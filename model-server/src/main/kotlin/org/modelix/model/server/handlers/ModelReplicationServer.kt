@@ -46,6 +46,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.modelix.api.public.Paths
 import org.modelix.authorization.getUserName
+import org.modelix.model.InMemoryModels
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.TreePointer
@@ -69,15 +70,20 @@ import org.slf4j.LoggerFactory
  * Implements the endpoints used by the 'model-client', but compared to KeyValueLikeModelServer also understands what
  * client sends. This allows more validations and more responsibilities on the server side.
  */
-class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
-    constructor(modelClient: LocalModelClient) : this(RepositoriesManager(modelClient))
+class ModelReplicationServer(
+    private val repositoriesManager: IRepositoriesManager,
+    private val modelClient: LocalModelClient,
+    private val inMemoryModels: InMemoryModels,
+) {
+    constructor(repositoriesManager: RepositoriesManager) :
+        this(repositoriesManager, repositoriesManager.client, InMemoryModels())
+
+    constructor(modelClient: LocalModelClient) : this(RepositoriesManager(modelClient), modelClient, InMemoryModels())
     constructor(storeClient: IStoreClient) : this(LocalModelClient(storeClient))
 
     companion object {
         private val LOG = LoggerFactory.getLogger(ModelReplicationServer::class.java)
     }
-
-    private val modelClient: LocalModelClient get() = repositoriesManager.client
     private val storeClient: IStoreClient get() = modelClient.store
 
     fun init(application: Application) {
@@ -268,16 +274,16 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             LOG.trace("Running query on {} @ {}", branchRef, version)
             val initialTree = version!!.getTree()
             val branch = OTBranch(
-                PBranch(initialTree, repositoriesManager.client.idGenerator),
-                repositoriesManager.client.idGenerator,
-                repositoriesManager.client.storeCache,
+                PBranch(initialTree, modelClient.idGenerator),
+                modelClient.idGenerator,
+                modelClient.storeCache,
             )
 
             ModelQLServer.handleCall(call, { writeAccess ->
                 if (writeAccess) {
                     branch.getRootNode() to branch.getArea()
                 } else {
-                    val model = repositoriesManager.inMemoryModels.getModel(initialTree).await()
+                    val model = inMemoryModels.getModel(initialTree).await()
                     model.getNode(ITree.ROOT_ID) to model.getArea()
                 }
             }, {
@@ -286,7 +292,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                 val (ops, newTree) = branch.getPendingChanges()
                 if (newTree != initialTree) {
                     val newVersion = CLVersion.createRegularVersion(
-                        id = repositoriesManager.client.idGenerator.generate(),
+                        id = modelClient.idGenerator.generate(),
                         author = getUserName(),
                         tree = newTree as CLTree,
                         baseVersion = version,
@@ -299,7 +305,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
 
         post<Paths.postRepositoryVersionHashQuery> {
             val versionHash = call.parameters["versionHash"]!!
-            val version = CLVersion.loadFromHash(versionHash, repositoriesManager.client.storeCache)
+            val version = CLVersion.loadFromHash(versionHash, modelClient.storeCache)
             val initialTree = version.getTree()
             val branch = TreePointer(initialTree)
             ModelQLServer.handleCall(call, branch.getRootNode(), branch.getArea())

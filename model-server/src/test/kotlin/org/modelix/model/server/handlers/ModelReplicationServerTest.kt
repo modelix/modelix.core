@@ -23,6 +23,7 @@ import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import org.modelix.authorization.installAuthentication
+import org.modelix.model.InMemoryModels
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.readVersionDelta
@@ -41,9 +42,12 @@ class ModelReplicationServerTest {
         application {
             installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
-            val repositoriesManager = RepositoriesManager(LocalModelClient(InMemoryStoreClient()))
-            ModelReplicationServer(repositoriesManager).init(this)
-            KeyValueLikeModelServer(repositoriesManager).init(this)
+            val storeClient = InMemoryStoreClient()
+            val modelClient = LocalModelClient(storeClient)
+            val repositoriesManager = RepositoriesManager(modelClient)
+            val inMemoryModels = InMemoryModels()
+            ModelReplicationServer(repositoriesManager, modelClient, inMemoryModels).init(this)
+            KeyValueLikeModelServer(repositoriesManager, storeClient, inMemoryModels).init(this)
         }
 
         coroutineScope {

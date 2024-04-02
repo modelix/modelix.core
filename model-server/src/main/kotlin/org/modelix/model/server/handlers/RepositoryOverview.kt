@@ -25,7 +25,7 @@ import kotlinx.html.tr
 import org.modelix.api.html.Paths
 import org.modelix.model.server.templates.PageWithMenuBar
 
-class RepositoryOverview(private val repoManager: RepositoriesManager) {
+class RepositoryOverview(private val repoManager: IRepositoriesManager) {
 
     fun init(application: Application) {
         application.routing {

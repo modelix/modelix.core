@@ -48,6 +48,7 @@ import org.apache.commons.io.FileUtils
 import org.apache.ignite.Ignition
 import org.modelix.authorization.KeycloakUtils
 import org.modelix.authorization.installAuthentication
+import org.modelix.model.InMemoryModels
 import org.modelix.model.server.handlers.ContentExplorer
 import org.modelix.model.server.handlers.DeprecatedLightModelServer
 import org.modelix.model.server.handlers.HistoryHandler
@@ -150,8 +151,9 @@ object Main {
                 i += 2
             }
             val localModelClient = LocalModelClient(storeClient)
+            val inMemoryModels = InMemoryModels()
             val repositoriesManager = RepositoriesManager(localModelClient)
-            val modelServer = KeyValueLikeModelServer(repositoriesManager)
+            val modelServer = KeyValueLikeModelServer(repositoriesManager, storeClient, inMemoryModels)
             val sharedSecretFile = cmdLineArgs.secretFile
             if (sharedSecretFile.exists()) {
                 modelServer.setSharedSecret(
@@ -162,7 +164,7 @@ object Main {
             val repositoryOverview = RepositoryOverview(repositoriesManager)
             val historyHandler = HistoryHandler(localModelClient, repositoriesManager)
             val contentExplorer = ContentExplorer(localModelClient, repositoriesManager)
-            val modelReplicationServer = ModelReplicationServer(repositoriesManager)
+            val modelReplicationServer = ModelReplicationServer(repositoriesManager, localModelClient, inMemoryModels)
             val metricsHandler = MetricsHandler()
 
             val configureNetty: NettyApplicationEngine.Configuration.() -> Unit = {

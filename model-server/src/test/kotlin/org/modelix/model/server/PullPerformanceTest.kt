@@ -26,6 +26,7 @@ import io.ktor.server.testing.testApplication
 import io.ktor.server.websocket.WebSockets
 import kotlinx.coroutines.coroutineScope
 import org.modelix.authorization.installAuthentication
+import org.modelix.model.InMemoryModels
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
@@ -46,6 +47,7 @@ class PullPerformanceTest {
     private fun runTest(block: suspend ApplicationTestBuilder.(storeClientWithStatistics: StoreClientWithStatistics) -> Unit) = testApplication {
         val storeClientWithStatistics = StoreClientWithStatistics(InMemoryStoreClient())
         val repositoriesManager = RepositoriesManager(LocalModelClient(storeClientWithStatistics))
+        val inMemoryModels = InMemoryModels()
         application {
             installAuthentication(unitTestMode = true)
             install(ContentNegotiation) {
@@ -54,8 +56,8 @@ class PullPerformanceTest {
             install(WebSockets)
             install(Resources)
             install(IgnoreTrailingSlash)
-            ModelReplicationServer(repositoriesManager).init(this)
-            KeyValueLikeModelServer(repositoriesManager).init(this)
+            ModelReplicationServer(repositoriesManager, LocalModelClient(storeClientWithStatistics), inMemoryModels).init(this)
+            KeyValueLikeModelServer(repositoriesManager, storeClientWithStatistics, inMemoryModels).init(this)
         }
 
         coroutineScope {

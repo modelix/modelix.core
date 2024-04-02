@@ -31,6 +31,7 @@ import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.RepetitionInfo
 import org.modelix.authorization.installAuthentication
+import org.modelix.model.InMemoryModels
 import org.modelix.model.ModelFacade
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.IBranch
@@ -79,9 +80,12 @@ class ReplicatedRepositoryTest {
             install(WebSockets)
             install(Resources)
             install(IgnoreTrailingSlash)
-            val repositoriesManager = RepositoriesManager(LocalModelClient(InMemoryStoreClient()))
-            ModelReplicationServer(repositoriesManager).init(this)
-            KeyValueLikeModelServer(repositoriesManager).init(this)
+            val storeClient = InMemoryStoreClient()
+            val modelClient = LocalModelClient(storeClient)
+            val repositoriesManager = RepositoriesManager(modelClient)
+            val inMemoryModels = InMemoryModels()
+            ModelReplicationServer(repositoriesManager, modelClient, inMemoryModels).init(this)
+            KeyValueLikeModelServer(repositoriesManager, storeClient, inMemoryModels).init(this)
         }
 
         coroutineScope {

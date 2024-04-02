@@ -55,7 +55,7 @@ import org.modelix.model.server.templates.PageWithMenuBar
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-class HistoryHandler(val client: IModelClient, private val repositoriesManager: RepositoriesManager) {
+class HistoryHandler(val client: IModelClient, private val repositoriesManager: IRepositoriesManager) {
 
     fun init(application: Application) {
         application.routing {

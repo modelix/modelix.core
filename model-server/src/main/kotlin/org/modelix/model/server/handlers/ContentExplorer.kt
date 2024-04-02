@@ -49,7 +49,7 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.templates.PageWithMenuBar
 import kotlin.collections.set
 
-class ContentExplorer(private val client: IModelClient, private val repoManager: RepositoriesManager) {
+class ContentExplorer(private val client: IModelClient, private val repoManager: IRepositoriesManager) {
 
     fun init(application: Application) {
         application.routing {

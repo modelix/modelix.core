@@ -44,7 +44,7 @@ class RevertTest {
 
         val allVersions = mutableListOf<CLVersion>()
 
-        randomChanges(baseBranch, 5, idGenerator, rand)
+        randomChanges(baseBranch, 10, idGenerator, rand)
 
         allVersions += createVersion(baseBranch.operationsAndTree, null, versionIdGenerator, store)
 

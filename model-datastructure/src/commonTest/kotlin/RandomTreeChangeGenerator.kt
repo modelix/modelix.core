@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IIdGenerator
@@ -27,6 +28,7 @@ class RandomTreeChangeGenerator(private val idGenerator: IIdGenerator, private v
     val childRoles = listOf("cRole1", "cRole2", "cRole3")
     val propertyRoles = listOf("pRole1", "pRole2", "pRole3")
     val referenceRoles = listOf("rRole1", "rRole2", "rRole3")
+    val concepts = listOf("concept1", "concept2", "concept3")
     val deleteOp: (IWriteTransaction, ExpectedTreeData?) -> Unit = { t, expectedTree ->
         val nodeToDelete = TreeTestUtil(t.tree, rand).randomLeafNode
         if (nodeToDelete != 0L && nodeToDelete != ITree.ROOT_ID) {
@@ -98,11 +100,18 @@ class RandomTreeChangeGenerator(private val idGenerator: IIdGenerator, private v
             }
         }
     }
+
+    val setConceptOp: (IWriteTransaction, ExpectedTreeData?) -> Unit = { transaction, expectedTree ->
+        val node = TreeTestUtil(transaction.tree, rand).randomNodeWithRoot
+        transaction.setConcept(node, ConceptReference(concepts[rand.nextInt(concepts.size)]))
+    }
+
     var operations: List<(IWriteTransaction, ExpectedTreeData?) -> Unit> = listOf(
         deleteOp,
         addNewOp,
         setPropertyOp,
         setReferenceOp,
+        setConceptOp,
         moveOp,
     )
 
@@ -111,6 +120,7 @@ class RandomTreeChangeGenerator(private val idGenerator: IIdGenerator, private v
             addNewOp,
             setPropertyOp,
             setReferenceOp,
+            setConceptOp,
         )
         return this
     }

@@ -29,6 +29,7 @@ import kotlinx.html.small
 import kotlinx.html.stream.appendHTML
 import kotlinx.html.style
 import kotlinx.html.table
+import kotlinx.html.tbody
 import kotlinx.html.td
 import kotlinx.html.th
 import kotlinx.html.thead
@@ -250,10 +251,12 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                         th { +"Value" }
                     }
                 }
-                for (propertyRole in node.getPropertyRoles()) {
-                    tr {
-                        td { +propertyRole }
-                        td { +"${node.getPropertyValue(propertyRole)}" }
+                tbody {
+                    for (propertyRole in node.getPropertyRoles()) {
+                        tr {
+                            td { +propertyRole }
+                            td { +"${node.getPropertyValue(propertyRole)}" }
+                        }
                     }
                 }
             }
@@ -265,19 +268,21 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                 thead {
                     tr {
                         th { +"ReferenceRole" }
-                        th { +"NodeId" }
-                        th { +"Value" }
+                        th { +"Target NodeId" }
+                        th { +"Target Reference" }
                     }
                 }
-                INodeResolutionScope.runWithAdditionalScope(node.getArea()) {
-                    for (referenceRole in node.getReferenceRoles()) {
-                        tr {
-                            td { +referenceRole }
-                            td {
-                                +"${(node.getReferenceTarget(referenceRole) as PNodeAdapter).nodeId}"
-                            }
-                            td {
-                                +"${node.getReferenceTarget(referenceRole)}"
+                tbody {
+                    INodeResolutionScope.runWithAdditionalScope(node.getArea()) {
+                        for (referenceRole in node.getReferenceRoles()) {
+                            tr {
+                                td { +referenceRole }
+                                td {
+                                    +"${(node.getReferenceTarget(referenceRole) as? PNodeAdapter)?.nodeId}"
+                                }
+                                td {
+                                    +"${node.getReferenceTargetRef(referenceRole)?.serialize()}"
+                                }
                             }
                         }
                     }

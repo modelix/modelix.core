@@ -15,14 +15,8 @@
 
 package org.modelix.model.server
 
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.application.install
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.server.resources.Resources
-import io.ktor.server.routing.IgnoreTrailingSlash
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
-import io.ktor.server.websocket.WebSockets
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.ITree
@@ -50,21 +44,10 @@ class ModelClientV2Test {
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         application {
             installAuthentication(unitTestMode = true)
-            install(ContentNegotiation) {
-                json()
-            }
-            install(WebSockets)
-            install(Resources)
-            install(IgnoreTrailingSlash)
+            installDefaultServerPlugins()
             ModelReplicationServer(InMemoryStoreClient()).init(this)
         }
         block()
-    }
-
-    private suspend fun ApplicationTestBuilder.createModelClient(): ModelClientV2 {
-        val url = "http://localhost/v2"
-        val modelClient = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
-        return modelClient
     }
 
     @Test

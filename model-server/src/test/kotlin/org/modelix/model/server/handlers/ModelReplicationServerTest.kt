@@ -18,14 +18,8 @@ package org.modelix.model.server.handlers
 import io.ktor.client.request.get
 import io.ktor.http.appendPathSegments
 import io.ktor.http.takeFrom
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.application.install
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.server.resources.Resources
-import io.ktor.server.routing.IgnoreTrailingSlash
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
-import io.ktor.server.websocket.WebSockets
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import org.modelix.authorization.installAuthentication
@@ -35,6 +29,7 @@ import org.modelix.model.client2.readVersionDelta
 import org.modelix.model.client2.runWrite
 import org.modelix.model.client2.useVersionStreamFormat
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import kotlin.test.Test
@@ -45,12 +40,7 @@ class ModelReplicationServerTest {
     private fun runTest(block: suspend ApplicationTestBuilder.(scope: CoroutineScope) -> Unit) = testApplication {
         application {
             installAuthentication(unitTestMode = true)
-            install(ContentNegotiation) {
-                json()
-            }
-            install(WebSockets)
-            install(Resources)
-            install(IgnoreTrailingSlash)
+            installDefaultServerPlugins()
             val repositoriesManager = RepositoriesManager(LocalModelClient(InMemoryStoreClient()))
             ModelReplicationServer(repositoriesManager).init(this)
             KeyValueLikeModelServer(repositoriesManager).init(this)

@@ -33,12 +33,19 @@ import io.ktor.server.websocket.WebSockets
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.select.Evaluator
+import org.modelix.model.api.IReferenceLink
+import org.modelix.model.api.ITree
+import org.modelix.model.api.NodeReferenceById
 import org.modelix.model.client.successful
+import org.modelix.model.client2.ModelClientV2
+import org.modelix.model.client2.runWrite
 import org.modelix.model.lazy.CLVersion
+import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientContentNegotiation
@@ -63,6 +70,12 @@ class ContentExplorerTest {
         }
     }
 
+    private suspend fun ApplicationTestBuilder.createModelClient(): ModelClientV2 {
+        val url = "http://localhost/v2"
+        val modelClient = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+        return modelClient
+    }
+
     @Test
     fun `node inspector finds root node`() = runTest {
         val client = createClient {
@@ -77,6 +90,34 @@ class ContentExplorerTest {
 
         val response = client.get("/content/$versionHash/$nodeId/")
         assertTrue(response.successful)
+    }
+
+    @Test
+    fun `node inspector can handle unresolvable references`() = runTest {
+        val modelClient = createModelClient()
+        val repoId = RepositoryId("node-inspector-null-ref")
+        val branchRef = repoId.getBranchReference("master")
+        val refLinkName = "myUnresolvableRef"
+        val refLinkTargetRef = NodeReferenceById("notAResolvableId")
+
+        modelClient.initRepository(repoId)
+
+        modelClient.runWrite(branchRef) { root ->
+            root.setReferenceTarget(IReferenceLink.fromName(refLinkName), refLinkTargetRef)
+        }
+
+        val versionHash = modelClient.pullHash(branchRef)
+
+        val response = client.get("/content/$versionHash/${ITree.ROOT_ID}/")
+        val html = Jsoup.parse(response.bodyAsText())
+        val nameCell = html.selectXpath("""//td[text()="$refLinkName"]""").first() ?: error("table cell not found")
+        val row = checkNotNull(nameCell.parent()) { "table row not found" }
+        val targetNodeIdCell = row.allElements[2] // index 0 is the row itself and 1 the nameCell
+        val targetRefCell = row.allElements[3]
+
+        assertTrue(response.successful)
+        assertEquals("null", targetNodeIdCell.text())
+        assertEquals(refLinkTargetRef.serialize(), targetRefCell.text())
     }
 
     @Test

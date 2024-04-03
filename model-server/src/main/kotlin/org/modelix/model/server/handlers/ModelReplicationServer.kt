@@ -27,13 +27,17 @@ import io.ktor.server.resources.get
 import io.ktor.server.resources.post
 import io.ktor.server.resources.put
 import io.ktor.server.response.respond
+import io.ktor.server.response.respondBytesWriter
 import io.ktor.server.response.respondText
-import io.ktor.server.response.respondTextWriter
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.webSocket
+import io.ktor.util.cio.use
 import io.ktor.util.pipeline.PipelineContext
+import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.close
+import io.ktor.utils.io.writeStringUtf8
 import io.ktor.websocket.send
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -84,6 +88,7 @@ class ModelReplicationServer(
     companion object {
         private val LOG = LoggerFactory.getLogger(ModelReplicationServer::class.java)
     }
+
     private val storeClient: IStoreClient get() = modelClient.store
 
     fun init(application: Application) {
@@ -378,21 +383,44 @@ class ModelReplicationServer(
         respond(delta)
     }
 
-    private suspend fun ApplicationCall.respondDeltaAsObjectStream(versionHash: String, baseVersionHash: String?, plainText: Boolean) {
+    private suspend fun ApplicationCall.respondDeltaAsObjectStream(
+        versionHash: String,
+        baseVersionHash: String?,
+        plainText: Boolean,
+    ) {
         // Call `computeDelta` before starting to respond.
         // It could already throw an exception, and in that case we do not want a successful response status.
         val objectData = repositoriesManager.computeDelta(versionHash, baseVersionHash)
-        respondTextWriter(contentType = if (plainText) ContentType.Text.Plain else VersionDeltaStream.CONTENT_TYPE) {
-            objectData.asFlow()
-                .flatten()
-                .withSeparator("\n")
-                .onEmpty { emit(versionHash) }
-                .withIndex()
-                .collect {
-                    if (it.index == 0) check(it.value == versionHash) { "First object should be the version" }
-                    append(it.value)
-                }
+        val contentType = if (plainText) ContentType.Text.Plain else VersionDeltaStream.CONTENT_TYPE
+        respondBytesWriter(contentType) {
+            this.useClosingWithoutCause {
+                objectData.asFlow()
+                    .flatten()
+                    .withSeparator("\n")
+                    .onEmpty { emit(versionHash) }
+                    .withIndex()
+                    .collect {
+                        if (it.index == 0) check(it.value == versionHash) { "First object should be the version" }
+                        writeStringUtf8(it.value)
+                    }
+            }
         }
+    }
+}
+
+/**
+ * Same as [[ByteWriteChannel.use]] but closing without a cause in case of an exception.
+ *
+ * Calling [[ByteWriteChannel.close]] with a cause results in not closing the connection properly.
+ * See ModelReplicationServerTest.`server closes connection when failing to compute delta after starting to respond`
+ * This will only be fixed in Ktor 3.
+ * See https://youtrack.jetbrains.com/issue/KTOR-4862/Ktor-hangs-if-exception-occurs-during-write-response-body
+ */
+private inline fun ByteWriteChannel.useClosingWithoutCause(block: ByteWriteChannel.() -> Unit) {
+    try {
+        block()
+    } finally {
+        close()
     }
 }
 

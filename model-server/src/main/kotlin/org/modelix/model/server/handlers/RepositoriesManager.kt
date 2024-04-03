@@ -50,6 +50,8 @@ import org.slf4j.LoggerFactory
 import java.lang.ref.SoftReference
 import java.util.UUID
 
+// The methods in this class are almost cohesive, so the number of functions is fine.
+@Suppress("complexity.TooManyFunctions")
 class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
 
     init {

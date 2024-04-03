@@ -24,12 +24,8 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.server.resources.Resources
-import io.ktor.server.routing.IgnoreTrailingSlash
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
-import io.ktor.server.websocket.WebSockets
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.select.Evaluator
@@ -37,11 +33,12 @@ import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.ITree
 import org.modelix.model.api.NodeReferenceById
 import org.modelix.model.client.successful
-import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.runWrite
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.api.v2.VersionDelta
+import org.modelix.model.server.createModelClient
+import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import kotlin.test.Test
@@ -55,32 +52,22 @@ class ContentExplorerTest {
     private val modelClient = LocalModelClient(InMemoryStoreClient())
     private val repoManager = RepositoriesManager(modelClient)
 
-    private fun runTest(body: suspend (ApplicationTestBuilder.() -> Unit)) {
-        testApplication {
-            install(WebSockets)
-            install(ContentNegotiation) { json() }
-            install(Resources)
-            install(IgnoreTrailingSlash)
-            application {
-                ModelReplicationServer(repoManager).init(this)
-                ContentExplorer(modelClient, repoManager).init(this)
-            }
-
-            body()
+    private fun runTest(body: suspend (ApplicationTestBuilder.() -> Unit)) = testApplication {
+        application {
+            installDefaultServerPlugins()
+            ModelReplicationServer(repoManager).init(this)
+            ContentExplorer(modelClient, repoManager).init(this)
         }
+        body()
     }
 
-    private suspend fun ApplicationTestBuilder.createModelClient(): ModelClientV2 {
-        val url = "http://localhost/v2"
-        val modelClient = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
-        return modelClient
+    private fun ApplicationTestBuilder.createHttpClient() = createClient {
+        install(ClientContentNegotiation) { json() }
     }
 
     @Test
     fun `node inspector finds root node`() = runTest {
-        val client = createClient {
-            install(ClientContentNegotiation) { json() }
-        }
+        val client = createHttpClient()
 
         val delta: VersionDelta = client.post("/v2/repositories/node-inspector/init").body()
 
@@ -122,9 +109,7 @@ class ContentExplorerTest {
 
     @Test
     fun `nodes can be expanded`() = runTest {
-        val client = createClient {
-            install(ClientContentNegotiation) { json() }
-        }
+        val client = createHttpClient()
 
         val delta: VersionDelta = client.post("/v2/repositories/node-expansion/init").body()
 

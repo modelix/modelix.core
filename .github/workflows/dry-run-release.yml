@@ -3,15 +3,6 @@ on:
   pull_request:
 
 jobs:
-  lint-commits:
-    name: Lint PR commits
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: wagoid/commitlint-github-action@v5
-
   test-release:
     name: Dry-run semantic-release
     runs-on: ubuntu-latest

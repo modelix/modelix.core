@@ -86,14 +86,15 @@ object Main {
             return
         }
 
-        LOG.info("Max memory (bytes): " + Runtime.getRuntime().maxMemory())
+        LOG.info("Max memory (bytes): ${Runtime.getRuntime().maxMemory()}")
         LOG.info("Server process started")
-        LOG.info("In memory: " + cmdLineArgs.inmemory)
-        LOG.info("Path to secret file: " + cmdLineArgs.secretFile)
-        LOG.info("Path to JDBC configuration file: " + cmdLineArgs.jdbcConfFile)
-        LOG.info("Schema initialization: " + cmdLineArgs.schemaInit)
-        LOG.info("Set values: " + cmdLineArgs.setValues)
-        LOG.info("Disable Swagger-UI: " + cmdLineArgs.noSwaggerUi)
+        LOG.info("In memory: ${cmdLineArgs.inmemory}")
+        LOG.info("Path to secret file: ${cmdLineArgs.secretFile}")
+        LOG.info("Path to JDBC configuration file: ${cmdLineArgs.jdbcConfFile}")
+        LOG.info("Schema initialization: ${cmdLineArgs.schemaInit}")
+        LOG.info("Set values: ${cmdLineArgs.setValues}")
+        LOG.info("Disable Swagger-UI: ${cmdLineArgs.noSwaggerUi}")
+        LOG.info("Response write timeout seconds: ${cmdLineArgs.responseWriteTimeoutSeconds}")
 
         if (cmdLineArgs.dumpOutName != null && !cmdLineArgs.inmemory) {
             throw RuntimeException("For now dumps are supported only with the inmemory option")
@@ -163,7 +164,12 @@ object Main {
             val contentExplorer = ContentExplorer(localModelClient, repositoriesManager)
             val modelReplicationServer = ModelReplicationServer(repositoriesManager)
             val metricsHandler = MetricsHandler()
-            val ktorServer: NettyApplicationEngine = embeddedServer(Netty, port = port) {
+
+            val configureNetty: NettyApplicationEngine.Configuration.() -> Unit = {
+                this.responseWriteTimeoutSeconds = cmdLineArgs.responseWriteTimeoutSeconds
+            }
+
+            val ktorServer: NettyApplicationEngine = embeddedServer(Netty, port = port, configure = configureNetty) {
                 install(Routing)
                 installAuthentication(unitTestMode = !KeycloakUtils.isEnabled())
                 install(ForwardedHeaders)

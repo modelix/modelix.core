@@ -12,6 +12,7 @@ All components in this repository have no dependencies to JetBrains MPS.
 If you are looking for MPS-related modelix components,
 see https://github.com/modelix/modelix.mps and https://github.com/modelix/modelix.mps-plugins.
 
+test
 
 ## Development
 

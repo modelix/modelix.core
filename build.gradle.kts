@@ -41,7 +41,6 @@ plugins {
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.gitVersion)
     alias(libs.plugins.spotless) apply false
-    alias(libs.plugins.tasktree)
     alias(libs.plugins.dokka)
     alias(libs.plugins.node) apply false
     alias(libs.plugins.detekt) apply false

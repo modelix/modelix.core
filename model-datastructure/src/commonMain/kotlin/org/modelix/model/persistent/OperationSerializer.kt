@@ -31,6 +31,7 @@ import org.modelix.model.operations.MoveNodeOp
 import org.modelix.model.operations.NoOp
 import org.modelix.model.operations.PositionInRole
 import org.modelix.model.operations.RevertToOp
+import org.modelix.model.operations.SetConceptOp
 import org.modelix.model.operations.SetPropertyOp
 import org.modelix.model.operations.SetReferenceOp
 import org.modelix.model.operations.UndoOp
@@ -222,6 +223,19 @@ class OperationSerializer private constructor() {
                     override fun deserialize(serialized: String): SetReferenceOp {
                         val parts = serialized.split(SEPARATOR).toTypedArray()
                         return SetReferenceOp(longFromHex(parts[0]), unescape(parts[1])!!, deserializeReference(parts[2]))
+                    }
+                },
+            )
+            INSTANCE.registerSerializer(
+                SetConceptOp::class,
+                object : Serializer<SetConceptOp> {
+                    override fun serialize(op: SetConceptOp): String {
+                        return longToHex(op.nodeId) + SEPARATOR + serializeConcept(op.concept)
+                    }
+
+                    override fun deserialize(serialized: String): SetConceptOp {
+                        val parts = serialized.split(SEPARATOR)
+                        return SetConceptOp(nodeId = longFromHex(parts[0]), concept = deserializeConcept(parts[2]))
                     }
                 },
             )

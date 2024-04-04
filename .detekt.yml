@@ -10,3 +10,14 @@ style:
     active: false
   ThrowsCount:
     active: false
+
+# Enforce some proper documentation standards (cf. MODELIX-794)
+comments:
+  OutdatedDocumentation:
+    active: true
+  UndocumentedPublicClass:
+    active: true
+  UndocumentedPublicFunction:
+    active: true
+  UndocumentedPublicProperty:
+    active: true

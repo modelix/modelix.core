@@ -358,9 +358,13 @@ class KeyValueLikeModelServer(
             storeClient.putAll(userDefinedEntries)
             for ((branch, value) in branchChanges) {
                 if (value == null) {
-                    repositoriesManager.removeBranchesBlocking(branch.repositoryId, setOf(branch.branchName))
+                    runBlocking {
+                        repositoriesManager.removeBranches(branch.repositoryId, setOf(branch.branchName))
+                    }
                 } else {
-                    repositoriesManager.mergeChangesBlocking(branch, value)
+                    runBlocking {
+                        repositoriesManager.mergeChanges(branch, value)
+                    }
                 }
             }
         }

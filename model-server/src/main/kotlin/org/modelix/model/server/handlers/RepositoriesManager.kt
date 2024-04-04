@@ -59,8 +59,8 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
             val legacyRepositories = listLegacyRepositories(infoBranch).groupBy { it.repositoryId }
             if (legacyRepositories.isNotEmpty()) {
                 // To not use `runTransactionSuspendable` like everywhere else,
-                // because this is blocking initialization code anyways.
-                ensureRepositoriesAreInList(legacyRepositories.keys)
+                // because this is blocking initialization code anyway.
+                runBlocking { ensureRepositoriesAreInList(legacyRepositories.keys) }
                 for ((legacyRepository, legacyBranches) in legacyRepositories) {
                     ensureBranchesAreInList(legacyRepository, legacyBranches.map { it.branchName }.toSet())
                 }
@@ -69,7 +69,8 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
 
         fun doMigrations() {
             store.runTransaction {
-                val infoVersionHash = client[RepositoryId("info").getBranchReference().getKey()] ?: return@runTransaction
+                val infoVersionHash =
+                    client[RepositoryId("info").getBranchReference().getKey()] ?: return@runTransaction
                 val infoVersion = CLVersion(infoVersionHash, client.storeCache)
                 val infoBranch: IBranch = PBranch(infoVersion.getTree(), IdGeneratorDummy())
 
@@ -112,8 +113,10 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
         }
     }
 
-    override fun getRepositories(): Set<RepositoryId> {
-        val repositoriesList = store[REPOSITORIES_LIST_KEY]
+    override suspend fun getRepositories(): Set<RepositoryId> {
+        val repositoriesList = store.runTransactionSuspendable {
+            store[REPOSITORIES_LIST_KEY]
+        }
         val emptyRepositoriesList = repositoriesList.isNullOrBlank()
         return if (emptyRepositoriesList) {
             emptySet()
@@ -122,14 +125,16 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
         }
     }
 
-    private fun repositoryExists(repositoryId: RepositoryId) = getRepositories().contains(repositoryId)
-
-    override suspend fun createRepository(repositoryId: RepositoryId, userName: String?, useRoleIds: Boolean): CLVersion {
+    override suspend fun createRepository(
+        repositoryId: RepositoryId,
+        userName: String?,
+        useRoleIds: Boolean,
+    ): CLVersion {
         var initialVersion: CLVersion? = null
         store.runTransactionSuspendable {
             val masterBranch = repositoryId.getBranchReference()
-            if (repositoryExists(repositoryId)) throw RepositoryAlreadyExistsException(repositoryId.id)
-            val existingRepositories = getRepositories()
+            val existingRepositories = runBlocking { getRepositories() }
+            if (existingRepositories.contains(repositoryId)) throw RepositoryAlreadyExistsException(repositoryId.id)
             store.put(REPOSITORIES_LIST_KEY, (existingRepositories + repositoryId).joinToString("\n") { it.id }, false)
             store.put(branchListKey(repositoryId), masterBranch.branchName, false)
             initialVersion = CLVersion.createRegularVersion(
@@ -145,11 +150,13 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
         return initialVersion!!
     }
 
-    fun getBranchNames(repositoryId: RepositoryId): Set<String> {
-        return store[branchListKey(repositoryId)]?.lines()?.toSet() ?: emptySet()
+    private suspend fun getBranchNames(repositoryId: RepositoryId): Set<String> {
+        return store.runTransactionSuspendable {
+            store[branchListKey(repositoryId)]?.lines()?.toSet() ?: emptySet()
+        }
     }
 
-    override fun getBranches(repositoryId: RepositoryId): Set<BranchReference> {
+    override suspend fun getBranches(repositoryId: RepositoryId): Set<BranchReference> {
         return getBranchNames(repositoryId)
             .map { repositoryId.getBranchReference(it) }
             .sortedBy { it.branchName }
@@ -159,13 +166,15 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
     /**
      * Must be executed inside a transaction
      */
-    private fun ensureRepositoriesAreInList(repositoryIds: Set<RepositoryId>) {
-        if (repositoryIds.isEmpty()) return
-        val key = REPOSITORIES_LIST_KEY
-        val existingRepositories = getRepositories()
-        val missingRepositories = repositoryIds - existingRepositories
-        if (missingRepositories.isNotEmpty()) {
-            store.put(key, (existingRepositories + missingRepositories).joinToString("\n") { it.id })
+    private suspend fun ensureRepositoriesAreInList(repositoryIds: Set<RepositoryId>) {
+        store.runTransactionSuspendable {
+            if (repositoryIds.isEmpty()) return@runTransactionSuspendable
+            val key = REPOSITORIES_LIST_KEY
+            val existingRepositories = runBlocking { getRepositories() }
+            val missingRepositories = repositoryIds - existingRepositories
+            if (missingRepositories.isNotEmpty()) {
+                store.put(key, (existingRepositories + missingRepositories).joinToString("\n") { it.id })
+            }
         }
     }
 
@@ -182,60 +191,41 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
         }
     }
 
-    override suspend fun removeRepository(repository: RepositoryId): Boolean {
+    override suspend fun removeRepository(repositoryId: RepositoryId): Boolean {
         return store.runTransactionSuspendable {
-            if (!repositoryExists(repository)) {
+            val existingRepositories = runBlocking { getRepositories() }
+            if (!existingRepositories.contains(repositoryId)) {
                 return@runTransactionSuspendable false
             }
 
-            for (branchName in getBranchNames(repository)) {
-                putVersionHash(repository.getBranchReference(branchName), null)
+            val branchNames = runBlocking { getBranchNames(repositoryId) }
+            for (branchName in branchNames) {
+                putVersionHash(repositoryId.getBranchReference(branchName), null)
             }
-            store.put(branchListKey(repository), null)
-            val existingRepositories = getRepositories()
-            val remainingRepositories = existingRepositories - repository
+            store.put(branchListKey(repositoryId), null)
+            val remainingRepositories = existingRepositories - repositoryId
             store.put(REPOSITORIES_LIST_KEY, remainingRepositories.joinToString("\n") { it.id })
 
             true
         }
     }
 
-    override suspend fun removeBranches(repository: RepositoryId, branchNames: Set<String>) {
+    override suspend fun removeBranches(repositoryId: RepositoryId, branchNames: Set<String>) {
         return store.runTransactionSuspendable {
-            removeBranchesBlocking(repository, branchNames)
-        }
-    }
-
-    /**
-     * Same as [removeBranches] but blocking.
-     * Caller is expected to execute it outside the request thread.
-     */
-    override fun removeBranchesBlocking(repository: RepositoryId, branchNames: Set<String>) {
-        if (branchNames.isEmpty()) return
-        store.runTransaction {
-            val key = branchListKey(repository)
+            if (branchNames.isEmpty()) return@runTransactionSuspendable
+            val key = branchListKey(repositoryId)
             val existingBranches = store[key]?.lines()?.toSet() ?: emptySet()
             val remainingBranches = existingBranches - branchNames
             store.put(key, remainingBranches.joinToString("\n"))
             for (branchName in branchNames) {
-                putVersionHash(repository.getBranchReference(branchName), null)
+                putVersionHash(repositoryId.getBranchReference(branchName), null)
             }
         }
     }
 
     override suspend fun mergeChanges(branch: BranchReference, newVersionHash: String): String {
         return store.runTransactionSuspendable {
-            mergeChangesBlocking(branch, newVersionHash)
-        }
-    }
-
-    /**
-     * Same as [mergeChanges] but blocking.
-     * Caller is expected to execute it outside the request thread.
-     */
-    override fun mergeChangesBlocking(branch: BranchReference, newVersionHash: String): String {
-        return store.runTransaction {
-            val headHash = getVersionHashBlocking(branch)
+            val headHash = runBlocking { getVersionHash(branch) }
             val mergedHash = if (headHash == null) {
                 newVersionHash
             } else {
@@ -250,7 +240,7 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
                 mergedVersion.hash
             }
             putVersionHash(branch, mergedHash)
-            ensureRepositoriesAreInList(setOf(branch.repositoryId))
+            runBlocking { ensureRepositoriesAreInList(setOf(branch.repositoryId)) }
             ensureBranchesAreInList(branch.repositoryId, setOf(branch.branchName))
             mergedHash
         }
@@ -262,16 +252,6 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
 
     override suspend fun getVersionHash(branch: BranchReference): String? {
         return store.runTransactionSuspendable {
-            getVersionHashBlocking(branch)
-        }
-    }
-
-    /**
-     * Same as [getVersionHash] but blocking.
-     * Caller is expected to execute it outside the request thread.
-     */
-    private fun getVersionHashBlocking(branch: BranchReference): String? {
-        return store.runTransaction {
             store[branchKey(branch)] ?: store[legacyBranchKey(branch)]?.also {
                 store.put(
                     branchKey(branch),
@@ -380,8 +360,6 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
         const val SERVER_ID_KEY = "$KEY_PREFIX:server-id"
     }
 }
-
-class RepositoryAlreadyExistsException(val name: String) : IllegalStateException("Repository '$name' already exists")
 
 sealed interface ObjectData {
     suspend fun asMap(): Map<String, String>

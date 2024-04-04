@@ -210,6 +210,8 @@ class ModelReplicationServer(
             fun PipelineContext<Unit, ApplicationCall>.branchRef() = call.branchRef()
 
             val lastKnownVersionHash = call.request.queryParameters["lastKnown"]
+            // BUG throws exception resulting in 500 instead of 404.
+            // See https://issues.modelix.org/issue/MODELIX-860
             val newVersionHash = repositoriesManager.pollVersionHash(branchRef(), lastKnownVersionHash)
             call.respondDelta(newVersionHash, lastKnownVersionHash)
         }
@@ -221,6 +223,8 @@ class ModelReplicationServer(
             fun PipelineContext<Unit, ApplicationCall>.branchRef() = call.branchRef()
 
             val lastKnownVersionHash = call.request.queryParameters["lastKnown"]
+            // BUG throws exception resulting in 500 instead of 404.
+            // See https://issues.modelix.org/issue/MODELIX-860
             val newVersionHash = repositoriesManager.pollVersionHash(branchRef(), lastKnownVersionHash)
             call.respondText(newVersionHash)
         }
@@ -236,6 +240,9 @@ class ModelReplicationServer(
                 var lastVersionHash = call.request.queryParameters["lastKnown"]
                 while (coroutineContext[Job]?.isCancelled == false) {
                     val newVersionHash =
+                        // XXX How are non-existing branches or branches removed while listening handled here?
+                        // Is the websocket session properly closed?
+                        // See https://issues.modelix.org/issue/MODELIX-860
                         repositoriesManager.pollVersionHash(call.branchRef(), lastVersionHash)
                     val delta = VersionDelta(
                         newVersionHash,

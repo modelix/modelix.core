@@ -27,21 +27,27 @@ import org.modelix.model.server.templates.PageWithMenuBar
 
 class RepositoryOverview(private val repoManager: IRepositoriesManager) {
 
+    class RepositoryIdWithBranchNames(val repositoryId: String, val branchNames: Set<String>)
+
     fun init(application: Application) {
         application.routing {
             get<Paths.getRepos> {
+                val repositoryIds = repoManager.getRepositories()
+                val repositoryIdsWithBranchNames = repositoryIds.map { repositoryId ->
+                    val branchNames = repoManager.getBranchNames(repositoryId)
+                    RepositoryIdWithBranchNames(repositoryId.id, branchNames)
+                }
                 call.respondHtmlTemplate(PageWithMenuBar("repos/", "..")) {
                     headContent { title("Repositories") }
-                    bodyContent { buildMainPage() }
+                    bodyContent { buildMainPage(repositoryIdsWithBranchNames) }
                 }
             }
         }
     }
 
-    private fun FlowContent.buildMainPage() {
+    private fun FlowContent.buildMainPage(repositoryIdsWithBranchNames: List<RepositoryIdWithBranchNames>) {
         h1 { +"Choose Repository" }
-        val repositories = repoManager.getRepositories()
-        if (repositories.isEmpty()) {
+        if (repositoryIdsWithBranchNames.isEmpty()) {
             p { i { +"No repositories available, add one" } }
         } else {
             table {
@@ -56,15 +62,16 @@ class RepositoryOverview(private val repoManager: IRepositoriesManager) {
                     }
                 }
                 tbody {
-                    for (repository in repositories) {
-                        val branches = repoManager.getBranches(repository)
+                    for (repositoryIdWithBranchNames in repositoryIdsWithBranchNames) {
+                        val repositoryId = repositoryIdWithBranchNames.repositoryId
+                        val branchNames = repositoryIdWithBranchNames.branchNames
                         tr {
                             td {
-                                rowSpan = branches.size.coerceAtLeast(1).plus(1).toString()
-                                +repository.id
+                                rowSpan = branchNames.size.coerceAtLeast(1).plus(1).toString()
+                                +repositoryIdWithBranchNames.repositoryId
                             }
                         }
-                        if (branches.isEmpty()) {
+                        if (branchNames.isEmpty()) {
                             tr {
                                 td { }
                                 td { }
@@ -72,21 +79,21 @@ class RepositoryOverview(private val repoManager: IRepositoriesManager) {
                                 td { }
                             }
                         } else {
-                            for (branch in branches) {
+                            for (branchName in branchNames) {
                                 tr {
                                     td {
                                         span {
-                                            +branch.branchName
+                                            +branchName
                                         }
                                     }
                                     td {
-                                        buildHistoryLink(branch.repositoryId.id, branch.branchName)
+                                        buildHistoryLink(repositoryId, branchName)
                                     }
                                     td {
-                                        buildExploreLatestLink(branch.repositoryId.id, branch.branchName)
+                                        buildExploreLatestLink(repositoryId, branchName)
                                     }
                                     td {
-                                        buildDeleteForm(branch.repositoryId.id)
+                                        buildDeleteForm(repositoryId)
                                     }
                                 }
                             }

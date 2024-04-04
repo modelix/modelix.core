@@ -38,8 +38,35 @@ interface IStoreClient : AutoCloseable {
     fun <T> runTransaction(body: () -> T): T
 }
 
-suspend fun <T> IStoreClient.runTransactionSuspendable(body: () -> T): T {
-    return withContext(Dispatchers.IO) { runTransaction(body) }
+private val isInSuspendableTransactionMarker: ThreadLocal<Boolean> = ThreadLocal()
+
+/**
+ * Runs the given [block] inside a transaction and on a thread that is permitted to being blocked.
+ *
+ * While running the provided [block] this function suspends.
+ * I should be called to interact with the store in a non-blocking way.
+ *
+ * Redispatching to another thread inside [block] is not allowed as transactions are thread bound.
+ * Recursive calls to [IStoreClient.runTransactionSuspendable] are allowed
+ * and only the topmost call will redispatch to another thread.
+ */
+suspend fun <T> IStoreClient.runTransactionSuspendable(block: () -> T): T {
+    if (isInSuspendableTransactionMarker.get() == true) {
+        return runTransaction(block)
+    }
+
+    // Only redispatch, if not already dispatched once.
+    // This avoids blocking more threads than necessary in case `runTransactionSuspendable` is called again in `block`.
+    // See `StoreClientTest.nestedSuspendableTransactionAreOnlyDispatchedOnce`
+    // Inspired by `io.ktor.http.content.safeToRunInPlace`.
+    return withContext(Dispatchers.IO) {
+        try {
+            isInSuspendableTransactionMarker.set(true)
+            runTransaction(block)
+        } finally {
+            isInSuspendableTransactionMarker.set(false)
+        }
+    }
 }
 
 suspend fun pollEntry(storeClient: IStoreClient, key: String, lastKnownValue: String?): String? {

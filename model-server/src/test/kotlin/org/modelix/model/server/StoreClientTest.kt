@@ -18,11 +18,13 @@ package org.modelix.model.server
 
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.modelix.model.IKeyListener
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.model.server.store.runTransactionSuspendable
 import java.util.Collections
 import kotlin.random.Random
 import kotlin.test.AfterTest
@@ -142,5 +144,33 @@ abstract class StoreClientTest(val store: IStoreClient) {
         }
 
         assertEquals(setOf<String?>(value3), valuesSeenByListener)
+    }
+
+    @Test
+    fun nestedSuspendableTransactionAreOnlyDispatchedOnce() = runTest {
+        var threadIdA1: Long? = null
+        var threadId2: Long? = null
+        var threadId3: Long? = null
+
+        fun getThreadId(): Long {
+            return Thread.currentThread().id
+        }
+
+        store.runTransactionSuspendable {
+            threadIdA1 = getThreadId()
+            runBlocking {
+                store.runTransactionSuspendable {
+                    threadId2 = getThreadId()
+                    runBlocking {
+                        store.runTransactionSuspendable {
+                            threadId3 = getThreadId()
+                        }
+                    }
+                }
+            }
+        }
+
+        assertEquals(threadIdA1, threadId2)
+        assertEquals(threadIdA1, threadId3)
     }
 }

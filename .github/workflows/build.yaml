@@ -32,7 +32,7 @@ jobs:
       - name: Build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew --build-cache build detekt :koverHtmlReport :koverXmlReport -PciBuild=true
+        run: ./gradlew --build-cache build detekt detektJsMain detektJsTest detektJvmMain detektJvmTest :koverHtmlReport :koverXmlReport -PciBuild=true
       - name: Publish test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         # Also report in case the build failed

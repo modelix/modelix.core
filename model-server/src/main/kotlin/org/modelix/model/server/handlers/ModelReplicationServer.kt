@@ -27,13 +27,17 @@ import io.ktor.server.resources.get
 import io.ktor.server.resources.post
 import io.ktor.server.resources.put
 import io.ktor.server.response.respond
+import io.ktor.server.response.respondBytesWriter
 import io.ktor.server.response.respondText
-import io.ktor.server.response.respondTextWriter
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.webSocket
+import io.ktor.util.cio.use
 import io.ktor.util.pipeline.PipelineContext
+import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.close
+import io.ktor.utils.io.writeStringUtf8
 import io.ktor.websocket.send
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -46,6 +50,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.modelix.api.public.Paths
 import org.modelix.authorization.getUserName
+import org.modelix.model.InMemoryModels
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.TreePointer
@@ -69,15 +74,21 @@ import org.slf4j.LoggerFactory
  * Implements the endpoints used by the 'model-client', but compared to KeyValueLikeModelServer also understands what
  * client sends. This allows more validations and more responsibilities on the server side.
  */
-class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
-    constructor(modelClient: LocalModelClient) : this(RepositoriesManager(modelClient))
+class ModelReplicationServer(
+    private val repositoriesManager: IRepositoriesManager,
+    private val modelClient: LocalModelClient,
+    private val inMemoryModels: InMemoryModels,
+) {
+    constructor(repositoriesManager: RepositoriesManager) :
+        this(repositoriesManager, repositoriesManager.client, InMemoryModels())
+
+    constructor(modelClient: LocalModelClient) : this(RepositoriesManager(modelClient), modelClient, InMemoryModels())
     constructor(storeClient: IStoreClient) : this(LocalModelClient(storeClient))
 
     companion object {
         private val LOG = LoggerFactory.getLogger(ModelReplicationServer::class.java)
     }
 
-    private val modelClient: LocalModelClient get() = repositoriesManager.client
     private val storeClient: IStoreClient get() = modelClient.store
 
     fun init(application: Application) {
@@ -268,16 +279,16 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
             LOG.trace("Running query on {} @ {}", branchRef, version)
             val initialTree = version!!.getTree()
             val branch = OTBranch(
-                PBranch(initialTree, repositoriesManager.client.idGenerator),
-                repositoriesManager.client.idGenerator,
-                repositoriesManager.client.storeCache,
+                PBranch(initialTree, modelClient.idGenerator),
+                modelClient.idGenerator,
+                modelClient.storeCache,
             )
 
             ModelQLServer.handleCall(call, { writeAccess ->
                 if (writeAccess) {
                     branch.getRootNode() to branch.getArea()
                 } else {
-                    val model = repositoriesManager.inMemoryModels.getModel(initialTree).await()
+                    val model = inMemoryModels.getModel(initialTree).await()
                     model.getNode(ITree.ROOT_ID) to model.getArea()
                 }
             }, {
@@ -286,7 +297,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
                 val (ops, newTree) = branch.getPendingChanges()
                 if (newTree != initialTree) {
                     val newVersion = CLVersion.createRegularVersion(
-                        id = repositoriesManager.client.idGenerator.generate(),
+                        id = modelClient.idGenerator.generate(),
                         author = getUserName(),
                         tree = newTree as CLTree,
                         baseVersion = version,
@@ -299,7 +310,7 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
 
         post<Paths.postRepositoryVersionHashQuery> {
             val versionHash = call.parameters["versionHash"]!!
-            val version = CLVersion.loadFromHash(versionHash, repositoriesManager.client.storeCache)
+            val version = CLVersion.loadFromHash(versionHash, modelClient.storeCache)
             val initialTree = version.getTree()
             val branch = TreePointer(initialTree)
             ModelQLServer.handleCall(call, branch.getRootNode(), branch.getArea())
@@ -372,18 +383,44 @@ class ModelReplicationServer(val repositoriesManager: RepositoriesManager) {
         respond(delta)
     }
 
-    private suspend fun ApplicationCall.respondDeltaAsObjectStream(versionHash: String, baseVersionHash: String?, plainText: Boolean) {
-        respondTextWriter(contentType = if (plainText) ContentType.Text.Plain else VersionDeltaStream.CONTENT_TYPE) {
-            repositoriesManager.computeDelta(versionHash, baseVersionHash).asFlow()
-                .flatten()
-                .withSeparator("\n")
-                .onEmpty { emit(versionHash) }
-                .withIndex()
-                .collect {
-                    if (it.index == 0) check(it.value == versionHash) { "First object should be the version" }
-                    append(it.value)
-                }
+    private suspend fun ApplicationCall.respondDeltaAsObjectStream(
+        versionHash: String,
+        baseVersionHash: String?,
+        plainText: Boolean,
+    ) {
+        // Call `computeDelta` before starting to respond.
+        // It could already throw an exception, and in that case we do not want a successful response status.
+        val objectData = repositoriesManager.computeDelta(versionHash, baseVersionHash)
+        val contentType = if (plainText) ContentType.Text.Plain else VersionDeltaStream.CONTENT_TYPE
+        respondBytesWriter(contentType) {
+            this.useClosingWithoutCause {
+                objectData.asFlow()
+                    .flatten()
+                    .withSeparator("\n")
+                    .onEmpty { emit(versionHash) }
+                    .withIndex()
+                    .collect {
+                        if (it.index == 0) check(it.value == versionHash) { "First object should be the version" }
+                        writeStringUtf8(it.value)
+                    }
+            }
         }
+    }
+}
+
+/**
+ * Same as [[ByteWriteChannel.use]] but closing without a cause in case of an exception.
+ *
+ * Calling [[ByteWriteChannel.close]] with a cause results in not closing the connection properly.
+ * See ModelReplicationServerTest.`server closes connection when failing to compute delta after starting to respond`
+ * This will only be fixed in Ktor 3.
+ * See https://youtrack.jetbrains.com/issue/KTOR-4862/Ktor-hangs-if-exception-occurs-during-write-response-body
+ */
+private inline fun ByteWriteChannel.useClosingWithoutCause(block: ByteWriteChannel.() -> Unit) {
+    try {
+        block()
+    } finally {
+        close()
     }
 }
 

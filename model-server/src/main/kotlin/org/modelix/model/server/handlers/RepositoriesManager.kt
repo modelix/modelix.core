@@ -25,7 +25,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import org.apache.commons.collections4.map.LRUMap
-import org.modelix.model.InMemoryModels
 import org.modelix.model.ModelMigrations
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.IBranch
@@ -51,7 +50,9 @@ import org.slf4j.LoggerFactory
 import java.lang.ref.SoftReference
 import java.util.UUID
 
-class RepositoriesManager(val client: LocalModelClient) {
+// The methods in this class are almost cohesive, so the number of functions is fine.
+@Suppress("complexity.TooManyFunctions")
+class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
 
     init {
         fun migrateLegacyRepositoriesList(infoBranch: IBranch) {
@@ -82,13 +83,6 @@ class RepositoriesManager(val client: LocalModelClient) {
 
     private val store: IStoreClient get() = client.store
     private val objectStore: IDeserializingKeyValueStore get() = client.storeCache
-    val inMemoryModels = InMemoryModels()
-
-    fun dispose() {
-        // TODO find instance creations and add a dispose() call if needed. Whoever creates an instance is responsible
-        //      for its lifecycle.
-        inMemoryModels.dispose()
-    }
 
     fun generateClientId(repositoryId: RepositoryId): Long {
         return client.store.generateId("$KEY_PREFIX:${repositoryId.id}:clientId")
@@ -103,7 +97,7 @@ class RepositoriesManager(val client: LocalModelClient) {
      * If the server ID was created previously but is only stored under a legacy database key,
      * it also gets stored under the current and all legacy database keys.
      */
-    suspend fun maybeInitAndGetSeverId(): String {
+    override suspend fun maybeInitAndGetSeverId(): String {
         return store.runTransactionSuspendable {
             var serverId = store[SERVER_ID_KEY]
             if (serverId == null) {
@@ -118,7 +112,7 @@ class RepositoriesManager(val client: LocalModelClient) {
         }
     }
 
-    fun getRepositories(): Set<RepositoryId> {
+    override fun getRepositories(): Set<RepositoryId> {
         val repositoriesList = store[REPOSITORIES_LIST_KEY]
         val emptyRepositoriesList = repositoriesList.isNullOrBlank()
         return if (emptyRepositoriesList) {
@@ -130,7 +124,7 @@ class RepositoriesManager(val client: LocalModelClient) {
 
     private fun repositoryExists(repositoryId: RepositoryId) = getRepositories().contains(repositoryId)
 
-    suspend fun createRepository(repositoryId: RepositoryId, userName: String?, useRoleIds: Boolean = true): CLVersion {
+    override suspend fun createRepository(repositoryId: RepositoryId, userName: String?, useRoleIds: Boolean): CLVersion {
         var initialVersion: CLVersion? = null
         store.runTransactionSuspendable {
             val masterBranch = repositoryId.getBranchReference()
@@ -155,7 +149,7 @@ class RepositoriesManager(val client: LocalModelClient) {
         return store[branchListKey(repositoryId)]?.lines()?.toSet() ?: emptySet()
     }
 
-    fun getBranches(repositoryId: RepositoryId): Set<BranchReference> {
+    override fun getBranches(repositoryId: RepositoryId): Set<BranchReference> {
         return getBranchNames(repositoryId)
             .map { repositoryId.getBranchReference(it) }
             .sortedBy { it.branchName }
@@ -188,7 +182,7 @@ class RepositoriesManager(val client: LocalModelClient) {
         }
     }
 
-    suspend fun removeRepository(repository: RepositoryId): Boolean {
+    override suspend fun removeRepository(repository: RepositoryId): Boolean {
         return store.runTransactionSuspendable {
             if (!repositoryExists(repository)) {
                 return@runTransactionSuspendable false
@@ -206,7 +200,7 @@ class RepositoriesManager(val client: LocalModelClient) {
         }
     }
 
-    suspend fun removeBranches(repository: RepositoryId, branchNames: Set<String>) {
+    override suspend fun removeBranches(repository: RepositoryId, branchNames: Set<String>) {
         return store.runTransactionSuspendable {
             removeBranchesBlocking(repository, branchNames)
         }
@@ -216,7 +210,7 @@ class RepositoriesManager(val client: LocalModelClient) {
      * Same as [removeBranches] but blocking.
      * Caller is expected to execute it outside the request thread.
      */
-    fun removeBranchesBlocking(repository: RepositoryId, branchNames: Set<String>) {
+    override fun removeBranchesBlocking(repository: RepositoryId, branchNames: Set<String>) {
         if (branchNames.isEmpty()) return
         store.runTransaction {
             val key = branchListKey(repository)
@@ -229,7 +223,7 @@ class RepositoriesManager(val client: LocalModelClient) {
         }
     }
 
-    suspend fun mergeChanges(branch: BranchReference, newVersionHash: String): String {
+    override suspend fun mergeChanges(branch: BranchReference, newVersionHash: String): String {
         return store.runTransactionSuspendable {
             mergeChangesBlocking(branch, newVersionHash)
         }
@@ -239,7 +233,7 @@ class RepositoriesManager(val client: LocalModelClient) {
      * Same as [mergeChanges] but blocking.
      * Caller is expected to execute it outside the request thread.
      */
-    fun mergeChangesBlocking(branch: BranchReference, newVersionHash: String): String {
+    override fun mergeChangesBlocking(branch: BranchReference, newVersionHash: String): String {
         return store.runTransaction {
             val headHash = getVersionHashBlocking(branch)
             val mergedHash = if (headHash == null) {
@@ -262,11 +256,11 @@ class RepositoriesManager(val client: LocalModelClient) {
         }
     }
 
-    suspend fun getVersion(branch: BranchReference): CLVersion? {
+    override suspend fun getVersion(branch: BranchReference): CLVersion? {
         return getVersionHash(branch)?.let { CLVersion.loadFromHash(it, client.storeCache) }
     }
 
-    suspend fun getVersionHash(branch: BranchReference): String? {
+    override suspend fun getVersionHash(branch: BranchReference): String? {
         return store.runTransactionSuspendable {
             getVersionHashBlocking(branch)
         }
@@ -293,13 +287,13 @@ class RepositoriesManager(val client: LocalModelClient) {
         store.put(legacyBranchKey(branch), hash, false)
     }
 
-    suspend fun pollVersionHash(branch: BranchReference, lastKnown: String?): String {
+    override suspend fun pollVersionHash(branch: BranchReference, lastKnown: String?): String {
         return pollEntry(client.store, branchKey(branch), lastKnown)
             ?: throw IllegalStateException("No version found for branch '${branch.branchName}' in repository '${branch.repositoryId}'")
     }
 
     private val versionDeltaCache = VersionDeltaCache(client.storeCache)
-    suspend fun computeDelta(versionHash: String, baseVersionHash: String?): ObjectData {
+    override suspend fun computeDelta(versionHash: String, baseVersionHash: String?): ObjectData {
         if (versionHash == baseVersionHash) return ObjectData.empty
         if (baseVersionHash == null) {
             // no need to cache anything if there is no delta computation happening

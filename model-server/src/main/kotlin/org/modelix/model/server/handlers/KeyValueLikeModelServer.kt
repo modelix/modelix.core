@@ -44,6 +44,7 @@ import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.requiresPermission
 import org.modelix.authorization.toKeycloakScope
+import org.modelix.model.InMemoryModels
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.persistent.HashUtil
@@ -67,15 +68,21 @@ private class NotFoundException(description: String?) : RuntimeException(descrip
 
 typealias CallContext = PipelineContext<Unit, ApplicationCall>
 
-class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
+class KeyValueLikeModelServer(
+    private val repositoriesManager: IRepositoriesManager,
+    private val storeClient: IStoreClient,
+    private val inMemoryModels: InMemoryModels,
+) {
+
+    constructor(repositoriesManager: RepositoriesManager) :
+        this(repositoriesManager, repositoriesManager.client.store, InMemoryModels())
+
     companion object {
         private val LOG = LoggerFactory.getLogger(KeyValueLikeModelServer::class.java)
         val HASH_PATTERN = Pattern.compile("[a-zA-Z0-9\\-_]{5}\\*[a-zA-Z0-9\\-_]{38}")
         const val PROTECTED_PREFIX = "$$$"
         val HEALTH_KEY = PROTECTED_PREFIX + "health2"
     }
-
-    val storeClient: IStoreClient get() = repositoriesManager.client.store
 
     fun init(application: Application) {
         // Functionally, it does not matter if the server ID
@@ -100,7 +107,7 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
                     ?.getBranchReference(System.getenv("MODELIX_SERVER_MODELQL_WARMUP_BRANCH"))
                 if (branchRef != null) {
                     val version = repositoriesManager.getVersion(branchRef)
-                    if (repositoriesManager.inMemoryModels.getModel(version!!.getTree()).isActive) {
+                    if (inMemoryModels.getModel(version!!.getTree()).isActive) {
                         call.respondText(
                             status = HttpStatusCode.ServiceUnavailable,
                             text = "Waiting for version $version to be loaded into memory",
@@ -346,7 +353,7 @@ class KeyValueLikeModelServer(val repositoriesManager: RepositoriesManager) {
 
         HashUtil.checkObjectHashes(hashedObjects)
 
-        repositoriesManager.client.store.runTransactionSuspendable {
+        storeClient.runTransactionSuspendable {
             storeClient.putAll(hashedObjects)
             storeClient.putAll(userDefinedEntries)
             for ((branch, value) in branchChanges) {

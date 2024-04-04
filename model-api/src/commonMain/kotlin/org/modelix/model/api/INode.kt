@@ -121,11 +121,11 @@ interface INode {
     }
 
     fun addNewChildren(role: String?, index: Int, concepts: List<IConceptReference?>): List<INode> {
-        return concepts.map { addNewChild(role, index, it) }
+        return concepts.mapIndexed { i, it -> addNewChild(role, if (index >= 0) index + i else index, it) }
     }
 
     fun addNewChildren(link: IChildLink, index: Int, concepts: List<IConceptReference?>): List<INode> {
-        return concepts.map { addNewChild(link, index, it) }
+        return concepts.mapIndexed { i, it -> addNewChild(link, if (index >= 0) index + i else index, it) }
     }
 
     /**

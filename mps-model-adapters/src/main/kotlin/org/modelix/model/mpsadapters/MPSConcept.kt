@@ -42,7 +42,7 @@ data class MPSConcept(val concept: SAbstractConceptAdapter) : IConcept {
             is SInterfaceConceptAdapterById -> concept.id
             else -> error("Unknown concept type: $concept")
         }
-        return "mps:" + id.serialize()
+        return UID_PREFIX + id.serialize()
     }
 
     override fun getShortName(): String {
@@ -116,6 +116,20 @@ data class MPSConcept(val concept: SAbstractConceptAdapter) : IConcept {
         return when (name) {
             "alias" -> concept.conceptAlias
             else -> null
+        }
+    }
+
+    companion object {
+        private const val UID_PREFIX = "mps:"
+
+        fun tryParseUID(uid: String): MPSConcept? {
+            if (!uid.startsWith(UID_PREFIX)) return null
+            val conceptId = SConceptId.deserialize(uid.substringAfter(UID_PREFIX))
+
+            // For interface concepts `SInterfaceConceptAdapterById(conceptId, "")` would be correct, but we don't have
+            // that information. Assuming that this concept is used to create new nodes SConceptAdapterById is the
+            // better default.
+            return MPSConcept(SConceptAdapterById(conceptId, ""))
         }
     }
 }

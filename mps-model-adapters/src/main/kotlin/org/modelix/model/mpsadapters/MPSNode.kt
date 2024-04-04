@@ -145,8 +145,39 @@ data class MPSNode(val node: SNode) : IDefaultNodeAdapter {
 
     override fun addNewChild(role: IChildLink, index: Int, concept: IConceptReference?): INode {
         val repo = checkNotNull(node.model?.repository)
-        val targetConcept = concept?.let { MPSLanguageRepository(repo).resolveConcept(it.getUID()) }
+        val targetConcept = concept?.let {
+            MPSLanguageRepository(repo).resolveConcept(it.getUID())
+                ?: MPSConcept.tryParseUID(it.getUID())
+        }
+
+        // A null value for the concept would default to BaseConcept, but then BaseConcept should be used explicitly.
+        checkNotNull(targetConcept) { "MPS concept not found: $concept" }
+
         return addNewChild(role, index, targetConcept)
+    }
+
+    override fun addNewChildren(role: String?, index: Int, concepts: List<IConceptReference?>): List<INode> {
+        requireNotNull(role) { "containment link required" }
+        val link = MPSChildLink(getMPSContainmentLink(role))
+        return addNewChildren(link, index, concepts)
+    }
+
+    override fun addNewChildren(link: IChildLink, index: Int, concepts: List<IConceptReference?>): List<INode> {
+        return concepts.mapIndexed { i, it -> addNewChild(link, if (index >= 0) index + i else index, it) }
+    }
+
+    @Deprecated("use IChildLink instead of String")
+    override fun addNewChild(role: String?, index: Int, concept: IConcept?): INode {
+        requireNotNull(role) { "containment link required" }
+        val link = MPSChildLink(getMPSContainmentLink(role))
+        return addNewChild(link, index, concept)
+    }
+
+    @Deprecated("use IChildLink instead of String")
+    override fun addNewChild(role: String?, index: Int, concept: IConceptReference?): INode {
+        requireNotNull(role) { "containment link required" }
+        val link = MPSChildLink(getMPSContainmentLink(role))
+        return addNewChild(link, index, concept)
     }
 
     override fun getReferenceTarget(link: IReferenceLink): INode? {
@@ -207,7 +238,11 @@ data class MPSNode(val node: SNode) : IDefaultNodeAdapter {
 
     private fun getMPSContainmentLink(childLink: IChildLink): SContainmentLink = when (childLink) {
         is MPSChildLink -> childLink.link
-        else -> node.concept.containmentLinks.find { MPSChildLink(it).getUID() == childLink.getUID() }
-            ?: SContainmentLinkAdapterById(SContainmentLinkId.deserialize(childLink.getUID()), "")
+        else -> getMPSContainmentLink(childLink.getUID())
+    }
+
+    private fun getMPSContainmentLink(uid: String): SContainmentLink {
+        return node.concept.containmentLinks.find { MPSChildLink(it).getUID() == uid }
+            ?: SContainmentLinkAdapterById(SContainmentLinkId.deserialize(uid), "")
     }
 }

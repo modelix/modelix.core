@@ -150,9 +150,11 @@ object Main {
                 storeClient.put(cmdLineArgs.setValues[i], cmdLineArgs.setValues[i + 1])
                 i += 2
             }
+            initializeAndMigrateServerId(storeClient)
             val localModelClient = LocalModelClient(storeClient)
             val inMemoryModels = InMemoryModels()
             val repositoriesManager = RepositoriesManager(localModelClient)
+
             val modelServer = KeyValueLikeModelServer(repositoriesManager, storeClient, inMemoryModels)
             val sharedSecretFile = cmdLineArgs.secretFile
             if (sharedSecretFile.exists()) {

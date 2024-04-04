@@ -43,7 +43,9 @@ class ModelClientTest {
             installAuthentication(unitTestMode = true)
             install(Resources)
             install(IgnoreTrailingSlash)
-            KeyValueLikeModelServer(RepositoriesManager(LocalModelClient(InMemoryStoreClient()))).init(this)
+            val storeClient = InMemoryStoreClient()
+            initializeAndMigrateServerId(storeClient)
+            KeyValueLikeModelServer(RepositoriesManager(LocalModelClient(storeClient))).init(this)
         }
         block()
     }

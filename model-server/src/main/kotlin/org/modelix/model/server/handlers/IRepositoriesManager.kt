@@ -26,17 +26,6 @@ import org.modelix.model.lazy.RepositoryId
  * All methods should use non-blocking IO (or dispatch it appropriately).
  */
 interface IRepositoriesManager {
-    /**
-     * Used to retrieve the server ID. If needed, the server ID is created and stored.
-     *
-     * If a server ID was not created yet, it is generated and saved in the database.
-     * It gets stored under the current and all legacy database keys.
-     *
-     * If the server ID was created previously but is only stored under a legacy database key,
-     * it also gets stored under the current and all legacy database keys.
-     */
-    suspend fun maybeInitAndGetSeverId(): String
-
     suspend fun getRepositories(): Set<RepositoryId>
 
     /**

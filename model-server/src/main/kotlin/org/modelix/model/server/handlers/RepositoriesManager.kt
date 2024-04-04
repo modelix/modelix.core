@@ -48,7 +48,6 @@ import org.modelix.model.server.store.pollEntry
 import org.modelix.model.server.store.runTransactionSuspendable
 import org.slf4j.LoggerFactory
 import java.lang.ref.SoftReference
-import java.util.UUID
 
 // The methods in this class are almost cohesive, so the number of functions is fine.
 @Suppress("complexity.TooManyFunctions")
@@ -87,30 +86,6 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
 
     fun generateClientId(repositoryId: RepositoryId): Long {
         return client.store.generateId("$KEY_PREFIX:${repositoryId.id}:clientId")
-    }
-
-    /**
-     * Used to retrieve the server ID. If needed, the server ID is created and stored.
-     *
-     * If a server ID was not created yet, it is generated and saved in the database.
-     * It gets stored under the current and all legacy database keys.
-     *
-     * If the server ID was created previously but is only stored under a legacy database key,
-     * it also gets stored under the current and all legacy database keys.
-     */
-    override suspend fun maybeInitAndGetSeverId(): String {
-        return store.runTransactionSuspendable {
-            var serverId = store[SERVER_ID_KEY]
-            if (serverId == null) {
-                serverId = store[LEGACY_SERVER_ID_KEY2]
-                    ?: store[LEGACY_SERVER_ID_KEY]
-                    ?: UUID.randomUUID().toString().replace("[^a-zA-Z0-9]".toRegex(), "")
-                store.put(SERVER_ID_KEY, serverId)
-                store.put(LEGACY_SERVER_ID_KEY, serverId)
-                store.put(LEGACY_SERVER_ID_KEY2, serverId)
-            }
-            serverId
-        }
     }
 
     override suspend fun getRepositories(): Set<RepositoryId> {
@@ -240,7 +215,6 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
                 mergedVersion.hash
             }
             putVersionHash(branch, mergedHash)
-            runBlocking { ensureRepositoriesAreInList(setOf(branch.repositoryId)) }
             ensureBranchesAreInList(branch.repositoryId, setOf(branch.branchName))
             mergedHash
         }
@@ -355,9 +329,6 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
         private val LOG = LoggerFactory.getLogger(RepositoriesManager::class.java)
         const val KEY_PREFIX = ":v2"
         private const val REPOSITORIES_LIST_KEY = "$KEY_PREFIX:repositories"
-        const val LEGACY_SERVER_ID_KEY = "repositoryId"
-        const val LEGACY_SERVER_ID_KEY2 = "server-id"
-        const val SERVER_ID_KEY = "$KEY_PREFIX:server-id"
     }
 }
 

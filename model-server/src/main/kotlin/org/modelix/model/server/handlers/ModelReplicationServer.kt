@@ -63,6 +63,7 @@ import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
+import org.modelix.model.server.SERVER_ID_KEY
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.api.v2.VersionDeltaStream
 import org.modelix.model.server.store.IStoreClient
@@ -104,13 +105,8 @@ class ModelReplicationServer(
             call.respondText(storeClient.generateId("clientId").toString())
         }
         get<Paths.getServerId> {
-            // Currently, the server ID is initialized in KeyValueLikeModelServer eagerly on startup.
-            // Should KeyValueLikeModelServer be removed or change,
-            // RepositoriesManager#maybeInitAndGetSeverId will initialize the server ID lazily on the first request.
-            //
-            // Functionally, it does not matter if the server ID is created eagerly or lazily,
-            // as long as the same server ID is returned from the same server.
-            val serverId = repositoriesManager.maybeInitAndGetSeverId()
+            val serverId = withContext(Dispatchers.IO) { storeClient[SERVER_ID_KEY] }
+            checkNotNull(serverId) { "Server ID should have been initialized at startup" }
             call.respondText(serverId)
         }
         get<Paths.getUserId> {

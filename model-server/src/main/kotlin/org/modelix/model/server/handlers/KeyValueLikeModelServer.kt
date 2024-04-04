@@ -48,6 +48,8 @@ import org.modelix.model.InMemoryModels
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.persistent.HashUtil
+import org.modelix.model.server.LEGACY_SERVER_ID_KEY
+import org.modelix.model.server.LEGACY_SERVER_ID_KEY2
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.pollEntry
 import org.modelix.model.server.store.runTransactionSuspendable
@@ -85,15 +87,6 @@ class KeyValueLikeModelServer(
     }
 
     fun init(application: Application) {
-        // Functionally, it does not matter if the server ID
-        // is created eagerly on startup or lazily on the first request,
-        // as long as the same server ID is returned from the same server.
-        //
-        // The server ID is initialized eagerly because adding special conditions in the affected
-        // request to initialize it lazily, would make the code less robust.
-        // Each change in the logic of RepositoriesManager#maybeInitAndGetSeverId would need
-        // the special conditions in the affected requests to be updated.
-        runBlocking { repositoriesManager.maybeInitAndGetSeverId() }
         application.apply {
             modelServerModule()
         }
@@ -341,7 +334,7 @@ class KeyValueLikeModelServer(
                     throw NoPermissionException("Access to keys starting with '${RepositoriesManager.KEY_PREFIX}' is only permitted to the model server itself.")
                 }
 
-                key == RepositoriesManager.LEGACY_SERVER_ID_KEY || key == RepositoriesManager.LEGACY_SERVER_ID_KEY2 -> {
+                key == LEGACY_SERVER_ID_KEY || key == LEGACY_SERVER_ID_KEY2 -> {
                     throw NoPermissionException("'$key' is read-only.")
                 }
 
@@ -386,7 +379,7 @@ class KeyValueLikeModelServer(
         if (key.startsWith(RepositoriesManager.KEY_PREFIX)) {
             throw NoPermissionException("Access to keys starting with '${RepositoriesManager.KEY_PREFIX}' is only permitted to the model server itself.")
         }
-        if ((key == RepositoriesManager.LEGACY_SERVER_ID_KEY || key == RepositoriesManager.LEGACY_SERVER_ID_KEY2) && type.includes(
+        if ((key == LEGACY_SERVER_ID_KEY || key == LEGACY_SERVER_ID_KEY2) && type.includes(
                 EPermissionType.WRITE,
             )
         ) {

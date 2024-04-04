@@ -21,3 +21,12 @@ comments:
     active: true
   UndocumentedPublicProperty:
     active: true
+
+# Try to enforce good handling of nullability
+potential-bugs:
+  CastNullableToNonNullableType:
+    active: true
+
+modelix:
+  AvoidNonNullAssertionOperator:
+    active: true

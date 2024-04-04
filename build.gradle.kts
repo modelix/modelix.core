@@ -43,7 +43,7 @@ plugins {
     alias(libs.plugins.spotless) apply false
     alias(libs.plugins.dokka)
     alias(libs.plugins.node) apply false
-    alias(libs.plugins.detekt) apply false
+    alias(libs.plugins.detekt)
     alias(libs.plugins.kotlinx.kover)
 }
 
@@ -82,7 +82,6 @@ subprojects {
     val subproject = this
     apply(plugin = "maven-publish")
     apply(plugin = "org.jetbrains.dokka")
-    apply(plugin = "io.gitlab.arturbosch.detekt")
     apply(plugin = "org.jetbrains.kotlinx.kover")
 
     version = rootProject.version
@@ -91,22 +90,6 @@ subprojects {
     tasks.withType<DokkaTaskPartial>().configureEach {
         pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
             footerMessage = createFooterMessage()
-        }
-    }
-
-    tasks.withType<Detekt> {
-        parallel = true
-        // For now, we only use the results here as hints
-        ignoreFailures = true
-
-        buildUponDefaultConfig = true
-        config.setFrom(parentProject.projectDir.resolve(".detekt.yml"))
-
-        reports {
-            sarif.required.set(true)
-            // This is required for the GitHub upload action to easily find all sarif files in a single directory.
-            sarif.outputLocation.set(parentProject.layout.buildDirectory.file("reports/detekt/${project.name}.sarif"))
-            html.required.set(true)
         }
     }
 
@@ -168,6 +151,31 @@ subprojects {
             download.set(true)
         }
     }
+
+    // Configure detekt including our custom rule sets
+    if (project.name != "detekt-rules") {
+        apply(plugin = "io.gitlab.arturbosch.detekt")
+        dependencies {
+            detektPlugins(project(":detekt-rules"))
+        }
+        tasks.withType<Detekt> {
+            dependsOn(":detekt-rules:assemble")
+
+            parallel = true
+            // For now, we only use the results here as hints
+            ignoreFailures = true
+
+            buildUponDefaultConfig = true
+            config.setFrom(parentProject.projectDir.resolve(".detekt.yml"))
+
+            reports {
+                sarif.required.set(true)
+                // This is required for the GitHub upload action to easily find all sarif files in a single directory.
+                sarif.outputLocation.set(parentProject.layout.buildDirectory.file("reports/detekt/${project.name}.sarif"))
+                html.required.set(true)
+            }
+        }
+    }
 }
 
 allprojects {
@@ -224,7 +232,8 @@ allprojects {
                     url = uri("https://maven.pkg.github.com/modelix/modelix")
                     credentials {
                         username = project.findProperty("gpr.user") as? String ?: System.getenv("GITHUB_ACTOR")
-                        password = project.findProperty("gpr.universalkey") as? String ?: System.getenv("GHP_UNIVERSAL_TOKEN")
+                        password =
+                            project.findProperty("gpr.universalkey") as? String ?: System.getenv("GHP_UNIVERSAL_TOKEN")
                     }
                 } else {
                     url = uri("https://maven.pkg.github.com/modelix/modelix.core")

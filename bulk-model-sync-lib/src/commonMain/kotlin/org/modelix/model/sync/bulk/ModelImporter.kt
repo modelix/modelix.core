@@ -252,7 +252,7 @@ class ModelImporter(
                 } else {
                     nodeAtIndex
                 }
-                check(childNode.getConceptReference() == expectedConcept) { "Unexpected concept change" }
+                check(childNode.getConceptReference() == expectedConcept) { "Unexpected concept change from $expectedConcept to ${childNode.getConceptReference()}" }
 
                 syncNode(childNode, expected, progressReporter)
             }

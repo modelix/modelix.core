@@ -19,7 +19,7 @@ import org.modelix.model.api.ITree
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.persistent.IKVValue
 
-abstract class AbstractOperation : IOperation {
+sealed class AbstractOperation : IOperation {
 
     abstract inner class Applied {
         override fun toString(): String {

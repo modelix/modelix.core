@@ -15,11 +15,14 @@ package org.modelix.model.lazy
 
 import org.modelix.model.operations.AddNewChildOp
 import org.modelix.model.operations.AddNewChildSubtreeOp
+import org.modelix.model.operations.AddNewChildrenOp
+import org.modelix.model.operations.BulkUpdateOp
 import org.modelix.model.operations.DeleteNodeOp
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.MoveNodeOp
 import org.modelix.model.operations.NoOp
 import org.modelix.model.operations.RevertToOp
+import org.modelix.model.operations.SetConceptOp
 import org.modelix.model.operations.SetPropertyOp
 import org.modelix.model.operations.SetReferenceOp
 import org.modelix.model.operations.UndoOp
@@ -42,7 +45,7 @@ class OperationsCompressor(val resultTree: CLTree) {
 
         for (op in ops) {
             when (op) {
-                is UndoOp, is RevertToOp, is AddNewChildSubtreeOp, is DeleteNodeOp, is MoveNodeOp -> return ops
+                is UndoOp, is RevertToOp, is AddNewChildSubtreeOp, is DeleteNodeOp, is MoveNodeOp, is BulkUpdateOp, is AddNewChildrenOp -> return ops
                 is NoOp -> {}
                 is AddNewChildOp -> {
                     if (!createdNodes.contains(op.position.nodeId)) {
@@ -53,10 +56,12 @@ class OperationsCompressor(val resultTree: CLTree) {
                 is SetPropertyOp -> {
                     if (!createdNodes.contains(op.nodeId)) compressedOps += op
                 }
+                is SetConceptOp -> {
+                    if (!createdNodes.contains(op.nodeId)) compressedOps += op
+                }
                 is SetReferenceOp -> {
                     if (!createdNodes.contains(op.sourceId)) compressedOps += op
                 }
-                else -> throw RuntimeException("Unknown operation type: $op")
             }
         }
 

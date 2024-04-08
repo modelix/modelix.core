@@ -31,7 +31,7 @@ interface ITreeChangeVisitor {
      *
      * @param nodeId id of the affected node
      */
-    fun conceptChanged(nodeId: Long)
+    fun conceptChanged(nodeId: Long) {} // Noop default implementation to avoid breaking change
 
     /**
      * Called when the children of a node have changed.

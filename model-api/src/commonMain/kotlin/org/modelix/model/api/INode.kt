@@ -54,7 +54,9 @@ interface INode {
      * @param concept the concept of the new node
      * @return replacement for this node with the new given concept
      */
-    fun replaceNode(concept: ConceptReference): INode
+    fun replaceNode(concept: ConceptReference): INode {
+        throw UnsupportedOperationException() // Default implementation to avoid breaking change
+    }
 
     /**
      * Role of this node in its parent node if it exists,or null otherwise.

@@ -257,7 +257,8 @@ class CLTree : ITree, IBulkTree {
     }
 
     override fun setConcept(nodeId: Long, concept: IConceptReference?): ITree {
-        val node = checkNotNull(resolveElement(nodeId)) { "nodeId could not be resolved. id=$nodeId" }
+        // manually throw NullPointerException for consistency, should be replaced for all methods in the future.
+        val node = resolveElement(nodeId) ?: throw NullPointerException("nodeId could not be resolved. id=$nodeId")
         val newData = create(
             node.id,
             concept?.getUID(),

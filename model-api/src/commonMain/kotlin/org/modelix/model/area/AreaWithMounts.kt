@@ -20,6 +20,7 @@ import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.INodeWrapper
+import org.modelix.model.api.IReplaceableNode
 
 @Deprecated("not supported anymore")
 class AreaWithMounts(val rootArea: IArea, mounts: Map<INode, IArea>) : IArea {
@@ -151,7 +152,7 @@ class AreaWithMounts(val rootArea: IArea, mounts: Map<INode, IArea>) : IArea {
         val mountValues: List<IAreaReference>,
     ) : IAreaReference
 
-    inner class NodeWrapper(val node: INode) : INode, INodeWrapper {
+    inner class NodeWrapper(val node: INode) : INode, INodeWrapper, IReplaceableNode {
         override fun getWrappedNode(): INode = node
 
         override fun getArea(): IArea = this@AreaWithMounts
@@ -160,7 +161,8 @@ class AreaWithMounts(val rootArea: IArea, mounts: Map<INode, IArea>) : IArea {
             return node.getChildren(role).map { NodeWrapper(getMountedArea(it)?.getRoot() ?: it) }
         }
 
-        override fun replaceNode(concept: ConceptReference): INode {
+        override fun replaceNode(concept: ConceptReference?): INode {
+            check(node is IReplaceableNode)
             return NodeWrapper(node.replaceNode(concept))
         }
 

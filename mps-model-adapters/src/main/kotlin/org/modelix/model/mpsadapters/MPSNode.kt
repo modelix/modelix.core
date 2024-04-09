@@ -36,10 +36,11 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
+import org.modelix.model.api.IReplaceableNode
 import org.modelix.model.api.resolveIn
 import org.modelix.model.area.IArea
 
-data class MPSNode(val node: SNode) : IDefaultNodeAdapter {
+data class MPSNode(val node: SNode) : IDefaultNodeAdapter, IReplaceableNode {
     override fun getArea(): IArea {
         return MPSArea(node.model?.repository ?: MPSModuleRepository.getInstance())
     }
@@ -73,7 +74,9 @@ data class MPSNode(val node: SNode) : IDefaultNodeAdapter {
             return node.children.map { MPSNode(it) }
         }
 
-    override fun replaceNode(concept: ConceptReference): INode {
+    override fun replaceNode(concept: ConceptReference?): INode {
+        requireNotNull(concept) { "Can't replace $node with null concept. Use BaseConcept explicitly." }
+
         val id = node.nodeId
         val model = checkNotNull(node.model) { "Node is not part of a model" }
         val newNode = model.createNode(SConceptAdapterById(SConceptId.deserialize(concept.uid), ""), id)

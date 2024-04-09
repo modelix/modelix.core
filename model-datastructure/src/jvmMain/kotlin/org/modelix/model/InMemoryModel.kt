@@ -317,10 +317,6 @@ data class InMemoryNode(val model: InMemoryModel, val nodeId: Long) : INode, INo
         throw UnsupportedOperationException("read-only")
     }
 
-    override fun replaceNode(concept: ConceptReference): INode {
-        throw UnsupportedOperationException("read-only")
-    }
-
     override fun removeChild(child: INode) {
         throw UnsupportedOperationException("read-only")
     }

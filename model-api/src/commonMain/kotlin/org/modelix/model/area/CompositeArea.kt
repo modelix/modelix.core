@@ -20,6 +20,7 @@ import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.INodeWrapper
+import org.modelix.model.api.IReplaceableNode
 
 @Deprecated("not supported anymore")
 class CompositeArea : IArea {
@@ -164,10 +165,6 @@ class CompositeArea : IArea {
             throw UnsupportedOperationException("Read only. Create a new CompositeArea instance instead.")
         }
 
-        override fun replaceNode(concept: ConceptReference): INode {
-            throw UnsupportedOperationException("Root cannot have a concept.")
-        }
-
         override fun removeChild(child: INode) {
             throw UnsupportedOperationException("Read only. Create a new CompositeArea instance instead.")
         }
@@ -214,7 +211,7 @@ class CompositeArea : IArea {
         }
     }
 
-    inner class NodeWrapper(val node: INode) : INode, INodeWrapper {
+    inner class NodeWrapper(val node: INode) : INode, INodeWrapper, IReplaceableNode {
 
         override fun getWrappedNode(): INode = node
 
@@ -224,7 +221,10 @@ class CompositeArea : IArea {
             return node.getChildren(role).map { NodeWrapper(it) }
         }
 
-        override fun replaceNode(concept: ConceptReference): INode = NodeWrapper(node.replaceNode(concept))
+        override fun replaceNode(concept: ConceptReference?): INode {
+            require(node is IReplaceableNode)
+            return NodeWrapper(node.replaceNode(concept))
+        }
 
         override fun removeChild(child: INode) {
             node.removeChild(unwrapNode(child))

@@ -48,17 +48,6 @@ interface INode {
     fun tryGetConcept(): IConcept? = getConceptReference()?.tryResolve()
 
     /**
-     * Replaces this node with a new node of the given concept that uses the same id as this node.
-     * Properties, references and children will be the same.
-     *
-     * @param concept the concept of the new node
-     * @return replacement for this node with the new given concept
-     */
-    fun replaceNode(concept: ConceptReference): INode {
-        throw UnsupportedOperationException() // Default implementation to avoid breaking change
-    }
-
-    /**
      * Role of this node in its parent node if it exists,or null otherwise.
      */
     @Deprecated("use getContainmentLink()")
@@ -306,6 +295,20 @@ interface IDeprecatedNodeDefaults : INode {
     override fun setPropertyValue(property: IProperty, value: String?)
     override fun getPropertyLinks(): List<IProperty>
     override fun getReferenceLinks(): List<IReferenceLink>
+}
+
+/**
+ *  Interface for nodes that can be replaced by a new instance.
+ */
+interface IReplaceableNode : INode {
+    /**
+     * Replaces this node with a new node of the given concept that uses the same id as this node.
+     * Properties, references and children will be the same.
+     *
+     * @param concept the concept of the new node
+     * @return replacement for this node with the new given concept
+     */
+    fun replaceNode(concept: ConceptReference?): INode
 }
 
 @Deprecated("Use .key(INode), .key(IBranch), .key(ITransaction) or .key(ITree)")

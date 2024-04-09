@@ -19,6 +19,7 @@ package org.modelix.model.mpsadapters
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.INode
+import org.modelix.model.api.IReplaceableNode
 
 class ReplaceNodeTest : MpsAdaptersTestBase("SimpleProject") {
 
@@ -33,7 +34,7 @@ class ReplaceNodeTest : MpsAdaptersTestBase("SimpleProject") {
             val module = repositoryNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Repository.modules)
                 .single { it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name) == "Solution1" }
             val model = module.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.models).single()
-            val rootNode = model.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes).single()
+            val rootNode = model.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes).single() as IReplaceableNode
 
             val oldProperties = rootNode.getAllProperties().toSet()
             val oldReferences = rootNode.getAllReferenceTargetRefs().toSet()

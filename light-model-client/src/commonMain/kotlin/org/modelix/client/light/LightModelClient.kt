@@ -455,10 +455,6 @@ class LightModelClient internal constructor(
             }
         }
 
-        override fun replaceNode(concept: ConceptReference): INode {
-            TODO("Not yet implemented")
-        }
-
         override fun removeChild(child: INode) {
             require(child is NodeAdapter && child.getClient() == getClient()) { "Unsupported child type: $child" }
             requiresWrite {

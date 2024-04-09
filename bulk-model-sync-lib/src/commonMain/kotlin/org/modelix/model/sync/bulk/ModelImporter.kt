@@ -22,6 +22,7 @@ import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.INodeResolutionScope
+import org.modelix.model.api.IReplaceableNode
 import org.modelix.model.api.SerializedNodeReference
 import org.modelix.model.api.getDescendants
 import org.modelix.model.api.isChildRoleOrdered
@@ -273,7 +274,7 @@ class ModelImporter(
         if (existingNode.getConceptReference() == newConcept) {
             return existingNode
         }
-        requireNotNull(newConcept) { "Unexpected null concept" }
+        require(existingNode is IReplaceableNode) { "Concept has changed but node is not replaceable. node=$existingNode" }
         return existingNode.replaceNode(newConcept)
     }
 

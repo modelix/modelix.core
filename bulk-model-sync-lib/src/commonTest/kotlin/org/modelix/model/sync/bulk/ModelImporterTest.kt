@@ -20,6 +20,7 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.PBranch
+import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.data.ModelData
@@ -42,6 +43,7 @@ import kotlin.random.Random
 import kotlin.reflect.KClass
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class ModelImporterTest {
@@ -196,6 +198,75 @@ class ModelImporterTest {
         )
 
         assertEquals(expectedOperations, branch.getNumOfUsedOperationsByType())
+    }
+
+    @Test
+    @JsName("can_update_previously_unresolvable_references")
+    fun `can update previously unresolvable reference`() {
+        // language=json
+        val initialData = """
+            {
+              "root": {
+                "id": "root",
+                "children": [
+                  {
+                    "id": "node:001",
+                    "references": {
+                      "myRef": "node:002",
+                      "myRef2": "node:unresolvable"
+                    }
+                  }
+                ]
+              }
+            }
+        """.trimIndent().let { ModelData.fromJson(it) }
+
+        // language=json
+        val expectedData = """
+            {
+              "root": {
+                "id": "root",
+                "children": [
+                  {
+                    "id": "node:001",
+                    "references": {
+                      "myRef": "node:002",
+                      "myRef2": "node:unresolvable"
+                    }
+                  },
+                  {
+                    "id": "node:002",
+                    "properties": {
+                      "name": "PreviouslyUnresolvableNode"
+                    }
+                  }
+                ]
+              }
+            }
+        """.trimIndent().let { ModelData.fromJson(it) }
+
+        val expectedOperations: Map<KClass<out IOperation>, Int> = mapOf(
+            SetReferenceOp::class to 1,
+            AddNewChildOp::class to 1,
+            SetPropertyOp::class to 2, // name and originalRef of new node
+        )
+
+        val branch = createOTBranchFromModel(initialData)
+        branch.importIncrementally(expectedData)
+
+        branch.runRead {
+            val root = branch.getRootNode()
+            val sourceNode = root.allChildren.first()
+            val referenceLink = IReferenceLink.fromName("myRef")
+
+            val targetReference = sourceNode.getReferenceTargetRef(referenceLink)
+            val targetNode = sourceNode.getReferenceTarget(referenceLink)
+
+            assertNotNull(targetNode)
+            assertTrue { targetReference is PNodeReference }
+            assertAllNodesConformToSpec(expectedData.root, root)
+            assertEquals(expectedOperations, branch.getNumOfUsedOperationsByType())
+        }
     }
 
     @Test

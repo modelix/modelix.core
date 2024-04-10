@@ -88,12 +88,15 @@ class ModelImporter(
 
     private fun PostponedReference.setPostponedReference() {
         val expectedRefTarget = originalIdToExisting[expectedTargetId]
-        if (expectedRefTarget == null) {
+        if (expectedRefTarget != null) {
+            node.setReferenceTarget(role, expectedRefTarget)
+            return
+        }
+        // Ensure unresolvable reference wasn't stored before
+        if (node.getReferenceTargetRef(role)?.serialize() != expectedTargetId) {
             // The target node is not part of the model. Assuming it exists in some other model we can
             // store the reference and try to resolve it dynamically on access.
             node.setReferenceTarget(role, SerializedNodeReference(expectedTargetId))
-        } else {
-            node.setReferenceTarget(role, expectedRefTarget)
         }
     }
 
@@ -293,16 +296,13 @@ class ModelImporter(
     }
 
     private fun syncReferences(node: INode, nodeData: NodeData) {
-        nodeData.references.forEach {
-            val expectedTargetId = it.value
-            val actualTargetId = node.getReferenceTarget(it.key)?.originalId()
-                ?: node.getReferenceTargetRef(it.key)?.serialize()
-            if (actualTargetId != expectedTargetId) {
+        nodeData.references.forEach { (referenceRole, expectedTargetId) ->
+            if (referenceNeedsUpdate(node, referenceRole, expectedTargetId)) {
                 val expectedTarget = originalIdToExisting[expectedTargetId]
                 if (expectedTarget == null) {
-                    postponedReferences += PostponedReference(expectedTargetId, node, it.key)
+                    postponedReferences += PostponedReference(expectedTargetId, node, referenceRole)
                 } else {
-                    node.setReferenceTarget(it.key, expectedTarget)
+                    node.setReferenceTarget(referenceRole, expectedTarget)
                 }
             }
         }
@@ -310,6 +310,14 @@ class ModelImporter(
         toBeRemoved.forEach {
             node.setReferenceTarget(it, null as INodeReference?)
         }
+    }
+
+    private fun referenceNeedsUpdate(node: INode, referenceRole: String, expectedTargetRef: String): Boolean {
+        val actualTarget = node.getReferenceTarget(referenceRole)
+            ?: return true // previously unresolvable reference might become resolvable e.g., when a referenced node was added
+        val actualTargetRef = actualTarget.originalId() ?: node.getReferenceTargetRef(referenceRole)?.serialize()
+
+        return actualTargetRef != expectedTargetRef
     }
 }
 

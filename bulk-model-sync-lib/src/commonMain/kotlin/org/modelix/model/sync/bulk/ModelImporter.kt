@@ -80,9 +80,9 @@ class ModelImporter(
         }
     }
 
-    data class PostponedReference(
+    private data class PostponedReference(
         val expectedTargetId: String,
-        val mpsNode: INode,
+        val node: INode,
         val role: String,
     )
 
@@ -91,9 +91,9 @@ class ModelImporter(
         if (expectedRefTarget == null) {
             // The target node is not part of the model. Assuming it exists in some other model we can
             // store the reference and try to resolve it dynamically on access.
-            mpsNode.setReferenceTarget(role, SerializedNodeReference(expectedTargetId))
+            node.setReferenceTarget(role, SerializedNodeReference(expectedTargetId))
         } else {
-            mpsNode.setReferenceTarget(role, expectedRefTarget)
+            node.setReferenceTarget(role, expectedRefTarget)
         }
     }
 

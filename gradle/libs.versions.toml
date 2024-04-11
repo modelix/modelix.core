@@ -35,7 +35,7 @@ apacheCxf="3.6.3"
 node="18.17.1"
 modelixBuildtools="1.4.1"
 openapi = "7.4.0"
-micrometer = "1.12.4"
+micrometer = "1.12.5"
 dokka = "1.9.20"
 
 [libraries]

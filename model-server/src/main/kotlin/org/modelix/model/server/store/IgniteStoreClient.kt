@@ -143,8 +143,11 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
         if (transactions.tx() == null) {
             transactions.txStart().use { tx ->
                 return pendingChangeMessages.runAndFlush {
+                    println("TX debug: Starting ${tx.hashCode()} $tx")
                     val result = body()
+                    println("TX debug: Finished body for ${tx.hashCode()} $tx")
                     tx.commit()
+                    println("TX debug: Commited ${tx.hashCode()} $tx")
                     result
                 }
             }

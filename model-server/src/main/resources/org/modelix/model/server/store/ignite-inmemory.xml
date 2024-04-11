@@ -37,5 +37,11 @@
                 </bean>
             </list>
         </property>
+
+<!--        <property name="transactionConfiguration">-->
+<!--            <bean class="org.apache.ignite.configuration.TransactionConfiguration">-->
+<!--                <property name="TxTimeoutOnPartitionMapExchange" value="5000"/>-->
+<!--            </bean>-->
+<!--        </property>-->
     </bean>
 </beans>

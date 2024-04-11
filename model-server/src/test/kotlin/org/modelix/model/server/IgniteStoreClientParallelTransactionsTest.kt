@@ -19,6 +19,7 @@ package org.modelix.model.server
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import org.modelix.model.IKeyListener
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.IgniteStoreClient
@@ -82,6 +83,38 @@ abstract class StoreClientParallelTransactionsTest(val store: IStoreClient) {
         threadBlocker.sleepUntilPointInTime(3)
         val notifiedValue = notifiedValueFuture.get(10, TimeUnit.SECONDS)
         assertEquals("valueB", notifiedValue)
+    }
+
+    @Test
+    fun `parallel transactions do not create a deadlock`() = runTest {
+        val threadBlocker = ThreadBlocker()
+        val job1 = launch(Dispatchers.IO) {
+            withTimeout(5_000) {
+                store.runTransaction {
+                    store.put("key1", "key1ValueA")
+                    threadBlocker.reachPointInTime(1)
+                    threadBlocker.sleepUntilPointInTime(2)
+                    store.put("key2", "key2ValueC")
+
+                }
+            }
+        }
+
+        val job2 = launch(Dispatchers.IO) {
+            withTimeout(5_000) {
+                store.runTransaction {
+                    store.put("key2", "key2ValueD")
+                    threadBlocker.sleepUntilPointInTime(1)
+                    threadBlocker.reachPointInTime(2)
+                    store.put("key1", "key2ValueB")
+                }
+            }
+        }
+        job1.join()
+        job2.join()
+        // If both jobs finish, then we do not have a deadlock.
+        // Currently we create a dead lock.
+        // https://issues.modelix.org/issue/MODELIX-866/Check-if-IgniteStoreClient-runs-into-deadlocks
     }
 }
 

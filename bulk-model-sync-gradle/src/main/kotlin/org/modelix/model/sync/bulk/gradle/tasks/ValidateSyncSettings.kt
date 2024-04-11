@@ -17,7 +17,6 @@
 package org.modelix.model.sync.bulk.gradle.tasks
 
 import org.gradle.api.DefaultTask
-import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
@@ -28,7 +27,6 @@ import org.modelix.model.sync.bulk.gradle.config.ModelSyncGradleSettings
 import org.modelix.model.sync.bulk.gradle.config.ServerSource
 import org.modelix.model.sync.bulk.gradle.config.ServerTarget
 import org.modelix.model.sync.bulk.gradle.config.SyncDirection
-import javax.inject.Inject
 
 /**
  * Instead of throwing exceptions for single configuration errors,
@@ -36,10 +34,10 @@ import javax.inject.Inject
  * so the user can see all steps that must be taken at a glance.
  */
 @CacheableTask
-abstract class ValidateSyncSettings @Inject constructor(of: ObjectFactory) : DefaultTask() {
+abstract class ValidateSyncSettings : DefaultTask() {
 
-    @Input
-    val settings: Property<ModelSyncGradleSettings> = of.property(ModelSyncGradleSettings::class.java)
+    @get:Input
+    abstract val settings: Property<ModelSyncGradleSettings>
 
     private val errorMsgBuilder = StringBuilder()
 

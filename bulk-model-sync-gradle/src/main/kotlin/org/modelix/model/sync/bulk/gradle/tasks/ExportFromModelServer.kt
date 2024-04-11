@@ -20,7 +20,6 @@ import kotlinx.coroutines.runBlocking
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.SetProperty
 import org.gradle.api.tasks.Input
@@ -36,32 +35,31 @@ import org.modelix.model.client2.ModelClientV2PlatformSpecificBuilder
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.sync.bulk.ModelExporter
 import org.modelix.model.sync.bulk.isModuleIncluded
-import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 
-abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : DefaultTask() {
+abstract class ExportFromModelServer : DefaultTask() {
 
-    @Input
-    val url: Property<String> = of.property(String::class.java)
+    @get:Input
+    abstract val url: Property<String>
 
-    @Input
-    @Optional
-    val repositoryId: Property<String> = of.property(String::class.java)
+    @get:Input
+    @get:Optional
+    abstract val repositoryId: Property<String>
 
     @get:InputFile
-    val revisionFile: RegularFileProperty = of.fileProperty()
+    abstract val revisionFile: RegularFileProperty
 
-    @OutputDirectory
-    val outputDir: DirectoryProperty = of.directoryProperty()
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
 
-    @Input
-    val includedModules: SetProperty<String> = of.setProperty(String::class.java)
+    @get:Input
+    abstract val includedModules: SetProperty<String>
 
-    @Input
-    val includedModulePrefixes: SetProperty<String> = of.setProperty(String::class.java)
+    @get:Input
+    abstract val includedModulePrefixes: SetProperty<String>
 
-    @Input
-    val requestTimeoutSeconds: Property<Int> = of.property(Int::class.java)
+    @get:Input
+    abstract val requestTimeoutSeconds: Property<Int>
 
     @TaskAction
     fun export() = runBlocking {

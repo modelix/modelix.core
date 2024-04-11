@@ -19,10 +19,12 @@ package org.modelix.model.sync.bulk.gradle.tasks
 import kotlinx.coroutines.runBlocking
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.SetProperty
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
@@ -30,9 +32,7 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
-import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ModelClientV2PlatformSpecificBuilder
-import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.sync.bulk.ModelExporter
 import org.modelix.model.sync.bulk.isModuleIncluded
@@ -48,13 +48,8 @@ abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : De
     @Optional
     val repositoryId: Property<String> = of.property(String::class.java)
 
-    @Input
-    @Optional
-    val branchName: Property<String> = of.property(String::class.java)
-
-    @Input
-    @Optional
-    val revision: Property<String> = of.property(String::class.java)
+    @get:InputFile
+    val revisionFile: RegularFileProperty = of.fileProperty()
 
     @OutputDirectory
     val outputDir: DirectoryProperty = of.directoryProperty()
@@ -68,17 +63,26 @@ abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : De
     @Input
     val requestTimeoutSeconds: Property<Int> = of.property(Int::class.java)
 
-    private fun getBranchReference(): BranchReference = RepositoryId(repositoryId.get()).getBranchReference(branchName.get())
-
     @TaskAction
     fun export() = runBlocking {
         val modelClient = ModelClientV2PlatformSpecificBuilder()
             .url(url.get())
             .requestTimeout(requestTimeoutSeconds.get().seconds)
             .build()
+
+        val revision = revisionFile.get().asFile.readText()
+
         modelClient.use { client ->
             client.init()
-            val branch = loadDataAsBranch(client)
+            val version = if (repositoryId.isPresent) {
+                client.loadVersion(RepositoryId(repositoryId.get()), revision, null)
+            } else {
+                logger.warn("Specifying a repositoryId will be mandatory in the future.")
+                client.loadVersion(revision, null)
+            }
+
+            val branch = PBranch(version.getTree(), client.getIdGenerator())
+
             branch.runRead {
                 val root = branch.getRootNode()
                 logger.info("Got root node: {}", root)
@@ -91,16 +95,6 @@ abstract class ExportFromModelServer @Inject constructor(of: ObjectFactory) : De
                 }
             }
         }
-    }
-
-    private suspend fun loadDataAsBranch(client: ModelClientV2): PBranch {
-        val version = if (revision.isPresent) {
-            client.loadVersion(revision.get(), null)
-        } else {
-            client.pull(getBranchReference(), null)
-        }
-        val branch = PBranch(version.getTree(), client.getIdGenerator())
-        return branch
     }
 
     private fun getIncludedModules(root: INode): Iterable<INode> {

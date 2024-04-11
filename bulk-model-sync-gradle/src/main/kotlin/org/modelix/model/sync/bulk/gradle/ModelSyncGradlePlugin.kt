@@ -29,6 +29,7 @@ import org.modelix.model.sync.bulk.gradle.config.ServerSource
 import org.modelix.model.sync.bulk.gradle.config.ServerTarget
 import org.modelix.model.sync.bulk.gradle.config.SyncDirection
 import org.modelix.model.sync.bulk.gradle.tasks.ExportFromModelServer
+import org.modelix.model.sync.bulk.gradle.tasks.GetRevisionInfo
 import org.modelix.model.sync.bulk.gradle.tasks.ImportIntoModelServer
 import org.modelix.model.sync.bulk.gradle.tasks.ValidateSyncSettings
 import java.io.File
@@ -95,15 +96,32 @@ class ModelSyncGradlePlugin : Plugin<Project> {
         jsonDir: File,
     ): TaskProvider<*> {
         val serverSource = syncDirection.source as ServerSource
+        val revisionFile = jsonDir.resolve(".modelix_revision").also { it.createNewFile() }
 
-        val name = "${syncDirection.name}ExportFromModelServer"
-        val exportFromModelServer = project.tasks.register(name, ExportFromModelServer::class.java) {
+        val getRevisionInfo = project.tasks.register(
+            "${syncDirection.name}GetRevisionInfo",
+            GetRevisionInfo::class.java,
+        ) {
             it.dependsOn(previousTask)
-            it.outputDir.set(jsonDir)
-            it.url.set(serverSource.url)
+
+            it.serverUrl.set(serverSource.url)
+            it.revision.set(serverSource.revision)
             it.repositoryId.set(serverSource.repositoryId)
             it.branchName.set(serverSource.branchName)
-            it.revision.set(serverSource.revision)
+            it.revisionFile.set(revisionFile)
+
+            it.outputs.upToDateWhen { serverSource.revision != null }
+        }
+
+        val exportFromModelServer = project.tasks.register(
+            "${syncDirection.name}ExportFromModelServer",
+            ExportFromModelServer::class.java,
+        ) {
+            it.dependsOn(getRevisionInfo)
+            it.url.set(serverSource.url)
+            it.repositoryId.set(serverSource.repositoryId)
+            it.revisionFile.set(revisionFile)
+            it.outputDir.set(jsonDir)
             it.includedModules.set(syncDirection.includedModules)
             it.includedModulePrefixes.set(syncDirection.includedModulePrefixes)
             it.requestTimeoutSeconds.set(serverSource.requestTimeoutSeconds)

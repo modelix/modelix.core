@@ -104,14 +104,23 @@ paths:
           schema:
             type: string
       responses:
-        "404":
-          $ref: '#/components/responses/404'
-        "200":
-          $ref: '#/components/responses/versionDelta'
-#          content:
-#            '*/*':
-#              schema:
-#                $ref: "#/components/schemas/VersionDelta"
+          "404":
+            $ref: '#/components/responses/404'
+          "200":
+            description: "Information about a branch for content type `application/x.modelix.branch+json;version=*'. Else all model data of the branch in version delta format."
+            content:
+              'application/x.modelix.branch+json;version=1':
+                schema:
+                  $ref: "#/components/schemas/BranchV1"
+              'application/x-modelix-objects':
+                schema:
+                  type: string
+              'application/json':
+                schema:
+                  type: object
+              'text/plain':
+                schema:
+                  type: string
     post:
       operationId: postRepositoryBranch
       parameters:
@@ -632,3 +641,14 @@ components:
           type: string
         value2:
           type: string
+    BranchV1:
+      type: object
+      properties:
+        name:
+          type: string
+        current_hash:
+          type: string
+          example: 7fQeo*xrdfZuHZtaKhbp0OosarV5tVR8N3pW8JPkl7ZE
+      required:
+        - name
+        - current_hash

@@ -21,20 +21,24 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.plugins.origin
 import io.ktor.server.request.acceptItems
+import io.ktor.server.request.contentType
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveStream
+import io.ktor.server.request.receiveText
 import io.ktor.server.resources.get
 import io.ktor.server.resources.post
 import io.ktor.server.resources.put
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytesWriter
 import io.ktor.server.response.respondText
+import io.ktor.server.response.responseType
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.webSocket
 import io.ktor.util.cio.use
 import io.ktor.util.pipeline.PipelineContext
+import io.ktor.util.reflect.typeInfo
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.close
 import io.ktor.utils.io.writeStringUtf8
@@ -46,8 +50,10 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.modelix.api.public.BranchV1
 import org.modelix.api.public.Paths
 import org.modelix.authorization.getUserName
 import org.modelix.model.InMemoryModels
@@ -63,6 +69,7 @@ import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
+import org.modelix.model.server.api.ContentTypes
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.api.v2.VersionDeltaStream
 import org.modelix.model.server.store.IStoreClient
@@ -128,23 +135,50 @@ class ModelReplicationServer(
         }
 
         get<Paths.getRepositoryBranch> {
-            fun ApplicationCall.repositoryId() = RepositoryId(parameters["repository"]!!)
-            fun PipelineContext<Unit, ApplicationCall>.repositoryId() = call.repositoryId()
-
-            fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameters["branch"]!!)
-            fun PipelineContext<Unit, ApplicationCall>.branchRef() = call.branchRef()
-
+            val repositoryParameter = call.parameters["repository"]!!
+            val branchParameter = call.parameters["branch"]!!
+            val branchRef = RepositoryId(repositoryParameter).getBranchReference(branchParameter)
             val baseVersionHash = call.request.queryParameters["lastKnown"]
-            val branch = branchRef()
-            val versionHash = repositoriesManager.getVersionHash(branch)
+
+            val versionHash = repositoriesManager.getVersionHash(branchRef)
             if (versionHash == null) {
                 call.respondText(
-                    "Branch '${branch.branchName}' doesn't exist in repository '${branch.repositoryId.id}'",
+                    "Branch '${branchRef.branchName}' doesn't exist in repository '${branchRef.repositoryId.id}'",
                     status = HttpStatusCode.NotFound,
                 )
                 return@get
             }
-            call.respondDelta(versionHash, baseVersionHash)
+
+            val acceptedContentTypeHeaderValues = call.request.acceptItems()
+
+            // User for-loop to respect users order
+            for (acceptedContentTypeHeaderValue in acceptedContentTypeHeaderValues) {
+                var acceptedContentType = ContentType.parse(acceptedContentTypeHeaderValue.value)
+                // Extracting the version is cumbersome
+                val version = acceptedContentTypeHeaderValue.params.find { (name, _, _) -> name == "version" }
+                if (version != null) {
+                    acceptedContentType = acceptedContentType.withParameter(version.name, version.value)
+                }
+
+                // TODO separate matching from responding
+                // TODO generalize matching
+                if (ContentTypes.BRANCH_V2.match(acceptedContentType)) {
+                    val branchV2 = TODO()
+                    call.respondText(TODO(), contentType = ContentTypes.BRANCH_V2)
+                    return@get
+                } else if (ContentTypes.BRANCH_V1.match(acceptedContentType)) {
+                    val branchV1 = BranchV1(branchRef.branchName, versionHash)
+                    call.respondText(Json.encodeToString(branchV1), contentType = ContentTypes.BRANCH_V1)
+                    return@get
+                } else if (VersionDeltaStream.CONTENT_TYPE.match(acceptedContentType)) {
+                    call.respondDeltaAsObjectStream(versionHash, baseVersionHash, false)
+                    return@get
+                } else if (ContentType.Application.Json.match(acceptedContentType)) {
+                    call.respondDeltaAsJson(versionHash, baseVersionHash)
+                    return@get
+                }
+            }
+            call.respondDeltaAsObjectStream(versionHash, baseVersionHash, true)
         }
 
         get<Paths.getRepositoryBranchHash> {
@@ -189,17 +223,28 @@ class ModelReplicationServer(
         }
 
         post<Paths.postRepositoryBranch> {
-            fun ApplicationCall.repositoryId() = RepositoryId(parameters["repository"]!!)
-            fun PipelineContext<Unit, ApplicationCall>.repositoryId() = call.repositoryId()
+            val repositoryParameter = call.parameters["repository"]!!
+            val branchParameter = call.parameters["branch"]!!
+            val branchRef = RepositoryId(repositoryParameter).getBranchReference(branchParameter)
 
-            fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameters["branch"]!!)
-            fun PipelineContext<Unit, ApplicationCall>.branchRef() = call.branchRef()
-
-            val deltaFromClient = call.receive<VersionDelta>()
-            deltaFromClient.checkObjectHashes()
-            storeClient.putAll(deltaFromClient.getAllObjects())
-            val mergedHash = repositoriesManager.mergeChanges(branchRef(), deltaFromClient.versionHash)
-            call.respondDelta(mergedHash, deltaFromClient.versionHash)
+            when(call.request.contentType()) {
+                ContentType.Application.Json -> {
+                    val deltaFromClient = call.receive<VersionDelta>()
+                    deltaFromClient.checkObjectHashes()
+                    storeClient.putAll(deltaFromClient.getAllObjects())
+                    val mergedHash = repositoriesManager.mergeChanges(branchRef, deltaFromClient.versionHash)
+                    call.respondDelta(mergedHash, deltaFromClient.versionHash)
+                }
+                ContentTypes.BRANCH_V1 -> {
+                    // NOTE `call.receive<BranchV1>()` does not work because ktor server does not know how handle that content type
+                    // We could implement custom serializers and deserializers in https://ktor.io/docs/serialization.html#implement_custom_serializer
+                    val branchV1 = Json.decodeFromString<BranchV1>(call.receiveText())
+                    val versionHash = branchV1.currentHash
+                    // TODO check if given hash exists
+                    // TODO implement repositoriesManager.setBranchVersion(branchRef, versionHash)
+                    call.respond(HttpStatusCode.NotImplemented)
+                }
+            }
         }
 
         get<Paths.pollRepositoryBranch> {

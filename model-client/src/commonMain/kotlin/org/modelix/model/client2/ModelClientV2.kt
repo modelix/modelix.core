@@ -22,6 +22,7 @@ import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
@@ -45,6 +46,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.model.IVersion
 import org.modelix.model.api.IBranch
@@ -63,6 +65,8 @@ import org.modelix.model.lazy.computeDelta
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.MapBasedStore
+import org.modelix.model.server.api.ContentTypes
+import org.modelix.model.server.api.v2.BranchV1
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.api.v2.VersionDeltaStream
 import org.modelix.model.server.api.v2.asStream
@@ -283,13 +287,16 @@ class ModelClientV2(
 
     override suspend fun pullHash(branch: BranchReference): String {
         val response = httpClient.get {
+            //   TODO Olekz Remove default application/json installed by `install(ContentNegotiation) { json() }`
+            //   Set it everywhere explicitly.
+            accept(ContentTypes.BRANCH_V1)
             url {
                 takeFrom(baseUrl)
-                appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName, "hash")
+                appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
             }
         }
-        val receivedHash: String = response.body()
-        return receivedHash
+        val branchV1 = response.body<BranchV1>()
+        return branchV1.currentHash
     }
 
     override suspend fun pollHash(branch: BranchReference, lastKnownVersion: IVersion?): String {

@@ -15,20 +15,36 @@
 
 package org.modelix.model.server
 
+import io.ktor.client.call.body
+import io.ktor.client.request.post
+import io.ktor.client.request.preparePost
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.appendPathSegments
+import io.ktor.http.contentType
+import io.ktor.http.takeFrom
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import org.modelix.api.public.BranchV1
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
 import org.modelix.model.client2.ModelClientV2
+import org.modelix.model.client2.readVersionDelta
 import org.modelix.model.client2.runWrite
 import org.modelix.model.client2.runWriteOnBranch
+import org.modelix.model.client2.useVersionStreamFormat
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.IKVValue
+import org.modelix.model.server.api.ContentTypes
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.modelql.core.count
@@ -233,5 +249,49 @@ class ModelClientV2Test {
         val loadedVersion = modelClient.loadVersion(initialVersion.getContentHash(), initialVersion)
 
         assertEquals(initialVersion.getContentHash(), loadedVersion.getContentHash())
+    }
+
+    @Test
+    fun `client can pull version hash`() = runTest {
+        val modelClient = createModelClient()
+        val repositoryId = RepositoryId("aRepo")
+        val defaultBranch = repositoryId.getBranchReference()
+        val initialVersion = modelClient.initRepository(repositoryId)
+
+        val loadedVersion = modelClient.pullHash(defaultBranch)
+
+        assertEquals(initialVersion.getContentHash(), loadedVersion)
+    }
+
+    @Test
+    fun `tmp show setting content type of body`() = runTest {
+        val repositoryId = RepositoryId("aRepo")
+        val defaultBranch = repositoryId.getBranchReference()
+        val newBranchData = BranchV1(defaultBranch.branchName, "someHashd")
+        val branchDataJson = Json.encodeToString(newBranchData)
+
+        val response = client.post {
+            url {
+                takeFrom("http://localhost/v2")
+                appendPathSegments("repositories", repositoryId.id, "branches", defaultBranch.branchName)
+            }
+            useVersionStreamFormat()
+            contentType(ContentTypes.BRANCH_V1)
+            setBody(branchDataJson)
+        }
+        assertEquals(HttpStatusCode.NotImplemented, response.status)
+    }
+
+    @Test
+    fun `tmp show matching`() {
+        println(ContentTypes.BRANCH_V1.match("application/x.modelix.branch+json")) // true
+        println(ContentTypes.BRANCH_V1.match("application/x.modelix.branch+json; version=*")) // true
+        println(ContentTypes.BRANCH_V1.match("application/x.modelix.branch+json; version=1")) // true
+        println(ContentTypes.BRANCH_V1.match("application/x.modelix.branch+json; version=2")) // false
+
+        println(ContentTypes.BRANCH_V2.match("application/x.modelix.branch+json")) // true
+        println(ContentTypes.BRANCH_V2.match("application/x.modelix.branch+json; version=*")) // true
+        println(ContentTypes.BRANCH_V2.match("application/x.modelix.branch+json; version=1")) // false
+        println(ContentTypes.BRANCH_V2.match("application/x.modelix.branch+json; version=2")) // true
     }
 }

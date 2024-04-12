@@ -115,6 +115,10 @@ mpsBuild {
 |===
 
 === ServerSource/-Target configuration
+[WARNING]
+--
+In the future you will be required to specify a `repositoryId` along the`revision`.
+--
 [%header, cols="1,1,2"]
 |===
 |setting
@@ -152,6 +156,7 @@ The mapping is `propertyName -> propertyValue`.
 Only available in ServerTarget.
 
 |===
+
 
 == Example
 

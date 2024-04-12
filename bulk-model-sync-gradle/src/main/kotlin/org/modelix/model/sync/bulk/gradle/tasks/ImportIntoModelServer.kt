@@ -19,7 +19,6 @@ package org.modelix.model.sync.bulk.gradle.tasks
 import kotlinx.coroutines.runBlocking
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.SetProperty
@@ -39,38 +38,37 @@ import org.modelix.model.operations.OTBranch
 import org.modelix.model.sync.bulk.ModelImporter
 import org.modelix.model.sync.bulk.importFilesAsRootChildren
 import org.modelix.model.sync.bulk.isModuleIncluded
-import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 
-abstract class ImportIntoModelServer @Inject constructor(of: ObjectFactory) : DefaultTask() {
+abstract class ImportIntoModelServer : DefaultTask() {
 
-    @InputDirectory
-    @PathSensitive(PathSensitivity.RELATIVE)
-    val inputDir: DirectoryProperty = of.directoryProperty()
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val inputDir: DirectoryProperty
 
-    @Input
-    val repositoryId: Property<String> = of.property(String::class.java)
+    @get:Input
+    abstract val repositoryId: Property<String>
 
-    @Input
-    val branchName: Property<String> = of.property(String::class.java)
+    @get:Input
+    abstract val branchName: Property<String>
 
-    @Input
-    val url: Property<String> = of.property(String::class.java)
+    @get:Input
+    abstract val url: Property<String>
 
-    @Input
-    val includedModules: SetProperty<String> = of.setProperty(String::class.java)
+    @get:Input
+    abstract val includedModules: SetProperty<String>
 
-    @Input
-    val includedModulePrefixes: SetProperty<String> = of.setProperty(String::class.java)
+    @get:Input
+    abstract val includedModulePrefixes: SetProperty<String>
 
-    @Input
-    val continueOnError: Property<Boolean> = of.property(Boolean::class.java)
+    @get:Input
+    abstract val continueOnError: Property<Boolean>
 
-    @Input
-    val requestTimeoutSeconds: Property<Int> = of.property(Int::class.java)
+    @get:Input
+    abstract val requestTimeoutSeconds: Property<Int>
 
-    @Input
-    val metaProperties: MapProperty<String, String> = of.mapProperty(String::class.java, String::class.java)
+    @get:Input
+    abstract val metaProperties: MapProperty<String, String>
 
     @TaskAction
     fun import() = runBlocking {

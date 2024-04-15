@@ -169,8 +169,7 @@ class ModelReplicationServer(
         post<Paths.initializeRepository> {
             fun ApplicationCall.repositoryId() = RepositoryId(parameters["repository"]!!)
             fun PipelineContext<Unit, ApplicationCall>.repositoryId() = call.repositoryId()
-
-            val useRoleIds = call.request.queryParameters["useRoleIds"] != "false"
+            val useRoleIds = call.parseQueryParameterAsBoolean("useRoleIds") ?: return@post
             val initialVersion = repositoriesManager.createRepository(repositoryId(), call.getUserName(), useRoleIds)
             call.respondDelta(initialVersion.getContentHash(), null)
         }
@@ -405,6 +404,25 @@ class ModelReplicationServer(
                     }
             }
         }
+    }
+
+    /**
+     * Parses the specified query parameter as boolean.
+     * If the query parameter is not in the request, the provided fallback value is used.
+     * If the value of query parameter cannot be parsed, respond with "400 Bad Request" and return `null`.
+     */
+    private suspend fun ApplicationCall.parseQueryParameterAsBoolean(parameterName: String, fallbackIfNotSpecified: Boolean = true): Boolean? {
+        val rawParameterValue = request.queryParameters[parameterName] ?: return fallbackIfNotSpecified
+        val parameterValue = rawParameterValue.toBooleanStrictOrNull()
+        if (parameterValue == null) {
+            // We cannot just throw a `BadRequestException`,
+            // because we have used `io.ktor.server.plugins.statuspages.StatusPages`
+            // with custom exception handlers.
+            val message = "Value `$rawParameterValue` for parameter `$parameterName` is not a valid boolean. Valid booleans are `true` and `false`."
+            respond(HttpStatusCode.BadRequest, message)
+            return null
+        }
+        return parameterValue
     }
 }
 

@@ -16,10 +16,12 @@
 package org.modelix.model.server.handlers
 
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.get
+import io.ktor.client.request.post
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.appendPathSegments
 import io.ktor.http.takeFrom
@@ -204,5 +206,24 @@ class ModelReplicationServerTest {
             }
         }
         runWithNettyServer(setupBlock, testBlock)
+    }
+
+    @Test
+    fun `respond 400 Bad for invalid query parameter useRoleId`() = runWithTestModelServer {
+        val url = "http://localhost/v2"
+        val repositoryId = RepositoryId("repo1")
+
+        // Act
+        val response = client.post {
+            url {
+                takeFrom(url)
+                appendPathSegments("repositories", repositoryId.id, "init")
+                parameters["useRoleIds"] = "False"
+            }
+        }
+
+        // Assert
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        assertEquals("Value `False` for parameter `useRoleIds` is not a valid boolean. Valid booleans are `true` and `false`.", response.body())
     }
 }

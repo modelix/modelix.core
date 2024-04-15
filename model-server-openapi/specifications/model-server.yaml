@@ -296,10 +296,14 @@ paths:
       operationId: initializeRepository
       parameters:
         - name: useRoleIds
+          description: |
+            Specifies if in the created repository role IDs should be used to to read an write roles.
+            If `false` role names are used.
+            Defaults to `true` if not specified.
           in: "query"
           required: false
           schema:
-            type: string
+            type: boolean
         - name: repository
           in: "path"
           required: true

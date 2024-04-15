@@ -299,7 +299,7 @@ paths:
           in: "query"
           required: false
           schema:
-            type: string
+            type: boolean
         - name: repository
           in: "path"
           required: true

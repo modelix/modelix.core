@@ -49,6 +49,7 @@ import org.apache.ignite.Ignition
 import org.modelix.authorization.KeycloakUtils
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.InMemoryModels
+import org.modelix.model.server.handlers.AboutInformationHandler
 import org.modelix.model.server.handlers.ContentExplorer
 import org.modelix.model.server.handlers.DeprecatedLightModelServer
 import org.modelix.model.server.handlers.HistoryHandler
@@ -87,6 +88,7 @@ object Main {
             return
         }
 
+        LOG.info("Version: $MODELIX_VERSION")
         LOG.info("Max memory (bytes): ${Runtime.getRuntime().maxMemory()}")
         LOG.info("Server process started")
         LOG.info("In memory: ${cmdLineArgs.inmemory}")
@@ -203,6 +205,7 @@ object Main {
                 jsonModelServer.init(this)
                 modelReplicationServer.init(this)
                 metricsHandler.init(this)
+                AboutInformationHandler.init(this)
                 routing {
                     static("/public") {
                         resources("public")

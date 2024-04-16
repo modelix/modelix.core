@@ -68,30 +68,9 @@ kotlin {
     }
 }
 
-val generateVersionVariable by tasks.creating {
-    doLast {
-        val outputDir = project.layout.buildDirectory.dir("version_gen/org/modelix/modelql/core").get().asFile
-        outputDir.mkdirs()
-        outputDir.resolve("Version.kt").writeText(
-            """
-            package org.modelix.modelql.core
-
-            const val modelqlVersion: String = "$version"
-
-            """.trimIndent(),
-        )
-    }
-}
-
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
-    dependsOn(generateVersionVariable)
     kotlinOptions {
         jvmTarget = "11"
         freeCompilerArgs += listOf("-Xjvm-default=all-compatibility")
-    }
-}
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon>().all {
-    dependsOn(generateVersionVariable)
-    kotlinOptions {
     }
 }

@@ -56,6 +56,7 @@ kotlin {
                 implementation(libs.kotlin.logging)
                 implementation(libs.kotlin.datetime)
                 implementation(libs.kotlin.serialization.json)
+                implementation(libs.ktor.client.auth)
                 implementation(libs.ktor.client.core)
                 implementation(libs.ktor.client.content.negotiation)
                 implementation(libs.ktor.serialization.json)

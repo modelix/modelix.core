@@ -22,6 +22,7 @@ import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class ModelClientV2JvmTest {
@@ -40,13 +41,15 @@ class ModelClientV2JvmTest {
         // Implementing `close` allow to use `.use` method.
         modelClient.use {
         }
-        assertFailsWith<CancellationException>("Parent job is Completed") {
+        val firstException = assertFailsWith<CancellationException> {
             modelClient.init()
         }
-        // `Closable` implies, that `.close` method is idempotent.
+        assertEquals("Parent job is Completed", firstException.message)
+        // `Closable` implies that `.close` method is idempotent.
         modelClient.close()
-        assertFailsWith<CancellationException>("Parent job is Completed") {
+        val secondException = assertFailsWith<CancellationException> {
             modelClient.init()
         }
+        assertEquals("Parent job is Completed", secondException.message)
     }
 }

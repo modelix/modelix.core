@@ -65,6 +65,7 @@ import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.api.v2.VersionDeltaStream
+import org.modelix.model.server.api.v2.VersionDeltaStreamV2
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.modelql.server.ModelQLServer
@@ -365,12 +366,14 @@ class ModelReplicationServer(
 
     private suspend fun ApplicationCall.respondDelta(versionHash: String, baseVersionHash: String?) {
         val expectedTypes = request.acceptItems().map { ContentType.parse(it.value) }
-        return if (expectedTypes.any { it.match(VersionDeltaStream.CONTENT_TYPE) }) {
-            respondDeltaAsObjectStream(versionHash, baseVersionHash, false)
+        return if (expectedTypes.any { it.match(VersionDeltaStreamV2.CONTENT_TYPE) }) {
+            respondDeltaAsObjectStreamV2(versionHash, baseVersionHash)
+        } else if (expectedTypes.any { it.match(VersionDeltaStream.CONTENT_TYPE) }) {
+            respondDeltaAsObjectStreamV1(versionHash, baseVersionHash, false)
         } else if (expectedTypes.any { it.match(ContentType.Application.Json) }) {
             respondDeltaAsJson(versionHash, baseVersionHash)
         } else {
-            respondDeltaAsObjectStream(versionHash, baseVersionHash, true)
+            respondDeltaAsObjectStreamV1(versionHash, baseVersionHash, true)
         }
     }
 
@@ -383,7 +386,7 @@ class ModelReplicationServer(
         respond(delta)
     }
 
-    private suspend fun ApplicationCall.respondDeltaAsObjectStream(
+    private suspend fun ApplicationCall.respondDeltaAsObjectStreamV1(
         versionHash: String,
         baseVersionHash: String?,
         plainText: Boolean,
@@ -403,6 +406,15 @@ class ModelReplicationServer(
                         if (it.index == 0) check(it.value == versionHash) { "First object should be the version" }
                         writeStringUtf8(it.value)
                     }
+            }
+        }
+    }
+
+    private suspend fun ApplicationCall.respondDeltaAsObjectStreamV2(versionHash: String, baseVersionHash: String?) {
+        val objectData = repositoriesManager.computeDelta(versionHash, baseVersionHash)
+        respondBytesWriter(VersionDeltaStreamV2.CONTENT_TYPE) {
+            this.useClosingWithoutCause {
+                VersionDeltaStreamV2.encodeVersionDeltaStreamV2(this, versionHash, objectData.asFlow())
             }
         }
     }

@@ -25,6 +25,7 @@ import io.ktor.server.request.receiveStream
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytesWriter
 import io.ktor.server.response.respondText
+import io.ktor.server.response.respondTextWriter
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.util.cio.use
@@ -197,6 +198,23 @@ class ModelReplicationServer(
             val branchRef = repositoryId(repository).getBranchReference(branch)
             val newVersionHash = repositoriesManager.pollVersionHash(branchRef, lastKnown)
             call.respondDelta(newVersionHash, lastKnown)
+        }
+    }
+
+    override suspend fun PipelineContext<Unit, ApplicationCall>.postRepositoryObjectsGetAll(repository: String) {
+        val keys = call.receiveStream().bufferedReader().use { reader ->
+            reader.lineSequence().toHashSet()
+        }
+        val objects = withContext(Dispatchers.IO) { modelClient.store.getAll(keys) }
+        call.respondTextWriter(contentType = VersionDeltaStream.CONTENT_TYPE) {
+            objects.forEach {
+                append(it.key)
+                append("\n")
+                append(it.value)
+                append("\n")
+            }
+            // additional empty line indicates end of stream and can be used to verify completeness of data transfer
+            append("\n")
         }
     }
 

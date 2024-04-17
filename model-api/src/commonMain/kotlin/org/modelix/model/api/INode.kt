@@ -314,6 +314,10 @@ interface IReplaceableNode : INode {
 @Deprecated("Use .key(INode), .key(IBranch), .key(ITransaction) or .key(ITree)")
 fun IRole.key(): String = RoleAccessContext.getKey(this)
 fun IRole.key(node: INode): String = if (node.usesRoleIds()) getUID() else getSimpleName()
+fun IChildLink.key(node: INode): String? = when (this) {
+    is NullChildLink -> null
+    else -> (this as IRole).key(node)
+}
 fun INode.usesRoleIds(): Boolean = if (this is INodeEx) this.usesRoleIds() else false
 fun INode.getChildren(link: IChildLink): Iterable<INode> = if (this is INodeEx) getChildren(link) else getChildren(link.key(this))
 fun INode.moveChild(role: IChildLink, index: Int, child: INode): Unit = if (this is INodeEx) moveChild(role, index, child) else moveChild(role.key(this), index, child)
@@ -433,3 +437,5 @@ fun INode.getContainmentLink() = if (this is INodeEx) {
 fun INode.getRoot(): INode = parent?.getRoot() ?: this
 fun INode.isInstanceOf(superConcept: IConcept?): Boolean = concept.let { it != null && it.isSubConceptOf(superConcept) }
 fun INode.isInstanceOfSafe(superConcept: IConcept): Boolean = tryGetConcept()?.isSubConceptOf(superConcept) ?: false
+
+fun INode.addNewChild(role: IChildLink, index: Int) = addNewChild(role, index, null as IConceptReference?)

@@ -75,6 +75,18 @@ paths:
           $ref: '#/components/responses/200json'
         default:
           $ref: '#/components/responses/GeneralError'
+  /repositories/{repository}/objects/getAll:
+    post:
+      operationId: postRepositoryObjectsGetAll
+      parameters:
+        - name: repository
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: '#/components/responses/200'
   /repositories/{repository}/branches:
     get:
       operationId: getRepositoryBranches

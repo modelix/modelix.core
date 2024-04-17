@@ -265,6 +265,29 @@ class ModelClientV2(
         }
     }
 
+    override suspend fun getObjects(repository: RepositoryId, keys: Sequence<String>): Map<String, String> {
+        val response = httpClient.post {
+            url {
+                takeFrom(baseUrl)
+                appendPathSegments("repositories", repository.id, "objects", "getAll")
+            }
+            setBody(keys.joinToString("\n"))
+        }
+
+        val content = response.bodyAsChannel()
+        val objects = HashMap<String, String>()
+        while (true) {
+            val key = checkNotNull(content.readUTF8Line()) { "Empty line expected at the end of the stream" }
+            if (key == "") {
+                check(content.readUTF8Line() == null) { "Empty line is only allowed at the end of the stream" }
+                break
+            }
+            val value = checkNotNull(content.readUTF8Line()) { "Object missing for hash $key" }
+            objects[key] = value
+        }
+        return objects
+    }
+
     override suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?): IVersion {
         LOG.debug { "${clientId.toString(16)}.push($branch, $version, $baseVersion)" }
         require(version is CLVersion)
@@ -274,7 +297,7 @@ class ModelClientV2(
         HashUtil.checkObjectHashes(objects)
         val delta = if (objects.size > 1000) {
             // large HTTP requests and large Json objects don't scale well
-            uploadObjects(branch.repositoryId, objects.asSequence().map { it.key to it.value })
+            pushObjects(branch.repositoryId, objects.asSequence().map { it.key to it.value })
             VersionDelta(version.getContentHash(), null)
         } else {
             VersionDelta(version.getContentHash(), null, objectsMap = objects)
@@ -292,7 +315,7 @@ class ModelClientV2(
         }
     }
 
-    private suspend fun uploadObjects(repository: RepositoryId, objects: Sequence<Pair<String, String>>) {
+    override suspend fun pushObjects(repository: RepositoryId, objects: Sequence<Pair<String, String>>) {
         LOG.debug { "${clientId.toString(16)}.pushObjects($repository)" }
         objects.chunked(100_000).forEach { unsortedChunk ->
             // Entries are sorted to avoid deadlocks on the server side between transactions.

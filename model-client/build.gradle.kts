@@ -21,6 +21,7 @@ val ktorVersion: String by rootProject
 val kotlinxSerializationVersion: String by rootProject
 
 kotlin {
+    jvmToolchain(11)
     jvm()
     js(IR) {
         browser {

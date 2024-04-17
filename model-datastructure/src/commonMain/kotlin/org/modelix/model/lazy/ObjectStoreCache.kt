@@ -17,9 +17,10 @@ package org.modelix.model.lazy
 
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.createLRUMap
+import kotlin.jvm.JvmOverloads
 
-class ObjectStoreCache(override val keyValueStore: IKeyValueStore) : IDeserializingKeyValueStore {
-    private val cache: MutableMap<String?, Any> = createLRUMap(100000)
+class ObjectStoreCache @JvmOverloads constructor(override val keyValueStore: IKeyValueStore, cacheSize: Int = 100_000) : IDeserializingKeyValueStore {
+    private val cache: MutableMap<String?, Any> = createLRUMap(cacheSize)
 
     override fun <T> getAll(hashes_: Iterable<String>, deserializer: (String, String) -> T): Iterable<T> {
         val hashes = hashes_.toList()

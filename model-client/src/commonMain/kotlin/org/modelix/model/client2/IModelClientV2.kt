@@ -85,4 +85,6 @@ interface IModelClientV2 {
     suspend fun <R> query(branch: BranchReference, body: (IMonoStep<INode>) -> IMonoStep<R>): R
 
     suspend fun <R> query(repositoryId: RepositoryId, versionHash: String, body: (IMonoStep<INode>) -> IMonoStep<R>): R
+
+    suspend fun getObjects(repository: RepositoryId, keys: Sequence<String>): Map<String, String>
 }

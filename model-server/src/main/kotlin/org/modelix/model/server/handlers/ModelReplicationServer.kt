@@ -30,6 +30,7 @@ import io.ktor.server.resources.put
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytesWriter
 import io.ktor.server.response.respondText
+import io.ktor.server.response.respondTextWriter
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
@@ -245,6 +246,23 @@ class ModelReplicationServer(
             val lastKnownVersionHash = call.request.queryParameters["lastKnown"]
             val newVersionHash = repositoriesManager.pollVersionHash(branchRef(), lastKnownVersionHash)
             call.respondDelta(newVersionHash, lastKnownVersionHash)
+        }
+        post<Paths.postRepositoryObjectsGetAll> {
+            val repository = RepositoryId(call.parameters["repository"]!!) // will be used in the future
+            val keys = call.receiveStream().bufferedReader().use { reader ->
+                reader.lineSequence().toHashSet()
+            }
+            val objects = withContext(Dispatchers.IO) { modelClient.store.getAll(keys) }
+            call.respondTextWriter(contentType = VersionDeltaStream.CONTENT_TYPE) {
+                objects.forEach {
+                    append(it.key)
+                    append("\n")
+                    append(it.value)
+                    append("\n")
+                }
+                // additional empty line indicates end of stream and can be used to verify completeness of data transfer
+                append("\n")
+            }
         }
         get<Paths.pollRepositoryBranchHash> {
             fun ApplicationCall.repositoryId() = RepositoryId(parameters["repository"]!!)

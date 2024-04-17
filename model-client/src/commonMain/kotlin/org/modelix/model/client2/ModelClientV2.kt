@@ -224,6 +224,29 @@ class ModelClientV2(
         }
     }
 
+    override suspend fun getObjects(repository: RepositoryId, keys: Sequence<String>): Map<String, String> {
+        val response = httpClient.post {
+            url {
+                takeFrom(baseUrl)
+                appendPathSegments("repositories", repository.id, "objects", "getAll")
+            }
+            setBody(keys.joinToString("\n"))
+        }
+
+        val content = response.bodyAsChannel()
+        val objects = HashMap<String, String>()
+        while (true) {
+            val key = checkNotNull(content.readUTF8Line()) { "Empty line expected at the end of the stream" }
+            if (key == "") {
+                check(content.readUTF8Line() == null) { "Empty line is only allowed at the end of the stream" }
+                break
+            }
+            val value = checkNotNull(content.readUTF8Line()) { "Object missing for hash $key" }
+            objects[key] = value
+        }
+        return objects
+    }
+
     override suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?): IVersion {
         LOG.debug { "${clientId.toString(16)}.push($branch, $version, $baseVersion)" }
         require(version is CLVersion)

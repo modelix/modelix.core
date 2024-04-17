@@ -18,6 +18,7 @@ package org.modelix.model
 
 import org.modelix.incremental.IncrementalEngine
 import org.modelix.incremental.incrementalFunction
+import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.ITree
@@ -72,6 +73,36 @@ class IncrementalBranchTest {
             incrementalBranch.runWriteT { it.addNewChild(ITree.ROOT_ID, "role1", -1, childId, null as IConceptReference?) }
             assertEquals(true, branch.computeReadT { it.tree.containsNode(childId) })
             assertEquals(true, incrementalBranch.computeRead { containsChild() })
+        } finally {
+            engine.dispose()
+        }
+    }
+
+    @Test
+    fun functionDependingOnPropertyOfNonExistingNodeIsUpdateAfterNodeIsAdded() {
+        val childId = 12345L
+        val branch = PBranch(ModelFacade.newLocalTree(), IdGenerator.getInstance(17865))
+        val incrementalBranch = IncrementalBranch(branch)
+        val engine = IncrementalEngine()
+        var callCount = 0
+        try {
+            val propertyOfMaybeNonExistingNode = engine.incrementalFunction("f") { _ ->
+                callCount++
+                try {
+                    incrementalBranch.transaction.getProperty(childId, "someRole") + "Value"
+                } catch (e: Exception) {
+                    "noNode"
+                }
+            }
+            assertEquals("noNode", incrementalBranch.computeRead { propertyOfMaybeNonExistingNode() })
+            incrementalBranch.runWriteT {
+                incrementalBranch.writeTransaction.addNewChild(ITree.ROOT_ID, null, -1, childId, null as ConceptReference?)
+            }
+
+            val actualPropertyValue = incrementalBranch.computeRead { propertyOfMaybeNonExistingNode() }
+            // Fails because function does not recalculate after node was added
+            assertEquals(2, callCount)
+            assertEquals("nullValue", actualPropertyValue)
         } finally {
             engine.dispose()
         }

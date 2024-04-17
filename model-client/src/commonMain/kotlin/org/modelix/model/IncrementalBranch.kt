@@ -65,10 +65,12 @@ class IncrementalBranch(val branch: IBranch) : IBranch, IBranchWrapper {
     }
 
     fun accessed(dep: IStateVariableReference<*>) {
+        println("accessed $dep")
         DependencyTracking.accessed(dep)
     }
 
     fun modified(dep: IStateVariableReference<*>) {
+        println("modified $dep")
         DependencyTracking.modified(dep)
     }
 
@@ -194,6 +196,14 @@ class IncrementalBranch(val branch: IBranch) : IBranch, IBranchWrapper {
         }
 
         override fun getProperty(nodeId: Long, role: String): String? {
+            // Getting the property depends on the existence of the node aka. `UnclassifiedNodeDependency`
+            // Fix call:
+            // accessed(UnclassifiedNodeDependency(this@IncrementalBranch, nodeId))
+            //
+            // Same for references etc.
+            //
+            // Same in implementation for IncrementalTree
+            // (think about extracting common dependency calls between IncrementalTree and IncrementalTransaction)
             accessed(PropertyDependency(this@IncrementalBranch, nodeId, role))
             return transaction.getProperty(nodeId, role)
         }

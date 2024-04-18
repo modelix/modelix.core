@@ -23,6 +23,7 @@ import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import io.ktor.websocket.send
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -360,6 +361,7 @@ class LightModelServer(val client: LocalModelClient) {
     }
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 private suspend fun <T> Channel<T>.receiveLast(): T {
     var latest = receive()
     while (!isEmpty) latest = receive()

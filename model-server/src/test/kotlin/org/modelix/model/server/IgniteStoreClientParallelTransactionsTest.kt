@@ -16,20 +16,23 @@
 
 package org.modelix.model.server
 
+import ThreadBlocker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.modelix.model.IKeyListener
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.InMemoryStoreClient
-import org.slf4j.LoggerFactory
+import org.modelix.model.server.store.runTransactionSuspendable
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import kotlin.test.AfterTest
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 
 @Ignore("Doesn't support parallel transactions (yet)")
 class MabBasedStoreClientParallelTransactionsTest : StoreClientParallelTransactionsTest(InMemoryStoreClient())
@@ -83,47 +86,59 @@ abstract class StoreClientParallelTransactionsTest(val store: IStoreClient) {
         val notifiedValue = notifiedValueFuture.get(10, TimeUnit.SECONDS)
         assertEquals("valueB", notifiedValue)
     }
-}
 
-class ThreadBlocker {
-
-    companion object {
-        private val LOG = LoggerFactory.getLogger(ThreadBlocker::class.java)
-    }
-
-    private var reachedPointInTime = 0
-
-    @Synchronized
-    fun reachPointInTime(pointInTime: Int) {
-        reachedPointInTime = pointInTime
-        LOG.debug("Reached point in time {}", reachedPointInTime)
-    }
-
-    fun sleepUntilPointInTime(pointInTime: Int) {
-        LOG.debug("Waiting for point in time {}", pointInTime)
-        sleepUntil {
-            reachedPointInTime >= pointInTime
+    @Test
+    fun parallelSuspendableTransactionsRunOnDifferentThreads() = runTest {
+        var threadIdA1: Long? = null
+        var threadIdA2: Long? = null
+        var threadIdA3: Long? = null
+        var threadIdB1: Long? = null
+        var threadIdB2: Long? = null
+        var threadIdB3: Long? = null
+        fun getThreadId(): Long {
+            return Thread.currentThread().id
         }
-    }
-}
+        val threadBlocker = ThreadBlocker()
 
-fun sleepUntil(
-    checkIntervalMilliseconds: Long = 10,
-    timeoutMilliseconds: Long = 1000,
-    condition: () -> Boolean,
-) {
-    check(checkIntervalMilliseconds > 0) {
-        "checkIntervalMilliseconds must be positive."
-    }
-    check(timeoutMilliseconds > 0) {
-        "timeoutMilliseconds must be positive."
-    }
-    var remainingDelays = timeoutMilliseconds / checkIntervalMilliseconds
-    while (!condition()) {
-        if (remainingDelays == 0L) {
-            error("Waited too long.")
+        val jobA = launch(Dispatchers.IO) {
+            store.runTransactionSuspendable {
+                threadIdA1 = getThreadId()
+                runBlocking {
+                    store.runTransactionSuspendable {
+                        threadIdA2 = getThreadId()
+                        threadBlocker.sleepUntilPointInTime(1)
+                        runBlocking {
+                            store.runTransactionSuspendable {
+                                threadIdA3 = getThreadId()
+                            }
+                        }
+                    }
+                }
+            }
         }
-        Thread.sleep(checkIntervalMilliseconds)
-        remainingDelays--
+        val jobB = launch(Dispatchers.IO) {
+            store.runTransactionSuspendable {
+                threadIdB1 = getThreadId()
+                threadBlocker.reachPointInTime(1)
+                runBlocking {
+                    store.runTransactionSuspendable {
+                        threadIdB2 = getThreadId()
+                        runBlocking {
+                            store.runTransactionSuspendable {
+                                threadIdB3 = getThreadId()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        jobA.join()
+        jobB.join()
+
+        assertNotEquals(threadIdA1, threadIdB2)
+        assertEquals(threadIdA1, threadIdA2)
+        assertEquals(threadIdA1, threadIdA3)
+        assertEquals(threadIdB1, threadIdB2)
+        assertEquals(threadIdB1, threadIdB3)
     }
 }

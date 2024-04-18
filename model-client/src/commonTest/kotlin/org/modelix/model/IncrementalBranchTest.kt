@@ -18,8 +18,10 @@ package org.modelix.model
 
 import org.modelix.incremental.IncrementalEngine
 import org.modelix.incremental.incrementalFunction
+import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.IProperty
+import org.modelix.model.api.IReplaceableNode
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
@@ -31,8 +33,7 @@ class IncrementalBranchTest {
 
     @Test
     fun propertyChange() {
-        val branch = PBranch(ModelFacade.newLocalTree(), IdGenerator.getInstance(17865))
-        val incrementalBranch = IncrementalBranch(branch)
+        val incrementalBranch = initializeIncrementalBranch()
         val rootNode = incrementalBranch.getRootNode()
         incrementalBranch.runWrite { rootNode.setPropertyValue(IProperty.fromName("name"), "abc") }
         val engine = IncrementalEngine()
@@ -58,6 +59,38 @@ class IncrementalBranchTest {
     }
 
     @Test
+    fun conceptChange() {
+        val incrementalBranch = initializeIncrementalBranch()
+        val root = incrementalBranch.getRootNode() as IReplaceableNode
+        incrementalBranch.runWrite { root.replaceNode(ConceptReference("myConcept")) }
+        val engine = IncrementalEngine()
+
+        try {
+            var callCount = 0
+            val conceptUidWithSuffix = engine.incrementalFunction("f") { _ ->
+                callCount++
+                val conceptRef = incrementalBranch.getRootNode().getConceptReference()?.getUID()
+                conceptRef + "Suffix"
+            }
+            assertEquals(callCount, 0)
+            assertEquals("myConceptSuffix", incrementalBranch.computeRead { conceptUidWithSuffix() })
+            assertEquals(callCount, 1)
+            assertEquals("myConceptSuffix", incrementalBranch.computeRead { conceptUidWithSuffix() })
+            assertEquals(callCount, 1)
+            incrementalBranch.runWrite {
+                (incrementalBranch.getRootNode() as IReplaceableNode).replaceNode(
+                    ConceptReference("myConcept2"),
+                )
+            }
+            assertEquals(callCount, 1)
+            assertEquals("myConcept2Suffix", incrementalBranch.computeRead { conceptUidWithSuffix() })
+            assertEquals(callCount, 2)
+        } finally {
+            engine.dispose()
+        }
+    }
+
+    @Test
     fun addNewChild_modifies_containsNode() {
         val childId = 12345L
         val branch = PBranch(ModelFacade.newLocalTree(), IdGenerator.getInstance(17865))
@@ -75,5 +108,11 @@ class IncrementalBranchTest {
         } finally {
             engine.dispose()
         }
+    }
+
+    private fun initializeIncrementalBranch(): IncrementalBranch {
+        val branch = PBranch(ModelFacade.newLocalTree(), IdGenerator.getInstance(17865))
+        val incrementalBranch = IncrementalBranch(branch)
+        return incrementalBranch
     }
 }

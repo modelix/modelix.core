@@ -297,6 +297,20 @@ interface IDeprecatedNodeDefaults : INode {
     override fun getReferenceLinks(): List<IReferenceLink>
 }
 
+/**
+ *  Interface for nodes that can be replaced by a new instance.
+ */
+interface IReplaceableNode : INode {
+    /**
+     * Replaces this node with a new node of the given concept that uses the same id as this node.
+     * Properties, references and children will be the same.
+     *
+     * @param concept the concept of the new node
+     * @return replacement for this node with the new given concept
+     */
+    fun replaceNode(concept: ConceptReference?): INode
+}
+
 @Deprecated("Use .key(INode), .key(IBranch), .key(ITransaction) or .key(ITree)")
 fun IRole.key(): String = RoleAccessContext.getKey(this)
 fun IRole.key(node: INode): String = if (node.usesRoleIds()) getUID() else getSimpleName()

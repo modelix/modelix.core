@@ -254,6 +254,12 @@ interface ITree {
      */
     fun deleteNodes(nodeIds: LongArray): ITree
 
+    /**
+     * @param nodeId id of the node
+     * @param concept the concept ref of the new concept for the node, or null to remove the concept
+     */
+    fun setConcept(nodeId: Long, concept: IConceptReference?): ITree
+
     fun getAllChildrenAsFlow(parentId: Long): Flow<Long> = getAllChildren(parentId).asFlow()
     fun getDescendantsAsFlow(nodeId: Long, includeSelf: Boolean = false): Flow<Long> {
         return if (includeSelf) {

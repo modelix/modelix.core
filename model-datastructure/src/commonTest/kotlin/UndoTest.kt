@@ -67,14 +67,14 @@ class UndoTest {
         val baseBranch = OTBranch(PBranch(CLTree(store), idGenerator), idGenerator, store)
         val rand = Random(347663)
 
-        randomChanges(baseBranch, 5, idGenerator, rand)
+        randomChanges(baseBranch, 50, idGenerator, rand)
         val baseVersion = createVersion(baseBranch.operationsAndTree, null, versionIdGenerator, store)
 
         val maxIndex = 2
         val branches = (0..maxIndex).map { OTBranch(PBranch(baseVersion.tree, idGenerator), idGenerator, store) }.toList()
         for (i in 0..maxIndex) {
             branches[i].runWrite {
-                randomChanges(branches[i], 5, idGenerator, rand)
+                randomChanges(branches[i], 50, idGenerator, rand)
             }
         }
         val versions = branches.map { branch ->
@@ -108,14 +108,14 @@ class UndoTest {
         val baseBranch = OTBranch(PBranch(CLTree(store), idGenerator), idGenerator, store)
         val rand = Random(347663)
 
-        randomChanges(baseBranch, 5, idGenerator, rand)
+        randomChanges(baseBranch, 50, idGenerator, rand)
         val baseVersion = createVersion(baseBranch.operationsAndTree, null, versionIdGenerator, store)
 
         val maxIndex = 2
         val branches = (0..maxIndex).map { OTBranch(PBranch(baseVersion.tree, idGenerator), idGenerator, store) }.toList()
         for (i in 0..maxIndex) {
             branches[i].runWrite {
-                randomChanges(branches[i], 5, idGenerator, rand)
+                randomChanges(branches[i], 50, idGenerator, rand)
             }
         }
         val versions = branches.map { branch ->
@@ -162,8 +162,12 @@ class UndoTest {
     private fun randomChanges(baseBranch: OTBranch, numChanges: Int, idGenerator: IIdGenerator, rand: Random) {
         baseBranch.runWrite {
             val changeGenerator = RandomTreeChangeGenerator(idGenerator, rand).growingOperationsOnly()
-            for (i in 0 until numChanges) {
+            for (i in 0 until (numChanges / 2)) {
                 changeGenerator.applyRandomChange(baseBranch, null)
+            }
+            val changeGenerator2 = RandomTreeChangeGenerator(idGenerator, rand)
+            for (i in 0 until (numChanges / 2)) {
+                changeGenerator2.applyRandomChange(baseBranch, null)
             }
         }
     }

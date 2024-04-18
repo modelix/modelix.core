@@ -24,6 +24,7 @@ import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.IOperationIntend
+import org.modelix.model.operations.UndoOp
 import org.modelix.model.persistent.CPVersion
 
 class VersionMerger(private val storeCache: IDeserializingKeyValueStore, private val idGenerator: IIdGenerator) {
@@ -70,7 +71,7 @@ class VersionMerger(private val storeCache: IDeserializingKeyValueStore, private
             return if (leftVersion.id < rightVersion.id) leftVersion else rightVersion
         }
 
-        val versionsToApply = LinearHistory(commonBase?.hash).load(leftVersion, rightVersion)
+        val versionsToApply = filterUndo(LinearHistory(commonBase?.hash).load(leftVersion, rightVersion))
 
         val operationsToApply = versionsToApply.flatMap { captureIntend(it) }
         var mergedVersion: CLVersion? = null
@@ -114,6 +115,24 @@ class VersionMerger(private val storeCache: IDeserializingKeyValueStore, private
             throw RuntimeException("Failed to merge ${leftVersion.hash} and ${rightVersion.hash}")
         }
         return mergedVersion!!
+    }
+
+    /**
+     * Instead of computing and applying the inverse operation we can optimize for the case when an undo follows
+     * directly after the version to be undone and just drop the version.
+     */
+    private fun filterUndo(versions: List<CLVersion>): List<CLVersion> {
+        val filtered = versions.toMutableList()
+        for (i in (0 until filtered.lastIndex).reversed()) {
+            val v0 = filtered[i]
+            val v1 = filtered.getOrNull(i + 1) ?: continue
+
+            if (v1.numberOfOperations == 1 && (v1.operations.single() as? UndoOp)?.versionHash?.getHash() == v0.getContentHash()) {
+                filtered.removeAt(i)
+                filtered.removeAt(i)
+            }
+        }
+        return filtered
     }
 
     private fun captureIntend(version: CLVersion): List<IOperationIntend> {

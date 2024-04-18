@@ -55,3 +55,10 @@ data class ReferenceChanged(override val node: INodeJS, val role: String) : Chan
 )
 @JsExport
 data class ContainmentChanged(override val node: INodeJS) : ChangeJS
+
+@UnstableModelixFeature(
+    reason = "The overarching task https://issues.modelix.org/issue/MODELIX-500 is in development.",
+    intendedFinalization = "The client is intended to be finalized when the overarching task is finished.",
+)
+@JsExport
+data class ConceptChanged(override val node: INodeJS) : ChangeJS

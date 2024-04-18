@@ -22,6 +22,7 @@ import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.INodeResolutionScope
+import org.modelix.model.api.IReplaceableNode
 import org.modelix.model.api.SerializedNodeReference
 import org.modelix.model.api.getDescendants
 import org.modelix.model.api.isChildRoleOrdered
@@ -162,9 +163,10 @@ class ModelImporter(
         currentNodeProgress += 1
         progressReporter.step(currentNodeProgress.toULong())
         doAndPotentiallyContinueOnErrors {
-            syncProperties(node, data)
-            syncChildren(node, data, progressReporter)
-            syncReferences(node, data)
+            val conceptCorrectedNode = checkAndHandleConceptChange(node, data)
+            syncProperties(conceptCorrectedNode, data)
+            syncChildren(conceptCorrectedNode, data, progressReporter)
+            syncReferences(conceptCorrectedNode, data)
         }
     }
 
@@ -200,7 +202,9 @@ class ModelImporter(
             // optimization for when there is no change in the child list
             // size check first to avoid querying the original ID
             if (expectedNodes.size == existingNodes.size && expectedNodes.map { it.originalId() } == existingNodes.map { it.originalId() }) {
-                existingNodes.zip(expectedNodes).forEach { syncNode(it.first, it.second, progressReporter) }
+                existingNodes.zip(expectedNodes).forEach {
+                    syncNode(it.first, it.second, progressReporter)
+                }
                 continue
             }
 
@@ -255,8 +259,6 @@ class ModelImporter(
                 } else {
                     nodeAtIndex
                 }
-                check(childNode.getConceptReference() == expectedConcept) { "Unexpected concept change from $expectedConcept to ${childNode.getConceptReference()}" }
-
                 syncNode(childNode, expected, progressReporter)
             }
 
@@ -268,6 +270,15 @@ class ModelImporter(
                 expectedNodesIds.contains(id) || newlyCreatedIds.contains(id)
             }
         }
+    }
+
+    private fun checkAndHandleConceptChange(existingNode: INode, expectedNode: NodeData): INode {
+        val newConcept = expectedNode.concept?.let { ConceptReference(it) }
+        if (existingNode.getConceptReference() == newConcept) {
+            return existingNode
+        }
+        require(existingNode is IReplaceableNode) { "Concept has changed but node is not replaceable. node=$existingNode" }
+        return existingNode.replaceNode(newConcept)
     }
 
     private fun buildExistingIndex(): MutableMap<String, INodeReference> {

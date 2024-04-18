@@ -44,6 +44,8 @@ class ModelIndex private constructor(val tree: ITree, val propertyRole: String) 
 
                     override fun referenceChanged(nodeId: Long, role: String) {}
                     override fun containmentChanged(nodeId: Long) {}
+                    override fun conceptChanged(nodeId: Long) {}
+
                     override fun nodeRemoved(nodeId: Long) {
                         val key = oldIndex.readKey(nodeId)
                         index.nodeMap[key]?.remove(nodeId)

@@ -400,6 +400,76 @@ class ModelImporterTest {
     }
 
     @Test
+    @JsName("can_handle_concept_changes")
+    fun `can handle concept changes`() {
+        // language=json
+        val initialData = """
+            {
+              "root": {
+                "id": "node:001",
+                "children": [
+                  {
+                    "id": "node:002",
+                    "concept": "ref:MyOldConcept",
+                    "children": [
+                      {
+                        "id": "child02",
+                        "references": {
+                          "myReference": "node:003"
+                        },
+                        "properties": {
+                          "myProperty": "myPropertyValue"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "node:003"
+                  }
+                ]
+              }
+            }
+        """.trimIndent().let { ModelData.fromJson(it) }
+
+        // language=json
+        val expectedData = """
+            {
+              "root": {
+                "id": "node:001",
+                "children": [
+                  {
+                    "id": "node:002",
+                    "concept": "ref:MyNewConcept",
+                    "children": [
+                      {
+                        "id": "child02",
+                        "references": {
+                          "myReference": "node:003"
+                        },
+                        "properties": {
+                          "myProperty": "myPropertyValue"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "node:003"
+                  }
+                ]
+              }
+            }
+        """.trimIndent().let { ModelData.fromJson(it) }
+
+        val branch = createOTBranchFromModel(initialData)
+        branch.importIncrementally(expectedData)
+
+        branch.runRead {
+            val changedNode = branch.getRootNode().allChildren.first()
+            assertEquals("ref:MyNewConcept", changedNode.getConceptReference().toString())
+        }
+    }
+
+    @Test
     @JsName("can_import_complex_model")
     fun `can import complex model`() {
         // legacy test case

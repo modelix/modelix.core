@@ -135,6 +135,7 @@ class TreeDiffTest {
     private open class DiffCollector() : ITreeChangeVisitor {
         val changedRoles = HashSet<RoleInNode>()
         val changedContainments = HashSet<Long>()
+        val changedConcepts = HashSet<Long>()
 
         open fun assertEquals(expected: DiffData) {
             assertEquals(expected.changedContainments, changedContainments)
@@ -147,6 +148,10 @@ class TreeDiffTest {
 
         override fun containmentChanged(nodeId: Long) {
             changedContainments.add(nodeId)
+        }
+
+        override fun conceptChanged(nodeId: Long) {
+            changedConcepts.add(nodeId)
         }
 
         override fun propertyChanged(nodeId: Long, role: String) {

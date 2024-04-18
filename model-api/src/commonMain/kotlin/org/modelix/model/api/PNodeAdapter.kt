@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import org.modelix.model.area.PArea
 
-open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx {
+open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx, IReplaceableNode {
 
     init {
         require(nodeId != 0L, { "Invalid node 0" })
@@ -80,6 +80,11 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx 
 
     override fun addNewChild(role: IChildLink, index: Int, concept: IConceptReference?): INode {
         return PNodeAdapter(branch.writeTransaction.addNewChild(nodeId, role.key(this), index, concept), branch)
+    }
+
+    override fun replaceNode(concept: ConceptReference?): INode {
+        branch.writeTransaction.setConcept(nodeId, concept)
+        return this
     }
 
     override val allChildren: Iterable<INode>

@@ -359,6 +359,10 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
 
                     override fun containmentChanged(nodeId: Long) {}
 
+                    override fun conceptChanged(nodeId: Long) {
+                        nodesToInclude += nodeId
+                    }
+
                     override fun propertyChanged(nodeId: Long, role: String) {
                         nodesToInclude += nodeId
                     }

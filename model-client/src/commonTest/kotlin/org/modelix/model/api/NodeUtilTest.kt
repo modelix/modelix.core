@@ -86,6 +86,7 @@ class SimpleTestNode(override val concept: IConcept? = null) : INode {
         get() = TODO("Not yet implemented")
     override val reference: INodeReference
         get() = TODO("Not yet implemented")
+
     override var roleInParent: String? = null
     override var parent: INode? = null
 

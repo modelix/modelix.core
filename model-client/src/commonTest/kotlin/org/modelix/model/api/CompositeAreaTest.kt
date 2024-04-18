@@ -23,6 +23,7 @@ class MyNode(val name: String) : INode {
         get() = TODO("Not yet implemented")
     override val concept: IConcept?
         get() = TODO("Not yet implemented")
+
     override val roleInParent: String?
         get() = TODO("Not yet implemented")
     override val parent: INode?

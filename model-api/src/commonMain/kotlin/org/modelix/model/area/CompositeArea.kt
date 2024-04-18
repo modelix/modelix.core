@@ -13,12 +13,14 @@
  */
 package org.modelix.model.area
 
+import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.INodeWrapper
+import org.modelix.model.api.IReplaceableNode
 
 @Deprecated("not supported anymore")
 class CompositeArea : IArea {
@@ -209,7 +211,7 @@ class CompositeArea : IArea {
         }
     }
 
-    inner class NodeWrapper(val node: INode) : INode, INodeWrapper {
+    inner class NodeWrapper(val node: INode) : INode, INodeWrapper, IReplaceableNode {
 
         override fun getWrappedNode(): INode = node
 
@@ -217,6 +219,11 @@ class CompositeArea : IArea {
 
         override fun getChildren(role: String?): Iterable<INode> {
             return node.getChildren(role).map { NodeWrapper(it) }
+        }
+
+        override fun replaceNode(concept: ConceptReference?): INode {
+            require(node is IReplaceableNode)
+            return NodeWrapper(node.replaceNode(concept))
         }
 
         override fun removeChild(child: INode) {

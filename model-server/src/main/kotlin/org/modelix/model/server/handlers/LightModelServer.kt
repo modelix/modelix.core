@@ -297,6 +297,10 @@ class LightModelServer(val client: LocalModelClient) {
                         }
                     }
 
+                    override fun conceptChanged(nodeId: Long) {
+                        nodesToInclude += nodeId
+                    }
+
                     override fun propertyChanged(nodeId: Long, role: String) {
                         nodesToInclude += nodeId
                     }

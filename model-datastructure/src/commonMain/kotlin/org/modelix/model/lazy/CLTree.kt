@@ -28,7 +28,6 @@ import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.tryResolve
-import org.modelix.model.lazy.COWArrays.add
 import org.modelix.model.lazy.COWArrays.insert
 import org.modelix.model.lazy.COWArrays.remove
 import org.modelix.model.lazy.RepositoryId.Companion.random
@@ -257,6 +256,26 @@ class CLTree : ITree, IBulkTree {
         return CLTree(data.id, newIdToHash!!, store, data.usesRoleIds)
     }
 
+    override fun setConcept(nodeId: Long, concept: IConceptReference?): ITree {
+        // manually throw NullPointerException for consistency, should be replaced for all methods in the future.
+        val node = resolveElement(nodeId) ?: throw NullPointerException("nodeId could not be resolved. id=$nodeId")
+        val newData = create(
+            node.id,
+            concept?.getUID(),
+            node.parentId,
+            node.roleInParent,
+            node.childrenIdArray,
+            node.propertyRoles,
+            node.propertyValues,
+            node.referenceRoles,
+            node.referenceTargets,
+        )
+        val nodesMap = checkNotNull(nodesMap) { "nodesMap not found" }
+
+        val newIdToHash = checkNotNull(nodesMap.put(newData, store)) { "could not put new data" }
+        return CLTree(data.id, newIdToHash, store, data.usesRoleIds)
+    }
+
     override fun deleteNode(nodeId: Long): ITree {
         return deleteNode(nodeId, true)
     }
@@ -472,6 +491,9 @@ class CLTree : ITree, IBulkTree {
                                 visitor.containmentChanged(key)
                                 notifyChildrenChange(oldElement.parentId, oldElement.roleInParent)
                                 notifyChildrenChange(newElement.parentId, newElement.roleInParent)
+                            }
+                            if (oldElement.concept != newElement.concept) {
+                                visitor.conceptChanged(key)
                             }
                             oldElement.propertyRoles.asSequence()
                                 .plus(newElement.propertyRoles.asSequence())

@@ -138,6 +138,10 @@ class TreePointer(private var tree_: ITree, val idGenerator: IIdGenerator = IdGe
         tree = tree.addNewChildren(parentId, role, index, childIds, concepts)
     }
 
+    override fun setConcept(nodeId: Long, concept: IConceptReference?) {
+        tree = tree.setConcept(nodeId, concept)
+    }
+
     override fun deleteNode(nodeId: Long) {
         tree = tree.deleteNode(nodeId)
     }

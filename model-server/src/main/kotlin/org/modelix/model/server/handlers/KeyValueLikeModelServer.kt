@@ -52,7 +52,6 @@ import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.pollEntry
 import org.modelix.model.server.store.runTransactionSuspendable
 import org.modelix.model.server.templates.PageWithMenuBar
-import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.util.*
 import java.util.regex.Pattern
@@ -61,7 +60,7 @@ val PERMISSION_MODEL_SERVER = "model-server".asResource()
 val MODEL_SERVER_ENTRY = KeycloakResourceType("model-server-entry", KeycloakScope.READ_WRITE_DELETE)
 
 private fun toLong(value: String?): Long {
-    return if (value == null || value.isEmpty()) 0 else value.toLong()
+    return if (value.isNullOrEmpty()) 0 else value.toLong()
 }
 
 private class NotFoundException(description: String?) : RuntimeException(description)
@@ -78,10 +77,9 @@ class KeyValueLikeModelServer(
         this(repositoriesManager, repositoriesManager.client.store, InMemoryModels())
 
     companion object {
-        private val LOG = LoggerFactory.getLogger(KeyValueLikeModelServer::class.java)
-        val HASH_PATTERN = Pattern.compile("[a-zA-Z0-9\\-_]{5}\\*[a-zA-Z0-9\\-_]{38}")
-        const val PROTECTED_PREFIX = "$$$"
-        val HEALTH_KEY = PROTECTED_PREFIX + "health2"
+        private val HASH_PATTERN: Pattern = Pattern.compile("[a-zA-Z0-9\\-_]{5}\\*[a-zA-Z0-9\\-_]{38}")
+        private const val PROTECTED_PREFIX = "$$$"
+        private const val HEALTH_KEY = PROTECTED_PREFIX + "health2"
     }
 
     fun init(application: Application) {
@@ -262,7 +260,7 @@ class KeyValueLikeModelServer(
         val processed: MutableSet<String> = HashSet()
         val pending: MutableSet<String> = HashSet()
         pending.add(rootKey)
-        while (!pending.isEmpty()) {
+        while (pending.isNotEmpty()) {
             val keys: List<String> = ArrayList(pending)
             pending.clear()
             val values = storeClient.getAll(keys)
@@ -295,7 +293,7 @@ class KeyValueLikeModelServer(
         return result
     }
 
-    protected suspend fun CallContext.putEntries(newEntries: Map<String, String?>) {
+    private suspend fun CallContext.putEntries(newEntries: Map<String, String?>) {
         val referencedKeys: MutableSet<String> = HashSet()
         for ((key, value) in newEntries) {
             checkKeyPermission(key, EPermissionType.WRITE)
@@ -397,7 +395,7 @@ class KeyValueLikeModelServer(
         call.checkPermission(MODEL_SERVER_ENTRY.createInstance(key), type.toKeycloakScope())
     }
 
-    fun isHealthy(): Boolean {
+    private fun isHealthy(): Boolean {
         val value = toLong(storeClient[HEALTH_KEY]) + 1
         storeClient.put(HEALTH_KEY, java.lang.Long.toString(value))
         return toLong(storeClient[HEALTH_KEY]) >= value

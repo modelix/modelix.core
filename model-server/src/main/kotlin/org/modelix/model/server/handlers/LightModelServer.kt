@@ -23,6 +23,7 @@ import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import io.ktor.websocket.send
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -64,7 +65,7 @@ import kotlin.collections.set
 
 class LightModelServer(val client: LocalModelClient) {
 
-    fun getStore() = client.storeCache!!
+    private fun getStore() = client.storeCache
 
     fun init(application: Application) {
         application.apply {
@@ -79,7 +80,7 @@ class LightModelServer(val client: LocalModelClient) {
     }
 
     private fun getCurrentVersion(repositoryId: RepositoryId): CLVersion {
-        val versionHash = client.asyncStore?.get(repositoryId.getBranchKey())!!
+        val versionHash = client.asyncStore.get(repositoryId.getBranchKey())!!
         return CLVersion.loadFromHash(versionHash, getStore())
     }
 
@@ -362,18 +363,11 @@ class LightModelServer(val client: LocalModelClient) {
             node.allChildren.forEach { node2json(it, true, outputList) }
         }
     }
-
-    companion object {
-        private val LOG = mu.KotlinLogging.logger { }
-    }
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 private suspend fun <T> Channel<T>.receiveLast(): T {
     var latest = receive()
     while (!isEmpty) latest = receive()
     return latest
-}
-
-private fun Channel<*>.clear() {
-    while (!isEmpty) tryReceive()
 }

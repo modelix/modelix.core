@@ -22,8 +22,7 @@ import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.html.respondHtmlTemplate
-import io.ktor.server.http.content.resources
-import io.ktor.server.http.content.static
+import io.ktor.server.http.content.staticResources
 import io.ktor.server.netty.Netty
 import io.ktor.server.netty.NettyApplicationEngine
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
@@ -44,6 +43,7 @@ import kotlinx.html.h1
 import kotlinx.html.li
 import kotlinx.html.style
 import kotlinx.html.ul
+import kotlinx.html.unsafe
 import org.apache.commons.io.FileUtils
 import org.apache.ignite.Ignition
 import org.modelix.authorization.KeycloakUtils
@@ -204,24 +204,26 @@ object Main {
                 modelReplicationServer.init(this)
                 metricsHandler.init(this)
                 routing {
-                    static("/public") {
-                        resources("public")
-                    }
+                    staticResources("/public", "public")
                     get("/") {
                         call.respondHtmlTemplate(PageWithMenuBar("root", ".")) {
                             headContent {
                                 style {
-                                    +"""
-                                    body {
-                                        font-family: sans-serif;
-                                    table {
-                                        border-collapse: collapse;
+                                    unsafe {
+                                        raw(
+                                            """
+                                            body {
+                                                font-family: sans-serif;
+                                            table {
+                                                border-collapse: collapse;
+                                            }
+                                            td, th {
+                                                border: 1px solid #888;
+                                                padding: 3px 12px;
+                                            }
+                                            """.trimIndent(),
+                                        )
                                     }
-                                    td, th {
-                                        border: 1px solid #888;
-                                        padding: 3px 12px;
-                                    }
-                                    """.trimIndent()
                                 }
                             }
                             bodyContent {

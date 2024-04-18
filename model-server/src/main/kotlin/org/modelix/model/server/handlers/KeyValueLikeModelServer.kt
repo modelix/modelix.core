@@ -79,9 +79,9 @@ class KeyValueLikeModelServer(
 
     companion object {
         private val LOG = LoggerFactory.getLogger(KeyValueLikeModelServer::class.java)
-        val HASH_PATTERN = Pattern.compile("[a-zA-Z0-9\\-_]{5}\\*[a-zA-Z0-9\\-_]{38}")
-        const val PROTECTED_PREFIX = "$$$"
-        val HEALTH_KEY = PROTECTED_PREFIX + "health2"
+        private val HASH_PATTERN: Pattern = Pattern.compile("[a-zA-Z0-9\\-_]{5}\\*[a-zA-Z0-9\\-_]{38}")
+        private const val PROTECTED_PREFIX = "$$$"
+        private const val HEALTH_KEY = PROTECTED_PREFIX + "health2"
     }
 
     fun init(application: Application) {

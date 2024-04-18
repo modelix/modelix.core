@@ -293,7 +293,7 @@ class KeyValueLikeModelServer(
         return result
     }
 
-    protected suspend fun CallContext.putEntries(newEntries: Map<String, String?>) {
+    private suspend fun CallContext.putEntries(newEntries: Map<String, String?>) {
         val referencedKeys: MutableSet<String> = HashSet()
         for ((key, value) in newEntries) {
             checkKeyPermission(key, EPermissionType.WRITE)
@@ -395,7 +395,7 @@ class KeyValueLikeModelServer(
         call.checkPermission(MODEL_SERVER_ENTRY.createInstance(key), type.toKeycloakScope())
     }
 
-    fun isHealthy(): Boolean {
+    private fun isHealthy(): Boolean {
         val value = toLong(storeClient[HEALTH_KEY]) + 1
         storeClient.put(HEALTH_KEY, java.lang.Long.toString(value))
         return toLong(storeClient[HEALTH_KEY]) >= value

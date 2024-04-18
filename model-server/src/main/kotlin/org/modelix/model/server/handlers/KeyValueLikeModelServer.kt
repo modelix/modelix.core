@@ -60,7 +60,7 @@ val PERMISSION_MODEL_SERVER = "model-server".asResource()
 val MODEL_SERVER_ENTRY = KeycloakResourceType("model-server-entry", KeycloakScope.READ_WRITE_DELETE)
 
 private fun toLong(value: String?): Long {
-    return if (value == null || value.isEmpty()) 0 else value.toLong()
+    return if (value.isNullOrEmpty()) 0 else value.toLong()
 }
 
 private class NotFoundException(description: String?) : RuntimeException(description)
@@ -260,7 +260,7 @@ class KeyValueLikeModelServer(
         val processed: MutableSet<String> = HashSet()
         val pending: MutableSet<String> = HashSet()
         pending.add(rootKey)
-        while (!pending.isEmpty()) {
+        while (pending.isNotEmpty()) {
             val keys: List<String> = ArrayList(pending)
             pending.clear()
             val values = storeClient.getAll(keys)

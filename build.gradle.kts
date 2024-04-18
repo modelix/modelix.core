@@ -170,8 +170,6 @@ subprojects {
 
             reports {
                 sarif.required.set(true)
-                // This is required for the GitHub upload action to easily find all sarif files in a single directory.
-                sarif.outputLocation.set(parentProject.layout.buildDirectory.file("reports/detekt/${project.name}.sarif"))
                 html.required.set(true)
             }
         }

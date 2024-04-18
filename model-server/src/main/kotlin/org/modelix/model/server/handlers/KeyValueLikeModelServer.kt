@@ -52,7 +52,6 @@ import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.pollEntry
 import org.modelix.model.server.store.runTransactionSuspendable
 import org.modelix.model.server.templates.PageWithMenuBar
-import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.util.*
 import java.util.regex.Pattern
@@ -78,7 +77,6 @@ class KeyValueLikeModelServer(
         this(repositoriesManager, repositoriesManager.client.store, InMemoryModels())
 
     companion object {
-        private val LOG = LoggerFactory.getLogger(KeyValueLikeModelServer::class.java)
         private val HASH_PATTERN: Pattern = Pattern.compile("[a-zA-Z0-9\\-_]{5}\\*[a-zA-Z0-9\\-_]{38}")
         private const val PROTECTED_PREFIX = "$$$"
         private const val HEALTH_KEY = PROTECTED_PREFIX + "health2"

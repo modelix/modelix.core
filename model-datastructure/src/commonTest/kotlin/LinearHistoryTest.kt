@@ -26,7 +26,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class LinearHistoryTest {
-    val initialTree = CLTree.builder(ObjectStoreCache(MapBaseStore())).repositoryId("LinearHistoryTest").build()
+    private val initialTree = CLTree.builder(ObjectStoreCache(MapBaseStore())).repositoryId("LinearHistoryTest").build()
 
     @Test
     fun noCommonHistory() {

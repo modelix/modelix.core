@@ -65,7 +65,7 @@ import kotlin.collections.set
 
 class LightModelServer(val client: LocalModelClient) {
 
-    fun getStore() = client.storeCache!!
+    private fun getStore() = client.storeCache
 
     fun init(application: Application) {
         application.apply {
@@ -80,7 +80,7 @@ class LightModelServer(val client: LocalModelClient) {
     }
 
     private fun getCurrentVersion(repositoryId: RepositoryId): CLVersion {
-        val versionHash = client.asyncStore?.get(repositoryId.getBranchKey())!!
+        val versionHash = client.asyncStore.get(repositoryId.getBranchKey())!!
         return CLVersion.loadFromHash(versionHash, getStore())
     }
 

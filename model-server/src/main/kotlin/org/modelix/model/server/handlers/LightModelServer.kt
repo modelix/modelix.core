@@ -358,18 +358,10 @@ class LightModelServer(val client: LocalModelClient) {
             node.allChildren.forEach { node2json(it, true, outputList) }
         }
     }
-
-    companion object {
-        private val LOG = mu.KotlinLogging.logger { }
-    }
 }
 
 private suspend fun <T> Channel<T>.receiveLast(): T {
     var latest = receive()
     while (!isEmpty) latest = receive()
     return latest
-}
-
-private fun Channel<*>.clear() {
-    while (!isEmpty) tryReceive()
 }

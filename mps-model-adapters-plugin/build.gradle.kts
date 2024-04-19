@@ -4,6 +4,7 @@ import org.modelix.mpsJavaVersion
 plugins {
     kotlin("jvm")
     alias(libs.plugins.intellij)
+    id("modelix-project-repositories")
 }
 
 dependencies {

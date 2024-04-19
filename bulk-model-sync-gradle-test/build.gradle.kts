@@ -19,27 +19,6 @@ plugins {
     id("org.modelix.bulk-model-sync")
 }
 
-repositories {
-    val modelixRegex = "org\\.modelix.*"
-    gradlePluginPortal {
-        content {
-            excludeGroupByRegex(modelixRegex)
-        }
-    }
-    maven {
-        url = uri("https://artifacts.itemis.cloud/repository/maven-mps/")
-        content {
-            includeGroupByRegex(modelixRegex)
-            includeGroup("com.jetbrains")
-        }
-    }
-    mavenCentral {
-        content {
-            excludeGroupByRegex(modelixRegex)
-        }
-    }
-}
-
 val kotlinGenDir = project.layout.buildDirectory.dir("metamodel/kotlin").get().asFile.apply { mkdirs() }
 
 dependencies {

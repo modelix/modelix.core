@@ -29,7 +29,6 @@ import org.modelix.model.data.LanguageData
 import org.modelix.model.data.Primitive
 import org.modelix.model.data.PrimitivePropertyType
 import org.modelix.model.data.PropertyData
-import org.modelix.model.data.PropertyType
 import org.modelix.model.data.ReferenceLinkData
 import java.io.File
 import java.nio.charset.StandardCharsets
@@ -56,22 +55,23 @@ class MPSMetaModelExporter(private val outputFolder: File) {
         }
         processedLanguages.add(languageModule)
 
-        val structureModel = LanguageAspect.STRUCTURE[languageModule]
-        val rootNodes = structureModel!!.rootNodes
+        val structureModel = LanguageAspect.STRUCTURE[languageModule] ?: return
+        val rootNodes = structureModel.rootNodes
 
         val concepts = SNodeOperations.ofConcept(rootNodes, CONCEPTS.AbstractConceptDeclaration).map { concept: SNode ->
             val properties = SLinkOperations.getChildren(concept, LINKS.propertyDeclaration)
                 .map { it: SNode ->
-                    var type: PropertyType? = PrimitivePropertyType(Primitive.STRING)
-                    if (SLinkOperations.getPointer(it, LINKS.dataType) == SNodePointer("r:00000000-0000-4000-0000-011c89590288(jetbrains.mps.lang.core.structure)", "1082983657062")) {
-                        type = PrimitivePropertyType(Primitive.INT)
+                    val type = if (SLinkOperations.getPointer(it, LINKS.dataType) == SNodePointer("r:00000000-0000-4000-0000-011c89590288(jetbrains.mps.lang.core.structure)", "1082983657062")) {
+                        PrimitivePropertyType(Primitive.INT)
                     } else if (SLinkOperations.getPointer(it, LINKS.dataType) == SNodePointer("r:00000000-0000-4000-0000-011c89590288(jetbrains.mps.lang.core.structure)", "1082983657063")) {
-                        type = PrimitivePropertyType(Primitive.BOOLEAN)
+                        PrimitivePropertyType(Primitive.BOOLEAN)
                     } else if (SNodeOperations.isInstanceOf(SLinkOperations.getTarget(it, LINKS.dataType), CONCEPTS.EnumerationDeclaration)) {
                         val pckg = SLinkOperations.getTarget(it, LINKS.dataType).model?.module?.moduleName ?: ""
-                        type = EnumPropertyType(pckg, SPropertyOperations.getString(SLinkOperations.getTarget(it, LINKS.dataType), PROPS.name))
+                        EnumPropertyType(pckg, SPropertyOperations.getString(SLinkOperations.getTarget(it, LINKS.dataType), PROPS.name))
+                    } else {
+                        PrimitivePropertyType(Primitive.STRING)
                     }
-                    PropertyData(MetaIdByDeclaration.getPropId(it).toString(), SPropertyOperations.getString(it, PROPS.name), (type)!!, true, deprecationMsg(it))
+                    PropertyData(MetaIdByDeclaration.getPropId(it).toString(), SPropertyOperations.getString(it, PROPS.name), type, true, deprecationMsg(it))
                 }.toList()
             val childLinks = SLinkOperations.getChildren(concept, LINKS.linkDeclaration)
                 .filter { SLinkOperations.getTarget(it, LINKS.specializedLink) == null }
@@ -163,7 +163,7 @@ class MPSMetaModelExporter(private val outputFolder: File) {
 
         val languageData = LanguageData(
             MetaIdByDeclaration.getLanguageId(languageModule).toString(),
-            languageModule.moduleName!!,
+            languageModule.moduleName ?: "",
             concepts,
             enums,
         )

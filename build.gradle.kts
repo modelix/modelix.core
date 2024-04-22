@@ -171,27 +171,6 @@ subprojects {
 }
 
 allprojects {
-    repositories {
-        val modelixRegex = "org\\.modelix.*"
-        mavenLocal {
-            content {
-                includeGroupByRegex(modelixRegex)
-            }
-        }
-        maven {
-            url = uri("https://artifacts.itemis.cloud/repository/maven-mps/")
-            content {
-                includeGroupByRegex(modelixRegex)
-                includeGroup("com.jetbrains") // for our mps dependencies
-            }
-        }
-        mavenCentral {
-            content {
-                excludeGroupByRegex(modelixRegex)
-            }
-        }
-    }
-
     publishing {
         repositories {
             maven {

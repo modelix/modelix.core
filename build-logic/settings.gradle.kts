@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023.
+ * Copyright (c) 2024.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-pluginManagement {
-    includeBuild("..")
-    includeBuild("../build-logic")
-    dependencyResolutionManagement {
-        versionCatalogs {
-            create("libs") {
-                from(files("../gradle/libs.versions.toml"))
-            }
+dependencyResolutionManagement {
+    repositories.gradlePluginPortal()
+    versionCatalogs {
+        create("libs") {
+            from(files("../gradle/libs.versions.toml"))
         }
     }
 }
-
-plugins {
-    id("modelix-repositories")
-}
-
-includeBuild("..")
-include("graph-lang-api")

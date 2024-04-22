@@ -17,6 +17,14 @@ package org.modelix.model.server.store
 import org.apache.ignite.cache.store.jdbc.dialect.BasicJdbcDialect
 import org.apache.ignite.internal.util.typedef.F
 
+/**
+ * Ignite dialect for PostgreSQL
+ *
+ * Ignite doesn't have an SQL dialect implementation for PostgreSQL.
+ * Implementing and using this one enables bulk updates/inserts (upserts).
+ *
+ * Originally added in https://github.com/modelix/modelix/commit/eee51caddd9f470307febaa01e2820266ddfc6c9
+ */
 class PostgresDialect : BasicJdbcDialect() {
     override fun hasMerge(): Boolean {
         return true
@@ -27,6 +35,7 @@ class PostgresDialect : BasicJdbcDialect() {
         keyCols: Collection<String>,
         uniqCols: Collection<String>,
     ): String {
+        // Copied over from org.apache.ignite.cache.store.jdbc.dialect.MySQLDialect.mergeQuery
         val cols = F.concat(false, keyCols, uniqCols)
         val updPart = mkString(
             uniqCols,

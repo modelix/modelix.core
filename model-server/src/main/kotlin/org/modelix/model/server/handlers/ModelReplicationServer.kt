@@ -23,6 +23,7 @@ import io.ktor.server.plugins.origin
 import io.ktor.server.request.acceptItems
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveStream
+import io.ktor.server.resources.delete
 import io.ktor.server.resources.get
 import io.ktor.server.resources.post
 import io.ktor.server.resources.put
@@ -146,6 +147,37 @@ class ModelReplicationServer(
                 return@get
             }
             call.respondDelta(versionHash, baseVersionHash)
+        }
+
+        delete<Paths.deleteRepositoryBranch> {
+            val repositoryName = call.parameters["repository"]
+            if (repositoryName == null) {
+                call.respondText("Request lacks repository name", status = HttpStatusCode.BadRequest)
+                return@delete
+            }
+            val repositoryId = try {
+                RepositoryId(repositoryName)
+            } catch (e: IllegalArgumentException) {
+                call.respondText("Invalid repository name '$repositoryName'", status = HttpStatusCode.BadRequest)
+                return@delete
+            }
+            val branch = call.parameters["branch"]
+            if (branch == null) {
+                call.respondText("Request lacks branch name", status = HttpStatusCode.BadRequest)
+                return@delete
+            }
+
+            if (!repositoriesManager.getBranchNames(repositoryId).contains(branch)) {
+                call.respondText(
+                    "Repository does not exist or branch '$branch' does not exist in repository '$repositoryId'",
+                    status = HttpStatusCode.NotFound,
+                )
+                return@delete
+            }
+
+            repositoriesManager.removeBranches(repositoryId, setOf(branch))
+
+            call.respond(HttpStatusCode.NoContent)
         }
 
         get<Paths.getRepositoryBranchHash> {

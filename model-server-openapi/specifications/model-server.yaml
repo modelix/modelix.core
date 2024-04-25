@@ -85,6 +85,24 @@ paths:
         "200":
           $ref: '#/components/responses/200'
   /v2/repositories/{repository}/branches/{branch}:
+    delete:
+      operationId: deleteRepositoryBranch
+      parameters:
+        - name: repository
+          in: "path"
+          required: true
+          schema:
+            type: string
+        - name: branch
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "404":
+          $ref: '#/components/responses/404'
+        "204":
+          description: "Branch successfully deleted"
     get:
       operationId: getRepositoryBranch
       parameters:

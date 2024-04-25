@@ -19,7 +19,9 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.appendPathSegments
@@ -51,39 +53,52 @@ import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.modelql.core.assertNotEmpty
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.fail
 import kotlin.time.Duration.Companion.seconds
 
 class ModelReplicationServerTest {
 
-    private fun getDefaultModelReplicationServer(): ModelReplicationServer {
+    private data class Fixture(
+        val storeClient: InMemoryStoreClient,
+        val modelClient: LocalModelClient,
+        val repositoriesManager: IRepositoriesManager,
+        val modelReplicationServer: ModelReplicationServer,
+    )
+
+    private fun getDefaultModelReplicationServerFixture(): Fixture {
         val storeClient = InMemoryStoreClient()
         val modelClient = LocalModelClient(storeClient)
         val repositoriesManager = RepositoriesManager(modelClient)
-        return ModelReplicationServer(repositoriesManager, modelClient, InMemoryModels())
+        return Fixture(
+            storeClient,
+            modelClient,
+            repositoriesManager,
+            ModelReplicationServer(repositoriesManager, modelClient, InMemoryModels()),
+        )
     }
 
     private fun runWithTestModelServer(
-        modelReplicationServer: ModelReplicationServer = getDefaultModelReplicationServer(),
-        block: suspend ApplicationTestBuilder.(scope: CoroutineScope) -> Unit,
+        fixture: Fixture = getDefaultModelReplicationServerFixture(),
+        block: suspend ApplicationTestBuilder.(scope: CoroutineScope, fixture: Fixture) -> Unit,
     ) = testApplication {
         application {
             installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
-            modelReplicationServer.init(this)
+            fixture.modelReplicationServer.init(this)
         }
 
         coroutineScope {
-            block(this)
+            block(this, fixture)
         }
     }
 
     @Test
-    fun `pulling delta does not return objects twice`() = runWithTestModelServer {
+    fun `pulling delta does not return objects twice`() = runWithTestModelServer { _, _ ->
         // Arrange
-        val url = "http://localhost/v2"
-        val modelClient = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+        val modelClient = ModelClientV2.builder().url("v2").client(client).build().also { it.init() }
         val repositoryId = RepositoryId("repo1")
         val branchId = repositoryId.getBranchReference("my-branch")
         // By calling modelClient.runWrite twice, we create to versions.
@@ -98,8 +113,7 @@ class ModelReplicationServerTest {
         // Act
         val response = client.get {
             url {
-                takeFrom(url)
-                appendPathSegments("repositories", repositoryId.id, "branches", branchId.branchName)
+                appendPathSegments("v2", "repositories", repositoryId.id, "branches", branchId.branchName)
             }
             useVersionStreamFormat()
         }
@@ -118,6 +132,75 @@ class ModelReplicationServerTest {
     }
 
     @Test
+    fun `responds with 404 when deleting a branch from a non-existent repository`() {
+        runWithTestModelServer { _, _ ->
+            val response = client.delete {
+                url {
+                    appendPathSegments("v2", "repositories", "doesnotexist", "branches", "does not exist")
+                }
+            }
+
+            assertEquals(HttpStatusCode.NotFound, response.status)
+            assertContains(response.bodyAsText(), "does not exist in repository")
+        }
+    }
+
+    @Test
+    fun `responds with 404 when deleting a non-existent branch`() {
+        val repositoryId = RepositoryId("repo1")
+
+        runWithTestModelServer { _, fixture ->
+            fixture.repositoriesManager.createRepository(repositoryId, null)
+
+            val response = client.delete {
+                url {
+                    appendPathSegments("v2", "repositories", repositoryId.id, "branches", "does not exist")
+                }
+            }
+
+            assertEquals(HttpStatusCode.NotFound, response.status)
+            assertContains(response.bodyAsText(), "does not exist in repository")
+        }
+    }
+
+    @Test
+    fun `responds with 400 when deleting from an invalid repository ID`() {
+        runWithTestModelServer { _, fixture ->
+            val response = client.delete {
+                url {
+                    appendPathSegments("v2", "repositories", "invalid with spaces", "branches", "master")
+                }
+            }
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            assertContains(response.bodyAsText(), "Invalid repository name")
+        }
+    }
+
+    @Test
+    fun `successfully deletes existing branches`() {
+        val repositoryId = RepositoryId("repo1")
+        val branch = "testbranch"
+        val defaultBranchRef = repositoryId.getBranchReference("master")
+
+        runWithTestModelServer { _, fixture ->
+            fixture.repositoriesManager.createRepository(repositoryId, null)
+            fixture.repositoriesManager.mergeChanges(
+                repositoryId.getBranchReference(branch),
+                checkNotNull(fixture.repositoriesManager.getVersionHash(defaultBranchRef)) { "Default branch must exist" },
+            )
+
+            val response = client.delete {
+                url {
+                    appendPathSegments("v2", "repositories", repositoryId.id, "branches", branch)
+                }
+            }
+
+            assertEquals(HttpStatusCode.NoContent, response.status)
+            assertFalse(fixture.repositoriesManager.getBranchNames(repositoryId).contains(branch))
+        }
+    }
+
+    @Test
     fun `server responds with error when failing to compute delta before starting to respond`() {
         // Arrange
         val storeClient = InMemoryStoreClient()
@@ -130,18 +213,16 @@ class ModelReplicationServerTest {
             }
         }
         val modelReplicationServer = ModelReplicationServer(faultyRepositoriesManager, modelClient, InMemoryModels())
-        val url = "http://localhost/v2"
         val repositoryId = RepositoryId("repo1")
         val branchRef = repositoryId.getBranchReference()
 
-        runWithTestModelServer(modelReplicationServer) {
+        runWithTestModelServer(Fixture(storeClient, modelClient, faultyRepositoriesManager, modelReplicationServer)) { _, _ ->
             repositoriesManager.createRepository(repositoryId, null)
 
             // Act
             val response = client.get {
                 url {
-                    takeFrom(url)
-                    appendPathSegments("repositories", repositoryId.id, "branches", branchRef.branchName)
+                    appendPathSegments("v2", "repositories", repositoryId.id, "branches", branchRef.branchName)
                 }
                 useVersionStreamFormat()
             }
@@ -210,10 +291,10 @@ class ModelReplicationServerTest {
         runWithNettyServer(setupBlock, testBlock)
     }
 
-    fun `client can pull versions in legacy version delta format`() = runWithTestModelServer {
+    @Test
+    fun `client can pull versions in legacy version delta format`() = runWithTestModelServer { _, _ ->
         // Arrange
-        val url = "http://localhost/v2"
-        val modelClient = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+        val modelClient = ModelClientV2.builder().url("v2").client(client).build().also { it.init() }
         val repositoryId = RepositoryId("repo1")
         val branchId = repositoryId.getBranchReference("my-branch")
         modelClient.runWrite(branchId) { root ->
@@ -224,8 +305,7 @@ class ModelReplicationServerTest {
         val response = client.get {
             headers[HttpHeaders.Accept] = VersionDeltaStream.CONTENT_TYPE.toString()
             url {
-                takeFrom(url)
-                appendPathSegments("repositories", repositoryId.id, "branches", branchId.branchName)
+                appendPathSegments("v2", "repositories", repositoryId.id, "branches", branchId.branchName)
             }
         }
         val versionDelta = response.readVersionDelta()

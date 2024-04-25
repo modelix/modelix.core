@@ -20,8 +20,10 @@ import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.get
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.appendPathSegments
+import io.ktor.http.contentType
 import io.ktor.http.takeFrom
 import io.ktor.server.application.Application
 import io.ktor.server.netty.NettyApplicationEngine
@@ -42,10 +44,12 @@ import org.modelix.model.client2.readVersionDelta
 import org.modelix.model.client2.runWrite
 import org.modelix.model.client2.useVersionStreamFormat
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.server.api.v2.VersionDeltaStream
 import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.runWithNettyServer
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
+import org.modelix.modelql.core.assertNotEmpty
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.fail
@@ -204,5 +208,30 @@ class ModelReplicationServerTest {
             }
         }
         runWithNettyServer(setupBlock, testBlock)
+    }
+
+    fun `client can pull versions in legacy version delta format`() = runWithTestModelServer {
+        // Arrange
+        val url = "http://localhost/v2"
+        val modelClient = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+        val repositoryId = RepositoryId("repo1")
+        val branchId = repositoryId.getBranchReference("my-branch")
+        modelClient.runWrite(branchId) { root ->
+            root.addNewChild("aChild", -1, null as IConceptReference?)
+        }
+
+        // Act
+        val response = client.get {
+            headers[HttpHeaders.Accept] = VersionDeltaStream.CONTENT_TYPE.toString()
+            url {
+                takeFrom(url)
+                appendPathSegments("repositories", repositoryId.id, "branches", branchId.branchName)
+            }
+        }
+        val versionDelta = response.readVersionDelta()
+
+        // Assert
+        assertEquals(response.contentType(), VersionDeltaStream.CONTENT_TYPE)
+        versionDelta.getObjectsAsFlow().assertNotEmpty()
     }
 }

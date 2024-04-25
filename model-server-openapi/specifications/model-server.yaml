@@ -603,6 +603,9 @@ components:
         'application/x-modelix-objects':
           schema:
             type: string
+        'application/x-modelix-objects-v2':
+          schema:
+            type: string
         'application/json':
           schema:
             type: object

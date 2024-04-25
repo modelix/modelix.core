@@ -17,11 +17,17 @@ package org.modelix.model.client2
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.respondError
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
+import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.server.api.v2.VersionDeltaStreamV2
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class ModelClientV2Test {
@@ -38,8 +44,30 @@ class ModelClientV2Test {
             .url(url)
             .build()
         modelClient.close()
-        assertFailsWith<CancellationException>("Parent job is Completed") {
+        val exception = assertFailsWith<CancellationException> {
             modelClient.init()
+        }
+        assertEquals("Parent job is Completed", exception.message)
+    }
+
+    @Test
+    fun detectIncompleteDataInVersionDeltaStreamV2() = runTest {
+        val incompleteData = "CTVRw*a6KXJ4o7uzGlp-kUosxpyRf4f"
+        val repositoryId = RepositoryId("aRepositoryId")
+        val branchRef = repositoryId.getBranchReference("main")
+        val url = "http://localhost/v2"
+        val mockEngine = MockEngine { requestData ->
+            assertEquals(VersionDeltaStreamV2.CONTENT_TYPE.toString(), requestData.headers[HttpHeaders.Accept])
+            respond(incompleteData, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, VersionDeltaStreamV2.CONTENT_TYPE.toString()))
+        }
+        val httpClient = HttpClient(mockEngine)
+        val modelClient = ModelClientV2.builder()
+            .client(httpClient)
+            .url(url)
+            .build()
+
+        assertFailsWith<VersionDeltaStreamV2.Companion.IncompleteData> {
+            modelClient.pull(branchRef, null)
         }
     }
 }

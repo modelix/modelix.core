@@ -69,7 +69,8 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
 
         fun doMigrations() {
             store.runTransaction {
-                val infoVersionHash = client[RepositoryId("info").getBranchReference().getKey()] ?: return@runTransaction
+                val v1BranchKey = RepositoryId("info").getBranchReference().getKey()
+                val infoVersionHash = client[v1BranchKey] ?: return@runTransaction
                 val infoVersion = CLVersion(infoVersionHash, client.storeCache)
                 val infoBranch: IBranch = PBranch(infoVersion.getTree(), IdGeneratorDummy())
 
@@ -124,25 +125,26 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
 
     private fun repositoryExists(repositoryId: RepositoryId) = getRepositories().contains(repositoryId)
 
-    override suspend fun createRepository(repositoryId: RepositoryId, userName: String?, useRoleIds: Boolean): CLVersion {
-        var initialVersion: CLVersion? = null
-        store.runTransactionSuspendable {
-            val masterBranch = repositoryId.getBranchReference()
-            if (repositoryExists(repositoryId)) throw RepositoryAlreadyExistsException(repositoryId.id)
-            val existingRepositories = getRepositories()
-            store.put(REPOSITORIES_LIST_KEY, (existingRepositories + repositoryId).joinToString("\n") { it.id }, false)
-            store.put(branchListKey(repositoryId), masterBranch.branchName, false)
-            initialVersion = CLVersion.createRegularVersion(
-                id = client.idGenerator.generate(),
-                time = Clock.System.now().epochSeconds.toString(),
-                author = userName,
-                tree = CLTree(null, null, client.storeCache, useRoleIds = useRoleIds),
-                baseVersion = null,
-                operations = emptyArray(),
-            )
-            store.put(branchKey(masterBranch), initialVersion!!.hash, false)
-        }
-        return initialVersion!!
+    override suspend fun createRepository(
+        repositoryId: RepositoryId,
+        userName: String?,
+        useRoleIds: Boolean,
+    ): CLVersion = store.runTransactionSuspendable {
+        val masterBranch = repositoryId.getBranchReference()
+        if (repositoryExists(repositoryId)) throw RepositoryAlreadyExistsException(repositoryId.id)
+        val existingRepositories = getRepositories()
+        store.put(REPOSITORIES_LIST_KEY, (existingRepositories + repositoryId).joinToString("\n") { it.id }, false)
+        store.put(branchListKey(repositoryId), masterBranch.branchName, false)
+        val initialVersion = CLVersion.createRegularVersion(
+            id = client.idGenerator.generate(),
+            time = Clock.System.now().epochSeconds.toString(),
+            author = userName,
+            tree = CLTree(null, null, client.storeCache, useRoleIds = useRoleIds),
+            baseVersion = null,
+            operations = emptyArray(),
+        )
+        putVersionHash(masterBranch, initialVersion.hash)
+        initialVersion
     }
 
     fun getBranchNames(repositoryId: RepositoryId): Set<String> {

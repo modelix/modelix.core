@@ -44,6 +44,14 @@ interface IModelClientV2 {
     suspend fun deleteRepository(repository: RepositoryId): Boolean
     suspend fun listBranches(repository: RepositoryId): List<BranchReference>
 
+    /**
+     * Deletes a branch from a repository if it exists.
+     *
+     * @param branch the branch to delete
+     * @return true if the branch existed and could be deleted, else false.
+     */
+    suspend fun deleteBranch(branch: BranchReference): Boolean
+
     @Deprecated("repository ID is required for permission checks")
     @DeprecationInfo("3.7.0", "May be removed with the next major release. Also remove the endpoint from the model-server.")
     suspend fun loadVersion(versionHash: String, baseVersion: IVersion?): IVersion

@@ -29,6 +29,7 @@ import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class ModelReplicationServerBackwardsCompatibilityTest {
 
@@ -72,6 +73,36 @@ class ModelReplicationServerBackwardsCompatibilityTest {
 
             val branchVersionVisibleInV1 = modelClientV1.getA(defaultBranchRef.getKey())
             assertEquals(initialVersion.getContentHash(), branchVersionVisibleInV1)
+        }
+    }
+
+    @Test
+    fun `branch is deleted through the V2 API is deleted in the V1 API`() {
+        val urlV1 = "http://localhost"
+        val urlV2 = "http://localhost/v2"
+        val repositoryId = RepositoryId("repo1")
+        val branchRef = repositoryId.getBranchReference("master")
+
+        runWithTestModelServer {
+            val modelClientV2 = ModelClientV2
+                .builder()
+                .url(urlV2)
+                .client(client)
+                .build()
+            modelClientV2.init()
+            val modelClientV1 = RestWebModelClient(baseUrl = urlV1, providedClient = client)
+            val initialVersion = modelClientV2.initRepository(repositoryId)
+            val branchVersionVisibleInV1BeforeDelete = modelClientV1.getA(branchRef.getKey())
+            assertEquals(
+                initialVersion.getContentHash(),
+                branchVersionVisibleInV1BeforeDelete,
+                "Test setup should create branch in a way that make it visible in the V1 API.",
+            )
+
+            modelClientV2.deleteBranch(branchRef)
+
+            val branchVersionVisibleInV1AfterDelete = modelClientV1.getA(branchRef.getKey())
+            assertNull(branchVersionVisibleInV1AfterDelete)
         }
     }
 }

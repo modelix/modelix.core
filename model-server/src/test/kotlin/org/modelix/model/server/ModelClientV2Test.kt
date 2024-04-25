@@ -24,6 +24,7 @@ import org.modelix.model.api.PBranch
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.runWrite
 import org.modelix.model.client2.runWriteOnBranch
+import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
@@ -163,6 +164,47 @@ class ModelClientV2Test {
 
         assertFalse(success)
         assertFalse(containsRepository)
+    }
+
+    @Test
+    fun `branches from non-existing repositories cannot be removed`() = runTest {
+        val client = createModelClient()
+        val repositoryId = RepositoryId(UUID.randomUUID().toString())
+
+        val success = client.deleteBranch(BranchReference(repositoryId, "doesntmatter"))
+
+        assertFalse(success)
+    }
+
+    @Test
+    fun `non-existing branches from existing repositories cannot be removed`() = runTest {
+        val client = createModelClient()
+        val repositoryId = RepositoryId(UUID.randomUUID().toString())
+        client.initRepository(repositoryId)
+
+        val success = client.deleteBranch(BranchReference(repositoryId, "doesnotexist"))
+
+        assertFalse(success)
+    }
+
+    @Test
+    fun `existing branches from existing repositories can be removed`() = runTest {
+        val client = createModelClient()
+        val repositoryId = RepositoryId(UUID.randomUUID().toString())
+        client.initRepository(repositoryId)
+        val branchToDelete = BranchReference(repositoryId, "todelete")
+        client.push(
+            branchToDelete,
+            requireNotNull(
+                client.pullIfExists(BranchReference(repositoryId, "master")),
+            ) { "the master branch must always exist" },
+            null,
+        )
+
+        val success = client.deleteBranch(BranchReference(repositoryId, branchToDelete.branchName))
+
+        assertTrue(success)
+        assertFalse(client.listBranches(repositoryId).contains(branchToDelete))
     }
 
     @Test

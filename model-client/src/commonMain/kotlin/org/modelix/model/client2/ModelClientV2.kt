@@ -22,6 +22,7 @@ import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
@@ -166,6 +167,25 @@ class ModelClientV2(
                 appendPathSegmentsEncodingSlash("repositories", repository.id, "branches")
             }
         }.bodyAsText().lines().filter { it.isNotEmpty() }.map { repository.getBranchReference(it) }
+    }
+
+    override suspend fun deleteBranch(branch: BranchReference): Boolean {
+        try {
+            return httpClient.delete {
+                url {
+                    takeFrom(baseUrl)
+                    appendPathSegmentsEncodingSlash(
+                        "repositories",
+                        branch.repositoryId.id,
+                        "branches",
+                        branch.branchName,
+                    )
+                }
+            }.status == HttpStatusCode.NoContent
+        } catch (ex: Exception) {
+            LOG.error(ex) { ex.message }
+            return false
+        }
     }
 
     @Deprecated("repository ID is required for permission checks")

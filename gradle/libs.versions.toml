@@ -16,7 +16,7 @@ spotless = { id = "com.diffplug.spotless", version = "6.25.0" }
 modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version.ref = "modelixBuildtools" }
 dokka = {id = "org.jetbrains.dokka", version.ref = "dokka"}
 node = {id = "com.github.node-gradle.node", version = "7.0.2"}
-detekt = { id = "io.gitlab.arturbosch.detekt", version = "1.23.6" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 npm-publish = { id = "dev.petuska.npm.publish", version = "3.4.2" }
 test-logger = { id = "com.adarshr.test-logger", version = "4.0.0" }
 shadow = { id = "com.github.johnrengelman.shadow", version = "8.1.1" }
@@ -37,6 +37,7 @@ modelixBuildtools="1.4.1"
 openapi = "7.5.0"
 micrometer = "1.12.5"
 dokka = "1.9.20"
+detekt = "1.23.6"
 
 [libraries]
 
@@ -116,3 +117,6 @@ modelix-buildtools-gradle = { group = "org.modelix.mps", name = "build-tools-gra
 modelix-buildtools-lib = { group = "org.modelix.mps", name = "build-tools-lib", version.ref = "modelixBuildtools"}
 
 micrometer-registry-prometheus = { group = "io.micrometer", name = "micrometer-registry-prometheus", version.ref = "micrometer"}
+
+detekt-api = { group = "io.gitlab.arturbosch.detekt", name= "detekt-api", version.ref = "detekt" }
+detekt-test = { group = "io.gitlab.arturbosch.detekt", name= "detekt-test", version.ref = "detekt" }

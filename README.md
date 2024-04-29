@@ -38,6 +38,25 @@ added 72 packages, removed 98 packages, changed 203 packages, and audited 654 pa
 ...
 ```
 
+### detekt
+
+We use [detekt](https://detekt.dev/) as a Kotlin linter.
+detekt is integrated in the Gradle build process.
+Manually, it can be triggered with:
+
+```console
+$ ./gradlew detektMain detektTest detektJsMain detektJsTest detektJvmMain detektJvmTest
+...
+```
+
+The project contains a configuration for the [IntelliJ detekt plugin](https://plugins.jetbrains.com/plugin/10761-detekt).
+If you install this plugin, you should get detekt annotations inline in IntelliJ.
+Unfortunately, the plugin [does not support detekt rules requiring type resolution](https://github.com/detekt/detekt-intellij-plugin/issues/499).
+Therefore, some annotations can only be obtained by running detekt through Gradle.
+
+detekt results are also reported on the GitHub project using GitHub's code scanning feature.
+In PRs, detekt finding will be provided as annotations on the PR.
+
 # Authors
 
 Development of modelix is supported by [itemis](https://itemis.com)

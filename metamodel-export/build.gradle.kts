@@ -10,7 +10,7 @@ group = "org.modelix.mps"
 dependencies {
     implementation(project(":model-api-gen-runtime"))
     implementation(project(":model-api-gen"))
-    compileOnly(fileTree(mpsHomeDir.map { it.dir("lib") }))
+    compileOnly(fileTree(mpsHomeDir.map { it.dir("lib") }).matching { include("**/*.jar") })
     compileOnly(
         mpsHomeDir.map {
             it.files(

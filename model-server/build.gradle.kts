@@ -1,5 +1,6 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import com.github.jengelman.gradle.plugins.shadow.transformers.PropertiesFileTransformer
+import io.gitlab.arturbosch.detekt.Detekt
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
@@ -290,4 +291,8 @@ openApiFiles.forEach {
 
     // add openAPI generated artifacts to the sourceSets
     sourceSets["main"].kotlin.srcDir("$outputPath/src/main/kotlin")
+}
+
+tasks.withType<Detekt> {
+    exclude("**/org/modelix/api/**")
 }

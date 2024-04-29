@@ -153,26 +153,20 @@ subprojects {
     }
 
     // Configure detekt including our custom rule sets
-    if (project.name != "detekt-rules") {
-        apply(plugin = "io.gitlab.arturbosch.detekt")
-        dependencies {
-            detektPlugins(project(":detekt-rules"))
+    apply(plugin = "io.gitlab.arturbosch.detekt")
+    tasks.withType<Detekt> {
+        reports {
+            sarif.required.set(true)
+            html.required.set(true)
         }
-        tasks.withType<Detekt> {
-            dependsOn(":detekt-rules:assemble")
+    }
+    detekt {
+        parallel = true
+        // For now, we only use the results here as hints
+        ignoreFailures = true
 
-            parallel = true
-            // For now, we only use the results here as hints
-            ignoreFailures = true
-
-            buildUponDefaultConfig = true
-            config.setFrom(parentProject.projectDir.resolve(".detekt.yml"))
-
-            reports {
-                sarif.required.set(true)
-                html.required.set(true)
-            }
-        }
+        buildUponDefaultConfig = true
+        config.setFrom(parentProject.projectDir.resolve(".detekt.yml"))
     }
 }
 

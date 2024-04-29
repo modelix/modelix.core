@@ -1,3 +1,0 @@
-modelix:
-  AvoidNonNullAssertionOperator:
-    active: true

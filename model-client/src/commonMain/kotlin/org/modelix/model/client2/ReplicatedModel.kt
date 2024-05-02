@@ -23,29 +23,44 @@ import org.modelix.model.operations.OTBranch
 
 /**
  * Dispose should be called on this, as otherwise a regular polling will go on.
+ *
+ * @property client the model client to connect to the model server
+ * @property branchRef the model server branch to fetch the data from
+ * @property providedScope the CoroutineScope to use for the suspendable tasks
+ * @property initialRemoteVersion the last version on the server from which we want to start the synchronization
  */
 class ReplicatedModel(
     val client: IModelClientV2,
     val branchRef: BranchReference,
     private val providedScope: CoroutineScope? = null,
+    initialRemoteVersion: CLVersion? = null,
 ) {
     private val scope = providedScope ?: CoroutineScope(Dispatchers.Default)
     private var state = State.New
-    private lateinit var localModel: LocalModel
-    private val remoteVersion = RemoteVersion(client, branchRef)
+    private var localModel: LocalModel? = null
+    private val remoteVersion = RemoteVersion(client, branchRef, initialRemoteVersion)
     private var pollingJob: Job? = null
 
+    init {
+        if (initialRemoteVersion != null) {
+            localModel = LocalModel(initialRemoteVersion, client.getIdGenerator()) { client.getUserId() }
+        }
+    }
+
+    private fun getLocalModel(): LocalModel = checkNotNull(localModel) { "Model is not initialized yet" }
+
     fun getBranch(): IBranch {
-        if (state != State.Started) throw IllegalStateException("state is $state")
-        return localModel.otBranch
+        return getLocalModel().otBranch
     }
 
     suspend fun start(): IBranch {
         if (state != State.New) throw IllegalStateException("already started")
         state = State.Starting
 
-        val initialVersion = remoteVersion.pull()
-        localModel = LocalModel(initialVersion, client.getIdGenerator(), { client.getUserId() })
+        if (localModel == null) {
+            val initialVersion = remoteVersion.pull()
+            localModel = LocalModel(initialVersion, client.getIdGenerator()) { client.getUserId() }
+        }
 
         // receive changes from the server
         pollingJob = scope.launch {
@@ -66,7 +81,7 @@ class ReplicatedModel(
             }
         }
 
-        localModel.rawBranch.addListener(object : IBranchListener {
+        getLocalModel().rawBranch.addListener(object : IBranchListener {
             override fun treeChanged(oldTree: ITree?, newTree: ITree) {
                 if (isDisposed()) return
                 scope.launch {
@@ -80,7 +95,7 @@ class ReplicatedModel(
     }
 
     suspend fun resetToServerVersion() {
-        localModel.resetToVersion(client.pull(branchRef, lastKnownVersion = null).upcast())
+        getLocalModel().resetToVersion(client.pull(branchRef, lastKnownVersion = null).upcast())
     }
 
     fun isDisposed(): Boolean = state == State.Disposed
@@ -102,11 +117,11 @@ class ReplicatedModel(
         if (isDisposed()) return
 
         val mergedVersion = try {
-            localModel.mergeRemoteVersion(newRemoteVersion)
+            getLocalModel().mergeRemoteVersion(newRemoteVersion)
         } catch (ex: Exception) {
-            val currentLocalVersion = localModel.getCurrentVersion()
+            val currentLocalVersion = getLocalModel().getCurrentVersion()
             LOG.warn(ex) { "Failed to merge remote version $newRemoteVersion into local version $currentLocalVersion. Resetting to remote version." }
-            localModel.resetToVersion(newRemoteVersion)
+            getLocalModel().resetToVersion(newRemoteVersion)
             newRemoteVersion
         }
 
@@ -121,7 +136,7 @@ class ReplicatedModel(
     private suspend fun pushLocalChanges() {
         if (isDisposed()) return
 
-        val version = localModel.createNewLocalVersion() ?: localModel.getCurrentVersion()
+        val version = getLocalModel().createNewLocalVersion() ?: getLocalModel().getCurrentVersion()
         val received = remoteVersion.push(version)
         if (received.getContentHash() != version.getContentHash()) {
             remoteVersionReceived(received)
@@ -129,7 +144,7 @@ class ReplicatedModel(
     }
 
     suspend fun getCurrentVersion(): CLVersion {
-        return localModel.getCurrentVersion()
+        return getLocalModel().getCurrentVersion()
     }
 
     private enum class State {
@@ -250,8 +265,11 @@ private class LocalModel(initialVersion: CLVersion, val idGenerator: IIdGenerato
     }
 }
 
-private class RemoteVersion(val client: IModelClientV2, val branchRef: BranchReference) {
-    private var lastKnownRemoteVersion: CLVersion? = null
+private class RemoteVersion(
+    val client: IModelClientV2,
+    val branchRef: BranchReference,
+    private var lastKnownRemoteVersion: CLVersion? = null,
+) {
     private val unconfirmedVersions: MutableSet<String> = LinkedHashSet()
 
     fun getNumberOfUnconfirmed() = runSynchronized(unconfirmedVersions) { unconfirmedVersions.size }

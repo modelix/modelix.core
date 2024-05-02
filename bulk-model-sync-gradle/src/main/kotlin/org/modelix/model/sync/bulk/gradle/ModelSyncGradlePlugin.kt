@@ -77,9 +77,17 @@ class ModelSyncGradlePlugin : Plugin<Project> {
     ) {
         val baseDir = project.layout.buildDirectory.dir("model-sync").get().asFile.apply { mkdirs() }
         val jsonDir = baseDir.resolve(syncDirection.name).apply { mkdir() }
-        val sourceTask = when (syncDirection.source) {
+        val source = syncDirection.source
+
+        val sourceTask = when (source) {
             is LocalSource -> registerTasksForLocalSource(syncDirection, previousTask, jsonDir)
-            is ServerSource -> registerTasksForServerSource(syncDirection, project, previousTask, jsonDir)
+            is ServerSource -> {
+                if (source.baseRevision != null) {
+                    previousTask
+                } else {
+                    registerTasksForServerSource(syncDirection, project, previousTask, jsonDir)
+                }
+            }
             else -> error("Unknown sync direction source")
         }
 
@@ -196,9 +204,10 @@ class ModelSyncGradlePlugin : Plugin<Project> {
         val localTarget = syncDirection.target as LocalTarget
         val importName = "${syncDirection.name}ImportIntoMps"
         val resolvedDependencies = mpsDependencies.resolvedConfiguration.files
+        val hasBaseRevision = (syncDirection.source as? ServerSource)?.baseRevision != null
         val config = MPSRunnerConfig(
             mainClassName = "org.modelix.mps.model.sync.bulk.MPSBulkSynchronizer",
-            mainMethodName = "importRepository",
+            mainMethodName = if (hasBaseRevision) "importRepositoryFromModelServer" else "importRepository",
             classPathElements = resolvedDependencies.toList(),
             mpsHome = localTarget.mpsHome,
             workDir = jsonDir,
@@ -209,6 +218,10 @@ class ModelSyncGradlePlugin : Plugin<Project> {
                 "-Dmodelix.mps.model.sync.bulk.input.modules.prefixes=${syncDirection.includedModulePrefixes.joinToString(",")}",
                 "-Dmodelix.mps.model.sync.bulk.repo.path=${localTarget.repositoryDir?.absolutePath}",
                 "-Dmodelix.mps.model.sync.bulk.input.continueOnError=${syncDirection.continueOnError}",
+                "-Dmodelix.mps.model.sync.bulk.server.repository=${(syncDirection.source as ServerSource).repositoryId}".takeIf { hasBaseRevision },
+                "-Dmodelix.mps.model.sync.bulk.server.url=${(syncDirection.source as ServerSource).url}".takeIf { hasBaseRevision },
+                "-Dmodelix.mps.model.sync.bulk.server.version.hash=${(syncDirection.source as ServerSource).revision}".takeIf { hasBaseRevision },
+                "-Dmodelix.mps.model.sync.bulk.server.version.base.hash=${(syncDirection.source as ServerSource).baseRevision}".takeIf { hasBaseRevision },
                 "-Xmx${localTarget.mpsHeapSize}",
                 localTarget.mpsDebugPort?.let { "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=$it" },
             ),

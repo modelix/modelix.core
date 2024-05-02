@@ -153,6 +153,7 @@ data class ServerSource(
     override var branchName: String? = null,
     override var requestTimeoutSeconds: Int = DEFAULT_REQUEST_TIMEOUT_SECONDS,
     var revision: String? = null,
+    var baseRevision: String? = null,
 ) : ServerEndpoint {
     override fun getValidationErrors(): List<String> {
         val errors = mutableListOf<String>()

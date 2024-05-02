@@ -117,7 +117,7 @@ mpsBuild {
 === ServerSource/-Target configuration
 [WARNING]
 --
-In the future you will be required to specify a `repositoryId` along the`revision`.
+In the future you will be required to specify a `repositoryId` along the `revision`.
 --
 [%header, cols="1,1,2"]
 |===
@@ -143,6 +143,10 @@ If the target branch does not exist on the model-server, it will be created.
 |String
 |Source model-server revision. Can be used instead of `repositoryId` and `branchName`.
 Only available in ServerSource.
+
+|`baseRevision`
+|String
+|Source model-server base revision. If specified, only the subtrees that changed between `baseRevision` and `revision` will be synchronized. Only available in ServerSource.
 
 |`requestTimeoutSeconds`
 |Integer

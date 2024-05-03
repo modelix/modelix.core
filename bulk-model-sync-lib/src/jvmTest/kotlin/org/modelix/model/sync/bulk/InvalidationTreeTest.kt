@@ -82,6 +82,7 @@ class InvalidationTreeTest {
         assertTrue { ancestors.none { invalidationTree.needsSynchronization(it) } }
 
         assertTrue { invalidationTree.needsSynchronization(treePointer.getNode(3L)) }
+        assertTrue { invalidationTree.needsDescentIntoSubtree(treePointer.getNode(3L)) }
 
         assertFalse { invalidationTree.needsSynchronization(treePointer.getNode(31L)) }
         assertTrue { invalidationTree.needsDescentIntoSubtree(treePointer.getNode(31L)) }

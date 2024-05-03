@@ -16,11 +16,8 @@
 
 package org.modelix.model.sync.bulk
 
-import org.modelix.model.api.IBranch
-import org.modelix.model.api.INode
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.PBranch
-import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.getDescendants
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
@@ -30,23 +27,30 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.MapBasedStore
+import org.modelix.model.sync.bulk.ModelSynchronizerTest.BasicAssociation
 import org.modelix.model.test.RandomModelChangeGenerator
 import kotlin.random.Random
 import kotlin.test.assertTrue
 
-class ModelSynchronizerTest : AbstractModelSyncTest() {
+class ModelSynchronizerWithInvalidationTreeTest : AbstractModelSyncTest() {
 
     override fun runTest(initialData: ModelData, expectedData: ModelData, assertions: OTBranch.() -> Unit) {
         val sourceBranch = createOTBranchFromModel(expectedData)
         val targetBranch = createOTBranchFromModel(initialData)
 
+        val invalidationTree = InvalidationTree(1000)
+
         sourceBranch.runRead {
             val sourceRoot = sourceBranch.getRootNode()
 
             targetBranch.runWrite {
+                val sourceTree = sourceBranch.transaction.tree
+                val targetTree = targetBranch.transaction.tree
+                sourceTree.visitChanges(targetTree, InvalidatingVisitor(sourceTree, invalidationTree))
+
                 val targetRoot = targetBranch.getRootNode()
                 val synchronizer = ModelSynchronizer(
-                    filter = BasicFilter,
+                    filter = invalidationTree,
                     sourceRoot = sourceRoot,
                     targetRoot = targetRoot,
                     nodeAssociation = BasicAssociation(targetBranch),
@@ -84,18 +88,22 @@ class ModelSynchronizerTest : AbstractModelSyncTest() {
         val tree1 = CLTree(store)
         val idGenerator = IdGenerator.getInstance(1)
         val targetBranch = PBranch(tree1, idGenerator)
+        val invalidationTree = InvalidationTree(1000)
 
         targetBranch.runWrite {
             sourceBranch.runRead {
                 val importer = ModelImporter(targetBranch.getRootNode())
                 importer.import(ModelData(root = sourceBranch.getRootNode().asExported()))
+                val sourceTree = sourceBranch.transaction.tree
+                val targetTree = targetBranch.transaction.tree
+
+                sourceTree.visitChanges(targetTree, InvalidatingVisitor(sourceTree, invalidationTree))
             }
         }
         val otBranch = OTBranch(targetBranch, idGenerator, store)
-
         otBranch.runWrite {
             ModelSynchronizer(
-                filter = BasicFilter,
+                filter = invalidationTree,
                 sourceRoot = sourceBranch.getRootNode(),
                 targetRoot = targetBranch.getRootNode(),
                 nodeAssociation = BasicAssociation(targetBranch),
@@ -110,31 +118,9 @@ class ModelSynchronizerTest : AbstractModelSyncTest() {
         assertTrue("expected operations: <= $expectedNumOps, actual: ${operations.size}") {
             operations.size <= expectedNumOps
         }
-    }
 
-    object BasicFilter : ModelSynchronizer.IFilter {
-        override fun needsDescentIntoSubtree(subtreeRoot: INode): Boolean {
-            return true
-        }
-
-        override fun needsSynchronization(node: INode): Boolean {
-            return true
-        }
-    }
-
-    class BasicAssociation(private val target: IBranch) : INodeAssociation {
-
-        override fun resolveTarget(sourceNode: INode): INode? {
-            require(sourceNode is PNodeAdapter)
-            return target.computeRead {
-                target.getRootNode().getDescendants(true).find { sourceNode.originalId() == it.originalId() }
-            }
-        }
-
-        override fun associate(sourceNode: INode, targetNode: INode) {
-            if (sourceNode.getOriginalReference() != targetNode.getOriginalReference()) {
-                targetNode.setPropertyValue(IProperty.fromName(ID_PROPERTY_KEY), sourceNode.reference.serialize())
-            }
+        otBranch.runRead {
+            assertAllNodesConformToSpec(sourceBranch.computeRead { sourceBranch.getRootNode().asExported() }, otBranch.getRootNode())
         }
     }
 }

@@ -28,10 +28,11 @@ class ChangePropertyTest : MpsAdaptersTestBase("SimpleProject") {
 
         val repositoryNode: INode = MPSRepositoryAsNode(mpsProject.repository)
 
-        writeActionOnEdt {
+        runCommandOnEDT {
             val module = repositoryNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Repository.modules)
                 .single { it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name) == "Solution1" }
-            val model = module.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.models).single()
+            val model = module.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.models)
+                .single { it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name) == "Solution1.model1" }
             val rootNode = model.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes).single()
             assertEquals("Class1", rootNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name))
             rootNode.setPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name, "MyRenamedClass")

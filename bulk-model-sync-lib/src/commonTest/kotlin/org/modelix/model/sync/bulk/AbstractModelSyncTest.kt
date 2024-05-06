@@ -601,8 +601,9 @@ abstract class AbstractModelSyncTest {
                 DeleteNodeOp::class to 1,
             )
 
-            assertEquals(expectedOperations, getNumOfUsedOperationsByType())
-            assertNoOverlappingOperations(getPendingChanges().first)
+            val operations = getPendingChanges().first
+            assertEquals(expectedOperations, operations.numOpsByType())
+            assertNoOverlappingOperations(operations)
         }
     }
 

@@ -29,6 +29,7 @@ import io.ktor.server.websocket.WebSockets
 import kotlinx.coroutines.runBlocking
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.client2.ModelClientV2
+import org.modelix.model.server.Main.installStatusPages
 
 suspend fun ApplicationTestBuilder.createModelClient(): ModelClientV2 {
     val url = "http://localhost/v2"
@@ -40,6 +41,7 @@ fun Application.installDefaultServerPlugins() {
     install(ContentNegotiation) { json() }
     install(Resources)
     install(IgnoreTrailingSlash)
+    installStatusPages()
 }
 
 /**

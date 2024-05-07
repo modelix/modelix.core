@@ -106,22 +106,17 @@ class KeyValueLikeModelServer(
                 if (branchRef != null) {
                     val version = repositoriesManager.getVersion(branchRef)
                     if (inMemoryModels.getModel(version!!.getTree()).isActive) {
-                        call.respondText(
-                            status = HttpStatusCode.ServiceUnavailable,
-                            text = "Waiting for version $version to be loaded into memory",
+                        throw HttpException(
+                            HttpStatusCode.ServiceUnavailable,
+                            details = "Waiting for version $version to be loaded into memory",
                         )
-                        return@get
                     }
                 }
 
                 if (isHealthy()) {
                     call.respondText(text = "healthy", contentType = ContentType.Text.Plain, status = HttpStatusCode.OK)
                 } else {
-                    call.respondText(
-                        text = "not healthy",
-                        contentType = ContentType.Text.Plain,
-                        status = HttpStatusCode.InternalServerError,
-                    )
+                    throw HttpException(HttpStatusCode.InternalServerError, details = "not healthy")
                 }
             }
             get<Paths.getHeaders> {
@@ -177,7 +172,7 @@ class KeyValueLikeModelServer(
                         putEntries(mapOf(key to value))
                         call.respondText("OK")
                     } catch (e: NotFoundException) {
-                        call.respondText(e.message ?: "Not found", status = HttpStatusCode.NotFound)
+                        throw HttpException(HttpStatusCode.NotFound, title = "Not found", details = e.message, cause = e)
                     }
                 }
 
@@ -196,7 +191,7 @@ class KeyValueLikeModelServer(
                         putEntries(entries)
                         call.respondText(entries.size.toString() + " entries written")
                     } catch (e: NotFoundException) {
-                        call.respondText(e.message ?: "Not found", status = HttpStatusCode.NotFound)
+                        throw HttpException(HttpStatusCode.NotFound, title = "Not found", details = e.message, cause = e)
                     }
                 }
 
@@ -366,7 +361,7 @@ class KeyValueLikeModelServer(
 
     private suspend fun CallContext.respondValue(key: String, value: String?) {
         if (value == null) {
-            call.respondText("key '$key' not found", status = HttpStatusCode.NotFound)
+            throw HttpException(HttpStatusCode.NotFound, details = "key '$key' not found")
         } else {
             call.respondText(text = value, contentType = ContentType.Text.Plain)
         }

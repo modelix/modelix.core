@@ -19,6 +19,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
+import io.ktor.server.plugins.BadRequestException
 import io.ktor.server.plugins.origin
 import io.ktor.server.request.acceptItems
 import io.ktor.server.request.receive
@@ -138,41 +139,25 @@ class ModelReplicationServer(
 
             val baseVersionHash = call.request.queryParameters["lastKnown"]
             val branch = branchRef()
-            val versionHash = repositoriesManager.getVersionHash(branch)
-            if (versionHash == null) {
-                call.respondText(
-                    "Branch '${branch.branchName}' doesn't exist in repository '${branch.repositoryId.id}'",
-                    status = HttpStatusCode.NotFound,
-                )
-                return@get
-            }
+            val versionHash = repositoriesManager.getVersionHash(branch) ?: throw BranchNotFoundException(branch)
             call.respondDelta(versionHash, baseVersionHash)
         }
 
         delete<Paths.deleteRepositoryBranch> {
-            val repositoryName = call.parameters["repository"]
-            if (repositoryName == null) {
-                call.respondText("Request lacks repository name", status = HttpStatusCode.BadRequest)
-                return@delete
-            }
+            val repositoryName = call.parameters["repository"] ?: throw BadRequestException(
+                "Request lacks repository name", "missing-repository-name",
+            )
             val repositoryId = try {
                 RepositoryId(repositoryName)
             } catch (e: IllegalArgumentException) {
-                call.respondText("Invalid repository name '$repositoryName'", status = HttpStatusCode.BadRequest)
-                return@delete
+                throw BadRequestException("Invalid repository name", "invalid-request", cause = e)
             }
-            val branch = call.parameters["branch"]
-            if (branch == null) {
-                call.respondText("Request lacks branch name", status = HttpStatusCode.BadRequest)
-                return@delete
-            }
+            val branch = call.parameters["branch"] ?: throw BadRequestException(
+                "Request lacks branch name", "missing-branch-name",
+            )
 
             if (!repositoriesManager.getBranchNames(repositoryId).contains(branch)) {
-                call.respondText(
-                    "Repository does not exist or branch '$branch' does not exist in repository '$repositoryId'",
-                    status = HttpStatusCode.NotFound,
-                )
-                return@delete
+                throw BranchNotFoundException(branch, repositoryId.id)
             }
 
             repositoriesManager.removeBranches(repositoryId, setOf(branch))
@@ -188,14 +173,8 @@ class ModelReplicationServer(
             fun PipelineContext<Unit, ApplicationCall>.branchRef() = call.branchRef()
 
             val branch = branchRef()
-            val versionHash = repositoriesManager.getVersionHash(branch)
-            if (versionHash == null) {
-                call.respondText(
-                    "Branch '${branch.branchName}' doesn't exist in repository '${branch.repositoryId.id}'",
-                    status = HttpStatusCode.NotFound,
-                )
-                return@get
-            }
+            val versionHash = repositoriesManager.getVersionHash(branch) ?: throw BranchNotFoundException(branch)
+
             call.respondText(versionHash)
         }
 
@@ -291,11 +270,7 @@ class ModelReplicationServer(
             val baseVersionHash = call.request.queryParameters["lastKnown"]
             val versionHash = call.parameters["versionHash"]!!
             if (storeClient[versionHash] == null) {
-                call.respondText(
-                    "Version '$versionHash' doesn't exist",
-                    status = HttpStatusCode.NotFound,
-                )
-                return@get
+                throw VersionNotFoundException(versionHash)
             }
             call.respondDelta(versionHash, baseVersionHash)
         }
@@ -382,11 +357,7 @@ class ModelReplicationServer(
             val baseVersionHash = call.request.queryParameters["lastKnown"]
             val versionHash = call.parameters["versionHash"]!!
             if (storeClient[versionHash] == null) {
-                call.respondText(
-                    "Version '$versionHash' doesn't exist",
-                    status = HttpStatusCode.NotFound,
-                )
-                return@get
+                throw VersionNotFoundException(versionHash)
             }
             call.respondDelta(versionHash, baseVersionHash)
         }

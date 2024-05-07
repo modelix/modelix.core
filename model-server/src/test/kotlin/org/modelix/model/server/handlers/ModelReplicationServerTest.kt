@@ -16,19 +16,24 @@
 package org.modelix.model.server.handlers
 
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.appendPathSegments
 import io.ktor.http.contentType
 import io.ktor.http.takeFrom
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.netty.NettyApplicationEngine
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.CoroutineScope
@@ -38,6 +43,7 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
+import org.modelix.api.public.Problem
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.InMemoryModels
 import org.modelix.model.api.IConceptReference
@@ -313,5 +319,50 @@ class ModelReplicationServerTest {
         // Assert
         assertEquals(response.contentType(), VersionDeltaStream.CONTENT_TYPE)
         versionDelta.getObjectsAsFlow().assertNotEmpty()
+    }
+
+    @Test
+    fun `responds with application problem+json in case of errors`() {
+        val storeClient = InMemoryStoreClient()
+        val modelClient = LocalModelClient(storeClient)
+        val repositoriesManager = RepositoriesManager(modelClient)
+        val errorMessage = "expected test failure"
+        val faultyRepositoriesManager = object :
+            IRepositoriesManager by repositoriesManager {
+            override fun getRepositories(): Set<RepositoryId> {
+                error(errorMessage)
+            }
+        }
+        val modelReplicationServer = ModelReplicationServer(faultyRepositoriesManager, modelClient, InMemoryModels())
+
+        runWithTestModelServer(
+            Fixture(
+                storeClient,
+                modelClient,
+                faultyRepositoriesManager,
+                modelReplicationServer,
+            ),
+        ) { _, _ ->
+            val client = createClient {
+                install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) { json() }
+            }
+            val response = client.get {
+                url {
+                    appendPathSegments("v2", "repositories")
+                }
+            }
+
+            assertEquals(HttpStatusCode.InternalServerError, response.status)
+            assertEquals(ContentType.parse("application/problem+json"), response.contentType())
+            assertEquals(
+                Problem(
+                    title = "Internal server error",
+                    detail = errorMessage,
+                    status = HttpStatusCode.InternalServerError.value,
+                    type = "/problems/unclassified-internal-server-error",
+                ),
+                response.body<Problem>(),
+            )
+        }
     }
 }

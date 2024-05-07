@@ -15,9 +15,13 @@
 package org.modelix.model.server
 
 import com.beust.jcommander.JCommander
+import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
@@ -28,6 +32,7 @@ import io.ktor.server.netty.NettyApplicationEngine
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.plugins.forwardedheaders.ForwardedHeaders
+import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.plugins.swagger.swaggerUI
 import io.ktor.server.resources.Resources
 import io.ktor.server.response.respondText
@@ -44,14 +49,20 @@ import kotlinx.html.li
 import kotlinx.html.style
 import kotlinx.html.ul
 import kotlinx.html.unsafe
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.apache.commons.io.FileUtils
 import org.apache.ignite.Ignition
+import org.modelix.api.public.Problem
 import org.modelix.authorization.KeycloakUtils
+import org.modelix.authorization.NoPermissionException
+import org.modelix.authorization.NotLoggedInException
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.InMemoryModels
 import org.modelix.model.server.handlers.ContentExplorer
 import org.modelix.model.server.handlers.DeprecatedLightModelServer
 import org.modelix.model.server.handlers.HistoryHandler
+import org.modelix.model.server.handlers.HttpException
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.MetricsHandler
 import org.modelix.model.server.handlers.ModelReplicationServer
@@ -195,6 +206,7 @@ object Main {
                     allowMethod(HttpMethod.Put)
                     allowMethod(HttpMethod.Post)
                 }
+                installStatusPages()
 
                 modelServer.init(this)
                 historyHandler.init(this)
@@ -273,6 +285,64 @@ object Main {
             )
         } catch (ex: Exception) {
             LOG.error("", ex)
+        }
+    }
+
+    /**
+     * Installs the status pages extension with a configuration suitable for generating application/problem+json
+     * responses as defined in the API specification.
+     */
+    fun Application.installStatusPages() {
+        val problemJsonContentType = ContentType.parse("application/problem+json")
+
+        install(StatusPages) {
+            suspend fun ApplicationCall.respondProblem(problem: Problem) {
+                requireNotNull(problem.status) { "Status code must exist as it is use for the HTTP response" }
+
+                // No easy way found to override the content type when directly responding with serializable objects.
+                respondText(
+                    Json.encodeToString(problem),
+                    problemJsonContentType,
+                    HttpStatusCode.fromValue(problem.status),
+                )
+            }
+
+            exception<Throwable> { call, cause ->
+                call.respondProblem(
+                    Problem(
+                        title = "Internal server error",
+                        detail = cause.message,
+                        status = HttpStatusCode.InternalServerError.value,
+                        type = "/problems/unclassified-internal-server-error",
+                    ),
+                )
+            }
+
+            exception<HttpException> { call, cause ->
+                call.respondProblem(cause.problem)
+            }
+
+            // Custom authorization exception types
+            exception<NoPermissionException> { call, cause ->
+                call.respondProblem(
+                    Problem(
+                        title = "Forbidden",
+                        detail = cause.message,
+                        status = HttpStatusCode.Forbidden.value,
+                        type = "/problems/forbidden",
+                    ),
+                )
+            }
+            exception<NotLoggedInException> { call, cause ->
+                call.respondProblem(
+                    Problem(
+                        title = "Unauthorized",
+                        detail = cause.message,
+                        status = HttpStatusCode.Unauthorized.value,
+                        type = "/problems/unauthorized",
+                    ),
+                )
+            }
         }
     }
 

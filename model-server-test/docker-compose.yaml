@@ -1,0 +1,11 @@
+services:
+  db:
+    image: postgres:16.2
+    volumes:
+      - ./legacy-database.sql:/docker-entrypoint-initdb.d/initdb.sql
+    environment:
+      - POSTGRES_PASSWORD=modelix
+      - POSTGRES_USER=modelix
+      - POSTGRES_DB=modelix
+    ports:
+      - 5432

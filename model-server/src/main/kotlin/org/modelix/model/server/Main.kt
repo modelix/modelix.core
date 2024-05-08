@@ -68,10 +68,12 @@ import org.modelix.model.server.handlers.MetricsHandler
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.handlers.RepositoryOverview
-import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.model.server.store.IsolatingStore
 import org.modelix.model.server.store.LocalModelClient
+import org.modelix.model.server.store.forContextRepository
+import org.modelix.model.server.store.forGlobalRepository
 import org.modelix.model.server.store.loadDump
 import org.modelix.model.server.store.writeDump
 import org.modelix.model.server.templates.PageWithMenuBar
@@ -121,7 +123,7 @@ object Main {
                 port = cmdLineArgs.port!!
             }
             LOG.info("Port: $port")
-            val storeClient: IStoreClient
+            val storeClient: IsolatingStore
             if (cmdLineArgs.inmemory) {
                 if (cmdLineArgs.jdbcConfFile != null) {
                     LOG.warn("JDBC conf file is ignored when in-memory flag is set")
@@ -158,20 +160,20 @@ object Main {
             }
             var i = 0
             while (i < cmdLineArgs.setValues.size) {
-                storeClient.put(cmdLineArgs.setValues[i], cmdLineArgs.setValues[i + 1])
+                storeClient.forGlobalRepository().put(cmdLineArgs.setValues[i], cmdLineArgs.setValues[i + 1])
                 i += 2
             }
-            val localModelClient = LocalModelClient(storeClient)
+            val localModelClient = LocalModelClient(storeClient.forContextRepository())
             val inMemoryModels = InMemoryModels()
             val repositoriesManager = RepositoriesManager(localModelClient)
-            val modelServer = KeyValueLikeModelServer(repositoriesManager, storeClient, inMemoryModels)
+            val modelServer = KeyValueLikeModelServer(repositoriesManager, storeClient.forGlobalRepository(), inMemoryModels)
             val sharedSecretFile = cmdLineArgs.secretFile
             if (sharedSecretFile.exists()) {
                 modelServer.setSharedSecret(
                     FileUtils.readFileToString(sharedSecretFile, StandardCharsets.UTF_8),
                 )
             }
-            val jsonModelServer = DeprecatedLightModelServer(localModelClient)
+            val jsonModelServer = DeprecatedLightModelServer(localModelClient, repositoriesManager)
             val repositoryOverview = RepositoryOverview(repositoriesManager)
             val historyHandler = HistoryHandler(localModelClient, repositoriesManager)
             val contentExplorer = ContentExplorer(localModelClient, repositoriesManager)
@@ -346,7 +348,7 @@ object Main {
         }
     }
 
-    private class DumpOutThread internal constructor(storeClient: IStoreClient, dumpName: String) :
+    private class DumpOutThread internal constructor(storeClient: IsolatingStore, dumpName: String) :
         Thread(
             Runnable {
                 try {

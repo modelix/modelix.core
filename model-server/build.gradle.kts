@@ -34,6 +34,7 @@ dependencies {
     implementation(project(":model-api"))
     implementation(project(":model-server-api"))
     implementation(project(":model-client", configuration = "jvmRuntimeElements"))
+    api(project(":model-datastructure", configuration = "jvmRuntimeElements"))
     implementation(project(":modelql-server"))
     implementation(project(":authorization"))
     implementation(libs.apache.commons.lang)

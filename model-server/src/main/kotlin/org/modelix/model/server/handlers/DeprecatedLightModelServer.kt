@@ -65,15 +65,11 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
-import org.modelix.model.persistent.CPVersion
 import org.modelix.model.server.store.LocalModelClient
-import org.modelix.model.server.store.pollEntry
 import org.modelix.model.server.templates.PageWithMenuBar
 import java.util.Date
 
-class DeprecatedLightModelServer(val client: LocalModelClient) {
-
-    fun getStore() = client.storeCache
+class DeprecatedLightModelServer(val client: LocalModelClient, val repositoriesManager: RepositoriesManager) {
 
     fun init(application: Application) {
         application.apply {
@@ -87,9 +83,11 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
         }
     }
 
-    private fun getCurrentVersion(repositoryId: RepositoryId): CLVersion {
-        val versionHash = client.asyncStore.get(repositoryId.getBranchKey())!!
-        return CLVersion.loadFromHash(versionHash, getStore())
+    private suspend fun getCurrentVersion(repositoryId: RepositoryId): CLVersion {
+        return repositoriesManager.runWithRepository(repositoryId) {
+            val branch = repositoryId.getBranchReference()
+            checkNotNull(repositoriesManager.getVersion(branch)) { "Branch not found: $branch" }
+        }
     }
 
     private fun Route.initRouting() {
@@ -144,95 +142,97 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
         }
         get<Paths.jsonRepositoryIdGet> {
             val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
-            val versionHash = client.asyncStore.get(repositoryId.getBranchKey())!!
+            val version = repositoriesManager.getVersion(repositoryId.getBranchReference())!!
             // TODO 404 if it doesn't exist
-            val version = CLVersion.loadFromHash(versionHash, getStore())
             respondVersion(version)
         }
         get<Paths.jsonRepositoryIdVersionHashGet> {
-            val versionHash = call.parameters["versionHash"]!!
-            // TODO 404 if it doesn't exist
-            val version = CLVersion.loadFromHash(versionHash, getStore())
-            respondVersion(version)
+            val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
+            repositoriesManager.runWithRepository(repositoryId) {
+                val versionHash = call.parameters["versionHash"]!!
+                // TODO 404 if it doesn't exist
+                val version = repositoriesManager.getVersion(repositoryId, versionHash)
+                respondVersion(version!!)
+            }
         }
         get<Paths.jsonRepositoryIdVersionHashPollGet> {
             val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
-            val versionHash = call.parameters["versionHash"]!!
-            val newValue = pollEntry(client.store, repositoryId.getBranchKey(), versionHash)
-            val version = CLVersion.loadFromHash(newValue!!, getStore())
-            val oldVersion = CLVersion.loadFromHash(versionHash, getStore())
-            respondVersion(version, oldVersion)
+            repositoriesManager.runWithRepository(repositoryId) {
+                val oldHash = call.parameters["versionHash"]!!
+                val newHash = repositoriesManager.pollVersionHash(repositoryId.getBranchReference(), oldHash)
+                val newVersion = repositoriesManager.getVersion(repositoryId, newHash)!!
+                val oldVersion = repositoriesManager.getVersion(repositoryId, oldHash)
+                respondVersion(newVersion, oldVersion)
+            }
         }
         webSocket("/json/{repositoryId}/ws") {
             val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
-            val userId = call.getUserName()
+            repositoriesManager.runWithRepository(repositoryId) {
+                val userId = call.getUserName()
 
-            var lastVersion: CLVersion? = null
-            val deltaMutex = Mutex()
-            val sendDelta: suspend (CLVersion) -> Unit = { newVersion ->
-                deltaMutex.withLock {
-                    if (newVersion.getContentHash() != lastVersion?.getContentHash()) {
-                        send(versionAsJson(newVersion, lastVersion).toString())
-                        lastVersion = newVersion
-                    }
-                }
-            }
-
-            val listener = object : IKeyListener {
-                override fun changed(key: String, value: String?) {
-                    if (value == null) return
-                    launch {
-                        val newVersion = CLVersion.loadFromHash(value, client.storeCache)
-                        sendDelta(newVersion)
-                    }
-                }
-            }
-
-            client.listen(repositoryId.getBranchKey(), listener)
-            try {
-                sendDelta(getCurrentVersion(repositoryId))
-                for (frame in incoming) {
-                    when (frame) {
-                        is Frame.Text -> {
-                            val updateData = JSONArray(frame.readText())
-                            val mergedVersion = applyUpdate(lastVersion!!, updateData, repositoryId, userId)
-                            sendDelta(mergedVersion)
+                var lastVersion: CLVersion? = null
+                val deltaMutex = Mutex()
+                val sendDelta: suspend (CLVersion) -> Unit = { newVersion ->
+                    deltaMutex.withLock {
+                        if (newVersion.getContentHash() != lastVersion?.getContentHash()) {
+                            send(versionAsJson(newVersion, lastVersion).toString())
+                            lastVersion = newVersion
                         }
-                        else -> {}
                     }
                 }
-            } finally {
-                client.removeListener(repositoryId.getBranchKey(), listener)
+
+                val listener = object : IKeyListener {
+                    override fun changed(key: String, value: String?) {
+                        if (value == null) return
+                        launch {
+                            repositoriesManager.runWithRepository(repositoryId) {
+                                val newVersion = CLVersion.loadFromHash(value, client.storeCache)
+                                sendDelta(newVersion)
+                            }
+                        }
+                    }
+                }
+
+                client.listen(repositoryId.getBranchKey(), listener)
+                try {
+                    sendDelta(getCurrentVersion(repositoryId))
+                    for (frame in incoming) {
+                        when (frame) {
+                            is Frame.Text -> {
+                                val updateData = JSONArray(frame.readText())
+                                val mergedVersion = applyUpdate(lastVersion!!, updateData, repositoryId, userId)
+                                sendDelta(mergedVersion)
+                            }
+                            else -> {}
+                        }
+                    }
+                } finally {
+                    client.removeListener(repositoryId.getBranchKey(), listener)
+                }
             }
         }
         post<Paths.jsonRepositoryIdInitPost> {
             // TODO error if it already exists
             val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
-            val newTree = CLTree.builder(getStore()).repositoryId(repositoryId).build()
-            val userId = call.getUserName()
-            val newVersion = CLVersion.createRegularVersion(
-                client.idGenerator.generate(),
-                Date().toString(),
-                userId,
-                newTree,
-                null,
-                emptyArray(),
-            )
-            client.asyncStore.put(repositoryId.getBranchKey(), newVersion.getContentHash())
-            respondVersion(newVersion)
+            repositoriesManager.runWithRepository(repositoryId) {
+                val userId = call.getUserName()
+                val newVersion = repositoriesManager.createRepository(repositoryId, userId)
+                respondVersion(newVersion)
+            }
         }
         post<Paths.jsonRepositoryIdVersionHashUpdatePost> {
             val updateData = JSONArray(call.receiveText())
             val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
-            val baseVersionHash = call.parameters["versionHash"]!!
-            val baseVersionData = getStore().get(baseVersionHash, { CPVersion.deserialize(it) })
-            if (baseVersionData == null) {
-                call.respond(HttpStatusCode.NotFound, "version not found: $baseVersionHash")
-                return@post
+            repositoriesManager.runWithRepository(repositoryId) {
+                val baseVersionHash = call.parameters["versionHash"]!!
+                val baseVersion = repositoriesManager.getVersion(repositoryId, baseVersionHash)
+                if (baseVersion == null) {
+                    call.respond(HttpStatusCode.NotFound, "version not found: $baseVersionHash")
+                    return@runWithRepository
+                }
+                val mergedVersion = applyUpdate(baseVersion, updateData, repositoryId, getUserName())
+                respondVersion(mergedVersion, baseVersion)
             }
-            val baseVersion = CLVersion(baseVersionData, getStore())
-            val mergedVersion = applyUpdate(baseVersion, updateData, repositoryId, getUserName())
-            respondVersion(mergedVersion, baseVersion)
         }
         post<Paths.jsonGenerateIdsPost> {
             val quantity = call.request.queryParameters["quantity"]?.toInt() ?: 1000
@@ -246,7 +246,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
         }
     }
 
-    private fun applyUpdate(
+    private suspend fun applyUpdate(
         baseVersion: CLVersion,
         updateData: JSONArray,
         repositoryId: RepositoryId,
@@ -271,8 +271,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
         repositoryId.getBranchKey()
         val mergedVersion = VersionMerger(client.storeCache, client.idGenerator)
             .mergeChange(getCurrentVersion(repositoryId), newVersion)
-        client.asyncStore.put(repositoryId.getBranchKey(), mergedVersion.getContentHash())
-        // TODO handle concurrent write to the branchKey, otherwise versions might get lost. See ReplicatedRepository.
+        repositoriesManager.mergeChanges(repositoryId.getBranchReference(), mergedVersion.getContentHash())
         return mergedVersion
     }
 

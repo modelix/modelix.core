@@ -23,6 +23,7 @@ import org.modelix.model.IKeyListener
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.model.server.store.forGlobalRepository
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
@@ -32,9 +33,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @Ignore("Doesn't support parallel transactions (yet)")
-class MabBasedStoreClientParallelTransactionsTest : StoreClientParallelTransactionsTest(InMemoryStoreClient())
+class MabBasedStoreClientParallelTransactionsTest : StoreClientParallelTransactionsTest(InMemoryStoreClient().forGlobalRepository())
 
-class IgniteStoreClientParallelTransactionsTest : StoreClientParallelTransactionsTest(IgniteStoreClient(inmemory = true))
+class IgniteStoreClientParallelTransactionsTest : StoreClientParallelTransactionsTest(IgniteStoreClient(inmemory = true).forGlobalRepository())
 
 abstract class StoreClientParallelTransactionsTest(val store: IStoreClient) {
 

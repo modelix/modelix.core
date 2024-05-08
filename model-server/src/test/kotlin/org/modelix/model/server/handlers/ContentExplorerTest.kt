@@ -41,6 +41,7 @@ import org.modelix.model.server.createModelClient
 import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
+import org.modelix.model.server.store.forContextRepository
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -49,7 +50,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientCon
 
 class ContentExplorerTest {
 
-    private val modelClient = LocalModelClient(InMemoryStoreClient())
+    private val modelClient = LocalModelClient(InMemoryStoreClient().forContextRepository())
     private val repoManager = RepositoriesManager(modelClient)
 
     private fun runTest(body: suspend (ApplicationTestBuilder.() -> Unit)) = testApplication {
@@ -75,7 +76,7 @@ class ContentExplorerTest {
         val version = CLVersion.loadFromHash(versionHash, modelClient.storeCache)
         val nodeId = checkNotNull(version.getTree().root?.id)
 
-        val response = client.get("/content/$versionHash/$nodeId/")
+        val response = client.get("/content/repositories/node-inspector/versions/$versionHash/$nodeId/")
         assertTrue(response.successful)
     }
 
@@ -95,7 +96,7 @@ class ContentExplorerTest {
 
         val versionHash = modelClient.pullHash(branchRef)
 
-        val response = client.get("/content/$versionHash/${ITree.ROOT_ID}/")
+        val response = client.get("/content/repositories/${repoId.id}/versions/$versionHash/${ITree.ROOT_ID}/")
         val html = Jsoup.parse(response.bodyAsText())
         val nameCell = html.selectXpath("""//td[text()="$refLinkName"]""").first() ?: error("table cell not found")
         val row = checkNotNull(nameCell.parent()) { "table row not found" }
@@ -119,7 +120,7 @@ class ContentExplorerTest {
 
         val expandedNodes = ContentExplorerExpandedNodes(setOf(nodeId.toString()), false)
 
-        val response = client.post("/content/$versionHash/") {
+        val response = client.post("/content/repositories/node-expansion/versions/$versionHash/") {
             contentType(ContentType.Application.Json)
             setBody(expandedNodes)
         }

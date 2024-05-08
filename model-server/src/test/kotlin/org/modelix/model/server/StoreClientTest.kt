@@ -23,6 +23,7 @@ import org.modelix.model.IKeyListener
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.model.server.store.forGlobalRepository
 import java.util.Collections
 import kotlin.random.Random
 import kotlin.test.AfterTest
@@ -31,8 +32,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
-class MapBasedStoreClientTest : StoreClientTest(InMemoryStoreClient())
-class IgniteStoreClientTest : StoreClientTest(IgniteStoreClient(inmemory = true))
+class MapBasedStoreClientTest : StoreClientTest(InMemoryStoreClient().forGlobalRepository())
+class IgniteStoreClientTest : StoreClientTest(IgniteStoreClient(inmemory = true).forGlobalRepository())
 
 abstract class StoreClientTest(val store: IStoreClient) {
 

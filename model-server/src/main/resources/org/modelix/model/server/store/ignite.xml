@@ -38,43 +38,18 @@
         <property name="password" value="${jdbc.pw}" />
     </bean>
 
-    <bean class="org.apache.ignite.cache.QueryEntity">
-        <property name="keyType" value="java.lang.String"/>
-        <property name="valueType" value="java.lang.String"/>
-        <property name="indexes">
-            <list>
-                <bean class="org.apache.ignite.cache.QueryIndex">
-                    <property name="name" value="pk_key"/>
-                    <property name="indexType">
-                        <util:constant static-field="org.apache.ignite.cache.QueryIndexType.SORTED"/>
-                    </property>
-                    <property name="fields">
-                        <map>
-                            <entry key="key" value="true"/>
-                        </map>
-                    </property>
-                </bean>
-            </list>
-        </property>
-    </bean>
-
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="peerClassLoadingEnabled" value="true"/>
-
         <property name="dataStorageConfiguration">
             <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
-                <!-- Redefining the default region's settings -->
                 <property name="defaultDataRegionConfiguration">
                     <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
                         <property name="maxSize" value="${ignite.cache.size}"/>
-                        <!--<property name="evictionThreshold" value="0.5"/>-->
                         <property name="pageEvictionMode" value="RANDOM_LRU" />
                         <property name="emptyPagesPoolSize" value="2000" />
                     </bean>
                 </property>
             </bean>
         </property>
-
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -86,18 +61,7 @@
                     <property name="readThrough" value="true"/>
                     <property name="writeThrough" value="true"/>
                     <property name="writeBehindEnabled" value="false"/>
-                    <property name="writeBehindFlushFrequency" value="1000"/>
-                    <property name="writeBehindBatchSize" value="10000"/>
-                    <property name="writeBehindFlushSize" value="30000"/>
-
                     <property name="cacheStoreFactory">
-                        <!--
-                        <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactory">
-                            <property name="connectionUrl" value="jdbc:postgresql://localhost/ignite"/>
-                            <property name="user" value="ignite"/>
-                            <property name="password" value="ignite"/>
-                        </bean>
-                        -->
                         <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory">
                             <property name="dataSourceBean" value="dataSource" />
                             <property name="sqlEscapeAll" value="true" />
@@ -105,13 +69,12 @@
                                 <bean class="org.modelix.model.server.store.PostgresDialect"/>
                             </property>
                             <property name="types">
-
                                 <list>
                                     <bean class="org.apache.ignite.cache.store.jdbc.JdbcType">
                                         <property name="cacheName" value="model"/>
                                         <property name="databaseSchema" value="${jdbc.schema}"/>
                                         <property name="databaseTable" value="model"/>
-                                        <property name="keyType" value="java.lang.String"/>
+                                        <property name="keyType" value="org.modelix.model.server.store.ObjectInRepository"/>
                                         <property name="valueType" value="java.lang.String"/>
                                         <property name="keyFields">
                                             <list>
@@ -123,18 +86,18 @@
                                                     <property name="javaFieldType" value="java.lang.String"/>
                                                     <property name="javaFieldName" value="key"/>
                                                 </bean>
+                                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                                    <property name="databaseFieldType">
+                                                        <util:constant static-field="java.sql.Types.VARCHAR"/>
+                                                    </property>
+                                                    <property name="databaseFieldName" value="repository"/>
+                                                    <property name="javaFieldType" value="java.lang.String"/>
+                                                    <property name="javaFieldName" value="repositoryId"/>
+                                                </bean>
                                             </list>
                                         </property>
                                         <property name="valueFields">
                                             <list>
-<!--                                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
-                                                    <property name="databaseFieldType">
-                                                        <util:constant static-field="java.sql.Types.VARCHAR"/>
-                                                    </property>
-                                                    <property name="databaseFieldName" value="key"/>
-                                                    <property name="javaFieldType" value="java.lang.String"/>
-                                                    <property name="javaFieldName" value="key"/>
-                                                </bean>-->
                                                 <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
                                                     <property name="databaseFieldType">
                                                         <util:constant static-field="java.sql.Types.VARCHAR"/>
@@ -148,22 +111,11 @@
                                     </bean>
                                 </list>
                             </property>
-
                         </bean>
                     </property>
-<!--
-                    <property name="evictionPolicyFactory">
-                        <bean class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory">
-                            <property name="maxSize" value="10000"/>
-                            <property name="maxMemorySize" value="#{20L * 1024 * 1024}"/>
-                        </bean>
-                    </property>
--->
-
                 </bean>
             </list>
         </property>
-
 
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
@@ -175,5 +127,4 @@
             </bean>
         </property>
     </bean>
-
 </beans>

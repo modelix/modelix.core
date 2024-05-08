@@ -74,51 +74,66 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                     call.respondText("unable to find latest version", status = HttpStatusCode.InternalServerError)
                     return@get
                 } else {
-                    call.respondRedirect("../../../${latestVersion.getContentHash()}/")
+                    call.respondRedirect("../../../versions/${latestVersion.getContentHash()}/")
                 }
             }
             get<Paths.getVersionHash> {
+                val repositoryId = call.parameters["repository"]?.let { RepositoryId(it) }
+                if (repositoryId == null) {
+                    call.respondText("repository parameter missing", status = HttpStatusCode.BadRequest)
+                    return@get
+                }
                 val versionHash = call.parameters["versionHash"]
                 if (versionHash.isNullOrEmpty()) {
-                    call.respondText("version not found", status = HttpStatusCode.BadRequest)
+                    call.respondText("version parameter missing", status = HttpStatusCode.BadRequest)
                     return@get
                 }
 
-                val tree = CLVersion.loadFromHash(versionHash, client.storeCache).getTree()
-                val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
+                repoManager.runWithRepository(repositoryId) {
+                    val tree = CLVersion.loadFromHash(versionHash, client.storeCache).getTree()
+                    val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
 
-                call.respondHtmlTemplate(PageWithMenuBar("repos/", "../..")) {
-                    headContent {
-                        title("Content Explorer")
-                        link("../../public/content-explorer.css", rel = "stylesheet")
-                        script("text/javascript", src = "../../public/content-explorer.js") {}
+                    call.respondHtmlTemplate(PageWithMenuBar("repos/", "../../../../..")) {
+                        headContent {
+                            title("Content Explorer")
+                            link("../../../../../public/content-explorer.css", rel = "stylesheet")
+                            script("text/javascript", src = "../../../../../public/content-explorer.js") {}
+                        }
+                        bodyContent { contentPageBody(rootNode, versionHash, emptySet()) }
                     }
-                    bodyContent { contentPageBody(rootNode, versionHash, emptySet()) }
                 }
             }
             post<Paths.postVersionHash> {
-                val versionHash = call.parameters["versionHash"]
-                if (versionHash.isNullOrEmpty()) {
-                    call.respondText("version not found", status = HttpStatusCode.BadRequest)
+                val repositoryId = call.parameters["repository"]?.let { RepositoryId(it) }
+                if (repositoryId == null) {
+                    call.respondText("repository parameter missing", status = HttpStatusCode.BadRequest)
                     return@post
                 }
-                val expandedNodes = call.receive<ContentExplorerExpandedNodes>()
-
-                val tree = CLVersion.loadFromHash(versionHash, client.storeCache).getTree()
-                val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
-
-                var expandedNodeIds = expandedNodes.expandedNodeIds
-                if (expandedNodes.expandAll) {
-                    expandedNodeIds = expandedNodeIds + collectExpandableChildNodes(rootNode, expandedNodes.expandedNodeIds)
+                val versionHash = call.parameters["versionHash"]
+                if (versionHash.isNullOrEmpty()) {
+                    call.respondText("version parameter missing", status = HttpStatusCode.BadRequest)
+                    return@post
                 }
 
-                call.respondText(
-                    buildString {
-                        appendHTML().ul("treeRoot") {
-                            nodeItem(rootNode, expandedNodeIds)
-                        }
-                    },
-                )
+                repoManager.runWithRepository(repositoryId) {
+                    val expandedNodes = call.receive<ContentExplorerExpandedNodes>()
+
+                    val tree = CLVersion.loadFromHash(versionHash, client.storeCache).getTree()
+                    val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
+
+                    var expandedNodeIds = expandedNodes.expandedNodeIds
+                    if (expandedNodes.expandAll) {
+                        expandedNodeIds = expandedNodeIds + collectExpandableChildNodes(rootNode, expandedNodes.expandedNodeIds)
+                    }
+
+                    call.respondText(
+                        buildString {
+                            appendHTML().ul("treeRoot") {
+                                nodeItem(rootNode, expandedNodeIds)
+                            }
+                        },
+                    )
+                }
             }
             get<Paths.getNodeIdForVersionHash> {
                 val id = call.parameters["nodeId"]?.toLongOrNull()
@@ -127,18 +142,23 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                 val versionHash = call.parameters["versionHash"]
                     ?: return@get call.respondText("version hash not found", status = HttpStatusCode.NotFound)
 
-                val version = try {
-                    CLVersion.loadFromHash(versionHash, client.storeCache)
-                } catch (ex: RuntimeException) {
-                    return@get call.respondText("version not found", status = HttpStatusCode.NotFound)
-                }
+                val repositoryId = call.parameters["repository"]
+                    ?: return@get call.respondText("repository parameter missing", status = HttpStatusCode.BadRequest)
 
-                val node = PNodeAdapter(id, TreePointer(version.getTree())).takeIf { it.isValid }
+                repoManager.runWithRepository(RepositoryId(repositoryId)) {
+                    val version = try {
+                        CLVersion.loadFromHash(versionHash, client.storeCache)
+                    } catch (ex: RuntimeException) {
+                        return@runWithRepository call.respondText("version not found", status = HttpStatusCode.NotFound)
+                    }
 
-                if (node != null) {
-                    call.respondHtml { body { nodeInspector(node) } }
-                } else {
-                    call.respondText("node id not found", status = HttpStatusCode.NotFound)
+                    val node = PNodeAdapter(id, TreePointer(version.getTree())).takeIf { it.isValid }
+
+                    if (node != null) {
+                        call.respondHtml { body { nodeInspector(node) } }
+                    } else {
+                        call.respondText("node id not found", status = HttpStatusCode.NotFound)
+                    }
                 }
             }
         }

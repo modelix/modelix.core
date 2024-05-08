@@ -27,6 +27,7 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
+import org.modelix.model.server.store.forGlobalRepository
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -40,7 +41,7 @@ class ModelReplicationServerBackwardsCompatibilityTest {
         val modelClient = LocalModelClient(storeClient)
         val repositoriesManager = RepositoriesManager(modelClient)
         val modelReplicationServer = ModelReplicationServer(repositoriesManager, modelClient, InMemoryModels())
-        val keyValueLikeModelServer = KeyValueLikeModelServer(repositoriesManager, storeClient, InMemoryModels())
+        val keyValueLikeModelServer = KeyValueLikeModelServer(repositoriesManager, storeClient.forGlobalRepository(), InMemoryModels())
         application {
             installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
@@ -69,7 +70,7 @@ class ModelReplicationServerBackwardsCompatibilityTest {
             modelClientV2.init()
             val modelClientV1 = RestWebModelClient(baseUrl = urlV1, providedClient = client)
 
-            val initialVersion = modelClientV2.initRepository(repositoryId)
+            val initialVersion = modelClientV2.initRepository(repositoryId, legacyGlobalStorage = true)
 
             val branchVersionVisibleInV1 = modelClientV1.getA(defaultBranchRef.getKey())
             assertEquals(initialVersion.getContentHash(), branchVersionVisibleInV1)
@@ -91,7 +92,7 @@ class ModelReplicationServerBackwardsCompatibilityTest {
                 .build()
             modelClientV2.init()
             val modelClientV1 = RestWebModelClient(baseUrl = urlV1, providedClient = client)
-            val initialVersion = modelClientV2.initRepository(repositoryId)
+            val initialVersion = modelClientV2.initRepository(repositoryId, legacyGlobalStorage = true)
             val branchVersionVisibleInV1BeforeDelete = modelClientV1.getA(branchRef.getKey())
             assertEquals(
                 initialVersion.getContentHash(),

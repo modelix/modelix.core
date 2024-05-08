@@ -34,7 +34,7 @@ class RepositoryOverviewTest {
             """
                 <span>
                     <a href="../history/repository%2Fv1/branch%2Fv2/">Show History</a>
-                    <a href="../content/repository%2Fv1/branch%2Fv2/latest/">Explore Latest Version</a>
+                    <a href="../content/repositories/repository%2Fv1/branches/branch%2Fv2/latest/">Explore Latest Version</a>
                     <form>
                         <button formmethod="post" name="delete" formaction="../v2/repositories/repository%2Fv1/delete">Delete Repository</button>
                     </form>

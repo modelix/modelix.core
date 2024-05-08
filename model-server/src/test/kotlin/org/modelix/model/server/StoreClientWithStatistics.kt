@@ -16,30 +16,31 @@
 
 package org.modelix.model.server
 
-import org.modelix.model.server.store.IStoreClient
+import org.modelix.model.server.store.IsolatingStore
+import org.modelix.model.server.store.ObjectInRepository
 import java.util.concurrent.atomic.AtomicLong
 
-class StoreClientWithStatistics(val store: IStoreClient) : IStoreClient by store {
+class StoreClientWithStatistics(val store: IsolatingStore) : IsolatingStore by store {
     private val totalRequests = AtomicLong()
 
     fun getTotalRequests() = totalRequests.get()
 
-    override fun get(key: String): String? {
+    override fun get(key: ObjectInRepository): String? {
         totalRequests.incrementAndGet()
         return store.get(key)
     }
 
-    override fun getAll(keys: List<String>): List<String?> {
+    override fun getAll(keys: List<ObjectInRepository>): List<String?> {
         totalRequests.incrementAndGet()
         return store.getAll(keys)
     }
 
-    override fun getAll(keys: Set<String>): Map<String, String?> {
+    override fun getAll(keys: Set<ObjectInRepository>): Map<ObjectInRepository, String?> {
         totalRequests.incrementAndGet()
         return store.getAll(keys)
     }
 
-    override fun getAll(): Map<String, String?> {
+    override fun getAll(): Map<ObjectInRepository, String?> {
         totalRequests.incrementAndGet()
         return store.getAll()
     }

@@ -8,7 +8,7 @@ import java.sql.SQLException
 
 internal class SqlUtils(private val connection: Connection) {
     @Throws(SQLException::class)
-    fun isSchemaExisting(schemaName: String?): Boolean {
+    fun isSchemaExisting(schemaName: String): Boolean {
         val metadata: DatabaseMetaData = connection.metaData
         val schemasRS: ResultSet = metadata.getSchemas()
         while (schemasRS.next()) {
@@ -20,7 +20,7 @@ internal class SqlUtils(private val connection: Connection) {
     }
 
     @Throws(SQLException::class)
-    fun isTableExisting(schemaName: String?, tableName: String): Boolean {
+    fun isTableExisting(schemaName: String, tableName: String): Boolean {
         val metadata: DatabaseMetaData = connection.metaData
         val schemasRS: ResultSet = metadata.getTables(null, schemaName, tableName, null)
         while (schemasRS.next()) {
@@ -32,30 +32,64 @@ internal class SqlUtils(private val connection: Connection) {
     }
 
     @Throws(SQLException::class)
+    fun isColumnExisting(schemaName: String, tableName: String, columnName: String): Boolean {
+        val metadata: DatabaseMetaData = connection.metaData
+        val schemasRS: ResultSet = metadata.getColumns(null, schemaName, tableName, columnName)
+        while (schemasRS.next()) {
+            if (schemasRS.getString("table_schem") == schemaName &&
+                schemasRS.getString("table_name") == tableName &&
+                schemasRS.getString("column_name") == columnName
+            ) {
+                return true
+            }
+        }
+        return false
+    }
+
+    @Throws(SQLException::class)
     fun ensureTableIsPresent(
-        schemaName: String?,
-        username: String?,
+        schemaName: String,
+        username: String,
         tableName: String,
-        creationSql: String?,
+        creationSql: String,
     ) {
         if (!isTableExisting(schemaName, tableName)) {
             val stmt = connection.createStatement()
             stmt.execute(creationSql)
         }
-        val stmt = connection.createStatement()
-        stmt.execute(
-            "GRANT ALL ON TABLE $schemaName.$tableName TO $username;",
-        )
+        try {
+            val stmt = connection.createStatement()
+            stmt.execute("GRANT ALL ON TABLE $schemaName.$tableName TO $username;")
+        } catch (ex: SQLException) {
+            LOG.error("Failed to change permissions on $schemaName.$tableName", ex)
+        }
     }
 
     @Throws(SQLException::class)
-    fun ensureSchemaIsPresent(schemaName: String?, username: String?) {
+    fun ensureColumnIsPresent(
+        schemaName: String,
+        tableName: String,
+        columnName: String,
+        creationSql: String,
+    ) {
+        if (!isColumnExisting(schemaName, tableName, columnName)) {
+            val stmt = connection.createStatement()
+            stmt.execute(creationSql)
+        }
+    }
+
+    @Throws(SQLException::class)
+    fun ensureSchemaIsPresent(schemaName: String, username: String) {
         if (!isSchemaExisting(schemaName)) {
             val stmt = connection.createStatement()
             stmt.execute("CREATE SCHEMA $schemaName;")
         }
-        val stmt = connection.createStatement()
-        stmt.execute("GRANT ALL ON SCHEMA $schemaName TO $username;")
+        try {
+            val stmt = connection.createStatement()
+            stmt.execute("GRANT ALL ON SCHEMA $schemaName TO $username;")
+        } catch (ex: SQLException) {
+            LOG.error("Failed to change permissions on $schemaName", ex)
+        }
     }
 
     fun ensureSchemaInitialization() {
@@ -78,11 +112,26 @@ internal class SqlUtils(private val connection: Connection) {
                 "model",
                 """
                     CREATE TABLE $schemaName.model (
-                        key character varying NOT NULL,
-                        value character varying,
-                        reachable boolean,
+                        key VARCHAR NOT NULL,
+                        value VARCHAR,
                         CONSTRAINT kv_pkey PRIMARY KEY (key)
                     );
+                """,
+            )
+            ensureColumnIsPresent(
+                schemaName,
+                "model",
+                "repository",
+                """
+                    alter table $schemaName.model
+                        add repository VARCHAR default '' not null;
+
+                    alter table $schemaName.model
+                        drop constraint kv_pkey;
+
+                    alter table $schemaName.model
+                        add constraint model_pkey
+                            primary key (key, repository);
                 """,
             )
         } catch (e: SQLException) {

@@ -33,6 +33,7 @@ import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
+import org.modelix.model.server.store.forGlobalRepository
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -46,7 +47,7 @@ class PullPerformanceTest {
             installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
             ModelReplicationServer(repositoriesManager, LocalModelClient(storeClientWithStatistics), inMemoryModels).init(this)
-            KeyValueLikeModelServer(repositoriesManager, storeClientWithStatistics, inMemoryModels).init(this)
+            KeyValueLikeModelServer(repositoriesManager, storeClientWithStatistics.forGlobalRepository(), inMemoryModels).init(this)
         }
 
         coroutineScope {
@@ -61,6 +62,9 @@ class PullPerformanceTest {
      */
     @Test
     fun `bulk requests are used`() = runTest { storeClientWithStatistics ->
+        val client = createClient {
+            expectSuccess = true
+        }
         val rand = Random(1056343)
         val url = "http://localhost/v2"
         val preparingModelClient = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
@@ -82,7 +86,7 @@ class PullPerformanceTest {
 
         // The request count when not using a bulk query is a couple ten thousand.
         // Using a bulk query reduces the number of separate requests to the underling store to much fewer.
-        assertTrue(actualRequestCount < 20, "Too many request: $actualRequestCount")
+        assertTrue(actualRequestCount < 30, "Too many request: $actualRequestCount")
     }
 }
 

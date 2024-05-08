@@ -57,6 +57,7 @@ import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.runWithNettyServer
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
+import org.modelix.model.server.store.forContextRepository
 import org.modelix.modelql.core.assertNotEmpty
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -76,7 +77,7 @@ class ModelReplicationServerTest {
 
     private fun getDefaultModelReplicationServerFixture(): Fixture {
         val storeClient = InMemoryStoreClient()
-        val modelClient = LocalModelClient(storeClient)
+        val modelClient = LocalModelClient(storeClient.forContextRepository())
         val repositoriesManager = RepositoriesManager(modelClient)
         return Fixture(
             storeClient,
@@ -210,7 +211,7 @@ class ModelReplicationServerTest {
     fun `server responds with error when failing to compute delta before starting to respond`() {
         // Arrange
         val storeClient = InMemoryStoreClient()
-        val modelClient = LocalModelClient(storeClient)
+        val modelClient = LocalModelClient(storeClient.forContextRepository())
         val repositoriesManager = RepositoriesManager(modelClient)
         val faultyRepositoriesManager = object :
             IRepositoriesManager by repositoriesManager {
@@ -244,7 +245,7 @@ class ModelReplicationServerTest {
         val repositoryId = RepositoryId("repo1")
         val branchRef = repositoryId.getBranchReference()
         val storeClient = InMemoryStoreClient()
-        val modelClient = LocalModelClient(storeClient)
+        val modelClient = LocalModelClient(storeClient.forContextRepository())
         val repositoriesManager = RepositoriesManager(modelClient)
         val faultyRepositoriesManager = object :
             IRepositoriesManager by repositoriesManager {

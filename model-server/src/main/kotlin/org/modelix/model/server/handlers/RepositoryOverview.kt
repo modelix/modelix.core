@@ -105,7 +105,7 @@ fun FlowOrInteractiveOrPhrasingContent.buildHistoryLink(repositoryId: String, br
 }
 
 fun FlowOrInteractiveOrPhrasingContent.buildExploreLatestLink(repositoryId: String, branchName: String) {
-    a("../content/${repositoryId.encodeURLPathPart()}/${branchName.encodeURLPathPart()}/latest/") {
+    a("../content/repositories/${repositoryId.encodeURLPathPart()}/branches/${branchName.encodeURLPathPart()}/latest/") {
         +"Explore Latest Version"
     }
 }

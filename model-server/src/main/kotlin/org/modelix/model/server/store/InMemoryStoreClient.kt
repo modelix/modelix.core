@@ -14,9 +14,8 @@
  */
 package org.modelix.model.server.store
 
-import org.modelix.model.IKeyListener
+import org.modelix.model.IGenericKeyListener
 import org.slf4j.LoggerFactory
-import kotlin.collections.HashMap
 
 fun generateId(idStr: String?): Long {
     return try {
@@ -31,38 +30,38 @@ fun generateId(idStr: String?): Long {
     } + 1L
 }
 
-class InMemoryStoreClient : IStoreClient {
+class InMemoryStoreClient : IsolatingStore {
     companion object {
         private val LOG = LoggerFactory.getLogger(InMemoryStoreClient::class.java)
     }
 
-    private val values: MutableMap<String, String?> = HashMap()
-    private var transactionValues: MutableMap<String, String?>? = null
+    private val values: MutableMap<ObjectInRepository, String?> = HashMap()
+    private var transactionValues: MutableMap<ObjectInRepository, String?>? = null
     private val changeNotifier = ChangeNotifier(this)
     private val pendingChangeMessages = PendingChangeMessages(changeNotifier::notifyListeners)
 
     @Synchronized
-    override fun get(key: String): String? {
+    override fun get(key: ObjectInRepository): String? {
         return if (transactionValues?.contains(key) == true) transactionValues!![key] else values[key]
     }
 
     @Synchronized
-    override fun getAll(keys: List<String>): List<String?> {
+    override fun getAll(keys: List<ObjectInRepository>): List<String?> {
         return keys.map { get(it) }
     }
 
     @Synchronized
-    override fun getAll(): Map<String, String?> {
+    override fun getAll(): Map<ObjectInRepository, String?> {
         return values + (transactionValues ?: emptyMap())
     }
 
     @Synchronized
-    override fun getAll(keys: Set<String>): Map<String, String?> {
+    override fun getAll(keys: Set<ObjectInRepository>): Map<ObjectInRepository, String?> {
         return keys.associateWith { get(it) }
     }
 
     @Synchronized
-    override fun put(key: String, value: String?, silent: Boolean) {
+    override fun put(key: ObjectInRepository, value: String?, silent: Boolean) {
         runTransaction {
             (transactionValues ?: values)[key] = value
             if (!silent) {
@@ -72,7 +71,7 @@ class InMemoryStoreClient : IStoreClient {
     }
 
     @Synchronized
-    override fun putAll(entries: Map<String, String?>, silent: Boolean) {
+    override fun putAll(entries: Map<ObjectInRepository, String?>, silent: Boolean) {
         runTransaction {
             for ((key, value) in entries) {
                 put(key, value, silent)
@@ -81,17 +80,17 @@ class InMemoryStoreClient : IStoreClient {
     }
 
     @Synchronized
-    override fun listen(key: String, listener: IKeyListener) {
+    override fun listen(key: ObjectInRepository, listener: IGenericKeyListener<ObjectInRepository>) {
         changeNotifier.addListener(key, listener)
     }
 
     @Synchronized
-    override fun removeListener(key: String, listener: IKeyListener) {
+    override fun removeListener(key: ObjectInRepository, listener: IGenericKeyListener<ObjectInRepository>) {
         changeNotifier.removeListener(key, listener)
     }
 
     @Synchronized
-    override fun generateId(key: String): Long {
+    override fun generateId(key: ObjectInRepository): Long {
         val id = generateId(get(key))
         put(key, id.toString(), false)
         return id

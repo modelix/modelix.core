@@ -243,10 +243,10 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
                 var version: CLVersion? = headVersion
                 while (version != null) {
                     if (rowIndex >= skip) {
-                        createTableRow(version, latestVersion)
+                        createTableRow(repositoryAndBranch.repositoryId, version, latestVersion)
                         if (version.isMerge()) {
                             for (v in LinearHistory(version.baseVersion!!.getContentHash()).load(version.getMergedVersion1()!!, version.getMergedVersion2()!!)) {
-                                createTableRow(v, latestVersion)
+                                createTableRow(repositoryAndBranch.repositoryId, v, latestVersion)
                                 rowIndex++
                                 if (rowIndex >= skip + limit) {
                                     break
@@ -265,7 +265,7 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
         buttons()
     }
 
-    private fun TBODY.createTableRow(version: CLVersion, latestVersion: CLVersion) {
+    private fun TBODY.createTableRow(repositoryId: RepositoryId, version: CLVersion, latestVersion: CLVersion) {
         tr {
             td {
                 +version.id.toString(16)
@@ -299,7 +299,7 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
             }
             td {
                 style = "white-space: nowrap;"
-                a("/../../../content/${version.getContentHash()}/") {
+                a("/../../../content/repositories/$repositoryId/versions/${version.getContentHash()}/") {
                     +"Explore Content"
                 }
             }

@@ -15,7 +15,6 @@ package org.modelix.client.light
 
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.WebSockets
-import io.ktor.client.request.post
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.coroutineScope
@@ -28,8 +27,8 @@ import org.modelix.incremental.incrementalFunction
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.addNewChild
 import org.modelix.model.api.getDescendants
-import org.modelix.model.server.handlers.DeprecatedLightModelServer
 import org.modelix.model.server.handlers.LightModelServer
+import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.test.RandomModelChangeGenerator
@@ -45,14 +44,16 @@ class LightModelClientTest {
     var localModelClient: LocalModelClient? = null
 
     private fun runTest(block: suspend (HttpClient) -> Unit) = testApplication {
+        val modelClient = LocalModelClient(InMemoryStoreClient())
+        val repositoryManager = RepositoriesManager(modelClient)
+        repositoryManager.createRepository(org.modelix.model.lazy.RepositoryId("test-repo"), userName = "unit-test")
+
         application {
             installAuthentication(unitTestMode = true)
             install(io.ktor.server.websocket.WebSockets)
             install(io.ktor.server.resources.Resources)
-            val modelClient = LocalModelClient(InMemoryStoreClient())
             localModelClient = modelClient
-            DeprecatedLightModelServer(modelClient).init(this)
-            LightModelServer(modelClient).init(this)
+            LightModelServer(modelClient, repositoryManager).init(this)
         }
         val client = createClient {
             install(WebSockets)
@@ -62,9 +63,6 @@ class LightModelClientTest {
 
     fun runClientTest(block: suspend (suspend (debugName: String) -> LightModelClient) -> Unit) = runTest { httpClient ->
         withTimeout(2.minutes) {
-            val response = httpClient.post("http://localhost/json/test-repo/init").status
-            // println("init: $response")
-
             val createClient: suspend (debugName: String) -> LightModelClient = { debugName ->
                 val client = LightModelClient.builder()
                     .httpClient(httpClient)

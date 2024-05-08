@@ -22,6 +22,7 @@ import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
 import org.modelix.model.client2.ModelClientV2
+import org.modelix.model.client2.VersionNotFoundException
 import org.modelix.model.client2.runWrite
 import org.modelix.model.client2.runWriteOnBranch
 import org.modelix.model.lazy.BranchReference
@@ -29,14 +30,17 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
+import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.IKVValue
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.model.server.store.forContextRepository
 import org.modelix.modelql.core.count
 import org.modelix.modelql.untyped.allChildren
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -46,7 +50,7 @@ class ModelClientV2Test {
         application {
             installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
-            ModelReplicationServer(InMemoryStoreClient()).init(this)
+            ModelReplicationServer(InMemoryStoreClient().forContextRepository()).init(this)
         }
         block()
     }
@@ -59,7 +63,7 @@ class ModelClientV2Test {
         val initialVersion = client.initRepository(repositoryId)
         assertEquals(0, initialVersion.getTree().getAllChildren(ITree.ROOT_ID).count())
 
-        val branch = OTBranch(PBranch(initialVersion.getTree(), client.getIdGenerator()), client.getIdGenerator(), client.store)
+        val branch = OTBranch(PBranch(initialVersion.getTree(), client.getIdGenerator()), client.getIdGenerator(), (initialVersion as CLVersion).store)
         branch.runWriteT { t ->
             t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?)
         }
@@ -293,5 +297,29 @@ class ModelClientV2Test {
         val initialVersion = modelClient.initRepository(repositoryId, useRoleIds = false)
 
         assertFalse(initialVersion.getTree().usesRoleIds())
+    }
+
+    @Test
+    fun `can load version without knowing the repository`() = runTest {
+        val modelClient = createModelClient()
+
+        val initialVersions = (0..4).map {
+            modelClient.initRepository(RepositoryId("repo$it"), legacyGlobalStorage = it % 2 != 0)
+        }
+
+        for (i in 0..4) {
+            println("repo$i")
+            val expectedHash = initialVersions[i].getContentHash()
+            val loadedVersion = modelClient.loadVersion(expectedHash, null)
+            assertEquals(expectedHash, loadedVersion.getContentHash())
+        }
+    }
+
+    @Test
+    fun `loading unknown version throws VersionNotFoundException`() = runTest {
+        val modelClient = createModelClient()
+        assertFailsWith<VersionNotFoundException> {
+            modelClient.loadVersion(HashUtil.sha256("xyz"), null)
+        }
     }
 }

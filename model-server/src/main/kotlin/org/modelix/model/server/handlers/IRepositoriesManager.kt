@@ -32,7 +32,7 @@ interface IRepositoriesManager {
      */
     suspend fun maybeInitAndGetSeverId(): String
     fun getRepositories(): Set<RepositoryId>
-    suspend fun createRepository(repositoryId: RepositoryId, userName: String?, useRoleIds: Boolean = true): CLVersion
+    suspend fun createRepository(repositoryId: RepositoryId, userName: String?, useRoleIds: Boolean = true, legacyGlobalStorage: Boolean = false): CLVersion
     suspend fun removeRepository(repository: RepositoryId): Boolean
 
     fun getBranches(repositoryId: RepositoryId): Set<BranchReference>
@@ -45,6 +45,7 @@ interface IRepositoriesManager {
      */
     fun removeBranchesBlocking(repository: RepositoryId, branchNames: Set<String>)
     suspend fun getVersion(branch: BranchReference): CLVersion?
+    suspend fun getVersion(repository: RepositoryId, versionHash: String): CLVersion?
     suspend fun getVersionHash(branch: BranchReference): String?
     suspend fun pollVersionHash(branch: BranchReference, lastKnown: String?): String
     suspend fun mergeChanges(branch: BranchReference, newVersionHash: String): String
@@ -55,6 +56,16 @@ interface IRepositoriesManager {
      */
     fun mergeChangesBlocking(branch: BranchReference, newVersionHash: String): String
     suspend fun computeDelta(versionHash: String, baseVersionHash: String?): ObjectData
+
+    suspend fun <R> runWithRepository(repository: RepositoryId, body: suspend () -> R): R
+
+    /**
+     * The data of a repository is stored separately from other repositories, but that wasn't always the case.
+     * For backwards compatibility, existing repositories remain in the global storage.
+     *
+     * @return null if the repository doesn't exist
+     */
+    fun isIsolated(repository: RepositoryId): Boolean?
 }
 
 fun IRepositoriesManager.getBranchNames(repositoryId: RepositoryId): Set<String> {

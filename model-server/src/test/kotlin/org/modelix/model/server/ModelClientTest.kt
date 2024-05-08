@@ -29,6 +29,7 @@ import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
+import org.modelix.model.server.store.forGlobalRepository
 import java.util.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -43,7 +44,7 @@ class ModelClientTest {
             installAuthentication(unitTestMode = true)
             install(Resources)
             install(IgnoreTrailingSlash)
-            KeyValueLikeModelServer(RepositoriesManager(LocalModelClient(InMemoryStoreClient()))).init(this)
+            KeyValueLikeModelServer(RepositoriesManager(LocalModelClient(InMemoryStoreClient().forGlobalRepository()))).init(this)
         }
         block()
     }
@@ -113,7 +114,7 @@ class ModelClientTest {
     fun `can retrieve server id initially`() = runTest {
         val modelClient = createModelClient()
 
-        val serverId = modelClient.get("server-id")
+        val serverId = modelClient.getA("server-id")
 
         assertNotNull(serverId)
     }

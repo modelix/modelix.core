@@ -22,38 +22,48 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /v2/user-id:
     get:
       operationId: getUserId
       responses:
         "200":
           $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /v2/generate-client-id:
     post:
       operationId: postGenerateClientId
       responses:
         "200":
           $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /headers:
     get:
       operationId: getHeaders
       responses:
         "200":
           $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /health:
     get:
       operationId: getHealth
       responses:
         "200":
           $ref: '#/components/responses/200'
-        "500":
-          $ref: '#/components/responses/500'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /v2/repositories:
     get:
       operationId: getRepositories
       responses:
         "200":
           $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /v2/repositories/{repository}/objects:
     put:
       operationId: putRepositoryObjects
@@ -68,10 +78,10 @@ paths:
           $ref: '#/components/responses/403'
         "401":
           $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
         "200":
           $ref: '#/components/responses/200json'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /v2/repositories/{repository}/branches:
     get:
       operationId: getRepositoryBranches
@@ -84,6 +94,8 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /v2/repositories/{repository}/branches/{branch}:
     delete:
       operationId: deleteRepositoryBranch
@@ -103,6 +115,8 @@ paths:
           $ref: '#/components/responses/404'
         "204":
           description: "Branch successfully deleted"
+        default:
+          $ref: '#/components/responses/GeneralError'
     get:
       operationId: getRepositoryBranch
       parameters:
@@ -130,6 +144,8 @@ paths:
 #            '*/*':
 #              schema:
 #                $ref: "#/components/schemas/VersionDelta"
+        default:
+          $ref: '#/components/responses/GeneralError'
     post:
       operationId: postRepositoryBranch
       parameters:
@@ -156,6 +172,8 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/versionDelta'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /v2/repositories/{repository}/branches/{branch}/hash:
     get:
       operationId: getRepositoryBranchHash
@@ -175,6 +193,8 @@ paths:
           $ref: '#/components/responses/404'
         "200":
           $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /v2/repositories/{repository}/branches/{branch}/listen:
     get:
       operationId: listenRepositoryBranch
@@ -217,8 +237,6 @@ paths:
           $ref: '#/components/responses/403'
         "401":
           $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
         "101":
           description: "Switching Protocols"
           headers:
@@ -234,6 +252,8 @@ paths:
               required: true
               schema:
                 type: string
+        default:
+          $ref: '#/components/responses/GeneralError'
   /v2/repositories/{repository}/branches/{branch}/poll:
     get:
       operationId: pollRepositoryBranch
@@ -258,10 +278,10 @@ paths:
           $ref: '#/components/responses/403'
         "401":
           $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
         "200":
           $ref: '#/components/responses/versionDelta'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /v2/repositories/{repository}/branches/{branch}/pollHash:
     get:
       operationId: pollRepositoryBranchHash
@@ -286,10 +306,10 @@ paths:
           $ref: '#/components/responses/403'
         "401":
           $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
         "200":
           $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /v2/repositories/{repository}/branches/{branch}/query:
     post:
       operationId: postRepositoryBranchQuery
@@ -307,8 +327,8 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200json'
-        "500":
-          $ref: '#/components/responses/500'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /v2/repositories/{repository}/init:
     post:
       operationId: initializeRepository
@@ -328,10 +348,10 @@ paths:
           $ref: '#/components/responses/403'
         "401":
           $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
         "200":
           $ref: '#/components/responses/versionDelta'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /v2/repositories/{repository}/delete:
     post:
       operationId: deleteRepository
@@ -374,12 +394,16 @@ paths:
             '*/*':
               schema:
                 type: object
+        default:
+          $ref: '#/components/responses/GeneralError'
   /v2/repositories/{repository}/versions/{versionHash}/history/{oldestVersionHash}:
     get:
       operationId: getOldestVersionHash
       responses:
         "200":
           $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/GeneralError'
       parameters:
         - name: repository
           in: "path"
@@ -413,8 +437,8 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200json'
-        "500":
-          $ref: '#/components/responses/500'
+        default:
+          $ref: '#/components/responses/GeneralError'
 
   /v2/versions/{versionHash}:
     get:
@@ -435,12 +459,16 @@ paths:
           $ref: '#/components/responses/404'
         "200":
           $ref: '#/components/responses/versionDelta'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /v2/versions/{versionHash}/history/{oldestVersionHash}:
     get:
       operationId: getOldestVersionHashForVersion
       responses:
         "200":
           $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/GeneralError'
       parameters:
         - name: versionHash
           in: "path"
@@ -465,10 +493,10 @@ paths:
           $ref: '#/components/responses/403'
         "401":
           $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
         "200":
           $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /get/{key}:
     get:
       parameters:
@@ -482,12 +510,12 @@ paths:
           $ref: '#/components/responses/403'
         "401":
           $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
         "404":
           $ref: '#/components/responses/404'
         "200":
           $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /getAll:
     put:
       responses:
@@ -495,15 +523,17 @@ paths:
           $ref: '#/components/responses/403'
         "401":
           $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
         "200":
           $ref: '#/components/responses/200json'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /getEmail:
     get:
       responses:
         "200":
           $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /getRecursively/{key}:
     get:
       parameters:
@@ -515,6 +545,8 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200json'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /poll/{key}:
     get:
       parameters:
@@ -533,12 +565,12 @@ paths:
           $ref: '#/components/responses/403'
         "401":
           $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
         "404":
           $ref: '#/components/responses/404'
         "200":
           $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /put/{key}:
     put:
       parameters:
@@ -552,12 +584,12 @@ paths:
           $ref: '#/components/responses/403'
         "401":
           $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
         "200":
           $ref: '#/components/responses/200'
         "404":
           $ref: '#/components/responses/404'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /putAll:
     put:
       responses:
@@ -565,15 +597,21 @@ paths:
           $ref: '#/components/responses/403'
         "401":
           $ref: '#/components/responses/401'
-        "500":
-          $ref: '#/components/responses/500'
         "200":
           $ref: '#/components/responses/200'
         "404":
           $ref: '#/components/responses/404'
+        default:
+          $ref: '#/components/responses/GeneralError'
 components:
   responses:
     "200":
+      description: OK
+      content:
+        text/plain:
+          schema:
+            type: string
+    "204":
       description: OK
       content:
         text/plain:
@@ -585,36 +623,38 @@ components:
         application/json:
           schema:
             type: string
+
     "400":
       description: "Bad Request"
       content:
-        text/plain:
+        application/problem+json:
           schema:
-            type: string
+            $ref: '#/components/schemas/Problem'
     "401":
       description: "Unauthorized"
       content:
-        text/plain:
+        application/problem+json:
           schema:
-            type: string
-    403:
+            $ref: '#/components/schemas/Problem'
+    "403":
       description: "Forbidden"
       content:
-        text/plain:
+        application/problem+json:
           schema:
-            type: string
+            $ref: '#/components/schemas/Problem'
     "404":
       description: "Not Found"
       content:
-        text/plain:
+        application/problem+json:
           schema:
-            type: string
-    "500":
-      description: "Internal Server Error"
+            $ref: '#/components/schemas/Problem'
+    GeneralError:
+      description: Unexpected error
       content:
-        text/plain:
+        application/problem+json:
           schema:
-            type: string
+            $ref: '#/components/schemas/Problem'
+
     "versionDelta":
       description: OK
       content:
@@ -630,7 +670,55 @@ components:
         'text/plain':
           schema:
             type: string
+
   schemas:
+    # From https://opensource.zalando.com/restful-api-guidelines/models/problem-1.0.1.yaml
+    Problem:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          description: >
+            A URI reference that uniquely identifies the problem type only in the
+            context of the provided API. Opposed to the specification in RFC-9457,
+            it is neither recommended to be dereferenceable and point to a
+            human-readable documentation nor globally unique for the problem type.
+          default: 'about:blank'
+          example: '/some/uri-reference'
+        title:
+          type: string
+          description: >
+            A short summary of the problem type. Written in English and readable
+            for engineers, usually not suited for non technical stakeholders and
+            not localized.
+          example: some title for the error situation
+        status:
+          type: integer
+          format: int32
+          description: >
+            The HTTP status code generated by the origin server for this occurrence
+            of the problem.
+          minimum: 100
+          maximum: 600
+          exclusiveMaximum: true
+        detail:
+          type: string
+          description: >
+            A human readable explanation specific to this occurrence of the
+            problem that is helpful to locate the problem and give advice on how
+            to proceed. Written in English and readable for engineers, usually not
+            suited for non technical stakeholders and not localized.
+          example: some description for the error situation
+        instance:
+          type: string
+          format: uri-reference
+          description: >
+            A URI reference that identifies the specific occurrence of the problem,
+            e.g. by adding a fragment identifier or sub-path to the problem type.
+            May be used to locate the root of this problem in the source code.
+          example: '/some/uri-reference#specific-occurrence-context'
+
     VersionDelta:
       title: VersionDelta
       type: object

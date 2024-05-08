@@ -34,7 +34,6 @@ import io.ktor.server.auth.jwt.jwt
 import io.ktor.server.auth.parseAuthorizationHeader
 import io.ktor.server.auth.principal
 import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
-import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.request.header
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
@@ -81,28 +80,6 @@ fun Application.installAuthentication(unitTestMode: Boolean = false) {
                     } catch (e: Exception) {
                     }
                     null
-                }
-            }
-        }
-    }
-    install(StatusPages) {
-        exception<Throwable> { call, cause ->
-            when (cause) {
-                is NoPermissionException -> call.respondText(
-                    text = cause.message ?: "",
-                    status = HttpStatusCode.Forbidden,
-                )
-                is NotLoggedInException -> call.respondText(
-                    text = cause.message ?: "",
-                    status = HttpStatusCode.Unauthorized,
-                )
-                else -> {
-                    val text = """
-                        |500: $cause
-                        |
-                        |${cause.stackTraceToString()}
-                    """.trimMargin()
-                    call.respondText(text = text, status = HttpStatusCode.InternalServerError)
                 }
             }
         }

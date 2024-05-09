@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/openjdk-11:1.19-4
+FROM registry.access.redhat.com/ubi8/openjdk-11:1.19-4.1715070694
 WORKDIR /usr/modelix-model
 EXPOSE 28101
 HEALTHCHECK CMD curl --fail http://localhost:28101/health || exit 1

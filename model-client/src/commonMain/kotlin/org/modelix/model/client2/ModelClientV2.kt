@@ -61,6 +61,7 @@ import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.computeDelta
+import org.modelix.model.oauth.ModelixOAuthClient
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.MapBasedStore
@@ -422,7 +423,7 @@ class ModelClientV2(
 abstract class ModelClientV2Builder {
     protected var httpClient: HttpClient? = null
     protected var baseUrl: String = "https://localhost/model/v2"
-    protected var authTokenProvider: (() -> String?)? = null
+    protected var authTokenProvider: (suspend () -> String?)? = null
     protected var userId: String? = null
     protected var connectTimeout: Duration = 1.seconds
     protected var requestTimeout: Duration = 30.seconds
@@ -445,7 +446,7 @@ abstract class ModelClientV2Builder {
         return this
     }
 
-    fun authToken(provider: () -> String?): ModelClientV2Builder {
+    fun authToken(provider: suspend () -> String?): ModelClientV2Builder {
         authTokenProvider = provider
         return this
     }
@@ -490,6 +491,7 @@ abstract class ModelClientV2Builder {
                     }
                 }
             }
+            ModelixOAuthClient.installAuth(this, baseUrl, authTokenProvider)
         }
     }
 

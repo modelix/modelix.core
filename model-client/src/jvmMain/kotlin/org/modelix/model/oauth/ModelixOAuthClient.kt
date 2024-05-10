@@ -34,7 +34,7 @@ import io.ktor.client.plugins.auth.providers.bearer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-object ModelixOAuthClient {
+actual object ModelixOAuthClient {
     private var DATA_STORE_FACTORY: DataStoreFactory = MemoryDataStoreFactory()
     private val SCOPE = "email"
     private val HTTP_TRANSPORT: HttpTransport = NetHttpTransport()
@@ -66,42 +66,27 @@ object ModelixOAuthClient {
         }
     }
 
-    fun installAuth(config: HttpClientConfig<*>, baseUrl: String, authTokenProvider: (() -> String?)? = null) {
+    actual fun installAuth(config: HttpClientConfig<*>, baseUrl: String, authTokenProvider: (suspend () -> String?)?) {
+        if (authTokenProvider != null) {
+            installAuthWithAuthTokenProvider(config, authTokenProvider)
+        } else {
+            installAuthWithPKCEFlow(config, baseUrl)
+        }
+    }
+
+    private fun installAuthWithPKCEFlow(config: HttpClientConfig<*>, baseUrl: String) {
         config.apply {
             install(Auth) {
                 bearer {
                     loadTokens {
-                        val tp = authTokenProvider
-                        if (tp == null) {
-                            ModelixOAuthClient.getTokens()?.let { BearerTokens(it.accessToken, it.refreshToken) }
-                        } else {
-                            val token = tp()
-                            if (token == null) {
-//                            connectionStatus = RestWebModelClient.ConnectionStatus.WAITING_FOR_TOKEN
-                                null
-                            } else {
-                                BearerTokens(token, "")
-                            }
-                        }
+                        getTokens()?.let { BearerTokens(it.accessToken, it.refreshToken) }
                     }
                     refreshTokens {
-                        val tp = authTokenProvider
-                        if (tp == null) {
-                            var url = baseUrl
-                            if (!url.endsWith("/")) url += "/"
-                            if (url.endsWith("/model/")) url = url.substringBeforeLast("/model/")
-//                        connectionStatus = RestWebModelClient.ConnectionStatus.WAITING_FOR_TOKEN
-                            val tokens = ModelixOAuthClient.authorize(url)
-                            BearerTokens(tokens.accessToken, tokens.refreshToken)
-                        } else {
-                            val providedToken = tp()
-                            if (providedToken != null && providedToken != this.oldTokens?.accessToken) {
-                                BearerTokens(providedToken, "")
-                            } else {
-//                            connectionStatus = RestWebModelClient.ConnectionStatus.WAITING_FOR_TOKEN
-                                null
-                            }
-                        }
+                        var url = baseUrl
+                        if (!url.endsWith("/")) url += "/"
+                        if (url.endsWith("/model/")) url = url.substringBeforeLast("/model/")
+                        val tokens = authorize(url)
+                        BearerTokens(tokens.accessToken, tokens.refreshToken)
                     }
                 }
             }

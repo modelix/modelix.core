@@ -31,6 +31,8 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.store.InMemoryStoreClient
 import kotlin.test.Test
+import kotlin.test.assertContains
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class LazyLoadingTest {
@@ -47,23 +49,41 @@ class LazyLoadingTest {
         block()
     }
 
-    private fun assertRequestCount(atLeast: Long, body: () -> Unit): Long {
+    private fun assertRequestCount(expected: IntRange, body: () -> Unit) {
         val requestCount = measureRequests(body)
-        assertTrue(requestCount >= atLeast, "At least $atLeast requests expected, but was $requestCount")
-        return requestCount
+        assertContains(expected, requestCount)
     }
 
-    private fun measureRequests(body: () -> Unit): Long {
+    private fun measureRequests(body: () -> Unit): Int {
         val before = statistics.getTotalRequests()
         body()
         val after = statistics.getTotalRequests()
-        val requestCount = after - before
+        val requestCount = (after - before).toInt()
         println("Requests: $requestCount")
         return requestCount
     }
 
-    @Test
-    fun `model data is loaded on demand`() = runTest {
+    @Test fun lazy_loading_500_10000_500_500() = runLazyLoadingTest(500, 10_000, 500, 500, 27, 1, 0)
+    @Test fun lazy_loading_5000_10000_500_500() = runLazyLoadingTest(5_000, 10_000, 500, 500, 40, 50, 55)
+    @Test fun lazy_loading_50000_10000_500_500() = runLazyLoadingTest(50_000, 10_000, 500, 500, 55, 1907, 1725)
+
+    @Test fun lazy_loading_500_10000_50_50() = runLazyLoadingTest(500, 10_000, 50, 50, 28, 14, 0)
+    @Test fun lazy_loading_5000_10000_50_50() = runLazyLoadingTest(5_000, 10_000, 50, 50, 41, 196, 100)
+    @Test fun lazy_loading_50000_10000_50_50() = runLazyLoadingTest(50_000, 10_000, 50, 50, 55, 3843, 4560)
+
+    @Test fun lazy_loading_5000_500_500_500() = runLazyLoadingTest(5_000, 500, 500, 500, 85, 1407, 1385)
+    @Test fun lazy_loading_5000_5000_500_500() = runLazyLoadingTest(5_000, 5_000, 500, 500, 39, 99, 182)
+    @Test fun lazy_loading_5000_50000_500_500() = runLazyLoadingTest(5_000, 50_000, 500, 500, 39, 14, 0)
+
+    @Test fun lazy_loading_5000_10000_5000_5000() = runLazyLoadingTest(5_000, 10_000, 5000, 5000, 39, 65, 56)
+
+    @Test fun lazy_loading_2000_100_5_5() = runLazyLoadingTest(2_000, 100, 5, 5, 37, 1902, 1934)
+
+    fun runLazyLoadingTest(numberOfNodes: Int, cacheSize: Int, batchSize: Int, prefetchSize: Int, vararg expectedRequests: Int) {
+        runLazyLoadingTest(numberOfNodes, cacheSize, batchSize, prefetchSize, expectedRequests.toList())
+    }
+
+    fun runLazyLoadingTest(numberOfNodes: Int, cacheSize: Int, batchSize: Int, prefetchSize: Int, expectedRequests: List<Int>) = runTest {
         // After optimizing the lazy loading to send less (but bigger) requests, this test might fail.
         // Just update the model size, cache size and expected request count to fix it.
 
@@ -82,19 +102,21 @@ class LazyLoadingTest {
                 createNodes(parentNode.addNewChild(NullChildLink, 1), subtreeSize2 - 1)
             }
 
-            createNodes(it, 5_000)
+            createNodes(it, numberOfNodes)
         }
-        val version = client.lazyLoadVersion(branchRef, cacheSize = 10_000, batchSize = 500, prefetchSize = 500)
+        val version = client.lazyLoadVersion(branchRef, cacheSize, batchSize, prefetchSize)
 
         val rootNode = TreePointer(version.getTree()).getRootNode()
 
+        val actualRequestCount = ArrayList<Int>()
+
         // Traverse to the first leaf node. This should load some data, but not the whole model.
-        assertRequestCount(1) {
+       actualRequestCount += measureRequests {
             generateSequence(rootNode) { it.allChildren.firstOrNull() }.count()
         }
 
         // Traverse the whole model.
-        val requestCountFirstTraversal = assertRequestCount(1) {
+        actualRequestCount += measureRequests {
             rootNode.getDescendants(true).count()
         }
 
@@ -102,8 +124,10 @@ class LazyLoadingTest {
         // unloaded during the first traversal. The unloaded parts need to be requested again.
         // But the navigation to the first leaf is like a warmup of the cache for the whole model traversal.
         // The previous traversal can benefit from that, but the next one cannot and is expected to need more requests.
-        assertRequestCount(requestCountFirstTraversal + 1) {
+        actualRequestCount += measureRequests {
             rootNode.getDescendants(true).count()
         }
+
+        assertEquals(expectedRequests, actualRequestCount)
     }
 }

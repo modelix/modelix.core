@@ -22,6 +22,7 @@ import org.modelix.model.api.ITree
  * This guarantees that after a prefetch there are no more request required.
  * Not thread safe.
  */
+@Deprecated("BulkQuery is now responsible for prefetching")
 class PrefetchCache(private val store: IDeserializingKeyValueStore) : IDeserializingKeyValueStore {
     init {
         if (store is ContextIndirectCache) throw IllegalArgumentException()

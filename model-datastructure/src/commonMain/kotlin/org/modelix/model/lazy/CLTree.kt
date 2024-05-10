@@ -94,6 +94,7 @@ class CLTree : ITree, IBulkTree {
         return (nodesMap ?: return 0L).calculateSize(store.newBulkQuery()).executeQuery()
     }
 
+    @Deprecated("BulkQuery is now responsible for prefetching")
     fun prefetchAll() {
         store.prefetch(hash)
     }

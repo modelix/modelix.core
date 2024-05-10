@@ -25,5 +25,7 @@ interface IDeserializingKeyValueStore {
     fun <T> getIfCached(hash: String, deserializer: (String) -> T): T?
     fun <T> getAll(hash: Iterable<String>, deserializer: (String, String) -> T): Iterable<T>
     fun put(hash: String, deserialized: Any, serialized: String)
+
+    @Deprecated("BulkQuery is now responsible for prefetching")
     fun prefetch(hash: String)
 }

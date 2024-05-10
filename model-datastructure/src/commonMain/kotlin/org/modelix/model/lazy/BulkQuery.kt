@@ -39,11 +39,11 @@ class BulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery {
     }
 
     fun <T : IKVValue> query(key: KVEntryReference<T>, callback: (T) -> Unit) {
-        if (queue.size >= BATCH_SIZE && !processing) process()
+        if (queue.size >= BATCH_SIZE && !processing) executeQuery()
         queue.add(Pair(key as KVEntryReference<IKVValue>, callback as (IKVValue?) -> Unit))
     }
 
-    override fun <T : IKVValue> get(hash: KVEntryReference<T>): IBulkQuery.Value<T?> {
+    override fun <T : IKVValue> query(hash: KVEntryReference<T>): IBulkQuery.Value<T?> {
         val result = Value<T?>()
         query(hash) { value: T? -> result.success(value) }
         return result
@@ -53,7 +53,7 @@ class BulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery {
         return Value(value)
     }
 
-    override fun process() {
+    override fun executeQuery() {
         if (processing) {
             throw RuntimeException("Already processing")
         }
@@ -83,22 +83,22 @@ class BulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery {
         }
     }
 
-    override fun <I, O> map(input_: Iterable<I>, f: (I) -> IBulkQuery.Value<O>): IBulkQuery.Value<List<O>> {
-        val input = input_.toList()
-        if (input.isEmpty()) {
+    override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IBulkQuery.Value<O>): IBulkQuery.Value<List<O>> {
+        val inputList = input.toList()
+        if (inputList.isEmpty()) {
             return constant(emptyList())
         }
-        val output = arrayOfNulls<Any>(input.size)
-        val done = BooleanArray(input.size)
-        var remaining = input.size
+        val output = arrayOfNulls<Any>(inputList.size)
+        val done = BooleanArray(inputList.size)
+        var remaining = inputList.size
         val result = Value<List<O>>()
-        for (i_ in input.indices) {
-            f(input[i_]).onSuccess { value ->
-                if (done[i_]) {
-                    return@onSuccess
+        for (i in inputList.indices) {
+            f(inputList[i]).onReceive { value ->
+                if (done[i]) {
+                    return@onReceive
                 }
-                output[i_] = value
-                done[i_] = true
+                output[i] = value
+                done[i] = true
                 remaining--
                 if (remaining == 0) {
                     result.success(output.map { e: Any? -> e as O })
@@ -131,7 +131,7 @@ class BulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery {
         }
 
         @Synchronized
-        override fun onSuccess(handler: (T) -> Unit) {
+        override fun onReceive(handler: (T) -> Unit) {
             if (done) {
                 handler(value as T)
             } else {
@@ -139,8 +139,8 @@ class BulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery {
             }
         }
 
-        override fun execute(): T {
-            process()
+        override fun executeQuery(): T {
+            this@BulkQuery.executeQuery()
             if (!done) {
                 throw RuntimeException("No value received")
             }
@@ -149,13 +149,13 @@ class BulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery {
 
         override fun <R> map(handler: (T) -> R): IBulkQuery.Value<R> {
             val result = Value<R>()
-            onSuccess { v -> result.success(handler(v)) }
+            onReceive { v -> result.success(handler(v)) }
             return result
         }
 
-        override fun <R> mapBulk(handler: (T) -> IBulkQuery.Value<R>): IBulkQuery.Value<R> {
+        override fun <R> flatMap(handler: (T) -> IBulkQuery.Value<R>): IBulkQuery.Value<R> {
             val result = Value<R>()
-            onSuccess { v -> handler(v).onSuccess { value -> result.success(value) } }
+            onReceive { v -> handler(v).onReceive { value -> result.success(value) } }
             return result
         }
     }

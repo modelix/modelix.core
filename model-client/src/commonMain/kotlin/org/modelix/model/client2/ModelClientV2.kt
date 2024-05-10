@@ -225,7 +225,7 @@ class ModelClientV2(
     }
 
     override suspend fun getObjects(repository: RepositoryId, keys: Sequence<String>): Map<String, String> {
-        LOG.debug { "${clientId.toString(16)}.getObjects($repository, ${keys.count()})" }
+        //LOG.debug { "${clientId.toString(16)}.getObjects($repository, ${keys.count()})" }
         val response = httpClient.post {
             url {
                 takeFrom(baseUrl)

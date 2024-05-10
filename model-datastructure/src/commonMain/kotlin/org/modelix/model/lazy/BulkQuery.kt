@@ -24,11 +24,16 @@ private val LOG = mu.KotlinLogging.logger {  }
 /**
  * Not thread safe
  */
-class BulkQuery(private val store: IDeserializingKeyValueStore, val batchSize: Int = 5_000) : IBulkQuery {
+class BulkQuery(private val store: IDeserializingKeyValueStore, val batchSize: Int = 5_000, val prefetchSize: Int = batchSize) : IBulkQuery {
     private val queue: MutableMap<String, QueueElement<out IKVValue>> = LinkedHashMap()
     private var prefetchOfferings: MutableList<() -> Unit> = ArrayList()
     private var processing = false
     private var prefetchMode = false
+
+    init {
+        require(prefetchSize <= batchSize)
+    }
+
     protected fun executeBulkQuery(refs: Iterable<KVEntryReference<IKVValue>>): Map<String, IKVValue?> {
         val refsMap = refs.associateBy { it.getHash() }
         val result = HashMap<String, IKVValue?>()
@@ -91,10 +96,10 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, val batchSize: I
                 val regularRequests: List<Map.Entry<String, QueueElement<out IKVValue>>> = queue.asSequence().filter { !it.value.isPrefetch }.toList()
                 if (regularRequests.isEmpty()) break
 
-                while (queue.size < batchSize && prefetchOfferings.isNotEmpty()) {
+                while (queue.size < prefetchSize && prefetchOfferings.isNotEmpty()) {
                     runPrefetch {
                         for (i in prefetchOfferings.indices.reversed()) {
-                            if (queue.size >= batchSize) break
+                            if (queue.size >= prefetchSize) break
                             prefetchOfferings[i].invoke()
                             prefetchOfferings.removeAt(i)
                         }
@@ -102,7 +107,7 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, val batchSize: I
                 }
 
                 val chosenRequests: List<Map.Entry<String, QueueElement<out IKVValue>>>
-                if (regularRequests.size >= batchSize) {
+                if (regularRequests.size >= prefetchSize) {
                     // The callback of a request usually enqueues new requests until it reaches the leafs of the
                     // data structure. By executing the latest (instead of the oldest) request we basically do a depth
                     // first traversal which keeps the maximum size of the queue smaller.

@@ -19,14 +19,19 @@ import org.modelix.model.IKeyValueStore
 import org.modelix.model.createLRUMap
 import kotlin.jvm.JvmOverloads
 
-class ObjectStoreCache @JvmOverloads constructor(override val keyValueStore: IKeyValueStore, cacheSize: Int = 100_000) : IDeserializingKeyValueStore {
+class ObjectStoreCache @JvmOverloads constructor(
+    override val keyValueStore: IKeyValueStore,
+    cacheSize: Int = 100_000,
+    private val batchSize: Int = 5_000,
+    private val prefetchSize: Int = batchSize,
+) : IDeserializingKeyValueStore {
     private val cache: MutableMap<String?, Any> = createLRUMap(cacheSize)
     private var bulkQuery: Pair<IBulkQuery, IDeserializingKeyValueStore>? = null
 
     override fun newBulkQuery(wrapper: IDeserializingKeyValueStore): IBulkQuery {
         // TODO thread safety
         if (bulkQuery?.takeIf { it.second == wrapper } == null) {
-            bulkQuery = keyValueStore.newBulkQuery(wrapper) to wrapper
+            bulkQuery = keyValueStore.newBulkQuery(wrapper, batchSize, prefetchSize) to wrapper
         }
         return bulkQuery!!.first
     }

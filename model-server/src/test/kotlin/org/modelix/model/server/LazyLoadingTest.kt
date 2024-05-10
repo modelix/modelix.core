@@ -84,7 +84,7 @@ class LazyLoadingTest {
 
             createNodes(it, 5_000)
         }
-        val version = client.lazyLoadVersion(branchRef, cacheSize = 10_000)
+        val version = client.lazyLoadVersion(branchRef, cacheSize = 10_000, batchSize = 500, prefetchSize = 500)
 
         val rootNode = TreePointer(version.getTree()).getRootNode()
 

@@ -135,16 +135,16 @@ class InMemoryModel private constructor(
             val bulkQuery = NonCachingObjectStore(store).newBulkQuery()
             LOG.info { "Start loading model into memory" }
             val duration = measureTimeMillis {
-                bulkQuery.get(slowMapRef).onSuccess { slowMap ->
+                bulkQuery.query(slowMapRef).onReceive { slowMap ->
                     slowMap!!.visitEntries(bulkQuery) { nodeId, nodeDataRef ->
-                        bulkQuery.get(nodeDataRef).onSuccess { nodeData ->
+                        bulkQuery.query(nodeDataRef).onReceive { nodeData ->
                             if (nodeData != null) {
                                 fastMap.put(nodeId, nodeData)
                             }
                         }
                     }
                 }
-                bulkQuery.process()
+                bulkQuery.executeQuery()
             }.milliseconds
             LOG.info { "Done loading model into memory after ${duration.toDouble(DurationUnit.SECONDS)} s" }
             return InMemoryModel(branchId, slowMapRef, fastMap, useRoleIds)
@@ -162,7 +162,7 @@ class InMemoryModel private constructor(
         LOG.debug { "Model update started" }
         fastMap.putAll(nodeMap)
         val duration = measureTimeMillis {
-            bulkQuery.map(listOf(slowMapRef, loadedMapRef)) { bulkQuery.get(it) }.onSuccess {
+            bulkQuery.flatMap(listOf(slowMapRef, loadedMapRef)) { bulkQuery.query(it) }.onReceive {
                 val newSlowMap = it[0]!!
                 val oldSlowMap = it[1]!!
                 newSlowMap.visitChanges(
@@ -170,7 +170,7 @@ class InMemoryModel private constructor(
                     object : CPHamtNode.IChangeVisitor {
                         override fun visitChangesOnly(): Boolean = false
                         override fun entryAdded(key: Long, value: KVEntryReference<CPNode>) {
-                            bulkQuery.get(value).onSuccess { nodeData ->
+                            bulkQuery.query(value).onReceive { nodeData ->
                                 if (nodeData != null) {
                                     fastMap.put(key, nodeData)
                                 }
@@ -184,7 +184,7 @@ class InMemoryModel private constructor(
                             oldValue: KVEntryReference<CPNode>,
                             newValue: KVEntryReference<CPNode>,
                         ) {
-                            bulkQuery.get(newValue).onSuccess { nodeData ->
+                            bulkQuery.query(newValue).onReceive { nodeData ->
                                 if (nodeData != null) {
                                     fastMap.put(key, nodeData)
                                 }
@@ -194,7 +194,7 @@ class InMemoryModel private constructor(
                     bulkQuery,
                 )
             }
-            bulkQuery.process()
+            bulkQuery.executeQuery()
         }.milliseconds
         LOG.info { "Done updating model after ${duration.toDouble(DurationUnit.SECONDS)} s" }
         return InMemoryModel(branchId, slowMapRef, fastMap, useRoleIds)

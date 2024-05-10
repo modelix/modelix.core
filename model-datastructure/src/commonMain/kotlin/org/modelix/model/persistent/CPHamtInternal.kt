@@ -61,12 +61,12 @@ class CPHamtInternal(
     override fun calculateSize(bulkQuery: IBulkQuery): IBulkQuery.Value<Long> {
         val childRefs = data.children
         return bulkQuery
-            .map(childRefs.asIterable(), { bulkQuery.get(it) })
-            .mapBulk { resolvedChildren: List<CPHamtNode?> ->
+            .flatMap(childRefs.asIterable(), { bulkQuery.query(it) })
+            .flatMap { resolvedChildren: List<CPHamtNode?> ->
                 val resolvedChildrenNN = resolvedChildren.mapIndexed { index, child ->
                     child ?: throw RuntimeException("Entry not found in store: " + childRefs[index].getHash())
                 }
-                bulkQuery.map(resolvedChildrenNN) { it.calculateSize(bulkQuery) }
+                bulkQuery.flatMap(resolvedChildrenNN) { it.calculateSize(bulkQuery) }
             }
             .map { it.reduce { a, b -> a + b } }
     }
@@ -74,7 +74,7 @@ class CPHamtInternal(
     override fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         val childIndex = CPHamtNode.indexFromKey(key, shift)
-        val child = getChild(childIndex, NonBulkQuery(store)).execute()
+        val child = getChild(childIndex, NonBulkQuery(store)).executeQuery()
         return if (child == null) {
             setChild(childIndex, CPHamtLeaf.create(key, value), shift, store)
         } else {
@@ -85,7 +85,7 @@ class CPHamtInternal(
     override fun remove(key: Long, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         val childIndex = CPHamtNode.indexFromKey(key, shift)
-        val child = getChild(childIndex, NonBulkQuery(store)).execute()
+        val child = getChild(childIndex, NonBulkQuery(store)).executeQuery()
         return if (child == null) {
             this
         } else {
@@ -96,7 +96,7 @@ class CPHamtInternal(
     override fun get(key: Long, shift: Int, bulkQuery: IBulkQuery): IBulkQuery.Value<KVEntryReference<CPNode>?> {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         val childIndex = CPHamtNode.indexFromKey(key, shift)
-        return getChild(childIndex, bulkQuery).mapBulk { child: CPHamtNode? ->
+        return getChild(childIndex, bulkQuery).flatMap { child: CPHamtNode? ->
             if (child == null) {
                 bulkQuery.constant(null)
             } else {
@@ -116,18 +116,18 @@ class CPHamtInternal(
     }
 
     protected fun getChild(childHash: KVEntryReference<CPHamtNode>, bulkQuery: IBulkQuery): IBulkQuery.Value<CPHamtNode> {
-        return bulkQuery[childHash].map { childData ->
+        return bulkQuery.query(childHash).map { childData ->
             if (childData == null) throw RuntimeException("Entry not found in store: ${childHash.getHash()}")
             childData
         }
     }
 
     protected fun getChild(logicalIndex: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
-        return getChild(logicalIndex, NonBulkQuery(store)).execute()
+        return getChild(logicalIndex, NonBulkQuery(store)).executeQuery()
     }
 
     protected fun getChild(childHash: KVEntryReference<CPHamtNode>, store: IDeserializingKeyValueStore): CPHamtNode? {
-        return getChild(childHash, NonBulkQuery(store)).execute()
+        return getChild(childHash, NonBulkQuery(store)).executeQuery()
     }
 
     fun setChild(logicalIndex: Int, child: CPHamtNode?, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
@@ -161,7 +161,7 @@ class CPHamtInternal(
         }
         val newChildren = COWArrays.removeAt(data.children, physicalIndex)
         if (newChildren.size == 1) {
-            val child0 = getChild(newChildren[0], NonBulkQuery(store)).execute()
+            val child0 = getChild(newChildren[0], NonBulkQuery(store)).executeQuery()
             if (child0 is CPHamtLeaf) {
                 return child0
             }
@@ -170,8 +170,8 @@ class CPHamtInternal(
     }
 
     override fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IBulkQuery.Value<Unit> {
-        return bulkQuery.map(data.children.asIterable()) { bulkQuery.get(it) }.mapBulk { children ->
-            bulkQuery.map(children) { it!!.visitEntries(bulkQuery, visitor) }.map { }
+        return bulkQuery.flatMap(data.children.asIterable()) { bulkQuery.query(it) }.flatMap { children ->
+            bulkQuery.flatMap(children) { it!!.visitEntries(bulkQuery, visitor) }.map { }
         }
     }
 
@@ -245,7 +245,7 @@ class CPHamtInternal(
                         } else {
                             visitor.entryAdded(k, v)
                         }
-                    }.onSuccess {
+                    }.onReceive {
                         entryVisitingDone = true
                         if (!oldEntryExists) visitor.entryRemoved(oldNode.key, oldNode.value)
                     }

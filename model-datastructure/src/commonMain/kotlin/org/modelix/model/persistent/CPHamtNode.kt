@@ -41,11 +41,11 @@ abstract class CPHamtNode : IKVValue {
 
     fun get(key: Long, store: IDeserializingKeyValueStore): KVEntryReference<CPNode>? {
         val bulkQuery: IBulkQuery = NonBulkQuery(store)
-        return get(key, 0, bulkQuery).execute()
+        return get(key, 0, bulkQuery).executeQuery()
     }
 
     fun getAll(keys: Iterable<Long>, bulkQuery: IBulkQuery): IBulkQuery.Value<List<KVEntryReference<CPNode>?>> {
-        return bulkQuery.map(keys) { key: Long -> get(key, 0, bulkQuery) }
+        return bulkQuery.flatMap(keys) { key: Long -> get(key, 0, bulkQuery) }
     }
 
     fun put(key: Long, value: KVEntryReference<CPNode>?, store: IDeserializingKeyValueStore): CPHamtNode? {

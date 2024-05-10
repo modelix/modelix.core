@@ -45,7 +45,7 @@ class CPHamtSingle(
     }
 
     override fun calculateSize(bulkQuery: IBulkQuery): IBulkQuery.Value<Long> {
-        return getChild(bulkQuery).mapBulk { it.calculateSize(bulkQuery) }
+        return getChild(bulkQuery).flatMap { it.calculateSize(bulkQuery) }
     }
 
     private fun maskBits(key: Long, shift: Int): Long = (key ushr (CPHamtNode.MAX_BITS - CPHamtNode.BITS_PER_LEVEL * numLevels - shift)) and mask
@@ -53,8 +53,8 @@ class CPHamtSingle(
     override fun get(key: Long, shift: Int, bulkQuery: IBulkQuery): IBulkQuery.Value<KVEntryReference<CPNode>?> {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         if (maskBits(key, shift) == bits) {
-            return bulkQuery.get(child)
-                .mapBulk {
+            return bulkQuery.query(child)
+                .flatMap {
                     val childData = it ?: throw RuntimeException("Entry not found in store: " + child.getHash())
                     childData.get(key, shift + numLevels * CPHamtNode.BITS_PER_LEVEL, bulkQuery)
                 }
@@ -66,7 +66,7 @@ class CPHamtSingle(
     override fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         if (maskBits(key, shift) == bits) {
-            return withNewChild(getChild(NonBulkQuery(store)).execute().put(key, value, shift + CPHamtNode.BITS_PER_LEVEL * numLevels, store))
+            return withNewChild(getChild(NonBulkQuery(store)).executeQuery().put(key, value, shift + CPHamtNode.BITS_PER_LEVEL * numLevels, store))
         } else {
             if (numLevels > 1) {
                 return splitOneLevel().put(key, value, shift, store)
@@ -109,11 +109,11 @@ class CPHamtSingle(
     }
 
     fun getChild(bulkQuery: IBulkQuery): IBulkQuery.Value<CPHamtNode> {
-        return bulkQuery[child].map { childData -> childData!! }
+        return bulkQuery.query(child).map { childData -> childData!! }
     }
 
     override fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IBulkQuery.Value<Unit> {
-        return getChild(bulkQuery).mapBulk { it.visitEntries(bulkQuery, visitor) }
+        return getChild(bulkQuery).flatMap { it.visitEntries(bulkQuery, visitor) }
     }
 
     override fun visitChanges(oldNode: CPHamtNode?, shift: Int, visitor: CPHamtNode.IChangeVisitor, bulkQuery: IBulkQuery) {

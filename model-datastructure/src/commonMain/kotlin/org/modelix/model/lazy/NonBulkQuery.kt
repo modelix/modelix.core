@@ -18,8 +18,8 @@ package org.modelix.model.lazy
 import org.modelix.model.persistent.IKVValue
 
 class NonBulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery {
-    override fun <I, O> map(input_: Iterable<I>, f: (I) -> IBulkQuery.Value<O>): IBulkQuery.Value<List<O>> {
-        val list = input_.asSequence().map(f).map { it.execute() }.toList()
+    override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IBulkQuery.Value<O>): IBulkQuery.Value<List<O>> {
+        val list = input.asSequence().map(f).map { it.executeQuery() }.toList()
         return Value(list)
     }
 
@@ -27,20 +27,20 @@ class NonBulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery 
         return Value(value)
     }
 
-    override fun <T : IKVValue> get(hash: KVEntryReference<T>): IBulkQuery.Value<T?> {
+    override fun <T : IKVValue> query(hash: KVEntryReference<T>): IBulkQuery.Value<T?> {
         return constant(hash.getValue(store))
     }
 
-    override fun process() {
+    override fun executeQuery() {
         // all requests are processed immediately
     }
 
     class Value<T>(private val value: T) : IBulkQuery.Value<T> {
-        override fun execute(): T {
+        override fun executeQuery(): T {
             return value
         }
 
-        override fun <R> mapBulk(handler: (T) -> IBulkQuery.Value<R>): IBulkQuery.Value<R> {
+        override fun <R> flatMap(handler: (T) -> IBulkQuery.Value<R>): IBulkQuery.Value<R> {
             return handler(value)
         }
 
@@ -48,7 +48,7 @@ class NonBulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery 
             return Value(handler(value))
         }
 
-        override fun onSuccess(handler: (T) -> Unit) {
+        override fun onReceive(handler: (T) -> Unit) {
             handler(value)
         }
     }

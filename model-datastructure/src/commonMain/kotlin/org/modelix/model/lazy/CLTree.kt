@@ -92,7 +92,7 @@ class CLTree : ITree, IBulkTree {
     }
 
     fun getSize(): Long {
-        return (nodesMap ?: return 0L).calculateSize(store.newBulkQuery()).execute()
+        return (nodesMap ?: return 0L).calculateSize(store.newBulkQuery()).executeQuery()
     }
 
     fun prefetchAll() {
@@ -315,35 +315,35 @@ class CLTree : ITree, IBulkTree {
     }
 
     override fun getAllChildren(parentId: Long): Iterable<Long> {
-        val children = getChildren(resolveElement(parentId)!!, store.newBulkQuery()).execute()
+        val children = getChildren(resolveElement(parentId)!!, store.newBulkQuery()).executeQuery()
         return children.map { it.id }
     }
 
     override fun getDescendants(root: Long, includeSelf: Boolean): Iterable<CLNode> {
         val parent = resolveElement(root)
-        return getDescendants(parent!!, store.newBulkQuery(), includeSelf).execute().map { CLNode(this, it) }
+        return getDescendants(parent!!, store.newBulkQuery(), includeSelf).executeQuery().map { CLNode(this, it) }
     }
 
     override fun getDescendants(rootIds: Iterable<Long>, includeSelf: Boolean): Iterable<CLNode> {
         val bulkQuery = store.newBulkQuery()
         val roots: IBulkQuery.Value<List<CPNode>> = resolveElements(rootIds.toList(), bulkQuery)
-        val descendants = roots.mapBulk { bulkQuery.map(it) { getDescendants(it, bulkQuery, includeSelf) } }
-        return descendants.execute().flatten().map { CLNode(this, it) }
+        val descendants = roots.flatMap { bulkQuery.flatMap(it) { getDescendants(it, bulkQuery, includeSelf) } }
+        return descendants.executeQuery().flatten().map { CLNode(this, it) }
     }
 
     override fun getAncestors(nodeIds: Iterable<Long>, includeSelf: Boolean): Set<Long> {
         val bulkQuery = store.newBulkQuery()
         val nodes: IBulkQuery.Value<List<CPNode>> = resolveElements(nodeIds, bulkQuery)
-        val ancestors = nodes.mapBulk { bulkQuery.map(it) { getAncestors(it, bulkQuery, includeSelf) } }
+        val ancestors = nodes.flatMap { bulkQuery.flatMap(it) { getAncestors(it, bulkQuery, includeSelf) } }
         val result = HashSet<Long>()
-        ancestors.execute().forEach { result.addAll(it.map { it.id }) }
+        ancestors.executeQuery().forEach { result.addAll(it.map { it.id }) }
         return result
     }
 
     override fun getChildren(parentId: Long, role: String?): Iterable<Long> {
         checkChildRoleId(parentId, role)
         val parent = resolveElement(parentId)
-        val children = getChildren(parent!!, store.newBulkQuery()).execute()
+        val children = getChildren(parent!!, store.newBulkQuery()).executeQuery()
         return children
             .filter { it.roleInParent == role }
             .map { it.id }
@@ -351,7 +351,7 @@ class CLTree : ITree, IBulkTree {
 
     override fun getChildRoles(sourceId: Long): Iterable<String?> {
         val parent = resolveElement(sourceId)
-        val children: Iterable<CPNode> = getChildren(parent!!, store.newBulkQuery()).execute()
+        val children: Iterable<CPNode> = getChildren(parent!!, store.newBulkQuery()).executeQuery()
         return children.map { it.roleInParent }.distinct()
     }
 
@@ -443,7 +443,7 @@ class CLTree : ITree, IBulkTree {
     override fun visitChanges(oldVersion: ITree, visitor: ITreeChangeVisitor) {
         val bulkQuery = store.newBulkQuery()
         visitChanges(oldVersion, visitor, bulkQuery)
-        (bulkQuery as? BulkQuery)?.process()
+        (bulkQuery as? BulkQuery)?.executeQuery()
     }
 
     fun visitChanges(oldVersion: ITree, visitor: ITreeChangeVisitor, bulkQuery: IBulkQuery) {
@@ -512,7 +512,7 @@ class CLTree : ITree, IBulkTree {
                                     }
                                 }
 
-                            bulkQuery.map(listOf(oldVersion.getChildren(oldElement, bulkQuery), getChildren(newElement, bulkQuery))) { it }.onSuccess { childrenLists ->
+                            bulkQuery.flatMap(listOf(oldVersion.getChildren(oldElement, bulkQuery), getChildren(newElement, bulkQuery))) { it }.onReceive { childrenLists ->
                                 val (oldChildrenList, newChildrenList) = childrenLists
                                 val oldChildren: MutableMap<String?, MutableList<CPNode>> = HashMap()
                                 val newChildren: MutableMap<String?, MutableList<CPNode>> = HashMap()
@@ -567,7 +567,7 @@ class CLTree : ITree, IBulkTree {
     }
 
     fun resolveElement(id: Long): CPNode? {
-        return resolveElement(id, NonBulkQuery(store)).execute()
+        return resolveElement(id, NonBulkQuery(store)).executeQuery()
     }
 
     fun resolveElement(id: Long, bulkQuery: IBulkQuery): IBulkQuery.Value<CPNode?> {
@@ -575,7 +575,7 @@ class CLTree : ITree, IBulkTree {
             return bulkQuery.constant(null)
         }
         val hash = nodesMap!!.get(id, bulkQuery)
-        return hash.mapBulk {
+        return hash.flatMap {
             if (it == null) throw NodeNotFoundException(id)
             createElement(it, bulkQuery)
         }
@@ -587,24 +587,24 @@ class CLTree : ITree, IBulkTree {
         val b: IBulkQuery.Value<List<KVEntryReference<CPNode>>> = a.map { hashes: List<KVEntryReference<CPNode>?> ->
             hashes.mapIndexed { index, s -> s ?: throw NodeNotFoundException(ids[index]) }
         }
-        return b.mapBulk { hashes -> createElements(hashes, bulkQuery) }
+        return b.flatMap { hashes -> createElements(hashes, bulkQuery) }
     }
 
     fun createElement(hash: KVEntryReference<CPNode>?, query: IBulkQuery): IBulkQuery.Value<CPNode?> {
         return if (hash == null) {
             query.constant(null)
         } else {
-            query[hash]
+            query.query(hash)
         }
     }
 
     fun createElement(hash: KVEntryReference<CPNode>?): CPNode? {
-        return createElement(hash, NonBulkQuery(store)).execute()
+        return createElement(hash, NonBulkQuery(store)).executeQuery()
     }
 
     fun createElements(hashes: List<KVEntryReference<CPNode>>, bulkQuery: IBulkQuery): IBulkQuery.Value<List<CPNode>> {
-        return bulkQuery.map(hashes) { hash: KVEntryReference<CPNode> ->
-            bulkQuery[hash].map { n -> n!! }
+        return bulkQuery.flatMap(hashes) { hash: KVEntryReference<CPNode> ->
+            bulkQuery.query(hash).map { n -> n!! }
         }
     }
 
@@ -635,9 +635,9 @@ class CLTree : ITree, IBulkTree {
             getDescendants(node, bulkQuery, false)
                 .map { descendants -> (sequenceOf(node) + descendants).asIterable() }
         } else {
-            getChildren(node, bulkQuery).mapBulk { children: Iterable<CPNode> ->
+            getChildren(node, bulkQuery).flatMap { children: Iterable<CPNode> ->
                 val d: IBulkQuery.Value<Iterable<CPNode>> = bulkQuery
-                    .map(children) { child: CPNode -> getDescendants(child, bulkQuery, true) }
+                    .flatMap(children) { child: CPNode -> getDescendants(child, bulkQuery, true) }
                     .map { it.flatten() }
                 d
             }

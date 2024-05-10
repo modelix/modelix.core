@@ -413,6 +413,14 @@ private class AccessTrackingStore(val store: IKeyValueStore) : IKeyValueStore {
         return value
     }
 
+    override fun getIfCached(key: String): String? {
+        val value = store.getIfCached(key)
+        if (value != null) {
+            accessedEntries[key] = value
+        }
+        return value
+    }
+
     override fun put(key: String, value: String?) {
         TODO("Not yet implemented")
     }

@@ -22,6 +22,7 @@ interface IDeserializingKeyValueStore {
     fun newBulkQuery(wrapper: IDeserializingKeyValueStore): IBulkQuery = keyValueStore.newBulkQuery(wrapper)
     val keyValueStore: IKeyValueStore
     operator fun <T> get(hash: String, deserializer: (String) -> T): T?
+    fun <T> getIfCached(hash: String, deserializer: (String) -> T): T?
     fun <T> getAll(hash: Iterable<String>, deserializer: (String, String) -> T): Iterable<T>
     fun put(hash: String, deserialized: Any, serialized: String)
     fun prefetch(hash: String)

@@ -33,6 +33,12 @@ class AsyncStore(private val store: IKeyValueStore) : IKeyValueStoreWrapper {
         return store[key]
     }
 
+    override fun getIfCached(key: String): String? {
+        return synchronized(pendingWrites) {
+            pendingWrites[key]
+        } ?: store.getIfCached(key)
+    }
+
     override fun getWrapped(): IKeyValueStore = store
 
     override fun getPendingSize(): Int = store.getPendingSize() + pendingWrites.size

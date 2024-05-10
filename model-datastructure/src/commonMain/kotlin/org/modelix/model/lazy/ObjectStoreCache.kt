@@ -21,6 +21,15 @@ import kotlin.jvm.JvmOverloads
 
 class ObjectStoreCache @JvmOverloads constructor(override val keyValueStore: IKeyValueStore, cacheSize: Int = 100_000) : IDeserializingKeyValueStore {
     private val cache: MutableMap<String?, Any> = createLRUMap(cacheSize)
+    private var bulkQuery: Pair<IBulkQuery, IDeserializingKeyValueStore>? = null
+
+    override fun newBulkQuery(wrapper: IDeserializingKeyValueStore): IBulkQuery {
+        // TODO thread safety
+        if (bulkQuery?.takeIf { it.second == wrapper } == null) {
+            bulkQuery = keyValueStore.newBulkQuery(wrapper) to wrapper
+        }
+        return bulkQuery!!.first
+    }
 
     override fun <T> getAll(hashes_: Iterable<String>, deserializer: (String, String) -> T): Iterable<T> {
         val hashes = hashes_.toList()
@@ -49,13 +58,21 @@ class ObjectStoreCache @JvmOverloads constructor(override val keyValueStore: IKe
     }
 
     override fun <T> get(hash: String, deserializer: (String) -> T): T? {
+        return get(hash, deserializer, false)
+    }
+
+    private fun <T> get(hash: String, deserializer: (String) -> T, ifCached: Boolean): T? {
         var deserialized = cache[hash] as T?
         if (deserialized == null) {
-            val serialized = keyValueStore[hash] ?: return null
+            val serialized = (if (ifCached) keyValueStore.getIfCached(hash) else keyValueStore[hash] ) ?: return null
             deserialized = deserializer(serialized)
             cache[hash] = deserialized ?: NULL
         }
         return if (deserialized === NULL) null else deserialized
+    }
+
+    override fun <T> getIfCached(hash: String, deserializer: (String) -> T): T? {
+        return get(hash, deserializer, true)
     }
 
     override fun put(hash: String, deserialized: Any, serialized: String) {

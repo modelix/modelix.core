@@ -84,7 +84,7 @@ class LazyLoadingTest {
 
             createNodes(it, 5_000)
         }
-        val version = client.lazyLoadVersion(branchRef, cacheSize = 500)
+        val version = client.lazyLoadVersion(branchRef, cacheSize = 10_000)
 
         val rootNode = TreePointer(version.getTree()).getRootNode()
 
@@ -94,7 +94,7 @@ class LazyLoadingTest {
         }
 
         // Traverse the whole model.
-        val requestCountFirstTraversal = assertRequestCount(10) {
+        val requestCountFirstTraversal = assertRequestCount(1) {
             rootNode.getDescendants(true).count()
         }
 

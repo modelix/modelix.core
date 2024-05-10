@@ -33,6 +33,10 @@ class NonCachingObjectStore(override val keyValueStore: IKeyValueStore) : IDeser
         return keyValueStore.get(hash)?.let(deserializer)
     }
 
+    override fun <T> getIfCached(hash: String, deserializer: (String) -> T): T? {
+        return keyValueStore.getIfCached(hash)?.let(deserializer)
+    }
+
     override fun put(hash: String, deserialized: Any, serialized: String) {
         keyValueStore.put(hash, serialized)
     }

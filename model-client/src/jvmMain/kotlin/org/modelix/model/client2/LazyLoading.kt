@@ -21,6 +21,7 @@ import org.modelix.model.IKeyListener
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.IVersion
 import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.BulkQuery
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
@@ -37,6 +38,10 @@ suspend fun IModelClientV2.lazyLoadVersion(branchRef: BranchReference, cacheSize
 class ModelClientAsStore(val client: IModelClientV2, val repositoryId: RepositoryId) : IKeyValueStore {
     override fun get(key: String): String? {
         return getAll(listOf(key))[key]
+    }
+
+    override fun getIfCached(key: String): String? {
+        return null
     }
 
     override fun put(key: String, value: String?) {

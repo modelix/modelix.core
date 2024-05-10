@@ -78,6 +78,7 @@ class LazyLoadingTest {
     @Test fun lazy_loading_5000_10000_5000_5000() = runLazyLoadingTest(5_000, 10_000, 5000, 5000, 39, 65, 56)
 
     @Test fun lazy_loading_2000_100_5_5() = runLazyLoadingTest(2_000, 100, 5, 5, 37, 1902, 1934)
+    @Test fun lazy_loading_20000_1000_50_50() = runLazyLoadingTest(20_000, 1_000, 50, 50, 50, 6396, 5521)
 
     fun runLazyLoadingTest(numberOfNodes: Int, cacheSize: Int, batchSize: Int, prefetchSize: Int, vararg expectedRequests: Int) {
         runLazyLoadingTest(numberOfNodes, cacheSize, batchSize, prefetchSize, expectedRequests.toList())

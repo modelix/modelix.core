@@ -56,16 +56,24 @@ class LazyLoadingTest {
 
     private fun measureRequests(body: () -> Unit): Int {
         val before = statistics.getTotalRequests()
+        val objectsBefore = statistics.getTotalRequestedObjects()
         body()
         val after = statistics.getTotalRequests()
+        val objectsAfter = statistics.getTotalRequestedObjects()
         val requestCount = (after - before).toInt()
         println("Requests: $requestCount")
+        println("Requested Objects: ${objectsAfter - objectsBefore}")
         return requestCount
     }
 
     @Test fun lazy_loading_500_10000_500_500() = runLazyLoadingTest(500, 10_000, 500, 500, 27, 1, 0)
     @Test fun lazy_loading_5000_10000_500_500() = runLazyLoadingTest(5_000, 10_000, 500, 500, 40, 14, 57)
-    @Test fun lazy_loading_50000_10000_500_500() = runLazyLoadingTest(50_000, 10_000, 500, 500, 56, 884, 852)
+
+    /**
+     * For 50_000 nodes there are ~100_000 objects in the database.
+     * With a batch size of 500 at least 200 request are required
+     */
+    @Test fun lazy_loading_50000_10000_500_500() = runLazyLoadingTest(50_000, 10_000, 500, 500, 55, 671, 822)
 
     @Test fun lazy_loading_500_10000_50_50() = runLazyLoadingTest(500, 10_000, 50, 50, 28, 13, 0)
     @Test fun lazy_loading_5000_10000_50_50() = runLazyLoadingTest(5_000, 10_000, 50, 50, 39, 191, 80)
@@ -88,6 +96,7 @@ class LazyLoadingTest {
     @Test fun lazy_loading_5000_5000_500_125() = runLazyLoadingTest(5_000, 5_000, 500, 125, 40, 72, 130)
     @Test fun lazy_loading_5000_5000_500_250() = runLazyLoadingTest(5_000, 5_000, 500, 250, 39, 57, 94)
     @Test fun lazy_loading_5000_5000_500_500() = runLazyLoadingTest(5_000, 5_000, 500, 500, 39, 79, 105)
+
 
     fun runLazyLoadingTest(numberOfNodes: Int, cacheSize: Int, batchSize: Int, prefetchSize: Int, vararg expectedRequests: Int) {
         runLazyLoadingTest(numberOfNodes, cacheSize, batchSize, prefetchSize, expectedRequests.toList())

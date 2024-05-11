@@ -21,21 +21,26 @@ import java.util.concurrent.atomic.AtomicLong
 
 class StoreClientWithStatistics(val store: IStoreClient) : IStoreClient by store {
     private val totalRequests = AtomicLong()
+    private val totalRequestedObjects = AtomicLong()
 
     fun getTotalRequests() = totalRequests.get()
+    fun getTotalRequestedObjects() = totalRequestedObjects.get()
 
     override fun get(key: String): String? {
         totalRequests.incrementAndGet()
+        totalRequestedObjects.incrementAndGet()
         return store.get(key)
     }
 
     override fun getAll(keys: List<String>): List<String?> {
         totalRequests.incrementAndGet()
+        totalRequestedObjects.addAndGet(keys.size.toLong())
         return store.getAll(keys)
     }
 
     override fun getAll(keys: Set<String>): Map<String, String?> {
         totalRequests.incrementAndGet()
+        totalRequestedObjects.addAndGet(keys.size.toLong())
         return store.getAll(keys)
     }
 

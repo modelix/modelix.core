@@ -26,7 +26,7 @@ private val LOG = mu.KotlinLogging.logger {  }
  */
 class BulkQuery(private val store: IDeserializingKeyValueStore, batchSize: Int? = null, prefetchSize: Int? = null) : IBulkQuery {
     private val queue: MutableMap<String, QueueElement<out IKVValue>> = LinkedHashMap()
-    private var prefetchOfferings: MutableList<PrefetchOffering> = ArrayList()
+    private val prefetchOfferings: MutableList<PrefetchOffering> = ArrayList()
     private var processing = false
     private var currentPrefetchLevel: Int = 0
     private val batchSize: Int = batchSize ?: 5_000
@@ -94,12 +94,12 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, batchSize: Int? 
         try {
             while (queue.isNotEmpty()) {
                 while (prefetchOfferings.isNotEmpty()) {
-                    for (i in prefetchOfferings.indices.reversed()) {
-                        val it = prefetchOfferings[i]
+                    val currentOfferings = prefetchOfferings.toList()
+                    prefetchOfferings.clear()
+                    currentOfferings.asReversed().forEach {
                         runPrefetch(it.level) {
                             it.offer.invoke()
                         }
-                        prefetchOfferings.removeAt(i)
                     }
                 }
 

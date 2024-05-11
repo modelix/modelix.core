@@ -22,16 +22,16 @@ import kotlin.jvm.JvmOverloads
 class ObjectStoreCache @JvmOverloads constructor(
     override val keyValueStore: IKeyValueStore,
     cacheSize: Int = 100_000,
-    private val batchSize: Int = 5_000,
-    private val prefetchSize: Int = batchSize,
+    private val defaultBatchSize: Int? = null,
+    private val defaultPrefetchSize: Int? = null,
 ) : IDeserializingKeyValueStore {
     private val cache: MutableMap<String?, Any> = createLRUMap(cacheSize)
     private var bulkQuery: Pair<IBulkQuery, IDeserializingKeyValueStore>? = null
 
-    override fun newBulkQuery(wrapper: IDeserializingKeyValueStore): IBulkQuery {
+    override fun newBulkQuery(wrapper: IDeserializingKeyValueStore, batchSize: Int?, prefetchSize: Int?): IBulkQuery {
         // TODO thread safety
         if (bulkQuery?.takeIf { it.second == wrapper } == null) {
-            bulkQuery = keyValueStore.newBulkQuery(wrapper, batchSize, prefetchSize) to wrapper
+            bulkQuery = keyValueStore.newBulkQuery(wrapper, batchSize ?: defaultBatchSize, prefetchSize ?: defaultPrefetchSize) to wrapper
         }
         return bulkQuery!!.first
     }

@@ -26,12 +26,12 @@ import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
 
-fun IModelClientV2.lazyLoadVersion(repositoryId: RepositoryId, versionHash: String, cacheSize: Int = 100_000, batchSize: Int = 5_000, prefetchSize: Int = batchSize): IVersion {
+fun IModelClientV2.lazyLoadVersion(repositoryId: RepositoryId, versionHash: String, cacheSize: Int = 100_000, batchSize: Int? = null, prefetchSize: Int? = null): IVersion {
     val store = ObjectStoreCache(ModelClientAsStore(this, repositoryId), cacheSize, batchSize, prefetchSize)
     return CLVersion.loadFromHash(versionHash, store)
 }
 
-suspend fun IModelClientV2.lazyLoadVersion(branchRef: BranchReference, cacheSize: Int = 100_000, batchSize: Int = 5_000, prefetchSize: Int = batchSize): IVersion {
+suspend fun IModelClientV2.lazyLoadVersion(branchRef: BranchReference, cacheSize: Int = 100_000, batchSize: Int? = null, prefetchSize: Int? = null): IVersion {
     return lazyLoadVersion(branchRef.repositoryId, pullHash(branchRef), cacheSize, batchSize, prefetchSize)
 }
 

@@ -20,7 +20,7 @@ import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 
 interface IKeyValueStore {
-    fun newBulkQuery(deserializingCache: IDeserializingKeyValueStore, batchSize: Int = 5_000, prefetchSize: Int = batchSize): IBulkQuery = BulkQuery(deserializingCache, batchSize, prefetchSize)
+    fun newBulkQuery(deserializingCache: IDeserializingKeyValueStore, batchSize: Int? = null, prefetchSize: Int? = null): IBulkQuery = BulkQuery(deserializingCache, batchSize, prefetchSize)
     operator fun get(key: String): String?
     fun getIfCached(key: String): String?
     suspend fun getA(key: String): String? = get(key)

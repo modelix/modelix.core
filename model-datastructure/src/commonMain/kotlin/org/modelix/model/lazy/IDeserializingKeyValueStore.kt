@@ -19,7 +19,7 @@ import org.modelix.model.IKeyValueStore
 
 interface IDeserializingKeyValueStore {
     fun newBulkQuery(): IBulkQuery = newBulkQuery(this)
-    fun newBulkQuery(wrapper: IDeserializingKeyValueStore): IBulkQuery = keyValueStore.newBulkQuery(wrapper)
+    fun newBulkQuery(wrapper: IDeserializingKeyValueStore, batchSize: Int? = null, prefetchSize: Int? = null): IBulkQuery = keyValueStore.newBulkQuery(wrapper, batchSize, prefetchSize)
     val keyValueStore: IKeyValueStore
     operator fun <T> get(hash: String, deserializer: (String) -> T): T?
     fun <T> getIfCached(hash: String, deserializer: (String) -> T): T?

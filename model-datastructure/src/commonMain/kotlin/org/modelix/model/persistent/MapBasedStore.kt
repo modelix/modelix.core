@@ -36,7 +36,7 @@ open class MapBasedStore : IKeyValueStore {
         return get(key)
     }
 
-    override fun newBulkQuery(deserializingCache: IDeserializingKeyValueStore, batchSize: Int, prefetchSize: Int): IBulkQuery {
+    override fun newBulkQuery(deserializingCache: IDeserializingKeyValueStore, batchSize: Int?, prefetchSize: Int?): IBulkQuery {
         // This implementation doesn't benefit from bulk queries. The NonBulkQuery has a lower performance overhead.
         return NonBulkQuery(deserializingCache)
     }

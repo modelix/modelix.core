@@ -24,14 +24,16 @@ private val LOG = mu.KotlinLogging.logger {  }
 /**
  * Not thread safe
  */
-class BulkQuery(private val store: IDeserializingKeyValueStore, val batchSize: Int = 5_000, val prefetchSize: Int = batchSize) : IBulkQuery {
+class BulkQuery(private val store: IDeserializingKeyValueStore, batchSize: Int? = null, prefetchSize: Int? = null) : IBulkQuery {
     private val queue: MutableMap<String, QueueElement<out IKVValue>> = LinkedHashMap()
     private var prefetchOfferings: MutableList<() -> Unit> = ArrayList()
     private var processing = false
     private var prefetchMode = false
+    private val batchSize: Int = batchSize ?: 5_000
+    private val prefetchSize: Int = prefetchSize ?: (this.batchSize / 2)
 
     init {
-        require(prefetchSize <= batchSize)
+        require(this.prefetchSize <= this.batchSize) { "prefetch size ${this.prefetchSize} is greater than the batch size ${this.batchSize}" }
     }
 
     protected fun executeBulkQuery(refs: Iterable<KVEntryReference<IKVValue>>): Map<String, IKVValue?> {

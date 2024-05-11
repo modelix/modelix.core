@@ -403,7 +403,7 @@ private fun trackAccessedEntries(store: IKeyValueStore, body: (IDeserializingKey
 private class AccessTrackingStore(val store: IKeyValueStore) : IKeyValueStore {
     val accessedEntries: MutableMap<String, String?> = LinkedHashMap()
 
-    override fun newBulkQuery(deserializingCache: IDeserializingKeyValueStore, batchSize: Int, prefetchSize: Int): IBulkQuery {
+    override fun newBulkQuery(deserializingCache: IDeserializingKeyValueStore, batchSize: Int?, prefetchSize: Int?): IBulkQuery {
         return store.newBulkQuery(deserializingCache, batchSize, prefetchSize)
     }
 

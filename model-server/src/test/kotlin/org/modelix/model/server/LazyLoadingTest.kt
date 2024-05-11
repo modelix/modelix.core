@@ -71,7 +71,7 @@ class LazyLoadingTest {
 
     /**
      * For 50_000 nodes there are ~100_000 objects in the database.
-     * With a batch size of 500 at least 200 request are required
+     * With a batch size of 500 at least 200 request are required.
      */
     @Test fun lazy_loading_50000_10000_500_500() = runLazyLoadingTest(50_000, 10_000, 500, 500, 55, 671, 822)
 

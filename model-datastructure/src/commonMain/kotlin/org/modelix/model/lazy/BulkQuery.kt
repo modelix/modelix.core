@@ -26,11 +26,12 @@ private val LOG = mu.KotlinLogging.logger {  }
  */
 class BulkQuery(private val store: IDeserializingKeyValueStore, batchSize: Int? = null, prefetchSize: Int? = null) : IBulkQuery {
     private val queue: MutableMap<String, QueueElement<out IKVValue>> = LinkedHashMap()
-    private var prefetchOfferings: MutableList<() -> Unit> = ArrayList()
+    private var prefetchOfferings: MutableList<PrefetchOffering> = ArrayList()
     private var processing = false
-    private var prefetchMode = false
+    private var currentPrefetchLevel: Int = 0
     private val batchSize: Int = batchSize ?: 5_000
     private val prefetchSize: Int = prefetchSize ?: (this.batchSize / 2)
+    private val prefetchQueueSizeLimit: Int = (this.prefetchSize * 10).coerceAtLeast(this.batchSize * 2)
 
     init {
         require(this.prefetchSize <= this.batchSize) { "prefetch size ${this.prefetchSize} is greater than the batch size ${this.batchSize}" }
@@ -56,35 +57,32 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, batchSize: Int? 
 
         val existingQueueElement = queue[hash.getHash()] as QueueElement<T>?
         if (existingQueueElement != null) {
-            if (existingQueueElement.isPrefetch && !prefetchMode) {
-                existingQueueElement.isPrefetch = false
-            }
+            existingQueueElement.prefetchLevel = minOf(existingQueueElement.prefetchLevel, currentPrefetchLevel)
             return existingQueueElement.value
         }
 
         val result = Value<T?>()
-        queue.put(hash.getHash(), QueueElement<T>(hash, result, prefetchMode))
+        queue.put(hash.getHash(), QueueElement<T>(hash, result, currentPrefetchLevel))
         return result
     }
 
     override fun offerPrefetch(body: () -> Unit) {
-        prefetchOfferings.add(body)
+        prefetchOfferings.add(PrefetchOffering(currentPrefetchLevel + 1, body))
     }
 
     override fun <T> constant(value: T): IBulkQuery.Value<T> {
         return Value(value)
     }
 
-    private fun runPrefetch(body: () -> Unit) {
-        if (prefetchMode) {
-            body()
-            return
-        }
-        prefetchMode = true
+    private fun runPrefetch(body: () -> Unit) = runPrefetch(currentPrefetchLevel + 1, body)
+
+    private fun runPrefetch(newLevel: Int, body: () -> Unit) {
+        val oldLevel = currentPrefetchLevel
         try {
+            currentPrefetchLevel = newLevel
             body()
         } finally {
-            prefetchMode = false
+            currentPrefetchLevel = oldLevel
         }
     }
 
@@ -95,33 +93,32 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, batchSize: Int? 
         processing = true
         try {
             while (queue.isNotEmpty()) {
-                val regularRequests: List<Map.Entry<String, QueueElement<out IKVValue>>> = queue.asSequence().filter { !it.value.isPrefetch }.toList()
-                if (regularRequests.isEmpty()) break
-
-                while (queue.size < prefetchSize && prefetchOfferings.isNotEmpty()) {
-                    runPrefetch {
-                        for (i in prefetchOfferings.indices.reversed()) {
-                            if (queue.size >= prefetchSize) break
-                            prefetchOfferings[i].invoke()
-                            prefetchOfferings.removeAt(i)
+                while (prefetchOfferings.isNotEmpty()) {
+                    for (i in prefetchOfferings.indices.reversed()) {
+                        val it = prefetchOfferings[i]
+                        runPrefetch(it.level) {
+                            it.offer.invoke()
                         }
+                        prefetchOfferings.removeAt(i)
                     }
                 }
-                prefetchOfferings.clear()
 
-                val chosenRequests: List<Map.Entry<String, QueueElement<out IKVValue>>>
-                if (regularRequests.size >= prefetchSize) {
-                    // The callback of a request usually enqueues new requests until it reaches the leafs of the
-                    // data structure. By executing the latest (instead of the oldest) request we basically do a depth
-                    // first traversal which keeps the maximum size of the queue smaller.
-                    chosenRequests = regularRequests.tailList(batchSize)
-                } else {
-                    val prefetchRequests = queue.asSequence().filter { it.value.isPrefetch }.toList()
-                    chosenRequests = regularRequests + prefetchRequests.tailList(batchSize - regularRequests.size)
-                }
+                val sortedQueue: List<Map.Entry<String, QueueElement<out IKVValue>>> = queue.asSequence().sortedByDescending { it.value.prefetchLevel }.toList()
+                val regularRequestsCount = sortedQueue.lastIndex - sortedQueue.indexOfLast { it.value.prefetchLevel != 0 }
+                if (regularRequestsCount == 0) break
+                val prefetchRequestCount = sortedQueue.size - regularRequestsCount
+
+                // The callback of a request usually enqueues new requests until it reaches the leafs of the
+                // data structure. By executing the latest (instead of the oldest) request we basically do a depth
+                // first traversal which keeps the maximum size of the queue smaller.
+                val chosenRequests = sortedQueue.tailList(regularRequestsCount.coerceIn(prefetchSize..batchSize))
 
                 val currentRequests: List<QueueElement<out IKVValue>> = chosenRequests.map { it.value }
                 chosenRequests.forEach { queue.remove(it.key) }
+
+                if (prefetchRequestCount > prefetchQueueSizeLimit) {
+                    sortedQueue.take(prefetchRequestCount - prefetchQueueSizeLimit).forEach { queue.remove(it.key) }
+                }
 
                 val entries: Map<String, IKVValue?> = executeBulkQuery(
                     currentRequests.map { obj -> obj.hash }.distinct(),
@@ -163,7 +160,12 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, batchSize: Int? 
     private class QueueElement<E : IKVValue>(
         val hash: KVEntryReference<E>,
         val value: Value<E?>,
-        var isPrefetch: Boolean
+        var prefetchLevel: Int
+    )
+
+    private class PrefetchOffering(
+        val level: Int,
+        val offer: () -> Unit
     )
 
     inner class Value<T> : IBulkQuery.Value<T> {
@@ -191,9 +193,10 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, batchSize: Int? 
             if (done) {
                 handler(value as T)
             } else {
-                val replacedHandler: (T) -> Unit = if (prefetchMode) {
+                val savedPrefetchLevel = currentPrefetchLevel
+                val replacedHandler: (T) -> Unit = if (savedPrefetchLevel != 0) {
                     { value : T ->
-                        runPrefetch {
+                        runPrefetch(savedPrefetchLevel) {
                             handler(value)
                         }
                     }

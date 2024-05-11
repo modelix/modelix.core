@@ -105,6 +105,7 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, val batchSize: I
                         }
                     }
                 }
+                prefetchOfferings.clear()
 
                 val chosenRequests: List<Map.Entry<String, QueueElement<out IKVValue>>>
                 if (regularRequests.size >= prefetchSize) {

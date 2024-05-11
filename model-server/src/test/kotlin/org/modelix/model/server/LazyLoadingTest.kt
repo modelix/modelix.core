@@ -75,10 +75,23 @@ class LazyLoadingTest {
     @Test fun lazy_loading_5000_5000_500_500() = runLazyLoadingTest(5_000, 5_000, 500, 500, 40, 161, 181)
     @Test fun lazy_loading_5000_50000_500_500() = runLazyLoadingTest(5_000, 50_000, 500, 500, 39, 14, 0)
 
-    @Test fun lazy_loading_5000_10000_5000_5000() = runLazyLoadingTest(5_000, 10_000, 5000, 5000, 40, 65, 56)
-
     @Test fun lazy_loading_2000_100_5_5() = runLazyLoadingTest(2_000, 100, 5, 5, 40, 1874, 1838)
     @Test fun lazy_loading_20000_1000_50_50() = runLazyLoadingTest(20_000, 1_000, 50, 50, 50, 6396, 5521)
+
+    @Test fun lazy_loading_5000_10000_5000_0() = runLazyLoadingTest(5_000, 10_000, 5_000, 0, 40, 6176, 6182)
+    @Test fun lazy_loading_5000_10000_5000_1() = runLazyLoadingTest(5_000, 10_000, 5_000, 1, 39, 6180, 6183)
+    @Test fun lazy_loading_5000_10000_5000_2() = runLazyLoadingTest(5_000, 10_000, 5_000, 2, 39, 6054, 1510)
+    @Test fun lazy_loading_5000_10000_5000_4() = runLazyLoadingTest(5_000, 10_000, 5_000, 4, 40, 3017, 532)
+    @Test fun lazy_loading_5000_10000_5000_8() = runLazyLoadingTest(5_000, 10_000, 5_000, 8, 39, 1837, 355)
+    @Test fun lazy_loading_5000_10000_5000_16() = runLazyLoadingTest(5_000, 10_000, 5_000, 16, 41, 1184, 225)
+    @Test fun lazy_loading_5000_10000_5000_32() = runLazyLoadingTest(5_000, 10_000, 5_000, 32, 40, 653, 172)
+    @Test fun lazy_loading_5000_10000_5000_64() = runLazyLoadingTest(5_000, 10_000, 5_000, 64, 39, 381, 108)
+    @Test fun lazy_loading_5000_10000_5000_128() = runLazyLoadingTest(5_000, 10_000, 5_000, 128, 40, 176, 67)
+    @Test fun lazy_loading_5000_10000_5000_256() = runLazyLoadingTest(5_000, 10_000, 5_000, 256, 40, 92, 56)
+    @Test fun lazy_loading_5000_10000_5000_512() = runLazyLoadingTest(5_000, 10_000, 5_000, 512, 40, 52, 53)
+    @Test fun lazy_loading_5000_10000_5000_1024() = runLazyLoadingTest(5_000, 10_000, 5_000, 1024, 40, 16, 57)
+    @Test fun lazy_loading_5000_10000_5000_2048() = runLazyLoadingTest(5_000, 10_000, 5_000, 2048, 39, 61, 56)
+    @Test fun lazy_loading_5000_10000_5000_5000() = runLazyLoadingTest(5_000, 10_000, 5_000, 5000, 39, 61, 56)
 
     fun runLazyLoadingTest(numberOfNodes: Int, cacheSize: Int, batchSize: Int, prefetchSize: Int, vararg expectedRequests: Int) {
         runLazyLoadingTest(numberOfNodes, cacheSize, batchSize, prefetchSize, expectedRequests.toList())

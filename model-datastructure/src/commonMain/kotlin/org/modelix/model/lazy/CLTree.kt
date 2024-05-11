@@ -322,7 +322,7 @@ class CLTree : ITree, IBulkTree {
         return resolveElement(parentId, bulkQuery).flatMap { getChildren(it!!, bulkQuery) }.map { children ->
             if (children.isNotEmpty()) {
                 bulkQuery.offerPrefetch {
-                    children.forEach {
+                    children.asReversed().forEach {
                         getAllChildren(it.id, bulkQuery)
                     }
                 }

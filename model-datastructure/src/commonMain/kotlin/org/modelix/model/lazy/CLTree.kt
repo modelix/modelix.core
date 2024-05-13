@@ -321,13 +321,17 @@ class CLTree : ITree, IBulkTree {
     fun getAllChildren(parentId: Long, bulkQuery: IBulkQuery): IBulkQuery.Value<Iterable<Long>> {
         return resolveElement(parentId, bulkQuery).flatMap { getChildren(it!!, bulkQuery) }.map { children ->
             if (children.isNotEmpty()) {
-                bulkQuery.offerPrefetch {
-                    children.asReversed().forEach {
-                        getAllChildren(it.id, bulkQuery)
-                    }
+                children.asReversed().forEach {
+                    bulkQuery.offerPrefetch(PrefetchNodeGoal(this, it.id))
                 }
             }
             children.map { it.id }
+        }
+    }
+
+    private data class PrefetchNodeGoal(val tree: CLTree, val nodeId: Long) : IPrefetchGoal {
+        override fun executeRequests(bulkQuery: IBulkQuery) {
+            tree.getAllChildren(nodeId, bulkQuery)
         }
     }
 

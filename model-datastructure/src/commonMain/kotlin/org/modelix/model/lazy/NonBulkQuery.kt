@@ -27,7 +27,7 @@ class NonBulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery 
         return Value(value)
     }
 
-    override fun offerPrefetch(body: () -> Unit) {
+    override fun offerPrefetch(key: IPrefetchGoal) {
         // Since no real bulk queries are executed, prefetching doesn't provide any benefit.
     }
 

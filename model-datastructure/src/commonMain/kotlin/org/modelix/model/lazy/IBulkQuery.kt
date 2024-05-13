@@ -18,7 +18,7 @@ package org.modelix.model.lazy
 import org.modelix.model.persistent.IKVValue
 
 interface IBulkQuery {
-    fun offerPrefetch(body: () -> Unit)
+    fun offerPrefetch(key: IPrefetchGoal)
     fun executeQuery()
     fun <I, O> flatMap(input: Iterable<I>, f: (I) -> Value<O>): Value<List<O>>
     fun <T> constant(value: T): Value<T>

@@ -206,6 +206,9 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, batchSize: Int? 
 
 
                 handlers = handlers.let { if (it == null) arrayOf(replacedHandler) else it + replacedHandler }
+                check(handlers.let { it == null || it.size < 1000 }) {
+                    "Too many handlers"
+                }
             }
         }
 
@@ -217,15 +220,15 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, batchSize: Int? 
             return value!!
         }
 
-        override fun <R> map(handler: (T) -> R): IBulkQuery.Value<R> {
+        override fun <R> map(transformation: (T) -> R): IBulkQuery.Value<R> {
             val result = Value<R>()
-            onReceive { v -> result.success(handler(v)) }
+            onReceive { v -> result.success(transformation(v)) }
             return result
         }
 
-        override fun <R> flatMap(handler: (T) -> IBulkQuery.Value<R>): IBulkQuery.Value<R> {
+        override fun <R> flatMap(transformation: (T) -> IBulkQuery.Value<R>): IBulkQuery.Value<R> {
             val result = Value<R>()
-            onReceive { v -> handler(v).onReceive { value -> result.success(value) } }
+            onReceive { v -> transformation(v).onReceive { value -> result.success(value) } }
             return result
         }
     }

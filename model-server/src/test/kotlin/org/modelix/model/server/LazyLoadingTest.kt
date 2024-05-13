@@ -30,10 +30,10 @@ import org.modelix.model.client2.runWrite
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.store.InMemoryStoreClient
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class LazyLoadingTest {
 
@@ -74,6 +74,7 @@ class LazyLoadingTest {
      * With a batch size of 500 at least 200 request are required, but 100 % efficiency is not achievable.
      */
     @Test fun lazy_loading_50000_10000_500_500_dfs() = runLazyLoadingTest(DepthFirstSearchPattern, 50_000, 10_000, 500, 500, 56, 792, 825)
+    @Test fun lazy_loading_50000_10000_500_500_random() = runLazyLoadingTest(RandomPattern(5000, Random(236767)), 50_000, 10_000, 500, 500, 56, 792, 825)
     @Test fun lazy_loading_50000_10000_500_500_pdfs() = runLazyLoadingTest(ParallelDepthFirstSearchPattern, 50_000, 10_000, 500, 500, 56, 825, 852)
     @Test fun lazy_loading_50000_10000_500_500_bfs() = runLazyLoadingTest(BreathFirstSearchPattern, 50_000, 10_000, 500, 500, 55, 181204, 179691)
 
@@ -176,6 +177,22 @@ private object BreathFirstSearchPattern : AccessPattern() {
         queue.addLast(rootNode)
         while (queue.isNotEmpty()) {
             queue.addAll(queue.removeFirst().allChildren)
+        }
+    }
+}
+
+private class RandomPattern(val maxAccessOperations: Int, val random: kotlin.random.Random) : AccessPattern() {
+    override fun runPattern(rootNode: INode) {
+        var currentNode = rootNode
+
+        for (i in 1..maxAccessOperations) {
+            val nextNode = when (random.nextInt(2)) {
+                0 -> currentNode.parent ?: currentNode.allChildren.toList().random(random)
+                else -> currentNode.allChildren.toList().let {
+                    if (it.isEmpty()) currentNode.parent!! else it.random(random)
+                }
+            }
+            currentNode = nextNode
         }
     }
 }

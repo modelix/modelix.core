@@ -25,7 +25,7 @@ kotlinx-kover = { id = "org.jetbrains.kotlinx.kover", version = "0.7.6" }
 
 [versions]
 kotlin = "1.9.24"
-kotlinCoroutines="1.8.0"
+kotlinCoroutines="1.8.1"
 ktor="2.3.11"
 kotlinHtml="0.8.0"
 kotlinSerialization="1.6.3"

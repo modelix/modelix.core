@@ -83,7 +83,11 @@ class LazyLoadingTest {
     @Test fun lazy_loading_50000_10000_50_50() = runLazyLoadingTest(DepthFirstSearchPattern, 50_000, 10_000, 50, 50, 56, 2125, 2173)
 
     @Test fun lazy_loading_5000_500_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 500, 500, 500, 99, 1443, 1443)
-    @Test fun lazy_loading_5000_50000_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 50_000, 500, 500, 41, 15, 0)
+
+    /**
+     * There are 10342 entries on the server.
+     */
+    @Test fun lazy_loading_5000_50000_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 50_000, 20_000, 20_000, 41, 15, 0)
 
     @Test fun lazy_loading_2000_100_5_5() = runLazyLoadingTest(DepthFirstSearchPattern, 2_000, 100, 5, 5, 36, 1073, 1059)
     @Test fun lazy_loading_20000_1000_50_50() = runLazyLoadingTest(DepthFirstSearchPattern, 20_000, 1_000, 50, 50, 49, 2071, 2081)

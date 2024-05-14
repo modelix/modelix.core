@@ -108,7 +108,9 @@ class ReplicatedRepositoryTest {
             }
             branchToChange.runWrite {
                 val changeGenerator = RandomModelChangeGenerator(branchToChange.getRootNode(), rand)
-                for (i in 1..1000) changeGenerator.applyRandomChange()
+                (1..1000).forEach { _ ->
+                    changeGenerator.applyRandomChange()
+                }
                 println("new tree: " + (branchToChange.transaction.tree as CLTree).hash)
             }
 
@@ -151,7 +153,7 @@ class ReplicatedRepositoryTest {
                 suspend fun launchWriter(model: ReplicatedModel, seed: Int) {
                     launch {
                         val rand = Random(seed)
-                        for (i in 1..10) {
+                        (1..10).forEach {
                             delay(rand.nextLong(50, 100))
                             model.getBranch().runWriteT { t ->
                                 createdNodes += t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?).toString(16)
@@ -344,7 +346,7 @@ class ReplicatedRepositoryTest {
                 suspend fun launchWriter(model: ReplicatedModel, seed: Int) {
                     launch {
                         val rand = Random(seed)
-                        for (i in 1..10) {
+                        (1..10).forEach {
                             delay(rand.nextLong(50, 100))
                             model.getBranch().runWriteT { t ->
                                 createdNodes += t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?).toString(16)
@@ -359,7 +361,7 @@ class ReplicatedRepositoryTest {
                 suspend fun launchWriterv1(model: ReplicatedRepository, seed: Int) {
                     launch {
                         val rand = Random(seed)
-                        for (i in 1..10) {
+                        (1..10).forEach {
                             delay(rand.nextLong(50, 100))
                             model.branch.runWriteT { t ->
                                 createdNodes += t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?).toString(16)
@@ -437,7 +439,7 @@ class ReplicatedRepositoryTest {
             nonMergedVersions.remove(versionToMerge)
         }
 
-        for (i in 1..100) {
+        (1..100).forEach {
             val baseVersion = versions[rand.nextInt(versions.size)]
             val branch = OTBranch(PBranch(baseVersion.tree, idGenerator), idGenerator, initialTree.store)
             branch.runWriteT { t ->

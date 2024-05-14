@@ -54,9 +54,9 @@ suspend fun pollEntry(storeClient: IStoreClient, key: String, lastKnownValue: St
         val channel = Channel<Unit>(Channel.RENDEZVOUS)
 
         val listener = object : IKeyListener {
-            override fun changed(key_: String, newValue: String?) {
+            override fun changed(key: String, value: String?) {
                 launch {
-                    callHandler(newValue)
+                    callHandler(value)
                     channel.trySend(Unit)
                 }
             }

@@ -109,8 +109,8 @@ class LightModelServer(val client: LocalModelClient) {
                             newVersion,
                         )
                     }
-                client.asyncStore.put(repositoryId.getBranchReference().getKey(), mergedVersion.hash)
-                if (mergedVersion.hash != lastVersionToClient?.hash) {
+                client.asyncStore.put(repositoryId.getBranchReference().getKey(), mergedVersion.getContentHash())
+                if (mergedVersion.getContentHash() != lastVersionToClient?.getContentHash()) {
                     sendMsg(
                         MessageFromServer(
                             version = versionAsJson(mergedVersion, lastVersionToClient),
@@ -131,9 +131,9 @@ class LightModelServer(val client: LocalModelClient) {
 
             val versionChanges = Channel<String>(capacity = Channel.UNLIMITED)
             val versionChangeDetector = object : VersionChangeDetector(client.asyncStore, repositoryId.getBranchReference().getKey(), CoroutineScope(coroutineContext)) {
-                override fun processVersionChange(oldVersionHash: String?, newVersionHash: String?) {
-                    if (newVersionHash != null) {
-                        versionChanges.trySend(newVersionHash)
+                override fun processVersionChange(oldVersion: String?, newVersion: String?) {
+                    if (newVersion != null) {
+                        versionChanges.trySend(newVersion)
                     }
                 }
             }
@@ -142,7 +142,7 @@ class LightModelServer(val client: LocalModelClient) {
                     val latestVersionHash = versionChanges.receiveLast()
                     val newVersion = CLVersion.loadFromHash(latestVersionHash, client.storeCache)
                     deltaMutex.withLock {
-                        if (latestVersionHash != lastVersionToClient?.hash) {
+                        if (latestVersionHash != lastVersionToClient?.getContentHash()) {
                             sendDelta(newVersion, null, null)
                         }
                     }
@@ -211,7 +211,7 @@ class LightModelServer(val client: LocalModelClient) {
         repositoryId: RepositoryId,
         userId: String?,
     ): CLVersion {
-        val branch = OTBranch(PBranch(baseVersion.tree, client.idGenerator), client.idGenerator, client.storeCache!!)
+        val branch = OTBranch(PBranch(baseVersion.getTree(), client.idGenerator), client.idGenerator, client.storeCache)
         branch.computeWriteT { t ->
             for (op in operations) {
                 try {
@@ -256,7 +256,7 @@ class LightModelServer(val client: LocalModelClient) {
             t.getChildren(ITree.ROOT_ID, ITree.DETACHED_NODES_ROLE).toList().forEach { t.deleteNode(it) }
         }
 
-        val operationsAndTree = branch.operationsAndTree
+        val operationsAndTree = branch.getPendingChanges()
         val newVersion = CLVersion.createRegularVersion(
             client.idGenerator.generate(),
             Date().toString(),
@@ -267,7 +267,7 @@ class LightModelServer(val client: LocalModelClient) {
         )
         val mergedVersion = VersionMerger(client.storeCache, client.idGenerator)
             .mergeChange(getCurrentVersion(repositoryId), newVersion)
-        client.asyncStore.put(repositoryId.getBranchKey(), mergedVersion.hash)
+        client.asyncStore.put(repositoryId.getBranchKey(), mergedVersion.getContentHash())
         // TODO handle concurrent write to the branchKey, otherwise versions might get lost. See ReplicatedRepository.
         return mergedVersion
     }
@@ -276,15 +276,15 @@ class LightModelServer(val client: LocalModelClient) {
         version: CLVersion,
         oldVersion: CLVersion?,
     ): VersionData {
-        val branch = TreePointer(version.tree)
+        val branch = TreePointer(version.getTree())
         val nodeDataList = ArrayList<NodeData>()
         if (oldVersion == null) {
             val rootNode = PNodeAdapter(ITree.ROOT_ID, branch)
             node2json(rootNode, true, nodeDataList)
         } else {
             val nodesToInclude = HashSet<Long>()
-            version.tree.visitChanges(
-                oldVersion.tree,
+            version.getTree().visitChanges(
+                oldVersion.getTree(),
                 object : ITreeChangeVisitorEx {
                     override fun childrenChanged(nodeId: Long, role: String?) {
                         nodesToInclude += nodeId
@@ -292,9 +292,9 @@ class LightModelServer(val client: LocalModelClient) {
 
                     override fun containmentChanged(nodeId: Long) {
                         nodesToInclude.add(nodeId)
-                        if (version.tree.getParent(nodeId) == oldVersion.tree.getParent(nodeId)) {
+                        if (version.getTree().getParent(nodeId) == oldVersion.getTree().getParent(nodeId)) {
                             // no childrenChanged event is received for the parent if only the role changed
-                            nodesToInclude.add(version.tree.getParent(nodeId))
+                            nodesToInclude.add(version.getTree().getParent(nodeId))
                         }
                     }
 
@@ -320,10 +320,10 @@ class LightModelServer(val client: LocalModelClient) {
             nodesToInclude.forEach { node2json(PNodeAdapter(it, branch), false, nodeDataList) }
         }
         return VersionData(
-            repositoryId = version.tree.getId(),
-            versionHash = version.hash,
+            repositoryId = version.getTree().getId(),
+            versionHash = version.getContentHash(),
             rootNodeId = if (oldVersion == null) ITree.ROOT_ID.toString(16) else null,
-            usesRoleIds = version.tree.usesRoleIds(),
+            usesRoleIds = version.getTree().usesRoleIds(),
             nodes = nodeDataList,
         )
     }

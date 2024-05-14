@@ -143,7 +143,7 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
             baseVersion = null,
             operations = emptyArray(),
         )
-        putVersionHash(masterBranch, initialVersion.hash)
+        putVersionHash(masterBranch, initialVersion.getContentHash())
         initialVersion
     }
 
@@ -243,13 +243,13 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
             } else {
                 val headVersion = CLVersion(headHash, client.storeCache)
                 val newVersion = CLVersion(newVersionHash, client.storeCache)
-                require(headVersion.tree.getId() == newVersion.tree.getId()) {
-                    "Attempt to merge a model with ID '${newVersion.tree.getId()}'" +
-                        " into one with ID '${headVersion.tree.getId()}'"
+                require(headVersion.getTree().getId() == newVersion.getTree().getId()) {
+                    "Attempt to merge a model with ID '${newVersion.getTree().getId()}'" +
+                        " into one with ID '${headVersion.getTree().getId()}'"
                 }
                 val mergedVersion = VersionMerger(client.storeCache, client.idGenerator)
                     .mergeChange(headVersion, newVersion)
-                mergedVersion.hash
+                mergedVersion.getContentHash()
             }
             putVersionHash(branch, mergedHash)
             ensureRepositoriesAreInList(setOf(branch.repositoryId))

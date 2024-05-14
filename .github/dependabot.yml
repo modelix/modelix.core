@@ -15,6 +15,10 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    groups:
+      google-oauth:
+        patterns:
+          - "com.google.oauth-client*"
   - package-ecosystem: "docker"
     open-pull-requests-limit: 20
     directory: "/model-server"

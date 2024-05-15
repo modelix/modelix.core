@@ -259,7 +259,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
             }
         }
 
-        val operationsAndTree = branch.operationsAndTree
+        val operationsAndTree = branch.getPendingChanges()
         val newVersion = CLVersion.createRegularVersion(
             client.idGenerator.generate(),
             Date().toString(),

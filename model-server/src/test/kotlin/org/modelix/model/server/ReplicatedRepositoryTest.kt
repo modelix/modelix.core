@@ -207,7 +207,7 @@ class ReplicatedRepositoryTest {
      * Makes it easier to test and fix performance issues.
      */
     @RepeatedTest(value = 10)
-    fun deterministicConcurrentWrite(repetitionInfo: RepetitionInfo) = runTest { scope ->
+    fun deterministicConcurrentWrite(repetitionInfo: RepetitionInfo) = runTest {
         val url = "http://localhost/v2"
         val clients = (1..3).map {
             ModelClientV2.builder().url(url).client(client).build().also { it.init() }
@@ -441,7 +441,7 @@ class ReplicatedRepositoryTest {
 
         (1..100).forEach {
             val baseVersion = versions[rand.nextInt(versions.size)]
-            val branch = OTBranch(PBranch(baseVersion.tree, idGenerator), idGenerator, initialTree.store)
+            val branch = OTBranch(PBranch(baseVersion.getTree(), idGenerator), idGenerator, initialTree.store)
             branch.runWriteT { t ->
                 createdNodes += t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?).toString(16)
             }

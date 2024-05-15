@@ -171,7 +171,7 @@ class ModelReplicationServerTest {
 
     @Test
     fun `responds with 400 when deleting from an invalid repository ID`() {
-        runWithTestModelServer { _, fixture ->
+        runWithTestModelServer { _, _ ->
             val response = client.delete {
                 url {
                     appendPathSegments("v2", "repositories", "invalid with spaces", "branches", "master")

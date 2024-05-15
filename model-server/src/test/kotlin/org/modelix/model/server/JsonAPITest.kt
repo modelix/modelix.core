@@ -157,15 +157,12 @@ class JsonAPITest {
             put("name", "EntityA")
         }
         val v1 = v1json.getString("versionHash")
-        val queryAndAssert: suspend (String, String?) -> Unit = { role, expectedValue ->
-            val merged = getCurrentVersion()
-            val entity = getFirstEntity(merged)
-            assertEquals(expectedValue, entity.getJSONObject("properties").getString(role))
-        }
-        val v2a = createNode(v1, nodeId, "properties", null) {
+        // v2 A
+        createNode(v1, nodeId, "properties", null) {
             put("name", "propertyA1")
         }
-        val v2b = createNode(v1, nodeId, "properties", null) {
+        // v2 B
+        createNode(v1, nodeId, "properties", null) {
             put("name", "propertyA2")
         }
         val v3 = getCurrentVersion()
@@ -173,7 +170,7 @@ class JsonAPITest {
     }
 
     private suspend fun ApplicationTestBuilder.changeNode(versionHash: String, id: Long, role: String, value: String) {
-        val response = client.post("/json/$repoId/$versionHash/update") {
+        client.post("/json/$repoId/$versionHash/update") {
             contentType(ContentType.Application.Json)
             setBody(
                 buildJSONArray(

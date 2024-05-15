@@ -59,9 +59,9 @@ abstract class VersionChangeDetector(
 
     init {
         keyListener = object : IKeyListener {
-            override fun changed(key: String, versionHash: String?) {
-                LOG.debug { "Listener received new version $versionHash" }
-                versionChanged(versionHash)
+            override fun changed(key: String, value: String?) {
+                LOG.debug { "Listener received new version $value" }
+                versionChanged(value)
             }
         }
 

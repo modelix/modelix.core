@@ -18,7 +18,6 @@ package org.modelix.model
 import org.apache.commons.collections4.map.LRUMap
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.util.StreamUtils.toStream
-import java.util.Arrays
 import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.stream.Collectors
@@ -27,11 +26,11 @@ class KeyValueStoreCache(private val store: IKeyValueStore) : IKeyValueStoreWrap
     private val cache = Collections.synchronizedMap(LRUMap<String, String?>(300000))
     private val pendingPrefetches: MutableSet<String> = HashSet()
     private val activeRequests: MutableList<GetRequest> = ArrayList()
-    override fun prefetch(rootKey: String) {
+    override fun prefetch(key: String) {
         val processedKeys: MutableSet<String?> = HashSet()
-        processedKeys.add(rootKey)
-        var newKeys: MutableList<String> = Arrays.asList(rootKey).toMutableList()
-        while (!newKeys.isEmpty() && processedKeys.size + newKeys.size <= 100000) {
+        processedKeys.add(key)
+        var newKeys: MutableList<String> = mutableListOf(key)
+        while (newKeys.isNotEmpty() && processedKeys.size + newKeys.size <= 100000) {
             synchronized(pendingPrefetches) { newKeys.removeAll(pendingPrefetches) }
             val currentKeys = newKeys
             newKeys = ArrayList()
@@ -39,9 +38,9 @@ class KeyValueStoreCache(private val store: IKeyValueStore) : IKeyValueStoreWrap
             synchronized(pendingPrefetches) { pendingPrefetches.addAll(currentKeys) }
             try {
                 loadedEntries = getAll(currentKeys)
-                for ((key, value) in loadedEntries) {
-                    processedKeys.add(key)
-                    for (childKey in HashUtil.extractSha256(value)) {
+                for ((loadedKey, loadedValue) in loadedEntries) {
+                    processedKeys.add(loadedKey)
+                    for (childKey in HashUtil.extractSha256(loadedValue)) {
                         if (processedKeys.contains(childKey)) {
                             continue
                         }
@@ -62,8 +61,8 @@ class KeyValueStoreCache(private val store: IKeyValueStore) : IKeyValueStoreWrap
         return getAll(setOf(key))[key]
     }
 
-    override fun getAll(keys_: Iterable<String>): Map<String, String?> {
-        val remainingKeys = toStream(keys_).collect(Collectors.toList())
+    override fun getAll(keys: Iterable<String>): Map<String, String?> {
+        val remainingKeys = toStream(keys).collect(Collectors.toList())
         val result: MutableMap<String, String?> = LinkedHashMap(16, 0.75.toFloat(), false)
         synchronized(cache) {
             val itr = remainingKeys.iterator()

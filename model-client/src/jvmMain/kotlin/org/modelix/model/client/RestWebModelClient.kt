@@ -530,8 +530,8 @@ class RestWebModelClient @JvmOverloads constructor(
         return sorted
     }
 
-    override fun putAll(entries_: Map<String, String?>) {
-        runBlocking { putAllA(entries_) }
+    override fun putAll(entries: Map<String, String?>) {
+        runBlocking { putAllA(entries) }
     }
 
     suspend fun putAllA(entries_: Map<String, String?>) {

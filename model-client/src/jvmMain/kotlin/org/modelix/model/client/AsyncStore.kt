@@ -49,11 +49,11 @@ class AsyncStore(private val store: IKeyValueStore) : IKeyValueStoreWrapper {
         putAll(mapOf(key to value))
     }
 
-    override fun getAll(keys_: Iterable<String>): Map<String, String?> {
-        val keys = keys_.toMutableList()
+    override fun getAll(keys: Iterable<String>): Map<String, String?> {
+        val mutableKeys = keys.toMutableList()
         val result: MutableMap<String, String?> = LinkedHashMap()
         synchronized(pendingWrites) {
-            val itr: MutableIterator<String> = keys.iterator()
+            val itr: MutableIterator<String> = mutableKeys.iterator()
             while (itr.hasNext()) {
                 val key: String = itr.next()
                 // always put even if null to have the same order in the linked hash map as in the input
@@ -63,8 +63,8 @@ class AsyncStore(private val store: IKeyValueStore) : IKeyValueStoreWrapper {
                 }
             }
         }
-        if (!keys.isEmpty()) {
-            result.putAll(store.getAll(keys))
+        if (mutableKeys.isNotEmpty()) {
+            result.putAll(store.getAll(mutableKeys))
         }
         return result
     }

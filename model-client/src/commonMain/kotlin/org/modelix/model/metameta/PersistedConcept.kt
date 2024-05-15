@@ -69,10 +69,12 @@ data class PersistedConcept(val id: Long, val uid: String?) : IConcept, IConcept
         throw UnsupportedOperationException()
     }
 
+    @Deprecated("use ILanguageRepository.resolveConcept")
     override fun resolve(area: IArea?): IConcept? {
         throw UnsupportedOperationException()
     }
 
+    @Deprecated("use getUID()")
     override fun serialize(): String {
         TODO("Not yet implemented")
     }

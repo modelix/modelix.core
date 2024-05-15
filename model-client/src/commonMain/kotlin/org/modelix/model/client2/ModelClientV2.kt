@@ -272,7 +272,7 @@ class ModelClientV2(
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
                 if (lastKnownVersion != null) {
-                    parameters["lastKnown"] = lastKnownVersion.hash
+                    parameters["lastKnown"] = lastKnownVersion.getContentHash()
                 }
             }
             useVersionStreamFormat()
@@ -339,7 +339,7 @@ class ModelClientV2(
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName, "poll")
                 if (lastKnownVersion != null) {
-                    parameters["lastKnown"] = lastKnownVersion.hash
+                    parameters["lastKnown"] = lastKnownVersion.getContentHash()
                 }
             }
             useVersionStreamFormat()
@@ -358,10 +358,10 @@ class ModelClientV2(
         return ModelQLClient.builder().httpClient(httpClient).url(url.buildString()).build().query(body)
     }
 
-    override suspend fun <R> query(repository: RepositoryId, versionHash: String, body: (IMonoStep<INode>) -> IMonoStep<R>): R {
+    override suspend fun <R> query(repositoryId: RepositoryId, versionHash: String, body: (IMonoStep<INode>) -> IMonoStep<R>): R {
         val url = URLBuilder().apply {
             takeFrom(baseUrl)
-            appendPathSegmentsEncodingSlash("repositories", repository.id, "versions", versionHash, "query")
+            appendPathSegmentsEncodingSlash("repositories", repositoryId.id, "versions", versionHash, "query")
         }
         return ModelQLClient.builder().httpClient(httpClient).url(url.buildString()).build().query(body)
     }

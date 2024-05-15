@@ -76,7 +76,7 @@ class LongKeyPMap<V> protected constructor(root: INode<V?>?) {
             val childIndex = (key ushr shift and LEVEL_MASK.toLong()).toInt()
             val child = getChild(childIndex)
             return if (child == null) {
-                this as INode<V?>
+                this
             } else {
                 setChild(childIndex, child.remove(key, shift + BITS_PER_LEVEL))
             }
@@ -103,7 +103,7 @@ class LongKeyPMap<V> protected constructor(root: INode<V?>?) {
             val physicalIndex = logicalToPhysicalIndex(bitmap, logicalIndex)
             return if (isBitNotSet(bitmap, logicalIndex)) {
                 val bm: Int = bitmap or (1 shl logicalIndex)
-                val resultingArray: Array<INode<V?>> = insert<INode<V?>>(children as Array<INode<V?>>, physicalIndex, child as INode<V?>) as Array<INode<V?>>
+                val resultingArray: Array<INode<V?>> = insert<INode<V?>>(children, physicalIndex, child as INode<V?>)
                 InternalNode(bm, resultingArray)
             } else {
                 InternalNode(bitmap, set<INode<V?>>(children, physicalIndex, child as INode<V?>))

@@ -117,7 +117,7 @@ actual open class ReplicatedRepository actual constructor(
         var remoteBase: CLVersion?
         var newLocalVersion: CLVersion
         synchronized(mergeLock) {
-            opsAndTree = localOTBranch.operationsAndTree
+            opsAndTree = localOTBranch.getPendingChanges()
             localBase = localVersion
             remoteBase = remoteVersion
             val ops: Array<IOperation> = opsAndTree.first.map { it.getOriginalOp() }.toTypedArray()
@@ -179,18 +179,18 @@ actual open class ReplicatedRepository actual constructor(
         synchronized(mergeLock) {
             if (remoteVersion!!.hash != newVersion.hash) {
                 remoteVersion = newVersion
-                client.asyncStore!!.put(branchReference.getKey(), newVersion.hash)
+                client.asyncStore.put(branchReference.getKey(), newVersion.getContentHash())
             }
         }
     }
 
     protected fun writeLocalVersion(newVersion: CLVersion?) {
         synchronized(mergeLock) {
-            if (newVersion!!.hash != this.localVersion!!.hash) {
+            if (newVersion!!.getContentHash() != this.localVersion!!.getContentHash()) {
                 this.localVersion = newVersion
                 divergenceTime = 0
                 localBranch.runWrite {
-                    val newTree = newVersion.tree
+                    val newTree = newVersion.getTree()
                     val currentTree = localBranch.transaction.tree as CLTree?
                     if (getHash(newTree) != getHash(currentTree)) {
                         localBranch.writeTransaction.tree = newTree
@@ -236,7 +236,7 @@ actual open class ReplicatedRepository actual constructor(
     companion object {
         private val LOG = mu.KotlinLogging.logger {}
         private fun getHash(v: CLVersion?): String? {
-            return v?.hash
+            return v?.getContentHash()
         }
 
         private fun getHash(v: CLTree?): String? {
@@ -246,13 +246,13 @@ actual open class ReplicatedRepository actual constructor(
 
     init {
         val versionHash = client[branchReference.getKey()]
-        val store = client.storeCache!!
+        val store = client.storeCache
         var initialVersion = if (versionHash.isNullOrEmpty()) null else loadFromHash(versionHash, store)
         val initialTree = MutableObject<CLTree>()
         if (initialVersion == null) {
             initialTree.setValue(CLTree.builder(store).repositoryId(branchReference.repositoryId).build())
             initialVersion = createVersion(initialTree.value, arrayOf(), null)
-            client.asyncStore!!.put(branchReference.getKey(), initialVersion.hash)
+            client.asyncStore.put(branchReference.getKey(), initialVersion.getContentHash())
         } else {
             initialTree.setValue(CLTree(initialVersion.treeHash?.getValue(store), store))
         }
@@ -265,20 +265,20 @@ actual open class ReplicatedRepository actual constructor(
         localOTBranch = OTBranch(localBranch, client.idGenerator, store)
         merger = VersionMerger(store, client.idGenerator)
         versionChangeDetector = object : VersionChangeDetector(client, branchReference.getKey(), coroutineScope) {
-            override fun processVersionChange(oldVersionHash: String?, newVersionHash: String?) {
+            override fun processVersionChange(oldVersion: String?, newVersion: String?) {
                 if (disposed) {
                     return
                 }
-                if (newVersionHash == null || newVersionHash.length == 0) {
+                if (newVersion.isNullOrEmpty()) {
                     return
                 }
-                if (newVersionHash == getHash(remoteVersion)) {
+                if (newVersion == getHash(remoteVersion)) {
                     return
                 }
-                val newRemoteVersion = loadFromHash(newVersionHash, store)
+                val newRemoteVersion = loadFromHash(newVersion, store)
                 val localBase = MutableObject<CLVersion?>()
                 synchronized(mergeLock) {
-                    localBase.setValue(localVersion)
+                    localBase.value = localVersion
                     remoteVersion = newRemoteVersion
                 }
                 val doMerge = object : Supplier<Boolean> {
@@ -300,7 +300,7 @@ actual open class ReplicatedRepository actual constructor(
                             LOG.error(ex) { "" }
                             mergedVersion = newRemoteVersion
                         }
-                        val mergedTree = mergedVersion.tree
+                        val mergedTree = mergedVersion.getTree()
                         synchronized(mergeLock) {
                             remoteVersion = mergedVersion
                             if (localVersion == localBase.value) {
@@ -346,8 +346,8 @@ actual open class ReplicatedRepository actual constructor(
         convergenceWatchdog = fixDelay(
             1000,
             Runnable {
-                val localHash = if (localVersion == null) null else localVersion!!.hash
-                val remoteHash = if (remoteVersion == null) null else remoteVersion!!.hash
+                val localHash = if (localVersion == null) null else localVersion!!.getContentHash()
+                val remoteHash = if (remoteVersion == null) null else remoteVersion!!.getContentHash()
                 if (localHash == remoteHash) {
                     divergenceTime = 0
                 } else {

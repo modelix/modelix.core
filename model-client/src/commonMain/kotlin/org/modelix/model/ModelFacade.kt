@@ -50,7 +50,7 @@ object ModelFacade {
     }
 
     fun loadCurrentModel(client: IModelClient, branch: BranchReference): ITree? {
-        return loadCurrentVersion(client, branch)?.tree
+        return loadCurrentVersion(client, branch)?.getTree()
     }
 
     fun toLocalBranch(tree: ITree): IBranch = TreePointer(tree, IdGenerator.getInstance(1))
@@ -74,11 +74,11 @@ object ModelFacade {
     fun createRepositoryId(id: String): RepositoryId = RepositoryId(id)
 
     fun mergeUpdate(client: IModelClient, branch: BranchReference, baseVersionHash: String? = null, userName: String?, body: (IWriteTransaction) -> Unit): CLVersion {
-        val baseVersionHash: String = baseVersionHash
+        val actualBaseVersionHash: String = baseVersionHash
             ?: client.get(branch.getKey())
             ?: throw RuntimeException("$branch doesn't exist")
-        val baseVersionData: CPVersion = client.storeCache.get(baseVersionHash, { CPVersion.deserialize(it) })
-            ?: throw RuntimeException("version not found: $baseVersionHash")
+        val baseVersionData: CPVersion = client.storeCache.get(actualBaseVersionHash) { CPVersion.deserialize(it) }
+            ?: throw RuntimeException("version not found: $actualBaseVersionHash")
         val baseVersion = CLVersion(baseVersionData, client.storeCache)
         return applyUpdate(client, baseVersion, branch, userName, body)
     }
@@ -90,10 +90,10 @@ object ModelFacade {
         userId: String?,
         body: (IWriteTransaction) -> Unit,
     ): CLVersion {
-        val otBranch = OTBranch(PBranch(baseVersion.tree, client.idGenerator), client.idGenerator, client.storeCache)
+        val otBranch = OTBranch(PBranch(baseVersion.getTree(), client.idGenerator), client.idGenerator, client.storeCache)
         otBranch.computeWriteT { t -> body(t) }
 
-        val operationsAndTree = otBranch.operationsAndTree
+        val operationsAndTree = otBranch.getPendingChanges()
         val newVersion = CLVersion.createRegularVersion(
             client.idGenerator.generate(),
             Clock.System.now().epochSeconds.toString(),
@@ -106,7 +106,7 @@ object ModelFacade {
             ?: throw RuntimeException("$branch doesn't exist")
         val mergedVersion = VersionMerger(client.storeCache, client.idGenerator)
             .mergeChange(currentVersion, newVersion)
-        client.asyncStore.put(branch.getKey(), mergedVersion.hash)
+        client.asyncStore.put(branch.getKey(), mergedVersion.getContentHash())
         // TODO handle concurrent write to the branchKey, otherwise versions might get lost. See ReplicatedRepository.
         return mergedVersion
     }

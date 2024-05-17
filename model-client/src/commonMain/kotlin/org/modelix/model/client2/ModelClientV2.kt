@@ -24,6 +24,7 @@ import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.preparePost
@@ -125,9 +126,10 @@ class ModelClientV2(
 
     override fun getUserId(): String? = clientProvidedUserId ?: serverProvidedUserId
 
-    override suspend fun initRepository(repository: RepositoryId): IVersion {
+    override suspend fun initRepository(repository: RepositoryId, useRoleIds: Boolean): IVersion {
         return httpClient.preparePost {
             url {
+                parameter("useRoleIds", useRoleIds)
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", repository.id, "init")
             }

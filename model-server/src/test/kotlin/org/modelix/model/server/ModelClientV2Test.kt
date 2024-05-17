@@ -276,4 +276,22 @@ class ModelClientV2Test {
 
         assertEquals(initialVersion.getContentHash(), loadedVersion.getContentHash())
     }
+
+    @Test
+    fun `create repository with useRoleIds true`() = runTest {
+        val modelClient = createModelClient()
+        val repositoryId = RepositoryId("useRoleIdsTrue")
+        val initialVersion = modelClient.initRepository(repositoryId)
+
+        assertTrue(initialVersion.getTree().usesRoleIds())
+    }
+
+    @Test
+    fun `create repository with useRoleIds false`() = runTest {
+        val modelClient = createModelClient()
+        val repositoryId = RepositoryId("useRoleIdsFalse")
+        val initialVersion = modelClient.initRepository(repositoryId, useRoleIds = false)
+
+        assertFalse(initialVersion.getTree().usesRoleIds())
+    }
 }

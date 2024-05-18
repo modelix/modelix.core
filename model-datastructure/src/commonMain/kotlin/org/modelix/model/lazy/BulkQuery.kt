@@ -53,7 +53,7 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, batchSize: Int? 
             val existingQueueElement = queue[hash.getHash()] as QueueElement<T>?
             val result = existingQueueElement?.value ?: prefetchedValue ?: Value()
             prefetchQueue.addRequest(hash, result)
-            return result
+            return DummyValue()
         } else {
             if (queue.size >= batchSize && !processing) executeQuery()
 
@@ -193,6 +193,18 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, batchSize: Int? 
             onReceive { v -> transformation(v).onReceive { value -> result.success(value) } }
             return result
         }
+    }
+
+    class DummyValue<E> : IBulkQuery.Value<E> {
+        override fun executeQuery(): E {
+            throw UnsupportedOperationException()
+        }
+
+        override fun <R> flatMap(handler: (E) -> IBulkQuery.Value<R>): IBulkQuery.Value<R> = DummyValue()
+
+        override fun <R> map(handler: (E) -> R): IBulkQuery.Value<R> = DummyValue()
+
+        override fun onReceive(handler: (E) -> Unit) {}
     }
 }
 

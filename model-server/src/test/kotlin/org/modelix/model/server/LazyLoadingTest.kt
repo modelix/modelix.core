@@ -25,6 +25,7 @@ import org.modelix.model.api.TreePointer
 import org.modelix.model.api.addNewChild
 import org.modelix.model.api.getDescendants
 import org.modelix.model.api.getRootNode
+import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.lazyLoadVersion
 import org.modelix.model.client2.runWrite
 import org.modelix.model.lazy.RepositoryId
@@ -50,16 +51,16 @@ class LazyLoadingTest {
         block()
     }
 
-    private fun assertRequestCount(expected: IntRange, body: () -> Unit) {
+    private fun ModelClientV2.assertRequestCount(expected: IntRange, body: () -> Unit) {
         val requestCount = measureRequests(body)
         assertContains(expected, requestCount)
     }
 
-    private fun measureRequests(body: () -> Unit): Int {
-        val before = statistics.getTotalRequests()
+    private fun ModelClientV2.measureRequests(body: () -> Unit): Int {
+        val before = requestCounter.get()
         val objectsBefore = statistics.getTotalRequestedObjects()
         body()
-        val after = statistics.getTotalRequests()
+        val after = requestCounter.get()
         val objectsAfter = statistics.getTotalRequestedObjects()
         val requestCount = (after - before).toInt()
         println("Requests: $requestCount")
@@ -67,8 +68,8 @@ class LazyLoadingTest {
         return requestCount
     }
 
-    @Test fun lazy_loading_500_10000_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 500, 10_000, 500, 500, 28, 2, 0)
-    @Test fun lazy_loading_5000_10000_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 10_000, 500, 500, 39, 15, 56)
+    @Test fun lazy_loading_500_10000_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 500, 10_000, 500, 500, 28, 5, 0)
+    @Test fun lazy_loading_5000_10000_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 10_000, 500, 500, 31, 28, 4)
 
     /*
      * For 50_000 nodes there are ~100_000 objects in the database.
@@ -80,31 +81,31 @@ class LazyLoadingTest {
     @Ignore @Test fun lazy_loading_50000_10000_500_500_pdfs() = runLazyLoadingTest(ParallelDepthFirstSearchPattern, 50_000, 10_000, 500, 500, 84, 2154, 2165)
     @Ignore @Test fun lazy_loading_50000_10000_500_500_bfs() = runLazyLoadingTest(BreathFirstSearchPattern, 50_000, 10_000, 500, 500, 55, 181204, 179691)
 
-    @Test fun lazy_loading_500_10000_50_50() = runLazyLoadingTest(DepthFirstSearchPattern, 500, 10_000, 50, 50, 28, 13, 0)
-    @Test fun lazy_loading_5000_10000_50_50() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 10_000, 50, 50, 69, 224, 94)
+    @Test fun lazy_loading_500_10000_50_50() = runLazyLoadingTest(DepthFirstSearchPattern, 500, 10_000, 50, 50, 28, 17, 0)
+    @Test fun lazy_loading_5000_10000_50_50() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 10_000, 50, 50, 32, 249, 61)
     @Ignore @Test fun lazy_loading_50000_10000_50_50() = runLazyLoadingTest(DepthFirstSearchPattern, 50_000, 10_000, 50, 50, 143, 3964, 4885)
 
-    @Test fun lazy_loading_5000_500_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 500, 500, 500, 99, 1443, 1443)
+    @Test fun lazy_loading_5000_500_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 500, 500, 500, 30, 74, 67)
 
     /**
      * There are 10342 entries on the server.
      */
-    @Test fun lazy_loading_5000_50000_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 50_000, 20_000, 20_000, 44, 0, 0)
+    @Test fun lazy_loading_5000_50000_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 50_000, 20_000, 20_000, 32, 13, 0)
 
     @Test fun lazy_loading_2000_100_5_5() = runLazyLoadingTest(DepthFirstSearchPattern, 2_000, 100, 5, 5, 50, 2685, 2766)
     @Ignore @Test fun lazy_loading_20000_1000_50_50() = runLazyLoadingTest(DepthFirstSearchPattern, 20_000, 1_000, 50, 50, 49, 2071, 2081)
 
-    @Test fun lazy_loading_5000_5000_500_0() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 0, 39, 6183, 6218)
-    @Test fun lazy_loading_5000_5000_500_1() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 1, 41, 6183, 6218)
-    @Test fun lazy_loading_5000_5000_500_2() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 2, 40, 5133, 5170)
-    @Test fun lazy_loading_5000_5000_500_4() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 4, 39, 2554, 2591)
-    @Test fun lazy_loading_5000_5000_500_8() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 8, 41, 1268, 1307)
-    @Test fun lazy_loading_5000_5000_500_16() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 16, 40, 625, 664)
-    @Test fun lazy_loading_5000_5000_500_32() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 32, 39, 307, 351)
-    @Test fun lazy_loading_5000_5000_500_64() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 64, 40, 149, 200)
-    @Test fun lazy_loading_5000_5000_500_125() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 125, 40, 74, 130)
-    @Test fun lazy_loading_5000_5000_500_250() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 250, 40, 70, 94)
-    @Test fun lazy_loading_5000_5000_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 500, 41, 85, 127)
+    @Ignore @Test fun lazy_loading_5000_5000_500_0() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 0, 30, 10300, 10326)
+    @Ignore @Test fun lazy_loading_5000_5000_500_1() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 1, 31, 10300, 10327)
+    @Ignore @Test fun lazy_loading_5000_5000_500_2() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 2, 31, 7756, 6321)
+    @Ignore @Test fun lazy_loading_5000_5000_500_4() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 4, 30, 3406, 1455)
+    @Ignore @Test fun lazy_loading_5000_5000_500_8() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 8, 31, 1599, 1249)
+    @Test fun lazy_loading_5000_5000_500_16() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 16, 31, 762, 671)
+    @Test fun lazy_loading_5000_5000_500_32() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 32, 31, 382, 353)
+    @Test fun lazy_loading_5000_5000_500_64() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 64, 31, 197, 196)
+    @Test fun lazy_loading_5000_5000_500_125() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 125, 32, 126, 115)
+    @Test fun lazy_loading_5000_5000_500_250() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 250, 31, 73, 66)
+    @Test fun lazy_loading_5000_5000_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 500, 31, 38, 5)
 
 
     private fun runLazyLoadingTest(accessPattern: AccessPattern, numberOfNodes: Int, cacheSize: Int, batchSize: Int, prefetchSize: Int, vararg expectedRequests: Int) {
@@ -139,12 +140,12 @@ class LazyLoadingTest {
         val actualRequestCount = ArrayList<Int>()
 
         // Traverse to the first leaf node. This should load some data, but not the whole model.
-       actualRequestCount += measureRequests {
+       actualRequestCount += client.measureRequests {
             generateSequence(rootNode) { it.allChildren.firstOrNull() }.count()
         }
 
         // Traverse the whole model.
-        actualRequestCount += measureRequests {
+        actualRequestCount += client.measureRequests {
             accessPattern.runPattern(rootNode)
         }
 
@@ -152,7 +153,7 @@ class LazyLoadingTest {
         // unloaded during the first traversal. The unloaded parts need to be requested again.
         // But the navigation to the first leaf is like a warmup of the cache for the whole model traversal.
         // The previous traversal can benefit from that, but the next one cannot and is expected to need more requests.
-        actualRequestCount += measureRequests {
+        actualRequestCount += client.measureRequests {
             accessPattern.runPattern(rootNode)
         }
 

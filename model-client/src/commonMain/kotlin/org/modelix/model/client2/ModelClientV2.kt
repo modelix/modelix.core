@@ -46,6 +46,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
+import org.modelix.incremental.AtomicLong
 import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.model.IVersion
 import org.modelix.model.api.IBranch
@@ -83,6 +84,7 @@ class ModelClientV2(
     private var serverProvidedUserId: String? = null
     private val kvStore = MapBasedStore()
     val store = ObjectStoreCache(kvStore) // TODO the store will accumulate garbage
+    val requestCounter = AtomicLong()
 
     suspend fun init() {
         updateClientId()
@@ -226,6 +228,7 @@ class ModelClientV2(
 
     override suspend fun getObjects(repository: RepositoryId, keys: Sequence<String>): Map<String, String> {
         //LOG.debug { "${clientId.toString(16)}.getObjects($repository, ${keys.count()})" }
+        requestCounter.incrementAndGet()
         val response = httpClient.post {
             url {
                 takeFrom(baseUrl)

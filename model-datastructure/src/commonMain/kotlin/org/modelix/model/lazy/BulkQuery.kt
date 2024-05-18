@@ -36,18 +36,12 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, batchSize: Int? 
         require(this.prefetchSize <= this.batchSize) { "prefetch size ${this.prefetchSize} is greater than the batch size ${this.batchSize}" }
     }
 
-    protected fun executeBulkQuery(refs: Iterable<KVEntryReference<IKVValue>>): Map<String, IKVValue?> {
-        val refsMap = refs.associateBy { it.getHash() }
-        val result = HashMap<String, IKVValue?>()
-        result += refs.filter { !it.isWritten() }.map { it.getHash() to it.getValue(store) }
-        val keysToQuery = refs.filter { it.isWritten() }.map { it.getHash() }
-        val queriedValues = store.getAll(keysToQuery) { key, serialized -> refsMap[key]!!.getDeserializer()(serialized) }
-        result += keysToQuery.zip(queriedValues)
-        return result
+    protected fun executeBulkQuery(regular: List<IKVEntryReference<IKVValue>>, prefetch: List<IKVEntryReference<IKVValue>>): Map<String, IKVValue?> {
+        return store.getAll(regular, prefetch)
     }
 
     override fun <T : IKVValue> query(hash: KVEntryReference<T>): IBulkQuery.Value<T?> {
-        val cachedValue = store.getIfCached(hash.getHash(), hash.getDeserializer())
+        val cachedValue = store.getIfCached(hash.getHash(), hash.getDeserializer(), prefetchQueue.isLoadingGoal())
         if (cachedValue != null) {
             return constant(cachedValue)
         }
@@ -103,7 +97,8 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, batchSize: Int? 
                 val allRequests: List<Pair<KVEntryReference<*>, Value<*>>> = regularRequests + prefetchRequests
 
                 val entries: Map<String, IKVValue?> = executeBulkQuery(
-                    allRequests.asSequence().map { obj -> obj.first }.toSet(),
+                    regularRequests.asSequence().map { obj -> obj.first }.toSet().toList(),
+                    prefetchRequests.asSequence().map { obj -> obj.first }.toSet().toList(),
                 )
                 for (request in allRequests) {
                     (request.second as Value<IKVValue?>).success(entries[request.first.getHash()])

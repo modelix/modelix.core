@@ -18,6 +18,10 @@ package org.modelix.model.lazy
 import org.modelix.model.persistent.IKVValue
 
 class NonBulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery {
+    init {
+        require(true)
+    }
+
     override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IBulkQuery.Value<O>): IBulkQuery.Value<List<O>> {
         val list = input.asSequence().map(f).map { it.executeQuery() }.toList()
         return Value(list)

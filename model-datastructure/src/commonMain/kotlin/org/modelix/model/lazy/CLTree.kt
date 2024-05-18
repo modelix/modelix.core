@@ -319,19 +319,14 @@ class CLTree : ITree, IBulkTree {
     }
 
     fun getAllChildren(parentId: Long, bulkQuery: IBulkQuery): IBulkQuery.Value<Iterable<Long>> {
-        return resolveElement(parentId, bulkQuery).flatMap { getChildren(it!!, bulkQuery) }.map { children ->
-            if (children.isNotEmpty()) {
-                children.asReversed().forEach {
-                    bulkQuery.offerPrefetch(PrefetchNodeGoal(this, it.id))
-                }
-            }
-            children.map { it.id }
+        return resolveElement(parentId, bulkQuery).map {
+            it?.childrenIdArray?.asIterable() ?: emptyList()
         }
     }
 
     private data class PrefetchNodeGoal(val tree: CLTree, val nodeId: Long) : IPrefetchGoal {
         override fun executeRequests(bulkQuery: IBulkQuery) {
-            tree.getAllChildren(nodeId, bulkQuery)
+            tree.getAllChildren(nodeId, bulkQuery).map { it.forEach { tree.resolveElement(it, bulkQuery) } }
         }
     }
 
@@ -610,7 +605,23 @@ class CLTree : ITree, IBulkTree {
         return if (hash == null) {
             query.constant(null)
         } else {
-            query.query(hash)
+            query.query(hash).also {
+                it.onReceive { node ->
+                    if (node == null) return@onReceive
+                    val children: LongArray = node.childrenIdArray
+                    if (children.isNotEmpty()) {
+                        children.reversedArray().forEach {
+                            query.offerPrefetch(PrefetchNodeGoal(this, it))
+                        }
+                    }
+                    if (node.parentId != 0L) {
+                        query.offerPrefetch(PrefetchNodeGoal(this, node.parentId))
+                    }
+                    node.referenceTargets.asSequence().filter { it.isLocal }.forEach { target ->
+                        query.offerPrefetch(PrefetchNodeGoal(this, target.elementId))
+                    }
+                }
+            }
         }
     }
 

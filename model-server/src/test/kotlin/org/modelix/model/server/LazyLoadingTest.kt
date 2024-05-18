@@ -68,24 +68,24 @@ class LazyLoadingTest {
         return requestCount
     }
 
-    @Test fun lazy_loading_500_10000_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 500, 10_000, 500, 500, 28, 5, 0)
-    @Test fun lazy_loading_5000_10000_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 10_000, 500, 500, 31, 28, 4)
+    @Test fun lazy_loading_500_10000_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 500, 10_000, 500, 500, 24, 5, 0)
+    @Test fun lazy_loading_5000_10000_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 10_000, 500, 500, 31, 27, 5)
 
     /*
      * For 50_000 nodes there are ~100_000 objects in the database.
      * With a batch size of 500 at least 200 request are required, but 100 % efficiency is not achievable.
      * 128, 1558, 1512
      */
-    @Ignore @Test fun lazy_loading_50000_10000_500_500_dfs() = runLazyLoadingTest(DepthFirstSearchPattern, 50_000, 10_000, 500, 500, 56, 792, 825)
-    @Ignore @Test fun lazy_loading_50000_10000_500_500_random() = runLazyLoadingTest(RandomPattern(5000, Random(236767)), 50_000, 10_000, 500, 500, 287, 6924, 6554)
-    @Ignore @Test fun lazy_loading_50000_10000_500_500_pdfs() = runLazyLoadingTest(ParallelDepthFirstSearchPattern, 50_000, 10_000, 500, 500, 84, 2154, 2165)
-    @Ignore @Test fun lazy_loading_50000_10000_500_500_bfs() = runLazyLoadingTest(BreathFirstSearchPattern, 50_000, 10_000, 500, 500, 55, 181204, 179691)
+    @Test fun lazy_loading_50000_10000_500_500_dfs() = runLazyLoadingTest(DepthFirstSearchPattern, 50_000, 10_000, 500, 500, 40, 434, 429)
+    @Test fun lazy_loading_50000_10000_500_500_random() = runLazyLoadingTest(RandomPattern(5000, Random(236767)), 50_000, 10_000, 500, 500, 40, 891, 657)
+    @Test fun lazy_loading_50000_10000_500_500_pdfs() = runLazyLoadingTest(ParallelDepthFirstSearchPattern, 50_000, 10_000, 500, 500, 40, 443, 427)
+    @Test fun lazy_loading_50000_10000_500_500_bfs() = runLazyLoadingTest(BreathFirstSearchPattern, 50_000, 10_000, 500, 500, 40, 2849, 2125)
 
     @Test fun lazy_loading_500_10000_50_50() = runLazyLoadingTest(DepthFirstSearchPattern, 500, 10_000, 50, 50, 28, 17, 0)
     @Test fun lazy_loading_5000_10000_50_50() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 10_000, 50, 50, 32, 249, 61)
-    @Ignore @Test fun lazy_loading_50000_10000_50_50() = runLazyLoadingTest(DepthFirstSearchPattern, 50_000, 10_000, 50, 50, 143, 3964, 4885)
+    @Test fun lazy_loading_50000_10000_50_50() = runLazyLoadingTest(DepthFirstSearchPattern, 50_000, 10_000, 50, 50, 40, 2678, 2617)
 
-    @Test fun lazy_loading_5000_500_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 500, 500, 500, 30, 74, 67)
+    @Test fun lazy_loading_5000_500_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 500, 500, 500, 32, 74, 69)
 
     /**
      * There are 10342 entries on the server.
@@ -93,19 +93,28 @@ class LazyLoadingTest {
     @Test fun lazy_loading_5000_50000_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 50_000, 20_000, 20_000, 32, 13, 0)
 
     @Test fun lazy_loading_2000_100_5_5() = runLazyLoadingTest(DepthFirstSearchPattern, 2_000, 100, 5, 5, 50, 2685, 2766)
-    @Ignore @Test fun lazy_loading_20000_1000_50_50() = runLazyLoadingTest(DepthFirstSearchPattern, 20_000, 1_000, 50, 50, 49, 2071, 2081)
+    @Test fun lazy_loading_20000_1000_50_50() = runLazyLoadingTest(DepthFirstSearchPattern, 20_000, 1_000, 50, 50, 36, 1588, 1603)
 
-    @Ignore @Test fun lazy_loading_5000_5000_500_0() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 0, 30, 10300, 10326)
-    @Ignore @Test fun lazy_loading_5000_5000_500_1() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 1, 31, 10300, 10327)
-    @Ignore @Test fun lazy_loading_5000_5000_500_2() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 2, 31, 7756, 6321)
-    @Ignore @Test fun lazy_loading_5000_5000_500_4() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 4, 30, 3406, 1455)
-    @Ignore @Test fun lazy_loading_5000_5000_500_8() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 8, 31, 1599, 1249)
-    @Test fun lazy_loading_5000_5000_500_16() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 16, 31, 762, 671)
-    @Test fun lazy_loading_5000_5000_500_32() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 32, 31, 382, 353)
-    @Test fun lazy_loading_5000_5000_500_64() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 64, 31, 197, 196)
-    @Test fun lazy_loading_5000_5000_500_125() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 125, 32, 126, 115)
-    @Test fun lazy_loading_5000_5000_500_250() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 250, 31, 73, 66)
-    @Test fun lazy_loading_5000_5000_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 500, 31, 38, 5)
+    @Ignore @Test fun lazy_loading_5000_5000_500_0() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 0, 32, 10300, 10326)
+    @Ignore @Test fun lazy_loading_5000_5000_500_1() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 1, 32, 10300, 10327)
+    @Ignore @Test fun lazy_loading_5000_5000_500_2() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 2, 32, 7756, 6321)
+    @Ignore @Test fun lazy_loading_5000_5000_500_4() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 4, 32, 3406, 1455)
+    @Ignore @Test fun lazy_loading_5000_5000_500_8() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 8, 32, 1599, 1249)
+    @Test fun lazy_loading_5000_5000_500_16() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 16, 32, 773, 679)
+    @Test fun lazy_loading_5000_5000_500_32() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 32, 32, 384, 353)
+    @Test fun lazy_loading_5000_5000_500_64() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 64, 32, 198, 196)
+    @Test fun lazy_loading_5000_5000_500_125() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 125, 32, 126, 117)
+    @Test fun lazy_loading_5000_5000_500_250() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 250, 32, 73, 66)
+    @Test fun lazy_loading_5000_5000_500_500() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 5_000, 500, 500, 32, 38, 9)
+
+    @Test fun lazy_loading_5000_2000_500_500_dfs() = runLazyLoadingTest(DepthFirstSearchPattern, 5_000, 2_000, 500, 500, 30, 46, 46)
+    @Test fun lazy_loading_5000_2000_500_500_pdfs() = runLazyLoadingTest(ParallelDepthFirstSearchPattern, 5_000, 2_000, 500, 500, 30, 46, 46)
+    @Test fun lazy_loading_5000_2000_500_500_bfs() = runLazyLoadingTest(BreathFirstSearchPattern, 5_000, 2_000, 500, 500, 30, 155, 64)
+    @Test fun lazy_loading_5000_2000_500_500_random() = runLazyLoadingTest(RandomPattern(5_000, Random(987)), 5_000, 2_000, 500, 500, 30, 1094, 704)
+
+    @Test fun lazy_loading_1000_200_50_50_dfs() = runLazyLoadingTest(DepthFirstSearchPattern, 1_000, 100, 50, 50, 26, 119, 107)
+    @Test fun lazy_loading_1000_200_50_0_dfs() = runLazyLoadingTest(DepthFirstSearchPattern, 1_000, 100, 50, 0, 26, 119, 107)
+    @Test fun lazy_loading_1000_200_50_50_random() = runLazyLoadingTest(RandomPattern(1_000, Random(987)), 1_000, 200, 50, 50, 26, 242, 172)
 
 
     private fun runLazyLoadingTest(accessPattern: AccessPattern, numberOfNodes: Int, cacheSize: Int, batchSize: Int, prefetchSize: Int, vararg expectedRequests: Int) {

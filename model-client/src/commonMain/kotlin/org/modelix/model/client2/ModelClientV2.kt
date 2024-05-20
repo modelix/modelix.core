@@ -255,7 +255,13 @@ class ModelClientV2(
 
     private suspend fun uploadObjects(repository: RepositoryId, objects: Sequence<Pair<String, String>>) {
         LOG.debug { "${clientId.toString(16)}.pushObjects($repository)" }
-        objects.chunked(100_000).forEach { chunk ->
+        objects.chunked(100_000).forEach { unsortedChunk ->
+            // Entries are sorted to avoid deadlocks on the server side between transactions.
+            // Since ignite locks individual entries, this is equivalent to a lock ordering.
+            // This is also fixed on the server side, but there might an old version of the server running that doesn't
+            // contain this fix. This client-side sorting could be removed in a future version when all servers
+            // are upgraded.
+            val chunk = unsortedChunk.sortedBy { it.first }
             httpClient.put {
                 url {
                     takeFrom(baseUrl)

@@ -109,13 +109,16 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
     }
 
     override fun putAll(entries: Map<String, String?>, silent: Boolean) {
-        val deletes = entries.filterValues { it == null }
-        val puts = entries.filterValues { it != null }
+        // Sorting is important to avoid deadlocks (lock ordering).
+        // The documentation of IgniteCache.putAll also states that this a requirement.
+        val sortedEntries = entries.toSortedMap()
+        val deletes = sortedEntries.filterValues { it == null }
+        val puts = sortedEntries.filterValues { it != null }
         runTransaction {
             if (deletes.isNotEmpty()) cache.removeAll(deletes.keys)
             if (puts.isNotEmpty()) cache.putAll(puts)
             if (!silent) {
-                for (key in entries.keys) {
+                for (key in sortedEntries.keys) {
                     if (HashUtil.isSha256(key)) continue
                     pendingChangeMessages.entryChanged(key)
                 }

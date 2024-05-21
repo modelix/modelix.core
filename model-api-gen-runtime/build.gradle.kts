@@ -9,6 +9,11 @@ kotlin {
     jvm()
     js(IR) {
         browser {
+            testTask {
+                useMocha {
+                    timeout = "10s"
+                }
+            }
         }
         nodejs {
             testTask {

@@ -6,7 +6,13 @@ plugins {
 kotlin {
     jvm()
     js(IR) {
-        browser {}
+        browser {
+            testTask {
+                useMocha {
+                    timeout = "10s"
+                }
+            }
+        }
         nodejs {
             testTask {
                 useMocha {

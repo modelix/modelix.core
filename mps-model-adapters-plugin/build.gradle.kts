@@ -23,7 +23,7 @@ tasks {
 
     patchPluginXml {
         sinceBuild.set("211")
-        untilBuild.set("232.10072.781")
+        untilBuild.set("241.*")
     }
 
     buildSearchableOptions {

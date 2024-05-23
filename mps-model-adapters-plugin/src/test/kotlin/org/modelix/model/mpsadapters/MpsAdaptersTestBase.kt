@@ -39,6 +39,10 @@ import kotlin.io.path.deleteRecursively
  */
 @Suppress("removal")
 abstract class MpsAdaptersTestBase(val testDataName: String?) : UsefulTestCase() {
+    init {
+        // workaround for MPS 2023.3 failing to start in test mode
+        System.setProperty("intellij.platform.load.app.info.from.resources", "true")
+    }
 
     protected lateinit var project: Project
 

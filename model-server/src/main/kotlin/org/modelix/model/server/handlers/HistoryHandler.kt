@@ -178,7 +178,7 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
         skip: Int,
         limit: Int,
     ) {
-        val headVersion = if (headHash == null || headHash.length == 0) {
+        val headVersion = if (headHash.isNullOrEmpty()) {
             latestVersion
         } else {
             CLVersion(

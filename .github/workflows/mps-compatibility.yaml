@@ -22,6 +22,8 @@ jobs:
           - "2022.2"
           - "2022.3"
           - "2023.2"
+          - "2023.3"
+          - "2024.1"
 
     steps:
       - uses: actions/checkout@v4
@@ -38,5 +40,6 @@ jobs:
           :bulk-model-sync-mps:build
           :metamodel-export:build
           :mps-model-adapters:build
+          :mps-model-adapters-plugin:build
           :mps-model-server-plugin:build
           -Pmps.version.major=${{ matrix.version }}

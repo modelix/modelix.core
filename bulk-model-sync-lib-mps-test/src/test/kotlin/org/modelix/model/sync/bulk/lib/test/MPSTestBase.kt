@@ -29,6 +29,10 @@ import java.util.regex.Pattern
 private val TESTDATA_PATTERN = Pattern.compile(".*\\(testdata (.*)\\)")
 
 abstract class MPSTestBase : HeavyPlatformTestCase() {
+    init {
+        // workaround for MPS 2023.3 failing to start in test mode
+        System.setProperty("intellij.platform.load.app.info.from.resources", "true")
+    }
 
     protected lateinit var projectDir: Path
 

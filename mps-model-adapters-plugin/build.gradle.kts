@@ -1,5 +1,4 @@
 import org.modelix.copyMps
-import org.modelix.mpsJavaVersion
 
 plugins {
     kotlin("jvm")
@@ -17,13 +16,9 @@ intellij {
 }
 
 tasks {
-    withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions.jvmTarget = mpsJavaVersion.toString()
-    }
-
     patchPluginXml {
         sinceBuild.set("211")
-        untilBuild.set("232.10072.781")
+        untilBuild.set("241.*")
     }
 
     buildSearchableOptions {

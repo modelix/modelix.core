@@ -51,6 +51,8 @@ import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
+import org.modelix.model.server.store.forContextRepository
+import org.modelix.model.server.store.forGlobalRepository
 import org.modelix.model.test.RandomModelChangeGenerator
 import java.util.Collections
 import java.util.SortedSet
@@ -70,11 +72,11 @@ class ReplicatedRepositoryTest {
             installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
             val storeClient = InMemoryStoreClient()
-            val modelClient = LocalModelClient(storeClient)
+            val modelClient = LocalModelClient(storeClient.forContextRepository())
             val repositoriesManager = RepositoriesManager(modelClient)
             val inMemoryModels = InMemoryModels()
             ModelReplicationServer(repositoriesManager, modelClient, inMemoryModels).init(this)
-            KeyValueLikeModelServer(repositoriesManager, storeClient, inMemoryModels).init(this)
+            KeyValueLikeModelServer(repositoriesManager, storeClient.forGlobalRepository(), inMemoryModels).init(this)
         }
 
         coroutineScope {
@@ -214,7 +216,7 @@ class ReplicatedRepositoryTest {
         }
 
         val repositoryId = RepositoryId("repo1")
-        val initialVersion = clients[0].initRepository(repositoryId)
+        val initialVersion = clients[0].initRepository(repositoryId) as CLVersion
         val branchId = repositoryId.getBranchReference("my-branch")
         clients[0].push(branchId, initialVersion, initialVersion)
         val localVersions: MutableMap<ModelClientV2, CLVersion> = clients.associateWith { it.pull(branchId, null) as CLVersion }.toMutableMap()
@@ -234,7 +236,7 @@ class ReplicatedRepositoryTest {
                 override suspend fun apply() {
                     // Change local version
                     val baseVersion = localVersions[client]!!
-                    val branch = OTBranch(PBranch(baseVersion.getTree(), client.getIdGenerator()), client.getIdGenerator(), client.store)
+                    val branch = OTBranch(PBranch(baseVersion.getTree(), client.getIdGenerator()), client.getIdGenerator(), baseVersion.store)
                     branch.runWriteT { t ->
                         createdNodes += t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?).toString(16)
                     }
@@ -256,7 +258,7 @@ class ReplicatedRepositoryTest {
 
                 override suspend fun apply() {
                     // Merge local into remote
-                    remoteVersions[client] = VersionMerger(client.store, client.getIdGenerator())
+                    remoteVersions[client] = VersionMerger(initialVersion.store, client.getIdGenerator())
                         .mergeChange(remoteVersions[client]!!, localVersions[client]!!)
                 }
             },
@@ -267,7 +269,7 @@ class ReplicatedRepositoryTest {
 
                 override suspend fun apply() {
                     // Merge remote into local
-                    localVersions[client] = VersionMerger(client.store, client.getIdGenerator())
+                    localVersions[client] = VersionMerger(initialVersion.store, client.getIdGenerator())
                         .mergeChange(localVersions[client]!!, remoteVersions[client]!!)
                 }
             },
@@ -280,7 +282,7 @@ class ReplicatedRepositoryTest {
                     // Push to server
                     val receivedVersion = client.push(branchId, remoteVersions[client]!!, lastKnownRemoteVersion[client]!!) as CLVersion
                     lastKnownRemoteVersion[client] = receivedVersion
-                    remoteVersions[client] = VersionMerger(client.store, client.getIdGenerator())
+                    remoteVersions[client] = VersionMerger(initialVersion.store, client.getIdGenerator())
                         .mergeChange(remoteVersions[client]!!, receivedVersion)
                 }
             },
@@ -293,7 +295,7 @@ class ReplicatedRepositoryTest {
                     // Pull from server
                     val receivedVersion = client.pull(branchId, lastKnownRemoteVersion[client]!!) as CLVersion
                     lastKnownRemoteVersion[client] = receivedVersion
-                    remoteVersions[client] = VersionMerger(client.store, client.getIdGenerator())
+                    remoteVersions[client] = VersionMerger(initialVersion.store, client.getIdGenerator())
                         .mergeChange(remoteVersions[client]!!, receivedVersion)
                 }
             },

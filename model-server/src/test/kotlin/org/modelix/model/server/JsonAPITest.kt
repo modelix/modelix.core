@@ -33,11 +33,13 @@ import org.json.JSONObject
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.api.ITree
 import org.modelix.model.server.handlers.DeprecatedLightModelServer
+import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.handlers.asObjectList
 import org.modelix.model.server.handlers.buildJSONArray
 import org.modelix.model.server.handlers.buildJSONObject
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
+import org.modelix.model.server.store.forContextRepository
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -50,7 +52,10 @@ class JsonAPITest {
             install(WebSockets)
             install(Resources)
             install(IgnoreTrailingSlash)
-            DeprecatedLightModelServer(LocalModelClient(InMemoryStoreClient())).init(this)
+
+            val modelClient = LocalModelClient(InMemoryStoreClient().forContextRepository())
+            val repositoryManager = RepositoriesManager(modelClient)
+            DeprecatedLightModelServer(modelClient, repositoryManager).init(this)
         }
         block()
     }
@@ -76,8 +81,7 @@ class JsonAPITest {
     }
 
     private fun assertEmptyVersion(json: JSONObject) {
-        assertEquals(json.getJSONObject("root").getString("nodeId").toLong(), 1L)
-        assertEquals(json.getString("repositoryId"), repoId)
+        assertEquals(1L, json.getJSONObject("root").getString("nodeId").toLong())
         assertNotNull(json.optString("versionHash"), "versionHash missing")
     }
 
@@ -102,8 +106,8 @@ class JsonAPITest {
         return JSONObject(response.bodyAsText())
     }
 
-    fun HttpResponse.assertOK(): HttpResponse {
-        assertEquals(HttpStatusCode.OK, status)
+    suspend fun HttpResponse.assertOK(): HttpResponse {
+        assertEquals(HttpStatusCode.OK, status, bodyAsText())
         return this
     }
 

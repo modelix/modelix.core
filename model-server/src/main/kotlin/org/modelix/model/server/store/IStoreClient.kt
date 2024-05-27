@@ -20,29 +20,16 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import org.modelix.model.IKeyListener
-import java.io.File
-import java.io.IOException
+import org.modelix.model.IGenericKeyListener
 import kotlin.time.Duration.Companion.seconds
 
-interface IStoreClient : AutoCloseable {
-    operator fun get(key: String): String?
-    fun getAll(keys: List<String>): List<String?>
-    fun getAll(keys: Set<String>): Map<String, String?>
-    fun getAll(): Map<String, String?>
-    fun put(key: String, value: String?, silent: Boolean = false)
-    fun putAll(entries: Map<String, String?>, silent: Boolean = false)
-    fun listen(key: String, listener: IKeyListener)
-    fun removeListener(key: String, listener: IKeyListener)
-    fun generateId(key: String): Long
-    fun <T> runTransaction(body: () -> T): T
-}
+interface IStoreClient : IGenericStoreClient<String>
 
 suspend fun <T> IStoreClient.runTransactionSuspendable(body: () -> T): T {
     return withContext(Dispatchers.IO) { runTransaction(body) }
 }
 
-suspend fun pollEntry(storeClient: IStoreClient, key: String, lastKnownValue: String?): String? {
+suspend fun pollEntry(storeClient: IsolatingStore, key: ObjectInRepository, lastKnownValue: String?): String? {
     var result: String? = null
     coroutineScope {
         var handlerCalled = false
@@ -53,8 +40,8 @@ suspend fun pollEntry(storeClient: IStoreClient, key: String, lastKnownValue: St
 
         val channel = Channel<Unit>(Channel.RENDEZVOUS)
 
-        val listener = object : IKeyListener {
-            override fun changed(key: String, value: String?) {
+        val listener = object : IGenericKeyListener<ObjectInRepository> {
+            override fun changed(key: ObjectInRepository, value: String?) {
                 launch {
                     callHandler(value)
                     channel.trySend(Unit)
@@ -87,31 +74,4 @@ suspend fun pollEntry(storeClient: IStoreClient, key: String, lastKnownValue: St
         if (!handlerCalled) result = storeClient[key]
     }
     return result
-}
-
-fun IStoreClient.loadDump(file: File): Int {
-    var n = 0
-    file.useLines { lines ->
-        val entries = lines.associate { line ->
-            val parts = line.split("#".toRegex(), limit = 2)
-            n++
-            parts[0] to parts[1]
-        }
-        putAll(entries, silent = true)
-    }
-    return n
-}
-
-@Synchronized
-@Throws(IOException::class)
-fun IStoreClient.writeDump(file: File) {
-    file.writer().use { writer ->
-        for ((key, value) in getAll()) {
-            if (value == null) continue
-            writer.append(key)
-            writer.append("#")
-            writer.append(value)
-            writer.append("\n")
-        }
-    }
 }

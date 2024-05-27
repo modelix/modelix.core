@@ -48,7 +48,10 @@ import org.modelix.model.InMemoryModels
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.persistent.HashUtil
+import org.modelix.model.server.store.ContextScopedStoreClient
 import org.modelix.model.server.store.IStoreClient
+import org.modelix.model.server.store.ObjectInRepository
+import org.modelix.model.server.store.getGenericStore
 import org.modelix.model.server.store.pollEntry
 import org.modelix.model.server.store.runTransactionSuspendable
 import org.modelix.model.server.templates.PageWithMenuBar
@@ -75,6 +78,10 @@ class KeyValueLikeModelServer(
 
     constructor(repositoriesManager: RepositoriesManager) :
         this(repositoriesManager, repositoriesManager.client.store, InMemoryModels())
+
+    init {
+        require(storeClient !is ContextScopedStoreClient)
+    }
 
     companion object {
         private val HASH_PATTERN: Pattern = Pattern.compile("[a-zA-Z0-9\\-_]{5}\\*[a-zA-Z0-9\\-_]{38}")
@@ -146,7 +153,7 @@ class KeyValueLikeModelServer(
                     val key: String = call.parameters["key"]!!
                     val lastKnownValue = call.request.queryParameters["lastKnownValue"]
                     checkKeyPermission(key, EPermissionType.READ)
-                    val newValue = pollEntry(storeClient, key, lastKnownValue)
+                    val newValue = pollEntry(storeClient.getGenericStore(), ObjectInRepository.global(key), lastKnownValue)
                     respondValue(key, newValue)
                 }
 
@@ -302,7 +309,7 @@ class KeyValueLikeModelServer(
                 }
             }
         }
-        val referencedEntries = storeClient.getAll(referencedKeys)
+        val referencedEntries = storeClient.getGenericStore().getAll(referencedKeys.map { ObjectInRepository.global(it) }.toSet()).mapKeys { it.key.key }
         for (key in referencedKeys) {
             if (referencedEntries[key] == null) {
                 throw NotFoundException("Referenced key $key not found")
@@ -346,9 +353,18 @@ class KeyValueLikeModelServer(
 
         HashUtil.checkObjectHashes(hashedObjects)
 
+        for ((branch, value) in branchChanges) {
+            require(repositoriesManager.isIsolated(branch.repositoryId) != true) {
+                "Writing to repository ${branch.repositoryId} is not supported by this API"
+            }
+            // We cannot reliably know in which repository to store the objects, because the objects may be uploaded
+            // in multiple request.
+            // We could try to move the objects later, but since this API is deprecated, it's not worth the effort.
+        }
+
         storeClient.runTransactionSuspendable {
-            storeClient.putAll(hashedObjects)
-            storeClient.putAll(userDefinedEntries)
+            storeClient.getGenericStore().putAll(hashedObjects.mapKeys { ObjectInRepository.global(it.key) })
+            storeClient.getGenericStore().putAll(userDefinedEntries.mapKeys { ObjectInRepository.global(it.key) })
             for ((branch, value) in branchChanges) {
                 if (value == null) {
                     repositoriesManager.removeBranchesBlocking(branch.repositoryId, setOf(branch.branchName))

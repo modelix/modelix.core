@@ -26,11 +26,19 @@ object HashUtil {
     }
 
     fun isSha256(value: String?): Boolean {
-        return if (value == null || value.length != 44) {
-            false
-        } else {
-            value.matches(HASH_PATTERN)
+        // this implementation is equivalent to matching against HASH_PATTERN, but ~ 6 times faster
+        if (value == null) return false
+        if (value.length != 44) return false
+        if (value[5] != '*') return false
+        for (i in 0..4) {
+            val c = value[i]
+            if (c !in 'a'..'z' && c !in 'A'..'Z' && c !in '0'..'9' && c != '-' && c != '_') return false
         }
+        for (i in 6..43) {
+            val c = value[i]
+            if (c !in 'a'..'z' && c !in 'A'..'Z' && c !in '0'..'9' && c != '-' && c != '_') return false
+        }
+        return true
     }
 
     fun extractSha256(input: String?): Iterable<String> {

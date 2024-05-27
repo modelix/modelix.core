@@ -40,6 +40,7 @@ interface IModelClientV2 {
     fun getUserId(): String?
 
     suspend fun initRepository(repository: RepositoryId, useRoleIds: Boolean = true): IVersion
+    suspend fun initRepositoryWithLegacyStorage(repository: RepositoryId): IVersion
     suspend fun listRepositories(): List<RepositoryId>
     suspend fun deleteRepository(repository: RepositoryId): Boolean
     suspend fun listBranches(repository: RepositoryId): List<BranchReference>

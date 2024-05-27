@@ -37,7 +37,7 @@ paths:
               examples:
                 Example#1:
                   value: "../repos/"
-  /content/{repository}/{branch}/latest:
+  /content/repositories/{repository}/branches/{branch}/latest:
     get:
       operationId: getContentRepositoryBranchLatest
       parameters:
@@ -54,26 +54,25 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200'
-  /content/{versionHash}:
+  /content/repositories/{repository}/versions/{versionHash}:
+    parameters:
+      - name: repository
+        in: "path"
+        required: true
+        schema:
+          type: string
+      - name: versionHash
+        in: "path"
+        required: true
+        schema:
+          type: string
     get:
       operationId: getVersionHash
-      parameters:
-        - name: versionHash
-          in: "path"
-          required: true
-          schema:
-            type: string
       responses:
         "400":
           $ref: '#/components/responses/400'
     post:
       operationId: postVersionHash
-      parameters:
-        - name: versionHash
-          in: "path"
-          required: true
-          schema:
-            type: string
       requestBody:
         content:
           'application/json':
@@ -85,10 +84,15 @@ paths:
           $ref: '#/components/responses/400'
         "200":
           $ref: '#/components/responses/200'
-  /content/{versionHash}/{nodeId}:
+  /content/repositories/{repository}/versions/{versionHash}/{nodeId}:
     get:
       operationId: getNodeIdForVersionHash
       parameters:
+        - name: repository
+          in: "path"
+          required: true
+          schema:
+            type: string
         - name: nodeId
           in: "path"
           required: true

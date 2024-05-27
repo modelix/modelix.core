@@ -36,7 +36,9 @@ actual class ContextValue<E> {
     }
 
     actual fun getValue(): E {
-        return getAllValues().last()
+        val stack = getAllValues()
+        check(stack.isNotEmpty()) { "No value provided for ContextValue" }
+        return stack.last()
     }
 
     actual fun getValueOrNull(): E? {

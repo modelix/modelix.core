@@ -18,9 +18,9 @@ import javax.cache.processor.EntryProcessor
 import javax.cache.processor.EntryProcessorException
 import javax.cache.processor.MutableEntry
 
-class ClientIdProcessor : EntryProcessor<String?, String?, Long> {
+class ClientIdProcessor : EntryProcessor<ObjectInRepository?, String?, Long> {
     @Throws(EntryProcessorException::class)
-    override fun process(mutableEntry: MutableEntry<String?, String?>, vararg objects: Any): Long {
+    override fun process(mutableEntry: MutableEntry<ObjectInRepository?, String?>, vararg objects: Any): Long {
         val id = generateId(mutableEntry.value)
         mutableEntry.value = id.toString()
         return id

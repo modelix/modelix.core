@@ -85,7 +85,7 @@ org-json = { group = "org.json", name = "json", version = "20240303" }
 google-oauth-client = { group = "com.google.oauth-client", name = "google-oauth-client", version = "1.36.0" }
 google-oauth-clientjetty = { group = "com.google.oauth-client", name = "google-oauth-client-jetty", version = "1.36.0" }
 
-modelix-incremental = { group = "org.modelix", name = "incremental", version = "0.2.0" }
+modelix-incremental = { group = "org.modelix", name = "incremental", version = "0.3.1" }
 kotlinpoet = { group = "com.squareup", name = "kotlinpoet", version = "1.17.0" }
 vavr = { group = "io.vavr", name = "vavr", version = "0.10.4" }
 apache-commons-lang = { group = "org.apache.commons", name = "commons-lang3", version = "3.14.0" }

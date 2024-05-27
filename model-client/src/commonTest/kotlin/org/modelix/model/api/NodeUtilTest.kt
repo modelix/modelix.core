@@ -4,6 +4,7 @@ import org.modelix.model.area.IArea
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@Suppress("DEPRECATION")
 class SimpleTestConcept : IConcept {
     override val language: ILanguage?
         get() = TODO("Not yet implemented")
@@ -77,6 +78,7 @@ class SimpleTestConcept : IConcept {
     }
 }
 
+@Suppress("OVERRIDE_DEPRECATION")
 class SimpleTestNode(override val concept: IConcept? = null) : INode {
     override fun getArea(): IArea {
         TODO("Not yet implemented")
@@ -103,15 +105,15 @@ class SimpleTestNode(override val concept: IConcept? = null) : INode {
     override val allChildren: Iterable<INode>
         get() = childrenByRole.values.flatten()
 
-    override fun moveChild(role: String?, index: Int, node: INode) {
+    override fun moveChild(role: String?, index: Int, child: INode) {
         val l = childrenByRole.getOrPut(role) { mutableListOf() }
-        l.add(index, node)
-        if (node is SimpleTestNode) {
-            node.parent = this
-            node.roleInParent = role
+        l.add(index, child)
+        if (child is SimpleTestNode) {
+            child.parent = this
+            child.roleInParent = role
         }
-        require(node.parent == this)
-        require(node.roleInParent == role)
+        require(child.parent == this)
+        require(child.roleInParent == role)
     }
 
     override fun addNewChild(role: String?, index: Int, concept: IConcept?): INode {

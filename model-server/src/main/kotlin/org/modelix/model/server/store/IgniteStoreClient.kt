@@ -79,7 +79,7 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
         //            System.out.println("stats: " + cache.metrics());
         //        }, 10, 10, TimeUnit.SECONDS);
 
-        ignite.message().localListen(ENTRY_CHANGED_TOPIC) { nodeId: UUID?, key: Any? ->
+        ignite.message().localListen(ENTRY_CHANGED_TOPIC) { _: UUID?, key: Any? ->
             if (key is String) {
                 changeNotifier.notifyListeners(key)
             }

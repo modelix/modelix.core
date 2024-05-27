@@ -33,6 +33,7 @@ import kotlinx.html.th
 import kotlinx.html.thead
 import kotlinx.html.tr
 import kotlinx.html.ul
+import kotlinx.html.unsafe
 import org.modelix.api.html.Paths
 import org.modelix.authorization.KeycloakScope
 import org.modelix.authorization.asResource
@@ -73,11 +74,15 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
                 call.respondHtmlTemplate(PageWithMenuBar("repos/", "../../..")) {
                     headContent {
                         style {
-                            +"""
-                            body {
-                                font-family: sans-serif;
+                            unsafe {
+                                raw(
+                                    """
+                                    body {
+                                        font-family: sans-serif;
+                                    }
+                                    """.trimIndent(),
+                                )
                             }
-                            """.trimIndent()
                         }
                         repositoryPageStyle()
                     }
@@ -109,11 +114,11 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
 
     private suspend fun revert(repositoryAndBranch: BranchReference, from: String?, to: String?, author: String?) {
         val version = repositoriesManager.getVersion(repositoryAndBranch) ?: throw RuntimeException("Branch doesn't exist: $repositoryAndBranch")
-        val branch = OTBranch(PBranch(version.tree, client.idGenerator), client.idGenerator, client.storeCache!!)
+        val branch = OTBranch(PBranch(version.getTree(), client.idGenerator), client.idGenerator, client.storeCache)
         branch.runWriteT { t ->
             t.applyOperation(RevertToOp(KVEntryReference(from!!, DESERIALIZER), KVEntryReference(to!!, DESERIALIZER)))
         }
-        val (ops, tree) = branch.operationsAndTree
+        val (ops, tree) = branch.getPendingChanges()
         val newVersion = createRegularVersion(
             client.idGenerator.generate(),
             LocalDateTime.now().toString(),
@@ -127,38 +132,42 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
 
     private fun HEAD.repositoryPageStyle() {
         style {
-            +"""
-            ul {
-              padding-left: 15px;
+            unsafe {
+                raw(
+                    """
+                    ul {
+                      padding-left: 15px;
+                    }
+                    .hash {
+                      color: #888;
+                      white-space: nowrap;
+                    }
+                    .BtnGroup {
+                      display: inline-block;
+                      vertical-align: middle;
+                      margin: 10px;
+                    }
+                    .BtnGroup-item {
+                      background-color: #f6f8fa;
+                      border: 1px solid rgba(27,31,36,0.15);
+                      padding: 5px 16px;
+                      position: relative;
+                      float: left;
+                      border-right-width: 0;
+                      border-radius: 0;
+                    }
+                    .BtnGroup-item:first-child {
+                      border-top-left-radius: 6px;
+                      border-bottom-left-radius: 6px;
+                    }
+                    .BtnGroup-item:last-child {
+                      border-right-width: 1px;
+                      border-top-right-radius: 6px;
+                      border-bottom-right-radius: 6px;
+                    }
+                    """.trimIndent(),
+                )
             }
-            .hash {
-              color: #888;
-              white-space: nowrap;
-            }
-            .BtnGroup {
-              display: inline-block;
-              vertical-align: middle;
-              margin: 10px;
-            }
-            .BtnGroup-item {
-              background-color: #f6f8fa;
-              border: 1px solid rgba(27,31,36,0.15);
-              padding: 5px 16px;
-              position: relative;
-              float: left;
-              border-right-width: 0;
-              border-radius: 0;
-            }
-            .BtnGroup-item:first-child {
-              border-top-left-radius: 6px;
-              border-bottom-left-radius: 6px;
-            }
-            .BtnGroup-item:last-child {
-              border-right-width: 1px;
-              border-top-right-radius: 6px;
-              border-bottom-right-radius: 6px;
-            }
-            """.trimIndent()
         }
     }
 
@@ -169,7 +178,14 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
         skip: Int,
         limit: Int,
     ) {
-        val headVersion = if (headHash == null || headHash.length == 0) latestVersion else CLVersion(headHash, client.storeCache!!)
+        val headVersion = if (headHash.isNullOrEmpty()) {
+            latestVersion
+        } else {
+            CLVersion(
+                headHash,
+                client.storeCache,
+            )
+        }
         var rowIndex = 0
         h1 {
             +"History for Repository "

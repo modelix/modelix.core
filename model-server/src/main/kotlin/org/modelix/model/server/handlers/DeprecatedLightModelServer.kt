@@ -73,7 +73,7 @@ import java.util.Date
 
 class DeprecatedLightModelServer(val client: LocalModelClient) {
 
-    fun getStore() = client.storeCache!!
+    fun getStore() = client.storeCache
 
     fun init(application: Application) {
         application.apply {
@@ -88,7 +88,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
     }
 
     private fun getCurrentVersion(repositoryId: RepositoryId): CLVersion {
-        val versionHash = client.asyncStore?.get(repositoryId.getBranchKey())!!
+        val versionHash = client.asyncStore.get(repositoryId.getBranchKey())!!
         return CLVersion.loadFromHash(versionHash, getStore())
     }
 
@@ -144,7 +144,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
         }
         get<Paths.jsonRepositoryIdGet> {
             val repositoryId = RepositoryId(call.parameters["repositoryId"]!!)
-            val versionHash = client.asyncStore?.get(repositoryId.getBranchKey())!!
+            val versionHash = client.asyncStore.get(repositoryId.getBranchKey())!!
             // TODO 404 if it doesn't exist
             val version = CLVersion.loadFromHash(versionHash, getStore())
             respondVersion(version)
@@ -171,7 +171,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
             val deltaMutex = Mutex()
             val sendDelta: suspend (CLVersion) -> Unit = { newVersion ->
                 deltaMutex.withLock {
-                    if (newVersion.hash != lastVersion?.hash) {
+                    if (newVersion.getContentHash() != lastVersion?.getContentHash()) {
                         send(versionAsJson(newVersion, lastVersion).toString())
                         lastVersion = newVersion
                     }
@@ -218,7 +218,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
                 null,
                 emptyArray(),
             )
-            client.asyncStore!!.put(repositoryId.getBranchKey(), newVersion.hash)
+            client.asyncStore.put(repositoryId.getBranchKey(), newVersion.getContentHash())
             respondVersion(newVersion)
         }
         post<Paths.jsonRepositoryIdVersionHashUpdatePost> {
@@ -252,14 +252,14 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
         repositoryId: RepositoryId,
         userId: String?,
     ): CLVersion {
-        val branch = OTBranch(PBranch(baseVersion.tree, client.idGenerator), client.idGenerator, client.storeCache!!)
+        val branch = OTBranch(PBranch(baseVersion.tree, client.idGenerator), client.idGenerator, client.storeCache)
         branch.computeWriteT { t ->
             for (nodeData in (0 until updateData.length()).map { updateData.getJSONObject(it) }) {
                 updateNode(nodeData, containmentData = null, t)
             }
         }
 
-        val operationsAndTree = branch.operationsAndTree
+        val operationsAndTree = branch.getPendingChanges()
         val newVersion = CLVersion.createRegularVersion(
             client.idGenerator.generate(),
             Date().toString(),
@@ -269,24 +269,24 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
             operationsAndTree.first.map { it.getOriginalOp() }.toTypedArray(),
         )
         repositoryId.getBranchKey()
-        val mergedVersion = VersionMerger(client.storeCache!!, client.idGenerator)
+        val mergedVersion = VersionMerger(client.storeCache, client.idGenerator)
             .mergeChange(getCurrentVersion(repositoryId), newVersion)
-        client.asyncStore!!.put(repositoryId.getBranchKey(), mergedVersion.hash)
+        client.asyncStore.put(repositoryId.getBranchKey(), mergedVersion.getContentHash())
         // TODO handle concurrent write to the branchKey, otherwise versions might get lost. See ReplicatedRepository.
         return mergedVersion
     }
 
     private fun updateNode(nodeData: JSONObject, containmentData: ContainmentData?, t: IWriteTransaction): Long {
-        var containmentData = containmentData
+        var actualContainmentData = containmentData
         val nodeId = nodeData.getString("nodeId").toLong()
         if (!t.containsNode(nodeId)) {
-            if (containmentData == null) {
-                containmentData = ContainmentData(nodeData.optLong("parent", ITree.ROOT_ID), nodeData.optString("role", null), nodeData.optInt("index", -1))
+            if (actualContainmentData == null) {
+                actualContainmentData = ContainmentData(nodeData.optLong("parent", ITree.ROOT_ID), nodeData.optString("role", null), nodeData.optInt("index", -1))
             }
             t.addNewChild(
-                containmentData.parent,
-                containmentData.role,
-                containmentData.index,
+                actualContainmentData.parent,
+                actualContainmentData.role,
+                actualContainmentData.index,
                 nodeId,
                 null as IConcept?,
             )
@@ -341,17 +341,17 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
         version: CLVersion,
         oldVersion: CLVersion?,
     ): JSONObject {
-        val branch = TreePointer(version.tree)
+        val branch = TreePointer(version.getTree())
         val rootNode = PNodeAdapter(ITree.ROOT_ID, branch)
         val json = JSONObject()
-        json.put("repositoryId", version.tree.getId())
-        json.put("versionHash", version.hash)
+        json.put("repositoryId", version.getTree().getId())
+        json.put("versionHash", version.getContentHash())
         if (oldVersion == null) {
             json.put("root", node2json(rootNode, true))
         } else {
             val nodesToInclude = HashSet<Long>()
-            version.tree.visitChanges(
-                oldVersion.tree,
+            version.getTree().visitChanges(
+                oldVersion.getTree(),
                 object : ITreeChangeVisitorEx {
                     override fun childrenChanged(nodeId: Long, role: String?) {
                         nodesToInclude += nodeId
@@ -380,7 +380,7 @@ class DeprecatedLightModelServer(val client: LocalModelClient) {
             )
             val changedNodes = nodesToInclude.map { node2json(PNodeAdapter(it, branch), false) }.toJsonArray()
             json.put("nodes", changedNodes)
-            version.tree
+            version.getTree()
         }
         return json
     }

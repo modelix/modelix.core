@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package org.modelix.model.api
 
 import org.modelix.model.area.AbstractArea
@@ -8,11 +10,13 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class MyNodeReference : INodeReference {
+    @Deprecated("use .resolveIn(INodeResolutionScope)", replaceWith = ReplaceWith("resolveIn(area!!)"))
     override fun resolveNode(area: IArea?): INode? {
         TODO("Not yet implemented")
     }
 }
 
+@Suppress("OVERRIDE_DEPRECATION")
 class MyNode(val name: String) : INode {
     override fun getArea(): IArea {
         TODO("Not yet implemented")
@@ -40,7 +44,7 @@ class MyNode(val name: String) : INode {
     override val allChildren: Iterable<INode>
         get() = TODO("Not yet implemented")
 
-    override fun moveChild(role: String?, index: Int, node: INode) {
+    override fun moveChild(role: String?, index: Int, child: INode) {
         TODO("Not yet implemented")
     }
 
@@ -94,6 +98,7 @@ class MyArea(val knownResolutions: Map<INodeReference, INode>) : AbstractArea(),
         return this
     }
 
+    @Deprecated("use ILanguageRepository.resolveConcept")
     override fun resolveConcept(ref: IConceptReference): IConcept? {
         return null
     }

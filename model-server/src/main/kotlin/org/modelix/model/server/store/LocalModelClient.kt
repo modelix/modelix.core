@@ -36,12 +36,12 @@ class LocalModelClient(val store: IStoreClient) : IModelClient {
         store.put(key, value)
     }
 
-    override fun getAll(keys_: Iterable<String>): Map<String, String?> {
-        val keys = IterableUtils.toList(keys_)
-        val values = store.getAll(keys)
+    override fun getAll(keys: Iterable<String>): Map<String, String?> {
+        val keyList = IterableUtils.toList(keys)
+        val values = store.getAll(keyList)
         val result: MutableMap<String, String?> = LinkedHashMap()
-        for (i in keys.indices) {
-            result[keys[i]] = values!![i]
+        for (i in keyList.indices) {
+            result[keyList[i]] = values[i]
         }
         return result
     }

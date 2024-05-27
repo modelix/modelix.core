@@ -279,6 +279,7 @@ openApiFiles.forEach {
                 "supportingFiles" to "Paths.kt",
             ),
         )
+        ignoreFileOverride.set("${layout.projectDirectory.file(".openapi-generator-ignore")}")
     }
 
     // Ensure that the OpenAPI generator runs before starting to compile

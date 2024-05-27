@@ -40,20 +40,20 @@ abstract class SmallPMap<K, V> : CustomPMap<K, V> {
 
         override fun put(key: K, value: V?): SmallPMap<K, V?>? {
             if (value == null) {
-                return remove(key) as SmallPMap<K, V?>?
+                return remove(key)
             }
             return if (key == this.key) {
                 if (value == this.value) {
-                    this as SmallPMap<K, V?>?
+                    this
                 } else {
-                    Single<K, V>(key, value) as SmallPMap<K, V?>?
+                    Single<K, V>(key, value)
                 }
             } else {
                 var res: SmallPMap<K, V?>?
                 val p1: Array<Any?> = arrayOf(this.key, key)
                 val p2: Array<Any?> = arrayOf(this.value, value)
                 res = create<K, V?>(p1, p2) as SmallPMap<K, V?>?
-                return res as SmallPMap<K, V?>?
+                return res
             }
         }
 
@@ -82,12 +82,12 @@ abstract class SmallPMap<K, V> : CustomPMap<K, V> {
 
         override fun put(key: K, value: V?): SmallPMap<K, V?>? {
             if (value == null) {
-                return remove(key)as SmallPMap<K, V?>?
+                return remove(key)
             }
             val index = indexOf(keys, key)
             return if (index != -1) {
                 if (value == values[index]) {
-                    this as SmallPMap<K, V?>?
+                    this
                 } else {
                     create<K, V?>(keys, set(values, index, value)) as SmallPMap<K, V?>?
                 }

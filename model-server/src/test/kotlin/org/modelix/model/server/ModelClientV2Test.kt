@@ -63,7 +63,7 @@ class ModelClientV2Test {
         branch.runWriteT { t ->
             t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?)
         }
-        val (ops, newTree) = branch.operationsAndTree
+        val (ops, newTree) = branch.getPendingChanges()
         val newVersion = CLVersion.createRegularVersion(
             client.getIdGenerator().generate(),
             null,

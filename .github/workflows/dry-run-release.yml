@@ -10,6 +10,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      # Use this action to run commitlint because pre-commit does not run it in CI.
+      # pre-commit probably does not run commitlint in CI because pre-commit can only run it in the `commit-msg` stage.
       - uses: wagoid/commitlint-github-action@v6
 
   test-release:

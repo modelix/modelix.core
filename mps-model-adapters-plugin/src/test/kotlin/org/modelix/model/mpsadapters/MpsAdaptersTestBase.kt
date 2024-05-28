@@ -97,18 +97,18 @@ abstract class MpsAdaptersTestBase(val testDataName: String?) : UsefulTestCase()
         return checkNotNull(ProjectHelper.fromIdeaProject(project)) { "MPS project not loaded" }
     }
 
-    protected fun <R> writeAction(body: () -> R): R {
-        return mpsProject.modelAccess.computeWriteAction(body)
-    }
-
-    protected fun <R> writeActionOnEdt(body: () -> R): R {
-        return onEdt { writeAction { body() } }
-    }
-
-    protected fun <R> onEdt(body: () -> R): R {
+    protected fun <R> runCommandOnEDT(body: () -> R): R {
         var result: R? = null
-        ThreadUtils.runInUIThreadAndWait {
-            result = body()
+        val exception = ThreadUtils.runInUIThreadAndWait {
+            mpsProject.modelAccess.executeCommand {
+                result = body()
+            }
+        }
+        if (exception != null) {
+            throw exception
+        }
+        checkNotNull(result) {
+            "The result was null even those no exception was thrown."
         }
         return result as R
     }

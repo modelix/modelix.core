@@ -306,13 +306,24 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
         val projectRef = if (ref is MPSProjectModuleReference) {
             ref.projectRef
         } else {
+            // XXX Prefix of `projectRef` is not checked.
+            // `projectRef` might actually be a ref to anything.
+            // This might trigger unexpected resolution results and undefined behavior.
+            // Similar missing checks exist for other references in `MPSArea`.
+            // See https://issues.modelix.org/issue/MODELIX-923
             val projectRef = serialized.substringAfter(MPSProjectModuleReference.SEPARATOR)
             NodeReference(projectRef)
         }
 
+        val resolvedNodeForProject = resolveNode(projectRef) ?: return null
+        check(resolvedNodeForProject is MPSProjectAsNode) {
+            "Resolved node `$resolvedNodeForProject` does not represent a project."
+        }
+        val resolvedProject = resolvedNodeForProject.project
+
         return moduleRef.resolve(repository)?.let {
             MPSProjectModuleAsNode(
-                project = (resolveNode(projectRef) as MPSProjectAsNode).project,
+                project = resolvedProject,
                 module = it,
             )
         }

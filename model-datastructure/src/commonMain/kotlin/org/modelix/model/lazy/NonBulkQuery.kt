@@ -27,6 +27,10 @@ class NonBulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery 
         return Value(value)
     }
 
+    override fun offerPrefetch(key: IPrefetchGoal) {
+        // Since no real bulk queries are executed, prefetching doesn't provide any benefit.
+    }
+
     override fun <T : IKVValue> query(hash: KVEntryReference<T>): IBulkQuery.Value<T?> {
         return constant(hash.getValue(store))
     }

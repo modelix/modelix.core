@@ -109,7 +109,7 @@ class CPHamtSingle(
     }
 
     fun getChild(bulkQuery: IBulkQuery): IBulkQuery.Value<CPHamtNode> {
-        return bulkQuery.query(child).map { childData -> childData!! }
+        return bulkQuery.query(child).map { childData -> checkNotNull(childData) { "Entry not found: $child" } }
     }
 
     override fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IBulkQuery.Value<Unit> {

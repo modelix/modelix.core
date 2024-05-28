@@ -17,6 +17,7 @@
 package org.modelix.model.lazy
 
 import org.modelix.model.IKeyValueStore
+import org.modelix.model.persistent.IKVValue
 
 class NonCachingObjectStore(override val keyValueStore: IKeyValueStore) : IDeserializingKeyValueStore {
 
@@ -29,8 +30,26 @@ class NonCachingObjectStore(override val keyValueStore: IKeyValueStore) : IDeser
         }
     }
 
+    override fun <T : IKVValue> getAll(
+        regular: List<IKVEntryReference<T>>,
+        prefetch: List<IKVEntryReference<T>>,
+    ): Map<String, T?> {
+        val allRequests = regular.asSequence() + prefetch.asSequence()
+        val hashes = allRequests.map { it.getHash() }
+        val deserializers = allRequests.associate { it.getHash() to it.getDeserializer() }
+        val serialized: Map<String, String?> = keyValueStore.getAll(hashes.asIterable())
+        return serialized.mapValues { (hash, serializedValue) ->
+            val value = checkNotNull(serializedValue) { "Entry not found: $hash" }
+            deserializers[hash]!!(value)
+        }
+    }
+
     override fun <T> get(hash: String, deserializer: (String) -> T): T? {
         return keyValueStore.get(hash)?.let(deserializer)
+    }
+
+    override fun <T> getIfCached(hash: String, deserializer: (String) -> T, isPrefetch: Boolean): T? {
+        return keyValueStore.getIfCached(hash)?.let(deserializer)
     }
 
     override fun put(hash: String, deserialized: Any, serialized: String) {

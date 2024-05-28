@@ -30,7 +30,6 @@ import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.tryResolve
 import org.modelix.model.lazy.COWArrays.insert
 import org.modelix.model.lazy.COWArrays.remove
-import org.modelix.model.lazy.RepositoryId.Companion.random
 import org.modelix.model.persistent.CPHamtInternal
 import org.modelix.model.persistent.CPHamtNode
 import org.modelix.model.persistent.CPNode
@@ -54,7 +53,7 @@ class CLTree : ITree, IBulkTree {
         var repositoryId = repositoryId_
         if (data == null) {
             if (repositoryId == null) {
-                repositoryId = random()
+                repositoryId = RepositoryId.random()
             }
             val root = CPNode.create(
                 1,
@@ -77,7 +76,7 @@ class CLTree : ITree, IBulkTree {
     private constructor(treeId_: String, idToHash: CPHamtNode, store: IDeserializingKeyValueStore, usesRoleIds: Boolean) {
         var treeId: String? = treeId_
         if (treeId == null) {
-            treeId = random().id
+            treeId = RepositoryId.random().id
         }
         data = CPTree(treeId, KVEntryReference(idToHash), usesRoleIds)
         this.store = store
@@ -95,6 +94,7 @@ class CLTree : ITree, IBulkTree {
         return (nodesMap ?: return 0L).calculateSize(store.newBulkQuery()).executeQuery()
     }
 
+    @Deprecated("BulkQuery is now responsible for prefetching")
     fun prefetchAll() {
         store.prefetch(hash)
     }
@@ -315,8 +315,23 @@ class CLTree : ITree, IBulkTree {
     }
 
     override fun getAllChildren(parentId: Long): Iterable<Long> {
-        val children = getChildren(resolveElement(parentId)!!, store.newBulkQuery()).executeQuery()
-        return children.map { it.id }
+        return getAllChildren(parentId, store.newBulkQuery()).executeQuery()
+    }
+
+    fun getAllChildren(parentId: Long, bulkQuery: IBulkQuery): IBulkQuery.Value<Iterable<Long>> {
+        return resolveElement(parentId, bulkQuery).map {
+            it?.childrenIdArray?.asIterable() ?: emptyList()
+        }
+    }
+
+    private data class PrefetchNodeGoal(val tree: CLTree, val nodeId: Long) : IPrefetchGoal {
+        override fun loadRequest(bulkQuery: IBulkQuery) {
+            tree.getAllChildren(nodeId, bulkQuery).map { it.forEach { tree.resolveElement(it, bulkQuery) } }
+        }
+
+        override fun toString(): String {
+            return nodeId.toString(16)
+        }
     }
 
     override fun getDescendants(root: Long, includeSelf: Boolean): Iterable<CLNode> {
@@ -443,7 +458,7 @@ class CLTree : ITree, IBulkTree {
     override fun visitChanges(oldVersion: ITree, visitor: ITreeChangeVisitor) {
         val bulkQuery = store.newBulkQuery()
         visitChanges(oldVersion, visitor, bulkQuery)
-        (bulkQuery as? BulkQuery)?.executeQuery()
+        bulkQuery.executeQuery()
     }
 
     fun visitChanges(oldVersion: ITree, visitor: ITreeChangeVisitor, bulkQuery: IBulkQuery) {
@@ -594,7 +609,23 @@ class CLTree : ITree, IBulkTree {
         return if (hash == null) {
             query.constant(null)
         } else {
-            query.query(hash)
+            query.query(hash).also {
+                it.onReceive { node ->
+                    if (node == null) return@onReceive
+                    val children: LongArray = node.childrenIdArray
+                    if (children.isNotEmpty()) {
+                        children.reversedArray().forEach {
+                            query.offerPrefetch(PrefetchNodeGoal(this, it))
+                        }
+                    }
+                    if (node.parentId != 0L) {
+                        query.offerPrefetch(PrefetchNodeGoal(this, node.parentId))
+                    }
+                    node.referenceTargets.asSequence().filter { it.isLocal }.forEach { target ->
+                        query.offerPrefetch(PrefetchNodeGoal(this, target.elementId))
+                    }
+                }
+            }
         }
     }
 
@@ -626,7 +657,7 @@ class CLTree : ITree, IBulkTree {
         }
     }
 
-    private fun getChildren(node: CPNode, bulkQuery: IBulkQuery): IBulkQuery.Value<Iterable<CPNode>> {
+    private fun getChildren(node: CPNode, bulkQuery: IBulkQuery): IBulkQuery.Value<List<CPNode>> {
         return resolveElements(node.getChildrenIds().toList(), bulkQuery).map { elements -> elements }
     }
 

@@ -369,7 +369,7 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
             )
             v1 = v2
         }
-        (bulkQuery as? BulkQuery)?.executeQuery()
+        bulkQuery.executeQuery()
     }
     val oldEntries: Map<String, String?> = trackAccessedEntries(keyValueStore) { store ->
         if (baseVersionHash == null) return@trackAccessedEntries
@@ -391,7 +391,7 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
             }
         }
 
-        (bulkQuery as? BulkQuery)?.executeQuery()
+        bulkQuery.executeQuery()
     }
     return oldAndNewEntries - oldEntries.keys
 }
@@ -406,13 +406,21 @@ private fun trackAccessedEntries(store: IKeyValueStore, body: (IDeserializingKey
 private class AccessTrackingStore(val store: IKeyValueStore) : IKeyValueStore {
     val accessedEntries: MutableMap<String, String?> = LinkedHashMap()
 
-    override fun newBulkQuery(deserializingCache: IDeserializingKeyValueStore): IBulkQuery {
-        return store.newBulkQuery(deserializingCache)
+    override fun newBulkQuery(deserializingCache: IDeserializingKeyValueStore, config: BulkQueryConfiguration): IBulkQuery {
+        return store.newBulkQuery(deserializingCache, config)
     }
 
     override fun get(key: String): String? {
         val value = store.get(key)
         accessedEntries.put(key, value)
+        return value
+    }
+
+    override fun getIfCached(key: String): String? {
+        val value = store.getIfCached(key)
+        if (value != null) {
+            accessedEntries[key] = value
+        }
         return value
     }
 

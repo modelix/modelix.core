@@ -19,6 +19,7 @@ import org.modelix.kotlin.utils.createMemoryEfficientMap
 import org.modelix.kotlin.utils.toSynchronizedMap
 import org.modelix.model.IKeyListener
 import org.modelix.model.IKeyValueStore
+import org.modelix.model.lazy.BulkQueryConfiguration
 import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.NonBulkQuery
@@ -32,7 +33,11 @@ open class MapBasedStore : IKeyValueStore {
         return map[key]
     }
 
-    override fun newBulkQuery(deserializingCache: IDeserializingKeyValueStore): IBulkQuery {
+    override fun getIfCached(key: String): String? {
+        return get(key)
+    }
+
+    override fun newBulkQuery(deserializingCache: IDeserializingKeyValueStore, config: BulkQueryConfiguration): IBulkQuery {
         // This implementation doesn't benefit from bulk queries. The NonBulkQuery has a lower performance overhead.
         return NonBulkQuery(deserializingCache)
     }

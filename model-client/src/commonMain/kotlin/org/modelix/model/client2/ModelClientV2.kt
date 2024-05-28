@@ -68,6 +68,10 @@ import org.modelix.model.lazy.computeDelta
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.MapBasedStore
+import org.modelix.model.server.api.v2.ImmutableObjectsStream
+import org.modelix.model.server.api.v2.ObjectHash
+import org.modelix.model.server.api.v2.ObjectHashAndSerializedObject
+import org.modelix.model.server.api.v2.SerializedObject
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.api.v2.VersionDeltaStream
 import org.modelix.model.server.api.v2.VersionDeltaStreamV2
@@ -83,7 +87,7 @@ class ModelClientV2(
     private val httpClient: HttpClient,
     val baseUrl: String,
     private var clientProvidedUserId: String?,
-) : IModelClientV2, Closable {
+) : IModelClientV2, IModelClientV2Internal, Closable {
     private var clientId: Int = 0
     private var idGenerator: IIdGenerator = IdGeneratorDummy()
     private var serverProvidedUserId: String? = null
@@ -265,27 +269,16 @@ class ModelClientV2(
         }
     }
 
-    override suspend fun getObjects(repository: RepositoryId, keys: Sequence<String>): Map<String, String> {
-        val response = httpClient.post {
+    override suspend fun getObjects(repository: RepositoryId, keys: Sequence<ObjectHash>): Map<ObjectHash, SerializedObject> {
+        return httpClient.preparePost {
             url {
                 takeFrom(baseUrl)
                 appendPathSegments("repositories", repository.id, "objects", "getAll")
             }
             setBody(keys.joinToString("\n"))
+        }.execute { response ->
+            ImmutableObjectsStream.decode(response.bodyAsChannel())
         }
-
-        val content = response.bodyAsChannel()
-        val objects = HashMap<String, String>()
-        while (true) {
-            val key = checkNotNull(content.readUTF8Line()) { "Empty line expected at the end of the stream" }
-            if (key == "") {
-                check(content.readUTF8Line() == null) { "Empty line is only allowed at the end of the stream" }
-                break
-            }
-            val value = checkNotNull(content.readUTF8Line()) { "Object missing for hash $key" }
-            objects[key] = value
-        }
-        return objects
     }
 
     override suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?): IVersion {
@@ -315,7 +308,7 @@ class ModelClientV2(
         }
     }
 
-    override suspend fun pushObjects(repository: RepositoryId, objects: Sequence<Pair<String, String>>) {
+    override suspend fun pushObjects(repository: RepositoryId, objects: Sequence<ObjectHashAndSerializedObject>) {
         LOG.debug { "${clientId.toString(16)}.pushObjects($repository)" }
         objects.chunked(100_000).forEach { unsortedChunk ->
             // Entries are sorted to avoid deadlocks on the server side between transactions.

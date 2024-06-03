@@ -11,7 +11,7 @@ rootProject.name = "modelix.core"
 include("authorization")
 include("bulk-model-sync-gradle")
 include("bulk-model-sync-lib")
-include("bulk-model-sync-lib-mps-test")
+include("bulk-model-sync-lib:mps-test")
 include("bulk-model-sync-mps")
 include("kotlin-utils")
 include("light-model-client")

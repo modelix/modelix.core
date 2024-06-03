@@ -41,6 +41,7 @@ import org.modelix.model.test.RandomModelChangeGenerator
 import kotlin.js.JsName
 import kotlin.random.Random
 import kotlin.reflect.KClass
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -638,6 +639,61 @@ class ModelImporterTest {
 
         assertEquals(expectedOperations, branch.getNumOfUsedOperationsByType())
         assertNoOverlappingOperations(branch.getPendingChanges().first)
+    }
+
+    @Test
+    @Ignore // Wait with fix after MODELIX-889 is finished and MODELIX-925 is refined.
+    fun deletingNodeDoesNotResultInUnnecessaryMoveOperations() {
+        // language=json
+        val initialData = """
+           {
+             "root": {
+               "id": "rootNode",
+               "children": [
+                 {
+                   "id": "node:001"
+                 },
+                 {
+                   "id": "node:002"
+                 },
+                 {
+                   "id": "node:003"
+                 }
+               ]
+             }
+           }
+        """.trimIndent().let { ModelData.fromJson(it) }
+
+        // language=json
+        val dataToImport = """
+            {
+             "root": {
+               "id": "rootNode",
+               "children": [
+                 {
+                   "id": "node:002"
+                 },
+                 {
+                   "id": "node:003"
+                 }
+               ]
+             }
+           }
+        """.trimIndent().let { ModelData.fromJson(it) }
+
+        val branch = createOTBranchFromModel(initialData)
+        branch.importIncrementally(dataToImport)
+        branch.runRead {
+            assertAllNodesConformToSpec(dataToImport.root, branch.getRootNode())
+        }
+
+        val expectedOperations: Map<KClass<out IOperation>, Int> = mapOf(
+            DeleteNodeOp::class to 1,
+        )
+
+        // TODO Assertion fails because of two unneeded `MoveNodeOps`.
+        // The algorithm first moves node:002 and node:003 and only then deletes node:001.
+        assertEquals(expectedOperations, branch.getNumOfUsedOperationsByType())
     }
 
     @Test

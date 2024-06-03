@@ -213,6 +213,8 @@ data class MPSNode(val node: SNode) : IDefaultNodeAdapter, IReplaceableNode {
     }
 
     override fun setReferenceTarget(link: IReferenceLink, target: INode?) {
+        require(target is MPSNode?) { "`target` has to be an `MPSNode` or `null`." }
+
         val refLink = when (link) {
             is MPSReferenceLink -> link.link
             else -> node.references.find { MPSReferenceLink(it.link).getUID() == link.getUID() }?.link
@@ -220,8 +222,7 @@ data class MPSNode(val node: SNode) : IDefaultNodeAdapter, IReplaceableNode {
                 ?: SReferenceLinkAdapterById(SReferenceLinkId.deserialize(link.getUID()), "")
         }
 
-        val targetNode = target?.let { getArea().resolveNode(it.reference) } as MPSNode
-        node.setReferenceTarget(refLink, targetNode.node)
+        node.setReferenceTarget(refLink, target?.node)
     }
 
     override fun setReferenceTarget(role: IReferenceLink, target: INodeReference?) {

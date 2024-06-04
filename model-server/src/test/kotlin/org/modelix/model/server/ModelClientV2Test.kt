@@ -15,6 +15,7 @@
 
 package org.modelix.model.server
 
+import io.ktor.server.routing.routing
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import org.modelix.authorization.installAuthentication
@@ -32,6 +33,7 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.IKVValue
+import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.forContextRepository
@@ -50,7 +52,11 @@ class ModelClientV2Test {
         application {
             installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
-            ModelReplicationServer(InMemoryStoreClient().forContextRepository()).init(this)
+            val storeClient = InMemoryStoreClient().forContextRepository()
+            ModelReplicationServer(storeClient).init(this)
+            routing {
+                IdsApiImpl(storeClient).installRoutes(this)
+            }
         }
         block()
     }

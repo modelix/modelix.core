@@ -15,6 +15,7 @@
 
 package org.modelix.model.server.handlers
 
+import io.ktor.server.routing.routing
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.CoroutineScope
@@ -47,6 +48,9 @@ class ModelReplicationServerBackwardsCompatibilityTest {
             installDefaultServerPlugins()
             modelReplicationServer.init(this)
             keyValueLikeModelServer.init(this)
+            routing {
+                IdsApiImpl(repositoriesManager, modelClient).installRoutes(this)
+            }
         }
 
         coroutineScope {

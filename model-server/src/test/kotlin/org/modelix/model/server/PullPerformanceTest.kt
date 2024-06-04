@@ -16,6 +16,7 @@
 
 package org.modelix.model.server
 
+import io.ktor.server.routing.routing
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.coroutineScope
@@ -28,6 +29,7 @@ import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.runWriteOnBranch
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
@@ -48,6 +50,9 @@ class PullPerformanceTest {
             installDefaultServerPlugins()
             ModelReplicationServer(repositoriesManager, LocalModelClient(storeClientWithStatistics), inMemoryModels).init(this)
             KeyValueLikeModelServer(repositoriesManager, storeClientWithStatistics.forGlobalRepository(), inMemoryModels).init(this)
+            routing {
+                IdsApiImpl(repositoriesManager, LocalModelClient(storeClientWithStatistics)).installRoutes(this)
+            }
         }
 
         coroutineScope {

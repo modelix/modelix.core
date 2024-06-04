@@ -15,9 +15,14 @@ info:
 servers:
   - url: '/'
     description: model-server
+tags:
+  - ids
 paths:
   /v2/server-id:
     get:
+      summary: Returns the ID of the server
+      tags:
+        - ids
       operationId: getServerId
       responses:
         "200":
@@ -26,6 +31,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /v2/user-id:
     get:
+      tags:
+        - ids
       operationId: getUserId
       responses:
         "200":
@@ -34,7 +41,9 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /v2/generate-client-id:
     post:
-      operationId: postGenerateClientId
+      tags:
+        - ids
+      operationId: generateClientId
       responses:
         "200":
           $ref: '#/components/responses/200'

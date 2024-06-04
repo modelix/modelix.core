@@ -54,6 +54,7 @@ class KeyValueLikeModelServerTest {
             installDefaultServerPlugins()
             KeyValueLikeModelServer(repositoriesManager, store.forGlobalRepository(), InMemoryModels()).init(this)
             ModelReplicationServer(repositoriesManager, localModelClient, inMemoryModels).init(this)
+            IdsApiImpl(repositoriesManager, localModelClient).init(this)
         }
 
         block()

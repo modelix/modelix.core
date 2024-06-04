@@ -16,6 +16,7 @@
 
 package org.modelix.model.server
 
+import io.ktor.server.routing.routing
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import org.modelix.authorization.installAuthentication
@@ -25,6 +26,7 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.NonCachingObjectStore
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
@@ -45,6 +47,9 @@ class RepositoryStorageBackwardsCompatiblityTest {
             val repositoriesManager = RepositoriesManager(LocalModelClient(store.forContextRepository()))
             KeyValueLikeModelServer(repositoriesManager, store.forGlobalRepository(), InMemoryModels()).init(this)
             ModelReplicationServer(repositoriesManager).init(this)
+            routing {
+                IdsApiImpl(repositoriesManager).installRoutes(this)
+            }
         }
         block()
     }

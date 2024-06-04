@@ -15,6 +15,7 @@
 
 package org.modelix.model.server
 
+import io.ktor.server.routing.routing
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.CoroutineScope
@@ -46,6 +47,7 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
+import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
@@ -77,6 +79,9 @@ class ReplicatedRepositoryTest {
             val inMemoryModels = InMemoryModels()
             ModelReplicationServer(repositoriesManager, modelClient, inMemoryModels).init(this)
             KeyValueLikeModelServer(repositoriesManager, storeClient.forGlobalRepository(), inMemoryModels).init(this)
+            routing {
+                IdsApiImpl(repositoriesManager, modelClient).installRoutes(this)
+            }
         }
 
         coroutineScope {

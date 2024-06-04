@@ -63,6 +63,7 @@ import org.modelix.model.server.handlers.ContentExplorer
 import org.modelix.model.server.handlers.DeprecatedLightModelServer
 import org.modelix.model.server.handlers.HistoryHandler
 import org.modelix.model.server.handlers.HttpException
+import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.MetricsHandler
 import org.modelix.model.server.handlers.ModelReplicationServer
@@ -218,6 +219,8 @@ object Main {
                 modelReplicationServer.init(this)
                 metricsHandler.init(this)
                 routing {
+                    IdsApiImpl(repositoriesManager, localModelClient).installRoutes(this)
+
                     staticResources("/public", "public")
                     get("/") {
                         call.respondHtmlTemplate(PageWithMenuBar("root", ".")) {

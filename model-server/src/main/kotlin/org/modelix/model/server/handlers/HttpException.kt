@@ -17,7 +17,7 @@
 package org.modelix.model.server.handlers
 
 import io.ktor.http.HttpStatusCode
-import org.modelix.api.public.Problem
+import org.modelix.api.v1.Problem
 import org.modelix.model.lazy.BranchReference
 
 /**

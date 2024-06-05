@@ -43,7 +43,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.withContext
-import org.modelix.api.public.Paths
+import org.modelix.api.v2.Paths
 import org.modelix.authorization.getUserName
 import org.modelix.model.InMemoryModels
 import org.modelix.model.api.ITree

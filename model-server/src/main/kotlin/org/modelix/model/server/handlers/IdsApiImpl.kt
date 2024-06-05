@@ -21,7 +21,7 @@ import io.ktor.server.application.call
 import io.ktor.server.plugins.origin
 import io.ktor.server.response.respondText
 import io.ktor.util.pipeline.PipelineContext
-import org.modelix.api.public.IdsApi
+import org.modelix.api.v2.IdsApi
 import org.modelix.authorization.getUserName
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.LocalModelClient

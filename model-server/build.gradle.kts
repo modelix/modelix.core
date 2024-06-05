@@ -230,7 +230,7 @@ val openAPIgenerationPath = "${project.layout.buildDirectory.get()}/generated/op
 // Pairs of the different OpenAPI files we use. Each pair must have its own 'category' as first argument as these
 // are used to generate corresponding packages
 val openApiFiles = listOf(
-    "public" to "model-server",
+    "v2" to "model-server-v2",
     "v1" to "model-server-v1",
     "operative" to "model-server-operative",
     "deprecated" to "model-server-deprecated",

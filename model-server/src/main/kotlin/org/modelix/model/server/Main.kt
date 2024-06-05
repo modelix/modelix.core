@@ -54,7 +54,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.apache.commons.io.FileUtils
 import org.apache.ignite.Ignition
-import org.modelix.api.public.Problem
+import org.modelix.api.v1.Problem
 import org.modelix.authorization.KeycloakUtils
 import org.modelix.authorization.NoPermissionException
 import org.modelix.authorization.NotLoggedInException

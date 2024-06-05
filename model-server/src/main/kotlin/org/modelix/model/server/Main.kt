@@ -356,7 +356,7 @@ object Main {
         }
     }
 
-    private class DumpOutThread internal constructor(storeClient: IsolatingStore, dumpName: String) :
+    private class DumpOutThread(storeClient: IsolatingStore, dumpName: String) :
         Thread(
             Runnable {
                 try {

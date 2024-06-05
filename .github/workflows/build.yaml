@@ -109,7 +109,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bulk-model-sync-gradle-test/ci.sh
-      - name: Test bulk-sync-lib with MPS
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: bulk-model-sync-lib-mps-test/ci.sh

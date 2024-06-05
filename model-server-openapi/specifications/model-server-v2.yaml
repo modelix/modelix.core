@@ -16,7 +16,7 @@ servers:
   - url: '/'
     description: model-server
 tags:
-  - ids
+  - name: ids
 paths:
   /v2/server-id:
     get:

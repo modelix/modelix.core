@@ -22,6 +22,8 @@ paths:
   /metrics:
     get:
       operationId: getMetrics
+      tags:
+        - metrics
       responses:
         "200":
           $ref: '#/components/responses/200'

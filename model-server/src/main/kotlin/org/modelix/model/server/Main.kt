@@ -65,7 +65,7 @@ import org.modelix.model.server.handlers.HistoryHandler
 import org.modelix.model.server.handlers.HttpException
 import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
-import org.modelix.model.server.handlers.MetricsHandler
+import org.modelix.model.server.handlers.MetricsApiImpl
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.handlers.RepositoryOverview
@@ -179,7 +179,7 @@ object Main {
             val historyHandler = HistoryHandler(localModelClient, repositoriesManager)
             val contentExplorer = ContentExplorer(localModelClient, repositoriesManager)
             val modelReplicationServer = ModelReplicationServer(repositoriesManager, localModelClient, inMemoryModels)
-            val metricsHandler = MetricsHandler()
+            val metricsApi = MetricsApiImpl()
 
             val configureNetty: NettyApplicationEngine.Configuration.() -> Unit = {
                 this.responseWriteTimeoutSeconds = cmdLineArgs.responseWriteTimeoutSeconds
@@ -217,7 +217,7 @@ object Main {
                 contentExplorer.init(this)
                 jsonModelServer.init(this)
                 modelReplicationServer.init(this)
-                metricsHandler.init(this)
+                metricsApi.init(this)
                 routing {
                     IdsApiImpl(repositoriesManager, localModelClient).installRoutes(this)
 

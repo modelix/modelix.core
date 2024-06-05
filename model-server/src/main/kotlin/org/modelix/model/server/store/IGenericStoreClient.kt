@@ -17,8 +17,27 @@
 package org.modelix.model.server.store
 
 import org.modelix.model.IGenericKeyListener
+import org.modelix.model.lazy.RepositoryId
 
-typealias IsolatingStore = IGenericStoreClient<ObjectInRepository>
+/**
+ * A store that saves data on a per-repository basis.
+ * The primary key is of type [ObjectInRepository].
+ */
+interface IsolatingStore : IGenericStoreClient<ObjectInRepository> {
+    /**
+     * Default implementation for removing repository objects.
+     * May be overridden by more efficient, store-specific implementations.
+     *
+     * Callers need to ensure that the repository is not usable anymore before calling this method.
+     */
+    fun removeRepositoryObjects(repositoryId: RepositoryId) {
+        val keysToDelete = getAll().asSequence()
+            .map { it.key }
+            .filter { it.getRepositoryId() == repositoryId.id }
+            .toSet()
+        putAll(keysToDelete.associateWith { null })
+    }
+}
 
 interface IGenericStoreClient<KeyT> : AutoCloseable {
     operator fun get(key: KeyT): String? = getAll(listOf(key)).first()

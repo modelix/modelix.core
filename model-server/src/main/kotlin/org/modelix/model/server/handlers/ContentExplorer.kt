@@ -6,10 +6,10 @@ import io.ktor.server.application.call
 import io.ktor.server.html.respondHtml
 import io.ktor.server.html.respondHtmlTemplate
 import io.ktor.server.request.receive
-import io.ktor.server.resources.get
-import io.ktor.server.resources.post
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import kotlinx.html.BODY
 import kotlinx.html.FlowContent
@@ -37,7 +37,6 @@ import kotlinx.html.title
 import kotlinx.html.tr
 import kotlinx.html.ul
 import kotlinx.html.unsafe
-import org.modelix.api.html.Paths
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INodeResolutionScope
 import org.modelix.model.api.ITree
@@ -54,10 +53,10 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
 
     fun init(application: Application) {
         application.routing {
-            get<Paths.getContent> {
+            get("/content") {
                 call.respondRedirect("../repos/")
             }
-            get<Paths.getContentRepositoryBranchLatest> {
+            get("/content/repositories/{repository}/branches/{branch}/latest") {
                 val repository = call.parameters["repository"]
                 val branch = call.parameters["branch"]
                 if (repository.isNullOrEmpty()) {
@@ -77,7 +76,7 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                     call.respondRedirect("../../../versions/${latestVersion.getContentHash()}/")
                 }
             }
-            get<Paths.getVersionHash> {
+            get("/content/repositories/{repository}/versions/{versionHash}") {
                 val repositoryId = call.parameters["repository"]?.let { RepositoryId(it) }
                 if (repositoryId == null) {
                     call.respondText("repository parameter missing", status = HttpStatusCode.BadRequest)
@@ -103,7 +102,7 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                     }
                 }
             }
-            post<Paths.postVersionHash> {
+            post("/content/repositories/{repository}/versions/{versionHash}") {
                 val repositoryId = call.parameters["repository"]?.let { RepositoryId(it) }
                 if (repositoryId == null) {
                     call.respondText("repository parameter missing", status = HttpStatusCode.BadRequest)
@@ -123,19 +122,19 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
 
                     var expandedNodeIds = expandedNodes.expandedNodeIds
                     if (expandedNodes.expandAll) {
-                        expandedNodeIds = expandedNodeIds + collectExpandableChildNodes(rootNode, expandedNodes.expandedNodeIds)
+                        expandedNodeIds = expandedNodeIds + collectExpandableChildNodes(rootNode, expandedNodes.expandedNodeIds.toSet())
                     }
 
                     call.respondText(
                         buildString {
                             appendHTML().ul("treeRoot") {
-                                nodeItem(rootNode, expandedNodeIds)
+                                nodeItem(rootNode, expandedNodeIds.toSet())
                             }
                         },
                     )
                 }
             }
-            get<Paths.getNodeIdForVersionHash> {
+            get("/content/repositories/{repository}/versions/{versionHash}/{nodeId}") {
                 val id = call.parameters["nodeId"]?.toLongOrNull()
                     ?: return@get call.respondText("node id not found", status = HttpStatusCode.NotFound)
 

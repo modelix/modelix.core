@@ -233,7 +233,6 @@ val openApiFiles = listOf(
     "public" to "model-server",
     "operative" to "model-server-operative",
     "light" to "model-server-light",
-    "html" to "model-server-html",
     "deprecated" to "model-server-deprecated",
 )
 

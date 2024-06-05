@@ -57,14 +57,6 @@ paths:
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/GeneralError'
-  /health:
-    get:
-      operationId: getHealth
-      responses:
-        "200":
-          $ref: '#/components/responses/200'
-        default:
-          $ref: '#/components/responses/GeneralError'
   /v2/repositories:
     get:
       operationId: getRepositories

@@ -61,6 +61,7 @@ import org.modelix.authorization.installAuthentication
 import org.modelix.model.InMemoryModels
 import org.modelix.model.server.handlers.ContentExplorer
 import org.modelix.model.server.handlers.DeprecatedLightModelServer
+import org.modelix.model.server.handlers.HealthApiImpl
 import org.modelix.model.server.handlers.HistoryHandler
 import org.modelix.model.server.handlers.HttpException
 import org.modelix.model.server.handlers.IdsApiImpl
@@ -160,14 +161,15 @@ object Main {
                 }
             }
             var i = 0
+            val globalStoreClient = storeClient.forGlobalRepository()
             while (i < cmdLineArgs.setValues.size) {
-                storeClient.forGlobalRepository().put(cmdLineArgs.setValues[i], cmdLineArgs.setValues[i + 1])
+                globalStoreClient.put(cmdLineArgs.setValues[i], cmdLineArgs.setValues[i + 1])
                 i += 2
             }
             val localModelClient = LocalModelClient(storeClient.forContextRepository())
             val inMemoryModels = InMemoryModels()
             val repositoriesManager = RepositoriesManager(localModelClient)
-            val modelServer = KeyValueLikeModelServer(repositoriesManager, storeClient.forGlobalRepository(), inMemoryModels)
+            val modelServer = KeyValueLikeModelServer(repositoriesManager, globalStoreClient, inMemoryModels)
             val sharedSecretFile = cmdLineArgs.secretFile
             if (sharedSecretFile.exists()) {
                 modelServer.setSharedSecret(
@@ -220,6 +222,7 @@ object Main {
                 metricsApi.init(this)
                 routing {
                     IdsApiImpl(repositoriesManager, localModelClient).installRoutes(this)
+                    HealthApiImpl(repositoriesManager, globalStoreClient, inMemoryModels).installRoutes(this)
 
                     staticResources("/public", "public")
                     get("/") {

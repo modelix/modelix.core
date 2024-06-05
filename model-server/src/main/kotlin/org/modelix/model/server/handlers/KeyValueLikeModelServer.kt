@@ -46,7 +46,6 @@ import org.modelix.authorization.requiresPermission
 import org.modelix.authorization.toKeycloakScope
 import org.modelix.model.InMemoryModels
 import org.modelix.model.lazy.BranchReference
-import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.store.ContextScopedStoreClient
 import org.modelix.model.server.store.IStoreClient
@@ -61,10 +60,6 @@ import java.util.regex.Pattern
 
 val PERMISSION_MODEL_SERVER = "model-server".asResource()
 val MODEL_SERVER_ENTRY = KeycloakResourceType("model-server-entry", KeycloakScope.READ_WRITE_DELETE)
-
-private fun toLong(value: String?): Long {
-    return if (value.isNullOrEmpty()) 0 else value.toLong()
-}
 
 private class NotFoundException(description: String?) : RuntimeException(description)
 
@@ -85,8 +80,7 @@ class KeyValueLikeModelServer(
 
     companion object {
         private val HASH_PATTERN: Pattern = Pattern.compile("[a-zA-Z0-9\\-_]{5}\\*[a-zA-Z0-9\\-_]{38}")
-        private const val PROTECTED_PREFIX = "$$$"
-        private const val HEALTH_KEY = PROTECTED_PREFIX + "health2"
+        const val PROTECTED_PREFIX = "$$$"
     }
 
     fun init(application: Application) {
@@ -106,26 +100,6 @@ class KeyValueLikeModelServer(
 
     private fun Application.modelServerModule() {
         routing {
-            get<Paths.getHealth> {
-                // eagerly load model into memory to speed up ModelQL queries
-                val branchRef = System.getenv("MODELIX_SERVER_MODELQL_WARMUP_REPOSITORY")?.let { RepositoryId(it) }
-                    ?.getBranchReference(System.getenv("MODELIX_SERVER_MODELQL_WARMUP_BRANCH"))
-                if (branchRef != null) {
-                    val version = repositoriesManager.getVersion(branchRef)
-                    if (inMemoryModels.getModel(version!!.getTree()).isActive) {
-                        throw HttpException(
-                            HttpStatusCode.ServiceUnavailable,
-                            details = "Waiting for version $version to be loaded into memory",
-                        )
-                    }
-                }
-
-                if (isHealthy()) {
-                    call.respondText(text = "healthy", contentType = ContentType.Text.Plain, status = HttpStatusCode.OK)
-                } else {
-                    throw HttpException(HttpStatusCode.InternalServerError, details = "not healthy")
-                }
-            }
             get<Paths.getHeaders> {
                 val headers = call.request.headers.entries().flatMap { e -> e.value.map { e.key to it } }
                 call.respondHtmlTemplate(PageWithMenuBar("headers", ".")) {
@@ -404,11 +378,5 @@ class KeyValueLikeModelServer(
             return
         }
         call.checkPermission(MODEL_SERVER_ENTRY.createInstance(key), type.toKeycloakScope())
-    }
-
-    private fun isHealthy(): Boolean {
-        val value = toLong(storeClient[HEALTH_KEY]) + 1
-        storeClient.put(HEALTH_KEY, java.lang.Long.toString(value))
-        return toLong(storeClient[HEALTH_KEY]) >= value
     }
 }

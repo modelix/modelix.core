@@ -35,6 +35,7 @@ import io.ktor.server.plugins.forwardedheaders.ForwardedHeaders
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.plugins.swagger.swaggerUI
 import io.ktor.server.resources.Resources
+import io.ktor.server.response.respondRedirect
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.IgnoreTrailingSlash
 import io.ktor.server.routing.Routing
@@ -274,8 +275,15 @@ object Main {
                             call.respondText("SwaggerUI is disabled")
                         }
                     } else {
-                        // we serve the public API to the outside via swagger UI
-                        swaggerUI(path = "swagger", swaggerFile = ResourceUtils.getFile("api/model-server.yaml").invariantSeparatorsPath)
+                        // We serve the public API to the outside via swagger UI.
+                        // The ktor swagger plugin currently has no way to serve multiple specifications. Therefore, we
+                        // simply offer two versions of the UI for now.
+                        swaggerUI(path = "swagger/v2", swaggerFile = ResourceUtils.getFile("api/model-server-v2.yaml").invariantSeparatorsPath)
+                        swaggerUI(path = "swagger/v1", swaggerFile = ResourceUtils.getFile("api/model-server-v1.yaml").invariantSeparatorsPath)
+                        // by default, users should be using v2
+                        get("swagger") {
+                            call.respondRedirect("swagger/v2", false)
+                        }
                     }
                 }
             }

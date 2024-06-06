@@ -310,6 +310,8 @@ object Main {
             }
 
             exception<Throwable> { call, cause ->
+                // Such errors were most likely not caught and logged anywhere else.
+                LOG.error("Encountered an internal server error.", cause)
                 call.respondProblem(
                     Problem(
                         title = "Internal server error",

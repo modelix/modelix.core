@@ -77,15 +77,8 @@
                                         <property name="keyType" value="org.modelix.model.server.store.ObjectInRepository"/>
                                         <property name="valueType" value="java.lang.String"/>
                                         <property name="keyFields">
+                                            <!-- Order of fields must be consistent with ObjectInRepository -->
                                             <list>
-                                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
-                                                    <property name="databaseFieldType">
-                                                        <util:constant static-field="java.sql.Types.VARCHAR"/>
-                                                    </property>
-                                                    <property name="databaseFieldName" value="key"/>
-                                                    <property name="javaFieldType" value="java.lang.String"/>
-                                                    <property name="javaFieldName" value="key"/>
-                                                </bean>
                                                 <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
                                                     <property name="databaseFieldType">
                                                         <util:constant static-field="java.sql.Types.VARCHAR"/>
@@ -93,6 +86,14 @@
                                                     <property name="databaseFieldName" value="repository"/>
                                                     <property name="javaFieldType" value="java.lang.String"/>
                                                     <property name="javaFieldName" value="repositoryId"/>
+                                                </bean>
+                                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                                    <property name="databaseFieldType">
+                                                        <util:constant static-field="java.sql.Types.VARCHAR"/>
+                                                    </property>
+                                                    <property name="databaseFieldName" value="key"/>
+                                                    <property name="javaFieldType" value="java.lang.String"/>
+                                                    <property name="javaFieldName" value="key"/>
                                                 </bean>
                                             </list>
                                         </property>

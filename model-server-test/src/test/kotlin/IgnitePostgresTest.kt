@@ -21,6 +21,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class IgnitePostgresTest {
     lateinit var store: IgniteStoreClient
@@ -33,6 +34,18 @@ class IgnitePostgresTest {
     @AfterTest
     fun afterTest() {
         store.dispose()
+    }
+
+    @Test
+    fun `can get values for multiple keys when Ignite has not cached the keys yet`() {
+        // The actual keys are irrelevant for this test.
+        // A fresh client will have no keys cached.
+        val keys = listOf("zK4Y2*xIEWlYlQGJL2Va4Z0ESgpWgnSQcOmnPeqt34PA", "zxgZN*oLuudxsu42ppSEGnCib8LkrSvauQk2B6T7AW6o")
+            .map { ObjectInRepository.global(it) }
+
+        val values = store.getAll(keys)
+
+        assertTrue(values.filterNotNull().isNotEmpty())
     }
 
     @Test

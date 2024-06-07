@@ -27,25 +27,33 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.InMemoryModels
+import org.modelix.model.client.RestWebModelClient
+import org.modelix.model.client2.runWrite
+import org.modelix.model.lazy.CLVersion
+import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.server.createModelClient
 import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
+import org.modelix.model.server.store.forContextRepository
 import org.modelix.model.server.store.forGlobalRepository
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class KeyValueLikeModelServerTest {
 
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
-        val storeClient = InMemoryStoreClient()
-        val modelClient = LocalModelClient(storeClient.forGlobalRepository())
-        val repositoriesManager = RepositoriesManager(modelClient)
-        val handler = KeyValueLikeModelServer(repositoriesManager, modelClient.store, InMemoryModels())
+        val inMemoryModels = InMemoryModels()
+        val store = InMemoryStoreClient()
+        val localModelClient = LocalModelClient(store.forContextRepository())
+        val repositoriesManager = RepositoriesManager(localModelClient)
 
         application {
             installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
-            handler.init(this)
+            KeyValueLikeModelServer(repositoriesManager, store.forGlobalRepository(), InMemoryModels()).init(this)
+            ModelReplicationServer(repositoriesManager, localModelClient, inMemoryModels).init(this)
         }
 
         block()
@@ -84,5 +92,27 @@ class KeyValueLikeModelServerTest {
             """,
             )
         assertEquals(expected, actual)
+    }
+
+    @Test
+    fun `model client V1 can merge versions`() = runTest {
+        val clientV1 = RestWebModelClient(baseUrl = "http://localhost/", providedClient = client)
+        val clientV2 = createModelClient()
+        val repositoryId = RepositoryId("repo1")
+        val branchA = repositoryId.getBranchReference("branchA")
+        val branchB = repositoryId.getBranchReference("branchB")
+        clientV2.initRepositoryWithLegacyStorage(repositoryId)
+        clientV2.runWrite(branchA) { rootNode ->
+            rootNode.setPropertyValue("propertyA", "valueA")
+        }
+        clientV2.runWrite(branchB) { rootNode ->
+            rootNode.setPropertyValue("propertyB", "valueB")
+        }
+        val branchBHash = clientV2.pullHash(branchB)
+
+        clientV1.putA(branchA.getKey(), branchBHash)
+
+        val branchAVersion = clientV2.pull(branchA, null) as CLVersion
+        assertTrue(branchAVersion.isMerge())
     }
 }

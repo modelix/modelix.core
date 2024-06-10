@@ -13,27 +13,22 @@ test("test branch connects", (done) => {
   class SuccessfulBranchJS {
     public rootNode: INodeJS;
 
-    constructor(branchId: string, changeCallback: (change: ChangeJS) => void) {
+    constructor(branchId: string) {
       const root = {
         root: {},
       };
 
-      this.rootNode = loadModelsFromJson(
-        [JSON.stringify(root)],
-        changeCallback,
-      );
+      this.rootNode = loadModelsFromJson([JSON.stringify(root)]);
       this.rootNode.setPropertyValue("branchId", branchId);
     }
+
+    addListener = jest.fn();
   }
 
   class SuccessfulClientJS {
-    connectBranch(
-      _repositoryId: string,
-      branchId: string,
-      changeCallback: (change: ChangeJS) => void,
-    ): Promise<BranchJS> {
+    connectBranch(_repositoryId: string, branchId: string): Promise<BranchJS> {
       return Promise.resolve(
-        new SuccessfulBranchJS(branchId, changeCallback) as BranchJS,
+        new SuccessfulBranchJS(branchId) as unknown as BranchJS,
       );
     }
   }

@@ -68,17 +68,18 @@ export function useRootNode(
       }
       const cache = new Cache<ReactiveINodeJS>();
       return clientValue
-        .connectBranch(repositoryIdValue, branchIdValue, (change: ChangeJS) => {
-          if (cache === null) {
-            throw Error("The cache is unexpectedly not set up.");
-          }
-          handleChange(change, cache);
-        })
+        .connectBranch(repositoryIdValue, branchIdValue)
         .then((branch) => ({ branch, cache }));
     },
     ({ branch: connectedBranch, cache }, isResultOfLastStartedPromise) => {
       if (isResultOfLastStartedPromise) {
         branch = connectedBranch;
+        branch.addListener((change: ChangeJS) => {
+          if (cache === null) {
+            throw Error("The cache is unexpectedly not set up.");
+          }
+          handleChange(change, cache);
+        });
         const unreactiveRootNode = branch.rootNode;
         const reactiveRootNode = toReactiveINodeJS(unreactiveRootNode, cache);
         rootNodeRef.value = reactiveRootNode;

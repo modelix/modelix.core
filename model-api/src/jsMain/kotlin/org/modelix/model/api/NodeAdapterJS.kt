@@ -3,6 +3,7 @@ package org.modelix.model.api
 import IConceptJS
 import INodeJS
 import INodeReferenceJS
+import ITypedNode
 import LanguageRegistry
 import TypedNode
 
@@ -95,6 +96,10 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
 
     override fun remove() {
         node.remove()
+    }
+
+    override fun wrap(): ITypedNode {
+        return LanguageRegistry.INSTANCE.wrapNode(this)
     }
 
     override fun getReferenceRoles(): Array<String> {

@@ -1,4 +1,5 @@
 import type {IConceptJS} from "./IConceptJS.js";
+import type {ITypedNode} from "./TypedNode.js";
 
 export interface INodeJS {
   getConcept(): IConceptJS | undefined
@@ -9,6 +10,7 @@ export interface INodeJS {
   getParent(): INodeJS | undefined
 
   remove(): void
+  wrap(): ITypedNode;
 
   getChildren(role: string | undefined): Array<INodeJS>
   getAllChildren(): Array<INodeJS>

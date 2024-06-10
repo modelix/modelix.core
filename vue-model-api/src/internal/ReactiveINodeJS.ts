@@ -1,4 +1,4 @@
-import { IConceptJS, INodeJS } from "@modelix/ts-model-api";
+import { IConceptJS, INodeJS, ITypedNode } from "@modelix/ts-model-api";
 import { customRef, markRaw } from "vue";
 import { Cache } from "./Cache";
 
@@ -86,6 +86,10 @@ export class ReactiveINodeJS implements INodeJS {
 
   remove(): void {
     this.unreactiveNode.remove();
+  }
+
+  wrap(): ITypedNode {
+    return this.unreactiveNode.wrap();
   }
 
   getChildren(role: string | undefined): INodeJS[] {

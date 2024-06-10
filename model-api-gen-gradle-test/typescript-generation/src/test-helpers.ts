@@ -1,5 +1,4 @@
 import { org } from "@modelix/model-client";
-import { LanguageRegistry } from "@modelix/ts-model-api";
 import { registerLanguages } from "../build/typescript_src";
 
 const DEFAULT_NODE_DATA = {
@@ -32,7 +31,7 @@ export function useFakeRootNode(nodeData: object = DEFAULT_NODE_DATA) {
   }
 
   function getTypedNode(role?: string) {
-    return LanguageRegistry.INSTANCE.wrapNode(getUntypedNode(role));
+    return getUntypedNode(role).wrap();
   }
 
   return {

@@ -273,8 +273,8 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                 $features
             }
 
-            export function isOfConcept_${concept.name}(node: ITypedNode): node is ${concept.nodeWrapperInterfaceName()} {
-                return '${concept.markerPropertyName()}' in node.constructor;
+            export function isOfConcept_${concept.name}(node: ITypedNode | null | undefined): node is ${concept.nodeWrapperInterfaceName()} {
+                return node?.constructor !== undefined && '${concept.markerPropertyName()}' in node.constructor;
             }
 
             export class ${concept.nodeWrapperImplName()} extends TypedNode implements ${concept.nodeWrapperInterfaceName()} {

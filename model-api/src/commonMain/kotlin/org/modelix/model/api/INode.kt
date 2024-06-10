@@ -215,7 +215,7 @@ interface INode {
      * @return the serialized reference of the source node, if this one was created during an import
      */
     fun getOriginalReference(): String? = getPropertyValue(IProperty.fromName(NodeData.ID_PROPERTY_KEY))
-        ?: getPropertyValue(IProperty.fromName("#mpsNodeID#")) // for backwards compatibility
+        ?: getPropertyValue(IProperty.fromName("#mpsNodeId#")) // for backwards compatibility
 
     // <editor-fold desc="non-string based API">
     fun usesRoleIds(): Boolean = false

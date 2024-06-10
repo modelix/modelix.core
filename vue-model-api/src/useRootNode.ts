@@ -26,6 +26,7 @@ type ChangeJS = org.modelix.model.client2.ChangeJS;
  *
  * @returns {Object} values Wrapper around diffrent returned values.
  * @returns {Ref<INodeJS | null>} values.rootNode  Reactive reference to a reactive root node.
+ * @returns {Ref<BranchJS | null>} values.branch  Reactive reference to the branch.
  * @returns {() => void} values.dispose A function to manually dispose the root node.
  * @returns {Ref<unknown>} values.error Reactive reference to a connection error.
  */
@@ -35,18 +36,19 @@ export function useRootNode(
   branchId: MaybeRefOrGetter<string | null>,
 ): {
   rootNode: Ref<INodeJS | null>;
+  branch: Ref<BranchJS | null>;
   dispose: () => void;
   error: Ref<unknown>;
 } {
-  let branch: BranchJS | null = null;
+  const branchRef: Ref<BranchJS | null> = shallowRef(null);
   const rootNodeRef: Ref<INodeJS | null> = shallowRef(null);
   const errorRef: Ref<unknown> = shallowRef(null);
 
   const dispose = () => {
-    if (branch !== null) {
-      branch.dispose();
+    if (branchRef.value !== null) {
+      branchRef.value.dispose();
     }
-    branch = null;
+    branchRef.value = null;
     rootNodeRef.value = null;
     errorRef.value = null;
   };
@@ -73,14 +75,14 @@ export function useRootNode(
     },
     ({ branch: connectedBranch, cache }, isResultOfLastStartedPromise) => {
       if (isResultOfLastStartedPromise) {
-        branch = connectedBranch;
-        branch.addListener((change: ChangeJS) => {
+        branchRef.value = connectedBranch;
+        branchRef.value.addListener((change: ChangeJS) => {
           if (cache === null) {
             throw Error("The cache is unexpectedly not set up.");
           }
           handleChange(change, cache);
         });
-        const unreactiveRootNode = branch.rootNode;
+        const unreactiveRootNode = branchRef.value.rootNode;
         const reactiveRootNode = toReactiveINodeJS(unreactiveRootNode, cache);
         rootNodeRef.value = reactiveRootNode;
       } else {
@@ -96,6 +98,7 @@ export function useRootNode(
 
   return {
     rootNode: rootNodeRef,
+    branch: branchRef,
     dispose,
     error: errorRef,
   };

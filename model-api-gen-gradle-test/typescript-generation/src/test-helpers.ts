@@ -1,5 +1,5 @@
 import { org } from "@modelix/model-client";
-import { LanguageRegistry } from "@modelix/ts-model-api";
+import { ITypedNode, LanguageRegistry } from "@modelix/ts-model-api";
 import { registerLanguages } from "../build/typescript_src";
 
 const DEFAULT_NODE_DATA = {
@@ -31,8 +31,8 @@ export function useFakeRootNode(nodeData: object = DEFAULT_NODE_DATA) {
     return rootNode.getChildren(role)[0];
   }
 
-  function getTypedNode(role?: string) {
-    return LanguageRegistry.INSTANCE.wrapNode(getUntypedNode(role));
+  function getTypedNode<T extends ITypedNode>(role?: string) {
+    return LanguageRegistry.INSTANCE.wrapNode(getUntypedNode(role)) as T;
   }
 
   return {
@@ -42,11 +42,14 @@ export function useFakeRootNode(nodeData: object = DEFAULT_NODE_DATA) {
   };
 }
 
-export function useFakeNode(role?: string, nodeData?: object) {
+export function useFakeNode<T extends ITypedNode>(
+  role?: string,
+  nodeData?: object
+) {
   const { getUntypedNode, getTypedNode, rootNode } = useFakeRootNode(nodeData);
   return {
     rootNode,
     untypedNode: getUntypedNode(role),
-    typedNode: getTypedNode(role),
+    typedNode: getTypedNode<T>(role),
   };
 }

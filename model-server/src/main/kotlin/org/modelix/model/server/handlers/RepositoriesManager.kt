@@ -277,27 +277,28 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
      * Same as [mergeChanges] but blocking.
      * Caller is expected to execute it outside the request thread.
      */
-    override fun mergeChangesBlocking(branch: BranchReference, newVersionHash: String): String {
-        return store.runTransaction {
-            val headHash = getVersionHashBlocking(branch)
-            val mergedHash = if (headHash == null) {
-                newVersionHash
-            } else {
-                val headVersion = CLVersion(headHash, client.storeCache)
-                val newVersion = CLVersion(newVersionHash, client.storeCache)
-                require(headVersion.getTree().getId() == newVersion.getTree().getId()) {
-                    "Attempt to merge a model with ID '${newVersion.getTree().getId()}'" +
-                        " into one with ID '${headVersion.getTree().getId()}'"
+    override fun mergeChangesBlocking(branch: BranchReference, newVersionHash: String): String =
+        runWithRepositoryBlocking(branch.repositoryId) {
+            store.runTransaction {
+                val headHash = getVersionHashBlocking(branch)
+                val mergedHash = if (headHash == null) {
+                    newVersionHash
+                } else {
+                    val headVersion = CLVersion(headHash, client.storeCache)
+                    val newVersion = CLVersion(newVersionHash, client.storeCache)
+                    require(headVersion.getTree().getId() == newVersion.getTree().getId()) {
+                        "Attempt to merge a model with ID '${newVersion.getTree().getId()}'" +
+                            " into one with ID '${headVersion.getTree().getId()}'"
+                    }
+                    val mergedVersion = VersionMerger(client.storeCache, client.idGenerator)
+                        .mergeChange(headVersion, newVersion)
+                    mergedVersion.getContentHash()
                 }
-                val mergedVersion = VersionMerger(client.storeCache, client.idGenerator)
-                    .mergeChange(headVersion, newVersion)
-                mergedVersion.getContentHash()
+                ensureBranchInList(branch)
+                putVersionHash(branch, mergedHash)
+                mergedHash
             }
-            ensureBranchInList(branch)
-            putVersionHash(branch, mergedHash)
-            mergedHash
         }
-    }
 
     override suspend fun getVersion(branch: BranchReference): CLVersion? {
         return getVersionHash(branch)?.let { getVersion(branch.repositoryId, it) }
@@ -438,6 +439,10 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
 
     override suspend fun <R> runWithRepository(repository: RepositoryId, body: suspend () -> R): R {
         return store.withRepositoryInCoroutine(repository.takeIf { isIsolated(repository) == true }, body)
+    }
+
+    private fun <R> runWithRepositoryBlocking(repository: RepositoryId, body: () -> R): R {
+        return store.withRepository(repository.takeIf { isIsolated(repository) == true }, body)
     }
 
     companion object {

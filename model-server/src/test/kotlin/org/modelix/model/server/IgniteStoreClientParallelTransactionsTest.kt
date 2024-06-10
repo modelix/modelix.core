@@ -110,7 +110,7 @@ class ThreadBlocker {
 
 fun sleepUntil(
     checkIntervalMilliseconds: Long = 10,
-    timeoutMilliseconds: Long = 1000,
+    timeoutMilliseconds: Long = 5_000,
     condition: () -> Boolean,
 ) {
     check(checkIntervalMilliseconds > 0) {

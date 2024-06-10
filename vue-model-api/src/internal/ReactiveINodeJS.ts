@@ -84,6 +84,10 @@ export class ReactiveINodeJS implements INodeJS {
       : unreacitveNode;
   }
 
+  remove(): void {
+    this.unreactiveNode.remove();
+  }
+
   getChildren(role: string | undefined): INodeJS[] {
     const { track } = this.getOrCreateTrackAndTriggerForRole(role);
     track();

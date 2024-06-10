@@ -93,6 +93,10 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
         node.removeChild((child as NodeAdapterJS).node)
     }
 
+    override fun remove() {
+        node.remove()
+    }
+
     override fun getReferenceRoles(): Array<String> {
         return node.getReferenceRoles().toTypedArray()
     }

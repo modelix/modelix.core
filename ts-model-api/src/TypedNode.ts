@@ -8,10 +8,14 @@ export class TypedNode implements ITypedNode {
     return this._node;
   }
 
+  remove(): void {
+    this._node.remove();
+  }
 }
 
 export interface ITypedNode {
   unwrap(): INodeJS
+  remove(): void
 }
 
 export class UnknownTypedNode extends TypedNode {

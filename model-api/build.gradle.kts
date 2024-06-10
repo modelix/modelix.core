@@ -53,6 +53,7 @@ kotlin {
         }
         val jsTest by getting {
             dependencies {
+                implementation(project(":model-client"))
             }
         }
     }

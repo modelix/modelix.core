@@ -34,7 +34,7 @@
     "@modelix/ts-model-api": "file:../../ts-model-api"
   },
   "devDependencies": {
-    "@reallyland/tsconfig": "^2.0.0",
+    "@reallyland/tsconfig": "^4.0.1",
     "@reallyland/tslint-config": "^1.1.1",
     "@types/node": "^13.9.8",
     "husky": "^4.2.3",

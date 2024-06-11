@@ -10,7 +10,7 @@ https://api.modelix.org/3.12.0/model-api-gen-gradle/index.html[API doc^] | https
 
 
 The *Model API Generator* (`model-api-gen`) is a Kotlin component which generates a domain-specific model API.
-Currently, the generator supports either Kotlin and TypeScipt as target languages.
+Currently, the generator supports either Kotlin and TypeScript as target languages.
 As a source for the generated API, `model-api-gen` consumes a given metamodel specified by JSON files.
 
 The Model API Generator is mainly used in the corresponding gradle plugin xref:core:reference/component-model-api-gen-gradle.adoc[model-api-gen-gradle].

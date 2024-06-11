@@ -35,7 +35,7 @@ apacheCxf="3.6.3"
 node="18.17.1"
 modelixBuildtools="1.5.0"
 openapi = "7.6.0"
-micrometer = "1.13.0"
+micrometer = "1.13.1"
 dokka = "1.9.20"
 detekt = "1.23.6"
 

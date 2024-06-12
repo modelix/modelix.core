@@ -6,9 +6,12 @@ plugins {
 dependencies {
     testImplementation(kotlin("test"))
     testImplementation(project(":model-server"))
+    testImplementation(project(":model-server").dependencyProject.sourceSets.test.get().runtimeClasspath)
 }
 
 tasks.test {
+    dependsOn(":model-server:compileTestKotlin")
+    useJUnitPlatform()
     doFirst {
         val db = dockerCompose.servicesInfos.getValue("db")
         systemProperty("jdbc.url", "jdbc:postgresql://${db.host}:${db.port}/")

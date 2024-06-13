@@ -221,8 +221,8 @@ object Main {
                 jsonModelServer.init(this)
                 modelReplicationServer.init(this)
                 metricsApi.init(this)
+                IdsApiImpl(repositoriesManager, localModelClient).init(this)
                 routing {
-                    IdsApiImpl(repositoriesManager, localModelClient).installRoutes(this)
                     HealthApiImpl(repositoriesManager, globalStoreClient, inMemoryModels).installRoutes(this)
 
                     staticResources("/public", "public")

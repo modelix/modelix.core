@@ -16,10 +16,13 @@
 
 package org.modelix.model.server.handlers
 
+import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.plugins.origin
 import io.ktor.server.response.respondText
+import io.ktor.server.routing.route
+import io.ktor.server.routing.routing
 import io.ktor.util.pipeline.PipelineContext
 import org.modelix.api.v2.IdsApi
 import org.modelix.authorization.getUserName
@@ -57,5 +60,15 @@ class IdsApiImpl(
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.generateClientId() {
         call.respondText(storeClient.generateId("clientId").toString())
+    }
+
+    fun init(application: Application) {
+        application.apply {
+            routing {
+                route("/v2") {
+                    installRoutes(this)
+                }
+            }
+        }
     }
 }

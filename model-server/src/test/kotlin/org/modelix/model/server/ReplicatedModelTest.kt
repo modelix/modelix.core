@@ -16,7 +16,6 @@
 
 package org.modelix.model.server
 
-import io.ktor.server.routing.routing
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.ktor.util.reflect.instanceOf
@@ -138,9 +137,7 @@ class ReplicatedModelTest {
             installDefaultServerPlugins()
             val storeClient = InMemoryStoreClient().forContextRepository()
             ModelReplicationServer(storeClient).init(this)
-            routing {
-                IdsApiImpl(storeClient).installRoutes(this)
-            }
+            IdsApiImpl(storeClient).init(this)
         }
         block()
     }

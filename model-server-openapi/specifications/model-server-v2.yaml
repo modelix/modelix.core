@@ -13,12 +13,12 @@ info:
   description: "modelix public API"
   version: "1.0.0"
 servers:
-  - url: '/'
+  - url: '/v2'
     description: model-server
 tags:
   - name: ids
 paths:
-  /v2/server-id:
+  /server-id:
     get:
       summary: Returns the ID of the server
       tags:
@@ -29,7 +29,7 @@ paths:
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/user-id:
+  /user-id:
     get:
       tags:
         - ids
@@ -39,7 +39,7 @@ paths:
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/generate-client-id:
+  /generate-client-id:
     post:
       tags:
         - ids
@@ -49,7 +49,7 @@ paths:
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/repositories:
+  /repositories:
     get:
       operationId: getRepositories
       responses:
@@ -57,7 +57,7 @@ paths:
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/repositories/{repository}/objects:
+  /repositories/{repository}/objects:
     put:
       operationId: putRepositoryObjects
       parameters:
@@ -75,7 +75,7 @@ paths:
           $ref: '#/components/responses/200json'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/repositories/{repository}/branches:
+  /repositories/{repository}/branches:
     get:
       operationId: getRepositoryBranches
       parameters:
@@ -89,7 +89,7 @@ paths:
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/repositories/{repository}/branches/{branch}:
+  /repositories/{repository}/branches/{branch}:
     delete:
       operationId: deleteRepositoryBranch
       parameters:
@@ -167,7 +167,7 @@ paths:
           $ref: '#/components/responses/versionDelta'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/repositories/{repository}/branches/{branch}/hash:
+  /repositories/{repository}/branches/{branch}/hash:
     get:
       operationId: getRepositoryBranchHash
       parameters:
@@ -188,7 +188,7 @@ paths:
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/repositories/{repository}/branches/{branch}/poll:
+  /repositories/{repository}/branches/{branch}/poll:
     get:
       operationId: pollRepositoryBranch
       parameters:
@@ -216,7 +216,7 @@ paths:
           $ref: '#/components/responses/versionDelta'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/repositories/{repository}/branches/{branch}/pollHash:
+  /repositories/{repository}/branches/{branch}/pollHash:
     get:
       operationId: pollRepositoryBranchHash
       parameters:
@@ -249,7 +249,7 @@ paths:
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/repositories/{repository}/branches/{branch}/query:
+  /repositories/{repository}/branches/{branch}/query:
     post:
       operationId: postRepositoryBranchQuery
       parameters:
@@ -268,7 +268,7 @@ paths:
           $ref: '#/components/responses/200json'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/repositories/{repository}/init:
+  /repositories/{repository}/init:
     post:
       operationId: initializeRepository
       parameters:
@@ -291,7 +291,7 @@ paths:
           $ref: '#/components/responses/versionDelta'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/repositories/{repository}/delete:
+  /repositories/{repository}/delete:
     post:
       operationId: deleteRepository
       parameters:
@@ -309,7 +309,7 @@ paths:
                 type: string
         "404":
           $ref: '#/components/responses/404'
-  /v2/repositories/{repository}/versions/{versionHash}:
+  /repositories/{repository}/versions/{versionHash}:
     get:
       operationId: getRepositoryVersionHash
       parameters:
@@ -339,7 +339,7 @@ paths:
                 type: object
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/repositories/{repository}/versions/{versionHash}/query:
+  /repositories/{repository}/versions/{versionHash}/query:
     post:
       operationId: postRepositoryVersionHashQuery
       parameters:
@@ -359,7 +359,7 @@ paths:
         default:
           $ref: '#/components/responses/GeneralError'
 
-  /v2/versions/{versionHash}:
+  /versions/{versionHash}:
     get:
       operationId: getVersionHash
       deprecated: true

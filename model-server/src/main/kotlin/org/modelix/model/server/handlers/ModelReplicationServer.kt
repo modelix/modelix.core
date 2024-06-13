@@ -31,6 +31,7 @@ import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytesWriter
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
+import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.util.cio.use
 import io.ktor.util.pipeline.PipelineContext
@@ -91,7 +92,9 @@ class ModelReplicationServer(
     fun init(application: Application) {
         application.apply {
             routing {
-                installHandlers()
+                route("/v2") {
+                    installHandlers()
+                }
             }
         }
     }

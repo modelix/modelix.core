@@ -32,7 +32,6 @@ import io.ktor.http.takeFrom
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.netty.NettyApplicationEngine
-import io.ktor.server.routing.routing
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.CoroutineScope
@@ -94,9 +93,7 @@ class ModelReplicationServerTest {
             installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
             fixture.modelReplicationServer.init(this)
-            routing {
-                IdsApiImpl(fixture.repositoriesManager, fixture.modelClient).installRoutes(this)
-            }
+            IdsApiImpl(fixture.repositoriesManager, fixture.modelClient).init(this)
         }
 
         coroutineScope {

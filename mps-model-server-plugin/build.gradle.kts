@@ -10,6 +10,19 @@ plugins {
 dependencies {
     implementation(project(":model-server-lib"))
     implementation(project(":mps-model-adapters"))
+    testImplementation(project(":light-model-client", configuration = "jvmRuntimeElements"))
+
+    testImplementation(libs.ktor.server.core)
+    testImplementation(libs.ktor.server.cors)
+    testImplementation(libs.ktor.server.netty)
+    testImplementation(libs.ktor.server.html.builder)
+    testImplementation(libs.ktor.server.auth)
+    testImplementation(libs.ktor.server.auth.jwt)
+    testImplementation(libs.ktor.server.status.pages)
+    testImplementation(libs.ktor.server.forwarded.header)
+    testImplementation(libs.ktor.server.websockets)
+    testImplementation(libs.ktor.server.test.host)
+    testImplementation(libs.ktor.server.resources)
 }
 
 // Configure Gradle IntelliJ Plugin

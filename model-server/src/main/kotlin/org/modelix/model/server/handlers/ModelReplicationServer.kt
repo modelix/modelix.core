@@ -85,11 +85,9 @@ class ModelReplicationServer(
     private val storeClient: IStoreClient get() = modelClient.store
 
     fun init(application: Application) {
-        application.apply {
-            routing {
-                route("/v2") {
-                    installRoutes(this)
-                }
+        application.routing {
+            route("/v2") {
+                installRoutes(this)
             }
         }
     }

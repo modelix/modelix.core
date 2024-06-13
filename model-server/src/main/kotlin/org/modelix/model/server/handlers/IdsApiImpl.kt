@@ -63,11 +63,9 @@ class IdsApiImpl(
     }
 
     fun init(application: Application) {
-        application.apply {
-            routing {
-                route("/v2") {
-                    installRoutes(this)
-                }
+        application.routing {
+            route("/v2") {
+                installRoutes(this)
             }
         }
     }

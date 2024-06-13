@@ -68,12 +68,10 @@ private val LOG = KotlinLogging.logger {}
 class LightModelServer(val client: LocalModelClient, val repositoriesManager: RepositoriesManager) {
 
     fun init(application: Application) {
-        application.apply {
-            routing {
-                requiresPermission("model-json-api".asResource(), KeycloakScope.READ) {
-                    route("/json/v2") {
-                        initRouting()
-                    }
+        application.routing {
+            requiresPermission("model-json-api".asResource(), KeycloakScope.READ) {
+                route("/json/v2") {
+                    initRouting()
                 }
             }
         }

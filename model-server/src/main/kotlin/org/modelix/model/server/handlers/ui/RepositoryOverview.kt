@@ -1,4 +1,4 @@
-package org.modelix.model.server.handlers
+package org.modelix.model.server.handlers.ui
 
 import io.ktor.http.encodeURLPathPart
 import io.ktor.server.application.Application
@@ -22,6 +22,7 @@ import kotlinx.html.th
 import kotlinx.html.thead
 import kotlinx.html.title
 import kotlinx.html.tr
+import org.modelix.model.server.handlers.IRepositoriesManager
 import org.modelix.model.server.templates.PageWithMenuBar
 
 class RepositoryOverview(private val repoManager: IRepositoriesManager) {

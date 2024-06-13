@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.model.server.handlers
+package org.modelix.model.server.handlers.ui
 
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -38,6 +38,9 @@ import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.createModelClient
+import org.modelix.model.server.handlers.IdsApiImpl
+import org.modelix.model.server.handlers.ModelReplicationServer
+import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient

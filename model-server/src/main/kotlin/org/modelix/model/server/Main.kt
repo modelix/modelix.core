@@ -60,7 +60,6 @@ import org.modelix.authorization.NotLoggedInException
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.InMemoryModels
 import org.modelix.model.server.handlers.ContentExplorer
-import org.modelix.model.server.handlers.DeprecatedLightModelServer
 import org.modelix.model.server.handlers.HistoryHandler
 import org.modelix.model.server.handlers.HttpException
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
@@ -173,7 +172,6 @@ object Main {
                     FileUtils.readFileToString(sharedSecretFile, StandardCharsets.UTF_8),
                 )
             }
-            val jsonModelServer = DeprecatedLightModelServer(localModelClient, repositoriesManager)
             val repositoryOverview = RepositoryOverview(repositoriesManager)
             val historyHandler = HistoryHandler(localModelClient, repositoriesManager)
             val contentExplorer = ContentExplorer(localModelClient, repositoriesManager)
@@ -214,7 +212,6 @@ object Main {
                 historyHandler.init(this)
                 repositoryOverview.init(this)
                 contentExplorer.init(this)
-                jsonModelServer.init(this)
                 modelReplicationServer.init(this)
                 metricsHandler.init(this)
                 routing {
@@ -245,9 +242,6 @@ object Main {
                                 ul {
                                     li {
                                         a("repos/") { +"View Repositories on the Model Server" }
-                                    }
-                                    li {
-                                        a("json/") { +"JSON API for JavaScript clients" }
                                     }
                                     li {
                                         a("headers") { +"View HTTP headers" }

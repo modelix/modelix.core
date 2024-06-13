@@ -277,6 +277,13 @@ paths:
           required: false
           schema:
             type: boolean
+            default: true
+        - name: legacyGlobalStorage
+          in: "query"
+          required: false
+          schema:
+            type: boolean
+            default: false
         - name: repository
           in: "path"
           required: true

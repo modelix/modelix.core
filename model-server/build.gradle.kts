@@ -208,7 +208,6 @@ val openApiFiles = listOf(
     "v2" to "model-server-v2",
     "v1" to "model-server-v1",
     "operative" to "model-server-operative",
-    "deprecated" to "model-server-deprecated",
 )
 
 // generate tasks for each OpenAPI file

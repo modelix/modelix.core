@@ -32,6 +32,8 @@ import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 import kotlin.jvm.JvmName
 
+private val LOG = mu.KotlinLogging.logger { }
+
 /**
  * A ModelImporter updates an existing [INode] and its subtree based on a [ModelData] specification.
  *
@@ -136,7 +138,12 @@ class ModelImporter(
         nodesToRemove.forEach {
             doAndPotentiallyContinueOnErrors {
                 if (it.isValid) { // if it's invalid then it's already removed
-                    it.remove()
+                    try {
+                        it.remove()
+                    } catch (ex: UnsupportedOperationException) {
+                        // it might be read-only
+                        LOG.warn(ex) { "Cannot delete node $it" }
+                    }
                 }
             }
         }

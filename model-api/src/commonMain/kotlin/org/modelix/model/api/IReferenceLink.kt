@@ -21,7 +21,12 @@ package org.modelix.model.api
 interface IReferenceLink : ILink {
     companion object {
         fun fromName(name: String): IReferenceLink = ReferenceLinkFromName(name)
+        fun fromUID(uid: String): IReferenceLink = ReferenceLinkFromUID(uid)
     }
 }
 
 data class ReferenceLinkFromName(override val name: String) : LinkFromName(), IReferenceLink
+
+data class ReferenceLinkFromUID(private val uid: String) : LinkFromUID(), IReferenceLink {
+    override fun getUID(): String = uid
+}

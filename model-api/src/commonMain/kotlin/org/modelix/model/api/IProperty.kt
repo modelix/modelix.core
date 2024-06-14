@@ -21,10 +21,18 @@ package org.modelix.model.api
 interface IProperty : IRole {
     companion object {
         fun fromName(name: String): IProperty = PropertyFromName(name)
+        fun fromUID(uid: String): IProperty = PropertyFromUID(uid)
     }
 }
 
 data class PropertyFromName(override val name: String) : RoleFromName(), IProperty {
     override val isOptional: Boolean
         get() = throw UnsupportedOperationException()
+}
+
+data class PropertyFromUID(private val uid: String) : RoleFromUID(), IProperty {
+    override val isOptional: Boolean
+        get() = throw UnsupportedOperationException()
+
+    override fun getUID(): String = uid
 }

@@ -29,6 +29,7 @@ interface IChildLink : ILink {
 
     companion object {
         fun fromName(name: String): IChildLink = ChildLinkFromName(name)
+        fun fromUID(uid: String) = ChildLinkFromUID(uid)
     }
 
     /**
@@ -47,6 +48,17 @@ data class ChildLinkFromName(override val name: String) : LinkFromName(), IChild
         get() = throw UnsupportedOperationException()
     override val childConcept: IConcept
         get() = throw UnsupportedOperationException()
+}
+
+data class ChildLinkFromUID(private val uid: String) : LinkFromUID(), IChildLink {
+    override val isMultiple: Boolean
+        get() = throw UnsupportedOperationException()
+    override val childConcept: IConcept
+        get() = throw UnsupportedOperationException()
+
+    override fun getUID(): String {
+        return uid
+    }
 }
 
 object NullChildLink : IChildLink {

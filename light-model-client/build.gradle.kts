@@ -65,6 +65,8 @@ kotlin {
                 implementation(project(":authorization"))
 //                implementation(project(":model-client"))
                 implementation(project(":model-server"))
+                implementation(project(":model-datastructure", configuration = "jvmRuntimeElements"))
+                implementation(project(":model-client", configuration = "jvmRuntimeElements"))
                 implementation(project(":model-server-lib"))
                 implementation(libs.modelix.incremental)
 

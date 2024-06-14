@@ -232,7 +232,6 @@ val openAPIgenerationPath = "${project.layout.buildDirectory.get()}/generated/op
 val openApiFiles = listOf(
     "public" to "model-server",
     "operative" to "model-server-operative",
-    "light" to "model-server-light",
     "html" to "model-server-html",
 )
 

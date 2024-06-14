@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,13 +93,11 @@ val generateVersionVariable by tasks.registering {
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
     dependsOn(generateVersionVariable)
-    kotlinOptions {
-        jvmTarget = "11"
-        freeCompilerArgs += listOf("-Xjvm-default=all-compatibility")
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_11)
+        freeCompilerArgs.add("-Xjvm-default=all-compatibility")
     }
 }
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon>().all {
     dependsOn(generateVersionVariable)
-    kotlinOptions {
-    }
 }

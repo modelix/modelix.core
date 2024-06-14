@@ -37,6 +37,13 @@ data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
         private val logger = mu.KotlinLogging.logger { }
     }
 
+    private val childrenAccessors: Map<IChildLink, () -> Iterable<INode>> = mapOf(
+        BuiltinLanguages.MPSRepositoryConcepts.Module.models to { module.models.map { MPSModelAsNode(it) } },
+        BuiltinLanguages.MPSRepositoryConcepts.Module.facets to { module.facets.filterIsInstance<JavaModuleFacet>().map { MPSJavaModuleFacetAsNode(it) } },
+        BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies to { getDependencies() },
+        BuiltinLanguages.MPSRepositoryConcepts.Module.languageDependencies to { getLanguageDependencies() },
+    )
+
     override fun getArea(): IArea {
         return MPSArea(module.repository ?: MPSModuleRepository.getInstance())
     }
@@ -49,24 +56,17 @@ data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
         get() = module.repository?.let { MPSRepositoryAsNode(it) }
 
     override val allChildren: Iterable<INode>
-        get() = module.models.map { MPSModelAsNode(it) }
+        get() = childrenAccessors.values.flatMap { it() }
 
     override fun getContainmentLink(): IChildLink {
         return BuiltinLanguages.MPSRepositoryConcepts.Repository.modules
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
-        return if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.models)) {
-            module.models.map { MPSModelAsNode(it) }
-        } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.facets)) {
-            module.facets.filterIsInstance<JavaModuleFacet>().map { MPSJavaModuleFacetAsNode(it) }
-        } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies)) {
-            getDependencies()
-        } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.languageDependencies)) {
-            getLanguageDependencies()
-        } else {
-            emptyList()
+        for (childrenAccessor in childrenAccessors) {
+            if (link.conformsTo(childrenAccessor.key)) return childrenAccessor.value()
         }
+        return emptyList()
     }
 
     private fun getDependencies(): Iterable<INode> {

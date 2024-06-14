@@ -26,7 +26,7 @@ import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.area.IArea
 
-class MPSModelImportAsNode(val importedModel: SModel, val importingModel: SModel) : IDefaultNodeAdapter {
+data class MPSModelImportAsNode(val importedModel: SModel, val importingModel: SModel) : IDefaultNodeAdapter {
     override fun getArea(): IArea =
         MPSArea(importingModel.repository)
 

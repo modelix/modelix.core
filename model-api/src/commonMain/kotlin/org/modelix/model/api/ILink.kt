@@ -16,3 +16,8 @@ abstract class LinkFromName : RoleFromName(), ILink {
     override val targetConcept: IConcept
         get() = throw UnsupportedOperationException()
 }
+
+abstract class LinkFromUID : RoleFromUID(), ILink {
+    override val targetConcept: IConcept
+        get() = throw UnsupportedOperationException()
+}

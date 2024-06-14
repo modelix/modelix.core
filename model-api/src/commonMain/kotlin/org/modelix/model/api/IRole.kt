@@ -80,3 +80,16 @@ abstract class RoleFromName() : IRole {
     override val isOptional: Boolean
         get() = throw UnsupportedOperationException()
 }
+
+abstract class RoleFromUID() : IRole {
+    override fun getConcept(): IConcept {
+        throw UnsupportedOperationException()
+    }
+
+    override fun getSimpleName(): String {
+        throw UnsupportedOperationException()
+    }
+
+    override val isOptional: Boolean
+        get() = throw UnsupportedOperationException()
+}

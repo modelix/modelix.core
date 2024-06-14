@@ -57,6 +57,7 @@ import kotlin.time.Duration.Companion.seconds
 
 private const val TEMP_ID_PREFIX = "tmp-"
 
+@Deprecated("Light model server/client will be replaced with an API based on persistent data structures")
 class LightModelClient internal constructor(
     val connection: IConnection,
     private val transactionManager: ITransactionManager,

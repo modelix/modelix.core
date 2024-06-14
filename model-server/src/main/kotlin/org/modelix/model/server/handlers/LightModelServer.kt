@@ -65,6 +65,7 @@ import kotlin.collections.set
 
 private val LOG = KotlinLogging.logger {}
 
+@Deprecated("Light model server/client will be replaced with an API based on persistent data structures")
 class LightModelServer(val client: LocalModelClient, val repositoriesManager: RepositoriesManager) {
 
     fun init(application: Application) {

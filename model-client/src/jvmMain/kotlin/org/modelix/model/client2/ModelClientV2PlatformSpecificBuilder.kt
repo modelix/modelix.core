@@ -13,7 +13,7 @@ actual class ModelClientV2PlatformSpecificBuilder : ModelClientV2Builder() {
         }
     }
 
-    override fun createHttpClient(): HttpClient {
+    actual override fun createHttpClient(): HttpClient {
         return HttpClient(CIO) {
             configureHttpClient(this)
         }

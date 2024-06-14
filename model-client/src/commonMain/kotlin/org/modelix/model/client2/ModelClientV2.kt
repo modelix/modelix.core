@@ -563,7 +563,9 @@ abstract class ModelClientV2Builder {
     }
 }
 
-expect class ModelClientV2PlatformSpecificBuilder() : ModelClientV2Builder
+expect class ModelClientV2PlatformSpecificBuilder() : ModelClientV2Builder {
+    override fun createHttpClient(): HttpClient
+}
 
 fun VersionDelta.checkObjectHashes() {
     HashUtil.checkObjectHashes(objectsMap)

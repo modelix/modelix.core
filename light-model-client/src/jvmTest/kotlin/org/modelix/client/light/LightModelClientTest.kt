@@ -27,7 +27,6 @@ import org.modelix.incremental.incrementalFunction
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.addNewChild
 import org.modelix.model.api.getDescendants
-import org.modelix.model.server.handlers.LightModelServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient

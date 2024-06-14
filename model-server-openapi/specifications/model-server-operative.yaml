@@ -25,7 +25,16 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200'
-
+  /about:
+    get:
+      operationId: getAboutInformation
+      responses:
+        "200":
+          $ref: '#/components/responses/200'
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/AboutInformation"
 components:
   responses:
     "200":
@@ -34,3 +43,11 @@ components:
         text/plain:
           schema:
             type: string
+  schemas:
+    AboutInformation:
+      type: object
+      properties:
+        version:
+          type: string
+      required:
+        - version

@@ -47,6 +47,7 @@ class ModelReplicationServerBackwardsCompatibilityTest {
             installDefaultServerPlugins()
             modelReplicationServer.init(this)
             keyValueLikeModelServer.init(this)
+            IdsApiImpl(repositoriesManager, modelClient).init(this)
         }
 
         coroutineScope {

@@ -230,10 +230,9 @@ val openAPIgenerationPath = "${project.layout.buildDirectory.get()}/generated/op
 // Pairs of the different OpenAPI files we use. Each pair must have its own 'category' as first argument as these
 // are used to generate corresponding packages
 val openApiFiles = listOf(
-    "public" to "model-server",
+    "v2" to "model-server-v2",
+    "v1" to "model-server-v1",
     "operative" to "model-server-operative",
-    "light" to "model-server-light",
-    "html" to "model-server-html",
     "deprecated" to "model-server-deprecated",
 )
 
@@ -280,7 +279,6 @@ openApiFiles.forEach {
                 "supportingFiles" to "Paths.kt",
             ),
         )
-        ignoreFileOverride.set("${layout.projectDirectory.file(".openapi-generator-ignore")}")
     }
 
     // Ensure that the OpenAPI generator runs before starting to compile

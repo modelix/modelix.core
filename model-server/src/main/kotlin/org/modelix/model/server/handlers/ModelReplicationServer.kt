@@ -19,19 +19,13 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
-import io.ktor.server.plugins.BadRequestException
-import io.ktor.server.plugins.origin
 import io.ktor.server.request.acceptItems
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveStream
-import io.ktor.server.resources.delete
-import io.ktor.server.resources.get
-import io.ktor.server.resources.post
-import io.ktor.server.resources.put
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytesWriter
 import io.ktor.server.response.respondText
-import io.ktor.server.routing.Route
+import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.util.cio.use
 import io.ktor.util.pipeline.PipelineContext
@@ -44,7 +38,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.withContext
-import org.modelix.api.public.Paths
+import org.modelix.api.v2.DefaultApi
 import org.modelix.authorization.getUserName
 import org.modelix.model.InMemoryModels
 import org.modelix.model.api.ITree
@@ -72,11 +66,12 @@ import org.slf4j.LoggerFactory
  * Implements the endpoints used by the 'model-client', but compared to KeyValueLikeModelServer also understands what
  * client sends. This allows more validations and more responsibilities on the server side.
  */
+@Suppress("TooManyFunctions") // result of the API spec
 class ModelReplicationServer(
     private val repositoriesManager: IRepositoriesManager,
     private val modelClient: LocalModelClient,
     private val inMemoryModels: InMemoryModels,
-) {
+) : DefaultApi() {
     constructor(repositoriesManager: RepositoriesManager) :
         this(repositoriesManager, repositoriesManager.client, InMemoryModels())
 
@@ -90,246 +85,243 @@ class ModelReplicationServer(
     private val storeClient: IStoreClient get() = modelClient.store
 
     fun init(application: Application) {
-        application.apply {
-            routing {
-                installHandlers()
+        application.routing {
+            route("/v2") {
+                installRoutes(this)
             }
         }
     }
 
-    private fun ApplicationCall.repositoryId() = RepositoryId(checkNotNull(parameters["repository"]) { "Parameter 'repository' not available" })
-    private fun PipelineContext<Unit, ApplicationCall>.repositoryId() = call.repositoryId()
-    private suspend fun <R> PipelineContext<Unit, ApplicationCall>.runWithRepository(body: suspend () -> R): R {
-        return repositoriesManager.runWithRepository(repositoryId(), body)
+    private fun repositoryId(paramValue: String?) = RepositoryId(checkNotNull(paramValue) { "Parameter 'repository' not available" })
+    private suspend fun <R> runWithRepository(repository: String, body: suspend () -> R): R {
+        return repositoriesManager.runWithRepository(repositoryId(repository), body)
     }
 
-    private fun Route.installHandlers() {
-        post<Paths.postGenerateClientId> {
-            call.respondText(storeClient.generateId("clientId").toString())
+    override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositories() {
+        call.respondText(repositoriesManager.getRepositories().joinToString("\n") { it.id })
+    }
+
+    override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositoryBranches(repository: String) {
+        call.respondText(repositoriesManager.getBranchNames(repositoryId(repository)).joinToString("\n"))
+    }
+
+    override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositoryBranch(
+        repository: String,
+        branch: String,
+        lastKnown: String?,
+    ) {
+        runWithRepository(repository) {
+            val branchRef = repositoryId(repository).getBranchReference(branch)
+            val versionHash = repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
+            call.respondDelta(versionHash, lastKnown)
         }
-        get<Paths.getServerId> {
-            // Currently, the server ID is initialized in KeyValueLikeModelServer eagerly on startup.
-            // Should KeyValueLikeModelServer be removed or change,
-            // RepositoriesManager#maybeInitAndGetSeverId will initialize the server ID lazily on the first request.
-            //
-            // Functionally, it does not matter if the server ID is created eagerly or lazily,
-            // as long as the same server ID is returned from the same server.
-            val serverId = repositoriesManager.maybeInitAndGetSeverId()
-            call.respondText(serverId)
-        }
-        get<Paths.getUserId> {
-            call.respondText(call.getUserName() ?: call.request.origin.remoteHost)
-        }
-        get<Paths.getRepositories> {
-            call.respondText(repositoriesManager.getRepositories().joinToString("\n") { it.id })
+    }
+
+    override suspend fun PipelineContext<Unit, ApplicationCall>.deleteRepositoryBranch(
+        repository: String,
+        branch: String,
+    ) {
+        val repositoryId = try {
+            RepositoryId(repository)
+        } catch (e: IllegalArgumentException) {
+            throw BadRequestException("Invalid repository name", "invalid-request", cause = e)
         }
 
-        get<Paths.getRepositoryBranches> {
-            call.respondText(repositoriesManager.getBranchNames(repositoryId()).joinToString("\n"))
+        if (!repositoriesManager.getBranchNames(repositoryId).contains(branch)) {
+            throw BranchNotFoundException(branch, repositoryId.id)
         }
 
-        get<Paths.getRepositoryBranch> {
-            fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameters["branch"]!!)
-            fun PipelineContext<Unit, ApplicationCall>.branchRef() = call.branchRef()
+        repositoriesManager.removeBranches(repositoryId, setOf(branch))
 
-            runWithRepository {
-                val baseVersionHash = call.request.queryParameters["lastKnown"]
-                val branch = branchRef()
-                val versionHash = repositoriesManager.getVersionHash(branch) ?: throw BranchNotFoundException(branch)
-                call.respondDelta(versionHash, baseVersionHash)
-            }
+        call.respond(HttpStatusCode.NoContent)
+    }
+
+    override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositoryBranchHash(
+        repository: String,
+        branch: String,
+    ) {
+        runWithRepository(repository) {
+            val branchRef = repositoryId(repository).getBranchReference(branch)
+            val versionHash = repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
+            call.respondText(versionHash)
         }
+    }
 
-        delete<Paths.deleteRepositoryBranch> {
-            val repositoryName = call.parameters["repository"] ?: throw BadRequestException(
-                "Request lacks repository name", "missing-repository-name",
+    override suspend fun PipelineContext<Unit, ApplicationCall>.initializeRepository(
+        repository: String,
+        useRoleIds: Boolean?,
+        legacyGlobalStorage: Boolean?,
+    ) {
+        runWithRepository(repository) {
+            val initialVersion = repositoriesManager.createRepository(
+                repositoryId(repository),
+                call.getUserName(),
+                useRoleIds ?: true,
+                legacyGlobalStorage ?: false,
             )
-            val repositoryId = try {
-                RepositoryId(repositoryName)
-            } catch (e: IllegalArgumentException) {
-                throw BadRequestException("Invalid repository name", "invalid-request", cause = e)
+            call.respondDelta(initialVersion.getContentHash(), null)
+        }
+    }
+
+    override suspend fun PipelineContext<Unit, ApplicationCall>.deleteRepository(repository: String) {
+        runWithRepository(repository) {
+            val foundAndDeleted = repositoriesManager.removeRepository(repositoryId(repository))
+            if (foundAndDeleted) {
+                call.respond(HttpStatusCode.NoContent)
+            } else {
+                call.respond(HttpStatusCode.NotFound)
             }
-            val branch = call.parameters["branch"] ?: throw BadRequestException(
-                "Request lacks branch name", "missing-branch-name",
+        }
+    }
+
+    override suspend fun PipelineContext<Unit, ApplicationCall>.postRepositoryBranch(
+        repository: String,
+        branch: String,
+    ) {
+        runWithRepository(repository) {
+            val branchRef = repositoryId(repository).getBranchReference(branch)
+            val deltaFromClient = call.receive<VersionDelta>()
+            deltaFromClient.checkObjectHashes()
+            storeClient.putAll(deltaFromClient.getAllObjects())
+            val mergedHash = repositoriesManager.mergeChanges(branchRef, deltaFromClient.versionHash)
+            call.respondDelta(mergedHash, deltaFromClient.versionHash)
+        }
+    }
+
+    override suspend fun PipelineContext<Unit, ApplicationCall>.pollRepositoryBranch(
+        repository: String,
+        branch: String,
+        lastKnown: String?,
+    ) {
+        runWithRepository(repository) {
+            val branchRef = repositoryId(repository).getBranchReference(branch)
+            val newVersionHash = repositoriesManager.pollVersionHash(branchRef, lastKnown)
+            call.respondDelta(newVersionHash, lastKnown)
+        }
+    }
+
+    override suspend fun PipelineContext<Unit, ApplicationCall>.pollRepositoryBranchHash(
+        repository: String,
+        branch: String,
+        lastKnown: String?,
+        legacyGlobalStorage: Boolean?,
+    ) {
+        runWithRepository(repository) {
+            val branchRef = repositoryId(repository).getBranchReference(branch)
+            val newVersionHash = repositoriesManager.pollVersionHash(branchRef, lastKnown)
+            call.respondText(newVersionHash)
+        }
+    }
+
+    override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositoryVersionHash(
+        versionHash: String,
+        repository: String,
+        lastKnown: String?,
+    ) {
+        // TODO permission check on the repository ID is not sufficient, because the client could
+        //      provide any repository ID to access a version inside a different repository.
+        //      A check if the version belongs to the repository is required.
+        runWithRepository(repository) {
+            if (repositoriesManager.getVersion(repositoryId(repository), versionHash) == null) {
+                throw VersionNotFoundException(versionHash)
+            }
+            call.respondDelta(versionHash, lastKnown)
+        }
+    }
+
+    override suspend fun PipelineContext<Unit, ApplicationCall>.postRepositoryBranchQuery(
+        repository: String,
+        branch: String,
+    ) {
+        val branchRef = repositoryId(repository).getBranchReference(branch)
+        runWithRepository(repository) {
+            val version = repositoriesManager.getVersion(branchRef)
+            LOG.trace("Running query on {} @ {}", branchRef, version)
+            val initialTree = version!!.getTree()
+            val otBranch = OTBranch(
+                PBranch(initialTree, modelClient.idGenerator),
+                modelClient.idGenerator,
+                modelClient.storeCache,
             )
 
-            if (!repositoriesManager.getBranchNames(repositoryId).contains(branch)) {
-                throw BranchNotFoundException(branch, repositoryId.id)
-            }
-
-            repositoriesManager.removeBranches(repositoryId, setOf(branch))
-
-            call.respond(HttpStatusCode.NoContent)
-        }
-
-        get<Paths.getRepositoryBranchHash> {
-            fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameters["branch"]!!)
-            fun PipelineContext<Unit, ApplicationCall>.branchRef() = call.branchRef()
-
-            runWithRepository {
-                val branch = branchRef()
-                val versionHash = repositoriesManager.getVersionHash(branch) ?: throw BranchNotFoundException(branch)
-                call.respondText(versionHash)
-            }
-        }
-
-        post<Paths.initializeRepository> {
-            runWithRepository {
-                val useRoleIds = call.request.queryParameters["useRoleIds"] != "false"
-                val legacyGlobalStorage = call.request.queryParameters["legacyGlobalStorage"] == "true"
-                val initialVersion = repositoriesManager.createRepository(repositoryId(), call.getUserName(), useRoleIds, legacyGlobalStorage)
-                call.respondDelta(initialVersion.getContentHash(), null)
-            }
-        }
-
-        post<Paths.deleteRepository> {
-            val repositoryId = repositoryId()
-            runWithRepository {
-                val foundAndDeleted = repositoriesManager.removeRepository(repositoryId)
-                if (foundAndDeleted) {
-                    call.respond(HttpStatusCode.NoContent)
+            ModelQLServer.handleCall(call, { writeAccess ->
+                if (writeAccess) {
+                    otBranch.getRootNode() to otBranch.getArea()
                 } else {
-                    call.respond(HttpStatusCode.NotFound)
+                    val model = inMemoryModels.getModel(initialTree).await()
+                    model.getNode(ITree.ROOT_ID) to model.getArea()
                 }
-            }
-        }
-
-        post<Paths.postRepositoryBranch> {
-            fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameters["branch"]!!)
-            fun PipelineContext<Unit, ApplicationCall>.branchRef() = call.branchRef()
-
-            runWithRepository {
-                val deltaFromClient = call.receive<VersionDelta>()
-                deltaFromClient.checkObjectHashes()
-                storeClient.putAll(deltaFromClient.getAllObjects())
-                val mergedHash = repositoriesManager.mergeChanges(branchRef(), deltaFromClient.versionHash)
-                call.respondDelta(mergedHash, deltaFromClient.versionHash)
-            }
-        }
-
-        get<Paths.pollRepositoryBranch> {
-            fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameters["branch"]!!)
-            fun PipelineContext<Unit, ApplicationCall>.branchRef() = call.branchRef()
-
-            runWithRepository {
-                val lastKnownVersionHash = call.request.queryParameters["lastKnown"]
-                val newVersionHash = repositoriesManager.pollVersionHash(branchRef(), lastKnownVersionHash)
-                call.respondDelta(newVersionHash, lastKnownVersionHash)
-            }
-        }
-        get<Paths.pollRepositoryBranchHash> {
-            fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameters["branch"]!!)
-            fun PipelineContext<Unit, ApplicationCall>.branchRef() = call.branchRef()
-
-            runWithRepository {
-                val lastKnownVersionHash = call.request.queryParameters["lastKnown"]
-                val newVersionHash = repositoriesManager.pollVersionHash(branchRef(), lastKnownVersionHash)
-                call.respondText(newVersionHash)
-            }
-        }
-
-        get<Paths.getRepositoryVersionHash> {
-            // TODO permission check on the repository ID is not sufficient, because the client could
-            //      provide any repository ID to access a version inside a different repository.
-            //      A check if the version belongs to the repository is required.
-            val baseVersionHash = call.request.queryParameters["lastKnown"]
-            val versionHash = call.parameters["versionHash"]!!
-            runWithRepository {
-                if (repositoriesManager.getVersion(repositoryId(), versionHash) == null) {
-                    throw VersionNotFoundException(versionHash)
-                    return@runWithRepository
+            }, {
+                // writing the new version has to happen before call.respond is invoked, otherwise subsequent queries
+                // from the same client may still be executed on the old version.
+                val (ops, newTree) = otBranch.getPendingChanges()
+                if (newTree != initialTree) {
+                    val newVersion = CLVersion.createRegularVersion(
+                        id = modelClient.idGenerator.generate(),
+                        author = getUserName(),
+                        tree = newTree as CLTree,
+                        baseVersion = version,
+                        operations = ops.map { it.getOriginalOp() }.toTypedArray(),
+                    )
+                    repositoriesManager.mergeChanges(branchRef, newVersion.getContentHash())
                 }
-                call.respondDelta(versionHash, baseVersionHash)
-            }
+            })
         }
+    }
 
-        post<Paths.postRepositoryBranchQuery> { parameters ->
-            val branchRef = RepositoryId(parameters.repository).getBranchReference(parameters.branch)
-            runWithRepository {
-                val version = repositoriesManager.getVersion(branchRef)
-                LOG.trace("Running query on {} @ {}", branchRef, version)
-                val initialTree = version!!.getTree()
-                val branch = OTBranch(
-                    PBranch(initialTree, modelClient.idGenerator),
-                    modelClient.idGenerator,
-                    modelClient.storeCache,
-                )
-
-                ModelQLServer.handleCall(call, { writeAccess ->
-                    if (writeAccess) {
-                        branch.getRootNode() to branch.getArea()
-                    } else {
-                        val model = inMemoryModels.getModel(initialTree).await()
-                        model.getNode(ITree.ROOT_ID) to model.getArea()
-                    }
-                }, {
-                    // writing the new version has to happen before call.respond is invoked, otherwise subsequent queries
-                    // from the same client may still be executed on the old version.
-                    val (ops, newTree) = branch.getPendingChanges()
-                    if (newTree != initialTree) {
-                        val newVersion = CLVersion.createRegularVersion(
-                            id = modelClient.idGenerator.generate(),
-                            author = getUserName(),
-                            tree = newTree as CLTree,
-                            baseVersion = version,
-                            operations = ops.map { it.getOriginalOp() }.toTypedArray(),
-                        )
-                        repositoriesManager.mergeChanges(branchRef, newVersion.getContentHash())
-                    }
-                })
-            }
+    override suspend fun PipelineContext<Unit, ApplicationCall>.postRepositoryVersionHashQuery(
+        versionHash: String,
+        repository: String,
+    ) {
+        runWithRepository(repository) {
+            val version = CLVersion.loadFromHash(versionHash, modelClient.storeCache)
+            val initialTree = version.getTree()
+            val branch = TreePointer(initialTree)
+            ModelQLServer.handleCall(call, branch.getRootNode(), branch.getArea())
         }
+    }
 
-        post<Paths.postRepositoryVersionHashQuery> {
-            runWithRepository {
-                val versionHash = call.parameters["versionHash"]!!
-                val version = CLVersion.loadFromHash(versionHash, modelClient.storeCache)
-                val initialTree = version.getTree()
-                val branch = TreePointer(initialTree)
-                ModelQLServer.handleCall(call, branch.getRootNode(), branch.getArea())
-            }
-        }
+    override suspend fun PipelineContext<Unit, ApplicationCall>.putRepositoryObjects(repository: String) {
+        runWithRepository(repository) {
+            val writtenEntries = withContext(Dispatchers.IO) {
+                val entries = call.receiveStream().bufferedReader().use { reader ->
+                    reader.lineSequence().windowed(2, 2).map {
+                        val key = it[0]
+                        val value = it[1]
 
-        put<Paths.putRepositoryObjects> {
-            runWithRepository {
-                val writtenEntries = withContext(Dispatchers.IO) {
-                    val entries = call.receiveStream().bufferedReader().use { reader ->
-                        reader.lineSequence().windowed(2, 2).map {
-                            val key = it[0]
-                            val value = it[1]
+                        require(HashUtil.isSha256(key)) {
+                            "This API cannot be used to store other entries than serialized objects." +
+                                " The key is expected to be a SHA256 hash over the value: $key -> $value"
+                        }
+                        val expectedKey = HashUtil.sha256(value)
+                        require(expectedKey == key) { "Hash mismatch. Expected $expectedKey, but $key was provided. Value: $value" }
 
-                            require(HashUtil.isSha256(key)) {
-                                "This API cannot be used to store other entries than serialized objects." +
-                                    " The key is expected to be a SHA256 hash over the value: $key -> $value"
-                            }
-                            val expectedKey = HashUtil.sha256(value)
-                            require(expectedKey == key) { "Hash mismatch. Expected $expectedKey, but $key was provided. Value: $value" }
-
-                            key to value
-                        }.toMap()
-                    }
-
-                    storeClient.putAll(entries, true)
-
-                    entries.size
+                        key to value
+                    }.toMap()
                 }
-                call.respondText("$writtenEntries objects received")
-            }
-        }
 
-        get<Paths.getVersionHash> {
-            // TODO versions should be stored inside a repository with permission checks.
-            //      Knowing a version hash should not give you access to the content.
-            //      This handler was already moved to the 'repositories' route. Removing it here would be a breaking
-            //      change, but should be done in some future version.
-            storeClient.withGlobalRepositoryInCoroutine {
-                val baseVersionHash = call.request.queryParameters["lastKnown"]
-                val versionHash = call.parameters["versionHash"]!!
-                if (storeClient[versionHash] == null) {
-                    throw VersionNotFoundException(versionHash)
-                }
-                call.respondDelta(versionHash, baseVersionHash)
+                storeClient.putAll(entries, true)
+
+                entries.size
             }
+            call.respondText("$writtenEntries objects received")
+        }
+    }
+
+    @Deprecated("deprecated flag is set in the OpenAPI specification")
+    override suspend fun PipelineContext<Unit, ApplicationCall>.getVersionHash(
+        versionHash: String,
+        lastKnown: String?,
+    ) {
+        // TODO versions should be stored inside a repository with permission checks.
+        //      Knowing a version hash should not give you access to the content.
+        //      This handler was already moved to the 'repositories' route. Removing it here would be a breaking
+        //      change, but should be done in some future version.
+        storeClient.withGlobalRepositoryInCoroutine {
+            if (storeClient[versionHash] == null) {
+                throw VersionNotFoundException(versionHash)
+            }
+            call.respondDelta(versionHash, lastKnown)
         }
     }
 

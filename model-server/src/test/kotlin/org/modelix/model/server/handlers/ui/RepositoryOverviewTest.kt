@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023.
+ * Copyright (c) 2023-2024.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.model.server.handlers
+package org.modelix.model.server.handlers.ui
 
 import kotlinx.html.span
 import kotlinx.html.stream.createHTML

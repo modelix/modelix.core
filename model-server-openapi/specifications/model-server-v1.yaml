@@ -1,0 +1,260 @@
+# WARNING - EXPERIMENTAL
+# This file was auto generated from the existing API using an IntelliJ plugin,
+# see https://www.jetbrains.com/help/idea/openapi.html#generate_openapi
+#
+# Manual changes were done for this 'spec' to work in-place with the
+# model-server for now. A lot of changes were done and are still necessary
+# to make this OpenAPI a viable artifact. It will most likely be split
+# into multiple OpenAPI files.
+
+openapi: "3.0.3"
+info:
+  title: "model-server public API"
+  description: "modelix public API"
+  version: "1.0.0"
+servers:
+  - url: '/'
+    description: model-server
+paths:
+  /headers:
+    get:
+      operationId: getHeaders
+      tags:
+        - v1
+      responses:
+        "200":
+          $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/GeneralError'
+  /counter/{key}:
+    post:
+      tags:
+        - v1
+      parameters:
+        - name: key
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "403":
+          $ref: '#/components/responses/403'
+        "401":
+          $ref: '#/components/responses/401'
+        "200":
+          $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/GeneralError'
+  /get/{key}:
+    get:
+      tags:
+        - v1
+      parameters:
+        - name: key
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "403":
+          $ref: '#/components/responses/403'
+        "401":
+          $ref: '#/components/responses/401'
+        "404":
+          $ref: '#/components/responses/404'
+        "200":
+          $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/GeneralError'
+  /getAll:
+    put:
+      tags:
+        - v1
+      responses:
+        "403":
+          $ref: '#/components/responses/403'
+        "401":
+          $ref: '#/components/responses/401'
+        "200":
+          $ref: '#/components/responses/200json'
+        default:
+          $ref: '#/components/responses/GeneralError'
+  /getEmail:
+    get:
+      tags:
+        - v1
+      responses:
+        "200":
+          $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/GeneralError'
+  /getRecursively/{key}:
+    get:
+      tags:
+        - v1
+      parameters:
+        - name: key
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: '#/components/responses/200json'
+        default:
+          $ref: '#/components/responses/GeneralError'
+  /poll/{key}:
+    get:
+      tags:
+        - v1
+      parameters:
+        - name: key
+          in: "path"
+          required: true
+          schema:
+            type: string
+        - name: lastKnownValue
+          in: "query"
+          required: false
+          schema:
+            type: string
+      responses:
+        "403":
+          $ref: '#/components/responses/403'
+        "401":
+          $ref: '#/components/responses/401'
+        "404":
+          $ref: '#/components/responses/404'
+        "200":
+          $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/GeneralError'
+  /put/{key}:
+    put:
+      tags:
+        - v1
+      parameters:
+        - name: key
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "403":
+          $ref: '#/components/responses/403'
+        "401":
+          $ref: '#/components/responses/401'
+        "200":
+          $ref: '#/components/responses/200'
+        "404":
+          $ref: '#/components/responses/404'
+        default:
+          $ref: '#/components/responses/GeneralError'
+  /putAll:
+    put:
+      tags:
+        - v1
+      responses:
+        "403":
+          $ref: '#/components/responses/403'
+        "401":
+          $ref: '#/components/responses/401'
+        "200":
+          $ref: '#/components/responses/200'
+        "404":
+          $ref: '#/components/responses/404'
+        default:
+          $ref: '#/components/responses/GeneralError'
+components:
+  responses:
+    "200":
+      description: OK
+      content:
+        text/plain:
+          schema:
+            type: string
+    "200json":
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: string
+
+    "400":
+      description: "Bad Request"
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    "401":
+      description: "Unauthorized"
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    "403":
+      description: "Forbidden"
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    "404":
+      description: "Not Found"
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    GeneralError:
+      description: Unexpected error
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+  schemas:
+    # From https://opensource.zalando.com/restful-api-guidelines/models/problem-1.0.1.yaml
+    Problem:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          description: >
+            A URI reference that uniquely identifies the problem type only in the
+            context of the provided API. Opposed to the specification in RFC-9457,
+            it is neither recommended to be dereferenceable and point to a
+            human-readable documentation nor globally unique for the problem type.
+          default: 'about:blank'
+          example: '/some/uri-reference'
+        title:
+          type: string
+          description: >
+            A short summary of the problem type. Written in English and readable
+            for engineers, usually not suited for non technical stakeholders and
+            not localized.
+          example: some title for the error situation
+        status:
+          type: integer
+          format: int32
+          description: >
+            The HTTP status code generated by the origin server for this occurrence
+            of the problem.
+          minimum: 100
+          maximum: 600
+          exclusiveMaximum: true
+        detail:
+          type: string
+          description: >
+            A human readable explanation specific to this occurrence of the
+            problem that is helpful to locate the problem and give advice on how
+            to proceed. Written in English and readable for engineers, usually not
+            suited for non technical stakeholders and not localized.
+          example: some description for the error situation
+        instance:
+          type: string
+          format: uri-reference
+          description: >
+            A URI reference that identifies the specific occurrence of the problem,
+            e.g. by adding a fragment identifier or sub-path to the problem type.
+            May be used to locate the root of this problem in the source code.
+          example: '/some/uri-reference#specific-occurrence-context'

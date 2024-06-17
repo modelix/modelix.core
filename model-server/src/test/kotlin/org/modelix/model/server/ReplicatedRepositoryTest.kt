@@ -46,6 +46,7 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
+import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
@@ -77,6 +78,7 @@ class ReplicatedRepositoryTest {
             val inMemoryModels = InMemoryModels()
             ModelReplicationServer(repositoriesManager, modelClient, inMemoryModels).init(this)
             KeyValueLikeModelServer(repositoriesManager, storeClient.forGlobalRepository(), inMemoryModels).init(this)
+            IdsApiImpl(repositoriesManager, modelClient).init(this)
         }
 
         coroutineScope {

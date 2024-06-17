@@ -19,7 +19,6 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
@@ -33,7 +32,6 @@ import io.ktor.http.takeFrom
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.netty.NettyApplicationEngine
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.CoroutineScope
@@ -43,7 +41,7 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
-import org.modelix.api.public.Problem
+import org.modelix.api.v1.Problem
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.InMemoryModels
 import org.modelix.model.api.IConceptReference
@@ -95,6 +93,7 @@ class ModelReplicationServerTest {
             installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
             fixture.modelReplicationServer.init(this)
+            IdsApiImpl(fixture.repositoriesManager, fixture.modelClient).init(this)
         }
 
         coroutineScope {

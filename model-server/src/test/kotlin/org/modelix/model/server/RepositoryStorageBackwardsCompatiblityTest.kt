@@ -25,6 +25,7 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.NonCachingObjectStore
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
@@ -45,6 +46,7 @@ class RepositoryStorageBackwardsCompatiblityTest {
             val repositoriesManager = RepositoriesManager(LocalModelClient(store.forContextRepository()))
             KeyValueLikeModelServer(repositoriesManager, store.forGlobalRepository(), InMemoryModels()).init(this)
             ModelReplicationServer(repositoriesManager).init(this)
+            IdsApiImpl(repositoriesManager).init(this)
         }
         block()
     }

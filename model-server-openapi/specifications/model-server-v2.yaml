@@ -13,50 +13,43 @@ info:
   description: "modelix public API"
   version: "1.0.0"
 servers:
-  - url: '/'
+  - url: '/v2'
     description: model-server
+tags:
+  - name: ids
 paths:
-  /v2/server-id:
+  /server-id:
     get:
+      summary: Returns the ID of the server
+      tags:
+        - ids
       operationId: getServerId
       responses:
         "200":
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/user-id:
+  /user-id:
     get:
+      tags:
+        - ids
       operationId: getUserId
       responses:
         "200":
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/generate-client-id:
+  /generate-client-id:
     post:
-      operationId: postGenerateClientId
+      tags:
+        - ids
+      operationId: generateClientId
       responses:
         "200":
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/GeneralError'
-  /headers:
-    get:
-      operationId: getHeaders
-      responses:
-        "200":
-          $ref: '#/components/responses/200'
-        default:
-          $ref: '#/components/responses/GeneralError'
-  /health:
-    get:
-      operationId: getHealth
-      responses:
-        "200":
-          $ref: '#/components/responses/200'
-        default:
-          $ref: '#/components/responses/GeneralError'
-  /v2/repositories:
+  /repositories:
     get:
       operationId: getRepositories
       responses:
@@ -64,7 +57,7 @@ paths:
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/repositories/{repository}/objects:
+  /repositories/{repository}/objects:
     put:
       operationId: putRepositoryObjects
       parameters:
@@ -82,7 +75,7 @@ paths:
           $ref: '#/components/responses/200json'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/repositories/{repository}/branches:
+  /repositories/{repository}/branches:
     get:
       operationId: getRepositoryBranches
       parameters:
@@ -96,7 +89,7 @@ paths:
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/repositories/{repository}/branches/{branch}:
+  /repositories/{repository}/branches/{branch}:
     delete:
       operationId: deleteRepositoryBranch
       parameters:
@@ -174,7 +167,7 @@ paths:
           $ref: '#/components/responses/versionDelta'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/repositories/{repository}/branches/{branch}/hash:
+  /repositories/{repository}/branches/{branch}/hash:
     get:
       operationId: getRepositoryBranchHash
       parameters:
@@ -195,7 +188,7 @@ paths:
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/repositories/{repository}/branches/{branch}/poll:
+  /repositories/{repository}/branches/{branch}/poll:
     get:
       operationId: pollRepositoryBranch
       parameters:
@@ -223,7 +216,7 @@ paths:
           $ref: '#/components/responses/versionDelta'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/repositories/{repository}/branches/{branch}/pollHash:
+  /repositories/{repository}/branches/{branch}/pollHash:
     get:
       operationId: pollRepositoryBranchHash
       parameters:
@@ -256,7 +249,7 @@ paths:
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/repositories/{repository}/branches/{branch}/query:
+  /repositories/{repository}/branches/{branch}/query:
     post:
       operationId: postRepositoryBranchQuery
       parameters:
@@ -275,7 +268,7 @@ paths:
           $ref: '#/components/responses/200json'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/repositories/{repository}/init:
+  /repositories/{repository}/init:
     post:
       operationId: initializeRepository
       parameters:
@@ -284,6 +277,13 @@ paths:
           required: false
           schema:
             type: boolean
+            default: true
+        - name: legacyGlobalStorage
+          in: "query"
+          required: false
+          schema:
+            type: boolean
+            default: false
         - name: repository
           in: "path"
           required: true
@@ -298,7 +298,7 @@ paths:
           $ref: '#/components/responses/versionDelta'
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/repositories/{repository}/delete:
+  /repositories/{repository}/delete:
     post:
       operationId: deleteRepository
       parameters:
@@ -316,7 +316,7 @@ paths:
                 type: string
         "404":
           $ref: '#/components/responses/404'
-  /v2/repositories/{repository}/versions/{versionHash}:
+  /repositories/{repository}/versions/{versionHash}:
     get:
       operationId: getRepositoryVersionHash
       parameters:
@@ -346,7 +346,7 @@ paths:
                 type: object
         default:
           $ref: '#/components/responses/GeneralError'
-  /v2/repositories/{repository}/versions/{versionHash}/query:
+  /repositories/{repository}/versions/{versionHash}/query:
     post:
       operationId: postRepositoryVersionHashQuery
       parameters:
@@ -366,7 +366,7 @@ paths:
         default:
           $ref: '#/components/responses/GeneralError'
 
-  /v2/versions/{versionHash}:
+  /versions/{versionHash}:
     get:
       operationId: getVersionHash
       deprecated: true
@@ -386,129 +386,6 @@ paths:
           $ref: '#/components/responses/404'
         "200":
           $ref: '#/components/responses/versionDelta'
-        default:
-          $ref: '#/components/responses/GeneralError'
-  /counter/{key}:
-    post:
-      parameters:
-        - name: key
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "200":
-          $ref: '#/components/responses/200'
-        default:
-          $ref: '#/components/responses/GeneralError'
-  /get/{key}:
-    get:
-      parameters:
-        - name: key
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "404":
-          $ref: '#/components/responses/404'
-        "200":
-          $ref: '#/components/responses/200'
-        default:
-          $ref: '#/components/responses/GeneralError'
-  /getAll:
-    put:
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "200":
-          $ref: '#/components/responses/200json'
-        default:
-          $ref: '#/components/responses/GeneralError'
-  /getEmail:
-    get:
-      responses:
-        "200":
-          $ref: '#/components/responses/200'
-        default:
-          $ref: '#/components/responses/GeneralError'
-  /getRecursively/{key}:
-    get:
-      parameters:
-        - name: key
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          $ref: '#/components/responses/200json'
-        default:
-          $ref: '#/components/responses/GeneralError'
-  /poll/{key}:
-    get:
-      parameters:
-        - name: key
-          in: "path"
-          required: true
-          schema:
-            type: string
-        - name: lastKnownValue
-          in: "query"
-          required: false
-          schema:
-            type: string
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "404":
-          $ref: '#/components/responses/404'
-        "200":
-          $ref: '#/components/responses/200'
-        default:
-          $ref: '#/components/responses/GeneralError'
-  /put/{key}:
-    put:
-      parameters:
-        - name: key
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "200":
-          $ref: '#/components/responses/200'
-        "404":
-          $ref: '#/components/responses/404'
-        default:
-          $ref: '#/components/responses/GeneralError'
-  /putAll:
-    put:
-      responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
-        "200":
-          $ref: '#/components/responses/200'
-        "404":
-          $ref: '#/components/responses/404'
         default:
           $ref: '#/components/responses/GeneralError'
 components:

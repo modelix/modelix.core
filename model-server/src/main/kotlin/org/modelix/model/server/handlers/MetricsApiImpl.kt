@@ -17,13 +17,13 @@
 package org.modelix.model.server.handlers
 
 import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.metrics.micrometer.MicrometerMetrics
-import io.ktor.server.resources.get
 import io.ktor.server.response.respond
-import io.ktor.server.routing.Route
 import io.ktor.server.routing.routing
+import io.ktor.util.pipeline.PipelineContext
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmInfoMetrics
@@ -35,9 +35,12 @@ import io.micrometer.core.instrument.binder.system.UptimeMetrics
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import org.modelix.api.operative.Paths
+import org.modelix.api.operative.MetricsApi
 
-class MetricsHandler {
+/**
+ * REST API implementation for providing micrometer metrics.
+ */
+class MetricsApiImpl : MetricsApi() {
 
     private val appMicrometerRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
@@ -63,14 +66,12 @@ class MetricsHandler {
             }
 
             routing {
-                installHandlers()
+                installRoutes(this)
             }
         }
     }
 
-    private fun Route.installHandlers() {
-        get<Paths.getMetrics> {
-            call.respond(appMicrometerRegistry.scrape())
-        }
+    override suspend fun PipelineContext<Unit, ApplicationCall>.getMetrics() {
+        call.respond(appMicrometerRegistry.scrape())
     }
 }

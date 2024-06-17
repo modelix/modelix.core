@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.model.server.handlers
+package org.modelix.model.server.handlers.ui
 
 import kotlinx.serialization.Serializable
 

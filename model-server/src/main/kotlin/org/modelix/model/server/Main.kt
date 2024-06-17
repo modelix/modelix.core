@@ -35,6 +35,7 @@ import io.ktor.server.plugins.forwardedheaders.ForwardedHeaders
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.plugins.swagger.swaggerUI
 import io.ktor.server.resources.Resources
+import io.ktor.server.response.respondRedirect
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.IgnoreTrailingSlash
 import io.ktor.server.routing.Routing
@@ -53,21 +54,23 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.apache.commons.io.FileUtils
 import org.apache.ignite.Ignition
-import org.modelix.api.public.Problem
+import org.modelix.api.v1.Problem
 import org.modelix.authorization.KeycloakUtils
 import org.modelix.authorization.NoPermissionException
 import org.modelix.authorization.NotLoggedInException
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.InMemoryModels
-import org.modelix.model.server.handlers.ContentExplorer
 import org.modelix.model.server.handlers.DeprecatedLightModelServer
-import org.modelix.model.server.handlers.HistoryHandler
+import org.modelix.model.server.handlers.HealthApiImpl
 import org.modelix.model.server.handlers.HttpException
+import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
-import org.modelix.model.server.handlers.MetricsHandler
+import org.modelix.model.server.handlers.MetricsApiImpl
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
-import org.modelix.model.server.handlers.RepositoryOverview
+import org.modelix.model.server.handlers.ui.ContentExplorer
+import org.modelix.model.server.handlers.ui.HistoryHandler
+import org.modelix.model.server.handlers.ui.RepositoryOverview
 import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.IsolatingStore
@@ -159,14 +162,15 @@ object Main {
                 }
             }
             var i = 0
+            val globalStoreClient = storeClient.forGlobalRepository()
             while (i < cmdLineArgs.setValues.size) {
-                storeClient.forGlobalRepository().put(cmdLineArgs.setValues[i], cmdLineArgs.setValues[i + 1])
+                globalStoreClient.put(cmdLineArgs.setValues[i], cmdLineArgs.setValues[i + 1])
                 i += 2
             }
             val localModelClient = LocalModelClient(storeClient.forContextRepository())
             val inMemoryModels = InMemoryModels()
             val repositoriesManager = RepositoriesManager(localModelClient)
-            val modelServer = KeyValueLikeModelServer(repositoriesManager, storeClient.forGlobalRepository(), inMemoryModels)
+            val modelServer = KeyValueLikeModelServer(repositoriesManager, globalStoreClient, inMemoryModels)
             val sharedSecretFile = cmdLineArgs.secretFile
             if (sharedSecretFile.exists()) {
                 modelServer.setSharedSecret(
@@ -178,7 +182,7 @@ object Main {
             val historyHandler = HistoryHandler(localModelClient, repositoriesManager)
             val contentExplorer = ContentExplorer(localModelClient, repositoriesManager)
             val modelReplicationServer = ModelReplicationServer(repositoriesManager, localModelClient, inMemoryModels)
-            val metricsHandler = MetricsHandler()
+            val metricsApi = MetricsApiImpl()
 
             val configureNetty: NettyApplicationEngine.Configuration.() -> Unit = {
                 this.responseWriteTimeoutSeconds = cmdLineArgs.responseWriteTimeoutSeconds
@@ -216,8 +220,11 @@ object Main {
                 contentExplorer.init(this)
                 jsonModelServer.init(this)
                 modelReplicationServer.init(this)
-                metricsHandler.init(this)
+                metricsApi.init(this)
+                IdsApiImpl(repositoriesManager, localModelClient).init(this)
                 routing {
+                    HealthApiImpl(repositoriesManager, globalStoreClient, inMemoryModels).installRoutes(this)
+
                     staticResources("/public", "public")
                     get("/") {
                         call.respondHtmlTemplate(PageWithMenuBar("root", ".")) {
@@ -268,8 +275,15 @@ object Main {
                             call.respondText("SwaggerUI is disabled")
                         }
                     } else {
-                        // we serve the public API to the outside via swagger UI
-                        swaggerUI(path = "swagger", swaggerFile = ResourceUtils.getFile("api/model-server.yaml").invariantSeparatorsPath)
+                        // We serve the public API to the outside via swagger UI.
+                        // The ktor swagger plugin currently has no way to serve multiple specifications. Therefore, we
+                        // simply offer two versions of the UI for now.
+                        swaggerUI(path = "swagger/v2", swaggerFile = ResourceUtils.getFile("api/model-server-v2.yaml").invariantSeparatorsPath)
+                        swaggerUI(path = "swagger/v1", swaggerFile = ResourceUtils.getFile("api/model-server-v1.yaml").invariantSeparatorsPath)
+                        // by default, users should be using v2
+                        get("swagger") {
+                            call.respondRedirect("swagger/v2", false)
+                        }
                     }
                 }
             }
@@ -350,7 +364,7 @@ object Main {
         }
     }
 
-    private class DumpOutThread internal constructor(storeClient: IsolatingStore, dumpName: String) :
+    private class DumpOutThread(storeClient: IsolatingStore, dumpName: String) :
         Thread(
             Runnable {
                 try {

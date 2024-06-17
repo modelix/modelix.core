@@ -76,6 +76,7 @@ class MetaModelGradlePlugin @Inject constructor(val project: Project) : Plugin<P
                 settings.kotlinDir?.let { task.kotlinOutputDir.set(it) }
                 settings.modelqlKotlinDir?.let { task.modelqlKotlinOutputDir.set(it) }
                 settings.typescriptDir?.let { task.typescriptOutputDir.set(it) }
+                task.includeTypescriptBarrels.set(settings.includeTypescriptBarrels)
                 task.includedNamespaces.addAll(settings.includedLanguageNamespaces)
                 task.includedLanguages.addAll(settings.includedLanguages)
                 task.includedConcepts.addAll(settings.includedConcepts)

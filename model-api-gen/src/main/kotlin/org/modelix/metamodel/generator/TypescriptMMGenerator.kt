@@ -8,7 +8,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.writeText
 
-class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = NameConfig()) {
+class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = NameConfig(), private val includeTsBarrels: Boolean = false) {
 
     private fun LanguageData.packageDir(): Path {
         val packageName = name
@@ -33,7 +33,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                 .resolve(language.generatedClassName().simpleName + ".ts")
                 .fixFormatAndWriteText(generateLanguage(language))
 
-            generateRegistry(languages)
+            generateIndexTs(languages)
         }
     }
 
@@ -54,7 +54,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
 
     private fun Path.fixFormatAndWriteText(text: String) = writeText(fixFormat(text))
 
-    private fun generateRegistry(languages: ProcessedLanguageSet) {
+    private fun generateIndexTs(languages: ProcessedLanguageSet) {
         outputDir.resolve("index.ts").fixFormatAndWriteText(
             """
             import { LanguageRegistry } from "@modelix/ts-model-api";
@@ -68,6 +68,13 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
             """
             }}
             }
+            ${if (!includeTsBarrels) {
+                ""
+            } else {
+                languages.getLanguages().joinToString("\n") {
+                    """export * from "./${it.simpleClassName()}";"""
+                }
+            }}
             """,
         )
     }

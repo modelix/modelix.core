@@ -10,6 +10,7 @@ import kotlin.io.path.deleteRecursively
 import kotlin.io.path.readText
 import kotlin.test.Test
 import kotlin.test.assertContains
+import kotlin.test.assertFalse
 
 class KotlinGeneratorTest {
 
@@ -81,6 +82,50 @@ class KotlinGeneratorTest {
         // val outputDir = File(".").toPath().resolve("build").resolve("test-generator-output")
         val outputDir = File("build/test-generator-output").toPath()
         TypescriptMMGenerator(outputDir).generate(LanguageSet(listOf(language)).process())
+
+        val indexFileContents = outputDir.resolve("index.ts").readText()
+        assertFalse(indexFileContents.contains("export * from"), "Does not include barrels when not explicitly opted in.")
+    }
+
+    @Test
+    fun test_ts_with_barrels() {
+        val input = """
+            name: org.modelix.entities
+            concepts:
+            - name: Entity
+              properties:
+              - name: name
+              children:
+              - name: properties
+                type: Property
+                multiple: true
+                optional: true
+            - name: Property
+              children:
+              - name: type
+                type: Type
+                optional: false
+            - name: Type
+            - name: EntityType
+              extends:
+              - Type
+              references:
+              - name: entity
+                type: Entity
+                optional: false
+            enums: []
+        """.trimIndent()
+
+        val language = Yaml.default.decodeFromString<LanguageData>(input)
+        val outputDir = File("build/test-generator-output").toPath()
+        TypescriptMMGenerator(outputDir, NameConfig(), true).generate(LanguageSet(listOf(language)).process())
+
+        val indexFileContents = outputDir.resolve("index.ts").readText()
+        assertContains(
+            indexFileContents,
+            """export * from "./L_org_modelix_entities";""",
+            message = "Includes barrels when explicitly opted in.",
+        )
     }
 
     @OptIn(ExperimentalPathApi::class)

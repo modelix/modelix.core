@@ -181,3 +181,22 @@ interface IConcept {
 fun IConcept?.isSubConceptOf(superConcept: IConcept?) = this?.isSubConceptOf(superConcept) == true
 
 fun IConcept.conceptAlias() = getConceptProperty("alias")
+
+/**
+ * Checks if this is a sub-concept of the [IConcept] that is identified by the [superConceptReference]'s UID.
+ *
+ * @param superConceptReference a reference to the potential super-concept
+ * @return true if this concept (or any of its ancestors) has the same UID as the [superConceptReference]
+ */
+fun IConcept.isSubConceptOf(superConceptReference: IConceptReference): Boolean {
+    if (this.getUID() == superConceptReference.getUID()) {
+        return true
+    } else {
+        for (parent in getDirectSuperConcepts()) {
+            if (parent.isSubConceptOf(superConceptReference)) {
+                return true
+            }
+        }
+    }
+    return false
+}

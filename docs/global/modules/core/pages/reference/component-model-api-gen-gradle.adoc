@@ -101,6 +101,11 @@ Inside of the `metamodel` block the following settings can be configured.
 |File
 |Target TypeScript directory of the generator
 
+|`includeTypescriptBarrels`
+|Boolean
+|Add barrelling to the generated index file for convenience.
+Only enable when you are completely sure there are no naming conflicts among the concepts of all generated languages.
+
 |`registrationHelperName`
 |String
 |Fully qualified name of the generated language registration helper

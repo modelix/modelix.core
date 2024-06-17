@@ -29,6 +29,7 @@ open class MetaModelGradleSettings {
             field = value
         }
     var typescriptDir: File? = null
+    var includeTypescriptBarrels: Boolean = false
     var registrationHelperName: String? = null
     var conceptPropertiesInterfaceName: String? = null
     val taskDependencies: MutableList<Any> = ArrayList()

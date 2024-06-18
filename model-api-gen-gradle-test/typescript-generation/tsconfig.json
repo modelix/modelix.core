@@ -34,5 +34,5 @@
     "target": "ES2020"
   },
   "include": ["build/typescript_src/**/*.ts"],
-  "exclude": ["dist"]
+  "exclude": ["dist", "src/**/*.test.ts"]
 }

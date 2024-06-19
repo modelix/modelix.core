@@ -20,11 +20,17 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.tasks.TaskProvider
+import org.modelix.buildtools.runner.BundledPluginPath
+import org.modelix.buildtools.runner.ExternalPluginPath
 import org.modelix.buildtools.runner.MPSRunnerConfig
+import org.modelix.buildtools.runner.PluginConfig
 import org.modelix.gradle.mpsbuild.MPSBuildPlugin
+import org.modelix.model.sync.bulk.gradle.config.BundledPluginSpec
+import org.modelix.model.sync.bulk.gradle.config.ExternalPluginSpec
 import org.modelix.model.sync.bulk.gradle.config.LocalSource
 import org.modelix.model.sync.bulk.gradle.config.LocalTarget
 import org.modelix.model.sync.bulk.gradle.config.ModelSyncGradleSettings
+import org.modelix.model.sync.bulk.gradle.config.PluginSpec
 import org.modelix.model.sync.bulk.gradle.config.ServerSource
 import org.modelix.model.sync.bulk.gradle.config.ServerTarget
 import org.modelix.model.sync.bulk.gradle.config.SyncDirection
@@ -151,6 +157,7 @@ class ModelSyncGradlePlugin : Plugin<Project> {
             mpsHome = localSource.mpsHome,
             workDir = jsonDir,
             additionalModuleDirs = localSource.mpsLibraries.toList() + listOfNotNull(localSource.repositoryDir),
+            plugins = createPluginConfig(localSource.mpsPlugins),
             jvmArgs = listOfNotNull(
                 "-Dmodelix.mps.model.sync.bulk.output.path=${jsonDir.absolutePath}",
                 "-Dmodelix.mps.model.sync.bulk.output.modules=${syncDirection.includedModules.joinToString(",")}",
@@ -212,6 +219,7 @@ class ModelSyncGradlePlugin : Plugin<Project> {
             mpsHome = localTarget.mpsHome,
             workDir = jsonDir,
             additionalModuleDirs = localTarget.mpsLibraries.toList() + listOfNotNull(localTarget.repositoryDir),
+            plugins = createPluginConfig(localTarget.mpsPlugins),
             jvmArgs = listOfNotNull(
                 "-Dmodelix.mps.model.sync.bulk.input.path=${jsonDir.absolutePath}",
                 "-Dmodelix.mps.model.sync.bulk.input.modules=${syncDirection.includedModules.joinToString(",")}",
@@ -235,6 +243,16 @@ class ModelSyncGradlePlugin : Plugin<Project> {
         project.tasks.register("runSync${syncDirection.name.replaceFirstChar { it.uppercaseChar() }}") {
             it.dependsOn(importIntoMps)
             it.group = "modelix"
+        }
+    }
+
+    private fun createPluginConfig(mpsPlugins: Set<PluginSpec>): List<PluginConfig> {
+        return mpsPlugins.map {
+            val pluginPath = when (it) {
+                is BundledPluginSpec -> BundledPluginPath(it.folder)
+                is ExternalPluginSpec -> ExternalPluginPath(it.folder)
+            }
+            PluginConfig(it.id, pluginPath)
         }
     }
 

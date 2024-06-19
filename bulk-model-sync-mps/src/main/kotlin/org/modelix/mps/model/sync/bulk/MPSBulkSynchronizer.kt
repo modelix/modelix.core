@@ -16,12 +16,14 @@
 
 package org.modelix.mps.model.sync.bulk
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.ProjectManager
+import jetbrains.mps.ide.ThreadUtils
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.smodel.SNodeUtil
+import jetbrains.mps.smodel.StaticReference
 import jetbrains.mps.smodel.adapter.ids.MetaIdHelper
 import jetbrains.mps.smodel.adapter.ids.SConceptId
+import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import jetbrains.mps.smodel.adapter.structure.concept.SConceptAdapterById
 import jetbrains.mps.smodel.language.ConceptRegistry
 import jetbrains.mps.smodel.language.StructureRegistry
@@ -33,6 +35,7 @@ import kotlinx.serialization.json.decodeFromStream
 import org.jetbrains.mps.openapi.model.EditableSModel
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SRepository
+import org.modelix.model.api.INode
 import org.modelix.model.data.ModelData
 import org.modelix.model.mpsadapters.MPSModuleAsNode
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
@@ -42,6 +45,32 @@ import org.modelix.model.sync.bulk.ModelImporter
 import org.modelix.model.sync.bulk.isModuleIncluded
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
+
+/**
+ * Identifier of the `name` property in the `INamedConcept` concept.
+ * See https://github.com/JetBrains/MPS/blob/5bb20b8a104c08206490e0f3fad70304fa0e0151/core/kernel/kernelSolution/source_gen/jetbrains/mps/util/SNodeOperations.java#L355
+ */
+@Suppress("MagicNumber")
+private val namePropertyOfINamedConceptConcept = MetaAdapterFactory.getProperty(
+    -0x3154ae6ada15b0deL,
+    -0x646defc46a3573f4L,
+    0x110396eaaa4L,
+    0x110396ec041L,
+    "name",
+)
+
+/**
+ * Identifier of the `resolveInfo` property in the `IResolveInfoConcept` concept.
+ * See https://github.com/JetBrains/MPS/blob/5bb20b8a104c08206490e0f3fad70304fa0e0151/core/kernel/kernelSolution/source_gen/jetbrains/mps/util/SNodeOperations.java#L355
+ */
+@Suppress("MagicNumber")
+private val resolveInfoPropertyOfIResolveInfoConcept = MetaAdapterFactory.getProperty(
+    -0x3154ae6ada15b0deL,
+    -0x646defc46a3573f4L,
+    0x116b17c6e46L,
+    0x116b17cd415L,
+    "resolveInfo",
+)
 
 object MPSBulkSynchronizer {
 
@@ -94,44 +123,64 @@ object MPSBulkSynchronizer {
         if (jsonFiles.isNullOrEmpty()) error("no json files found for included modules")
 
         println("Found ${jsonFiles.size} modules to be imported")
-        val access = repository.modelAccess
-        access.executeCommandInEDT {
+        val getModulesToImport = {
             val allModules = repository.modules
             val includedModules: Iterable<SModule> = allModules.filter {
                 isModuleIncluded(it.moduleName!!, includedModuleNames, includedModulePrefixes)
             }
             val numIncludedModules = includedModules.count()
-            val repoAsNode = MPSRepositoryAsNode(repository)
-            println("Importing modules...")
-            try {
-                println("Importing modules...")
-                // `modulesToImport` lazily produces modules to import
-                // so that loaded model data can be garbage collected.
-                val modulesToImport = includedModules.asSequence().flatMapIndexed { index, module ->
-                    println("Importing module ${index + 1} of $numIncludedModules: '${module.moduleName}'")
-                    val fileName = inputPath + File.separator + module.moduleName + ".json"
-                    val moduleFile = File(fileName)
-                    if (moduleFile.exists()) {
-                        val expectedData: ModelData = moduleFile.inputStream().use(Json::decodeFromStream)
-                        sequenceOf(ExistingAndExpectedNode(MPSModuleAsNode(module), expectedData))
-                    } else {
-                        println("Skip importing ${module.moduleName}} because $fileName does not exist.")
-                        sequenceOf()
-                    }
+            val modulesToImport = includedModules.asSequence().flatMapIndexed { index, module ->
+                println("Importing module ${index + 1} of $numIncludedModules: '${module.moduleName}'")
+                val fileName = inputPath + File.separator + module.moduleName + ".json"
+                val moduleFile = File(fileName)
+                if (moduleFile.exists()) {
+                    val expectedData: ModelData = moduleFile.inputStream().use(Json::decodeFromStream)
+                    sequenceOf(ExistingAndExpectedNode(MPSModuleAsNode(module), expectedData))
+                } else {
+                    println("Skip importing ${module.moduleName}} because $fileName does not exist.")
+                    sequenceOf()
                 }
-                ModelImporter(repoAsNode, continueOnError).importIntoNodes(modulesToImport)
-                println("Import finished.")
-            } catch (ex: Exception) {
-                // Exceptions are only visible in the MPS log file by default
-                ex.printStackTrace()
             }
-            println("Import finished.")
+            modulesToImport
+        }
+        importModelsIntoRepository(repository, MPSRepositoryAsNode(repository), continueOnError, getModulesToImport)
+    }
+
+    /**
+     * Import specified models into the repository.
+     * [getModulesToImport] is a lambda to be executed with read access in MPS.
+     */
+    @JvmStatic
+    fun importModelsIntoRepository(
+        repository: SRepository,
+        rootOfImport: INode,
+        continueOnError: Boolean,
+        getModulesToImport: () -> Sequence<ExistingAndExpectedNode>,
+    ) {
+        val access = repository.modelAccess
+        ThreadUtils.runInUIThreadAndWait {
+            access.executeCommand {
+                println("Importing modules...")
+                try {
+                    println("Importing modules...")
+                    // `modulesToImport` lazily produces modules to import
+                    // so that loaded model data can be garbage collected.
+                    val modulesToImport = getModulesToImport()
+                    ModelImporter(rootOfImport, continueOnError).importIntoNodes(modulesToImport)
+                    println("Import finished.")
+                } catch (ex: Exception) {
+                    // Exceptions are only visible in the MPS log file by default
+                    ex.printStackTrace()
+                }
+                println("Import finished.")
+            }
         }
 
-        ApplicationManager.getApplication().invokeAndWait {
+        ThreadUtils.runInUIThreadAndWait {
             println("Persisting changes...")
-            access.executeCommandInEDT {
+            access.executeCommand {
                 enableWorkaroundForFilePerRootPersistence(repository)
+                updateUnsetResolveInfo(repository)
                 repository.saveAll()
             }
             println("Changes persisted.")
@@ -139,11 +188,53 @@ object MPSBulkSynchronizer {
     }
 
     /**
+     * Workaround for MPS not being able to set the `resolveInfo` property on a reference.
+     * This is the case when the concept of the target node cannot be loaded/is not valid.
+     * Without this workaround, the `resolve` attribute in serialized references
+     * (e.g. <ref role="3SLt5I" node="3vHUMVfa0RY" resolve="referencedNodeA" />)
+     * will not be set, updated or even removed.
+     *
+     * The `resolve` is for example removed when the node that contains the reference is moved.
+     *
+     * The workaround follows the logic of MPS but without relying on the concept being loaded/valid.
+     * Without this workaround a bulk sync can remove the `resolve` info unintentionally
+     * and produce unwanted file changes.
+     */
+    private fun updateUnsetResolveInfo(repository: SRepository) {
+        val changedModels = repository.modules.asSequence()
+            .flatMap { it.models }
+            .mapNotNull { it as? EditableSModel }
+            .filter { it.isChanged }
+        val references = changedModels
+            .flatMap { org.jetbrains.mps.openapi.model.SNodeUtil.getDescendants(it) }
+            .flatMap { it.references }
+            .mapNotNull { it as? StaticReference }
+
+        references.forEach { reference ->
+            val target = reference.targetNode ?: return@forEach
+            // A concept is not valid, for example, when the language could not be loaded.
+            if (target.concept.isValid) {
+                return@forEach
+            }
+            // Try guessing the resolve info following the logic of MPS.
+            // Use the logic like in MPS but without relying on the concept being loaded.
+            // https://github.com/JetBrains/MPS/blob/5bb20b8a104c08206490e0f3fad70304fa0e0151/core/kernel/kernelSolution/source_gen/jetbrains/mps/util/SNodeOperations.java#L230
+            val newResolveInfo = target.getProperty(resolveInfoPropertyOfIResolveInfoConcept)
+                ?: target.getProperty(namePropertyOfINamedConceptConcept)
+            if (newResolveInfo != reference.resolveInfo) {
+                // This workaround works with different persistence because it sets the `resolveInfo`
+                // using `jetbrains.mps.smodel.SReference` which is not specific to any persistence.
+                reference.resolveInfo = newResolveInfo
+            }
+        }
+    }
+
+    /**
      * Workaround for MPS not being able to read the name property of the node during the save process
      * in case FilePerRootPersistence is used.
-     * This is because the concept is not properly loaded and in the MPS code it checks if the concept is a subconcept
-     * of INamedConcept.
-     * Without this workaround the id of the root node will be used instead of the name, resulting in renamed files.
+     * This is because the concept is not properly loaded,
+     * and in the MPS code it checks if the concept is a subconcept of INamedConcept.
+     * Without this workaround, the id of the root node will be used instead of the name, resulting in renamed files.
      */
     @JvmStatic
     private fun enableWorkaroundForFilePerRootPersistence(repository: SRepository) {

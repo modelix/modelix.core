@@ -30,8 +30,10 @@ plugins {
 
 dependencies {
     testImplementation(project(":bulk-model-sync-lib"))
+    testImplementation(project(":bulk-model-sync-mps"))
     testImplementation(project(":mps-model-adapters"))
     testImplementation(libs.kotlin.serialization.json)
+    testImplementation(libs.xmlunit.matchers)
 }
 
 intellij {

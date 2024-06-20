@@ -58,6 +58,7 @@ import org.modelix.authorization.ModelixAuthorization
 import org.modelix.authorization.NoPermissionException
 import org.modelix.authorization.NotLoggedInException
 import org.modelix.authorization.permissions.modelServerSchema
+import org.modelix.authorization.requiresPermission
 import org.modelix.model.InMemoryModels
 import org.modelix.model.server.handlers.ContentExplorer
 import org.modelix.model.server.handlers.HistoryHandler

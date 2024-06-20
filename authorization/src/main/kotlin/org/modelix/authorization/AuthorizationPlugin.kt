@@ -33,6 +33,7 @@ import io.ktor.server.auth.jwt.jwt
 import io.ktor.server.auth.principal
 import io.ktor.server.html.respondHtml
 import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
+import io.ktor.server.request.uri
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
@@ -65,7 +66,7 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
         application.install(XForwardedHeaders)
         application.install(Authentication) {
             if (config.shouldGenerateFakeTokens()) {
-                register(object : AuthenticationProvider(object : Config(jwtAuth) {}) {
+                register(object : AuthenticationProvider(object : Config(modelixJwtAuth) {}) {
                     override suspend fun onAuthenticate(context: AuthenticationContext) {
                         val token = JWT.create()
                             .withIssuer("modelix")
@@ -77,7 +78,7 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                 })
             } else {
                 // "Authorization: Bearer ..." header is provided in the header by OAuth proxy
-                jwt(jwtAuth) {
+                jwt(modelixJwtAuth) {
                     val jwkProvider = config.getJwkProvider()
                     if (jwkProvider != null) {
                         verifier(jwkProvider) {
@@ -106,9 +107,16 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                 }
             }
         }
+
+        application.routing {
+            intercept(ApplicationCallPipeline.Plugins) {
+                throw NoPermissionException("Route doesn't specify which permissions are required: " + call.request.uri)
+            }
+        }
+
         if (config.debugEndpointsEnabled) {
             application.routing {
-                authenticate(jwtAuth) {
+                authenticate(modelixJwtAuth) {
                     (installedIntoRoute ?: this).apply {
                         get("/user") {
                             val jwt = call.principal<AccessTokenPrincipal>()?.jwt ?: call.jwtFromHeaders()

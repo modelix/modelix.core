@@ -48,7 +48,9 @@ import org.modelix.api.public.Paths
 import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.hasPermission
+import org.modelix.authorization.permissions.PermissionParts
 import org.modelix.authorization.requiresLogin
+import org.modelix.authorization.requiresPermission
 import org.modelix.model.InMemoryModels
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
@@ -107,6 +109,8 @@ class ModelReplicationServer(
     private suspend fun <R> PipelineContext<Unit, ApplicationCall>.runWithRepository(body: suspend () -> R): R {
         return repositoriesManager.runWithRepository(repositoryId(), body)
     }
+    fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameter("branch"))
+    fun PipelineContext<Unit, ApplicationCall>.branchRef() = call.branchRef()
 
     private fun Route.installHandlers() {
         post<Paths.postGenerateClientId> {
@@ -143,19 +147,16 @@ class ModelReplicationServer(
             )
         }
 
-        get<Paths.getRepositoryBranch> {
-            fun ApplicationCall.branchRef() = repositoryId().getBranchReference(parameter("branch"))
-            fun PipelineContext<Unit, ApplicationCall>.branchRef() = call.branchRef()
+        requiresPermission({ PermissionParts("repository", branchRef().repositoryId.id, "branch", branchRef().branchName, "pull") }) {
+            get<Paths.getRepositoryBranch> {
+                val baseVersionHash = it.lastKnown
+                val branch = branchRef()
 
-            val baseVersionHash = call.request.queryParameters["lastKnown"]
-            val branch = branchRef()
-
-            checkPermission("repository", branch.repositoryId.id, "branch", branch.branchName, "pull")
-
-            runWithRepository {
-                val versionHash = repositoriesManager.getVersionHash(branch)
-                    ?: throw BranchNotFoundException(branch)
-                call.respondDelta(versionHash, baseVersionHash)
+                runWithRepository {
+                    val versionHash = repositoriesManager.getVersionHash(branch)
+                        ?: throw BranchNotFoundException(branch)
+                    call.respondDelta(versionHash, baseVersionHash)
+                }
             }
         }
 

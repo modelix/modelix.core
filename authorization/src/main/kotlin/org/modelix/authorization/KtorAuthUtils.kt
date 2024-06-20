@@ -36,7 +36,7 @@ import org.modelix.authorization.permissions.PermissionParts
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-internal const val jwtAuth = "jwtAuth"
+internal const val modelixJwtAuth = "modelixJwtAuth"
 
 @Deprecated("Install the ModelixAuthorization plugin", replaceWith = ReplaceWith("install(ModelixAuthorization) { if (unitTestMode) configureForUnitTests() }"))
 fun Application.installAuthentication(unitTestMode: Boolean = false) {
@@ -62,7 +62,7 @@ fun Route.requiresDelete(resource: KeycloakResource, body: Route.() -> Unit) {
 }
 
 fun Route.requiresPermission(resource: KeycloakResource, scope: KeycloakScope, body: Route.() -> Unit) {
-    authenticate(jwtAuth) {
+    authenticate(modelixJwtAuth) {
         intercept(ApplicationCallPipeline.Call) {
             call.checkPermission(resource, scope)
         }
@@ -70,8 +70,32 @@ fun Route.requiresPermission(resource: KeycloakResource, scope: KeycloakScope, b
     }
 }
 
+fun Route.requiresPermission(permissionProvider: PipelineContext<Unit, ApplicationCall>.() -> PermissionParts, body: Route.() -> Unit) {
+    authenticate(modelixJwtAuth) {
+        intercept(ApplicationCallPipeline.Call) {
+            PermissionProviders.addProvider(call, object : IPermissionProvider {
+                override fun getRequiredPermissions(): List<PermissionParts> {
+                    return listOf(permissionProvider())
+                }
+            })
+            PermissionProviders.checkPermissions(call)
+        }
+        body()
+    }
+}
+
+fun Route.requiresPermission(permission: PermissionParts, body: Route.() -> Unit) {
+    authenticate(modelixJwtAuth) {
+        intercept(ApplicationCallPipeline.Call) {
+            PermissionProviders.addProvider(call, StaticPermissionProvider(permission))
+            call.checkPermission(permission)
+        }
+        body()
+    }
+}
+
 fun Route.requiresLogin(body: Route.() -> Unit) {
-    authenticate(jwtAuth) {
+    authenticate(modelixJwtAuth) {
         body()
     }
 }

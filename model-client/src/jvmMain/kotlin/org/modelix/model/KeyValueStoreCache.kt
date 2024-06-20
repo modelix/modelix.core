@@ -61,6 +61,10 @@ class KeyValueStoreCache(private val store: IKeyValueStore) : IKeyValueStoreWrap
         return getAll(setOf(key))[key]
     }
 
+    override fun getIfCached(key: String): String? {
+        return cache[key] ?: store.getIfCached(key)
+    }
+
     override fun getAll(keys: Iterable<String>): Map<String, String?> {
         val remainingKeys = toStream(keys).collect(Collectors.toList())
         val result: MutableMap<String, String?> = LinkedHashMap(16, 0.75.toFloat(), false)

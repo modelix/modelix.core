@@ -90,7 +90,7 @@ class CPHamtLeaf(
                     visitor.entryRemoved(k, v)
                 }
             }
-            oldNode!!.visitEntries(bulkQuery, bp).onSuccess {
+            oldNode!!.visitEntries(bulkQuery, bp).onReceive {
                 val oldValue = oldValue
                 if (oldValue == null) {
                     visitor.entryAdded(key, value)

@@ -22,6 +22,7 @@ import org.modelix.model.api.ITree
  * This guarantees that after a prefetch there are no more request required.
  * Not thread safe.
  */
+@Deprecated("BulkQuery is now responsible for prefetching")
 class PrefetchCache(private val store: IDeserializingKeyValueStore) : IDeserializingKeyValueStore {
     init {
         if (store is ContextIndirectCache) throw IllegalArgumentException()
@@ -33,13 +34,21 @@ class PrefetchCache(private val store: IDeserializingKeyValueStore) : IDeseriali
     override val keyValueStore: IKeyValueStore = store.keyValueStore
 
     override fun <T> get(hash: String, deserializer: (String) -> T): T? {
+        return get(hash, deserializer, false, false)
+    }
+
+    private fun <T> get(hash: String, deserializer: (String) -> T, ifCached: Boolean, isPrefetch: Boolean): T? {
         return if (entries.containsKey(hash)) {
             entries[hash] as T?
         } else {
-            val value = store.get(hash, deserializer)
+            val value = if (ifCached) store.getIfCached(hash, deserializer, isPrefetch) else store.get(hash, deserializer)
             entries[hash] = value
             value
         }
+    }
+
+    override fun <T> getIfCached(hash: String, deserializer: (String) -> T, isPrefetch: Boolean): T? {
+        return get(hash, deserializer, true, isPrefetch)
     }
 
     override fun <T> getAll(hashes: Iterable<String>, deserializer: (String, String) -> T): Iterable<T> {

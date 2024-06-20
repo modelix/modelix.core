@@ -349,7 +349,7 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
                     override fun visitChangesOnly(): Boolean = false
                     override fun entryAdded(key: Long, value: KVEntryReference<CPNode>) {
                         changedNodeIds += key
-                        if (value != null) bulkQuery.get(value)
+                        if (value != null) bulkQuery.query(value)
                     }
 
                     override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>) {
@@ -362,14 +362,14 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
                         newValue: KVEntryReference<CPNode>,
                     ) {
                         changedNodeIds += key
-                        if (newValue != null) bulkQuery.get(newValue)
+                        if (newValue != null) bulkQuery.query(newValue)
                     }
                 },
                 bulkQuery,
             )
             v1 = v2
         }
-        (bulkQuery as? BulkQuery)?.process()
+        bulkQuery.executeQuery()
     }
     val oldEntries: Map<String, String?> = trackAccessedEntries(keyValueStore) { store ->
         if (baseVersionHash == null) return@trackAccessedEntries
@@ -386,12 +386,12 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
 
         val nodesMap = oldTree.nodesMap!!
         changedNodeIds.forEach { changedNodeId ->
-            nodesMap.get(changedNodeId, 0, bulkQuery).onSuccess { nodeRef: KVEntryReference<CPNode>? ->
-                if (nodeRef != null) bulkQuery.get(nodeRef)
+            nodesMap.get(changedNodeId, 0, bulkQuery).onReceive { nodeRef: KVEntryReference<CPNode>? ->
+                if (nodeRef != null) bulkQuery.query(nodeRef)
             }
         }
 
-        (bulkQuery as? BulkQuery)?.process()
+        bulkQuery.executeQuery()
     }
     return oldAndNewEntries - oldEntries.keys
 }
@@ -406,13 +406,21 @@ private fun trackAccessedEntries(store: IKeyValueStore, body: (IDeserializingKey
 private class AccessTrackingStore(val store: IKeyValueStore) : IKeyValueStore {
     val accessedEntries: MutableMap<String, String?> = LinkedHashMap()
 
-    override fun newBulkQuery(deserializingCache: IDeserializingKeyValueStore): IBulkQuery {
-        return store.newBulkQuery(deserializingCache)
+    override fun newBulkQuery(deserializingCache: IDeserializingKeyValueStore, config: BulkQueryConfiguration): IBulkQuery {
+        return store.newBulkQuery(deserializingCache, config)
     }
 
     override fun get(key: String): String? {
         val value = store.get(key)
         accessedEntries.put(key, value)
+        return value
+    }
+
+    override fun getIfCached(key: String): String? {
+        val value = store.getIfCached(key)
+        if (value != null) {
+            accessedEntries[key] = value
+        }
         return value
     }
 

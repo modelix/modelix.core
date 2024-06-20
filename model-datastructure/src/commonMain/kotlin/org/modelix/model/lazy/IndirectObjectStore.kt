@@ -26,6 +26,10 @@ abstract class IndirectObjectStore : IDeserializingKeyValueStore {
         return getStore().get(hash, deserializer)
     }
 
+    override fun <T> getIfCached(hash: String, deserializer: (String) -> T, isPrefetch: Boolean): T? {
+        return getStore().getIfCached(hash, deserializer, isPrefetch)
+    }
+
     override fun <T> getAll(hash: Iterable<String>, deserializer: (String, String) -> T): Iterable<T> {
         return getStore().getAll(hash, deserializer)
     }

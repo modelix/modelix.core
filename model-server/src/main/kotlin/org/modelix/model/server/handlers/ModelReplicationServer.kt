@@ -25,6 +25,7 @@ import io.ktor.server.request.receiveStream
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytesWriter
 import io.ktor.server.response.respondText
+import io.ktor.server.response.respondTextWriter
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.util.cio.use
@@ -53,6 +54,7 @@ import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
+import org.modelix.model.server.api.v2.ImmutableObjectsStream
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.api.v2.VersionDeltaStream
 import org.modelix.model.server.api.v2.VersionDeltaStreamV2
@@ -197,6 +199,20 @@ class ModelReplicationServer(
             val branchRef = repositoryId(repository).getBranchReference(branch)
             val newVersionHash = repositoriesManager.pollVersionHash(branchRef, lastKnown)
             call.respondDelta(newVersionHash, lastKnown)
+        }
+    }
+
+    override suspend fun PipelineContext<Unit, ApplicationCall>.postRepositoryObjectsGetAll(repository: String) {
+        runWithRepository(repository) {
+            val keys = call.receiveStream().bufferedReader().use { reader ->
+                reader.lineSequence().toHashSet()
+            }
+            val objects = withContext(Dispatchers.IO) { modelClient.store.getAll(keys) }.checkValuesNotNull {
+                "Object not found: $it"
+            }
+            call.respondTextWriter(contentType = ImmutableObjectsStream.CONTENT_TYPE) {
+                ImmutableObjectsStream.encode(this, objects)
+            }
         }
     }
 
@@ -415,3 +431,10 @@ private fun Flow<String>.withSeparator(separator: String) = flow {
         emit(it)
     }
 }
+
+@Suppress("UNCHECKED_CAST")
+private fun <K, V> Map<K, V?>.checkValuesNotNull(lazyMessage: (K) -> Any): Map<K, V> = apply {
+    for (entry in this) {
+        checkNotNull(entry.value) { lazyMessage(entry.key) }
+    }
+} as Map<K, V>

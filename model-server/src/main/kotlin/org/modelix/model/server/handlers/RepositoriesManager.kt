@@ -372,7 +372,7 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
                 fun emitObjects(entry: KVEntryReference<*>) {
                     if (seenHashes.contains(entry.getHash())) return
                     seenHashes.add(entry.getHash())
-                    bulkQuery.get(entry).onSuccess {
+                    bulkQuery.query(entry).onReceive {
                         val value = checkNotNull(it) { "No value received for ${entry.getHash()}" }
                         // Use `send` instead of `trySend`,
                         // because `trySend` fails if the channel capacity is full.
@@ -391,7 +391,7 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
                 }
                 emitObjects(KVEntryReference(versionHash, CPVersion.DESERIALIZER))
                 LOG.debug("Starting to bulk query all objects.")
-                bulkQuery.process()
+                bulkQuery.executeQuery()
             }
         }
         val checkedHashObjectFlow = hashObjectFlow.checkObjectHashes()

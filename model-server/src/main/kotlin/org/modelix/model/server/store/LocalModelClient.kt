@@ -33,6 +33,10 @@ class LocalModelClient(val store: IStoreClient) : IModelClient {
         return store[key]
     }
 
+    override fun getIfCached(key: String): String? {
+        return null
+    }
+
     override fun put(key: String, value: String?) {
         store.put(key, value)
     }

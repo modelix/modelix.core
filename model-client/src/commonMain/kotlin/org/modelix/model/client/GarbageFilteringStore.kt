@@ -29,6 +29,10 @@ class GarbageFilteringStore(private val store: IKeyValueStore) : IKeyValueStoreW
         return if (pendingEntries.containsKey(key)) pendingEntries[key] else store[key]
     }
 
+    override fun getIfCached(key: String): String? {
+        return if (pendingEntries.containsKey(key)) pendingEntries[key] else store.getIfCached(key)
+    }
+
     override fun getPendingSize(): Int = store.getPendingSize() + pendingEntries.size
 
     override fun getWrapped(): IKeyValueStore = store

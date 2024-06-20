@@ -8,6 +8,8 @@ export interface INodeJS {
   getRoleInParent(): string | undefined
   getParent(): INodeJS | undefined
 
+  remove(): void
+
   getChildren(role: string | undefined): Array<INodeJS>
   getAllChildren(): Array<INodeJS>
   moveChild(role: string | undefined, index: number, child: INodeJS): void

@@ -144,3 +144,18 @@ test("change to all children is reactive", () => {
     "child3",
   ]);
 });
+
+test("removing a node is reactive", () => {
+  const rootNode = useRootNode();
+  const childCount = rootNode.getChildren("children1").length;
+  const node = rootNode.getChildren("children1")[0];
+
+  // We use `computed` to test the reactivity with Vue.
+  // Accessing the property directly would circumvent Vue
+  // and make this test useless.
+  const computedProperty = computed(() => rootNode.getChildren("children1"));
+  expect(computedProperty.value).toHaveLength(childCount);
+
+  node.remove();
+  expect(computedProperty.value).toHaveLength(childCount - 1);
+});

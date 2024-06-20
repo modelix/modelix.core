@@ -47,7 +47,7 @@ export class SingleChildAccessor<ChildT extends ITypedNode> extends ChildrenAcce
   public setNew(): ChildT {
     const existing = this.get();
     if (existing !== undefined) {
-      this.parentNode.removeChild(existing.unwrap())
+      existing.remove();
     }
     return this.wrapChild(this.parentNode.addNewChild(this.role, 0, undefined))
   }

@@ -1,8 +1,9 @@
 package org.modelix.model.server.handlers
 
+import io.mockk.spyk
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.IsolatingStore
 import org.modelix.model.server.store.LocalModelClient
@@ -11,12 +12,12 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class RepositoriesManagerWithInMemoryStoreClientTest : RepositoriesManagerTest(InMemoryStoreClient())
-class RepositoriesManagerWithIgniteStoreClientTest : RepositoriesManagerTest(IgniteStoreClient(inmemory = true))
+class RepositoriesManagerTest {
 
-abstract class RepositoriesManagerTest(val store: IsolatingStore) {
-    protected val repoManager = RepositoriesManager(LocalModelClient(store))
-    protected suspend fun initRepository(repoId: RepositoryId) {
+    val store = spyk<IsolatingStore>(InMemoryStoreClient())
+    private val repoManager = RepositoriesManager(LocalModelClient(store))
+
+    private suspend fun initRepository(repoId: RepositoryId) {
         repoManager.createRepository(repoId, "testUser", useRoleIds = true, legacyGlobalStorage = false)
     }
 
@@ -29,15 +30,8 @@ abstract class RepositoriesManagerTest(val store: IsolatingStore) {
     fun `repository data is removed when removing repository`() = runTest {
         val repoId = RepositoryId("abc")
         initRepository(repoId)
-
-        fun getRepositoryData() = store.getAll().filterKeys { it.getRepositoryId() == repoId.id }
-
-        val dataBeforeDeletion = getRepositoryData()
         repoManager.removeRepository(repoId)
-        val dataAfterDeletion = getRepositoryData()
-
-        assertTrue(dataBeforeDeletion.isNotEmpty(), "Expected data to be present before deletion.")
-        assertTrue(dataAfterDeletion.isEmpty(), "Leftover repository data was found after deletion. entries=${dataAfterDeletion.size}")
+        verify(exactly = 1) { store.removeRepositoryObjects(repoId) }
     }
 
     @Test

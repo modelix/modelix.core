@@ -6,7 +6,6 @@ plugins {
 dependencies {
     testImplementation(kotlin("test"))
     testImplementation(project(":model-server"))
-    testImplementation(project(":model-server").dependencyProject.sourceSets.test.get().runtimeClasspath)
 }
 
 tasks.test {

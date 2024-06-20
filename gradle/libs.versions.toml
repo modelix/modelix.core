@@ -106,6 +106,7 @@ cucumber-java = { group = "io.cucumber", name = "cucumber-java", version = "7.18
 junit = { group = "junit", name = "junit", version = "4.13.2" }
 xmlunit-core = { group = "org.xmlunit", name = "xmlunit-core", version = "2.10.0"}
 jsoup = { group = "org.jsoup", name = "jsoup", version = "1.17.2" }
+mockk = { group = "io.mockk", name = "mockk", version = "1.13.11"}
 
 apache-cxf-sse = { group = "org.apache.cxf", name = "cxf-rt-rs-sse", version.ref = "apacheCxf" }
 apache-cxf-client = { group = "org.apache.cxf", name = "cxf-rt-rs-client", version.ref = "apacheCxf" }

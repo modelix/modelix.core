@@ -44,11 +44,11 @@ export class SingleChildAccessor<ChildT extends ITypedNode> extends ChildrenAcce
     return children.length === 0 ? undefined : children[0]
   }
 
-  public setNew(): ChildT {
+  public setNew(subconcept?: IConceptJS | undefined): ChildT {
     const existing = this.get();
     if (existing !== undefined) {
       existing.remove();
     }
-    return this.wrapChild(this.parentNode.addNewChild(this.role, 0, undefined))
+    return this.wrapChild(this.parentNode.addNewChild(this.role, 0, subconcept))
   }
 }

@@ -2,7 +2,7 @@ import { org } from "@modelix/model-client";
 import { INodeJS } from "@modelix/ts-model-api";
 import { watchEffect } from "vue";
 import { useModelClient } from "./useModelClient";
-import { useRootNode } from "./useRootNode";
+import { useReplicatedModel } from "./useReplicatedModel";
 
 type BranchJS = org.modelix.model.client2.BranchJS;
 type ReplicatedModelJS = org.modelix.model.client2.ReplicatedModelJS;
@@ -53,11 +53,13 @@ test("test branch connects", (done) => {
   const { client } = useModelClient("anURL", () =>
     Promise.resolve(new SuccessfulClientJS() as unknown as ClientJS),
   );
-
-  const { rootNode } = useRootNode(client, "aRepository", "aBranch");
-
+  const { rootNode, replicatedModel } = useReplicatedModel(
+    client,
+    "aRepository",
+    "aBranch",
+  );
   watchEffect(() => {
-    if (rootNode.value !== null) {
+    if (rootNode.value !== null && replicatedModel.value !== null) {
       expect(rootNode.value.getPropertyValue("branchId")).toBe("aBranch");
       done();
     }
@@ -78,7 +80,7 @@ test("test branch connection error is exposed", (done) => {
     Promise.resolve(new FailingClientJS() as unknown as ClientJS),
   );
 
-  const { error } = useRootNode(client, "aRepository", "aBranch");
+  const { error } = useReplicatedModel(client, "aRepository", "aBranch");
 
   watchEffect(() => {
     if (error.value !== null) {

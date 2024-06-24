@@ -30,7 +30,7 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
       - name: Set up Gradle
-        uses: gradle/gradle-build-action@v3
+        uses: gradle/actions/setup-gradle@v3
 
       - name: Configure the project version
         id: version

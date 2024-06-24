@@ -28,7 +28,7 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
       - name: Set up Gradle
-        uses: gradle/gradle-build-action@v3
+        uses: gradle/actions/setup-gradle@v3
       - name: Build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -80,7 +80,7 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
       - name: Set up Gradle
-        uses: gradle/gradle-build-action@v3
+        uses: gradle/actions/setup-gradle@v3
       - name: Assemble
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -100,7 +100,7 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
       - name: Set up Gradle
-        uses: gradle/gradle-build-action@v3
+        uses: gradle/actions/setup-gradle@v3
       - name: Assemble
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

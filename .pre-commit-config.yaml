@@ -36,7 +36,7 @@ repos:
     rev: v3.0.3
     hooks:
       - id: prettier
-        files: ^(vue-model-api)|(model-api-gen-gradle-test/vue-integration)/
+        files: ^(vue-model-api)|(model-api-gen-gradle-test/vue-integration)|(model-client-js-test/model-client-connection)/
   - repo: https://github.com/pre-commit/mirrors-eslint
     # IMPORTANT: keep versions of hook and additional dependencies in sync with the versions configured in `vue-model-api/package.json`
     rev: v8.56.0

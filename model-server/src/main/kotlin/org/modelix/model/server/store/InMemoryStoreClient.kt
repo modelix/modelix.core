@@ -103,7 +103,14 @@ class InMemoryStoreClient : IsolatingStore {
                 try {
                     transactionValues = HashMap()
                     val result = body()
-                    values.putAll(transactionValues!!)
+                    val tValues = requireNotNull(transactionValues) { "Passed lambda set 'transactionValues' to null unexpectedly." }
+
+                    val puts = tValues.filterValues { it != null }
+                    val deletes = tValues.filterValues { it == null }.keys
+                    values.putAll(puts)
+                    for (keyToDelete in deletes) {
+                        values.remove(keyToDelete)
+                    }
                     result
                 } finally {
                     transactionValues = null

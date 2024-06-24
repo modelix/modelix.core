@@ -18,19 +18,29 @@ import mu.KotlinLogging
 import org.apache.ignite.Ignite
 import org.apache.ignite.IgniteCache
 import org.apache.ignite.Ignition
+import org.apache.ignite.cache.query.ScanQuery
+import org.apache.ignite.lang.IgniteBiPredicate
+import org.apache.ignite.lang.IgniteClosure
 import org.modelix.kotlin.utils.ContextValue
 import org.modelix.model.IGenericKeyListener
+import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.SqlUtils
 import java.io.File
 import java.io.FileReader
 import java.io.IOException
+import java.sql.SQLException
 import java.util.*
+import javax.cache.Cache
 import javax.sql.DataSource
 
 private val LOG = KotlinLogging.logger { }
 
-class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) : IsolatingStore, AutoCloseable {
+/**
+ * Store client implementation with an ignite cache.
+ * If [inmemory] is true, the data is not persisted in a database.
+ */
+class IgniteStoreClient(jdbcConfFile: File? = null, private val inmemory: Boolean = false) : IsolatingStore, AutoCloseable {
 
     companion object {
         private const val ENTRY_CHANGED_TOPIC = "entryChanged"
@@ -41,6 +51,14 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
     private val changeNotifier = ChangeNotifier(this)
     private val pendingChangeMessages = PendingChangeMessages {
         ignite.message().send(ENTRY_CHANGED_TOPIC, it)
+    }
+
+    private val igniteConfigName: String = if (inmemory) "ignite-inmemory.xml" else "ignite.xml"
+    private val dataSource: DataSource by lazy {
+        Ignition.loadSpringBean(
+            IgniteStoreClient::class.java.getResource(igniteConfigName),
+            "dataSource",
+        )
     }
 
     /**
@@ -74,8 +92,7 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
                 )
             }
         }
-        val igniteConfigName = if (inmemory) "ignite-inmemory.xml" else "ignite.xml"
-        if (!inmemory) updateDatabaseSchema(igniteConfigName)
+        if (!inmemory) updateDatabaseSchema()
         ignite = Ignition.start(javaClass.getResource(igniteConfigName))
         cache = ignite.getOrCreateCache("model")
 
@@ -87,11 +104,7 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
         }
     }
 
-    private fun updateDatabaseSchema(igniteConfigName: String) {
-        val dataSource: DataSource = Ignition.loadSpringBean<DataSource>(
-            IgniteStoreClient::class.java.getResource(igniteConfigName),
-            "dataSource",
-        )
+    private fun updateDatabaseSchema() {
         SqlUtils(dataSource.connection).ensureSchemaInitialization()
     }
 
@@ -101,6 +114,44 @@ class IgniteStoreClient(jdbcConfFile: File? = null, inmemory: Boolean = false) :
 
     override fun getAll(): Map<ObjectInRepository, String?> {
         return cache.associate { it.key to it.value }
+    }
+
+    override fun removeRepositoryObjects(repositoryId: RepositoryId) {
+        if (!inmemory) {
+            // Not all entries are in the cache. We delete them directly instead of loading them into the cache first.
+            // This should be safe as the repository has already been removed from the list of available ones.
+            removeRepositoryObjectsFromDatabase(repositoryId)
+        }
+
+        val filter = IgniteBiPredicate<ObjectInRepository, String?> { key, _ ->
+            key.getRepositoryId() == repositoryId.id
+        }
+        val transformer = IgniteClosure<Cache.Entry<ObjectInRepository, String?>, ObjectInRepository?> { entry ->
+            entry.key
+        }
+        val query = ScanQuery(filter)
+
+        // sorting is necessary to avoid deadlocks, see documentation of IgniteCache::removeAllAsync
+        val toDelete = cache.query(query, transformer).all.asSequence().filterNotNull().toSortedSet()
+        LOG.info { "Deleting cache entries asynchronously. [numberOfEntries=${toDelete.size}]" }
+        cache.removeAllAsync(toDelete).listen { LOG.info { "Cache entries deleted." } }
+    }
+
+    private fun removeRepositoryObjectsFromDatabase(repositoryId: RepositoryId) {
+        require(!inmemory) { "Cannot remove from database in in-memory mode." }
+        LOG.info { "Removing repository objects from database." }
+
+        dataSource.connection.use { connection ->
+            connection.prepareStatement("DELETE from model WHERE repository = ?").use { stmt ->
+                stmt.setString(1, repositoryId.id)
+                try {
+                    val deletedRows = stmt.executeUpdate()
+                    LOG.info { "Deleted rows from database. [deletedRows=$deletedRows]" }
+                } catch (e: SQLException) {
+                    LOG.error { e }
+                }
+            }
+        }
     }
 
     override fun putAll(entries: Map<ObjectInRepository, String?>, silent: Boolean) {
@@ -174,7 +225,8 @@ class PendingChangeMessages(private val notifier: (ObjectInRepository) -> Unit) 
     }
 
     fun entryChanged(key: ObjectInRepository) {
-        val messages = checkNotNull(pendingChangeMessages.getValueOrNull()) { "Only allowed inside PendingChangeMessages.runAndFlush" }
+        val messages =
+            checkNotNull(pendingChangeMessages.getValueOrNull()) { "Only allowed inside PendingChangeMessages.runAndFlush" }
         messages.add(key)
     }
 }

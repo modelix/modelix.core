@@ -226,6 +226,8 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
     }
 
     override suspend fun removeRepository(repository: RepositoryId): Boolean {
+        val genericStore = store.getGenericStore()
+
         return store.runTransactionSuspendable {
             if (!repositoryExists(repository)) {
                 return@runTransactionSuspendable false
@@ -234,12 +236,12 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
             for (branchName in getBranchNames(repository)) {
                 putVersionHash(repository.getBranchReference(branchName), null)
             }
-            store.getGenericStore().put(branchListKey(repository), null)
+            genericStore.put(branchListKey(repository), null)
             val isolated = checkNotNull(isIsolated(repository)) { "Repository not found: $repository" }
             val existingRepositories = getRepositories(isolated)
             val remainingRepositories = existingRepositories - repository
             store.put(repositoriesListKey(isolated), remainingRepositories.joinToString("\n") { it.id })
-
+            genericStore.removeRepositoryObjects(repository)
             true
         }
     }

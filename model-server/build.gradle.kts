@@ -70,6 +70,7 @@ dependencies {
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.coroutines.test)
     testImplementation(libs.jsoup)
+    testImplementation(libs.mockk)
     testImplementation(kotlin("test"))
     testImplementation(project(":modelql-untyped"))
 

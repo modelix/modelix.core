@@ -14,6 +14,7 @@
 package org.modelix.model.lazy
 
 import org.modelix.model.IKeyValueStore
+import org.modelix.model.persistent.IKVValue
 
 abstract class IndirectObjectStore : IDeserializingKeyValueStore {
 
@@ -32,6 +33,10 @@ abstract class IndirectObjectStore : IDeserializingKeyValueStore {
 
     override fun <T> getAll(hash: Iterable<String>, deserializer: (String, String) -> T): Iterable<T> {
         return getStore().getAll(hash, deserializer)
+    }
+
+    override fun <T : IKVValue> getAll(regular: List<IKVEntryReference<T>>, prefetch: List<IKVEntryReference<T>>): Map<String, T?> {
+        return getStore().getAll(regular, prefetch)
     }
 
     override fun put(hash: String, deserialized: Any, serialized: String) {

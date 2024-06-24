@@ -14,7 +14,7 @@ dependencies {
         },
     )
 
-    implementation(libs.trove)
+    implementation(libs.trove4j)
 
     implementation(kotlin("stdlib"))
     implementation(libs.kotlin.logging)

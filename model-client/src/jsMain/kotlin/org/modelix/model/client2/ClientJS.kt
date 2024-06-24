@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-@file:OptIn(UnstableModelixFeature::class)
+@file:OptIn(UnstableModelixFeature::class, UnstableModelixFeature::class)
 
 package org.modelix.model.client2
 
@@ -25,13 +25,8 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.promise
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.ModelFacade
-import org.modelix.model.api.IBranch
-import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.INode
-import org.modelix.model.api.ITree
-import org.modelix.model.api.ITreeChangeVisitor
 import org.modelix.model.api.JSNodeConverter
-import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.data.ModelData
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.withAutoTransactions
@@ -43,11 +38,8 @@ import kotlin.js.Promise
     intendedFinalization = "The client is intended to be finalized when the overarching task is finished.",
 )
 @JsExport
-fun loadModelsFromJson(
-    json: Array<String>,
-    changeCallback: (ChangeJS) -> Unit,
-): INodeJS {
-    val branch = loadModelsFromJsonAsBranch(json, changeCallback)
+fun loadModelsFromJson(json: Array<String>): INodeJS {
+    val branch = loadModelsFromJsonAsBranch(json)
     return branch.rootNode
 }
 
@@ -56,13 +48,9 @@ fun loadModelsFromJson(
     intendedFinalization = "The client is intended to be finalized when the overarching task is finished.",
 )
 @JsExport
-fun loadModelsFromJsonAsBranch(
-    json: Array<String>,
-    changeCallback: (ChangeJS) -> Unit,
-): BranchJS {
+fun loadModelsFromJsonAsBranch(json: Array<String>): BranchJS {
     val branch = ModelFacade.toLocalBranch(ModelFacade.newLocalTree())
     json.forEach { ModelData.fromJson(it).load(branch) }
-    branch.addListener(ChangeListener(branch, changeCallback))
     return BranchJSImpl({}, branch.withAutoTransactions())
 }
 
@@ -88,11 +76,7 @@ fun connectClient(url: String): Promise<ClientJS> {
 interface ClientJS {
     fun dispose()
 
-    fun connectBranch(
-        repositoryId: String,
-        branchId: String,
-        changeCallback: (ChangeJS) -> Unit,
-    ): Promise<BranchJS>
+    fun connectBranch(repositoryId: String, branchId: String): Promise<BranchJS>
 
     fun fetchBranches(repositoryId: String): Promise<Array<String>>
 
@@ -121,18 +105,13 @@ class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
     }
 
     @DelicateCoroutinesApi
-    override fun connectBranch(
-        repositoryId: String,
-        branchId: String,
-        changeCallback: (ChangeJS) -> Unit,
-    ): Promise<BranchJS> {
+    override fun connectBranch(repositoryId: String, branchId: String): Promise<BranchJS> {
         return GlobalScope.promise {
             val modelClient = modelClient
             val branchReference = RepositoryId(repositoryId).getBranchReference(branchId)
             val model: ReplicatedModel = modelClient.getReplicatedModel(branchReference)
             model.start()
             val branch = model.getBranch()
-            branch.addListener(ChangeListener(branch, changeCallback))
             val branchWithAutoTransaction = branch.withAutoTransactions()
             return@promise BranchJSImpl({ model.dispose() }, branchWithAutoTransaction)
         }
@@ -143,6 +122,8 @@ class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
     }
 }
 
+typealias ChangeHandler = (ChangeJS) -> Unit
+
 @UnstableModelixFeature(
     reason = "The overarching task https://issues.modelix.org/issue/MODELIX-500 is in development.",
     intendedFinalization = "The client is intended to be finalized when the overarching task is finished.",
@@ -152,43 +133,8 @@ interface BranchJS {
     val rootNode: INodeJS
     fun dispose()
     fun resolveNode(reference: INodeReferenceJS): INodeJS?
-}
-
-class ChangeListener(private val branch: IBranch, private val changeCallback: (ChangeJS) -> Unit) : IBranchListener {
-
-    fun nodeIdToInode(nodeId: Long): INodeJS {
-        return toNodeJs(PNodeAdapter(nodeId, branch))
-    }
-
-    override fun treeChanged(oldTree: ITree?, newTree: ITree) {
-        if (oldTree == null) {
-            return
-        }
-        newTree.visitChanges(
-            oldTree,
-            object : ITreeChangeVisitor {
-                override fun containmentChanged(nodeId: Long) {
-                    changeCallback(ContainmentChanged(nodeIdToInode(nodeId)))
-                }
-
-                override fun conceptChanged(nodeId: Long) {
-                    changeCallback(ConceptChanged(nodeIdToInode(nodeId)))
-                }
-
-                override fun childrenChanged(nodeId: Long, role: String?) {
-                    changeCallback(ChildrenChanged(nodeIdToInode(nodeId), role))
-                }
-
-                override fun referenceChanged(nodeId: Long, role: String) {
-                    changeCallback(ReferenceChanged(nodeIdToInode(nodeId), role))
-                }
-
-                override fun propertyChanged(nodeId: Long, role: String) {
-                    changeCallback(PropertyChanged(nodeIdToInode(nodeId), role))
-                }
-            },
-        )
-    }
+    fun addListener(handler: ChangeHandler)
+    fun removeListener(handler: ChangeHandler)
 }
 
 fun toNodeJs(rootNode: INode) = JSNodeConverter.nodeToJs(rootNode).unsafeCast<INodeJS>()

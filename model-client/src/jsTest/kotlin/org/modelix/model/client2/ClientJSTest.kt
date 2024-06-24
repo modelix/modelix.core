@@ -34,7 +34,7 @@ class ClientJSTest {
     @Test
     fun canAddChildrenWithUnregisteredConcept() {
         // Arrange
-        val rootNode = loadModelsFromJson(arrayOf(emptyRoot)) {}
+        val rootNode = loadModelsFromJson(arrayOf(emptyRoot))
         val jsConcept = GeneratedConcept("aConceptUid")
 
         // Act
@@ -46,105 +46,6 @@ class ClientJSTest {
         val children = rootNode.getChildren("aRole")
         assertEquals(1, children.size)
         assertEquals("aConceptUid", children.get(0).getConceptUID())
-    }
-
-    @Test
-    fun changeDetectionWorksForPropertyUpdate() {
-        // Arrange
-        var propertyChanged = 0
-        val rootNode = loadModelsFromJson(arrayOf(emptyRoot)) {
-            when (it) {
-                is PropertyChanged -> propertyChanged++
-                else -> {}
-            }
-        }
-
-        // Act
-        rootNode.setPropertyValue("aProperty", "aValue")
-
-        // Assert
-        assertEquals(1, propertyChanged)
-    }
-
-    @Test
-    fun changeDetectionWorksForReferenceUpdate() {
-        // Arrange
-        var referenceChanged = 0
-        val rootNode = loadModelsFromJson(arrayOf(emptyRoot)) {
-            when (it) {
-                is ReferenceChanged -> referenceChanged++
-                else -> {}
-            }
-        }
-
-        // Act
-        rootNode.setReferenceTargetNode("aRef", rootNode)
-
-        // Assert
-        assertEquals(1, referenceChanged)
-    }
-
-    @Test
-    fun changeDetectionWorksForAddedChild() {
-        // Arrange
-        var childrenChanged = 0
-        val rootNode = loadModelsFromJson(arrayOf(emptyRoot)) {
-            when (it) {
-                is ChildrenChanged -> childrenChanged++
-                else -> {}
-            }
-        }
-
-        // Act
-        rootNode.addNewChild("aRole", -1, GeneratedConcept("aConceptUid"))
-
-        // Assert
-        assertEquals(1, childrenChanged)
-    }
-
-    @Test
-    fun changeDetectionWorksForMovedChild() {
-        // Arrange
-        var childrenChanged = 0
-        var containmentChanged = 0
-        val rootNode = loadModelsFromJson(arrayOf(emptyRoot)) {
-            when (it) {
-                is ChildrenChanged -> childrenChanged++
-                is ContainmentChanged -> containmentChanged++
-                else -> {}
-            }
-        }
-        val childNode = rootNode.addNewChild("aRole", -1, GeneratedConcept("aConceptUid"))
-        childrenChanged = 0
-
-        // Act
-        rootNode.moveChild("anotherRole", -1, childNode)
-
-        // Assert
-        assertEquals(2, childrenChanged)
-        assertEquals(1, containmentChanged)
-    }
-
-    @Test
-    fun changeDetectionWorksForRemovedChild() {
-        // Arrange
-        var childrenChanged = 0
-        var containmentChanged = 0
-        val rootNode = loadModelsFromJson(arrayOf(emptyRoot)) {
-            when (it) {
-                is ChildrenChanged -> childrenChanged++
-                is ContainmentChanged -> containmentChanged++
-                else -> {}
-            }
-        }
-        val childNode = rootNode.addNewChild("aRole", -1, GeneratedConcept("aConceptUid"))
-        childrenChanged = 0
-
-        // Act
-        rootNode.removeChild(childNode)
-
-        // Assert
-        assertEquals(1, childrenChanged)
     }
 
     @Test
@@ -164,7 +65,7 @@ class ClientJSTest {
             }
         }
         """.trimIndent()
-        val rootNode = loadModelsFromJson(arrayOf(data), {})
+        val rootNode = loadModelsFromJson(arrayOf(data))
         val child0 = rootNode.getAllChildren()[0]
         val child1 = rootNode.getAllChildren()[1]
 

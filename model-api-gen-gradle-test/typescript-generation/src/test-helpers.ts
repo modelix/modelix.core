@@ -23,8 +23,6 @@ export function useFakeRootNode(nodeData: object = DEFAULT_NODE_DATA) {
   const { loadModelsFromJson } = org.modelix.model.client2;
   const rootNode = loadModelsFromJson(
     [JSON.stringify(nodeData)],
-    // for the purpose of the test a change handler is not needed
-    () => {}
   );
 
   function getUntypedNode(role: string = "children1") {

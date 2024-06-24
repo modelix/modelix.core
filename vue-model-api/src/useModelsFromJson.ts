@@ -4,7 +4,7 @@ import { Cache } from "./internal/Cache";
 import { handleChange } from "./internal/handleChange";
 import { org } from "@modelix/model-client";
 
-const { loadModelsFromJson } = org.modelix.model.client2;
+const { loadModelsFromJsonAsBranch } = org.modelix.model.client2;
 
 type ChangeJS = org.modelix.model.client2.ChangeJS;
 
@@ -20,12 +20,10 @@ type ChangeJS = org.modelix.model.client2.ChangeJS;
  */
 export function useModelsFromJson(modelDataJsonStrings: string[]): INodeJS {
   const cache = new Cache<ReactiveINodeJS>();
-  const unreactiveRootNode = loadModelsFromJson(
-    modelDataJsonStrings,
-    (change: ChangeJS) => {
-      handleChange(change, cache);
-    },
-  );
-  const reactiveRootNode = toReactiveINodeJS(unreactiveRootNode, cache);
+  const branch = loadModelsFromJsonAsBranch(modelDataJsonStrings);
+  branch.addListener((change: ChangeJS) => {
+    handleChange(change, cache);
+  });
+  const reactiveRootNode = toReactiveINodeJS(branch.rootNode, cache);
   return reactiveRootNode;
 }

@@ -205,6 +205,10 @@ object MPSBulkSynchronizer {
         }
     }
 
+    /**
+     * Import from model-server via [INode]-based [ModelSynchronizer].
+     * Requires a specified baseVersion.
+     */
     @JvmStatic
     fun importRepositoryFromModelServer() {
         val repository = getRepository()
@@ -220,22 +224,18 @@ object MPSBulkSynchronizer {
         val branchName = System.getProperty("modelix.mps.model.sync.bulk.server.branch")
         val branchRef = repositoryId.getBranchReference(branchName)
         val versionHash: String? = System.getProperty("modelix.mps.model.sync.bulk.server.version.hash")
-        val baseVersionHash: String? = System.getProperty("modelix.mps.model.sync.bulk.server.version.base.hash")
+        val baseVersionHash = requireNotNull(System.getProperty("modelix.mps.model.sync.bulk.server.version.base.hash")) { "modelix.mps.model.sync.bulk.server.version.base.hash not specified" }
         val client = ModelClientV2.builder().url(modelServerUrl).build()
         val version = runBlocking {
             if (versionHash == null) client.lazyLoadVersion(branchRef) else client.lazyLoadVersion(repositoryId, versionHash)
         }
-        val baseVersion = baseVersionHash?.let {
-            runBlocking {
-                client.lazyLoadVersion(repositoryId, it)
-            }
+        val baseVersion = runBlocking {
+            client.lazyLoadVersion(repositoryId, baseVersionHash)
         }
         println("Loading version ${version.getContentHash()}")
 
         val access = repository.modelAccess
         access.executeCommandInEDT {
-            if (baseVersion == null) return@executeCommandInEDT
-
             val invalidationTree = InvalidationTree(1_000_000)
             val newTree = version.getTree()
             newTree.visitChanges(

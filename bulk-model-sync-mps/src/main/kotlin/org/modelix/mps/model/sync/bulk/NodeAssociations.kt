@@ -28,7 +28,7 @@ import org.modelix.model.data.NodeData
 import org.modelix.model.mpsadapters.MPSArea
 import org.modelix.model.sync.bulk.INodeAssociation
 
-class NodeAssociationToModelServer(val branch: IBranch) : INodeAssociation {
+internal class NodeAssociationToModelServer(val branch: IBranch) : INodeAssociation {
 
     private val modelIndex
         get() = ModelIndex.get(branch.transaction, NodeData.ID_PROPERTY_KEY)
@@ -42,7 +42,7 @@ class NodeAssociationToModelServer(val branch: IBranch) : INodeAssociation {
     }
 }
 
-class NodeAssociationToMps(val mpsArea: MPSArea) : INodeAssociation {
+internal class NodeAssociationToMps(val mpsArea: MPSArea) : INodeAssociation {
 
     private val serverToMps: TLongObjectMap<INode> = TLongObjectHashMap()
 

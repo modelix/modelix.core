@@ -20,6 +20,9 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.data.NodeData
 
+/**
+ * Visitor that visits a [tree] and stores the invalidation information in an [invalidationTree].
+ */
 class InvalidatingVisitor(val tree: ITree, val invalidationTree: InvalidationTree) : ITreeChangeVisitorEx {
 
     private fun invalidateNode(nodeId: Long) = invalidationTree.invalidate(tree, nodeId)

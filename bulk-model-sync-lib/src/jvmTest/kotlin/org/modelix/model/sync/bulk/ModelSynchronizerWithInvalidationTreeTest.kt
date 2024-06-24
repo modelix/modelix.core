@@ -74,12 +74,12 @@ class ModelSynchronizerWithInvalidationTreeTest : AbstractModelSyncTest() {
             val rootNode = sourceBranch.getRootNode()
             rootNode.setPropertyValue(IProperty.fromName(ID_PROPERTY_KEY), rootNode.reference.serialize())
             val grower = RandomModelChangeGenerator(rootNode, rand).growingOperationsOnly()
-            for (i in 1..100) {
+            repeat(100) {
                 grower.applyRandomChange()
             }
 
             val changer = RandomModelChangeGenerator(rootNode, rand)
-            for (i in 1..numChanges) {
+            repeat(numChanges) {
                 changer.applyRandomChange()
             }
         }

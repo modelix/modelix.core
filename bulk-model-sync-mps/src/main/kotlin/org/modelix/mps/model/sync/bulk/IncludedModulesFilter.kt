@@ -21,7 +21,8 @@ import org.modelix.model.api.INode
 import org.modelix.model.sync.bulk.ModelSynchronizer
 
 /**
- * A filter that skips nodes, which represent MPS modules and do not match the included module names or prefixes.
+ * A filter that skips nodes, which represent MPS modules and do not match
+ * the included module names ([includedModules]) or prefixes ([includedModulePrefixes]).
  *
  * Note: This is currently not meant to be used standalone.
  * It should be used with other filters in a [CompositeFilter].

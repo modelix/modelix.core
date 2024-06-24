@@ -90,6 +90,26 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: model-api-gen-gradle-test/ci.sh
 
+  test-model-client-js:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+      - name: Assemble
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew --build-cache assemble publishToMavenLocal -PciBuild=true
+      - name: Test Model Client JS API
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: model-client-js-test/ci.sh
+
   test-bulk-model-sync-gradle:
     runs-on: ubuntu-latest
     steps:

@@ -5,8 +5,9 @@ import { useModelClient } from "./useModelClient";
 import { useRootNode } from "./useRootNode";
 
 type BranchJS = org.modelix.model.client2.BranchJS;
+type ReplicatedModelJS = org.modelix.model.client2.ReplicatedModelJS;
 type ClientJS = org.modelix.model.client2.ClientJS;
-type ChangeJS = org.modelix.model.client2.ChangeJS;
+
 const { loadModelsFromJson } = org.modelix.model.client2;
 
 test("test branch connects", (done) => {
@@ -25,16 +26,32 @@ test("test branch connects", (done) => {
     addListener = jest.fn();
   }
 
+  class SuccessfulReplicatedModelJS {
+    private branch: BranchJS;
+    constructor(branchId: string) {
+      this.branch = new SuccessfulBranchJS(branchId) as unknown as BranchJS;
+    }
+
+    getBranch() {
+      return this.branch;
+    }
+  }
+
   class SuccessfulClientJS {
-    connectBranch(_repositoryId: string, branchId: string): Promise<BranchJS> {
+    startReplicatedModel(
+      _repositoryId: string,
+      branchId: string,
+    ): Promise<ReplicatedModelJS> {
       return Promise.resolve(
-        new SuccessfulBranchJS(branchId) as unknown as BranchJS,
+        new SuccessfulReplicatedModelJS(
+          branchId,
+        ) as unknown as ReplicatedModelJS,
       );
     }
   }
 
   const { client } = useModelClient("anURL", () =>
-    Promise.resolve(new SuccessfulClientJS() as ClientJS),
+    Promise.resolve(new SuccessfulClientJS() as unknown as ClientJS),
   );
 
   const { rootNode } = useRootNode(client, "aRepository", "aBranch");
@@ -49,17 +66,16 @@ test("test branch connects", (done) => {
 
 test("test branch connection error is exposed", (done) => {
   class FailingClientJS {
-    connectBranch(
+    startReplicatedModel(
       _repositoryId: string,
       _branchId: string,
-      _changeCallback: (change: ChangeJS) => void,
     ): Promise<BranchJS> {
       return Promise.reject("Could not connect branch.");
     }
   }
 
   const { client } = useModelClient("anURL", () =>
-    Promise.resolve(new FailingClientJS() as ClientJS),
+    Promise.resolve(new FailingClientJS() as unknown as ClientJS),
   );
 
   const { error } = useRootNode(client, "aRepository", "aBranch");

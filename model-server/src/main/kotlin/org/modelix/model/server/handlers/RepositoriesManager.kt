@@ -181,7 +181,7 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
     }
 
     fun getBranchNames(repositoryId: RepositoryId): Set<String> {
-        return store.getGenericStore()[branchListKey(repositoryId)]?.lines()?.toSet().orEmpty()
+        return store.getGenericStore()[branchListKey(repositoryId)]?.ifEmpty { null }?.lines()?.toSet().orEmpty()
     }
 
     override fun getBranches(repositoryId: RepositoryId): Set<BranchReference> {

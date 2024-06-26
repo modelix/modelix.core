@@ -47,7 +47,10 @@ class RepositoryOverview(private val repoManager: IRepositoriesManager) {
             table {
                 thead {
                     tr {
-                        th { +"Repository" }
+                        th {
+                            colSpan = "2"
+                            +"Repository"
+                        }
                         th { +"Branch" }
                         th {
                             colSpan = "3"
@@ -58,10 +61,15 @@ class RepositoryOverview(private val repoManager: IRepositoriesManager) {
                 tbody {
                     for (repository in repositories) {
                         val branches = repoManager.getBranches(repository)
+                        val repoRowSpan = branches.size.coerceAtLeast(1).plus(1).toString()
                         tr {
                             td {
-                                rowSpan = branches.size.coerceAtLeast(1).plus(1).toString()
+                                rowSpan = repoRowSpan
                                 +repository.id
+                            }
+                            td {
+                                rowSpan = repoRowSpan
+                                buildDeleteRepositoryForm(repository.id)
                             }
                         }
                         if (branches.isEmpty()) {
@@ -85,9 +93,6 @@ class RepositoryOverview(private val repoManager: IRepositoriesManager) {
                                     td {
                                         buildExploreLatestLink(branch.repositoryId.id, branch.branchName)
                                     }
-                                    td {
-                                        buildDeleteForm(branch.repositoryId.id)
-                                    }
                                 }
                             }
                         }
@@ -110,7 +115,7 @@ fun FlowOrInteractiveOrPhrasingContent.buildExploreLatestLink(repositoryId: Stri
     }
 }
 
-fun FlowContent.buildDeleteForm(repositoryId: String) {
+fun FlowContent.buildDeleteRepositoryForm(repositoryId: String) {
     form {
         postButton {
             name = "delete"

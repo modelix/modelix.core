@@ -28,7 +28,7 @@ class RepositoryOverviewTest {
         val html = createHTML(prettyPrint = false).span {
             buildHistoryLink("repository/v1", "branch/v2")
             buildExploreLatestLink("repository/v1", "branch/v2")
-            buildDeleteForm("repository/v1")
+            buildDeleteRepositoryForm("repository/v1")
         }
         assertEquals(
             """

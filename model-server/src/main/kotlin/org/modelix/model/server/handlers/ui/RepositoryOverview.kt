@@ -12,6 +12,7 @@ import kotlinx.html.a
 import kotlinx.html.form
 import kotlinx.html.h1
 import kotlinx.html.i
+import kotlinx.html.onClick
 import kotlinx.html.p
 import kotlinx.html.postButton
 import kotlinx.html.span
@@ -120,6 +121,7 @@ fun FlowContent.buildDeleteRepositoryForm(repositoryId: String) {
         postButton {
             name = "delete"
             formAction = "../v2/repositories/${repositoryId.encodeURLPathPart()}/delete"
+            onClick = "return confirm('Are you sure you want to delete the repository $repositoryId?')"
             +"Delete Repository"
         }
     }

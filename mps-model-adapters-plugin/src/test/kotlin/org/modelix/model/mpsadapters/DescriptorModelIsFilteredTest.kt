@@ -1,9 +1,6 @@
 package org.modelix.model.mpsadapters
 
-import junit.framework.TestCase
 import org.modelix.model.api.BuiltinLanguages
-import org.modelix.model.api.IChildLink
-import org.modelix.model.api.INode
 
 /*
  * Copyright (c) 2023.
@@ -26,8 +23,12 @@ class DescriptorModelIsFilteredTest : MpsAdaptersTestBase("SimpleProject") {
     fun `test descriptor model is filtered by adapter`() {
         readAction {
             val module = checkNotNull(mpsProject.projectModules.find { it.moduleName == "Solution1" })
+
+            val descriptorModels = module.models.filter { it.name.stereotype == "descriptor" }
+            if (descriptorModels.isEmpty()) return@readAction // they don't seem to exist in MPS 2024.1 anymore
+
+            assertEquals(1, descriptorModels.size)
             assertEquals(2, module.models.count())
-            assertEquals(1, module.models.count { it.name.stereotype == "descriptor" })
 
             assertEquals(1, MPSModuleAsNode(module).getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.models).count())
         }

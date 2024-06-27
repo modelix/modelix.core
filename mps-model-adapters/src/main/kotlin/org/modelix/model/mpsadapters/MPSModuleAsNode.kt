@@ -20,6 +20,7 @@ import jetbrains.mps.project.ProjectManager
 import jetbrains.mps.project.Solution
 import jetbrains.mps.project.facets.JavaModuleFacet
 import jetbrains.mps.smodel.MPSModuleRepository
+import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.SDependencyScope
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleId
@@ -38,7 +39,7 @@ data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
     }
 
     private val childrenAccessors: Map<IChildLink, () -> Iterable<INode>> = mapOf(
-        BuiltinLanguages.MPSRepositoryConcepts.Module.models to { module.models.map { MPSModelAsNode(it) } },
+        BuiltinLanguages.MPSRepositoryConcepts.Module.models to { module.models.withoutDescriptorModel().map { MPSModelAsNode(it) } },
         BuiltinLanguages.MPSRepositoryConcepts.Module.facets to { module.facets.filterIsInstance<JavaModuleFacet>().map { MPSJavaModuleFacetAsNode(it) } },
         BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies to { getDependencies() },
         BuiltinLanguages.MPSRepositoryConcepts.Module.languageDependencies to { getLanguageDependencies() },
@@ -201,4 +202,8 @@ data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
         }
         return null
     }
+}
+
+private fun <T : SModel> Iterable<T>.withoutDescriptorModel(): List<T> {
+    return filter { it.name.stereotype != "descriptor" }
 }

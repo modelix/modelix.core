@@ -30,13 +30,7 @@ import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.getRootNode
 import org.modelix.model.area.getArea
 
-fun interface DisposeFunction {
-    fun invoke()
-}
-
-@OptIn(UnstableModelixFeature::class)
-class BranchJSImpl(
-    private val dispose: DisposeFunction,
+internal class BranchJSImpl(
     private val branch: IBranch,
 ) : BranchJS {
 
@@ -70,13 +64,9 @@ class BranchJSImpl(
     override fun removeListener(handler: ChangeHandler) {
         changeHandlers.remove(handler)
     }
-
-    override fun dispose() {
-        dispose.invoke()
-    }
 }
 
-class ChangeListener(private val branch: IBranch, private val changeCallback: (ChangeJS) -> Unit) : IBranchListener {
+internal class ChangeListener(private val branch: IBranch, private val changeCallback: (ChangeJS) -> Unit) : IBranchListener {
 
     fun nodeIdToInode(nodeId: Long): INodeJS {
         return toNodeJs(PNodeAdapter(nodeId, branch))

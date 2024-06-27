@@ -79,3 +79,11 @@ updates:
     commit-message:
       prefix: "build(deps)"
       prefix-development: "build(deps)"
+  - package-ecosystem: "npm"
+    open-pull-requests-limit: 20
+    directory: "/model-client-js-test/model-client-connection"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "build(deps)"
+      prefix-development: "build(deps)"

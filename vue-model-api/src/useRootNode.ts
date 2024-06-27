@@ -7,7 +7,7 @@ import { Cache } from "./internal/Cache";
 import { handleChange } from "./internal/handleChange";
 
 type ClientJS = org.modelix.model.client2.ClientJS;
-type BranchJS = org.modelix.model.client2.BranchJS;
+type ReplicatedModelJS = org.modelix.model.client2.ReplicatedModelJS;
 type ChangeJS = org.modelix.model.client2.ChangeJS;
 
 /**
@@ -38,15 +38,15 @@ export function useRootNode(
   dispose: () => void;
   error: Ref<unknown>;
 } {
-  let branch: BranchJS | null = null;
+  let replicatedModel: ReplicatedModelJS | null = null;
   const rootNodeRef: Ref<INodeJS | null> = shallowRef(null);
   const errorRef: Ref<unknown> = shallowRef(null);
 
   const dispose = () => {
-    if (branch !== null) {
-      branch.dispose();
+    if (replicatedModel !== null) {
+      replicatedModel.dispose();
     }
-    branch = null;
+    replicatedModel = null;
     rootNodeRef.value = null;
     errorRef.value = null;
   };
@@ -68,12 +68,16 @@ export function useRootNode(
       }
       const cache = new Cache<ReactiveINodeJS>();
       return clientValue
-        .connectBranch(repositoryIdValue, branchIdValue)
-        .then((branch) => ({ branch, cache }));
+        .startReplicatedModel(repositoryIdValue, branchIdValue)
+        .then((replicatedModel) => ({ replicatedModel, cache }));
     },
-    ({ branch: connectedBranch, cache }, isResultOfLastStartedPromise) => {
+    (
+      { replicatedModel: connectedReplicatedModel, cache },
+      isResultOfLastStartedPromise,
+    ) => {
       if (isResultOfLastStartedPromise) {
-        branch = connectedBranch;
+        replicatedModel = connectedReplicatedModel;
+        const branch = replicatedModel.getBranch();
         branch.addListener((change: ChangeJS) => {
           if (cache === null) {
             throw Error("The cache is unexpectedly not set up.");
@@ -84,7 +88,7 @@ export function useRootNode(
         const reactiveRootNode = toReactiveINodeJS(unreactiveRootNode, cache);
         rootNodeRef.value = reactiveRootNode;
       } else {
-        connectedBranch.dispose();
+        connectedReplicatedModel.dispose();
       }
     },
     (reason, isResultOfLastStartedPromise) => {

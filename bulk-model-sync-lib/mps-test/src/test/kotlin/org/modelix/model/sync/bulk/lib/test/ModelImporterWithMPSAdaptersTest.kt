@@ -44,7 +44,7 @@ class ModelImporterWithMPSAdaptersTest : MPSTestBase() {
         val moduleAdapter = MPSModuleAsNode(module)
         // Arrange: Create export data
         val dataWithRootsInOneOrder = ModelData(root = moduleAdapter.asExported())
-        val modelWitRootsInOneOrder = dataWithRootsInOneOrder.root.children[1]
+        val modelWitRootsInOneOrder = dataWithRootsInOneOrder.root.children[0]
         val rootsInOneOrder = modelWitRootsInOneOrder.children
         // Arrange: Create alternative export data with switched roots
         val rootsInDifferentOrder = listOf(rootsInOneOrder[1], rootsInOneOrder[0])

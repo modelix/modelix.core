@@ -27,6 +27,7 @@ import io.ktor.server.routing.IgnoreTrailingSlash
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.websocket.WebSockets
 import kotlinx.coroutines.runBlocking
+import org.modelix.api.v2.Paths.registerJsonTypes
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.server.Main.installStatusPages
@@ -38,7 +39,10 @@ suspend fun ApplicationTestBuilder.createModelClient(): ModelClientV2 {
 
 fun Application.installDefaultServerPlugins() {
     install(WebSockets)
-    install(ContentNegotiation) { json() }
+    install(ContentNegotiation) {
+        json()
+        registerJsonTypes()
+    }
     install(Resources)
     install(IgnoreTrailingSlash)
     installStatusPages()

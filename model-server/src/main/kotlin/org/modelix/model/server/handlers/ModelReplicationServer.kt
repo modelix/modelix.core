@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.withContext
+import org.modelix.api.v2.BranchV1
 import org.modelix.api.v2.DefaultApi
 import org.modelix.authorization.getUserName
 import org.modelix.model.InMemoryModels
@@ -94,7 +95,9 @@ class ModelReplicationServer(
         }
     }
 
-    private fun repositoryId(paramValue: String?) = RepositoryId(checkNotNull(paramValue) { "Parameter 'repository' not available" })
+    private fun repositoryId(paramValue: String?) =
+        RepositoryId(checkNotNull(paramValue) { "Parameter 'repository' not available" })
+
     private suspend fun <R> runWithRepository(repository: String, body: suspend () -> R): R {
         return repositoriesManager.runWithRepository(repositoryId(repository), body)
     }
@@ -107,7 +110,7 @@ class ModelReplicationServer(
         call.respondText(repositoriesManager.getBranchNames(repositoryId(repository)).joinToString("\n"))
     }
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositoryBranch(
+    override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositoryBranchDelta(
         repository: String,
         branch: String,
         lastKnown: String?,
@@ -116,6 +119,18 @@ class ModelReplicationServer(
             val branchRef = repositoryId(repository).getBranchReference(branch)
             val versionHash = repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
             call.respondDelta(versionHash, lastKnown)
+        }
+    }
+
+    override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositoryBranchV1(
+        repository: String,
+        branch: String,
+        lastKnown: String?,
+    ) {
+        runWithRepository(repository) {
+            val branchRef = repositoryId(repository).getBranchReference(branch)
+            val versionHash = repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
+            call.respond(BranchV1(branch, versionHash))
         }
     }
 

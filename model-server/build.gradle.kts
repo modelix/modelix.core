@@ -66,6 +66,8 @@ dependencies {
 
     testImplementation(libs.bundles.apache.cxf)
     testImplementation(libs.junit)
+    testImplementation(libs.kotest.assertions.coreJvm)
+    testImplementation(libs.kotest.assertions.ktor)
     testImplementation(libs.cucumber.java)
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.coroutines.test)

@@ -3,6 +3,10 @@ package {{packageName}}
 
 import io.ktor.resources.*
 import kotlinx.serialization.*
+import io.ktor.http.ContentType
+import io.ktor.serialization.kotlinx.KotlinxSerializationConverter
+import io.ktor.serialization.kotlinx.json.DefaultJson
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiationConfig
 {{#imports}}import {{import}}
 {{/imports}}
 
@@ -26,5 +30,22 @@ object Paths {
     {{/operation}}
 {{/operations}}
 {{/apis}}
+
+    /**
+     * Registers all models from /components/schemas with an x-modelix-media-type vendor extension to be serializable
+     * as JSON for that media type.
+     */
+    fun ContentNegotiationConfig.registerJsonTypes() {
+    {{#models}}
+        {{#model}}
+            {{#vendorExtensions}}
+                {{#x-modelix-media-type}}
+        register(ContentType.parse("{{{.}}}"), KotlinxSerializationConverter(DefaultJson))
+                {{/x-modelix-media-type}}
+            {{/vendorExtensions}}
+        {{/model}}
+    {{/models}}
+    }
+
 }
 {{/apiInfo}}

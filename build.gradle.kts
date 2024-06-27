@@ -1,22 +1,7 @@
+
 import com.github.gradle.node.NodeExtension
 import com.github.gradle.node.NodePlugin
 import io.gitlab.arturbosch.detekt.Detekt
-import kotlinx.html.FlowContent
-import kotlinx.html.a
-import kotlinx.html.body
-import kotlinx.html.div
-import kotlinx.html.h2
-import kotlinx.html.head
-import kotlinx.html.html
-import kotlinx.html.id
-import kotlinx.html.link
-import kotlinx.html.meta
-import kotlinx.html.p
-import kotlinx.html.span
-import kotlinx.html.stream.createHTML
-import kotlinx.html.style
-import kotlinx.html.title
-import kotlinx.html.unsafe
 import org.jetbrains.dokka.base.DokkaBase
 import org.jetbrains.dokka.base.DokkaBaseConfiguration
 import org.jetbrains.dokka.gradle.DokkaTaskPartial
@@ -25,12 +10,10 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinMultiplatformPluginWrapper
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformJvmPlugin
-import org.semver.Version
 
 buildscript {
     dependencies {
-        classpath(libs.dokka.versioning)
-        classpath(libs.semver)
+        classpath(libs.dokka.base)
     }
 }
 
@@ -68,8 +51,6 @@ fun computeVersion(): Any {
 }
 
 dependencies {
-    dokkaPlugin(libs.dokka.versioning)
-
     // Generate a combined coverage report
     project.subprojects.forEach {
         kover(it)
@@ -89,7 +70,7 @@ subprojects {
 
     tasks.withType<DokkaTaskPartial>().configureEach {
         pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
-            footerMessage = createFooterMessage()
+            footerMessage = dokkaFooterMessage
         }
     }
 
@@ -246,141 +227,25 @@ fun MavenPublication.setMetadata() {
 tasks.withType<org.jetbrains.kotlin.gradle.targets.js.npm.tasks.KotlinNpmInstallTask> {
     dependsOn(":ts-model-api:npm_run_build")
 }
-val docsDir = project.layout.buildDirectory.dir("dokka").get().asFile
 
 tasks.dokkaHtmlMultiModule {
-    outputDirectory.set(docsDir.resolve("$version"))
+    val docsDir = project.layout.buildDirectory.dir("dokka").get().asFile
+    outputDirectory.set(docsDir)
     pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
         customAssets += file(projectDir.resolve("dokka/logo-dark.svg"))
         customAssets += file(projectDir.resolve("dokka/logo-icon.svg"))
         customStyleSheets += file(projectDir.resolve("dokka/logo-styles.css"))
-        footerMessage = createFooterMessage()
-    }
-    doLast {
-        val index = file(docsDir.resolve("index.html"))
-        index.writeText(createDocsIndexPage())
+        footerMessage = dokkaFooterMessage
     }
 }
 
-fun createFooterMessage(): String {
-    return createHTML().span {
-        createFooter()
-    }
-}
-
-fun FlowContent.createFooter() {
-    p {
-        +"For more information visit "
-        a("https://modelix.org") { +"modelix.org" }
-        +", for further documentation visit "
-        a("https://docs.modelix.org") { +"docs.modelix.org" }
-        +"."
-    }
-    p {
-        +"Copyright \u00A9 2021-present by the "
-        a("https://modelix.org") { +"modelix open source project" }
-        +" and the individual contributors. All Rights reserved."
-    }
-    p {
-        +"Except where otherwise noted, "
-        a("https://api.modelix.org") { +"api.modelix.org" }
-        +", modelix, and the modelix framework, are licensed under the "
-        a("https://www.apache.org/licenses/LICENSE-2.0.html") { +"Apache-2.0 license" }
-        +"."
-    }
-}
-
-fun createDocsIndexPage(): String {
-    return createHTML().html {
-        head {
-            meta(charset = "utf-8")
-            link(href = "./$version/styles/style.css", rel = "Stylesheet")
-            link(href = "./$version/styles/logo-styles.css", rel = "Stylesheet")
-            link(href = "./$version/images/logo-icon.svg", rel = "icon")
-            title("modelix.core API Reference")
-            style {
-                unsafe {
-                    +"""
-                    .library-name {
-                        padding-top: 6px;
-                        padding-bottom: 6px;
-                    }
-                    """.trimIndent()
-                }
-            }
-        }
-        body {
-            div("navigation-wrapper") {
-                id = "navigation-wrapper"
-                div("library-name") {
-                    a { +"modelix.core API Reference" }
-                }
-            }
-            div("wrapper") {
-                id = "container"
-                div {
-                    id = "leftColumn"
-                }
-                div {
-                    id = "main"
-                    div("main-content") {
-                        id = "content"
-                        div("breadcrumbs")
-                        div("cover") {
-                            h2 { +"Available versions:" }
-                            div("table") {
-                                val versionDirs = docsDir.listFiles()
-                                    ?.filter {
-                                        it.isDirectory && !it.name.startsWith('.') && it.name != "latest"
-                                    }
-                                    ?.sortedByDescending { Version.parse(it.name) }
-                                if (versionDirs != null) {
-                                    div("table-row") {
-                                        div("main-subrow") {
-                                            div("w-100") {
-                                                span("inline-flex") {
-                                                    a(href = "/latest") {
-                                                        +"modelix.core LATEST"
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    for (versionDir in versionDirs) {
-                                        val versionIndex = versionDir.resolve("index.html")
-                                        if (versionIndex.exists()) {
-                                            div("table-row") {
-                                                div("main-subrow") {
-                                                    div("w-100") {
-                                                        span("inline-flex") {
-                                                            a(href = versionIndex.relativeTo(docsDir).path) {
-                                                                +"modelix.core ${versionDir.name}"
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    div("footer") {
-                        span("go-to-top-icon") {
-                            a("#content") {
-                                id = "go-to-top-link"
-                            }
-                        }
-                        span {
-                            createFooter()
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
+val dokkaFooterMessage = """
+    <span>
+      <p>For more information visit <a href="https://modelix.org">modelix.org</a>, for further documentation visit <a href="https://docs.modelix.org">docs.modelix.org</a>.</p>
+      <p>Copyright ${"\u00A9"} 2021-present by the <a href="https://modelix.org">modelix open source project</a> and the individual contributors. All Rights reserved.</p>
+      <p>Except where otherwise noted, <a href="https://api.modelix.org">api.modelix.org</a>, modelix, and the modelix framework, are licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0.html">Apache-2.0 license</a>.</p>
+    </span>
+""".trimIndent()
 
 catalog {
     versionCatalog {

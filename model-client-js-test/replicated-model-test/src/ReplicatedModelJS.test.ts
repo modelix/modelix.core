@@ -25,7 +25,7 @@ afterEach(() => {
 
 test("replicated model uses user set in client", async () => {
   const userId = "aAuthor"
-  client!.setClientProvideUserId(userId)
+  client!.setClientProvidedUserId(userId)
   const rootNode = replicatedModel!.getBranch().rootNode
 
   rootNode.setPropertyValue("aProperty", "aValue")

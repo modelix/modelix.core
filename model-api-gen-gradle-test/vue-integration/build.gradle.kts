@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.node)
 }
 
-val updateDependencies = tasks.create<NpmTask>("updateDependencies") {
+val updateDependencies = tasks.register<NpmTask>("updateDependencies") {
     dependsOn(":typescript-generation:packJsPackage")
     args.set(
         listOf(

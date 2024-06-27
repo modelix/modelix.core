@@ -74,7 +74,7 @@ kotlin {
     }
 }
 
-val generateVersionVariable by tasks.creating {
+val generateVersionVariable by tasks.registering {
     doLast {
         val outputDir = project.layout.buildDirectory.dir("version_gen/org/modelix/modelql/core").get().asFile
         outputDir.mkdirs()

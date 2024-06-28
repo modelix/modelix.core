@@ -23,17 +23,9 @@ jobs:
           ref: gh-pages
           path: build/dokka
       - name: Generate Docs with Dokka
-        run: ./gradlew dokkaHtmlMultiModule
-      - name: Create symlink to latest version
-        run: |
-          cd build/dokka
-          latestVersion=$(for n in *; do printf '%s\n' "$n"; done | sort -V | grep -E "^[0-9]+\.[0-9]+" | tail -n1)
-          if [[ -n "${latestVersion}" ]]; then
-            ln -sf ${latestVersion} latest
-          fi
+        run: ./gradlew :dokkaHtmlMultiModule
       - name: Publish to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: build/dokka
-          keep_files: true

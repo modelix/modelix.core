@@ -13,7 +13,7 @@ val npmRunBuild = tasks.named("npm_run_build") {
   outputs.dir("dist")
 }
 
-val patchKotlinExternals = tasks.create("patchKotlinExternals") {
+val patchKotlinExternals = tasks.register("patchKotlinExternals") {
   dependsOn("npm_run_generateKotlin")
   doLast {
     val annotationLine = """@file:JsModule("@modelix/ts-model-api") @file:JsNonModule"""
@@ -51,7 +51,7 @@ tasks.named("npm_run_generateKotlin") {
 // With `NpmPackage.files` we cannot copy the "dist" directory into `destinationDir`.
 // We can only either copy the files from "dist" directly into `destinationDir`
 // or copy all files from `projectDir` into `destinationDir`.
-val copyBuildTypeScriptForPackaging = tasks.create<Copy>("copyBuildTypeScriptForPackaging") {
+val copyBuildTypeScriptForPackaging = tasks.register<Copy>("copyBuildTypeScriptForPackaging") {
   dependsOn(npmRunBuild)
   from(projectDir)
   include("dist/**")
@@ -74,7 +74,7 @@ npmPublish {
         version.set("${project.version}")
       }
       files {
-        setFrom(copyBuildTypeScriptForPackaging.outputs)
+        setFrom(copyBuildTypeScriptForPackaging.map { it.outputs })
       }
     }
   }

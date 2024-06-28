@@ -6,7 +6,7 @@ plugins {
     id("org.modelix.model-api-gen") apply false
 }
 
-val updateDependencies = tasks.create<NpmTask>("updateDependencies") {
+val updateDependencies = tasks.register<NpmTask>("updateDependencies") {
     args.set(
         listOf(
             "install",

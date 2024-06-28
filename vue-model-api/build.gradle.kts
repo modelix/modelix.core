@@ -10,7 +10,7 @@ plugins {
     id("modelix-project-repositories")
 }
 
-val updateModelClient = tasks.create<NpmTask>("updateModelClient") {
+val updateModelClient = tasks.register<NpmTask>("updateModelClient") {
     val modelClientPackage = "../model-client/build/npmDevPackage/model-client.tgz"
     inputs.file(modelClientPackage)
     outputs.cacheIf { true }
@@ -49,7 +49,7 @@ tasks.named("npm_run_lint") {
 }
 
 val packageJsonForProd = layout.buildDirectory.file("package-for-publishing.json").get().asFile
-val createPackageJsonForPublishing = tasks.create("createPackageJsonForPublishing") {
+val createPackageJsonForPublishing = tasks.register("createPackageJsonForPublishing") {
     dependsOn(updateModelClient)
 
     val packageJsonForDev = projectDir.resolve("package.json")

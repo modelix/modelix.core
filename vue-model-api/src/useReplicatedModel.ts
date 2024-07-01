@@ -11,12 +11,15 @@ type ReplicatedModelJS = org.modelix.model.client2.ReplicatedModelJS;
 type ChangeJS = org.modelix.model.client2.ChangeJS;
 
 /**
- * Creates a reactive root node from a client for a given repository and branch.
+ * Creates a replicated model for a given repository and branch.
+ * A replicated model exposes a branch that can be used to read and write model data.
+ * The written model data is automatically synced to the model server.
+ * Changed from the model server are automatically synced to the branch in the replicated model
  *
- * The returned root node uses Vues reactivity and can be used in Vue like an reactive object.
- * Changes to the returned node or its descendants are synced to the branch on the model server.
+ * Also creates root node that uses Vues reactivity and can be used in Vue like a reactive object.
+ * Changes to model data trigger recalculation of computed properties or re-rendering of components using that data.
  *
- * Calling the returned dispose function stops syncing the root node to the underlying branch on the serever.
+ * Calling the returned dispose function stops syncing the root node to the underlying branch on the server.
  *
  * @experimental This feature is expected to be finalized with https://issues.modelix.org/issue/MODELIX-500.
  *
@@ -24,29 +27,35 @@ type ChangeJS = org.modelix.model.client2.ChangeJS;
  * @param repositoryId - Reactive reference of a repositoryId on the model server.
  * @param branchId - Reactive reference of a branchId in the repository of the model server.
  *
- * @returns {Object} values Wrapper around diffrent returned values.
- * @returns {Ref<INodeJS | null>} values.rootNode  Reactive reference to a reactive root node.
+ * @returns {Object} values Wrapper around different returned values.
+ * @returns {Ref<ReplicatedModelJS | null>} values.rootNode  Reactive reference to the replicated model for the specified branch.
+ * @returns {Ref<INodeJS | null>} values.rootNode  Reactive reference to the root node with Vue.js reactivity for the specified branch.
  * @returns {() => void} values.dispose A function to manually dispose the root node.
  * @returns {Ref<unknown>} values.error Reactive reference to a connection error.
  */
-export function useRootNode(
+export function useReplicatedModel(
   client: MaybeRefOrGetter<ClientJS | null>,
   repositoryId: MaybeRefOrGetter<string | null>,
   branchId: MaybeRefOrGetter<string | null>,
 ): {
+  replicatedModel: Ref<ReplicatedModelJS | null>;
   rootNode: Ref<INodeJS | null>;
   dispose: () => void;
   error: Ref<unknown>;
 } {
+  // Use `replicatedModel` to access the replicated model without tracking overhead of Vue.js.
   let replicatedModel: ReplicatedModelJS | null = null;
+  const replicatedModelRef: Ref<ReplicatedModelJS | null> = shallowRef(null);
   const rootNodeRef: Ref<INodeJS | null> = shallowRef(null);
   const errorRef: Ref<unknown> = shallowRef(null);
 
   const dispose = () => {
+    // Using `replicatedModelRef.value` here would create a circular dependency.
+    // `toRaw` does not work on `Ref<>`.
     if (replicatedModel !== null) {
       replicatedModel.dispose();
     }
-    replicatedModel = null;
+    replicatedModelRef.value = null;
     rootNodeRef.value = null;
     errorRef.value = null;
   };
@@ -86,6 +95,7 @@ export function useRootNode(
         });
         const unreactiveRootNode = branch.rootNode;
         const reactiveRootNode = toReactiveINodeJS(unreactiveRootNode, cache);
+        replicatedModelRef.value = replicatedModel;
         rootNodeRef.value = reactiveRootNode;
       } else {
         connectedReplicatedModel.dispose();
@@ -99,6 +109,7 @@ export function useRootNode(
   );
 
   return {
+    replicatedModel: replicatedModelRef,
     rootNode: rootNodeRef,
     dispose,
     error: errorRef,

@@ -11,3 +11,4 @@ kotlin_gen
 /node_modules
 **/.ideaconfig
 **/.mpsconfig
+.kotlin

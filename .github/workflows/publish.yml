@@ -107,7 +107,7 @@ jobs:
         with:
           platforms: linux/amd64,linux/arm64
       - name: Build and publish model-server Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         env:
           # We only push the resulting image when we are on release tag (i.e., the only time we have a push event) or on
           # manual request via the workflow_dispatch event.

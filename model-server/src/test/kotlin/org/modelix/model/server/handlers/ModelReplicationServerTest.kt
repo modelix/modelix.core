@@ -15,11 +15,17 @@
 
 package org.modelix.model.server.handlers
 
+import com.google.api.client.http.HttpStatusCodes
+import io.kotest.assertions.ktor.client.shouldHaveContentType
+import io.kotest.assertions.ktor.client.shouldHaveStatus
+import io.kotest.matchers.shouldBe
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.accept
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
@@ -29,6 +35,9 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.appendPathSegments
 import io.ktor.http.contentType
 import io.ktor.http.takeFrom
+import io.ktor.http.withCharset
+import io.ktor.serialization.kotlinx.KotlinxSerializationConverter
+import io.ktor.serialization.kotlinx.json.DefaultJson
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.netty.NettyApplicationEngine
@@ -42,6 +51,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import org.modelix.api.v1.Problem
+import org.modelix.api.v2.BranchV1
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.InMemoryModels
 import org.modelix.model.api.IConceptReference
@@ -51,6 +61,7 @@ import org.modelix.model.client2.runWrite
 import org.modelix.model.client2.useVersionStreamFormat
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.api.v2.VersionDeltaStream
+import org.modelix.model.server.api.v2.VersionDeltaStreamV2
 import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.runWithNettyServer
 import org.modelix.model.server.store.InMemoryStoreClient
@@ -222,7 +233,14 @@ class ModelReplicationServerTest {
         val repositoryId = RepositoryId("repo1")
         val branchRef = repositoryId.getBranchReference()
 
-        runWithTestModelServer(Fixture(storeClient, modelClient, faultyRepositoriesManager, modelReplicationServer)) { _, _ ->
+        runWithTestModelServer(
+            Fixture(
+                storeClient,
+                modelClient,
+                faultyRepositoriesManager,
+                modelReplicationServer,
+            ),
+        ) { _, _ ->
             repositoriesManager.createRepository(repositoryId, null)
 
             // Act
@@ -362,6 +380,55 @@ class ModelReplicationServerTest {
                     type = "/problems/unclassified-internal-server-error",
                 ),
                 response.body<Problem>(),
+            )
+        }
+    }
+
+    @Test
+    fun `getRepositoryBranch responds with version delta v2 if requested`() {
+        val repositoryId = RepositoryId("repo1")
+
+        runWithTestModelServer { _, fixture ->
+            fixture.repositoriesManager.createRepository(repositoryId, null)
+
+            val response = client.get {
+                url {
+                    appendPathSegments("v2", "repositories", repositoryId.id, "branches", "master")
+                }
+                accept(VersionDeltaStreamV2.CONTENT_TYPE)
+            }
+
+            response shouldHaveStatus HttpStatusCodes.STATUS_CODE_OK
+            response.shouldHaveContentType(VersionDeltaStreamV2.CONTENT_TYPE)
+        }
+    }
+
+    @Test
+    fun `getRepositoryBranch responds with v1 branch if requested`() {
+        val repositoryId = RepositoryId("repo1")
+        val branchV1ContentType =
+            ContentType.parse("application/x.modelix.branch+json;version=1").withCharset(Charsets.UTF_8)
+
+        runWithTestModelServer { _, fixture ->
+            fixture.repositoriesManager.createRepository(repositoryId, null)
+            val client = createClient {
+                install(ContentNegotiation) {
+                    json()
+                    register(branchV1ContentType, KotlinxSerializationConverter(DefaultJson))
+                }
+            }
+
+            val response = client.get {
+                url {
+                    appendPathSegments("v2", "repositories", repositoryId.id, "branches", "master")
+                }
+                accept(branchV1ContentType)
+            }
+
+            response.shouldHaveContentType(branchV1ContentType)
+            response.body<BranchV1>() shouldBe BranchV1(
+                "master",
+                fixture.repositoriesManager.pollVersionHash(repositoryId.getBranchReference("master"), null),
             )
         }
     }

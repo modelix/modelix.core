@@ -3,6 +3,7 @@ package {{apiPackage}}
 
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 {{#featureResources}}
 import {{packageName}}.Paths
@@ -22,6 +23,11 @@ import io.ktor.util.pipeline.PipelineContext
 abstract class {{classname}} {
 {{#operations}}
     {{#operation}}
+
+        {{#vendorExtensions}}
+            {{#x-modelix-media-type-handlers}}
+                {{#entrySet}}
+
     /**{{#summary}}
      * {{.}}{{/summary}}
      *
@@ -29,13 +35,37 @@ abstract class {{classname}} {
      *
      * {{httpMethod}} {{path}}
      *
-    {{#allParams}}* @param {{paramName}} {{description}} {{^required}}(optional{{#defaultValue}}, default to {{{.}}}{{/defaultValue}}){{/required}}
-    {{/allParams}}
+     {{#allParams}}
+     * @param {{paramName}} {{description}} {{^required}}(optional{{#defaultValue}}, default to {{{.}}}{{/defaultValue}}){{/required}}
+     {{/allParams}}
+     */
+     {{#isDeprecated}}
+     @Deprecated("deprecated flag is set in the OpenAPI specification")
+     {{/isDeprecated}}
+    abstract suspend fun PipelineContext<Unit, ApplicationCall>.{{operationId}}{{#lambda.titlecase}}{{key}}{{/lambda.titlecase}}({{#allParams}}{{paramName}}: {{{dataType}}}{{^required}}?{{/required}}{{#required}}{{#isNullable}}?{{/isNullable}}{{/required}}{{^-last}}, {{/-last}}{{/allParams}})
+
+                {{/entrySet}}
+            {{/x-modelix-media-type-handlers}}
+            {{^x-modelix-media-type-handlers}}
+
+    /**{{#summary}}
+     * {{.}}{{/summary}}
+     *
+     * {{unescapedNotes}}
+     *
+     * {{httpMethod}} {{path}}
+     *
+     {{#allParams}}
+     * @param {{paramName}} {{description}} {{^required}}(optional{{#defaultValue}}, default to {{{.}}}{{/defaultValue}}){{/required}}
+     {{/allParams}}
      */
     {{#isDeprecated}}
     @Deprecated("deprecated flag is set in the OpenAPI specification")
     {{/isDeprecated}}
     abstract suspend fun PipelineContext<Unit, ApplicationCall>.{{operationId}}({{#allParams}}{{paramName}}: {{{dataType}}}{{^required}}?{{/required}}{{#required}}{{#isNullable}}?{{/isNullable}}{{/required}}{{^-last}}, {{/-last}}{{/allParams}})
+
+            {{/x-modelix-media-type-handlers}}
+        {{/vendorExtensions}}
 
     {{/operation}}
 {{/operations}}
@@ -55,9 +85,30 @@ abstract class {{classname}} {
     {{#operations}}
     {{#operation}}
     protected open fun Route.install_{{operationId}}() {
+        {{#vendorExtensions}}
+            {{#x-modelix-media-type-handlers}}
+                {{#entrySet}}
+
+                    accept(
+                        {{#value}}
+                            ContentType.parse("{{{.}}}"),
+                        {{/value}}
+                    ) {
+                        {{#lambda.lowercase}}{{httpMethod}}{{/lambda.lowercase}}<Paths.{{operationId}}> { parameters ->
+                            {{operationId}}{{#lambda.titlecase}}{{key}}{{/lambda.titlecase}}({{#allParams}}parameters.{{paramName}}{{^-last}}, {{/-last}}{{/allParams}})
+                        }
+                    }
+
+                {{/entrySet}}
+            {{/x-modelix-media-type-handlers}}
+            {{^x-modelix-media-type-handlers}}
+
         {{#lambda.lowercase}}{{httpMethod}}{{/lambda.lowercase}}<Paths.{{operationId}}> { parameters ->
-            {{#lambda.indented_8}}{{operationId}}({{#allParams}}parameters.{{paramName}}{{^-last}}, {{/-last}}{{/allParams}}){{/lambda.indented_8}}
+            {{operationId}}({{#allParams}}parameters.{{paramName}}{{^-last}}, {{/-last}}{{/allParams}})
         }
+
+            {{/x-modelix-media-type-handlers}}
+        {{/vendorExtensions}}
     }
     {{/operation}}
     {{/operations}}

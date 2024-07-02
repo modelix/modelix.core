@@ -55,6 +55,7 @@ import kotlinx.serialization.json.Json
 import org.apache.commons.io.FileUtils
 import org.apache.ignite.Ignition
 import org.modelix.api.v1.Problem
+import org.modelix.api.v2.Paths.registerJsonTypes
 import org.modelix.authorization.KeycloakUtils
 import org.modelix.authorization.NoPermissionException
 import org.modelix.authorization.NotLoggedInException
@@ -203,6 +204,7 @@ object Main {
                 }
                 install(ContentNegotiation) {
                     json()
+                    registerJsonTypes()
                 }
                 install(CORS) {
                     anyHost()

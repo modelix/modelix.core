@@ -68,7 +68,6 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotest.assertions.coreJvm)
     testImplementation(libs.kotest.assertions.ktor)
-    testImplementation(libs.cucumber.java)
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.coroutines.test)
     testImplementation(libs.jsoup)
@@ -82,10 +81,6 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
-}
-
-val cucumberRuntime by configurations.creating {
-    extendsFrom(configurations["testImplementation"])
 }
 
 tasks.named<ShadowJar>("shadowJar") {
@@ -113,28 +108,6 @@ val fatJarArtifact = artifacts.add("archives", fatJarFile) {
     builtBy("shadowJar")
 }
 
-val cucumber = task("cucumber") {
-    dependsOn("shadowJar", "compileTestJava")
-    doLast {
-        javaexec {
-            mainClass.set("io.cucumber.core.cli.Main")
-            classpath = cucumberRuntime + sourceSets.main.get().output + sourceSets.test.get().output
-            args = listOf(
-                "--plugin",
-                "pretty",
-                // Enable junit reporting so that GitHub actions can report on these tests, too
-                "--plugin",
-                "junit:${project.layout.buildDirectory.dir("test-results/cucumber.xml").get()}",
-                // Change glue for your project package where the step definitions are.
-                "--glue",
-                "org.modelix.model.server.functionaltests",
-                // Specify where the feature files are.
-                "src/test/resources/functionaltests",
-            )
-        }
-    }
-}
-
 // copies the openAPI specifications from the api folder into a resource
 // folder so that they are packaged and deployed with the model-server
 tasks.register<Copy>("copyApis") {
@@ -149,7 +122,6 @@ tasks.named("compileKotlin") {
 }
 
 tasks.named("build") {
-    dependsOn("cucumber")
     dependsOn("copyApis")
 }
 

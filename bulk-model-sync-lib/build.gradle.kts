@@ -3,6 +3,7 @@ plugins {
 }
 
 kotlin {
+    jvmToolchain(11)
     js(IR) {
         browser {
             testTask {
@@ -13,7 +14,6 @@ kotlin {
         }
     }
     jvm {
-        jvmToolchain(11)
         testRuns["test"].executionTask.configure {
             useJUnitPlatform()
         }

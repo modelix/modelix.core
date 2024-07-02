@@ -38,6 +38,7 @@ dependencies {
 
 intellij {
     localPath = copyMps().absolutePath
+    instrumentCode = false
 }
 
 tasks {

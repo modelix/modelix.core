@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,13 +74,13 @@ kotlin {
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
-    kotlinOptions {
-        jvmTarget = "11"
-        freeCompilerArgs += listOf("-Xjvm-default=all-compatibility", "-Xcontext-receivers")
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_11)
+        freeCompilerArgs.addAll("-Xjvm-default=all-compatibility", "-Xcontext-receivers")
     }
 }
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon>().all {
-    kotlinOptions {
-        freeCompilerArgs += listOf("-Xcontext-receivers")
+    compilerOptions {
+        freeCompilerArgs.add("-Xcontext-receivers")
     }
 }

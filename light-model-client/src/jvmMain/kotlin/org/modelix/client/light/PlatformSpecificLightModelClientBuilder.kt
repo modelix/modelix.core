@@ -17,5 +17,5 @@ import io.ktor.client.engine.HttpClientEngineFactory
 import io.ktor.client.engine.cio.CIO
 
 actual class PlatformSpecificLightModelClientBuilder : LightModelClientBuilder() {
-    override fun getDefaultEngineFactory(): HttpClientEngineFactory<*> = CIO
+    actual override fun getDefaultEngineFactory(): HttpClientEngineFactory<*> = CIO
 }

@@ -17,5 +17,5 @@ import io.ktor.client.engine.HttpClientEngineFactory
 import io.ktor.client.engine.js.Js
 
 actual class PlatformSpecificLightModelClientBuilder actual constructor() : LightModelClientBuilder() {
-    override fun getDefaultEngineFactory(): HttpClientEngineFactory<*> = Js
+    actual override fun getDefaultEngineFactory(): HttpClientEngineFactory<*> = Js
 }

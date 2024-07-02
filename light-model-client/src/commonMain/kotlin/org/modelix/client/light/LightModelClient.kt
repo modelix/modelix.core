@@ -766,7 +766,9 @@ private class AutoTransactions(val delegate: ITransactionManager) : ITransaction
     }
 }
 
-expect class PlatformSpecificLightModelClientBuilder() : LightModelClientBuilder
+expect class PlatformSpecificLightModelClientBuilder() : LightModelClientBuilder {
+    override fun getDefaultEngineFactory(): HttpClientEngineFactory<*>
+}
 
 abstract class LightModelClientBuilder {
     private var host: String = "localhost"

@@ -53,3 +53,40 @@ To reformat and add license header to all files run:
 Valid keys are keys starting with the PROTECTED_PREFIX ($$$).
 
 For details please refer to the OpenAPI documentation under `doc/model-server.json`.
+
+== JSON web tokens (JWT) based authorization
+
+By default, the model server doesn't check any permissions.
+To enable it you can specify the following environment variables.
+
+
+|===
+|Variable |Description
+
+|MODELIX_JWT_SIGNATURE_HMAC512_KEY
+ MODELIX_JWT_SIGNATURE_HMAC384_KEY
+ MODELIX_JWT_SIGNATURE_HMAC256_KEY
+|If JWT tokens are signed with the HMAC algorithm, this variable specifies the secret key.
+
+ The `org.modelix:authorization` library provides a utility function `createModelixAccessToken`
+ for creating valid tokens signed with this algorithm,
+
+|MODELIX_JWT_SIGNATURE_HMAC512_KEY_FILE
+ MODELIX_JWT_SIGNATURE_HMAC384_KEY_FILE
+ MODELIX_JWT_SIGNATURE_HMAC256_KEY_FILE
+|Instead of specifying the key directly via `MODELIX_JWT_SIGNATURE_HMAC512_KEY`
+ a path to a file containing the key can be specified.
+ This is useful when keys are stored in kubernetes secrets.
+
+|MODELIX_JWK_URI
+|If keys are created and signed by some OpenID connect server the public keys are provided via HTTP.
+ Here you can specify the URI of the key set.
+ Only RSA (256, 284 and 512) keys are currently supported.
+
+|===
+
+The `permissions` claim of the token is expected to list directly granted permission.
+Additional granted permissions may be derived from that list.
+For example, an `admin` permission on a repository will grant write permission on all branches.
+
+A detailed list of all permissions can be found on the model server at `/permissions`.

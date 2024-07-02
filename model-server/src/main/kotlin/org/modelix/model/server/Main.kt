@@ -55,12 +55,11 @@ import kotlinx.serialization.json.Json
 import org.apache.commons.io.FileUtils
 import org.apache.ignite.Ignition
 import org.modelix.api.v1.Problem
-import org.modelix.authorization.KeycloakUtils
+import org.modelix.authorization.ModelixAuthorization
 import org.modelix.authorization.NoPermissionException
 import org.modelix.authorization.NotLoggedInException
-import org.modelix.authorization.installAuthentication
+import org.modelix.authorization.permissions.MODEL_SERVER_SCHEMA
 import org.modelix.model.InMemoryModels
-import org.modelix.model.server.handlers.DeprecatedLightModelServer
 import org.modelix.model.server.handlers.HealthApiImpl
 import org.modelix.model.server.handlers.HttpException
 import org.modelix.model.server.handlers.IdsApiImpl
@@ -177,7 +176,6 @@ object Main {
                     FileUtils.readFileToString(sharedSecretFile, StandardCharsets.UTF_8),
                 )
             }
-            val jsonModelServer = DeprecatedLightModelServer(localModelClient, repositoriesManager)
             val repositoryOverview = RepositoryOverview(repositoriesManager)
             val historyHandler = HistoryHandler(localModelClient, repositoriesManager)
             val contentExplorer = ContentExplorer(localModelClient, repositoriesManager)
@@ -190,7 +188,9 @@ object Main {
 
             val ktorServer: NettyApplicationEngine = embeddedServer(Netty, port = port, configure = configureNetty) {
                 install(Routing)
-                installAuthentication(unitTestMode = !KeycloakUtils.isEnabled())
+                install(ModelixAuthorization) {
+                    permissionSchema = MODEL_SERVER_SCHEMA
+                }
                 install(ForwardedHeaders)
                 install(Resources)
                 // https://opensource.zalando.com/restful-api-guidelines/#136
@@ -218,7 +218,6 @@ object Main {
                 historyHandler.init(this)
                 repositoryOverview.init(this)
                 contentExplorer.init(this)
-                jsonModelServer.init(this)
                 modelReplicationServer.init(this)
                 metricsApi.init(this)
                 IdsApiImpl(repositoriesManager, localModelClient).init(this)
@@ -252,9 +251,6 @@ object Main {
                                 ul {
                                     li {
                                         a("repos/") { +"View Repositories on the Model Server" }
-                                    }
-                                    li {
-                                        a("json/") { +"JSON API for JavaScript clients" }
                                     }
                                     li {
                                         a("headers") { +"View HTTP headers" }

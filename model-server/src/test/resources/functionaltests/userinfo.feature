@@ -32,4 +32,4 @@ Feature: Basic routes
     Given the server has been started with in-memory storage
     When I visit "/getEmail"
     Then I should get an OK response
-    And the text of the page should be "unit-tests@example.com"
+    And the text of the page should be "<no email>"

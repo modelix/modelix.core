@@ -42,8 +42,6 @@ import org.modelix.authorization.NoPermissionException
 import org.modelix.authorization.asResource
 import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
-import org.modelix.authorization.requiresPermission
-import org.modelix.authorization.toKeycloakScope
 import org.modelix.model.InMemoryModels
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.persistent.HashUtil
@@ -116,89 +114,86 @@ class KeyValueLikeModelServer(
                     }
                 }
             }
-            requiresPermission(PERMISSION_MODEL_SERVER, EPermissionType.READ) {
-                get<Paths.getKeyGet> {
-                    val key = call.parameters["key"]!!
-                    checkKeyPermission(key, EPermissionType.READ)
-                    val value = storeClient[key]
-                    respondValue(key, value)
-                }
-                get<Paths.pollKeyGet> {
-                    val key: String = call.parameters["key"]!!
-                    val lastKnownValue = call.request.queryParameters["lastKnownValue"]
-                    checkKeyPermission(key, EPermissionType.READ)
-                    val newValue = pollEntry(storeClient.getGenericStore(), ObjectInRepository.global(key), lastKnownValue)
-                    respondValue(key, newValue)
-                }
+            get<Paths.getKeyGet> {
+                val key = call.parameters["key"]!!
+                checkKeyPermission(key, EPermissionType.READ)
+                val value = storeClient[key]
+                respondValue(key, value)
+            }
+            get<Paths.pollKeyGet> {
+                val key: String = call.parameters["key"]!!
+                val lastKnownValue = call.request.queryParameters["lastKnownValue"]
+                checkKeyPermission(key, EPermissionType.READ)
+                val newValue = pollEntry(storeClient.getGenericStore(), ObjectInRepository.global(key), lastKnownValue)
+                respondValue(key, newValue)
+            }
 
-                get<Paths.getEmailGet> {
-                    call.respondText(call.getUserName() ?: "<no email>")
-                }
-                post<Paths.counterKeyPost> {
-                    val key = call.parameters["key"]!!
-                    checkKeyPermission(key, EPermissionType.WRITE)
-                    val value = storeClient.generateId(key)
-                    call.respondText(text = value.toString())
-                }
+            get<Paths.getEmailGet> {
+                call.respondText(call.getUserName() ?: "<no email>")
+            }
+            post<Paths.counterKeyPost> {
+                val key = call.parameters["key"]!!
+                checkKeyPermission(key, EPermissionType.WRITE)
+                val value = storeClient.generateId(key)
+                call.respondText(text = value.toString())
+            }
 
-                get<Paths.getRecursivelyKeyGet> {
-                    val key = call.parameters["key"]!!
-                    call.respondText(collect(key).toString(2), contentType = ContentType.Application.Json)
-                }
+            get<Paths.getRecursivelyKeyGet> {
+                val key = call.parameters["key"]!!
+                checkKeyPermission(key, EPermissionType.READ)
+                call.respondText(collect(key, this).toString(2), contentType = ContentType.Application.Json)
+            }
 
-                put<Paths.putKeyPut> {
-                    val key = call.parameters["key"]!!
-                    val value = call.receiveText()
-                    try {
-                        putEntries(mapOf(key to value))
-                        call.respondText("OK")
-                    } catch (e: NotFoundException) {
-                        throw HttpException(HttpStatusCode.NotFound, title = "Not found", details = e.message, cause = e)
-                    }
-                }
-
-                put<Paths.putAllPut> {
-                    val jsonStr = call.receiveText()
-                    val json = JSONArray(jsonStr)
-                    var entries: MutableMap<String, String?> = LinkedHashMap()
-                    for (entry_ in json) {
-                        val entry = entry_ as JSONObject
-                        val key = entry.getString("key")
-                        val value = entry.optString("value", null)
-                        entries[key] = value
-                    }
-                    entries = sortByDependency(entries)
-                    try {
-                        putEntries(entries)
-                        call.respondText(entries.size.toString() + " entries written")
-                    } catch (e: NotFoundException) {
-                        throw HttpException(HttpStatusCode.NotFound, title = "Not found", details = e.message, cause = e)
-                    }
-                }
-
-                put<Paths.getAllPut> {
-                    // PUT is used, because a GET is not allowed to have a request body that changes the result of the
-                    // request. It would be legal for an HTTP proxy to cache all /getAll requests and ignore the body.
-                    val reqJsonStr = call.receiveText()
-                    val reqJson = JSONArray(reqJsonStr)
-                    val respJson = JSONArray()
-                    val keys: MutableList<String> = ArrayList(reqJson.length())
-                    for (entry_ in reqJson) {
-                        val key = entry_ as String
-                        checkKeyPermission(key, EPermissionType.READ)
-                        keys.add(key)
-                    }
-                    val values = storeClient.getAll(keys)
-                    for (i in keys.indices) {
-                        val respEntry = JSONObject()
-                        respEntry.put("key", keys[i])
-                        respEntry.put("value", values[i])
-                        respJson.put(respEntry)
-                    }
-                    call.respondText(respJson.toString(), contentType = ContentType.Application.Json)
+            put<Paths.putKeyPut> {
+                val key = call.parameters["key"]!!
+                val value = call.receiveText()
+                try {
+                    putEntries(mapOf(key to value))
+                    call.respondText("OK")
+                } catch (e: NotFoundException) {
+                    throw HttpException(HttpStatusCode.NotFound, title = "Not found", details = e.message, cause = e)
                 }
             }
-            requiresPermission(PERMISSION_MODEL_SERVER, EPermissionType.WRITE) {
+
+            put<Paths.putAllPut> {
+                val jsonStr = call.receiveText()
+                val json = JSONArray(jsonStr)
+                var entries: MutableMap<String, String?> = LinkedHashMap()
+                for (entry_ in json) {
+                    val entry = entry_ as JSONObject
+                    val key = entry.getString("key")
+                    val value = entry.optString("value", null)
+                    entries[key] = value
+                }
+                entries = sortByDependency(entries)
+                try {
+                    putEntries(entries)
+                    call.respondText(entries.size.toString() + " entries written")
+                } catch (e: NotFoundException) {
+                    throw HttpException(HttpStatusCode.NotFound, title = "Not found", details = e.message, cause = e)
+                }
+            }
+
+            put<Paths.getAllPut> {
+                // PUT is used, because a GET is not allowed to have a request body that changes the result of the
+                // request. It would be legal for an HTTP proxy to cache all /getAll requests and ignore the body.
+                val reqJsonStr = call.receiveText()
+                val reqJson = JSONArray(reqJsonStr)
+                val respJson = JSONArray()
+                val keys: MutableList<String> = ArrayList(reqJson.length())
+                for (entry_ in reqJson) {
+                    val key = entry_ as String
+                    checkKeyPermission(key, EPermissionType.READ)
+                    keys.add(key)
+                }
+                val values = storeClient.getAll(keys)
+                for (i in keys.indices) {
+                    val respEntry = JSONObject()
+                    respEntry.put("key", keys[i])
+                    respEntry.put("value", values[i])
+                    respJson.put(respEntry)
+                }
+                call.respondText(respJson.toString(), contentType = ContentType.Application.Json)
             }
         }
     }
@@ -231,7 +226,7 @@ class KeyValueLikeModelServer(
         return sorted
     }
 
-    fun collect(rootKey: String): JSONArray {
+    fun collect(rootKey: String, callContext: CallContext?): JSONArray {
         val result = JSONArray()
         val processed: MutableSet<String> = HashSet()
         val pending: MutableSet<String> = HashSet()
@@ -239,6 +234,9 @@ class KeyValueLikeModelServer(
         while (pending.isNotEmpty()) {
             val keys: List<String> = ArrayList(pending)
             pending.clear()
+            if (callContext != null) {
+                keys.forEach { callContext.checkKeyPermission(it, EPermissionType.READ) }
+            }
             val values = storeClient.getAll(keys)
             for (i in keys.indices) {
                 val key = keys[i]
@@ -298,31 +296,21 @@ class KeyValueLikeModelServer(
         val userDefinedEntries = LinkedHashMap<String, String?>()
 
         for ((key, value) in newEntries) {
-            when {
-                HashUtil.isSha256(key) -> {
+            switchKeyType(
+                key = key,
+                immutableObject = {
                     hashedObjects[key] = value ?: throw IllegalArgumentException("No value provided for $key")
-                }
-
-                BranchReference.tryParseBranch(key) != null -> {
-                    branchChanges[BranchReference.tryParseBranch(key)!!] = value
-                }
-
-                key.startsWith(PROTECTED_PREFIX) -> {
-                    throw NoPermissionException("Access to keys starting with '$PROTECTED_PREFIX' is only permitted to the model server itself.")
-                }
-
-                key.startsWith(RepositoriesManager.KEY_PREFIX) -> {
-                    throw NoPermissionException("Access to keys starting with '${RepositoriesManager.KEY_PREFIX}' is only permitted to the model server itself.")
-                }
-
-                key == RepositoriesManager.LEGACY_SERVER_ID_KEY || key == RepositoriesManager.LEGACY_SERVER_ID_KEY2 -> {
+                },
+                branch = {
+                    branchChanges[it] = value
+                },
+                serverId = {
                     throw NoPermissionException("'$key' is read-only.")
-                }
-
-                else -> {
+                },
+                unknown = {
                     userDefinedEntries[key] = value
-                }
-            }
+                },
+            )
         }
 
         HashUtil.checkObjectHashes(hashedObjects)
@@ -341,8 +329,10 @@ class KeyValueLikeModelServer(
             storeClient.getGenericStore().putAll(userDefinedEntries.mapKeys { ObjectInRepository.global(it.key) })
             for ((branch, value) in branchChanges) {
                 if (value == null) {
+                    checkPermission("repository", branch.repositoryId.id, "branch", branch.branchName, "delete")
                     repositoriesManager.removeBranchesBlocking(branch.repositoryId, setOf(branch.branchName))
                 } else {
+                    checkPermission("repository", branch.repositoryId.id, "branch", branch.branchName, "push")
                     repositoriesManager.mergeChangesBlocking(branch, value)
                 }
             }
@@ -359,24 +349,45 @@ class KeyValueLikeModelServer(
 
     @Throws(IOException::class)
     private fun CallContext.checkKeyPermission(key: String, type: EPermissionType) {
-        if (key.startsWith(PROTECTED_PREFIX)) {
-            throw NoPermissionException("Access to keys starting with '$PROTECTED_PREFIX' is only permitted to the model server itself.")
+        val isWrite = type == EPermissionType.WRITE
+        switchKeyType(
+            key = key,
+            immutableObject = {
+                call.checkPermission("legacy-global-objects", if (isWrite) "add" else "read")
+                return
+            },
+            branch = {
+                call.checkPermission(
+                    "repository",
+                    it.repositoryId.id,
+                    "branch",
+                    it.branchName,
+                    if (isWrite) "push" else "pull",
+                )
+            },
+            serverId = {
+                if (isWrite) throw NoPermissionException("'$key' is read-only.")
+            },
+            unknown = {
+                call.checkPermission("legacy-user-defined-entries", if (isWrite) "write" else "read")
+            },
+        )
+    }
+
+    private inline fun <R> switchKeyType(
+        key: String,
+        immutableObject: () -> R,
+        branch: (branch: BranchReference) -> R,
+        serverId: () -> R,
+        unknown: () -> R,
+    ): R {
+        return when {
+            HashUtil.isSha256(key) -> immutableObject()
+            BranchReference.tryParseBranch(key) != null -> branch(BranchReference.tryParseBranch(key)!!)
+            key.startsWith(PROTECTED_PREFIX) -> throw NoPermissionException("Access to keys starting with '$PROTECTED_PREFIX' is only permitted to the model server itself.")
+            key.startsWith(RepositoriesManager.KEY_PREFIX) -> throw NoPermissionException("Access to keys starting with '${RepositoriesManager.KEY_PREFIX}' is only permitted to the model server itself.")
+            key == RepositoriesManager.LEGACY_SERVER_ID_KEY || key == RepositoriesManager.LEGACY_SERVER_ID_KEY2 -> serverId()
+            else -> unknown()
         }
-        if (key.startsWith(RepositoriesManager.KEY_PREFIX)) {
-            throw NoPermissionException("Access to keys starting with '${RepositoriesManager.KEY_PREFIX}' is only permitted to the model server itself.")
-        }
-        if ((key == RepositoriesManager.LEGACY_SERVER_ID_KEY || key == RepositoriesManager.LEGACY_SERVER_ID_KEY2) && type.includes(
-                EPermissionType.WRITE,
-            )
-        ) {
-            throw NoPermissionException("'$key' is read-only.")
-        }
-        if (HashUtil.isSha256(key)) {
-            // Reading entries with a hash key is equivalent to uncompressing data that the user already has access to.
-            // If he isn't allowed to read the entry then he shouldn't be allowed to know the hash.
-            // A permission check has happened somewhere earlier.
-            return
-        }
-        call.checkPermission(MODEL_SERVER_ENTRY.createInstance(key), type.toKeycloakScope())
     }
 }

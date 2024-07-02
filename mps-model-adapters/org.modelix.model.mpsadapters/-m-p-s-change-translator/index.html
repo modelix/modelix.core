@@ -1,0 +1,873 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>MPSChangeTranslator</title>
+<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../styles/style.css" rel="Stylesheet">
+<link href="../../../styles/main.css" rel="Stylesheet">
+<link href="../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+<nav class="navigation" id="navigation-wrapper">
+    <div class="navigation--inner">
+        <div class="navigation-title">
+            <button class="menu-toggle" id="menu-toggle" type="button">toggle menu</button>
+            <div class="library-name">
+<a class="library-name--link" href="../../../index.html">
+                            modelix.core
+                    </a>            </div>
+            <div class="library-version">8.11.0
+            </div>
+        </div>
+        <div class="filter-section" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":mps-model-adapters:dokkaHtmlPartial/main">jvm</button>
+        </div>
+    </div>
+    <div class="navigation-controls">
+        <button class="navigation-controls--btn navigation-controls--theme" id="theme-toggle-button" type="button">switch theme</button>
+        <div class="navigation-controls--btn navigation-controls--search" id="searchBar" role="button">search in API</div>
+    </div>
+</nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="sidebar--inner" id="sideMenu"></div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="mps-model-adapters::org.modelix.model.mpsadapters/MPSChangeTranslator///PointingToDeclaration//-769643517">
+  <div class="breadcrumbs"><a href="../../index.html">mps-model-adapters</a><span class="delimiter">/</span><a href="../index.html">org.modelix.model.mpsadapters</a><span class="delimiter">/</span><span class="current">MPSChangeTranslator</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>MPSChange</span><wbr><span><span>Translator</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">MPSChangeTranslator</a> : <a href="../-global-model-listener/index.html">GlobalModelListener</a>, <span data-unresolved-link="org.jetbrains.mps.openapi.model/SNodeChangeListener///PointingToDeclaration/">SNodeChangeListener</span>, <span data-unresolved-link="org.jetbrains.mps.openapi.module/SModuleListener///PointingToDeclaration/">SModuleListener</span>, <span data-unresolved-link="org.jetbrains.mps.openapi.module/SRepositoryListener///PointingToDeclaration/">SRepositoryListener</span>, <span data-unresolved-link="jetbrains.mps.smodel.event/SModelListener///PointingToDeclaration/">SModelListener</span>, <span data-unresolved-link="org.jetbrains.mps.openapi.model/SModelListener///PointingToDeclaration/">SModelListener</span></div></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="953500344%2FConstructors%2F-769643517" anchor-label="MPSChangeTranslator" id="953500344%2FConstructors%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-p-s-change-translator.html"><span>MPSChange</span><wbr><span><span>Translator</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="953500344%2FConstructors%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="751694419%2FFunctions%2F-769643517" anchor-label="beforeChildRemoved" id="751694419%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="before-child-removed.html"><span>before</span><wbr><span>Child</span><wbr><span><span>Removed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="751694419%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="before-child-removed.html"><span class="token function">beforeChildRemoved</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">event<span class="token operator">: </span><span data-unresolved-link="jetbrains.mps.smodel.event/SModelChildEvent///PointingToDeclaration/">SModelChildEvent</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1909166102%2FFunctions%2F-769643517" anchor-label="beforeModelDisposed" id="-1909166102%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="before-model-disposed.html"><span>before</span><wbr><span>Model</span><wbr><span><span>Disposed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1909166102%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="before-model-disposed.html"><span class="token function">beforeModelDisposed</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">model<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.model/SModel///PointingToDeclaration/">SModel</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="112423891%2FFunctions%2F-769643517" anchor-label="beforeModelFileChanged" id="112423891%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="index.html#112423891%2FFunctions%2F-769643517"><span>before</span><wbr><span>Model</span><wbr><span>File</span><wbr><span><span>Changed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="112423891%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="index.html#112423891%2FFunctions%2F-769643517"><span class="token function"><strike>beforeModelFileChanged</strike></span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p0<span class="token operator">: </span><span data-unresolved-link="jetbrains.mps.smodel.event/SModelFileChangedEvent///PointingToDeclaration/">SModelFileChangedEvent</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2012021489%2FFunctions%2F-769643517" anchor-label="beforeModelRemoved" id="-2012021489%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="before-model-removed.html"><span>before</span><wbr><span>Model</span><wbr><span><span>Removed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2012021489%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="before-model-removed.html"><span class="token function">beforeModelRemoved</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">module<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SModule///PointingToDeclaration/">SModule</span><span class="token punctuation">, </span></span><span class="parameter ">model<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.model/SModel///PointingToDeclaration/">SModel</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="200657360%2FFunctions%2F-769643517" anchor-label="beforeModelRenamed" id="200657360%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="before-model-renamed.html"><span>before</span><wbr><span>Model</span><wbr><span><span>Renamed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="200657360%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="before-model-renamed.html"><span class="token function">beforeModelRenamed</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">event<span class="token operator">: </span><span data-unresolved-link="jetbrains.mps.smodel.event/SModelRenamedEvent///PointingToDeclaration/">SModelRenamedEvent</span></span></span><span class="token punctuation">)</span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="before-model-renamed.html"><span class="token function">beforeModelRenamed</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">module<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SModule///PointingToDeclaration/">SModule</span><span class="token punctuation">, </span></span><span class="parameter ">model<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.model/SModel///PointingToDeclaration/">SModel</span><span class="token punctuation">, </span></span><span class="parameter ">reference<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.model/SModelReference///PointingToDeclaration/">SModelReference</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-601828510%2FFunctions%2F-769643517" anchor-label="beforeModuleRemoved" id="-601828510%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="before-module-removed.html"><span>before</span><wbr><span>Module</span><wbr><span><span>Removed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-601828510%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="before-module-removed.html"><span class="token function">beforeModuleRemoved</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">module<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SModule///PointingToDeclaration/">SModule</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-129571961%2FFunctions%2F-769643517" anchor-label="beforeRootRemoved" id="-129571961%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="before-root-removed.html"><span>before</span><wbr><span>Root</span><wbr><span><span>Removed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-129571961%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="before-root-removed.html"><span class="token function">beforeRootRemoved</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">event<span class="token operator">: </span><span data-unresolved-link="jetbrains.mps.smodel.event/SModelRootEvent///PointingToDeclaration/">SModelRootEvent</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="326509396%2FFunctions%2F-769643517" anchor-label="childAdded" id="326509396%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="child-added.html"><span>child</span><wbr><span><span>Added</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="326509396%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="child-added.html"><span class="token function">childAdded</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">event<span class="token operator">: </span><span data-unresolved-link="jetbrains.mps.smodel.event/SModelChildEvent///PointingToDeclaration/">SModelChildEvent</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1210181516%2FFunctions%2F-769643517" anchor-label="childRemoved" id="-1210181516%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="child-removed.html"><span>child</span><wbr><span><span>Removed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1210181516%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="child-removed.html"><span class="token function">childRemoved</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">event<span class="token operator">: </span><span data-unresolved-link="jetbrains.mps.smodel.event/SModelChildEvent///PointingToDeclaration/">SModelChildEvent</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1880738820%2FFunctions%2F-769643517" anchor-label="commandFinished" id="-1880738820%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="command-finished.html"><span>command</span><wbr><span><span>Finished</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1880738820%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="command-finished.html"><span class="token function">commandFinished</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">repository<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SRepository///PointingToDeclaration/">SRepository</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-272067719%2FFunctions%2F-769643517" anchor-label="commandStarted" id="-272067719%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="command-started.html"><span>command</span><wbr><span><span>Started</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-272067719%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="command-started.html"><span class="token function">commandStarted</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">repository<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SRepository///PointingToDeclaration/">SRepository</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-432481285%2FFunctions%2F-769643517" anchor-label="conflictDetected" id="-432481285%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="conflict-detected.html"><span>conflict</span><wbr><span><span>Detected</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-432481285%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="conflict-detected.html"><span class="token function">conflictDetected</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">model<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.model/SModel///PointingToDeclaration/">SModel</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1305792067%2FFunctions%2F-769643517" anchor-label="dependencyAdded" id="1305792067%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="dependency-added.html"><span>dependency</span><wbr><span><span>Added</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1305792067%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="dependency-added.html"><span class="token function">dependencyAdded</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">module<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SModule///PointingToDeclaration/">SModule</span><span class="token punctuation">, </span></span><span class="parameter ">dependency<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SDependency///PointingToDeclaration/">SDependency</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-501351005%2FFunctions%2F-769643517" anchor-label="dependencyRemoved" id="-501351005%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="dependency-removed.html"><span>dependency</span><wbr><span><span>Removed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-501351005%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="dependency-removed.html"><span class="token function">dependencyRemoved</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">module<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SModule///PointingToDeclaration/">SModule</span><span class="token punctuation">, </span></span><span class="parameter ">dependency<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SDependency///PointingToDeclaration/">SDependency</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="430769702%2FFunctions%2F-769643517" anchor-label="devkitAdded" id="430769702%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="devkit-added.html"><span>devkit</span><wbr><span><span>Added</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="430769702%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="devkit-added.html"><span class="token function">devkitAdded</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">event<span class="token operator">: </span><span data-unresolved-link="jetbrains.mps.smodel.event/SModelDevKitEvent///PointingToDeclaration/">SModelDevKitEvent</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1605743290%2FFunctions%2F-769643517" anchor-label="devkitRemoved" id="-1605743290%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="devkit-removed.html"><span>devkit</span><wbr><span><span>Removed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1605743290%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="devkit-removed.html"><span class="token function">devkitRemoved</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">event<span class="token operator">: </span><span data-unresolved-link="jetbrains.mps.smodel.event/SModelDevKitEvent///PointingToDeclaration/">SModelDevKitEvent</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2069557832%2FFunctions%2F-769643517" anchor-label="getPriority" id="-2069557832%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-priority.html"><span>get</span><wbr><span><span>Priority</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2069557832%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="get-priority.html"><span class="token function">getPriority</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="jetbrains.mps.smodel.event/SModelListener.SModelListenerPriority///PointingToDeclaration/">SModelListener.SModelListenerPriority</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1321280846%2FFunctions%2F-769643517" anchor-label="importAdded" id="1321280846%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="import-added.html"><span>import</span><wbr><span><span>Added</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1321280846%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="import-added.html"><span class="token function">importAdded</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">event<span class="token operator">: </span><span data-unresolved-link="jetbrains.mps.smodel.event/SModelImportEvent///PointingToDeclaration/">SModelImportEvent</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1032878958%2FFunctions%2F-769643517" anchor-label="importRemoved" id="1032878958%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="import-removed.html"><span>import</span><wbr><span><span>Removed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1032878958%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="import-removed.html"><span class="token function">importRemoved</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">event<span class="token operator">: </span><span data-unresolved-link="jetbrains.mps.smodel.event/SModelImportEvent///PointingToDeclaration/">SModelImportEvent</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1835431445%2FFunctions%2F-769643517" anchor-label="languageAdded" id="1835431445%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="language-added.html"><span>language</span><wbr><span><span>Added</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1835431445%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="language-added.html"><span class="token function">languageAdded</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">event<span class="token operator">: </span><span data-unresolved-link="jetbrains.mps.smodel.event/SModelLanguageEvent///PointingToDeclaration/">SModelLanguageEvent</span></span></span><span class="token punctuation">)</span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="language-added.html"><span class="token function">languageAdded</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">module<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SModule///PointingToDeclaration/">SModule</span><span class="token punctuation">, </span></span><span class="parameter ">language<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.language/SLanguage///PointingToDeclaration/">SLanguage</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="529732949%2FFunctions%2F-769643517" anchor-label="languageRemoved" id="529732949%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="language-removed.html"><span>language</span><wbr><span><span>Removed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="529732949%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="language-removed.html"><span class="token function">languageRemoved</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">event<span class="token operator">: </span><span data-unresolved-link="jetbrains.mps.smodel.event/SModelLanguageEvent///PointingToDeclaration/">SModelLanguageEvent</span></span></span><span class="token punctuation">)</span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="language-removed.html"><span class="token function">languageRemoved</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">module<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SModule///PointingToDeclaration/">SModule</span><span class="token punctuation">, </span></span><span class="parameter ">language<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.language/SLanguage///PointingToDeclaration/">SLanguage</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="856095312%2FFunctions%2F-769643517" anchor-label="modelAdded" id="856095312%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="model-added.html"><span>model</span><wbr><span><span>Added</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="856095312%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="model-added.html"><span class="token function">modelAdded</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">module<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SModule///PointingToDeclaration/">SModule</span><span class="token punctuation">, </span></span><span class="parameter ">model<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.model/SModel///PointingToDeclaration/">SModel</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1524443910%2FFunctions%2F-769643517" anchor-label="modelAttached" id="-1524443910%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="model-attached.html"><span>model</span><wbr><span><span>Attached</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1524443910%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="model-attached.html"><span class="token function">modelAttached</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">model<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.model/SModel///PointingToDeclaration/">SModel</span><span class="token punctuation">, </span></span><span class="parameter ">repository<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SRepository///PointingToDeclaration/">SRepository</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="689468872%2FFunctions%2F-769643517" anchor-label="modelDetached" id="689468872%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="model-detached.html"><span>model</span><wbr><span><span>Detached</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="689468872%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="model-detached.html"><span class="token function">modelDetached</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">model<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.model/SModel///PointingToDeclaration/">SModel</span><span class="token punctuation">, </span></span><span class="parameter ">repository<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SRepository///PointingToDeclaration/">SRepository</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1315218292%2FFunctions%2F-769643517" anchor-label="modelFileChanged" id="1315218292%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="index.html#1315218292%2FFunctions%2F-769643517"><span>model</span><wbr><span>File</span><wbr><span><span>Changed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1315218292%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="index.html#1315218292%2FFunctions%2F-769643517"><span class="token function"><strike>modelFileChanged</strike></span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p0<span class="token operator">: </span><span data-unresolved-link="jetbrains.mps.smodel.event/SModelFileChangedEvent///PointingToDeclaration/">SModelFileChangedEvent</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1875770489%2FFunctions%2F-769643517" anchor-label="modelLoaded" id="1875770489%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="model-loaded.html"><span>model</span><wbr><span><span>Loaded</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1875770489%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="model-loaded.html"><span class="token function">modelLoaded</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">model<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.model/SModel///PointingToDeclaration/">SModel</span><span class="token punctuation">, </span></span><span class="parameter ">partially<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1901571100%2FFunctions%2F-769643517" anchor-label="modelLoadingStateChanged" id="1901571100%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="model-loading-state-changed.html"><span>model</span><wbr><span>Loading</span><wbr><span>State</span><wbr><span><span>Changed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1901571100%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="model-loading-state-changed.html"><span class="token function">modelLoadingStateChanged</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">model<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.model/SModel///PointingToDeclaration/">SModel</span><span class="token punctuation">, </span></span><span class="parameter ">state<span class="token operator">: </span><span data-unresolved-link="jetbrains.mps.smodel.loading/ModelLoadingState///PointingToDeclaration/">ModelLoadingState</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="30362823%2FFunctions%2F-769643517" anchor-label="modelRemoved" id="30362823%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="model-removed.html"><span>model</span><wbr><span><span>Removed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="30362823%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="model-removed.html"><span class="token function">modelRemoved</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">module<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SModule///PointingToDeclaration/">SModule</span><span class="token punctuation">, </span></span><span class="parameter ">reference<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.model/SModelReference///PointingToDeclaration/">SModelReference</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1050438610%2FFunctions%2F-769643517" anchor-label="modelRenamed" id="1050438610%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="model-renamed.html"><span>model</span><wbr><span><span>Renamed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1050438610%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="model-renamed.html"><span class="token function">modelRenamed</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">event<span class="token operator">: </span><span data-unresolved-link="jetbrains.mps.smodel.event/SModelRenamedEvent///PointingToDeclaration/">SModelRenamedEvent</span></span></span><span class="token punctuation">)</span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="model-renamed.html"><span class="token function">modelRenamed</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">module<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SModule///PointingToDeclaration/">SModule</span><span class="token punctuation">, </span></span><span class="parameter ">model<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.model/SModel///PointingToDeclaration/">SModel</span><span class="token punctuation">, </span></span><span class="parameter ">reference<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.model/SModelReference///PointingToDeclaration/">SModelReference</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="409940768%2FFunctions%2F-769643517" anchor-label="modelReplaced" id="409940768%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="model-replaced.html"><span>model</span><wbr><span><span>Replaced</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="409940768%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="model-replaced.html"><span class="token function">modelReplaced</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">model<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.model/SModel///PointingToDeclaration/">SModel</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="919960209%2FFunctions%2F-769643517" anchor-label="modelSaved" id="919960209%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="model-saved.html"><span>model</span><wbr><span><span>Saved</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="919960209%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="model-saved.html"><span class="token function">modelSaved</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">model<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.model/SModel///PointingToDeclaration/">SModel</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1007219122%2FFunctions%2F-769643517" anchor-label="modelUnloaded" id="1007219122%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="model-unloaded.html"><span>model</span><wbr><span><span>Unloaded</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1007219122%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="model-unloaded.html"><span class="token function">modelUnloaded</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">model<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.model/SModel///PointingToDeclaration/">SModel</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="897772899%2FFunctions%2F-769643517" anchor-label="moduleAdded" id="897772899%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="module-added.html"><span>module</span><wbr><span><span>Added</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="897772899%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="module-added.html"><span class="token function">moduleAdded</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">module<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SModule///PointingToDeclaration/">SModule</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1334792721%2FFunctions%2F-769643517" anchor-label="moduleChanged" id="-1334792721%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="module-changed.html"><span>module</span><wbr><span><span>Changed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1334792721%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="module-changed.html"><span class="token function">moduleChanged</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">module<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SModule///PointingToDeclaration/">SModule</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1644358420%2FFunctions%2F-769643517" anchor-label="moduleRemoved" id="1644358420%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="module-removed.html"><span>module</span><wbr><span><span>Removed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1644358420%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="module-removed.html"><span class="token function">moduleRemoved</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">reference<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SModuleReference///PointingToDeclaration/">SModuleReference</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-32039812%2FFunctions%2F-769643517" anchor-label="moduleRenamed" id="-32039812%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="index.html#-32039812%2FFunctions%2F-769643517"><span>module</span><wbr><span><span>Renamed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-32039812%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="index.html#-32039812%2FFunctions%2F-769643517"><span class="token function">moduleRenamed</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span><span class="token annotation builtin">@</span><span data-unresolved-link="org.jetbrains.annotations/NotNull///PointingToDeclaration/"><span class="token annotation builtin">NotNull</span></span>&nbsp;</span>p0<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SModule///PointingToDeclaration/">SModule</span><span class="token punctuation">, </span></span><span class="parameter "><span><span class="token annotation builtin">@</span><span data-unresolved-link="org.jetbrains.annotations/NotNull///PointingToDeclaration/"><span class="token annotation builtin">NotNull</span></span>&nbsp;</span>p1<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SModuleReference///PointingToDeclaration/">SModuleReference</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-16714158%2FFunctions%2F-769643517" anchor-label="nodeAdded" id="-16714158%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="node-added.html"><span>node</span><wbr><span><span>Added</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-16714158%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="node-added.html"><span class="token function">nodeAdded</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">e<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.event/SNodeAddEvent///PointingToDeclaration/">SNodeAddEvent</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-356534623%2FFunctions%2F-769643517" anchor-label="nodeRemoved" id="-356534623%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="node-removed.html"><span>node</span><wbr><span><span>Removed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-356534623%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="node-removed.html"><span class="token function">nodeRemoved</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">e<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.event/SNodeRemoveEvent///PointingToDeclaration/">SNodeRemoveEvent</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1642978292%2FFunctions%2F-769643517" anchor-label="problemsDetected" id="-1642978292%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="problems-detected.html"><span>problems</span><wbr><span><span>Detected</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1642978292%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="problems-detected.html"><span class="token function">problemsDetected</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">model<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.model/SModel///PointingToDeclaration/">SModel</span><span class="token punctuation">, </span></span><span class="parameter ">problems<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-iterable/index.html">Iterable</a><span class="token operator">&lt;</span><span data-unresolved-link="org.jetbrains.mps.openapi.model/SModel.Problem///PointingToDeclaration/">SModel.Problem</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1569161357%2FFunctions%2F-769643517" anchor-label="propertyChanged" id="1569161357%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="property-changed.html"><span>property</span><wbr><span><span>Changed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1569161357%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="property-changed.html"><span class="token function">propertyChanged</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">event<span class="token operator">: </span><span data-unresolved-link="jetbrains.mps.smodel.event/SModelPropertyEvent///PointingToDeclaration/">SModelPropertyEvent</span></span></span><span class="token punctuation">)</span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="property-changed.html"><span class="token function">propertyChanged</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">e<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.event/SPropertyChangeEvent///PointingToDeclaration/">SPropertyChangeEvent</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1868830668%2FFunctions%2F-769643517" anchor-label="referenceAdded" id="-1868830668%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="reference-added.html"><span>reference</span><wbr><span><span>Added</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1868830668%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="reference-added.html"><span class="token function">referenceAdded</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">event<span class="token operator">: </span><span data-unresolved-link="jetbrains.mps.smodel.event/SModelReferenceEvent///PointingToDeclaration/">SModelReferenceEvent</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="789673731%2FFunctions%2F-769643517" anchor-label="referenceChanged" id="789673731%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="reference-changed.html"><span>reference</span><wbr><span><span>Changed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="789673731%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="reference-changed.html"><span class="token function">referenceChanged</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">e<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.event/SReferenceChangeEvent///PointingToDeclaration/">SReferenceChangeEvent</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1844126996%2FFunctions%2F-769643517" anchor-label="referenceRemoved" id="1844126996%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="reference-removed.html"><span>reference</span><wbr><span><span>Removed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1844126996%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="reference-removed.html"><span class="token function">referenceRemoved</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">event<span class="token operator">: </span><span data-unresolved-link="jetbrains.mps.smodel.event/SModelReferenceEvent///PointingToDeclaration/">SModelReferenceEvent</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="191881236%2FFunctions%2F-769643517" anchor-label="repositoryCommandFinished" id="191881236%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="index.html#191881236%2FFunctions%2F-769643517"><span>repository</span><wbr><span>Command</span><wbr><span><span>Finished</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="191881236%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="index.html#191881236%2FFunctions%2F-769643517"><span class="token function"><strike>repositoryCommandFinished</strike></span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p0<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SRepository///PointingToDeclaration/">SRepository</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="348980321%2FFunctions%2F-769643517" anchor-label="repositoryCommandStarted" id="348980321%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="index.html#348980321%2FFunctions%2F-769643517"><span>repository</span><wbr><span>Command</span><wbr><span><span>Started</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="348980321%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="index.html#348980321%2FFunctions%2F-769643517"><span class="token function"><strike>repositoryCommandStarted</strike></span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p0<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SRepository///PointingToDeclaration/">SRepository</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1220946696%2FFunctions%2F-769643517" anchor-label="rootAdded" id="1220946696%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="root-added.html"><span>root</span><wbr><span><span>Added</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1220946696%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="root-added.html"><span class="token function"><strike>rootAdded</strike></span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">event<span class="token operator">: </span><span data-unresolved-link="jetbrains.mps.smodel.event/SModelRootEvent///PointingToDeclaration/">SModelRootEvent</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1950605848%2FFunctions%2F-769643517" anchor-label="rootRemoved" id="-1950605848%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="root-removed.html"><span>root</span><wbr><span><span>Removed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1950605848%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="root-removed.html"><span class="token function"><strike>rootRemoved</strike></span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">event<span class="token operator">: </span><span data-unresolved-link="jetbrains.mps.smodel.event/SModelRootEvent///PointingToDeclaration/">SModelRootEvent</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2106378005%2FFunctions%2F-769643517" anchor-label="start" id="-2106378005%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-global-model-listener/start.html"><span><span>start</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2106378005%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-global-model-listener/start.html"><span class="token function">start</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">model<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.model/SModel///PointingToDeclaration/">SModel</span></span></span><span class="token punctuation">)</span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-global-model-listener/start.html"><span class="token function">start</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">module<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SModule///PointingToDeclaration/">SModule</span></span></span><span class="token punctuation">)</span></div><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-global-model-listener/start.html"><span class="token function">start</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">repo<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SRepository///PointingToDeclaration/">SRepository</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="971888437%2FFunctions%2F-769643517" anchor-label="stop" id="971888437%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-global-model-listener/stop.html"><span><span>stop</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="971888437%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-global-model-listener/stop.html"><span class="token function">stop</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-global-model-listener/stop.html"><span class="token function">stop</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">model<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.model/SModel///PointingToDeclaration/">SModel</span></span></span><span class="token punctuation">)</span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-global-model-listener/stop.html"><span class="token function">stop</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">module<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SModule///PointingToDeclaration/">SModule</span></span></span><span class="token punctuation">)</span></div><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-global-model-listener/stop.html"><span class="token function">stop</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">repo<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SRepository///PointingToDeclaration/">SRepository</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-235675194%2FFunctions%2F-769643517" anchor-label="updateFinished" id="-235675194%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="index.html#-235675194%2FFunctions%2F-769643517"><span>update</span><wbr><span><span>Finished</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-235675194%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="index.html#-235675194%2FFunctions%2F-769643517"><span class="token function"><strike>updateFinished</strike></span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p0<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SRepository///PointingToDeclaration/">SRepository</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1305019503%2FFunctions%2F-769643517" anchor-label="updateStarted" id="1305019503%2FFunctions%2F-769643517" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":mps-model-adapters:dokkaHtmlPartial/main" data-filterable-set=":mps-model-adapters:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="index.html#1305019503%2FFunctions%2F-769643517"><span>update</span><wbr><span><span>Started</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1305019503%2FFunctions%2F-769643517"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":mps-model-adapters:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="index.html#1305019503%2FFunctions%2F-769643517"><span class="token function"><strike>updateStarted</strike></span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p0<span class="token operator">: </span><span data-unresolved-link="org.jetbrains.mps.openapi.module/SRepository///PointingToDeclaration/">SRepository</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      <div class="footer">
+        <span class="go-to-top-icon"><a href="#content" id="go-to-top-link"></a></span><span><span>
+  <p>For more information visit <a href="https://modelix.org">modelix.org</a>, for further documentation visit <a href="https://docs.modelix.org">docs.modelix.org</a>.</p>
+  <p>Copyright © 2021-present by the <a href="https://modelix.org">modelix open source project</a> and the individual contributors. All Rights reserved.</p>
+  <p>Except where otherwise noted, <a href="https://api.modelix.org">api.modelix.org</a>, modelix, and the modelix framework, are licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0.html">Apache-2.0 license</a>.</p>
+</span></span><span class="pull-right"><span>Generated by </span><a href="https://github.com/Kotlin/dokka"><span>dokka</span><span class="padded-icon"></span></a></span>
+      </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

@@ -1,0 +1,269 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>InvalidatingVisitor</title>
+<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../styles/style.css" rel="Stylesheet">
+<link href="../../../styles/main.css" rel="Stylesheet">
+<link href="../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+<nav class="navigation" id="navigation-wrapper">
+    <div class="navigation--inner">
+        <div class="navigation-title">
+            <button class="menu-toggle" id="menu-toggle" type="button">toggle menu</button>
+            <div class="library-name">
+<a class="library-name--link" href="../../../index.html">
+                            modelix.core
+                    </a>            </div>
+            <div class="library-version">8.11.0
+            </div>
+        </div>
+        <div class="filter-section" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">jvm</button>
+        </div>
+    </div>
+    <div class="navigation-controls">
+        <button class="navigation-controls--btn navigation-controls--theme" id="theme-toggle-button" type="button">switch theme</button>
+        <div class="navigation-controls--btn navigation-controls--search" id="searchBar" role="button">search in API</div>
+    </div>
+</nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="sidebar--inner" id="sideMenu"></div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="bulk-model-sync-lib::org.modelix.model.sync.bulk/InvalidatingVisitor///PointingToDeclaration//123257859">
+  <div class="breadcrumbs"><a href="../../index.html">bulk-model-sync-lib</a><span class="delimiter">/</span><a href="../index.html">org.modelix.model.sync.bulk</a><span class="delimiter">/</span><span class="current">InvalidatingVisitor</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>Invalidating</span><wbr><span><span>Visitor</span></span></h1>
+    <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+      <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-active="" data-toggle=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">InvalidatingVisitor</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>tree<span class="token operator">: </span><a href="../../../model-api/org.modelix.model.api/-i-tree/index.html">ITree</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>invalidationTree<span class="token operator">: </span><a href="../-invalidation-tree/index.html">InvalidationTree</a></span></span><span class="token punctuation">)</span> : <a href="../../../model-api/org.modelix.model.api/-i-tree-change-visitor-ex/index.html">ITreeChangeVisitorEx</a></div><p class="paragraph">Visitor that visits a <a href="tree.html">tree</a> and stores the invalidation information in an <a href="invalidation-tree.html">invalidationTree</a>.</p></div>    </div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="-862332976%2FConstructors%2F123257859" anchor-label="InvalidatingVisitor" id="-862332976%2FConstructors%2F123257859" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-invalidating-visitor.html"><span>Invalidating</span><wbr><span><span>Visitor</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-862332976%2FConstructors%2F123257859"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-active="" data-toggle=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">tree<span class="token operator">: </span><a href="../../../model-api/org.modelix.model.api/-i-tree/index.html">ITree</a><span class="token punctuation">, </span></span><span class="parameter ">invalidationTree<span class="token operator">: </span><a href="../-invalidation-tree/index.html">InvalidationTree</a></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="1384684441%2FProperties%2F123257859" anchor-label="invalidationTree" id="1384684441%2FProperties%2F123257859" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain"></a>
+          <div class="table-row" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="invalidation-tree.html"><span>invalidation</span><wbr><span><span>Tree</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1384684441%2FProperties%2F123257859"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-active="" data-toggle=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="invalidation-tree.html">invalidationTree</a><span class="token operator">: </span><a href="../-invalidation-tree/index.html">InvalidationTree</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="433858135%2FProperties%2F123257859" anchor-label="tree" id="433858135%2FProperties%2F123257859" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain"></a>
+          <div class="table-row" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="tree.html"><span><span>tree</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="433858135%2FProperties%2F123257859"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-active="" data-toggle=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="tree.html">tree</a><span class="token operator">: </span><a href="../../../model-api/org.modelix.model.api/-i-tree/index.html">ITree</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="-257492875%2FFunctions%2F123257859" anchor-label="childrenChanged" id="-257492875%2FFunctions%2F123257859" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain"></a>
+          <div class="table-row" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="children-changed.html"><span>children</span><wbr><span><span>Changed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-257492875%2FFunctions%2F123257859"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-active="" data-toggle=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="children-changed.html"><span class="token function">childrenChanged</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">nodeId<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token punctuation">, </span></span><span class="parameter ">role<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-281003610%2FFunctions%2F123257859" anchor-label="conceptChanged" id="-281003610%2FFunctions%2F123257859" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain"></a>
+          <div class="table-row" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="index.html#-281003610%2FFunctions%2F123257859"><span>concept</span><wbr><span><span>Changed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-281003610%2FFunctions%2F123257859"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-active="" data-toggle=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="index.html#-281003610%2FFunctions%2F123257859"><span class="token function">conceptChanged</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">nodeId<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="376750854%2FFunctions%2F123257859" anchor-label="containmentChanged" id="376750854%2FFunctions%2F123257859" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain"></a>
+          <div class="table-row" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="containment-changed.html"><span>containment</span><wbr><span><span>Changed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="376750854%2FFunctions%2F123257859"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-active="" data-toggle=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="containment-changed.html"><span class="token function">containmentChanged</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">nodeId<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2091924238%2FFunctions%2F123257859" anchor-label="nodeAdded" id="-2091924238%2FFunctions%2F123257859" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain"></a>
+          <div class="table-row" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="node-added.html"><span>node</span><wbr><span><span>Added</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2091924238%2FFunctions%2F123257859"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-active="" data-toggle=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="node-added.html"><span class="token function">nodeAdded</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">nodeId<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1288503598%2FFunctions%2F123257859" anchor-label="nodeRemoved" id="-1288503598%2FFunctions%2F123257859" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain"></a>
+          <div class="table-row" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="node-removed.html"><span>node</span><wbr><span><span>Removed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1288503598%2FFunctions%2F123257859"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-active="" data-toggle=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="node-removed.html"><span class="token function">nodeRemoved</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">nodeId<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1876777240%2FFunctions%2F123257859" anchor-label="propertyChanged" id="1876777240%2FFunctions%2F123257859" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain"></a>
+          <div class="table-row" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="property-changed.html"><span>property</span><wbr><span><span>Changed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1876777240%2FFunctions%2F123257859"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-active="" data-toggle=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="property-changed.html"><span class="token function">propertyChanged</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">nodeId<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token punctuation">, </span></span><span class="parameter ">role<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1884714610%2FFunctions%2F123257859" anchor-label="referenceChanged" id="1884714610%2FFunctions%2F123257859" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain"></a>
+          <div class="table-row" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="reference-changed.html"><span>reference</span><wbr><span><span>Changed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1884714610%2FFunctions%2F123257859"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain" data-active="" data-toggle=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":bulk-model-sync-lib:dokkaHtmlPartial/jvmMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="reference-changed.html"><span class="token function">referenceChanged</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">nodeId<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token punctuation">, </span></span><span class="parameter ">role<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      <div class="footer">
+        <span class="go-to-top-icon"><a href="#content" id="go-to-top-link"></a></span><span><span>
+  <p>For more information visit <a href="https://modelix.org">modelix.org</a>, for further documentation visit <a href="https://docs.modelix.org">docs.modelix.org</a>.</p>
+  <p>Copyright © 2021-present by the <a href="https://modelix.org">modelix open source project</a> and the individual contributors. All Rights reserved.</p>
+  <p>Except where otherwise noted, <a href="https://api.modelix.org">api.modelix.org</a>, modelix, and the modelix framework, are licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0.html">Apache-2.0 license</a>.</p>
+</span></span><span class="pull-right"><span>Generated by </span><a href="https://github.com/Kotlin/dokka"><span>dokka</span><span class="padded-icon"></span></a></span>
+      </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

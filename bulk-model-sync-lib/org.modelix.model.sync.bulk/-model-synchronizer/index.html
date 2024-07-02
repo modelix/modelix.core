@@ -1,0 +1,236 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>ModelSynchronizer</title>
+<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../styles/style.css" rel="Stylesheet">
+<link href="../../../styles/main.css" rel="Stylesheet">
+<link href="../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+<nav class="navigation" id="navigation-wrapper">
+    <div class="navigation--inner">
+        <div class="navigation-title">
+            <button class="menu-toggle" id="menu-toggle" type="button">toggle menu</button>
+            <div class="library-name">
+<a class="library-name--link" href="../../../index.html">
+                            modelix.core
+                    </a>            </div>
+            <div class="library-version">8.11.0
+            </div>
+        </div>
+        <div class="filter-section" id="filter-section">
+                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain">common</button>
+        </div>
+    </div>
+    <div class="navigation-controls">
+        <button class="navigation-controls--btn navigation-controls--theme" id="theme-toggle-button" type="button">switch theme</button>
+        <div class="navigation-controls--btn navigation-controls--search" id="searchBar" role="button">search in API</div>
+    </div>
+</nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="sidebar--inner" id="sideMenu"></div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="bulk-model-sync-lib::org.modelix.model.sync.bulk/ModelSynchronizer///PointingToDeclaration//252999059">
+  <div class="breadcrumbs"><a href="../../index.html">bulk-model-sync-lib</a><span class="delimiter">/</span><a href="../index.html">org.modelix.model.sync.bulk</a><span class="delimiter">/</span><span class="current">ModelSynchronizer</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>Model</span><wbr><span><span>Synchronizer</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">ModelSynchronizer</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>filter<span class="token operator">: </span><a href="-i-filter/index.html">ModelSynchronizer.IFilter</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>sourceRoot<span class="token operator">: </span><a href="../../../model-api/org.modelix.model.api/-i-node/index.html">INode</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>targetRoot<span class="token operator">: </span><a href="../../../model-api/org.modelix.model.api/-i-node/index.html">INode</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>nodeAssociation<span class="token operator">: </span><a href="../-i-node-association/index.html">INodeAssociation</a></span></span><span class="token punctuation">)</span></div><p class="paragraph">Similar to <a href="../-model-importer/index.html">ModelImporter</a>, but the input is two <a href="../../../model-api/org.modelix.model.api/-i-node/index.html">INode</a> instances instead of <a href="../../../model-api/org.modelix.model.api/-i-node/index.html">INode</a> and <a href="../../../model-api/org.modelix.model.data/-node-data/index.html">NodeData</a>.</p><p class="paragraph">Changes to the behaviour of this class should also reflected in <a href="../-model-importer/index.html">ModelImporter</a>.</p><h4 class="">Parameters</h4><div class="table"><div class="table-row" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>filter</span></span></u></div></span></div><div><div class="title"><p class="paragraph">determines which nodes need synchronization.     Nodes that do not match the filter are skipped and will remain unchanged.</p></div></div></div></div><div class="table-row" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span>source</span><wbr><span><span>Root</span></span></u></div></span></div><div><div class="title"><p class="paragraph">root of the tree containing the expected nodes</p></div></div></div></div><div class="table-row" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span>target</span><wbr><span><span>Root</span></span></u></div></span></div><div><div class="title"><p class="paragraph">root of the tree that needs changes</p></div></div></div></div><div class="table-row" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span>node</span><wbr><span><span>Association</span></span></u></div></span></div><div><div class="title"><p class="paragraph">mapping between source and target nodes, that is used for internal optimizations</p></div></div></div></div></div></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="-1508797940%2FConstructors%2F252999059" anchor-label="ModelSynchronizer" id="-1508797940%2FConstructors%2F252999059" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-model-synchronizer.html"><span>Model</span><wbr><span><span>Synchronizer</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1508797940%2FConstructors%2F252999059"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">filter<span class="token operator">: </span><a href="-i-filter/index.html">ModelSynchronizer.IFilter</a><span class="token punctuation">, </span></span><span class="parameter ">sourceRoot<span class="token operator">: </span><a href="../../../model-api/org.modelix.model.api/-i-node/index.html">INode</a><span class="token punctuation">, </span></span><span class="parameter ">targetRoot<span class="token operator">: </span><a href="../../../model-api/org.modelix.model.api/-i-node/index.html">INode</a><span class="token punctuation">, </span></span><span class="parameter ">nodeAssociation<span class="token operator">: </span><a href="../-i-node-association/index.html">INodeAssociation</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="1029200450%2FClasslikes%2F252999059" anchor-label="IFilter" id="1029200450%2FClasslikes%2F252999059" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-i-filter/index.html"><span><span>IFilter</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1029200450%2FClasslikes%2F252999059"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-i-filter/index.html">IFilter</a></div><div class="brief "><p class="paragraph">Determines, which nodes need synchronization and which can be skipped.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-21250243%2FClasslikes%2F252999059" anchor-label="MergedRole" id="-21250243%2FClasslikes%2F252999059" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-merged-role/index.html"><span>Merged</span><wbr><span><span>Role</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-21250243%2FClasslikes%2F252999059"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-merged-role/index.html">MergedRole</a><span class="token operator">&lt;</span><a href="-merged-role/index.html">E</a><span class="token operator"> : </span><a href="../../../model-api/org.modelix.model.api/-i-role/index.html">IRole</a><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">source<span class="token operator">: </span><a href="-merged-role/index.html">E</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">target<span class="token operator">: </span><a href="-merged-role/index.html">E</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1353825099%2FClasslikes%2F252999059" anchor-label="PendingReference" id="1353825099%2FClasslikes%2F252999059" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-pending-reference/index.html"><span>Pending</span><wbr><span><span>Reference</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1353825099%2FClasslikes%2F252999059"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">inner </span><span class="token keyword">class </span><a href="-pending-reference/index.html">PendingReference</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>sourceNode<span class="token operator">: </span><a href="../../../model-api/org.modelix.model.api/-i-node/index.html">INode</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>targetNode<span class="token operator">: </span><a href="../../../model-api/org.modelix.model.api/-i-node/index.html">INode</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>role<span class="token operator">: </span><a href="-merged-role/index.html">ModelSynchronizer.MergedRole</a><span class="token operator">&lt;</span><a href="../../../model-api/org.modelix.model.api/-i-reference-link/index.html">IReferenceLink</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="1793694418%2FProperties%2F252999059" anchor-label="filter" id="1793694418%2FProperties%2F252999059" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="filter.html"><span><span>filter</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1793694418%2FProperties%2F252999059"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="filter.html">filter</a><span class="token operator">: </span><a href="-i-filter/index.html">ModelSynchronizer.IFilter</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-697780591%2FProperties%2F252999059" anchor-label="nodeAssociation" id="-697780591%2FProperties%2F252999059" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="node-association.html"><span>node</span><wbr><span><span>Association</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-697780591%2FProperties%2F252999059"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="node-association.html">nodeAssociation</a><span class="token operator">: </span><a href="../-i-node-association/index.html">INodeAssociation</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1014399949%2FProperties%2F252999059" anchor-label="sourceRoot" id="1014399949%2FProperties%2F252999059" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="source-root.html"><span>source</span><wbr><span><span>Root</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1014399949%2FProperties%2F252999059"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="source-root.html">sourceRoot</a><span class="token operator">: </span><a href="../../../model-api/org.modelix.model.api/-i-node/index.html">INode</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="736638487%2FProperties%2F252999059" anchor-label="targetRoot" id="736638487%2FProperties%2F252999059" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="target-root.html"><span>target</span><wbr><span><span>Root</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="736638487%2FProperties%2F252999059"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="target-root.html">targetRoot</a><span class="token operator">: </span><a href="../../../model-api/org.modelix.model.api/-i-node/index.html">INode</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="-456467200%2FFunctions%2F252999059" anchor-label="synchronize" id="-456467200%2FFunctions%2F252999059" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain" data-filterable-set=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="synchronize.html"><span><span>synchronize</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-456467200%2FFunctions%2F252999059"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":bulk-model-sync-lib:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="synchronize.html"><span class="token function">synchronize</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      <div class="footer">
+        <span class="go-to-top-icon"><a href="#content" id="go-to-top-link"></a></span><span><span>
+  <p>For more information visit <a href="https://modelix.org">modelix.org</a>, for further documentation visit <a href="https://docs.modelix.org">docs.modelix.org</a>.</p>
+  <p>Copyright © 2021-present by the <a href="https://modelix.org">modelix open source project</a> and the individual contributors. All Rights reserved.</p>
+  <p>Except where otherwise noted, <a href="https://api.modelix.org">api.modelix.org</a>, modelix, and the modelix framework, are licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0.html">Apache-2.0 license</a>.</p>
+</span></span><span class="pull-right"><span>Generated by </span><a href="https://github.com/Kotlin/dokka"><span>dokka</span><span class="padded-icon"></span></a></span>
+      </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

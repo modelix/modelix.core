@@ -95,6 +95,25 @@ sealed interface LocalEndpoint : SyncEndpoint {
     var repositoryDir: File?
     var mpsDebugPort: Int?
 
+    /**
+     * Add a plugin to be loaded when running MPS.
+     * `jetbrains.mps.core`, `jetbrains.mps.testing`, `jetbrains.mps.ide.make` are always loaded.
+     *
+     * All other plugins, even bundled ones, must be configured explicitly.
+     * In general cases, the sync does not rely on concepts (and in turn on languages and plugins) of the synced nodes.
+     *
+     * Loading other plugins might become necessary when they provide custom persistence
+     * and in other, yet unknown cases.
+     * First, try if the sync works for your project without adding plugins.
+     *
+     * Example usage:
+     * ```
+     * mpsPlugin(BundledPluginSpec("jetbrains.mps.vcs", File("plugins/mps-vcs")))
+     * mpsPlugin(ExternalPluginSpec("com.example.mps.aPlugin", File("/full/path/to/aPlugin")))
+     * ```
+     */
+    fun mpsPlugin(plugin: PluginSpec)
+
     fun mpsLibrary(folder: File)
 
     override fun getValidationErrors(): List<String> {
@@ -112,9 +131,13 @@ data class LocalSource(
     override var mpsHeapSize: String = "2g",
     override var repositoryDir: File? = null,
     override var mpsDebugPort: Int? = null,
+    internal var mpsPlugins: Set<PluginSpec> = emptySet(),
 ) : LocalEndpoint {
     override fun mpsLibrary(folder: File) {
         mpsLibraries += folder
+    }
+    override fun mpsPlugin(plugin: PluginSpec) {
+        mpsPlugins += plugin
     }
 }
 
@@ -124,11 +147,35 @@ data class LocalTarget(
     override var mpsHeapSize: String = "2g",
     override var repositoryDir: File? = null,
     override var mpsDebugPort: Int? = null,
+    internal var mpsPlugins: Set<PluginSpec> = emptySet(),
 ) : LocalEndpoint {
     override fun mpsLibrary(folder: File) {
         mpsLibraries += folder
     }
+    override fun mpsPlugin(plugin: PluginSpec) {
+        mpsPlugins += plugin
+    }
 }
+
+/**
+ * Specifies an MPS-plugin to be loaded.
+ * The [id] is the one that can be found in the `META-INF/plugin.xml` of a plugin.
+ */
+sealed interface PluginSpec {
+    val id: String
+}
+
+/**
+ * Specifies a plugin by specifying its installation [folder]
+ * that will be resolved against the installation of MPS.
+ */
+data class BundledPluginSpec(override val id: String, val folder: File) : PluginSpec
+
+/**
+ * Specifies a plugin by specifying its installation [folder]
+ * that can be absolute or will be resolved depending on the JVM process it is executed in.
+ */
+data class ExternalPluginSpec(override val id: String, val folder: File) : PluginSpec
 
 private const val DEFAULT_REQUEST_TIMEOUT_SECONDS = 5 * 60
 

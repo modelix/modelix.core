@@ -10,12 +10,10 @@ import kotlinx.html.FlowContent
 import kotlinx.html.FlowOrInteractiveOrPhrasingContent
 import kotlinx.html.a
 import kotlinx.html.button
-import kotlinx.html.form
 import kotlinx.html.h1
 import kotlinx.html.i
 import kotlinx.html.onClick
 import kotlinx.html.p
-import kotlinx.html.postButton
 import kotlinx.html.script
 import kotlinx.html.span
 import kotlinx.html.table
@@ -42,8 +40,15 @@ class RepositoryOverview(private val repoManager: IRepositoriesManager) {
                             unsafe {
                                 +"""
                                     function removeBranch(repository, branch) {
-                                        if (confirm('Are you sure you want to delete the branch' + branch +' of repository' +repository + '?')) {
+                                        if (confirm('Are you sure you want to delete the branch ' + branch + ' of repository ' +repository + '?')) {
                                             fetch('../v2/repositories/' + repository + '/branches/' + branch, { method: 'DELETE'})
+                                            .then( _ => location.reload())
+                                        }
+                                    }
+
+                                    function removeRepository(repository) {
+                                        if (confirm('Are you sure you want to delete the repository ' + repository + '?')) {
+                                            fetch('../v2/repositories/' + repository + '/delete', { method: 'POST'})
                                             .then( _ => location.reload())
                                         }
                                     }
@@ -138,13 +143,11 @@ internal fun FlowOrInteractiveOrPhrasingContent.buildExploreLatestLink(repositor
 }
 
 internal fun FlowContent.buildDeleteRepositoryForm(repositoryId: String) {
-    form {
-        postButton {
-            name = "delete"
-            formAction = "../v2/repositories/${repositoryId.encodeURLPathPart()}/delete"
-            onClick = "return confirm('Are you sure you want to delete the repository $repositoryId?')"
-            +"Delete Repository"
-        }
+    button {
+        name = "delete"
+        formAction = "../v2/repositories/${repositoryId.encodeURLPathPart()}/delete"
+        onClick = "return removeRepository('${repositoryId.encodeURLPathPart()}')"
+        +"Delete Repository"
     }
 }
 

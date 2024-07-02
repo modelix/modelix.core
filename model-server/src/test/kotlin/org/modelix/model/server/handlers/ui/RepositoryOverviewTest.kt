@@ -47,14 +47,14 @@ class RepositoryOverviewTest {
     }
 
     @Test
-    fun `delete repository form action is encoded properly`() {
+    fun `delete repository button parameters encoded properly`() {
         val html = createHTML(prettyPrint = false).span {
             buildDeleteRepositoryForm("repository/v1")
         }
 
         val document = Jsoup.parse(html)
-        val formAction = document.getElementsByTag("button").first()?.attribute("formaction")?.value
-        assertEquals("../v2/repositories/repository%2Fv1/delete", formAction)
+        val onClick = document.getElementsByTag("button").first()?.attribute("onclick")?.value
+        assertEquals("return removeRepository('repository%2Fv1')", onClick)
     }
 
     @Test

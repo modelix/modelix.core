@@ -6,7 +6,7 @@ import org.modelix.model.api.INode
 abstract class TypedNodeImpl(val wrappedNode: INode) : ITypedNode {
 
     init {
-        val expected: IConcept = _concept._concept
+        val expected: IConcept = _concept.untyped()
         val actual: IConcept? = unwrap().concept
         require(actual != null && actual.isSubConceptOf(expected)) {
             "Concept of node ${unwrap()} expected to be a sub-concept of $expected, but was $actual"

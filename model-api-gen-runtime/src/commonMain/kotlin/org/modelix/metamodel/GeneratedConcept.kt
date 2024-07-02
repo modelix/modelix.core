@@ -149,7 +149,10 @@ abstract class GeneratedConcept<NodeT : ITypedNode, ConceptT : ITypedConcept>(
     }
 
     override fun isExactly(concept: IConcept?): Boolean {
-        return concept == this
+        if (concept == null) return false
+        if (concept == this) return true
+        if (concept.getUID() == this.getUID()) return true
+        return false
     }
 
     override fun isSubConceptOf(superConcept: IConcept?): Boolean {

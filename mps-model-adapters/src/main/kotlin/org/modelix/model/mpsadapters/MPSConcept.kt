@@ -63,8 +63,17 @@ data class MPSConcept(val concept: SAbstractConceptAdapter) : IConcept {
     }
 
     override fun isSubConceptOf(superConcept: IConcept?): Boolean {
-        val mpsSuperConcept = superConcept as? MPSConcept ?: return false
-        return concept.isSubConceptOf(mpsSuperConcept.concept)
+        if (superConcept == null) return false
+        if (isExactly(superConcept)) return true
+        if (superConcept is MPSConcept) {
+            // Use the MPS logic if possible, because it's faster (super concepts are cached in a set).
+            return concept.isSubConceptOf(superConcept.concept)
+        } else {
+            for (c in getDirectSuperConcepts()) {
+                if (c.isSubConceptOf(superConcept)) return true
+            }
+        }
+        return false
     }
 
     override fun getDirectSuperConcepts(): List<IConcept> {
@@ -77,8 +86,9 @@ data class MPSConcept(val concept: SAbstractConceptAdapter) : IConcept {
     }
 
     override fun isExactly(concept: IConcept?): Boolean {
-        val otherMpsConcept = concept as? MPSConcept ?: return false
-        return this.concept == otherMpsConcept.concept
+        if (concept == null) return false
+        if (concept == this) return true
+        return concept.getUID() == getUID()
     }
 
     override fun getOwnProperties(): List<IProperty> {

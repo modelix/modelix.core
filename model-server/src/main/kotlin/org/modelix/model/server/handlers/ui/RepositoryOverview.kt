@@ -9,11 +9,12 @@ import io.ktor.server.routing.routing
 import kotlinx.html.FlowContent
 import kotlinx.html.FlowOrInteractiveOrPhrasingContent
 import kotlinx.html.a
-import kotlinx.html.form
+import kotlinx.html.button
 import kotlinx.html.h1
 import kotlinx.html.i
+import kotlinx.html.onClick
 import kotlinx.html.p
-import kotlinx.html.postButton
+import kotlinx.html.script
 import kotlinx.html.span
 import kotlinx.html.table
 import kotlinx.html.tbody
@@ -22,6 +23,8 @@ import kotlinx.html.th
 import kotlinx.html.thead
 import kotlinx.html.title
 import kotlinx.html.tr
+import kotlinx.html.unsafe
+import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.handlers.IRepositoriesManager
 import org.modelix.model.server.templates.PageWithMenuBar
 
@@ -31,7 +34,28 @@ class RepositoryOverview(private val repoManager: IRepositoriesManager) {
         application.routing {
             get("/repos") {
                 call.respondHtmlTemplate(PageWithMenuBar("repos/", "..")) {
-                    headContent { title("Repositories") }
+                    headContent {
+                        title("Repositories")
+                        script(type = "text/javascript") {
+                            unsafe {
+                                +"""
+                                    function removeBranch(repository, branch) {
+                                        if (confirm('Are you sure you want to delete the branch ' + branch + ' of repository ' +repository + '?')) {
+                                            fetch('../v2/repositories/' + repository + '/branches/' + branch, { method: 'DELETE'})
+                                            .then( _ => location.reload())
+                                        }
+                                    }
+
+                                    function removeRepository(repository) {
+                                        if (confirm('Are you sure you want to delete the repository ' + repository + '?')) {
+                                            fetch('../v2/repositories/' + repository + '/delete', { method: 'POST'})
+                                            .then( _ => location.reload())
+                                        }
+                                    }
+                                """.trimIndent()
+                            }
+                        }
+                    }
                     bodyContent { buildMainPage() }
                 }
             }
@@ -47,7 +71,10 @@ class RepositoryOverview(private val repoManager: IRepositoriesManager) {
             table {
                 thead {
                     tr {
-                        th { +"Repository" }
+                        th {
+                            colSpan = "2"
+                            +"Repository"
+                        }
                         th { +"Branch" }
                         th {
                             colSpan = "3"
@@ -58,10 +85,15 @@ class RepositoryOverview(private val repoManager: IRepositoriesManager) {
                 tbody {
                     for (repository in repositories) {
                         val branches = repoManager.getBranches(repository)
+                        val repoRowSpan = branches.size.coerceAtLeast(1).plus(1).toString()
                         tr {
                             td {
-                                rowSpan = branches.size.coerceAtLeast(1).plus(1).toString()
+                                rowSpan = repoRowSpan
                                 +repository.id
+                            }
+                            td {
+                                rowSpan = repoRowSpan
+                                buildDeleteRepositoryForm(repository.id)
                             }
                         }
                         if (branches.isEmpty()) {
@@ -80,13 +112,13 @@ class RepositoryOverview(private val repoManager: IRepositoriesManager) {
                                         }
                                     }
                                     td {
-                                        buildHistoryLink(branch.repositoryId.id, branch.branchName)
+                                        buildHistoryLink(repository.id, branch.branchName)
                                     }
                                     td {
-                                        buildExploreLatestLink(branch.repositoryId.id, branch.branchName)
+                                        buildExploreLatestLink(repository.id, branch.branchName)
                                     }
                                     td {
-                                        buildDeleteForm(branch.repositoryId.id)
+                                        buildDeleteBranchButton(repository.id, branch.branchName)
                                     }
                                 }
                             }
@@ -98,24 +130,31 @@ class RepositoryOverview(private val repoManager: IRepositoriesManager) {
     }
 }
 
-fun FlowOrInteractiveOrPhrasingContent.buildHistoryLink(repositoryId: String, branchName: String) {
+internal fun FlowOrInteractiveOrPhrasingContent.buildHistoryLink(repositoryId: String, branchName: String) {
     a("../history/${repositoryId.encodeURLPathPart()}/${branchName.encodeURLPathPart()}/") {
         +"Show History"
     }
 }
 
-fun FlowOrInteractiveOrPhrasingContent.buildExploreLatestLink(repositoryId: String, branchName: String) {
+internal fun FlowOrInteractiveOrPhrasingContent.buildExploreLatestLink(repositoryId: String, branchName: String) {
     a("../content/repositories/${repositoryId.encodeURLPathPart()}/branches/${branchName.encodeURLPathPart()}/latest/") {
         +"Explore Latest Version"
     }
 }
 
-fun FlowContent.buildDeleteForm(repositoryId: String) {
-    form {
-        postButton {
-            name = "delete"
-            formAction = "../v2/repositories/${repositoryId.encodeURLPathPart()}/delete"
-            +"Delete Repository"
-        }
+internal fun FlowContent.buildDeleteRepositoryForm(repositoryId: String) {
+    button {
+        name = "delete"
+        formAction = "../v2/repositories/${repositoryId.encodeURLPathPart()}/delete"
+        onClick = "return removeRepository('${repositoryId.encodeURLPathPart()}')"
+        +"Delete Repository"
+    }
+}
+
+internal fun FlowContent.buildDeleteBranchButton(repositoryId: String, branchName: String) {
+    if (branchName == RepositoryId.DEFAULT_BRANCH) return
+    button {
+        onClick = "return removeBranch('${repositoryId.encodeURLPathPart()}', '${branchName.encodeURLPathPart()}')"
+        +"Delete Branch"
     }
 }

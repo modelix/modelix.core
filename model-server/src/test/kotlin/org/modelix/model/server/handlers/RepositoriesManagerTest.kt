@@ -27,6 +27,16 @@ class RepositoriesManagerTest {
     }
 
     @Test
+    fun `deleting default branch works`() = runTest {
+        val repoId = RepositoryId("branch-removal")
+        initRepository(repoId)
+        repoManager.removeBranches(repoId, setOf("master"))
+        val branches = repoManager.getBranches(repoId)
+
+        assertTrue { branches.none { it.branchName == "master" } }
+    }
+
+    @Test
     fun `repository data is removed when removing repository`() = runTest {
         val repoId = RepositoryId("abc")
         initRepository(repoId)

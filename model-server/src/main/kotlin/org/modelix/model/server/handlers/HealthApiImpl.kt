@@ -65,6 +65,6 @@ class HealthApiImpl(
     }
 
     companion object {
-        private const val HEALTH_KEY = PROTECTED_PREFIX + "health2"
+        internal const val HEALTH_KEY = PROTECTED_PREFIX + "health2"
     }
 }

@@ -35,12 +35,20 @@ paths:
         - health
       responses:
         "200":
-          $ref: '#/components/responses/200'
+          $ref: '#/components/responses/Healthy'
         default:
           $ref: '#/components/responses/GeneralError'
 
 components:
   responses:
+    Healthy:
+      description: OK
+      content:
+        text/plain:
+          schema:
+            type: string
+            enum: ["healthy"]
+
     MetricsResponse:
       description: OK
       content:

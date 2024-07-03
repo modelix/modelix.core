@@ -1,0 +1,5 @@
+services:
+  mockserver:
+    image: mockserver/mockserver:5.15.0
+    ports:
+      - 55212:1080

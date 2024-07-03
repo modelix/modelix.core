@@ -34,7 +34,8 @@ import io.ktor.client.plugins.auth.providers.bearer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-object ModelixOAuthClient {
+@Suppress("UndocumentedPublicClass") // already documented in the expected declaration
+actual object ModelixAuthClient {
     private var DATA_STORE_FACTORY: DataStoreFactory = MemoryDataStoreFactory()
     private val SCOPE = "email"
     private val HTTP_TRANSPORT: HttpTransport = NetHttpTransport()
@@ -66,42 +67,35 @@ object ModelixOAuthClient {
         }
     }
 
-    fun installAuth(config: HttpClientConfig<*>, baseUrl: String, authTokenProvider: (() -> String?)? = null) {
+    @Suppress("UndocumentedPublicFunction") // already documented in the expected declaration
+    actual fun installAuth(config: HttpClientConfig<*>, baseUrl: String, authTokenProvider: (suspend () -> String?)?) {
+        if (authTokenProvider != null) {
+            installAuthWithAuthTokenProvider(config, authTokenProvider)
+        } else {
+            installAuthWithPKCEFlow(config, baseUrl)
+        }
+    }
+
+    private fun installAuthWithPKCEFlow(config: HttpClientConfig<*>, baseUrl: String) {
         config.apply {
             install(Auth) {
                 bearer {
                     loadTokens {
-                        val tp = authTokenProvider
-                        if (tp == null) {
-                            ModelixOAuthClient.getTokens()?.let { BearerTokens(it.accessToken, it.refreshToken) }
-                        } else {
-                            val token = tp()
-                            if (token == null) {
-//                            connectionStatus = RestWebModelClient.ConnectionStatus.WAITING_FOR_TOKEN
-                                null
-                            } else {
-                                BearerTokens(token, "")
-                            }
-                        }
+                        getTokens()?.let { BearerTokens(it.accessToken, it.refreshToken) }
                     }
                     refreshTokens {
-                        val tp = authTokenProvider
-                        if (tp == null) {
-                            var url = baseUrl
-                            if (!url.endsWith("/")) url += "/"
-                            if (url.endsWith("/model/")) url = url.substringBeforeLast("/model/")
-//                        connectionStatus = RestWebModelClient.ConnectionStatus.WAITING_FOR_TOKEN
-                            val tokens = ModelixOAuthClient.authorize(url)
-                            BearerTokens(tokens.accessToken, tokens.refreshToken)
-                        } else {
-                            val providedToken = tp()
-                            if (providedToken != null && providedToken != this.oldTokens?.accessToken) {
-                                BearerTokens(providedToken, "")
-                            } else {
-//                            connectionStatus = RestWebModelClient.ConnectionStatus.WAITING_FOR_TOKEN
-                                null
-                            }
-                        }
+                        var url = baseUrl
+                        if (!url.endsWith("/")) url += "/"
+                        // XXX Detecting and removing "/model/" is workaround for when the model server
+                        // is used in Modelix workspaces and reachable behind the sub path /model/".
+                        // When the model server is reachable at https://example.org/model/,
+                        // Keycloak is expected to be reachable under https://example.org/realms/
+                        // See https://github.com/modelix/modelix.kubernetes/blob/60f7db6533c3fb82209b1a6abb6836923f585672/proxy/nginx.conf#L14
+                        // and https://github.com/modelix/modelix.kubernetes/blob/60f7db6533c3fb82209b1a6abb6836923f585672/proxy/nginx.conf#L41
+                        // TODO MODELIX-975 remove this check and replace with configuration.
+                        if (url.endsWith("/model/")) url = url.substringBeforeLast("/model/")
+                        val tokens = authorize(url)
+                        BearerTokens(tokens.accessToken, tokens.refreshToken)
                     }
                 }
             }

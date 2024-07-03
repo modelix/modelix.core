@@ -1,6 +1,5 @@
 .gradle/
-/build/
-/*/build/
+**/build
 /*/ignite/
 .DS_Store
 .gradletasknamecache

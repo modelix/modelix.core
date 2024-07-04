@@ -25,7 +25,6 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
-import io.ktor.server.html.respondHtmlTemplate
 import io.ktor.server.http.content.staticResources
 import io.ktor.server.netty.Netty
 import io.ktor.server.netty.NettyApplicationEngine
@@ -44,12 +43,6 @@ import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.pingPeriod
 import io.ktor.server.websocket.timeout
-import kotlinx.html.a
-import kotlinx.html.h1
-import kotlinx.html.li
-import kotlinx.html.style
-import kotlinx.html.ul
-import kotlinx.html.unsafe
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.apache.commons.io.FileUtils
@@ -71,6 +64,7 @@ import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.handlers.ui.ContentExplorer
 import org.modelix.model.server.handlers.ui.HistoryHandler
+import org.modelix.model.server.handlers.ui.IndexPage
 import org.modelix.model.server.handlers.ui.RepositoryOverview
 import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.InMemoryStoreClient
@@ -80,7 +74,6 @@ import org.modelix.model.server.store.forContextRepository
 import org.modelix.model.server.store.forGlobalRepository
 import org.modelix.model.server.store.loadDump
 import org.modelix.model.server.store.writeDump
-import org.modelix.model.server.templates.PageWithMenuBar
 import org.slf4j.LoggerFactory
 import org.springframework.util.ResourceUtils
 import java.io.File
@@ -217,6 +210,7 @@ object Main {
                 installStatusPages()
 
                 modelServer.init(this)
+                IndexPage().init(this)
                 historyHandler.init(this)
                 repositoryOverview.init(this)
                 contentExplorer.init(this)
@@ -224,54 +218,12 @@ object Main {
                 modelReplicationServer.init(this)
                 metricsApi.init(this)
                 IdsApiImpl(repositoriesManager, localModelClient).init(this)
+
                 routing {
                     HealthApiImpl(repositoriesManager, globalStoreClient, inMemoryModels).installRoutes(this)
 
                     staticResources("/public", "public")
-                    get("/") {
-                        call.respondHtmlTemplate(PageWithMenuBar("root", ".")) {
-                            headContent {
-                                style {
-                                    unsafe {
-                                        raw(
-                                            """
-                                            body {
-                                                font-family: sans-serif;
-                                            table {
-                                                border-collapse: collapse;
-                                            }
-                                            td, th {
-                                                border: 1px solid #888;
-                                                padding: 3px 12px;
-                                            }
-                                            """.trimIndent(),
-                                        )
-                                    }
-                                }
-                            }
-                            bodyContent {
-                                h1 { +"Model Server" }
-                                ul {
-                                    li {
-                                        a("repos/") { +"View Repositories on the Model Server" }
-                                    }
-                                    li {
-                                        a("json/") { +"JSON API for JavaScript clients" }
-                                    }
-                                    li {
-                                        a("headers") { +"View HTTP headers" }
-                                    }
-                                    li {
-                                        a("user") { +"View JWT token and permissions" }
-                                    }
-                                    li {
-                                        a("swagger") { +"SwaggerUI" }
-                                    }
-                                }
-                            }
-                        }
-                        call.respondText("Model Server")
-                    }
+
                     if (cmdLineArgs.noSwaggerUi) {
                         get("swagger") {
                             call.respondText("SwaggerUI is disabled")

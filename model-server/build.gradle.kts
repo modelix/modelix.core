@@ -201,7 +201,7 @@ spotless {
 
 // OpenAPI integration
 val basePackage = project.group.toString()
-val openAPIgenerationPath = "${project.layout.buildDirectory.get()}/generated/openapi"
+val openApiGenerationPath = project.layout.buildDirectory.get().dir("generated").dir("openapi")
 
 // Pairs of the different OpenAPI files we use. Each pair must have its own 'category' as first argument as these
 // are used to generate corresponding packages
@@ -215,7 +215,7 @@ val openApiFiles = listOf(
 openApiFiles.forEach {
     val targetTaskName = "openApiGenerate-${it.second}"
     val targetPackageName = "$basePackage.api.${it.first}"
-    val outputPath = "$openAPIgenerationPath/${it.first}"
+    val outputPath = "$openApiGenerationPath/${it.first}"
     tasks.register<GenerateTask>(targetTaskName) {
         // we let the Gradle OpenAPI generator plugin build data classes and API interfaces based on the provided
         // OpenAPI specification. That way, the code is forced to stay in sync with the API specification.

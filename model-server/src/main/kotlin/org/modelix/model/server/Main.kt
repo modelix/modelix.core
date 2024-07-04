@@ -240,6 +240,11 @@ object Main {
                         get("swagger") {
                             call.respondRedirect("swagger/v2", false)
                         }
+                        // The swagger UI plugin automatically serves the configured OpenAPI specification. However,
+                        // it does not include potentially linked files. Therefore, we need to serve those on
+                        // appropriate paths on our own to not break the Swagger UI.
+                        staticResources("swagger/v2", "api")
+                        staticResources("swagger/v1", "api")
                     }
                 }
             }

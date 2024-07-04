@@ -60,7 +60,7 @@ import org.modelix.model.api.IIdGenerator
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.PrefetchCache
-import org.modelix.model.oauth.ModelixOAuthClient
+import org.modelix.model.oauth.ModelixAuthClient
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.sleep
 import org.modelix.model.util.StreamUtils.toStream
@@ -184,7 +184,7 @@ class RestWebModelClient @JvmOverloads constructor(
                 loadTokens {
                     val tp = authTokenProvider
                     if (tp == null) {
-                        ModelixOAuthClient.getTokens()?.let { BearerTokens(it.accessToken, it.refreshToken) }
+                        ModelixAuthClient.getTokens()?.let { BearerTokens(it.accessToken, it.refreshToken) }
                     } else {
                         val token = tp()
                         if (token == null) {
@@ -200,9 +200,10 @@ class RestWebModelClient @JvmOverloads constructor(
                     if (tp == null) {
                         var url = baseUrl
                         if (!url.endsWith("/")) url += "/"
+                        // TODO MODELIX-975 See ModelixOAuthClient.installAuthWithPKCEFlow
                         if (url.endsWith("/model/")) url = url.substringBeforeLast("/model/")
                         connectionStatus = ConnectionStatus.WAITING_FOR_TOKEN
-                        val tokens = ModelixOAuthClient.authorize(url)
+                        val tokens = ModelixAuthClient.authorize(url)
                         BearerTokens(tokens.accessToken, tokens.refreshToken)
                     } else {
                         val providedToken = tp()

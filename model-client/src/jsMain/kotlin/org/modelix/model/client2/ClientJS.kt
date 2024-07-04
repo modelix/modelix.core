@@ -22,6 +22,7 @@ import INodeJS
 import INodeReferenceJS
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.await
 import kotlinx.coroutines.promise
 import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.ModelFacade
@@ -30,7 +31,6 @@ import org.modelix.model.api.JSNodeConverter
 import org.modelix.model.data.ModelData
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.withAutoTransactions
-import kotlin.Unit
 import kotlin.js.Promise
 
 /**
@@ -73,9 +73,15 @@ fun loadModelsFromJsonAsBranch(json: Array<String>): BranchJS {
     intendedFinalization = "The client is intended to be finalized when the overarching task is finished.",
 )
 @JsExport
-fun connectClient(url: String): Promise<ClientJS> {
+fun connectClient(url: String, bearerTokenProvider: (() -> Promise<String?>)? = null): Promise<ClientJS> {
     return GlobalScope.promise {
-        val client = ModelClientV2.builder().url(url).build()
+        val clientBuilder = ModelClientV2.builder()
+            .url(url)
+
+        if (bearerTokenProvider != null) {
+            clientBuilder.authToken { bearerTokenProvider().await() }
+        }
+        val client = clientBuilder.build()
         client.init()
         return@promise ClientJSImpl(client)
     }

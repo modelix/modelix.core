@@ -1,4 +1,3 @@
-# From https://opensource.zalando.com/restful-api-guidelines/models/problem-1.0.1.yaml
 Problem:
   type: object
   properties:

@@ -20,8 +20,6 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.response.respond
 import io.ktor.util.pipeline.PipelineContext
-import org.modelix.api.operative.AboutApi
-import org.modelix.api.operative.AboutV1
 import org.modelix.model.server.MODELIX_VERSION
 
 /**

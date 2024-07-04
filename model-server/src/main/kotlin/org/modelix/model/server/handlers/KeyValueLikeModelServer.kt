@@ -34,7 +34,6 @@ import kotlinx.html.h1
 import kotlinx.html.span
 import org.json.JSONArray
 import org.json.JSONObject
-import org.modelix.api.v1.Paths
 import org.modelix.authorization.EPermissionType
 import org.modelix.authorization.KeycloakResourceType
 import org.modelix.authorization.KeycloakScope

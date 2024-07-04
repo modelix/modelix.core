@@ -22,7 +22,6 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.response.respondText
 import io.ktor.util.pipeline.PipelineContext
-import org.modelix.api.operative.HealthApi
 import org.modelix.model.InMemoryModels
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.handlers.KeyValueLikeModelServer.Companion.PROTECTED_PREFIX

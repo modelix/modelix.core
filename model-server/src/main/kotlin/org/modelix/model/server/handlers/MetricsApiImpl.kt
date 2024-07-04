@@ -35,7 +35,6 @@ import io.micrometer.core.instrument.binder.system.UptimeMetrics
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import org.modelix.api.operative.MetricsApi
 
 /**
  * REST API implementation for providing micrometer metrics.

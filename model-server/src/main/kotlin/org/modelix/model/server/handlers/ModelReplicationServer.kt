@@ -26,7 +26,6 @@ import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytesWriter
 import io.ktor.server.response.respondText
 import io.ktor.server.response.respondTextWriter
-import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.util.cio.use
 import io.ktor.util.pipeline.PipelineContext
@@ -39,8 +38,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.withContext
-import org.modelix.api.v2.BranchV1
-import org.modelix.api.v2.DefaultApi
 import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.hasPermission
@@ -78,7 +75,7 @@ class ModelReplicationServer(
     private val repositoriesManager: IRepositoriesManager,
     private val modelClient: LocalModelClient,
     private val inMemoryModels: InMemoryModels,
-) : DefaultApi() {
+) : V2Api() {
     constructor(repositoriesManager: RepositoriesManager) :
         this(repositoriesManager, repositoriesManager.client, InMemoryModels())
 
@@ -93,10 +90,8 @@ class ModelReplicationServer(
 
     fun init(application: Application) {
         application.routing {
-            route("/v2") {
-                requiresLogin {
-                    installRoutes(this)
-                }
+            requiresLogin {
+                installRoutes(this)
             }
         }
     }

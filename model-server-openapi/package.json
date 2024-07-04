@@ -1,0 +1,9 @@
+{
+  "name": "model-server-openapi",
+  "version": "1.0.0",
+  "description": "",
+  "author": "",
+  "dependencies": {
+    "@redocly/cli": "^1.17.1"
+  }
+}

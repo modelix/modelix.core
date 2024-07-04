@@ -17,6 +17,7 @@ servers:
     description: model-server
 tags:
   - name: ids
+  - name: v2
 paths:
   /server-id:
     get:
@@ -51,6 +52,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories:
     get:
+      tags:
+        - v2
       operationId: getRepositories
       responses:
         "200":
@@ -59,6 +62,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/objects:
     put:
+      tags:
+        - v2
       operationId: putRepositoryObjects
       parameters:
         - name: repository
@@ -77,6 +82,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/objects/getAll:
     post:
+      tags:
+        - v2
       operationId: postRepositoryObjectsGetAll
       parameters:
         - name: repository
@@ -89,6 +96,8 @@ paths:
           $ref: '#/components/responses/200'
   /repositories/{repository}/branches:
     get:
+      tags:
+        - v2
       operationId: getRepositoryBranches
       parameters:
         - name: repository
@@ -103,6 +112,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/branches/{branch}:
     delete:
+      tags:
+        - v2
       operationId: deleteRepositoryBranch
       parameters:
         - name: repository
@@ -123,6 +134,8 @@ paths:
         default:
           $ref: '#/components/responses/GeneralError'
     get:
+      tags:
+        - v2
       operationId: getRepositoryBranch
       parameters:
         - name: lastKnown
@@ -173,6 +186,8 @@ paths:
         default:
           $ref: '#/components/responses/GeneralError'
     post:
+      tags:
+        - v2
       operationId: postRepositoryBranch
       parameters:
         - name: repository
@@ -202,6 +217,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/branches/{branch}/hash:
     get:
+      tags:
+        - v2
       operationId: getRepositoryBranchHash
       parameters:
         - name: repository
@@ -223,6 +240,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/branches/{branch}/poll:
     get:
+      tags:
+        - v2
       operationId: pollRepositoryBranch
       parameters:
         - name: lastKnown
@@ -251,6 +270,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/branches/{branch}/pollHash:
     get:
+      tags:
+        - v2
       operationId: pollRepositoryBranchHash
       parameters:
         - name: lastKnown
@@ -284,6 +305,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/branches/{branch}/query:
     post:
+      tags:
+        - v2
       operationId: postRepositoryBranchQuery
       parameters:
         - name: repository
@@ -303,6 +326,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/init:
     post:
+      tags:
+        - v2
       operationId: initializeRepository
       parameters:
         - name: useRoleIds
@@ -333,6 +358,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/delete:
     post:
+      tags:
+        - v2
       operationId: deleteRepository
       parameters:
         - name: repository
@@ -351,6 +378,8 @@ paths:
           $ref: '#/components/responses/404'
   /repositories/{repository}/versions/{versionHash}:
     get:
+      tags:
+        - v2
       operationId: getRepositoryVersionHash
       parameters:
         - name: lastKnown
@@ -381,6 +410,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/versions/{versionHash}/query:
     post:
+      tags:
+        - v2
       operationId: postRepositoryVersionHashQuery
       parameters:
         - name: versionHash
@@ -401,6 +432,8 @@ paths:
 
   /versions/{versionHash}:
     get:
+      tags:
+        - v2
       operationId: getVersionHash
       deprecated: true
       parameters:

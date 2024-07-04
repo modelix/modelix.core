@@ -34,7 +34,6 @@ import io.ktor.server.plugins.forwardedheaders.ForwardedHeaders
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.plugins.swagger.swaggerUI
 import io.ktor.server.resources.Resources
-import io.ktor.server.response.respondRedirect
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.IgnoreTrailingSlash
 import io.ktor.server.routing.Routing
@@ -47,7 +46,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.apache.commons.io.FileUtils
 import org.apache.ignite.Ignition
-import org.modelix.api.v1.Problem
 import org.modelix.authorization.ModelixAuthorization
 import org.modelix.authorization.NoPermissionException
 import org.modelix.authorization.NotLoggedInException
@@ -59,6 +57,8 @@ import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.MetricsApiImpl
 import org.modelix.model.server.handlers.ModelReplicationServer
+import org.modelix.model.server.handlers.Paths.registerJsonTypes
+import org.modelix.model.server.handlers.Problem
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.handlers.ui.ContentExplorer
 import org.modelix.model.server.handlers.ui.HistoryHandler
@@ -79,8 +79,6 @@ import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.time.Duration
 import javax.sql.DataSource
-import org.modelix.api.operative.Paths.registerJsonTypes as registerJsonTypesOperative
-import org.modelix.api.v2.Paths.registerJsonTypes as registerJsonTypesV2
 
 object Main {
     private val LOG = LoggerFactory.getLogger(Main::class.java)
@@ -199,8 +197,7 @@ object Main {
                 }
                 install(ContentNegotiation) {
                     json()
-                    registerJsonTypesV2()
-                    registerJsonTypesOperative()
+                    registerJsonTypes()
                 }
                 install(CORS) {
                     anyHost()
@@ -232,19 +229,7 @@ object Main {
                         }
                     } else {
                         // We serve the public API to the outside via swagger UI.
-                        // The ktor swagger plugin currently has no way to serve multiple specifications. Therefore, we
-                        // simply offer two versions of the UI for now.
-                        swaggerUI(path = "swagger/v2", swaggerFile = ResourceUtils.getFile("api/model-server-v2.yaml").invariantSeparatorsPath)
-                        swaggerUI(path = "swagger/v1", swaggerFile = ResourceUtils.getFile("api/model-server-v1.yaml").invariantSeparatorsPath)
-                        // by default, users should be using v2
-                        get("swagger") {
-                            call.respondRedirect("swagger/v2", false)
-                        }
-                        // The swagger UI plugin automatically serves the configured OpenAPI specification. However,
-                        // it does not include potentially linked files. Therefore, we need to serve those on
-                        // appropriate paths on our own to not break the Swagger UI.
-                        staticResources("swagger/v2", "api")
-                        staticResources("swagger/v1", "api")
+                        swaggerUI(path = "swagger", swaggerFile = ResourceUtils.getFile("api/model-server.yaml").invariantSeparatorsPath)
                     }
                 }
             }

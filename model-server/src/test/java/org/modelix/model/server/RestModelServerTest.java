@@ -37,7 +37,7 @@ public class RestModelServerTest {
                                 new LocalModelClient(
                                         StoreClientAdapterKt.forGlobalRepository(
                                                 new InMemoryStoreClient()))));
-        JSONArray result = rms.collect("unexistingKey");
+        JSONArray result = rms.collect("unexistingKey", null);
         assertEquals(1, result.length());
         assertEquals(new HashSet<>(Arrays.asList("key")), result.getJSONObject(0).keySet());
         assertEquals("unexistingKey", result.getJSONObject(0).get("key"));
@@ -50,7 +50,7 @@ public class RestModelServerTest {
         KeyValueLikeModelServer rms =
                 new KeyValueLikeModelServer(
                         new RepositoriesManager(new LocalModelClient(storeClient)));
-        JSONArray result = rms.collect("existingKey");
+        JSONArray result = rms.collect("existingKey", null);
         assertEquals(1, result.length());
         assertEquals(
                 new HashSet<>(Arrays.asList("key", "value")), result.getJSONObject(0).keySet());
@@ -66,7 +66,7 @@ public class RestModelServerTest {
         KeyValueLikeModelServer rms =
                 new KeyValueLikeModelServer(
                         new RepositoriesManager(new LocalModelClient(storeClient)));
-        JSONArray result = rms.collect("existingKey");
+        JSONArray result = rms.collect("existingKey", null);
         assertEquals(2, result.length());
 
         var obj = result.getJSONObject(0);
@@ -100,7 +100,7 @@ public class RestModelServerTest {
         KeyValueLikeModelServer rms =
                 new KeyValueLikeModelServer(
                         new RepositoriesManager(new LocalModelClient(storeClient)));
-        JSONArray result = rms.collect("root");
+        JSONArray result = rms.collect("root", null);
         assertEquals(5, result.length());
 
         var obj = result.getJSONObject(0);
@@ -148,7 +148,7 @@ public class RestModelServerTest {
         KeyValueLikeModelServer rms =
                 new KeyValueLikeModelServer(
                         new RepositoriesManager(new LocalModelClient(storeClient)));
-        JSONArray result = rms.collect("root");
+        JSONArray result = rms.collect("root", null);
         assertEquals(4, result.length());
 
         var obj = result.getJSONObject(0);

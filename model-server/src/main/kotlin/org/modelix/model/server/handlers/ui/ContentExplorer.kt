@@ -53,6 +53,7 @@ import kotlinx.html.title
 import kotlinx.html.tr
 import kotlinx.html.ul
 import kotlinx.html.unsafe
+import org.modelix.authorization.checkPermission
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INodeResolutionScope
 import org.modelix.model.api.ITree
@@ -62,6 +63,7 @@ import org.modelix.model.client.IModelClient
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.model.server.handlers.IRepositoriesManager
 import org.modelix.model.server.templates.PageWithMenuBar
 import kotlin.collections.set
@@ -84,6 +86,7 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                     call.respondText("branch not found", status = HttpStatusCode.BadRequest)
                     return@get
                 }
+                call.checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
 
                 val latestVersion = repoManager.getVersion(BranchReference(RepositoryId(repository), branch))
                 if (latestVersion == null) {
@@ -99,6 +102,7 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                     call.respondText("repository parameter missing", status = HttpStatusCode.BadRequest)
                     return@get
                 }
+                call.checkPermission(ModelServerPermissionSchema.repository(repositoryId).objects.read)
                 val versionHash = call.parameters["versionHash"]
                 if (versionHash.isNullOrEmpty()) {
                     call.respondText("version parameter missing", status = HttpStatusCode.BadRequest)
@@ -131,6 +135,8 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                     return@post
                 }
 
+                call.checkPermission(ModelServerPermissionSchema.repository(repositoryId).objects.read)
+
                 repoManager.runWithRepository(repositoryId) {
                     val expandedNodes = call.receive<ContentExplorerExpandedNodes>()
 
@@ -160,6 +166,8 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
 
                 val repositoryId = call.parameters["repository"]
                     ?: return@get call.respondText("repository parameter missing", status = HttpStatusCode.BadRequest)
+
+                call.checkPermission(ModelServerPermissionSchema.repository(repositoryId).objects.read)
 
                 repoManager.runWithRepository(RepositoryId(repositoryId)) {
                     val version = try {

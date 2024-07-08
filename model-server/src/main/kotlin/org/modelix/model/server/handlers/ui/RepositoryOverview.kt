@@ -2,6 +2,7 @@ package org.modelix.model.server.handlers.ui
 
 import io.ktor.http.encodeURLPathPart
 import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.html.respondHtmlTemplate
 import io.ktor.server.routing.get
@@ -24,7 +25,9 @@ import kotlinx.html.thead
 import kotlinx.html.title
 import kotlinx.html.tr
 import kotlinx.html.unsafe
+import org.modelix.authorization.hasPermission
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.model.server.handlers.IRepositoriesManager
 import org.modelix.model.server.templates.PageWithMenuBar
 
@@ -56,15 +59,15 @@ class RepositoryOverview(private val repoManager: IRepositoriesManager) {
                             }
                         }
                     }
-                    bodyContent { buildMainPage() }
+                    bodyContent { buildMainPage(call) }
                 }
             }
         }
     }
 
-    private fun FlowContent.buildMainPage() {
+    private fun FlowContent.buildMainPage(call: ApplicationCall) {
         h1 { +"Choose Repository" }
-        val repositories = repoManager.getRepositories()
+        val repositories = repoManager.getRepositories().filter { call.hasPermission(ModelServerPermissionSchema.repository(it).list) }
         if (repositories.isEmpty()) {
             p { i { +"No repositories available, add one" } }
         } else {
@@ -84,7 +87,7 @@ class RepositoryOverview(private val repoManager: IRepositoriesManager) {
                 }
                 tbody {
                     for (repository in repositories) {
-                        val branches = repoManager.getBranches(repository)
+                        val branches = repoManager.getBranches(repository).filter { call.hasPermission(ModelServerPermissionSchema.branch(it).list) }
                         val repoRowSpan = branches.size.coerceAtLeast(1).plus(1).toString()
                         tr {
                             td {

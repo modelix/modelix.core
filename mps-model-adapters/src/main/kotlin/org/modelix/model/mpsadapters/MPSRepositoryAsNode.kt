@@ -29,6 +29,16 @@ import org.modelix.model.area.IArea
 
 data class MPSRepositoryAsNode(val repository: SRepository) : IDefaultNodeAdapter {
 
+    private val childrenAccessors: Map<IChildLink, () -> Iterable<INode>> = mapOf(
+        BuiltinLanguages.MPSRepositoryConcepts.Repository.modules to { repository.modules.filter { !it.isTempModule() }.map { MPSModuleAsNode(it) } },
+        BuiltinLanguages.MPSRepositoryConcepts.Repository.projects to {
+            ProjectManager.getInstance().openedProjects
+                .filterIsInstance<ProjectBase>()
+                .map { MPSProjectAsNode(it) }
+        },
+        BuiltinLanguages.MPSRepositoryConcepts.Repository.tempModules to { repository.modules.filter { it.isTempModule() }.map { MPSModuleAsNode(it) } },
+    )
+
     override fun getArea(): IArea {
         return MPSArea(repository)
     }
@@ -41,26 +51,18 @@ data class MPSRepositoryAsNode(val repository: SRepository) : IDefaultNodeAdapte
         get() = null
 
     override val allChildren: Iterable<INode>
-        get() = repository.modules.map { MPSModuleAsNode(it) }
+        get() = childrenAccessors.values.flatMap { it() }
 
     override fun getContainmentLink(): IChildLink? {
         return null
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
-        return if (link is NullChildLink) {
-            return emptyList()
-        } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Repository.modules)) {
-            repository.modules.filter { !it.isTempModule() }.map { MPSModuleAsNode(it) }
-        } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Repository.projects)) {
-            ProjectManager.getInstance().openedProjects
-                .filterIsInstance<ProjectBase>()
-                .map { MPSProjectAsNode(it) }
-        } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Repository.tempModules)) {
-            repository.modules.filter { it.isTempModule() }.map { MPSModuleAsNode(it) }
-        } else {
-            emptyList()
+        if (link is NullChildLink) return emptyList()
+        for (childrenAccessor in childrenAccessors) {
+            if (link.conformsTo(childrenAccessor.key)) return childrenAccessor.value()
         }
+        return emptyList()
     }
 }
 

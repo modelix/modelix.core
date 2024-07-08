@@ -29,6 +29,17 @@ import org.modelix.model.area.IArea
 
 data class MPSModelAsNode(val model: SModel) : IDefaultNodeAdapter {
 
+    private val childrenAccessors: Map<IChildLink, () -> Iterable<INode>> = mapOf(
+        BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes to { model.rootNodes.map { MPSNode(it) } },
+        BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports to {
+            ModelImports(model).importedModels.mapNotNull { modelRef ->
+                val target = modelRef.resolve(model.repository)
+                target?.let { MPSModelImportAsNode(it, model) }
+            }
+        },
+        BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages to { getImportedLanguagesAndDevKits() },
+    )
+
     override fun getArea(): IArea {
         return MPSArea(model.repository)
     }
@@ -41,14 +52,7 @@ data class MPSModelAsNode(val model: SModel) : IDefaultNodeAdapter {
         get() = MPSModuleAsNode(model.module)
 
     override val allChildren: Iterable<INode>
-        get() {
-            val childLinks = listOf(
-                BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes,
-                BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports,
-                BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages,
-            )
-            return childLinks.flatMap { getChildren(it) }
-        }
+        get() = childrenAccessors.values.flatMap { it() }
 
     override fun removeChild(child: INode) {
         val link = child.getContainmentLink() ?: error("ContainmentLink not found for node $child")
@@ -71,20 +75,11 @@ data class MPSModelAsNode(val model: SModel) : IDefaultNodeAdapter {
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
-        return if (link is NullChildLink) {
-            emptyList()
-        } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes)) {
-            model.rootNodes.map { MPSNode(it) }
-        } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports)) {
-            ModelImports(model).importedModels.mapNotNull { modelRef ->
-                val target = modelRef.resolve(model.repository)
-                target?.let { MPSModelImportAsNode(it, model) }
-            }
-        } else if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages)) {
-            getImportedLanguagesAndDevKits()
-        } else {
-            emptyList()
+        if (link is NullChildLink) return emptyList()
+        for (childrenAccessor in childrenAccessors) {
+            if (link.conformsTo(childrenAccessor.key)) return childrenAccessor.value()
         }
+        return emptyList()
     }
 
     private fun getImportedLanguagesAndDevKits(): List<INode> {

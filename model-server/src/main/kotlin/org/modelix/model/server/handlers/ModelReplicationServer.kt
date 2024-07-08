@@ -41,7 +41,10 @@ import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.withContext
 import org.modelix.api.v2.BranchV1
 import org.modelix.api.v2.DefaultApi
+import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
+import org.modelix.authorization.hasPermission
+import org.modelix.authorization.requiresLogin
 import org.modelix.model.InMemoryModels
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
@@ -55,6 +58,7 @@ import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
+import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.model.server.api.v2.ImmutableObjectsStream
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.api.v2.VersionDeltaStream
@@ -90,7 +94,9 @@ class ModelReplicationServer(
     fun init(application: Application) {
         application.routing {
             route("/v2") {
-                installRoutes(this)
+                requiresLogin {
+                    installRoutes(this)
+                }
             }
         }
     }
@@ -103,11 +109,20 @@ class ModelReplicationServer(
     }
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositories() {
-        call.respondText(repositoriesManager.getRepositories().joinToString("\n") { it.id })
+        call.respondText(
+            repositoriesManager.getRepositories()
+                .filter { call.hasPermission(ModelServerPermissionSchema.repository(it).list) }
+                .joinToString("\n") { it.id },
+        )
     }
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositoryBranches(repository: String) {
-        call.respondText(repositoriesManager.getBranchNames(repositoryId(repository)).joinToString("\n"))
+        call.respondText(
+            repositoriesManager
+                .getBranchNames(repositoryId(repository))
+                .filter { call.hasPermission(ModelServerPermissionSchema.repository(repository).branch(it).list) }
+                .joinToString("\n"),
+        )
     }
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositoryBranchDelta(
@@ -115,6 +130,7 @@ class ModelReplicationServer(
         branch: String,
         lastKnown: String?,
     ) {
+        checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
         runWithRepository(repository) {
             val branchRef = repositoryId(repository).getBranchReference(branch)
             val versionHash = repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
@@ -127,6 +143,7 @@ class ModelReplicationServer(
         branch: String,
         lastKnown: String?,
     ) {
+        checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
         runWithRepository(repository) {
             val branchRef = repositoryId(repository).getBranchReference(branch)
             val versionHash = repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
@@ -144,6 +161,8 @@ class ModelReplicationServer(
             throw BadRequestException("Invalid repository name", "invalid-request", cause = e)
         }
 
+        checkPermission(ModelServerPermissionSchema.repository(repositoryId).branch(branch).delete)
+
         if (!repositoriesManager.getBranchNames(repositoryId).contains(branch)) {
             throw BranchNotFoundException(branch, repositoryId.id)
         }
@@ -157,6 +176,7 @@ class ModelReplicationServer(
         repository: String,
         branch: String,
     ) {
+        checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
         runWithRepository(repository) {
             val branchRef = repositoryId(repository).getBranchReference(branch)
             val versionHash = repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
@@ -169,6 +189,7 @@ class ModelReplicationServer(
         useRoleIds: Boolean?,
         legacyGlobalStorage: Boolean?,
     ) {
+        checkPermission(ModelServerPermissionSchema.repository(repository).create)
         runWithRepository(repository) {
             val initialVersion = repositoriesManager.createRepository(
                 repositoryId(repository),
@@ -181,6 +202,8 @@ class ModelReplicationServer(
     }
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.deleteRepository(repository: String) {
+        checkPermission(ModelServerPermissionSchema.repository(repository).delete)
+
         runWithRepository(repository) {
             val foundAndDeleted = repositoriesManager.removeRepository(repositoryId(repository))
             if (foundAndDeleted) {
@@ -195,6 +218,7 @@ class ModelReplicationServer(
         repository: String,
         branch: String,
     ) {
+        checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).push)
         runWithRepository(repository) {
             val branchRef = repositoryId(repository).getBranchReference(branch)
             val deltaFromClient = call.receive<VersionDelta>()
@@ -210,6 +234,7 @@ class ModelReplicationServer(
         branch: String,
         lastKnown: String?,
     ) {
+        checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
         runWithRepository(repository) {
             val branchRef = repositoryId(repository).getBranchReference(branch)
             val newVersionHash = repositoriesManager.pollVersionHash(branchRef, lastKnown)
@@ -218,6 +243,7 @@ class ModelReplicationServer(
     }
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.postRepositoryObjectsGetAll(repository: String) {
+        checkPermission(ModelServerPermissionSchema.repository(repository).objects.read)
         runWithRepository(repository) {
             val keys = call.receiveStream().bufferedReader().use { reader ->
                 reader.lineSequence().toHashSet()
@@ -237,6 +263,7 @@ class ModelReplicationServer(
         lastKnown: String?,
         legacyGlobalStorage: Boolean?,
     ) {
+        checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
         runWithRepository(repository) {
             val branchRef = repositoryId(repository).getBranchReference(branch)
             val newVersionHash = repositoriesManager.pollVersionHash(branchRef, lastKnown)
@@ -249,9 +276,7 @@ class ModelReplicationServer(
         repository: String,
         lastKnown: String?,
     ) {
-        // TODO permission check on the repository ID is not sufficient, because the client could
-        //      provide any repository ID to access a version inside a different repository.
-        //      A check if the version belongs to the repository is required.
+        checkPermission(ModelServerPermissionSchema.repository(repository).objects.read)
         runWithRepository(repository) {
             if (repositoriesManager.getVersion(repositoryId(repository), versionHash) == null) {
                 throw VersionNotFoundException(versionHash)
@@ -265,6 +290,7 @@ class ModelReplicationServer(
         branch: String,
     ) {
         val branchRef = repositoryId(repository).getBranchReference(branch)
+        checkPermission(ModelServerPermissionSchema.branch(branchRef).query)
         runWithRepository(repository) {
             val version = repositoriesManager.getVersion(branchRef)
             LOG.trace("Running query on {} @ {}", branchRef, version)
@@ -304,6 +330,7 @@ class ModelReplicationServer(
         versionHash: String,
         repository: String,
     ) {
+        checkPermission(ModelServerPermissionSchema.repository(repository).objects.read)
         runWithRepository(repository) {
             val version = CLVersion.loadFromHash(versionHash, modelClient.storeCache)
             val initialTree = version.getTree()
@@ -313,6 +340,7 @@ class ModelReplicationServer(
     }
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.putRepositoryObjects(repository: String) {
+        checkPermission(ModelServerPermissionSchema.repository(parameter("repository")).objects.add)
         runWithRepository(repository) {
             val writtenEntries = withContext(Dispatchers.IO) {
                 val entries = call.receiveStream().bufferedReader().use { reader ->
@@ -344,10 +372,7 @@ class ModelReplicationServer(
         versionHash: String,
         lastKnown: String?,
     ) {
-        // TODO versions should be stored inside a repository with permission checks.
-        //      Knowing a version hash should not give you access to the content.
-        //      This handler was already moved to the 'repositories' route. Removing it here would be a breaking
-        //      change, but should be done in some future version.
+        checkPermission(ModelServerPermissionSchema.legacyGlobalObjects.read)
         storeClient.withGlobalRepositoryInCoroutine {
             if (storeClient[versionHash] == null) {
                 throw VersionNotFoundException(versionHash)
@@ -453,3 +478,11 @@ private fun <K, V> Map<K, V?>.checkValuesNotNull(lazyMessage: (K) -> Any): Map<K
         checkNotNull(entry.value) { lazyMessage(entry.key) }
     }
 } as Map<K, V>
+
+private fun PipelineContext<Unit, ApplicationCall>.parameter(name: String): String {
+    return call.parameter(name)
+}
+
+private fun ApplicationCall.parameter(name: String): String {
+    return requireNotNull(parameters[name]) { "Unknown parameter '$name'" }
+}

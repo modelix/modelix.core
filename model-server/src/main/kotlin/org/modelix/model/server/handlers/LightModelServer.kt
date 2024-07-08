@@ -28,10 +28,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import mu.KotlinLogging
-import org.modelix.authorization.KeycloakScope
-import org.modelix.authorization.asResource
 import org.modelix.authorization.getUserName
-import org.modelix.authorization.requiresPermission
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.INode
@@ -69,10 +66,8 @@ class LightModelServer(val client: LocalModelClient, val repositoriesManager: Re
 
     fun init(application: Application) {
         application.routing {
-            requiresPermission("model-json-api".asResource(), KeycloakScope.READ) {
-                route("/json/v2") {
-                    initRouting()
-                }
+            route("/json/v2") {
+                initRouting()
             }
         }
     }

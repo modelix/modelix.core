@@ -67,6 +67,7 @@ internal class ConceptObjectGenerator(
             addSuperclassConstructorParameter(concept.abstract.toString())
             addInstanceClassGetter()
             addTypedFun()
+            addConceptPropertiesGetter()
             addLanguageProperty()
             addWrapFun()
             if (concept.uid != null) {
@@ -97,6 +98,25 @@ internal class ConceptObjectGenerator(
             )
         }
         addProperty(propertySpec)
+    }
+
+    private fun TypeSpec.Builder.addConceptPropertiesGetter() {
+        if (concept.metaProperties.isEmpty()) return
+
+        val getConceptPropertyFun = FunSpec.builder(GeneratedConcept<*, *>::getConceptProperty.name).runBuild {
+            val paramName = GeneratedConcept<*, *>::getConceptProperty.parameters.first().name ?: "name"
+            returns(String::class.asTypeName().copy(nullable = true))
+            addParameter(paramName, String::class)
+            addModifiers(KModifier.OVERRIDE)
+            beginControlFlow("return when (%N)", paramName)
+            for ((key, _) in concept.metaProperties) {
+                addStatement("""%S -> %T.%N""", key, concept.conceptWrapperInterfaceClass(), key)
+            }
+            addStatement("else -> null")
+            endControlFlow()
+        }
+
+        addFunction(getConceptPropertyFun)
     }
 
     private fun TypeSpec.Builder.addConceptObjectChildLink(childLink: ProcessedChildLink) {

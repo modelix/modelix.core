@@ -16,6 +16,7 @@ import org.modelix.metamodel.typed
 import org.modelix.metamodel.untyped
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.INode
+import org.modelix.model.api.conceptAlias
 import org.modelix.model.api.getRootNode
 import org.modelix.model.data.ConceptData
 import org.modelix.model.data.ModelData
@@ -82,6 +83,11 @@ class GeneratedApiTest {
     fun `metaProperty alias has value`() {
         val alias = C_ClassConcept.alias
         assertEquals("class", alias)
+    }
+
+    @Test
+    fun `alias can be retrieved via conceptAlias`() {
+        assertEquals(C_ClassConcept.alias, C_ClassConcept.untyped().conceptAlias())
     }
 
     private fun KAnnotatedElement.hasDeprecationWithMessage() =

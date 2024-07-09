@@ -130,6 +130,7 @@ $dokka.location:org.modelix.metamodel//descendants/org.modelix.metamodel.ITypedN
 $dokka.location:org.modelix.metamodel//typed/org.modelix.model.api.INode#/PointingToDeclaration/model-api-gen-runtime/org.modelix.metamodel/[common]typed.html
 module:authorization
 org.modelix.authorization
+org.modelix.authorization.permissions
 module:bulk-model-sync-gradle
 org.modelix.model.sync.bulk.gradle
 org.modelix.model.sync.bulk.gradle.config

@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.modelix.registerVersionGenerationTask
 
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -76,28 +77,11 @@ kotlin {
     }
 }
 
-val generateVersionVariable by tasks.registering {
-    doLast {
-        val outputDir = project.layout.buildDirectory.dir("version_gen/org/modelix/modelql/core").get().asFile
-        outputDir.mkdirs()
-        outputDir.resolve("Version.kt").writeText(
-            """
-            package org.modelix.modelql.core
-
-            const val modelqlVersion: String = "$version"
-
-            """.trimIndent(),
-        )
-    }
-}
-
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
-    dependsOn(generateVersionVariable)
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_11)
         freeCompilerArgs.add("-Xjvm-default=all-compatibility")
     }
 }
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon>().all {
-    dependsOn(generateVersionVariable)
-}
+
+project.registerVersionGenerationTask("org.modelix.modelql.core")

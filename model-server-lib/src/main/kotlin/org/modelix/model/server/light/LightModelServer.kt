@@ -67,7 +67,7 @@ import org.modelix.model.server.api.SetPropertyOpData
 import org.modelix.model.server.api.SetReferenceOpData
 import org.modelix.model.server.api.VersionData
 import org.modelix.model.server.api.buildModelQuery
-import org.modelix.modelql.core.modelqlVersion
+import org.modelix.modelql.core.MODELIX_VERSION
 import org.modelix.modelql.server.ModelQLServer
 import java.time.Duration
 import java.util.*
@@ -202,7 +202,7 @@ class LightModelServer @JvmOverloads constructor(val port: Int, val rootNodeProv
                 }
             }
             get("/version") {
-                call.respondText(modelqlVersion ?: "unknown")
+                call.respondText(MODELIX_VERSION)
             }
             get("/health") {
                 val output = StringBuilder()

@@ -39,6 +39,22 @@ paths:
         default:
           $ref: '#/components/responses/GeneralError'
 
+  /about:
+    get:
+      operationId: getAboutInformation
+      x-modelix-media-type-handlers:
+        - v1:
+            - 'application/x.modelix.about+json;version=1'
+      tags:
+        - about
+      responses:
+        "200":
+          description: Response with information about the model server.
+          content:
+            'application/x.modelix.about+json;version=1':
+              schema:
+                $ref: "#/components/schemas/AboutV1"
+
 components:
   responses:
     Healthy:
@@ -110,3 +126,13 @@ components:
             e.g. by adding a fragment identifier or sub-path to the problem type.
             May be used to locate the root of this problem in the source code.
           example: '/some/uri-reference#specific-occurrence-context'
+
+    AboutV1:
+      x-modelix-media-type: 'application/x.modelix.about+json;version=1'
+      description: Information about the model server
+      type: object
+      properties:
+        version:
+          type: string
+      required:
+        - version

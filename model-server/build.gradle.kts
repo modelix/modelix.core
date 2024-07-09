@@ -1,6 +1,7 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import com.github.jengelman.gradle.plugins.shadow.transformers.PropertiesFileTransformer
 import io.gitlab.arturbosch.detekt.Detekt
+import org.modelix.registerVersionGenerationTask
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
@@ -270,3 +271,5 @@ openApiFiles.forEach {
 tasks.withType<Detekt> {
     exclude("**/org/modelix/api/**")
 }
+
+project.registerVersionGenerationTask("org.modelix.model.server")

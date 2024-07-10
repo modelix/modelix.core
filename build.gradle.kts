@@ -20,7 +20,6 @@ buildscript {
 plugins {
     `maven-publish`
     `version-catalog`
-    alias(libs.plugins.kotlin.multiplatform) apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.gitVersion)
     alias(libs.plugins.spotless) apply false

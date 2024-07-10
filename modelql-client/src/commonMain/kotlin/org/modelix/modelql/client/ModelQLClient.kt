@@ -26,11 +26,11 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.area.IArea
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IUnboundQuery
+import org.modelix.modelql.core.MODELIX_VERSION
 import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.UnboundQuery
 import org.modelix.modelql.core.VersionAndData
 import org.modelix.modelql.core.castToInstance
-import org.modelix.modelql.core.modelqlVersion
 import org.modelix.modelql.untyped.UntypedModelQL
 import org.modelix.modelql.untyped.query
 
@@ -82,7 +82,7 @@ class ModelQLClient(val url: String, val client: HttpClient, includedSerializers
                 LOG.debug { "result: $text" }
                 return text
             }
-            else -> throw RuntimeException("Query failed : $query \nclient version: $modelqlVersion\n${response.status}\n${response.bodyAsText()}")
+            else -> throw RuntimeException("Query failed : $query \nclient version: $MODELIX_VERSION\n${response.status}\n${response.bodyAsText()}")
         }
     }
 

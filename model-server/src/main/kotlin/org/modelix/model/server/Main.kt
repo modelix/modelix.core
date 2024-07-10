@@ -48,11 +48,11 @@ import kotlinx.serialization.json.Json
 import org.apache.commons.io.FileUtils
 import org.apache.ignite.Ignition
 import org.modelix.api.v1.Problem
-import org.modelix.api.v2.Paths.registerJsonTypes
 import org.modelix.authorization.ModelixAuthorization
 import org.modelix.authorization.NoPermissionException
 import org.modelix.authorization.NotLoggedInException
 import org.modelix.model.InMemoryModels
+import org.modelix.model.server.handlers.AboutApiImpl
 import org.modelix.model.server.handlers.HealthApiImpl
 import org.modelix.model.server.handlers.HttpException
 import org.modelix.model.server.handlers.IdsApiImpl
@@ -79,6 +79,8 @@ import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.time.Duration
 import javax.sql.DataSource
+import org.modelix.api.operative.Paths.registerJsonTypes as registerJsonTypesOperative
+import org.modelix.api.v2.Paths.registerJsonTypes as registerJsonTypesV2
 
 object Main {
     private val LOG = LoggerFactory.getLogger(Main::class.java)
@@ -95,6 +97,7 @@ object Main {
             return
         }
 
+        LOG.info("Version: $MODELIX_VERSION")
         LOG.info("Max memory (bytes): ${Runtime.getRuntime().maxMemory()}")
         LOG.info("Server process started")
         LOG.info("In memory: ${cmdLineArgs.inmemory}")
@@ -196,7 +199,8 @@ object Main {
                 }
                 install(ContentNegotiation) {
                     json()
-                    registerJsonTypes()
+                    registerJsonTypesV2()
+                    registerJsonTypesOperative()
                 }
                 install(CORS) {
                     anyHost()
@@ -219,7 +223,7 @@ object Main {
 
                 routing {
                     HealthApiImpl(repositoriesManager, globalStoreClient, inMemoryModels).installRoutes(this)
-
+                    AboutApiImpl.installRoutes(this)
                     staticResources("/public", "public")
 
                     if (cmdLineArgs.noSwaggerUi) {

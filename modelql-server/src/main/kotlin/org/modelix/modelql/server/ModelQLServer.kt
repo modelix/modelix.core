@@ -27,10 +27,10 @@ import org.modelix.model.api.INode
 import org.modelix.model.area.IArea
 import org.modelix.modelql.core.IMonoUnboundQuery
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.MODELIX_VERSION
 import org.modelix.modelql.core.QueryGraphDescriptor
 import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.VersionAndData
-import org.modelix.modelql.core.modelqlVersion
 import org.modelix.modelql.core.upcast
 import org.modelix.modelql.untyped.UntypedModelQL
 import org.modelix.modelql.untyped.createQueryExecutor
@@ -110,7 +110,7 @@ class ModelQLServer private constructor(val rootNodeProvider: () -> INode?, val 
             } catch (ex: Throwable) {
                 afterQueryExecution()
                 call.respondText(
-                    text = "server version: $modelqlVersion\n" + ex.stackTraceToString(),
+                    text = "server version: $MODELIX_VERSION\n" + ex.stackTraceToString(),
                     status = HttpStatusCode.InternalServerError,
                 )
             }

@@ -106,7 +106,7 @@ class ModelixAuthorizationConfig : IModelixAuthorizationConfig {
                 URI("${keycloakBaseUrl}realms/$keycloakRealm/protocol/openid-connect/certs")
             }
         }
-    override var jwkKeyId: String? = null
+    override var jwkKeyId: String? = System.getenv("MODELIX_JWK_KEY_ID")
     override var permissionSchema: Schema = buildPermissionSchema { }
 
     private val hmac512KeyFromEnv by lazy {

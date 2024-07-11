@@ -15,6 +15,8 @@
 
 package org.modelix.model.api
 
+import kotlinx.serialization.Serializable
+
 /**
  * Representation of a property within an [IConcept].
  */
@@ -24,6 +26,7 @@ interface IProperty : IRole {
     }
 }
 
+@Serializable
 data class PropertyFromName(override val name: String) : RoleFromName(), IProperty {
     override val isOptional: Boolean
         get() = throw UnsupportedOperationException()

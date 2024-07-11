@@ -244,6 +244,7 @@ interface INode {
     // <editor-fold desc="flow API">
     fun getParentAsFlow(): Flow<INode> = flowOf(parent).filterNotNull()
     fun getPropertyValueAsFlow(role: IProperty): Flow<String?> = flowOf(getPropertyValue(role))
+    fun getAllPropertiesAsFlow(): Flow<Pair<IProperty, String>> = getAllProperties().asFlow()
     fun getAllChildrenAsFlow(): Flow<INode> = allChildren.asFlow()
     fun getAllReferenceTargetsAsFlow(): Flow<Pair<IReferenceLink, INode>> = getAllReferenceTargets().asFlow()
     fun getAllReferenceTargetRefsAsFlow(): Flow<Pair<IReferenceLink, INodeReference>> = getAllReferenceTargetRefs().asFlow()

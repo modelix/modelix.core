@@ -33,7 +33,7 @@ class TypedModelQLWithModelServerTest : TypedModelQLTest() {
     private val branchRef
         get() = ModelFacade.createBranchReference(RepositoryId("modelql-test$testRun"), "master")
 
-    override fun runTest(block: suspend (ModelQLClient) -> Unit) {
+    override fun runTypedModelQLTest(block: suspend (ModelQLClient) -> Unit) {
         val modelQlClient = ModelQLClient.builder()
             .url("http://localhost:28102/v2/repositories/${branchRef.repositoryId.id}/branches/${branchRef.branchName}/query")
             .build()

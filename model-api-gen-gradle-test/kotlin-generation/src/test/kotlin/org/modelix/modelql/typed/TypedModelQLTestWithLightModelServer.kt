@@ -29,7 +29,7 @@ import kotlin.test.BeforeTest
 class TypedModelQLTestWithLightModelServer : TypedModelQLTest() {
     private lateinit var branch: IBranch
 
-    override fun runTest(block: suspend (ModelQLClient) -> Unit) = testApplication {
+    override fun runTypedModelQLTest(block: suspend (ModelQLClient) -> Unit) = testApplication {
         application {
             LightModelServer(80, branch.getRootNode()).apply { installHandlers() }
         }

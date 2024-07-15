@@ -75,7 +75,7 @@ import kotlin.test.assertTrue
 
 abstract class TypedModelQLTest {
 
-    abstract fun runTest(block: suspend (ModelQLClient) -> Unit)
+    abstract fun runTypedModelQLTest(block: suspend (ModelQLClient) -> Unit)
 
     protected fun createTestData(rootNode: INode) {
         rootNode.allChildren.forEach { it.remove() }
@@ -116,12 +116,12 @@ abstract class TypedModelQLTest {
         // Example for single non-abstract child
         rootNode.addNewChild("xmlFile", -1, C_XmlFile.untyped())
 
-        // Example for mulitple non-abstract child
+        // Example for multiple non-abstract child
         rootNode.addNewChild("xmlComment", -1, C_XmlComment.untyped())
     }
 
     @Test
-    fun `simple query`() = runTest { client ->
+    fun `simple query`() = runTypedModelQLTest { client ->
         val result: Int = client.query { root ->
             root.children("classes").ofConcept(C_ClassConcept)
                 .member
@@ -132,7 +132,7 @@ abstract class TypedModelQLTest {
     }
 
     @Test
-    fun `complex query`() = runTest { client ->
+    fun `complex query`() = runTypedModelQLTest { client ->
         val result: List<Pair<String, String>> = client.query { root ->
             root.children("classes").ofConcept(C_ClassConcept)
                 .member
@@ -147,7 +147,7 @@ abstract class TypedModelQLTest {
     }
 
     @Test
-    fun `get references`() = runTest { client ->
+    fun `get references`() = runTypedModelQLTest { client ->
         val usedVariables: Set<String> = client.query { root ->
             root.children("classes").ofConcept(C_ClassConcept)
                 .member
@@ -162,7 +162,7 @@ abstract class TypedModelQLTest {
     }
 
     @Test
-    fun `get references - fqName`() = runTest { client ->
+    fun `get references - fqName`() = runTypedModelQLTest { client ->
         val usedVariables: Set<String> = client.query { root ->
             root.children("classes").ofConcept(C_ClassConcept)
                 .member
@@ -184,7 +184,7 @@ abstract class TypedModelQLTest {
     }
 
     @Test
-    fun `node serialization`() = runTest { client ->
+    fun `node serialization`() = runTypedModelQLTest { client ->
         val result: List<StaticMethodDeclaration> = client.query { root ->
             root.children("classes").ofConcept(C_ClassConcept)
                 .member
@@ -197,7 +197,7 @@ abstract class TypedModelQLTest {
     }
 
     @Test
-    fun `return typed node`() = runTest { client ->
+    fun `return typed node`() = runTypedModelQLTest { client ->
         val result: List<StaticMethodDeclaration> = client.query { root ->
             root.children("classes").ofConcept(C_ClassConcept)
                 .member
@@ -209,7 +209,7 @@ abstract class TypedModelQLTest {
     }
 
     @Test
-    fun `set property`() = runTest { client ->
+    fun `set property`() = runTypedModelQLTest { client ->
         val expected = "myRenamedMethod"
         client.query { root ->
             root.children("classes").ofConcept(C_ClassConcept)
@@ -228,7 +228,7 @@ abstract class TypedModelQLTest {
     }
 
     @Test
-    fun `set reference`() = runTest { client ->
+    fun `set reference`() = runTypedModelQLTest { client ->
         val oldValue = client.query { root ->
             root.children("classes").ofConcept(C_ClassConcept)
                 .member
@@ -267,7 +267,7 @@ abstract class TypedModelQLTest {
     }
 
     @Test
-    fun `set reference - null`() = runTest { client ->
+    fun `set reference - null`() = runTypedModelQLTest { client ->
         val oldValue = client.query { root ->
             root.children("imageGen").ofConcept(C_ImageGenerator).first().node
         }
@@ -284,7 +284,7 @@ abstract class TypedModelQLTest {
     }
 
     @Test
-    fun `add new child`() = runTest { client ->
+    fun `add new child`() = runTypedModelQLTest { client ->
         val oldNumChildren = client.query { root ->
             root.children("classes").ofConcept(C_ClassConcept)
                 .first()
@@ -312,7 +312,7 @@ abstract class TypedModelQLTest {
     }
 
     @Test
-    fun `add new child - default concept`() = runTest { client ->
+    fun `add new child - default concept`() = runTypedModelQLTest { client ->
         client.query { root ->
             root.descendants().ofConcept(C_XmlComment)
                 .first()
@@ -330,7 +330,7 @@ abstract class TypedModelQLTest {
     }
 
     @Test
-    fun `set child`() = runTest { client ->
+    fun `set child`() = runTypedModelQLTest { client ->
         client.query { root ->
             root.descendants().ofConcept(C_ReturnStatement)
                 .first()
@@ -345,7 +345,7 @@ abstract class TypedModelQLTest {
     }
 
     @Test
-    fun `set child - default concept`() = runTest { client ->
+    fun `set child - default concept`() = runTypedModelQLTest { client ->
         client.query { root ->
             root.descendants().ofConcept(C_XmlFile)
                 .first()
@@ -362,7 +362,7 @@ abstract class TypedModelQLTest {
     }
 
     @Test
-    fun `write operations return typed nodes`() = runTest { client ->
+    fun `write operations return typed nodes`() = runTypedModelQLTest { client ->
         val name = client.query { root ->
             root.children("classes").ofConcept(C_ClassConcept)
                 .first()

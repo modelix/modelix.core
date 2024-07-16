@@ -16,6 +16,8 @@
 
 package org.modelix.model.api
 
+import io.kotest.inspectors.forAll
+import io.kotest.matchers.string.shouldStartWith
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -40,5 +42,15 @@ class BuiltinLanguagesTest {
         // because previously, children were not listed at all in Model.getOwnChildLinks().
         // They were only accessible by directly calling Model.modelImports for example.
         assertEquals(3, childLinks.size)
+    }
+
+    @Test
+    fun allBuiltInLanguagesHaveMpsConceptId() {
+        val concepts = BuiltinLanguages.getAllLanguages()
+            .flatMap { it.getConcepts() }
+
+        concepts.forAll { concept: IConcept ->
+            concept.getUID().shouldStartWith("mps:")
+        }
     }
 }

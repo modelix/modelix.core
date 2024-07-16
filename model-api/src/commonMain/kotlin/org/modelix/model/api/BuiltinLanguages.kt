@@ -68,7 +68,11 @@ object BuiltinLanguages {
             init { addConcept(this) }
         }
 
-        object INamedConcept : SimpleConcept(conceptName = "INamedConcept") {
+        object INamedConcept : SimpleConcept(
+            conceptName = "INamedConcept",
+            is_abstract = true,
+            uid = "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/1169194658468",
+        ) {
             init { addConcept(this) }
             val name = SimpleProperty(
                 "name",

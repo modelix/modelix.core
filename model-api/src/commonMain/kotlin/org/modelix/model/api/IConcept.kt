@@ -56,6 +56,8 @@ interface IConcept {
     /**
      * Checks if this concept is abstract.
      *
+     * A concept is abstract if it is not designated to be instantiated directly.
+     *
      * @return true if the concept is abstract, false otherwise
      */
     fun isAbstract(): Boolean

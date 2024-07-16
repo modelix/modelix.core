@@ -39,6 +39,7 @@ micrometer = "1.13.2"
 dokka = "1.9.20"
 detekt = "1.23.6"
 xmlunit = "2.10.0"
+kotest = "5.9.1"
 
 [libraries]
 
@@ -84,7 +85,8 @@ ktor-serialization-json = { group = "io.ktor", name = "ktor-serialization-kotlin
 
 keycloak-authz-client = { group = "org.keycloak", name = "keycloak-authz-client", version = "25.0.1" }
 
-kotest-assertions-coreJvm = { group = "io.kotest", name = "kotest-assertions-core-jvm", version = "5.9.1" }
+kotest-assertions-core = { group = "io.kotest", name = "kotest-assertions-core", version.ref = "kotest" }
+kotest-assertions-coreJvm = { group = "io.kotest", name = "kotest-assertions-core-jvm", version.ref = "kotest" }
 kotest-assertions-ktor = { group = "io.kotest.extensions", name = "kotest-assertions-ktor", version = "2.0.0" }
 
 guava = { group = "com.google.guava", name = "guava", version = "33.2.1-jre" }

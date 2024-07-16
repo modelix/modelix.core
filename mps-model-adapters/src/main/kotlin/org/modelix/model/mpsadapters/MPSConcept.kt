@@ -54,6 +54,11 @@ data class MPSConcept(val concept: SAbstractConceptAdapter) : IConcept {
     }
 
     override fun isAbstract(): Boolean {
+        // In MPS `org.jetbrains.mps.openapi.language.SAbstractConcept.isAbstract`
+        // returns `true` for abstract concepts and interface concepts.
+        // See https://github.com/JetBrains/MPS/blob/78b81f56866370e227262000e597a211f885b9e6/core/kernel/source/jetbrains/mps/smodel/adapter/structure/concept/SConceptAdapterById.java#L54
+        // This exactly matches with the definition of `IConcept.isAbstract`,
+        // as such concepts are not designated to be instantiated directly.
         return concept.isAbstract
     }
 

@@ -73,7 +73,10 @@ open class SimpleConcept(
 
     override fun getShortName() = conceptName
 
-    override fun isExactly(concept: IConcept?) = concept == this
+    override fun isExactly(concept: IConcept?): Boolean {
+        if (concept == null) return false
+        return concept == this || getUID() == concept.getUID()
+    }
 
     override fun isSubConceptOf(superConcept: IConcept?): Boolean {
         if (superConcept == null) return false

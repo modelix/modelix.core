@@ -34,7 +34,7 @@ interface IStep {
 
     fun requiresWriteAccess(): Boolean = false
     fun hasSideEffect(): Boolean = requiresWriteAccess()
-    fun needsCoroutineScope() = false
+    fun needsCoroutineScope() = hasSideEffect()
     fun requiresSingularQueryInput(): Boolean
 
     fun getRootInputSteps(): Set<IStep> = if (this is IConsumingStep<*>) getProducers().flatMap { it.getRootInputSteps() }.toSet() else setOf(this)
@@ -185,6 +185,19 @@ abstract class MonoTransformingStep<In, Out> : TransformingStep<In, Out>(), IMon
     override fun canBeEmpty(): Boolean = getProducer().canBeEmpty()
     override fun canBeMultiple(): Boolean = getProducer().canBeMultiple()
 
+    override fun createFlow(context: IFlowInstantiationContext): StepFlow<Out> {
+        val flow = super.createFlow(context)
+        if (!needsCoroutineScope()) {
+            return flow
+        }
+
+        // If a step has side effects, we need to ensure that it's only consumed once by using a SharedFlow
+        val coroutineScope = requireNotNull(context.coroutineScope) { "coroutine scope is required for steps with side effects. [step]=${this::class}" }
+        return flow.assertNotEmpty() // empty flow would result in deadlock
+            .shareIn(coroutineScope, SharingStarted.Lazily, 1)
+            .take(1) // without this the flow would keep subscribers active
+    }
+
     fun connectAndDowncast(producer: IMonoStep<In>): IMonoStep<Out> = also { producer.connect(it) }
     fun connectAndDowncast(producer: IFluxStep<In>): IFluxStep<Out> = also { producer.connect(it) }
 }
@@ -212,7 +225,7 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
         val flow = flow {
             emit(aggregate(input))
         }
-        return if (outputIsConsumedMultipleTimes()) {
+        return if (needsCoroutineScope()) {
             val scope = context.coroutineScope ?: throw RuntimeException("Coroutine scope required for caching of $this")
             flow.shareIn(scope, SharingStarted.Lazily, 1)
                 .take(1) // The shared flow seems to ignore that there are no more elements and keeps the subscribers active.
@@ -221,7 +234,7 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
         }
     }
 
-    override fun needsCoroutineScope() = outputIsConsumedMultipleTimes()
+    override fun needsCoroutineScope() = outputIsConsumedMultipleTimes() || hasSideEffect()
 
     override fun inputIsConsumedMultipleTimes(): Boolean {
         return false

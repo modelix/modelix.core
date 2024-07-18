@@ -371,4 +371,37 @@ abstract class TypedModelQLTest {
         }
         assertEquals("", name)
     }
+
+    @Test
+    fun `chained write operations are executed once`() = runTypedModelQLTest { client ->
+        val oldNumChildren = client.query { root ->
+            root.children("classes").ofConcept(C_ClassConcept)
+                .first()
+                .member
+                .ofConcept(C_StaticMethodDeclaration)
+                .count()
+        }
+
+        val newChildName = "I am unique"
+
+        client.query { root ->
+            root.children("classes").ofConcept(C_ClassConcept)
+                .first()
+                .addToMember(C_StaticMethodDeclaration)
+                .setName(newChildName.asMono())
+        }
+
+        val actualChildren = client.query { root ->
+            root.children("classes").ofConcept(C_ClassConcept)
+                .first()
+                .member
+                .ofConcept(C_StaticMethodDeclaration)
+                .toList()
+        }
+
+        val numAddExecutions = actualChildren.size - oldNumChildren
+        assertEquals(1, numAddExecutions)
+        assertEquals(C_StaticMethodDeclaration.untyped().getUID(), actualChildren.last().untyped().concept?.getUID())
+        assertEquals(newChildName, actualChildren.last().name)
+    }
 }

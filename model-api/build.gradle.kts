@@ -30,6 +30,7 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
+                implementation(project(":model-datastructure"))
                 implementation(kotlin("test"))
                 implementation(libs.kotest.assertions.core)
             }

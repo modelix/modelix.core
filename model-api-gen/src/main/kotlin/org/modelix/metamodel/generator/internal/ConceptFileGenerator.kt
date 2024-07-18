@@ -43,7 +43,7 @@ internal class ConceptFileGenerator(
 ) : NameConfigBasedGenerator(nameConfig), FileGenerator {
 
     override fun generateFileSpec(): FileSpec {
-        val conceptObject = ConceptObjectGenerator(concept, nameConfig).generate()
+        val conceptObject = ConceptObjectGenerator(concept, nameConfig, conceptPropertiesInterfaceName).generate()
         val conceptWrapperInterface = ConceptWrapperInterfaceGenerator(
             concept,
             nameConfig,

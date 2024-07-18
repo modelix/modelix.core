@@ -53,6 +53,7 @@ import kotlin.reflect.KClass
 internal class ConceptObjectGenerator(
     private val concept: ProcessedConcept,
     override val nameConfig: NameConfig,
+    private val conceptPropertiesInterfaceName: String?,
     private val alwaysUseNonNullableProperties: Boolean = true,
 ) : NameConfigBasedGenerator(nameConfig) {
 
@@ -101,7 +102,7 @@ internal class ConceptObjectGenerator(
     }
 
     private fun TypeSpec.Builder.addConceptPropertiesGetter() {
-        if (concept.metaProperties.isEmpty()) return
+        if (conceptPropertiesInterfaceName == null || concept.metaProperties.isEmpty()) return
 
         val getConceptPropertyFun = FunSpec.builder(GeneratedConcept<*, *>::getConceptProperty.name).runBuild {
             val paramName = GeneratedConcept<*, *>::getConceptProperty.parameters.first().name ?: "name"

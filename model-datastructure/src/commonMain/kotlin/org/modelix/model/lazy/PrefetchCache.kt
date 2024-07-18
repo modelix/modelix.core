@@ -55,7 +55,8 @@ class PrefetchCache(private val store: IDeserializingKeyValueStore) : IDeseriali
         val missingHashes = hashes.filterNot { entries.containsKey(it) }
         val missingValues = store.getAll(missingHashes, deserializer).toList()
         val missingEntries = missingHashes.mapIndexed { index, hash -> hash to missingValues[index] }.associate { it }
-        return hashes.map { missingEntries[it] ?: entries[it] as T }
+        entries.putAll(missingEntries)
+        return hashes.map { entries[it] as T }
     }
 
     override fun put(hash: String, deserialized: Any, serialized: String) {

@@ -16,6 +16,7 @@ package org.modelix.model.lazy
 import org.modelix.kotlin.utils.ContextValue
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.api.ITree
+import org.modelix.model.persistent.IKVValue
 
 /**
  * There is no size limit. Entries are not evicted.
@@ -55,7 +56,17 @@ class PrefetchCache(private val store: IDeserializingKeyValueStore) : IDeseriali
         val missingHashes = hashes.filterNot { entries.containsKey(it) }
         val missingValues = store.getAll(missingHashes, deserializer).toList()
         val missingEntries = missingHashes.mapIndexed { index, hash -> hash to missingValues[index] }.associate { it }
-        return hashes.map { missingEntries[it] ?: entries[it] as T }
+        entries.putAll(missingEntries)
+        return hashes.map { entries[it] as T }
+    }
+
+    override fun <T : IKVValue> getAll(regular: List<IKVEntryReference<T>>, prefetch: List<IKVEntryReference<T>>): Map<String, T?> {
+        val missingRegular = regular.filterNot { entries.containsKey(it.getHash()) }
+        val missingPrefetch = prefetch.filterNot { entries.containsKey(it.getHash()) }
+        val missingEntries = store.getAll(missingRegular, missingPrefetch)
+        entries.putAll(missingEntries)
+        val regularAndPrefetch = regular.asSequence() + prefetch.asSequence()
+        return regularAndPrefetch.associate { it.getHash() to entries[it.getHash()] as T? }
     }
 
     override fun put(hash: String, deserialized: Any, serialized: String) {

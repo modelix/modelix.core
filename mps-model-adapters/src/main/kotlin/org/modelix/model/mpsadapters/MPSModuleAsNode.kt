@@ -35,7 +35,7 @@ import org.modelix.model.area.IArea
 data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
 
     companion object {
-        private val logger = mu.KotlinLogging.logger { }
+        private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger { }
     }
 
     private val childrenAccessors: Map<IChildLink, () -> Iterable<INode>> = mapOf(

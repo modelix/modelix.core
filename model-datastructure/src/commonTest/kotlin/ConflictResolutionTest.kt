@@ -29,7 +29,7 @@ import kotlin.test.Test
 import kotlin.test.fail
 
 class ConflictResolutionTest : TreeTestBase() {
-    private val logger = mu.KotlinLogging.logger {}
+    private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
     @Test
     fun randomTest2Branches() {

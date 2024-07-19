@@ -37,7 +37,7 @@ class CPVersion(
     operationsHash: KVEntryReference<CPOperationsList>?,
     numberOfOperations: Int,
 ) : IKVValue {
-    private val logger = mu.KotlinLogging.logger {}
+    private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
     override var isWritten: Boolean = false
 
     val id: Long

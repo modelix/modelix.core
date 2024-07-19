@@ -16,7 +16,7 @@
 
 package org.modelix.model.sync.bulk
 
-import mu.KLogger
+import io.github.oshai.kotlinlogging.KLogger
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData

@@ -49,7 +49,7 @@ import kotlin.system.measureTimeMillis
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.DurationUnit
 
-private val LOG = mu.KotlinLogging.logger { }
+private val LOG = io.github.oshai.kotlinlogging.KotlinLogging.logger { }
 
 class InMemoryModelLoader(val incrementalModel: IncrementalInMemoryModel, val coroutineScope: CoroutineScope) {
     private val treeHash2modelLoadJob = Collections.synchronizedMap(HashMap<String, Deferred<InMemoryModel>>())

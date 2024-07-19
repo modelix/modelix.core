@@ -478,7 +478,7 @@ class ModelClientV2(
     }
 
     companion object {
-        private val LOG = mu.KotlinLogging.logger {}
+        private val LOG = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
         fun builder(): ModelClientV2Builder = ModelClientV2PlatformSpecificBuilder()
     }
 }
@@ -561,7 +561,7 @@ abstract class ModelClientV2Builder {
     protected abstract fun createHttpClient(): HttpClient
 
     companion object {
-        private val LOG = mu.KotlinLogging.logger {}
+        private val LOG = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
     }
 }
 

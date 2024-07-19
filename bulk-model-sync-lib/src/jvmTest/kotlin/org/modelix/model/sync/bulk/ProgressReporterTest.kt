@@ -1,9 +1,10 @@
 package org.modelix.model.sync.bulk
 
-import mu.KLogger
-import mu.KotlinLogging
-import mu.Marker
-import org.slf4j.Logger
+import io.github.oshai.kotlinlogging.KLogger
+import io.github.oshai.kotlinlogging.KLoggingEventBuilder
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.oshai.kotlinlogging.Level
+import io.github.oshai.kotlinlogging.Marker
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -49,8 +50,17 @@ class ProgressReporterTest {
 
         var infoMessages: MutableList<Any?> = mutableListOf()
 
-        override val underlyingLogger: Logger
-            get() = throw RuntimeException("Not needed in test")
+        override fun at(level: Level, marker: Marker?, block: KLoggingEventBuilder.() -> Unit) {
+            // not needed in this test
+        }
+
+        override val name: String
+            get() = "" // not needed in this test
+
+        override fun isLoggingEnabledFor(level: Level, marker: Marker?): Boolean {
+            // not needed in this test
+            return true
+        }
 
         override fun <T : Throwable> catching(throwable: T) {
             // not needed in this test
@@ -89,26 +99,6 @@ class ProgressReporterTest {
         }
 
         override fun debug(msg: String?, t: Throwable?) {
-            // not needed in this test
-        }
-
-        override fun debug(marker: org.slf4j.Marker?, msg: String?) {
-            // not needed in this test
-        }
-
-        override fun debug(marker: org.slf4j.Marker?, format: String?, arg: Any?) {
-            // not needed in this test
-        }
-
-        override fun debug(marker: org.slf4j.Marker?, format: String?, arg1: Any?, arg2: Any?) {
-            // not needed in this test
-        }
-
-        override fun debug(marker: org.slf4j.Marker?, format: String?, vararg arguments: Any?) {
-            // not needed in this test
-        }
-
-        override fun debug(marker: org.slf4j.Marker?, msg: String?, t: Throwable?) {
             // not needed in this test
         }
 
@@ -152,26 +142,6 @@ class ProgressReporterTest {
             // not needed in this test
         }
 
-        override fun error(marker: org.slf4j.Marker?, msg: String?) {
-            // not needed in this test
-        }
-
-        override fun error(marker: org.slf4j.Marker?, format: String?, arg: Any?) {
-            // not needed in this test
-        }
-
-        override fun error(marker: org.slf4j.Marker?, format: String?, arg1: Any?, arg2: Any?) {
-            // not needed in this test
-        }
-
-        override fun error(marker: org.slf4j.Marker?, format: String?, vararg arguments: Any?) {
-            // not needed in this test
-        }
-
-        override fun error(marker: org.slf4j.Marker?, msg: String?, t: Throwable?) {
-            // not needed in this test
-        }
-
         override fun exit() {
             // not needed in this test
         }
@@ -179,11 +149,6 @@ class ProgressReporterTest {
         override fun <T> exit(result: T): T {
             // not needed in this test
             return result
-        }
-
-        override fun getName(): String {
-            // not needed in this test
-            return ""
         }
 
         override fun info(msg: () -> Any?) {
@@ -220,76 +185,6 @@ class ProgressReporterTest {
 
         override fun info(msg: String?, t: Throwable?) {
             // not needed in this test
-        }
-
-        override fun info(marker: org.slf4j.Marker?, msg: String?) {
-            // not needed in this test
-        }
-
-        override fun info(marker: org.slf4j.Marker?, format: String?, arg: Any?) {
-            // not needed in this test
-        }
-
-        override fun info(marker: org.slf4j.Marker?, format: String?, arg1: Any?, arg2: Any?) {
-            // not needed in this test
-        }
-
-        override fun info(marker: org.slf4j.Marker?, format: String?, vararg arguments: Any?) {
-            // not needed in this test
-        }
-
-        override fun info(marker: org.slf4j.Marker?, msg: String?, t: Throwable?) {
-            // not needed in this test
-        }
-
-        override fun isDebugEnabled(): Boolean {
-            // not needed in this test
-            return false
-        }
-
-        override fun isDebugEnabled(marker: org.slf4j.Marker?): Boolean {
-            // not needed in this test
-            return false
-        }
-
-        override fun isErrorEnabled(): Boolean {
-            // not needed in this test
-            return false
-        }
-
-        override fun isErrorEnabled(marker: org.slf4j.Marker?): Boolean {
-            // not needed in this test
-            return false
-        }
-
-        override fun isInfoEnabled(): Boolean {
-            // not needed in this test
-            return false
-        }
-
-        override fun isInfoEnabled(marker: org.slf4j.Marker?): Boolean {
-            // not needed in this test
-            return false
-        }
-
-        override fun isTraceEnabled(): Boolean {
-            // not needed in this test
-            return false
-        }
-
-        override fun isTraceEnabled(marker: org.slf4j.Marker?): Boolean {
-            // not needed in this test
-            return false
-        }
-
-        override fun isWarnEnabled(): Boolean {
-            // not needed in this test
-            return false
-        }
-
-        override fun isWarnEnabled(marker: org.slf4j.Marker?): Boolean {
-            // not needed in this test
-            return false
         }
 
         override fun <T : Throwable> throwing(throwable: T): T {
@@ -333,26 +228,6 @@ class ProgressReporterTest {
             // not needed in this test
         }
 
-        override fun trace(marker: org.slf4j.Marker?, msg: String?) {
-            // not needed in this test
-        }
-
-        override fun trace(marker: org.slf4j.Marker?, format: String?, arg: Any?) {
-            // not needed in this test
-        }
-
-        override fun trace(marker: org.slf4j.Marker?, format: String?, arg1: Any?, arg2: Any?) {
-            // not needed in this test
-        }
-
-        override fun trace(marker: org.slf4j.Marker?, format: String?, vararg argArray: Any?) {
-            // not needed in this test
-        }
-
-        override fun trace(marker: org.slf4j.Marker?, msg: String?, t: Throwable?) {
-            // not needed in this test
-        }
-
         override fun warn(msg: () -> Any?) {
             // not needed in this test
         }
@@ -386,26 +261,6 @@ class ProgressReporterTest {
         }
 
         override fun warn(msg: String?, t: Throwable?) {
-            // not needed in this test
-        }
-
-        override fun warn(marker: org.slf4j.Marker?, msg: String?) {
-            // not needed in this test
-        }
-
-        override fun warn(marker: org.slf4j.Marker?, format: String?, arg: Any?) {
-            // not needed in this test
-        }
-
-        override fun warn(marker: org.slf4j.Marker?, format: String?, arg1: Any?, arg2: Any?) {
-            // not needed in this test
-        }
-
-        override fun warn(marker: org.slf4j.Marker?, format: String?, vararg arguments: Any?) {
-            // not needed in this test
-        }
-
-        override fun warn(marker: org.slf4j.Marker?, msg: String?, t: Throwable?) {
             // not needed in this test
         }
     }

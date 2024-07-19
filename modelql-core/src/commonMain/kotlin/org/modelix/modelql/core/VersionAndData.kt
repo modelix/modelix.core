@@ -23,7 +23,7 @@ import kotlinx.serialization.json.JsonPrimitive
 class VersionAndData<E>(val data: E, val version: String?) {
     constructor(data: E) : this(data, MODELIX_VERSION)
     companion object {
-        private val LOG = mu.KotlinLogging.logger { }
+        private val LOG = io.github.oshai.kotlinlogging.KotlinLogging.logger { }
         fun readVersionOnly(text: String): String? {
             val version = runCatching {
                 val deserialized: JsonObject = Json.decodeFromString(text)

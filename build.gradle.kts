@@ -109,6 +109,12 @@ subprojects {
             compilerOptions {
                 jvmTarget.set(JvmTarget.JVM_11)
             }
+            sourceSets.named("test") {
+                dependencies {
+                    // kotlin-logging expects slf4j on the classpath
+                    implementation(libs.logback.classic)
+                }
+            }
         }
     }
 
@@ -120,6 +126,12 @@ subprojects {
                     languageSettings {
                         apiVersion = kotlinApiVersion.version
                     }
+                }
+            }
+            sourceSets.jvmTest {
+                dependencies {
+                    // kotlin-logging expects slf4j on the classpath
+                    implementation(libs.logback.classic)
                 }
             }
         }

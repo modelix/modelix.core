@@ -13,6 +13,7 @@
  */
 package org.modelix.model.server.handlers
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.application.Application
 import io.ktor.server.request.host
 import io.ktor.server.routing.Route
@@ -27,7 +28,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import mu.KotlinLogging
 import org.modelix.authorization.getUserName
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.ConceptReference

@@ -677,7 +677,7 @@ class LightModelClient internal constructor(
     data class AreaReference(val branchId: String?) : IAreaReference
 
     companion object {
-        private val LOG = mu.KotlinLogging.logger {}
+        private val LOG = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
         init {
             LightClientReferenceSerializer.register()
@@ -734,7 +734,7 @@ private class ReadWriteLockTransactionManager : ITransactionManager {
                     try {
                         writeListener?.invoke()
                     } catch (ex: Exception) {
-                        mu.KotlinLogging.logger { }.error(ex) { "Exception in write listener" }
+                        io.github.oshai.kotlinlogging.KotlinLogging.logger { }.error(ex) { "Exception in write listener" }
                     }
                 }
             }

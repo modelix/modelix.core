@@ -46,7 +46,7 @@ import org.modelix.authorization.permissions.PermissionParts
 import org.modelix.authorization.permissions.SchemaInstance
 import java.util.concurrent.TimeUnit
 
-private val LOG = mu.KotlinLogging.logger { }
+private val LOG = io.github.oshai.kotlinlogging.KotlinLogging.logger { }
 
 /**
  * JWT based authorization plugin.

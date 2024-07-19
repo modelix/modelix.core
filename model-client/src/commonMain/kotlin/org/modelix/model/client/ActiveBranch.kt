@@ -23,7 +23,7 @@ import org.modelix.model.lazy.RepositoryId
 import kotlin.jvm.Synchronized
 
 open class ActiveBranch(val client: IModelClient, val repository: RepositoryId, branchName: String?, user: () -> String) : IIndirectBranch {
-    private val logger = mu.KotlinLogging.logger {}
+    private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
     var branchName: String
         private set
     private val user: () -> String

@@ -21,7 +21,7 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 object SharedExecutors {
-    private val LOG = mu.KotlinLogging.logger {}
+    private val LOG = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
     @JvmField
     val FIXED = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() + 1)

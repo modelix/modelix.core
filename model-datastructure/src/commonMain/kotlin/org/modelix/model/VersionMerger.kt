@@ -28,7 +28,7 @@ import org.modelix.model.operations.UndoOp
 import org.modelix.model.persistent.CPVersion
 
 class VersionMerger(private val storeCache: IDeserializingKeyValueStore, private val idGenerator: IIdGenerator) {
-    private val logger = mu.KotlinLogging.logger {}
+    private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
     fun mergeChange(lastMergedVersion: CLVersion, newVersion: CLVersion): CLVersion {
         if (newVersion.hash == lastMergedVersion.hash) {
             return lastMergedVersion

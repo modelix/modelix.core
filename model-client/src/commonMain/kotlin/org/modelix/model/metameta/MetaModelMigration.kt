@@ -26,7 +26,7 @@ internal object MetaModelMigration {
 
     private val HEX_LONG_PATTERN = Regex("[a-fA-Z0-9]+")
 
-    private val LOG = mu.KotlinLogging.logger {}
+    private val LOG = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
     private data class ConceptInformation(
         val nodeId: Long,

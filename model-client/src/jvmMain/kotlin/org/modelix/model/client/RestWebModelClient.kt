@@ -118,7 +118,7 @@ class RestWebModelClient @JvmOverloads constructor(
 ) : IModelClient {
 
     companion object {
-        private val LOG = mu.KotlinLogging.logger {}
+        private val LOG = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
         const val MODEL_URI_VAR_NAME = "MODEL_URI"
         val modelUrlFromEnv: String?
             get() {

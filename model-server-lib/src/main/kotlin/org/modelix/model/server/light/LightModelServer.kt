@@ -114,7 +114,7 @@ class LightModelServer @JvmOverloads constructor(val port: Int, val rootNodeProv
         this(port, { rootNode }, ignoredRoles, additionalHealthChecks)
 
     companion object {
-        private val LOG = mu.KotlinLogging.logger { }
+        private val LOG = io.github.oshai.kotlinlogging.KotlinLogging.logger { }
         fun builder(): LightModelServerBuilder = LightModelServerBuilder()
     }
 

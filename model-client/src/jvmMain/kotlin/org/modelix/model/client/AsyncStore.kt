@@ -131,6 +131,6 @@ class AsyncStore(private val store: IKeyValueStore) : IKeyValueStoreWrapper {
     fun dispose() {}
 
     companion object {
-        private val LOG = mu.KotlinLogging.logger {}
+        private val LOG = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
     }
 }

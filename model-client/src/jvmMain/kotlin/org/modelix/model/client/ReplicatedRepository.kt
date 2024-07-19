@@ -234,7 +234,7 @@ actual open class ReplicatedRepository actual constructor(
     }
 
     companion object {
-        private val LOG = mu.KotlinLogging.logger {}
+        private val LOG = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
         private fun getHash(v: CLVersion?): String? {
             return v?.getContentHash()
         }

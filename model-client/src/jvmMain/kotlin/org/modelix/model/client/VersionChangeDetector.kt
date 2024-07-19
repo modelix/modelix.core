@@ -54,7 +54,7 @@ abstract class VersionChangeDetector(
     }
 
     companion object {
-        private val LOG = mu.KotlinLogging.logger {}
+        private val LOG = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
     }
 
     init {

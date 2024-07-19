@@ -16,7 +16,7 @@
 
 package org.modelix.model.sync.bulk
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.modelix.kotlin.utils.createMemoryEfficientMap
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.INode
@@ -32,7 +32,7 @@ import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 import kotlin.jvm.JvmName
 
-private val LOG = mu.KotlinLogging.logger { }
+private val LOG = io.github.oshai.kotlinlogging.KotlinLogging.logger { }
 
 /**
  * A ModelImporter updates an existing [INode] and its subtree based on a [ModelData] specification.

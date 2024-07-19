@@ -29,7 +29,7 @@ import java.io.File
 import java.net.URI
 import java.security.interfaces.RSAPublicKey
 
-private val LOG = mu.KotlinLogging.logger { }
+private val LOG = io.github.oshai.kotlinlogging.KotlinLogging.logger { }
 
 /**
  * Reduced interface exposed to users of the plugin.

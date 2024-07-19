@@ -20,7 +20,7 @@ import org.modelix.model.area.PArea
 import kotlin.jvm.Volatile
 
 class PBranch constructor(@field:Volatile private var tree: ITree, private val idGenerator: IIdGenerator) : IBranch {
-    private val logger = mu.KotlinLogging.logger {}
+    private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
     private val writeLock = Any()
     private val contextTransactions = ContextValue<Transaction?>()
     private var listeners: Set<IBranchListener> = emptySet()

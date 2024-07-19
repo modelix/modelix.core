@@ -35,7 +35,7 @@ class OTWriteTransaction(
     private var idGenerator: IIdGenerator,
     private val store: IDeserializingKeyValueStore,
 ) : IWriteTransaction, ITransactionWrapper {
-    private val logger = mu.KotlinLogging.logger {}
+    private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
     override fun unwrap(): ITransaction = transaction
 
     fun apply(op: IOperation) {

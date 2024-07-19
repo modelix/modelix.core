@@ -87,7 +87,7 @@ class ModelQLClient(val url: String, val client: HttpClient, includedSerializers
     }
 
     companion object {
-        private val LOG = mu.KotlinLogging.logger { }
+        private val LOG = io.github.oshai.kotlinlogging.KotlinLogging.logger { }
         fun builder(): ModelQLClientBuilder = PlatformSpecificModelQLClientBuilder()
     }
 }

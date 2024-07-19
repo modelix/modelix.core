@@ -71,7 +71,7 @@ class ModelQLServer private constructor(val rootNodeProvider: () -> INode?, val 
     }
 
     companion object {
-        private val LOG = mu.KotlinLogging.logger { }
+        private val LOG = io.github.oshai.kotlinlogging.KotlinLogging.logger { }
 
         fun builder(rootNode: INode): Builder = Builder().also { it.rootNode(rootNode) }
         fun builder(rootNodeProvider: () -> INode?): Builder = Builder().also { it.rootNode(rootNodeProvider) }

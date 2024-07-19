@@ -25,7 +25,7 @@ interface INodeReferenceSerializer {
     fun deserialize(serialized: String): INodeReference?
 
     companion object {
-        private val LOG = mu.KotlinLogging.logger {}
+        private val LOG = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
         private val deserializerForPrefix: MutableMap<String, INodeReferenceSerializerEx> = HashMap()
         private val serializersForClass: MutableMap<KClass<*>, INodeReferenceSerializerEx> = HashMap()
         private val legacySerializers: MutableSet<INodeReferenceSerializer> = HashSet()

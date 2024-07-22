@@ -43,7 +43,9 @@ class PrefetchCache(private val store: IDeserializingKeyValueStore) : IDeseriali
             entries[hash] as T?
         } else {
             val value = if (ifCached) store.getIfCached(hash, deserializer, isPrefetch) else store.get(hash, deserializer)
-            entries[hash] = value
+            if (value != null) {
+                entries[hash] = value
+            }
             value
         }
     }
@@ -64,7 +66,11 @@ class PrefetchCache(private val store: IDeserializingKeyValueStore) : IDeseriali
         val missingRegular = regular.filterNot { entries.containsKey(it.getHash()) }
         val missingPrefetch = prefetch.filterNot { entries.containsKey(it.getHash()) }
         val missingEntries = store.getAll(missingRegular, missingPrefetch)
-        entries.putAll(missingEntries)
+        for ((key, value) in missingEntries) {
+            if (value != null) {
+                entries[key] = value
+            }
+        }
         val regularAndPrefetch = regular.asSequence() + prefetch.asSequence()
         return regularAndPrefetch.associate { it.getHash() to entries[it.getHash()] as T? }
     }

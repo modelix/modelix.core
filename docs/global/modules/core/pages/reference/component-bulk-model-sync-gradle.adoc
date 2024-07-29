@@ -112,6 +112,16 @@ mpsBuild {
 |`mpsDebugPort`
 |Int
 |If set, the headless MPS will suspend on startup and wait for a remote debugger on the specified port.
+|`mpsPlugin`
+| PluginSpec
+| Add a plugin to be loaded when running MPS.
+`jetbrains.mps.core`, `jetbrains.mps.testing`, `jetbrains.mps.ide.make` are always loaded.
+
+All other plugins, even bundled ones, must be configured explicitly.
+In general cases, the sync does not rely on concepts (and in turn on languages and plugins) of the synced nodes.
+
+Loading other plugins might become necessary when they provide custom persistence and in other, yet unknown cases.
+First, try if the sync works for your project without adding plugins.
 |===
 
 === ServerSource/-Target configuration

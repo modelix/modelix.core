@@ -119,27 +119,6 @@ val fatJarArtifact = artifacts.add("archives", fatJarFile) {
     builtBy("shadowJar")
 }
 
-// copies the openAPI specifications from the api folder into a resource
-// folder so that they are packaged and deployed with the model-server
-val copyApi = tasks.register<Copy>("copyApi") {
-    dependsOn(openApiSpec)
-    from(openApiSpec.resolve().first())
-    into(project.layout.buildDirectory.dir("openapi/src/main/resources/api"))
-    sourceSets["main"].resources.srcDir(project.layout.buildDirectory.dir("openapi/src/main/resources/"))
-}
-
-tasks.named("compileKotlin") {
-    dependsOn(copyApi)
-}
-
-tasks.named("build") {
-    dependsOn(copyApi)
-}
-
-tasks.named("processResources") {
-    dependsOn(copyApi)
-}
-
 task("copyLibs", Sync::class) {
     into(project.layout.buildDirectory.dir("dependency-libs"))
     from(configurations.runtimeClasspath)
@@ -209,11 +188,27 @@ spotless {
     }
 }
 
+// copies the openAPI specifications from the api folder into a resource
+// folder so that they are packaged and deployed with the model-server
+val specSourceDir = project.layout.buildDirectory.dir("openapi/src/main/resources")
+val copyApi = tasks.register<Copy>("copyApi") {
+    dependsOn(openApiSpec)
+
+    from(openApiSpec.resolve().first())
+    into(specSourceDir.get().dir("api"))
+}
+sourceSets["main"].resources.srcDir(specSourceDir)
+
+tasks.named("processResources") {
+    dependsOn(copyApi)
+}
+
 // OpenAPI integration
 val openApiGenerationPath = project.layout.buildDirectory.get().dir("generated/openapi")
 val restApiPackage = "org.modelix.model.server.handlers"
 val openApiGenerate = tasks.register<GenerateTask>("openApiGenerateModelServer") {
     dependsOn(openApiSpec)
+
     // we let the Gradle OpenAPI generator plugin build data classes and API interfaces based on the provided
     // OpenAPI specification. That way, the code is forced to stay in sync with the API specification.
     generatorName.set("kotlin-server")
@@ -254,9 +249,6 @@ val openApiGenerate = tasks.register<GenerateTask>("openApiGenerateModelServer")
 }
 
 // Ensure that the OpenAPI generator runs before starting to compile
-tasks.named("processResources") {
-    dependsOn(openApiGenerate)
-}
 tasks.named("compileKotlin") {
     dependsOn(openApiGenerate)
 }

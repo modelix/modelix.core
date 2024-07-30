@@ -17,6 +17,7 @@ servers:
     description: model-server
 tags:
   - name: ids
+  - name: v2
 paths:
   /server-id:
     get:
@@ -51,6 +52,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories:
     get:
+      tags:
+        - v2
       operationId: getRepositories
       responses:
         "200":
@@ -59,6 +62,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/objects:
     put:
+      tags:
+        - v2
       operationId: putRepositoryObjects
       parameters:
         - name: repository
@@ -77,6 +82,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/objects/getAll:
     post:
+      tags:
+        - v2
       operationId: postRepositoryObjectsGetAll
       parameters:
         - name: repository
@@ -89,6 +96,8 @@ paths:
           $ref: '#/components/responses/200'
   /repositories/{repository}/branches:
     get:
+      tags:
+        - v2
       operationId: getRepositoryBranches
       parameters:
         - name: repository
@@ -103,6 +112,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/branches/{branch}:
     delete:
+      tags:
+        - v2
       operationId: deleteRepositoryBranch
       parameters:
         - name: repository
@@ -123,6 +134,8 @@ paths:
         default:
           $ref: '#/components/responses/GeneralError'
     get:
+      tags:
+        - v2
       operationId: getRepositoryBranch
       parameters:
         - name: lastKnown
@@ -173,6 +186,8 @@ paths:
         default:
           $ref: '#/components/responses/GeneralError'
     post:
+      tags:
+        - v2
       operationId: postRepositoryBranch
       parameters:
         - name: repository
@@ -202,6 +217,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/branches/{branch}/hash:
     get:
+      tags:
+        - v2
       operationId: getRepositoryBranchHash
       parameters:
         - name: repository
@@ -223,6 +240,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/branches/{branch}/poll:
     get:
+      tags:
+        - v2
       operationId: pollRepositoryBranch
       parameters:
         - name: lastKnown
@@ -251,6 +270,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/branches/{branch}/pollHash:
     get:
+      tags:
+        - v2
       operationId: pollRepositoryBranchHash
       parameters:
         - name: lastKnown
@@ -284,6 +305,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/branches/{branch}/query:
     post:
+      tags:
+        - v2
       operationId: postRepositoryBranchQuery
       parameters:
         - name: repository
@@ -303,6 +326,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/init:
     post:
+      tags:
+        - v2
       operationId: initializeRepository
       parameters:
         - name: useRoleIds
@@ -333,6 +358,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/delete:
     post:
+      tags:
+        - v2
       operationId: deleteRepository
       parameters:
         - name: repository
@@ -351,6 +378,8 @@ paths:
           $ref: '#/components/responses/404'
   /repositories/{repository}/versions/{versionHash}:
     get:
+      tags:
+        - v2
       operationId: getRepositoryVersionHash
       parameters:
         - name: lastKnown
@@ -381,6 +410,8 @@ paths:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/versions/{versionHash}/query:
     post:
+      tags:
+        - v2
       operationId: postRepositoryVersionHashQuery
       parameters:
         - name: versionHash
@@ -401,6 +432,8 @@ paths:
 
   /versions/{versionHash}:
     get:
+      tags:
+        - v2
       operationId: getVersionHash
       deprecated: true
       parameters:
@@ -447,31 +480,31 @@ components:
       content:
         application/problem+json:
           schema:
-            $ref: '#/components/schemas/Problem'
+            $ref: 'problem.yaml#/Problem'
     "401":
       description: "Unauthorized"
       content:
         application/problem+json:
           schema:
-            $ref: '#/components/schemas/Problem'
+            $ref: 'problem.yaml#/Problem'
     "403":
       description: "Forbidden"
       content:
         application/problem+json:
           schema:
-            $ref: '#/components/schemas/Problem'
+            $ref: 'problem.yaml#/Problem'
     "404":
       description: "Not Found"
       content:
         application/problem+json:
           schema:
-            $ref: '#/components/schemas/Problem'
+            $ref: 'problem.yaml#/Problem'
     GeneralError:
       description: Unexpected error
       content:
         application/problem+json:
           schema:
-            $ref: '#/components/schemas/Problem'
+            $ref: 'problem.yaml#/Problem'
 
     "versionDelta":
       description: OK
@@ -490,53 +523,6 @@ components:
             type: string
 
   schemas:
-    # From https://opensource.zalando.com/restful-api-guidelines/models/problem-1.0.1.yaml
-    Problem:
-      type: object
-      properties:
-        type:
-          type: string
-          format: uri-reference
-          description: >
-            A URI reference that uniquely identifies the problem type only in the
-            context of the provided API. Opposed to the specification in RFC-9457,
-            it is neither recommended to be dereferenceable and point to a
-            human-readable documentation nor globally unique for the problem type.
-          default: 'about:blank'
-          example: '/some/uri-reference'
-        title:
-          type: string
-          description: >
-            A short summary of the problem type. Written in English and readable
-            for engineers, usually not suited for non technical stakeholders and
-            not localized.
-          example: some title for the error situation
-        status:
-          type: integer
-          format: int32
-          description: >
-            The HTTP status code generated by the origin server for this occurrence
-            of the problem.
-          minimum: 100
-          maximum: 600
-          exclusiveMaximum: true
-        detail:
-          type: string
-          description: >
-            A human readable explanation specific to this occurrence of the
-            problem that is helpful to locate the problem and give advice on how
-            to proceed. Written in English and readable for engineers, usually not
-            suited for non technical stakeholders and not localized.
-          example: some description for the error situation
-        instance:
-          type: string
-          format: uri-reference
-          description: >
-            A URI reference that identifies the specific occurrence of the problem,
-            e.g. by adding a fragment identifier or sub-path to the problem type.
-            May be used to locate the root of this problem in the source code.
-          example: '/some/uri-reference#specific-occurrence-context'
-
     VersionDelta:
       title: VersionDelta
       type: object

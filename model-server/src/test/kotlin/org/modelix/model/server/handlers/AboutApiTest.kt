@@ -34,7 +34,6 @@ import io.ktor.server.routing.routing
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import org.junit.jupiter.api.Test
-import org.modelix.api.operative.AboutV1
 import org.modelix.model.server.MODELIX_VERSION
 import org.modelix.model.server.installDefaultServerPlugins
 

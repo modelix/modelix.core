@@ -75,6 +75,6 @@ class HealthApiTest {
         assertEquals(HttpStatusCode.InternalServerError, response.status)
 
         val expectedProblem = HttpException(HttpStatusCode.InternalServerError, details = "not healthy").problem
-        assertEquals(expectedProblem, Json.decodeFromString<org.modelix.api.v1.Problem>(response.bodyAsText()))
+        assertEquals(expectedProblem, Json.decodeFromString<Problem>(response.bodyAsText()))
     }
 }

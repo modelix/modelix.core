@@ -50,8 +50,6 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
-import org.modelix.api.v1.Problem
-import org.modelix.api.v2.BranchV1
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.InMemoryModels
 import org.modelix.model.api.IConceptReference

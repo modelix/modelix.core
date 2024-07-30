@@ -32,8 +32,7 @@ import org.modelix.authorization.ModelixAuthorization
 import org.modelix.authorization.installAuthentication
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.server.Main.installStatusPages
-import org.modelix.api.operative.Paths.registerJsonTypes as registerJsonTypesOperative
-import org.modelix.api.v2.Paths.registerJsonTypes as registerJsonTypesV2
+import org.modelix.model.server.handlers.Paths.registerJsonTypes
 
 suspend fun ApplicationTestBuilder.createModelClient(): ModelClientV2 {
     val url = "http://localhost/v2"
@@ -44,8 +43,7 @@ fun Application.installDefaultServerPlugins(unitTestMode: Boolean = true) {
     install(WebSockets)
     install(ContentNegotiation) {
         json()
-        registerJsonTypesV2()
-        registerJsonTypesOperative()
+        registerJsonTypes()
     }
     install(Resources)
     install(IgnoreTrailingSlash)

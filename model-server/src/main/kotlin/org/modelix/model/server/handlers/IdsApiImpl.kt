@@ -21,10 +21,8 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.plugins.origin
 import io.ktor.server.response.respondText
-import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.util.pipeline.PipelineContext
-import org.modelix.api.v2.IdsApi
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.requiresLogin
 import org.modelix.model.server.store.IStoreClient
@@ -65,10 +63,8 @@ class IdsApiImpl(
 
     fun init(application: Application) {
         application.routing {
-            route("/v2") {
-                requiresLogin {
-                    installRoutes(this)
-                }
+            requiresLogin {
+                installRoutes(this)
             }
         }
     }

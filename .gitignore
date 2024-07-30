@@ -7,7 +7,7 @@
 *.iml
 kotlin_gen
 /version.txt
-/node_modules
+**/node_modules/
 **/.ideaconfig
 **/.mpsconfig
 .kotlin

@@ -1,0 +1,17 @@
+plugins:
+  - redocly-plugins/plugin.js
+
+# Keep this list in sync with the list of files in build.gradle.kts!
+apis:
+  model-server@v2:
+    root: ./specifications/model-server-v2.yaml
+    decorators:
+      plugin/use-server-path: {}
+  model-server@v1:
+    root: ./specifications/model-server-v1.yaml
+    decorators:
+      plugin/use-server-path: {}
+  model-server@operative:
+    root: ./specifications/model-server-operative.yaml
+    decorators:
+      plugin/use-server-path: {}

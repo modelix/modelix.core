@@ -51,7 +51,7 @@ fun computeVersion(): Any {
 
 dependencies {
     // Generate a combined coverage report
-    project.subprojects.forEach {
+    project.subprojects.filterNot { it.name in setOf("model-server-openapi") }.forEach {
         kover(it)
     }
 }
@@ -62,7 +62,9 @@ subprojects {
     val subproject = this
     apply(plugin = "maven-publish")
     apply(plugin = "org.jetbrains.dokka")
-    apply(plugin = "org.jetbrains.kotlinx.kover")
+    if (subproject.name !in setOf("model-server-openapi")) {
+        apply(plugin = "org.jetbrains.kotlinx.kover")
+    }
 
     version = rootProject.version
     group = rootProject.group

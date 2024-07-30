@@ -58,6 +58,8 @@ dependencies {
     implementation(libs.ktor.server.resources)
     implementation(libs.ktor.serialization.json)
     implementation(libs.ktor.server.swagger)
+    implementation(libs.ktor.server.metrics.micrometer)
+    implementation(libs.micrometer.registry.prometheus)
 
     implementation(libs.bundles.ignite)
 
@@ -86,9 +88,6 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(kotlin("test"))
     testImplementation(project(":modelql-untyped"))
-
-    implementation(libs.ktor.server.metrics.micrometer)
-    implementation(libs.micrometer.registry.prometheus)
 }
 
 tasks.test {

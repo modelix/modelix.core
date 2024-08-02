@@ -27,7 +27,6 @@ import org.modelix.incremental.incrementalFunction
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.addNewChild
 import org.modelix.model.api.getDescendants
-import org.modelix.model.server.handlers.LightModelServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
@@ -41,8 +40,6 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class LightModelClientTest {
-    var localModelClient: LocalModelClient? = null
-
     private fun runTest(block: suspend (HttpClient) -> Unit) = testApplication {
         val modelClient = LocalModelClient(InMemoryStoreClient())
         val repositoryManager = RepositoriesManager(modelClient)
@@ -52,8 +49,11 @@ class LightModelClientTest {
             installAuthentication(unitTestMode = true)
             install(io.ktor.server.websocket.WebSockets)
             install(io.ktor.server.resources.Resources)
-            localModelClient = modelClient
-            LightModelServer(modelClient, repositoryManager).init(this)
+            // TODO MODELIX-994 Should use `org.modelix.model.server.light.LightModelServer`
+            // to test against the actual implementation.
+            // But just using it does not work.
+            // Might be caused by the setup here or actual bugs in the server or client.
+            FakeLightModelServer(modelClient, repositoryManager).init(this)
         }
         val client = createClient {
             install(WebSockets)

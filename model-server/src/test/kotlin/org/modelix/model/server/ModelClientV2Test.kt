@@ -123,7 +123,7 @@ class ModelClientV2Test {
     fun `user id can be provided to client after creation`() = runTest {
         val modelClient = createModelClient()
         val userId = "a_user_id"
-        modelClient.setClientProvideUserId(userId)
+        modelClient.setClientProvidedUserId(userId)
 
         assertEquals(userId, modelClient.getUserId())
     }
@@ -141,7 +141,7 @@ class ModelClientV2Test {
         modelClient.init()
 
         assertEquals(userId, modelClient.getUserId())
-        modelClient.setClientProvideUserId(null)
+        modelClient.setClientProvidedUserId(null)
 
         assertEquals("unit-tests@example.com", modelClient.getUserId())
     }

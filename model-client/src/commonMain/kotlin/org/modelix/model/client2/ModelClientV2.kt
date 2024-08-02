@@ -126,14 +126,22 @@ class ModelClientV2(
     }
 
     /**
+     * Version of [setClientProvidedUserId] with typo.
+     */
+    @Deprecated("Use setClientProvidedUserId, without a typo.", ReplaceWith("setClientProvidedUserId(userId)"))
+    fun setClientProvideUserId(userId: String?) {
+        clientProvidedUserId = userId
+    }
+
+    /**
      * Set or remove the client provided user ID.
      *
      * When the used ID is removed by passing null, [[getUserId]] might return the [[serverProvidedUserId]].
      *
      * @param userId A new user ID, or null to remove the old one.
      */
-    fun setClientProvideUserId(userId: String?) {
-        clientProvidedUserId = userId
+    fun setClientProvidedUserId(userId: String?) {
+        setClientProvideUserId(userId)
     }
 
     override fun getClientId(): Int = clientId

@@ -152,7 +152,7 @@ interface ClientJS {
 internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
 
     override fun setClientProvidedUserId(userId: String) {
-        modelClient.setClientProvideUserId(userId)
+        modelClient.setClientProvidedUserId(userId)
     }
 
     override fun initRepository(repositoryId: String, useRoleIds: Boolean): Promise<Unit> {

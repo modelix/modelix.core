@@ -15,6 +15,7 @@
 
 package org.modelix.model.persistent
 
+import org.modelix.model.async.IAsyncValue
 import org.modelix.model.bitCount
 import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.IDeserializingKeyValueStore
@@ -44,13 +45,13 @@ class CPHamtSingle(
         require(numLevels <= CPHamtNode.MAX_LEVELS) { "Only ${CPHamtNode.MAX_LEVELS} levels expected, but was $numLevels" }
     }
 
-    override fun calculateSize(bulkQuery: IBulkQuery): IBulkQuery.Value<Long> {
+    override fun calculateSize(bulkQuery: IBulkQuery): IAsyncValue<Long> {
         return getChild(bulkQuery).flatMap { it.calculateSize(bulkQuery) }
     }
 
     private fun maskBits(key: Long, shift: Int): Long = (key ushr (CPHamtNode.MAX_BITS - CPHamtNode.BITS_PER_LEVEL * numLevels - shift)) and mask
 
-    override fun get(key: Long, shift: Int, bulkQuery: IBulkQuery): IBulkQuery.Value<KVEntryReference<CPNode>?> {
+    override fun get(key: Long, shift: Int, bulkQuery: IBulkQuery): IAsyncValue<KVEntryReference<CPNode>?> {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         if (maskBits(key, shift) == bits) {
             return bulkQuery.query(child)
@@ -66,7 +67,7 @@ class CPHamtSingle(
     override fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         if (maskBits(key, shift) == bits) {
-            return withNewChild(getChild(NonBulkQuery(store)).executeQuery().put(key, value, shift + CPHamtNode.BITS_PER_LEVEL * numLevels, store))
+            return withNewChild(getChild(NonBulkQuery(store)).awaitBlocking().put(key, value, shift + CPHamtNode.BITS_PER_LEVEL * numLevels, store))
         } else {
             if (numLevels > 1) {
                 return splitOneLevel().put(key, value, shift, store)
@@ -108,21 +109,20 @@ class CPHamtSingle(
         return put(key, null, shift, store)
     }
 
-    fun getChild(bulkQuery: IBulkQuery): IBulkQuery.Value<CPHamtNode> {
+    fun getChild(bulkQuery: IBulkQuery): IAsyncValue<CPHamtNode> {
         return bulkQuery.query(child).map { childData -> checkNotNull(childData) { "Entry not found: $child" } }
     }
 
-    override fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IBulkQuery.Value<Unit> {
+    override fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IAsyncValue<Unit> {
         return getChild(bulkQuery).flatMap { it.visitEntries(bulkQuery, visitor) }
     }
 
-    override fun visitChanges(oldNode: CPHamtNode?, shift: Int, visitor: CPHamtNode.IChangeVisitor, bulkQuery: IBulkQuery) {
-        if (oldNode === this || hash == oldNode?.hash) {
-            return
-        }
-        if (oldNode is CPHamtSingle && oldNode.numLevels == numLevels) {
-            getChild(bulkQuery).map { child ->
-                oldNode.getChild(bulkQuery).map { oldNode ->
+    override fun visitChanges(oldNode: CPHamtNode?, shift: Int, visitor: CPHamtNode.IChangeVisitor, bulkQuery: IBulkQuery): IAsyncValue<Unit> {
+        return if (oldNode === this || hash == oldNode?.hash) {
+            return IAsyncValue.UNIT
+        } else if (oldNode is CPHamtSingle && oldNode.numLevels == numLevels) {
+            getChild(bulkQuery).flatMap { child ->
+                oldNode.getChild(bulkQuery).flatMap { oldNode ->
                     child.visitChanges(oldNode, shift + numLevels * CPHamtNode.BITS_PER_LEVEL, visitor, bulkQuery)
                 }
             }

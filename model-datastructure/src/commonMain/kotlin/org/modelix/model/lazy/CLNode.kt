@@ -16,6 +16,7 @@
 package org.modelix.model.lazy
 
 import org.modelix.model.api.ITree
+import org.modelix.model.async.IAsyncValue
 import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPNodeRef
 import kotlin.jvm.JvmStatic
@@ -72,26 +73,25 @@ class CLNode(private val tree: CLTree, private val data: CPNode) {
         return data
     }
 
-    fun getChildren(bulkQuery: IBulkQuery): IBulkQuery.Value<Iterable<CLNode>> {
+    fun getChildren(bulkQuery: IBulkQuery): IAsyncValue<Iterable<CLNode>> {
         return (getTree() as CLTree).resolveElements(getData().getChildrenIds().toList(), bulkQuery)
             .map { elements -> elements.map { CLNode(tree, it) } }
     }
 
-    fun getDescendants(bulkQuery: IBulkQuery, includeSelf: Boolean): IBulkQuery.Value<Iterable<CLNode>> {
+    fun getDescendants(bulkQuery: IBulkQuery, includeSelf: Boolean): IAsyncValue<Iterable<CLNode>> {
         return if (includeSelf) {
             getDescendants(bulkQuery, false)
                 .map { descendants -> (sequenceOf(this) + descendants).asIterable() }
         } else {
-            getChildren(bulkQuery).flatMap { children: Iterable<CLNode> ->
-                val d: IBulkQuery.Value<Iterable<CLNode>> = bulkQuery
-                    .flatMap(children) { child: CLNode -> child.getDescendants(bulkQuery, true) }
+            getChildren(bulkQuery).flatMap { children ->
+                bulkQuery
+                    .flatMap(children) { child -> child.getDescendants(bulkQuery, true) }
                     .map { it.flatten() }
-                d
             }
         }
     }
 
-    fun getAncestors(bulkQuery: IBulkQuery, includeSelf: Boolean): IBulkQuery.Value<List<CLNode>> {
+    fun getAncestors(bulkQuery: IBulkQuery, includeSelf: Boolean): IAsyncValue<List<CLNode>> {
         return if (includeSelf) {
             getAncestors(bulkQuery, false).map { ancestors -> (listOf(this) + ancestors) }
         } else {

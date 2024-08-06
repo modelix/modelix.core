@@ -15,20 +15,15 @@
 
 package org.modelix.model.lazy
 
+import org.modelix.model.async.IAsyncValue
 import org.modelix.model.persistent.IKVValue
 
 interface IBulkQuery {
     fun offerPrefetch(key: IPrefetchGoal)
     fun executeQuery()
-    fun <I, O> flatMap(input: Iterable<I>, f: (I) -> Value<O>): Value<List<O>>
-    fun <T> constant(value: T): Value<T>
-    fun <T : IKVValue> query(hash: KVEntryReference<T>): Value<T?>
-    interface Value<out T> {
-        fun executeQuery(): T
-        fun <R> flatMap(handler: (T) -> Value<R>): Value<R>
-        fun <R> map(handler: (T) -> R): Value<R>
-        fun onReceive(handler: (T) -> Unit)
-    }
+    fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IAsyncValue<O>): IAsyncValue<List<O>>
+    fun <T> constant(value: T): IAsyncValue<T>
+    fun <T : IKVValue> query(hash: KVEntryReference<T>): IAsyncValue<T?>
 }
 
 open class BulkQueryConfiguration {

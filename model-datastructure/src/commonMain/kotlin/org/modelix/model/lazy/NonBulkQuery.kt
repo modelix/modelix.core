@@ -15,15 +15,16 @@
 
 package org.modelix.model.lazy
 
+import org.modelix.model.async.IAsyncValue
 import org.modelix.model.persistent.IKVValue
 
 class NonBulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery {
-    override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IBulkQuery.Value<O>): IBulkQuery.Value<List<O>> {
-        val list = input.asSequence().map(f).map { it.executeQuery() }.toList()
+    override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IAsyncValue<O>): IAsyncValue<List<O>> {
+        val list = input.asSequence().map(f).map { it.awaitBlocking() }.toList()
         return Value(list)
     }
 
-    override fun <T> constant(value: T): IBulkQuery.Value<T> {
+    override fun <T> constant(value: T): IAsyncValue<T> {
         return Value(value)
     }
 
@@ -31,7 +32,7 @@ class NonBulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery 
         // Since no real bulk queries are executed, prefetching doesn't provide any benefit.
     }
 
-    override fun <T : IKVValue> query(hash: KVEntryReference<T>): IBulkQuery.Value<T?> {
+    override fun <T : IKVValue> query(hash: KVEntryReference<T>): IAsyncValue<T?> {
         return constant(hash.getValue(store))
     }
 
@@ -39,21 +40,25 @@ class NonBulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery 
         // all requests are processed immediately
     }
 
-    class Value<T>(private val value: T) : IBulkQuery.Value<T> {
-        override fun executeQuery(): T {
-            return value
-        }
-
-        override fun <R> flatMap(handler: (T) -> IBulkQuery.Value<R>): IBulkQuery.Value<R> {
+    class Value<T>(private val value: T) : IAsyncValue<T> {
+        override fun <R> flatMap(handler: (T) -> IAsyncValue<R>): IAsyncValue<R> {
             return handler(value)
         }
 
-        override fun <R> map(handler: (T) -> R): IBulkQuery.Value<R> {
+        override fun <R> map(handler: (T) -> R): IAsyncValue<R> {
             return Value(handler(value))
         }
 
         override fun onReceive(handler: (T) -> Unit) {
             handler(value)
+        }
+
+        override suspend fun await(): T {
+            return value
+        }
+
+        override fun awaitBlocking(): T {
+            return value
         }
     }
 }

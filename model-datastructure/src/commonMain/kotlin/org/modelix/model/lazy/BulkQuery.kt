@@ -15,6 +15,7 @@
 
 package org.modelix.model.lazy
 
+import org.modelix.model.async.IAsyncValue
 import org.modelix.model.persistent.IKVValue
 
 /**
@@ -43,7 +44,7 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
         return store.getAll(regular, prefetch)
     }
 
-    override fun <T : IKVValue> query(hash: KVEntryReference<T>): IBulkQuery.Value<T?> {
+    override fun <T : IKVValue> query(hash: KVEntryReference<T>): IAsyncValue<T?> {
         if (!hash.isWritten()) return constant(hash.getValue(store))
 
         val cachedValue = store.getIfCached(hash.getHash(), hash.getDeserializer(), prefetchQueue.isLoadingGoal())
@@ -76,7 +77,7 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
         prefetchQueue.addGoal(goal)
     }
 
-    override fun <T> constant(value: T): IBulkQuery.Value<T> {
+    override fun <T> constant(value: T): IAsyncValue<T> {
         return Value(value)
     }
 
@@ -114,7 +115,7 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
         }
     }
 
-    override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IBulkQuery.Value<O>): IBulkQuery.Value<List<O>> {
+    override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IAsyncValue<O>): IAsyncValue<List<O>> {
         val inputList = input.toList()
         if (inputList.isEmpty()) {
             return constant(emptyList())
@@ -144,7 +145,7 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
         val value: Value<E?>,
     )
 
-    inner class Value<T> : IBulkQuery.Value<T> {
+    inner class Value<T> : IAsyncValue<T> {
         private var handlers: MutableList<(T) -> Unit>? = null
         private var value: T? = null
         private var done = false
@@ -165,19 +166,19 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
             handlers = null
         }
 
-        override fun onReceive(handler: (T) -> Unit) {
+        override fun onReceive(callback: (T) -> Unit) {
             if (done) {
-                handler(value as T)
+                callback(value as T)
             } else {
                 if (handlers == null) handlers = ArrayList(1)
-                handlers!!.add(handler)
+                handlers!!.add(callback)
                 check(handlers.let { it == null || it.size < 1_000 }) {
                     "Too many handlers"
                 }
             }
         }
 
-        override fun executeQuery(): T {
+        fun executeQuery(): T {
             this@BulkQuery.executeQuery()
             if (!done) {
                 throw RuntimeException("No value received")
@@ -185,29 +186,42 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
             return value!!
         }
 
-        override fun <R> map(transformation: (T) -> R): IBulkQuery.Value<R> {
+        override fun <R> map(body: (T) -> R): IAsyncValue<R> {
             val result = Value<R>()
-            onReceive { v -> result.success(transformation(v)) }
+            onReceive { v -> result.success(body(v)) }
             return result
         }
 
-        override fun <R> flatMap(transformation: (T) -> IBulkQuery.Value<R>): IBulkQuery.Value<R> {
+        override fun <R> flatMap(handler: (T) -> IAsyncValue<R>): IAsyncValue<R> {
             val result = Value<R>()
-            onReceive { v -> transformation(v).onReceive { value -> result.success(value) } }
+            onReceive { v -> handler(v).onReceive { value -> result.success(value) } }
             return result
+        }
+
+        override suspend fun await(): T {
+            return executeQuery()
+        }
+
+        override fun awaitBlocking(): T {
+            return executeQuery()
         }
     }
 
-    class DummyValue<E> : IBulkQuery.Value<E> {
-        override fun executeQuery(): E {
+    class DummyValue<E> : IAsyncValue<E> {
+
+        override fun <R> flatMap(handler: (E) -> IAsyncValue<R>): IAsyncValue<R> = DummyValue()
+
+        override fun <R> map(handler: (E) -> R): IAsyncValue<R> = DummyValue()
+
+        override fun onReceive(handler: (E) -> Unit) {}
+
+        override suspend fun await(): E {
             throw UnsupportedOperationException()
         }
 
-        override fun <R> flatMap(handler: (E) -> IBulkQuery.Value<R>): IBulkQuery.Value<R> = DummyValue()
-
-        override fun <R> map(handler: (E) -> R): IBulkQuery.Value<R> = DummyValue()
-
-        override fun onReceive(handler: (E) -> Unit) {}
+        override fun awaitBlocking(): E {
+            throw UnsupportedOperationException()
+        }
     }
 }
 

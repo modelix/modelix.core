@@ -38,6 +38,7 @@ import org.modelix.model.api.resolveInCurrentContext
 import org.modelix.model.area.IArea
 import org.modelix.model.area.IAreaListener
 import org.modelix.model.area.IAreaReference
+import org.modelix.model.async.IAsyncValue
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.NonCachingObjectStore
@@ -169,22 +170,23 @@ class InMemoryModel private constructor(
                     oldSlowMap,
                     object : CPHamtNode.IChangeVisitor {
                         override fun visitChangesOnly(): Boolean = false
-                        override fun entryAdded(key: Long, value: KVEntryReference<CPNode>) {
-                            bulkQuery.query(value).onReceive { nodeData ->
+                        override fun entryAdded(key: Long, value: KVEntryReference<CPNode>): IAsyncValue<Unit> {
+                            return bulkQuery.query(value).map { nodeData ->
                                 if (nodeData != null) {
                                     fastMap.put(key, nodeData)
                                 }
                             }
                         }
-                        override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>) {
+                        override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>): IAsyncValue<Unit> {
                             fastMap.remove(key)
+                            return IAsyncValue.UNIT
                         }
                         override fun entryChanged(
                             key: Long,
                             oldValue: KVEntryReference<CPNode>,
                             newValue: KVEntryReference<CPNode>,
-                        ) {
-                            bulkQuery.query(newValue).onReceive { nodeData ->
+                        ): IAsyncValue<Unit> {
+                            return bulkQuery.query(newValue).map { nodeData ->
                                 if (nodeData != null) {
                                     fastMap.put(key, nodeData)
                                 }

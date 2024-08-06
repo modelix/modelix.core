@@ -30,7 +30,7 @@ kotlin {
 //                api(project(":model-server-api"))
 //                kotlin("stdlib-common")
 //                implementation(libs.kotlin.collections.immutable)
-//                implementation(libs.kotlin.coroutines.core)
+                implementation(libs.kotlin.coroutines.core)
                 implementation(libs.kotlin.logging)
                 implementation(libs.kotlin.datetime)
 //                implementation(libs.kotlin.serialization.json)

@@ -28,6 +28,7 @@ import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.TreePointer
+import org.modelix.model.async.IAsyncValue
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.SetReferenceOp
@@ -346,22 +347,23 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
                 oldTree.nodesMap!!,
                 object : CPHamtNode.IChangeVisitor {
                     override fun visitChangesOnly(): Boolean = false
-                    override fun entryAdded(key: Long, value: KVEntryReference<CPNode>) {
+                    override fun entryAdded(key: Long, value: KVEntryReference<CPNode>): IAsyncValue<Unit> {
                         changedNodeIds += key
-                        if (value != null) bulkQuery.query(value)
+                        return if (value != null) bulkQuery.query(value).map { } else IAsyncValue.UNIT
                     }
 
-                    override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>) {
+                    override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>): IAsyncValue<Unit> {
                         changedNodeIds += key
+                        return IAsyncValue.UNIT
                     }
 
                     override fun entryChanged(
                         key: Long,
                         oldValue: KVEntryReference<CPNode>,
                         newValue: KVEntryReference<CPNode>,
-                    ) {
+                    ): IAsyncValue<Unit> {
                         changedNodeIds += key
-                        if (newValue != null) bulkQuery.query(newValue)
+                        return if (newValue != null) bulkQuery.query(newValue).map { } else IAsyncValue.UNIT
                     }
                 },
                 bulkQuery,

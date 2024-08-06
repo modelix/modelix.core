@@ -17,12 +17,13 @@
 package org.modelix.model.lazy
 
 import org.modelix.model.api.runSynchronized
+import org.modelix.model.async.IAsyncValue
 import org.modelix.model.persistent.IKVValue
 import kotlin.jvm.Synchronized
 
 class SynchronizedBulkQuery(val nonThreadSafeQuery: IBulkQuery) : IBulkQuery {
     @Synchronized
-    override fun <T> constant(value: T): IBulkQuery.Value<T> {
+    override fun <T> constant(value: T): IAsyncValue<T> {
         return nonThreadSafeQuery.constant(value)
     }
 
@@ -37,29 +38,23 @@ class SynchronizedBulkQuery(val nonThreadSafeQuery: IBulkQuery) : IBulkQuery {
     }
 
     @Synchronized
-    override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IBulkQuery.Value<O>): IBulkQuery.Value<List<O>> {
+    override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IAsyncValue<O>): IAsyncValue<List<O>> {
         return nonThreadSafeQuery.flatMap(input, f)
     }
 
     @Synchronized
-    override fun <T : IKVValue> query(hash: KVEntryReference<T>): IBulkQuery.Value<T?> {
+    override fun <T : IKVValue> query(hash: KVEntryReference<T>): IAsyncValue<T?> {
         return nonThreadSafeQuery.query(hash)
     }
 
-    inner class Value<E>(val nonThreadSafeValue: IBulkQuery.Value<E>) : IBulkQuery.Value<E> {
-        override fun executeQuery(): E {
-            runSynchronized(this@SynchronizedBulkQuery) {
-                return nonThreadSafeValue.executeQuery()
-            }
-        }
-
-        override fun <R> flatMap(handler: (E) -> IBulkQuery.Value<R>): IBulkQuery.Value<R> {
+    inner class Value<E>(val nonThreadSafeValue: IAsyncValue<E>) : IAsyncValue<E> {
+        override fun <R> flatMap(handler: (E) -> IAsyncValue<R>): IAsyncValue<R> {
             runSynchronized(this@SynchronizedBulkQuery) {
                 return nonThreadSafeValue.flatMap(handler)
             }
         }
 
-        override fun <R> map(handler: (E) -> R): IBulkQuery.Value<R> {
+        override fun <R> map(handler: (E) -> R): IAsyncValue<R> {
             runSynchronized(this@SynchronizedBulkQuery) {
                 return nonThreadSafeValue.map(handler)
             }
@@ -68,6 +63,16 @@ class SynchronizedBulkQuery(val nonThreadSafeQuery: IBulkQuery) : IBulkQuery {
         override fun onReceive(handler: (E) -> Unit) {
             runSynchronized(this@SynchronizedBulkQuery) {
                 return nonThreadSafeValue.onReceive(handler)
+            }
+        }
+
+        override suspend fun await(): E {
+            return awaitBlocking()
+        }
+
+        override fun awaitBlocking(): E {
+            runSynchronized(this@SynchronizedBulkQuery) {
+                return nonThreadSafeValue.awaitBlocking()
             }
         }
     }

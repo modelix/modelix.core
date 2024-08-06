@@ -17,19 +17,26 @@
 package org.modelix.model.async
 
 import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INodeReference
+import org.modelix.model.api.IPropertyReference
+import org.modelix.model.api.IReferenceLinkReference
+import org.modelix.model.api.ITree
 
 interface IAsyncTree {
     fun visitChanges(oldVersion: IAsyncTree, visitor: IAsyncTreeChangeVisitor): IAsyncValue<Unit>
     fun containsNode(nodeId: Long): IAsyncValue<Boolean>
-    fun getProperty(nodeId: Long, role: String): IAsyncValue<String?>
-    fun getChildren(parentId: Long, role: String?): IAsyncValue<List<Long>>
+    fun getProperty(nodeId: Long, role: IPropertyReference): IAsyncValue<String?>
+    fun getChildren(parentId: Long, role: IChildLinkReference): IAsyncValue<List<Long>>
     fun getConceptReference(nodeId: Long): IAsyncValue<ConceptReference?>
     fun getParent(nodeId: Long): IAsyncValue<Long>
     fun getRole(nodeId: Long): IAsyncValue<String?>
-    fun getReferenceTarget(sourceId: Long, role: String): IAsyncValue<INodeReference?>
+    fun getAllReferenceTargetRefs(sourceId: Long): IAsyncValue<List<Pair<IReferenceLinkReference, INodeReference>>>
+    fun getReferenceTarget(sourceId: Long, role: IReferenceLinkReference): IAsyncValue<INodeReference?>
     fun getReferenceRoles(sourceId: Long): IAsyncValue<List<String>>
     fun getPropertyRoles(sourceId: Long): IAsyncValue<List<String>>
     fun getChildRoles(sourceId: Long): IAsyncValue<List<String?>>
     fun getAllChildren(parentId: Long): IAsyncValue<List<Long>>
 }
+
+fun IAsyncTree.getRootNode(): IAsyncNode = AsyncNode(ITree.ROOT_ID, this)

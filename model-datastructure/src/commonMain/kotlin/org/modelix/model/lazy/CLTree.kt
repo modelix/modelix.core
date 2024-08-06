@@ -28,6 +28,7 @@ import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.tryResolve
+import org.modelix.model.async.AsyncTree
 import org.modelix.model.async.IAsyncValue
 import org.modelix.model.lazy.COWArrays.insert
 import org.modelix.model.lazy.COWArrays.remove
@@ -82,6 +83,8 @@ class CLTree : ITree, IBulkTree {
         data = CPTree(treeId, KVEntryReference(idToHash), usesRoleIds)
         this.store = store
     }
+
+    fun asAsyncTree() = AsyncTree(data, store.newBulkQuery())
 
     override fun usesRoleIds(): Boolean {
         return data.usesRoleIds

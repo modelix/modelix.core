@@ -17,6 +17,9 @@
 package org.modelix.model.async
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flow
 
 interface IAsyncValue<out E> {
     fun onReceive(callback: (E) -> Unit)
@@ -35,6 +38,9 @@ interface IAsyncValue<out E> {
 
 fun <T> T.asAsync(): IAsyncValue<T> = IAsyncValue.constant(this)
 fun <T> IAsyncValue<T>.asNonAsync(): T = (this as NonAsyncValue<T>).value
+
+fun <T> IAsyncValue<T>.asFlow() = flow<T> { emit(await()) }
+fun <T> IAsyncValue<Iterable<T>>.asFlattenedFlow() = asFlow().flatMapConcat { it.asFlow() }
 
 fun <T> List<IAsyncValue<T>>.mapList(): IAsyncValue<List<T>> = mapList { it }
 

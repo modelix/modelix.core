@@ -18,7 +18,7 @@ package org.modelix.model.api
 /**
  * Representation of a parent-child relationship between [IConcept]s.
  */
-interface IChildLink : ILink {
+interface IChildLink : ILink, IChildLinkReference {
     /**
      * Specifies if the parent-child relation ship is 1:n.
      */
@@ -40,6 +40,46 @@ interface IChildLink : ILink {
      */
     val isOrdered
         get() = true
+}
+
+
+@Deprecated("For compatibility with methods that still require an IChildLink instead of just an IChildLinkReference")
+fun IChildLinkReference.asLink() = this as IChildLink
+
+interface IChildLinkReference {
+
+    fun getSimpleName(): String?
+    fun getUID(): String?
+
+    companion object {
+        /**
+         * Can be a name or UID or anything else. INode will decide how to resolve it.
+         */
+        fun fromString(value: String?): IChildLinkReference {
+            return if (value == null) NullChildLinkReference else UnclassifiedChildLinkReference(value)
+        }
+        fun fromName(value: String): IChildLinkReference = ChildLinkReferenceByName(value)
+        fun fromUID(value: String): IChildLinkReference = ChildLinkReferenceByUID(value)
+    }
+}
+
+abstract class AbstractChildLinkReference : IChildLinkReference, IChildLink {
+    override fun getConcept(): IConcept = throw UnsupportedOperationException()
+    override fun getUID(): String = throw UnsupportedOperationException()
+    override fun getSimpleName(): String = throw UnsupportedOperationException()
+    override val isOptional: Boolean get() = throw UnsupportedOperationException()
+    override val targetConcept: IConcept get() = throw UnsupportedOperationException()
+    override val childConcept: IConcept get() = throw UnsupportedOperationException()
+    override val isMultiple: Boolean get() = throw UnsupportedOperationException()
+}
+
+object NullChildLinkReference : AbstractChildLinkReference()
+data class UnclassifiedChildLinkReference(val value: String) : AbstractChildLinkReference()
+data class ChildLinkReferenceByName(override val name: String) : AbstractChildLinkReference() {
+    override fun getSimpleName(): String = name
+}
+data class ChildLinkReferenceByUID(val uid: String) : AbstractChildLinkReference() {
+    override fun getUID(): String = uid
 }
 
 data class ChildLinkFromName(override val name: String) : LinkFromName(), IChildLink {

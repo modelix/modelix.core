@@ -13,12 +13,15 @@
  */
 package org.modelix.modelql.untyped
 
+import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
+import org.modelix.model.api.IPropertyReference
+import org.modelix.model.api.asProperty
 import org.modelix.model.api.resolvePropertyOrFallback
+import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
@@ -29,11 +32,18 @@ import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.SimpleMonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
+import org.modelix.modelql.core.StepFlow
+import org.modelix.modelql.core.asStepFlow
 import org.modelix.modelql.core.stepOutputSerializer
 
+// TODO replace `role: String` with a more specific IPropertyReference
 class PropertyTraversalStep(val role: String) : SimpleMonoTransformingStep<INode, String?>(), IMonoStep<String?> {
     override fun transform(evaluationContext: QueryEvaluationContext, input: INode): String? {
         return input.getPropertyValue(input.resolvePropertyOrFallback(role))
+    }
+
+    override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<String?> {
+        return input.flatMapConcat { it.value.getPropertyValueAsFlow(IPropertyReference.fromString(role).asProperty()) }.asStepFlow(this)
     }
 
     override fun canBeEmpty(): Boolean = getProducer().canBeEmpty()

@@ -17,7 +17,11 @@
 package org.modelix.model.async
 
 import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INodeReference
+import org.modelix.model.api.IPropertyReference
+import org.modelix.model.api.IReferenceLinkReference
+import org.modelix.model.api.NullChildLinkReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.KVEntryReference
@@ -140,18 +144,6 @@ class AsyncTree(private val treeData: CPTree, private val bulkQuery: IBulkQuery)
         )
     }
 
-    override fun getProperty(nodeId: Long, role: String): IAsyncValue<String?> {
-        return getNode(nodeId).map { it.getPropertyValue(role) }
-    }
-
-    override fun getChildren(parentId: Long, role: String?): IAsyncValue<List<Long>> {
-        return getAllChildren(parentId).flatMap {
-            it.map { getNode(it) }.mapList {
-                it.filter { it.roleInParent == role }.map { it.id }
-            }
-        }
-    }
-
     override fun getConceptReference(nodeId: Long): IAsyncValue<ConceptReference?> {
         return getNode(nodeId).map { it.concept?.let { ConceptReference(it) } }
     }
@@ -164,15 +156,19 @@ class AsyncTree(private val treeData: CPTree, private val bulkQuery: IBulkQuery)
         return getNode(nodeId).map { it.roleInParent }
     }
 
-    override fun getReferenceTarget(sourceId: Long, role: String): IAsyncValue<INodeReference?> {
+    override fun getReferenceTarget(sourceId: Long, role: IReferenceLinkReference): IAsyncValue<INodeReference?> {
         return getNode(sourceId).map { node ->
-            val targetRef = node.getReferenceTarget(role)
-            when {
-                targetRef == null -> null
-                targetRef.isLocal -> PNodeReference(targetRef.elementId, treeData.id)
-                targetRef is CPNodeRef.ForeignRef -> org.modelix.model.api.INodeReferenceSerializer.deserialize(targetRef.serializedRef)
-                else -> throw UnsupportedOperationException("Unsupported reference: $targetRef")
-            }
+            val roleString = if (treeData.usesRoleIds) role.getUID() else role.getSimpleName()
+            node.getReferenceTarget(roleString)?.convertReference()
+        }
+    }
+
+    private fun CPNodeRef.convertReference(): INodeReference {
+        val targetRef = this
+        return when {
+            targetRef.isLocal -> PNodeReference(targetRef.elementId, treeData.id)
+            targetRef is CPNodeRef.ForeignRef -> org.modelix.model.api.INodeReferenceSerializer.deserialize(targetRef.serializedRef)
+            else -> throw UnsupportedOperationException("Unsupported reference: $targetRef")
         }
     }
 
@@ -194,6 +190,31 @@ class AsyncTree(private val treeData: CPTree, private val bulkQuery: IBulkQuery)
 
     override fun getAllChildren(parentId: Long): IAsyncValue<List<Long>> {
         return getNode(parentId).map { it.childrenIdArray.toList() }
+    }
+
+    override fun getAllReferenceTargetRefs(sourceId: Long): IAsyncValue<List<Pair<IReferenceLinkReference, INodeReference>>> {
+        return getNode(sourceId).map { data ->
+            data.referenceRoles.mapIndexed { index, role ->
+                val link = if (treeData.usesRoleIds) IReferenceLinkReference.fromUID(role) else IReferenceLinkReference.fromUID(role)
+                link to data.referenceTargets[index].convertReference()
+            }
+        }
+    }
+
+    override fun getProperty(nodeId: Long, role: IPropertyReference): IAsyncValue<String?> {
+        return getNode(nodeId).map { node ->
+            val roleString = if (treeData.usesRoleIds) role.getUID() else role.getSimpleName()
+            node.getPropertyValue(roleString)
+        }
+    }
+
+    override fun getChildren(parentId: Long, role: IChildLinkReference): IAsyncValue<List<Long>> {
+        val roleString = if (role == NullChildLinkReference) null else if (treeData.usesRoleIds) role.getUID() else role.getSimpleName()
+        return getAllChildren(parentId).flatMap {
+            it.map { getNode(it) }.mapList {
+                it.filter { it.roleInParent == roleString }.map { it.id }
+            }
+        }
     }
 }
 

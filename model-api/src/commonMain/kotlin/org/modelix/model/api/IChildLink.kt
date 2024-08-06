@@ -42,7 +42,6 @@ interface IChildLink : ILink, IChildLinkReference {
         get() = true
 }
 
-
 @Deprecated("For compatibility with methods that still require an IChildLink instead of just an IChildLinkReference")
 fun IChildLinkReference.asLink() = this as IChildLink
 

@@ -21,6 +21,10 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flowOf
+import org.modelix.model.api.roles.IChildLinkReference
+import org.modelix.model.api.roles.IPropertyReference
+import org.modelix.model.api.roles.IReferenceLinkReference
+import org.modelix.model.api.roles.IRoleReference
 import org.modelix.model.area.IArea
 import org.modelix.model.data.NodeData
 
@@ -259,6 +263,20 @@ interface INode {
         }
     }
     // </editor-fold>
+
+    // <editor-fold desc="role-reference based API">
+    fun getChildren(childLink: IChildLinkReference) = getChildren(childLink.key(this))
+    fun moveChild(childLink: IChildLinkReference, index: Int, child: INode) = moveChild(childLink.key(this), index, child)
+    fun addNewChild(childLink: IChildLinkReference, index: Int, concept: IConcept?) = addNewChild(childLink.key(this), index, concept)
+    fun addNewChild(childLink: IChildLinkReference, index: Int, concept: ConceptReference?) = addNewChild(childLink.key(this), index, concept)
+    fun getReferenceTarget(referenceLink: IReferenceLinkReference) = addNewChild(referenceLink.key(this))
+    fun setReferenceTarget(referenceLink: IReferenceLinkReference, target: INode?) = setReferenceTarget(referenceLink.key(this), target)
+    fun setReferenceTarget(referenceLink: IReferenceLinkReference, target: INodeReference?) = setReferenceTarget(referenceLink.key(this), target)
+    fun removeReference(referenceLink: IReferenceLinkReference) = setReferenceTarget(referenceLink, null as INode?)
+    fun getReferenceTargetRef(referenceLink: IReferenceLinkReference): INodeReference? = getReferenceTargetRef(referenceLink.key(this))
+    fun getPropertyValue(property: IPropertyReference): String? = getPropertyValue(property.key(this))
+    fun setPropertyValue(property: IPropertyReference, value: String?) = setPropertyValue(property.key(this), value)
+    // </editor-fold>
 }
 
 fun <T1, T2> List<Pair<T1, T2?>>.filterSecondNotNull(): List<Pair<T1, T2>> = filter { it.second != null } as List<Pair<T1, T2>>
@@ -314,6 +332,11 @@ interface IReplaceableNode : INode {
 @Deprecated("Use .key(INode), .key(IBranch), .key(ITransaction) or .key(ITree)")
 fun IRole.key(): String = RoleAccessContext.getKey(this)
 fun IRole.key(node: INode): String = if (node.usesRoleIds()) getUID() else getSimpleName()
+
+fun IRoleReference.key(node: INode): String? = if (node.usesRoleIds()) getRoleId()?.getUID() else getName()
+fun IPropertyReference.key(node: INode): String = requireNotNull((this as IRoleReference).key(node)) { "Invalid IPropertyReference" }
+fun IReferenceLinkReference.key(node: INode): String = requireNotNull((this as IRoleReference).key(node)) { "Invalid IReferenceLinkReference" }
+
 fun IChildLink.key(node: INode): String? = when (this) {
     is NullChildLink -> null
     else -> (this as IRole).key(node)

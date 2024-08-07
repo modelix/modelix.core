@@ -28,8 +28,6 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
-import org.modelix.model.api.toLink
-import org.modelix.model.api.toReference
 import org.modelix.model.area.IArea
 
 class AsyncNodeAsNode(val node: IAsyncNode) : INode, INodeWithAsyncSupport {
@@ -131,7 +129,7 @@ class AsyncNodeAsNode(val node: IAsyncNode) : INode, INodeWithAsyncSupport {
 
     override fun getAllReferenceTargetRefsAsFlow(): Flow<Pair<IReferenceLink, INodeReference>> {
         return node.getAllReferenceTargetRefs().asFlow().flatMapConcat { it.asFlow() }
-            .map { it.first.toLink() to it.second }
+            .map { it.first.toLegacy() to it.second }
     }
 
     override fun getAllReferenceTargets(): List<Pair<IReferenceLink, INode>> {
@@ -140,7 +138,7 @@ class AsyncNodeAsNode(val node: IAsyncNode) : INode, INodeWithAsyncSupport {
 
     override fun getAllReferenceTargetsAsFlow(): Flow<Pair<IReferenceLink, INode>> {
         return node.getAllReferenceTargets().asFlattenedFlow()
-            .map { it.first.toLink() to it.second.asNode() }
+            .map { it.first.toLegacy() to it.second.asNode() }
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
@@ -176,7 +174,7 @@ class AsyncNodeAsNode(val node: IAsyncNode) : INode, INodeWithAsyncSupport {
     }
 
     override fun getPropertyValueAsFlow(role: IProperty): Flow<String?> {
-        return node.getPropertyValue(role).asFlow()
+        return node.getPropertyValue(role.toReference()).asFlow()
     }
 
     override fun getReferenceLinks(): List<IReferenceLink> {
@@ -188,7 +186,7 @@ class AsyncNodeAsNode(val node: IAsyncNode) : INode, INodeWithAsyncSupport {
     }
 
     override fun getReferenceTargetAsFlow(role: IReferenceLink): Flow<INode> {
-        return node.getReferenceTarget(role).asFlow().filterNotNull().map { it.asNode() }
+        return node.getReferenceTarget(role.toReference()).asFlow().filterNotNull().map { it.asNode() }
     }
 
     override fun getReferenceTargetRef(role: IReferenceLink): INodeReference? {
@@ -200,7 +198,7 @@ class AsyncNodeAsNode(val node: IAsyncNode) : INode, INodeWithAsyncSupport {
     }
 
     override fun getReferenceTargetRefAsFlow(role: IReferenceLink): Flow<INodeReference> {
-        return node.getReferenceTargetRef(role).asFlow().filterNotNull()
+        return node.getReferenceTargetRef(role.toReference()).asFlow().filterNotNull()
     }
 
     override fun moveChild(role: IChildLink, index: Int, child: INode) {

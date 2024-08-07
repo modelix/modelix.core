@@ -16,16 +16,26 @@
 
 package org.modelix.model.api.async
 
+import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
+import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.asProperty
-import org.modelix.model.api.toLink
+import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.api.toReference
 
 class NodeAsAsyncNode(val node: INode) : IAsyncNode {
+    override fun getConcept(): IAsyncValue<IConcept> {
+        return (node.concept ?: NullConcept).asAsync()
+    }
+
+    override fun getConceptRef(): IAsyncValue<ConceptReference> {
+        return ((node.getConceptReference() ?: NullConcept.getReference()) as ConceptReference).asAsync()
+    }
+
     override fun getParent(): IAsyncValue<IAsyncNode?> {
         return node.parent?.asAsyncNode().asAsync()
     }
@@ -43,22 +53,22 @@ class NodeAsAsyncNode(val node: INode) : IAsyncNode {
     }
 
     override fun getChildren(role: IChildLinkReference): IAsyncValue<List<IAsyncNode>> {
-        return node.getChildren(role.toLink()).map { it.asAsyncNode() }.asAsync()
+        return node.getChildren(role.toLegacy()).map { it.asAsyncNode() }.asAsync()
     }
 
     override fun getReferenceTarget(role: IReferenceLinkReference): IAsyncValue<IAsyncNode?> {
-        return node.getReferenceTarget(role.toLink())?.asAsyncNode().asAsync()
+        return node.getReferenceTarget(role.toLegacy())?.asAsyncNode().asAsync()
     }
 
     override fun getReferenceTargetRef(role: IReferenceLinkReference): IAsyncValue<INodeReference?> {
-        return node.getReferenceTargetRef(role.toLink()).asAsync()
+        return node.getReferenceTargetRef(role.toLegacy()).asAsync()
     }
 
     override fun getAllReferenceTargetRefs(): IAsyncValue<List<Pair<IReferenceLinkReference, INodeReference>>> {
-        return node.getAllReferenceTargetRefs().asAsync()
+        return node.getAllReferenceTargetRefs().map { it.first.toReference() to it.second }.asAsync()
     }
 
     override fun getAllReferenceTargets(): IAsyncValue<List<Pair<IReferenceLinkReference, IAsyncNode>>> {
-        return node.getAllReferenceTargets().map { it.first to it.second.asAsyncNode() }.asAsync()
+        return node.getAllReferenceTargets().map { it.first.toReference() to it.second.asAsyncNode() }.asAsync()
     }
 }

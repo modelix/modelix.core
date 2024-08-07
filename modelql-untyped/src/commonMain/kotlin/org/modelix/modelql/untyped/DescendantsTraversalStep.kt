@@ -13,12 +13,19 @@
  */
 package org.modelix.modelql.untyped
 
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flattenConcat
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
+import org.modelix.model.api.async.IAsyncNode
+import org.modelix.model.api.async.asAsyncNode
+import org.modelix.model.api.async.asFlattenedFlow
+import org.modelix.model.api.async.asNode
 import org.modelix.modelql.core.FluxTransformingStep
 import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
@@ -36,7 +43,9 @@ import org.modelix.modelql.core.stepOutputSerializer
 
 class DescendantsTraversalStep(val includeSelf: Boolean) : FluxTransformingStep<INode, INode>(), IFluxStep<INode> {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
-        return input.flatMapConcat { it.value.getDescendantsAsFlow(includeSelf) }.asStepFlow(this)
+        return input.flatMapConcat {
+            it.value.asAsyncNode().getDescendantsAsFlow(includeSelf)
+        }.asStepFlow(this)
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<INode>> {
@@ -67,3 +76,11 @@ class DescendantsTraversalStep(val includeSelf: Boolean) : FluxTransformingStep<
 }
 
 fun IProducingStep<INode>.descendants(includeSelf: Boolean = false): IFluxStep<INode> = DescendantsTraversalStep(includeSelf).also { connect(it) }
+
+private fun IAsyncNode.getDescendantsAsFlow(includeSelf: Boolean = false): Flow<INode> {
+    return if (includeSelf) {
+        flowOf(flowOf(this.asNode()), getDescendantsAsFlow(false)).flattenConcat()
+    } else {
+        getAllChildren().asFlattenedFlow().flatMapConcat { it.getDescendantsAsFlow(true) }
+    }
+}

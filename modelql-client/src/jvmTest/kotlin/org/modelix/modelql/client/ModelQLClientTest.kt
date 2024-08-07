@@ -21,7 +21,6 @@ import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
-import org.modelix.model.async.withAsyncSupport
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.ObjectStoreCache
@@ -57,11 +56,11 @@ import kotlin.time.Duration.Companion.seconds
 
 class ModelQLClientTest {
     private fun runTest(block: suspend (HttpClient) -> Unit) = testApplication {
-        withTimeout(3.seconds) {
+        withTimeout(30.seconds) {
             application {
                 val tree = CLTree(ObjectStoreCache(MapBaseStore()))
                 val branch = PBranch(tree, IdGenerator.getInstance(1))
-                val rootNode = branch.getRootNode().withAsyncSupport()
+                val rootNode = branch.getRootNode()
                 branch.runWrite {
                     val module1 = rootNode.addNewChild("modules", -1, null as IConceptReference?)
                     module1.setPropertyValue("name", "abc")

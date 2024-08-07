@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-package org.modelix.model.async
+package org.modelix.model.api.async
 
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
-import org.modelix.model.api.ITree
-import org.modelix.model.api.async.IAsyncNode
-import org.modelix.model.api.async.IAsyncValue
 
 interface IAsyncTree {
     fun visitChanges(oldVersion: IAsyncTree, visitor: IAsyncTreeChangeVisitor): IAsyncValue<Unit>
     fun containsNode(nodeId: Long): IAsyncValue<Boolean>
     fun getProperty(nodeId: Long, role: IPropertyReference): IAsyncValue<String?>
     fun getChildren(parentId: Long, role: IChildLinkReference): IAsyncValue<List<Long>>
-    fun getConceptReference(nodeId: Long): IAsyncValue<ConceptReference?>
+    fun getConceptReference(nodeId: Long): IAsyncValue<ConceptReference>
     fun getParent(nodeId: Long): IAsyncValue<Long>
     fun getRole(nodeId: Long): IAsyncValue<IChildLinkReference>
     fun getAllReferenceTargetRefs(sourceId: Long): IAsyncValue<List<Pair<IReferenceLinkReference, INodeReference>>>
@@ -40,5 +37,3 @@ interface IAsyncTree {
     fun getChildRoles(sourceId: Long): IAsyncValue<List<String?>>
     fun getAllChildren(parentId: Long): IAsyncValue<List<Long>>
 }
-
-fun IAsyncTree.getRootNode(): IAsyncNode = AsyncNode(ITree.ROOT_ID, this)

@@ -80,8 +80,8 @@ class ModelImporterOrderPropertyTest {
         val store = ObjectStoreCache(MapBasedStore())
         val tree = CLTree(
             data = null,
-            repositoryId_ = null,
-            store_ = store,
+            repositoryId = null,
+            store = store,
             useRoleIds = true,
         )
         val idGenerator = IdGenerator.getInstance(1)

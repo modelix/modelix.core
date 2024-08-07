@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.model.async
-
-import org.modelix.model.api.async.IAsyncValue
+package org.modelix.model.api.async
 
 /**
  * Returning IAsyncValue<Unit> allows the event handler to execute further queries and guarantees that they are executed

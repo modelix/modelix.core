@@ -14,39 +14,47 @@
  * limitations under the License.
  */
 
-package org.modelix.model.async
+package org.modelix.model.api.async
 
+import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
+import org.modelix.model.api.IConcept
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
-import org.modelix.model.api.async.IAsyncNode
-import org.modelix.model.api.async.IAsyncValue
-import org.modelix.model.api.async.asAsyncNode
+import org.modelix.model.api.resolve
 import org.modelix.model.api.resolveInCurrentContext
 
-class AsyncNode(val nodeId: Long, val tree: IAsyncTree) : IAsyncNode {
+class AsyncNode(private val nodeId: Long, private val tree: () -> IAsyncTree, private val createNodeAdapter: (Long) -> IAsyncNode) : IAsyncNode {
 
-    private fun Long.asNode(): IAsyncNode = AsyncNode(this, tree)
+    private fun Long.asNode(): IAsyncNode = createNodeAdapter(this)
 
     override fun getParent(): IAsyncValue<IAsyncNode> {
-        return tree.getParent(nodeId).map { it.asNode() }
+        return tree().getParent(nodeId).map { it.asNode() }
+    }
+
+    override fun getConcept(): IAsyncValue<IConcept> {
+        return tree().getConceptReference(nodeId).map { it.resolve() }
+    }
+
+    override fun getConceptRef(): IAsyncValue<ConceptReference> {
+        return tree().getConceptReference(nodeId)
     }
 
     override fun getRoleInParent(): IAsyncValue<IChildLinkReference> {
-        return tree.getRole(nodeId)
+        return tree().getRole(nodeId)
     }
 
     override fun getPropertyValue(role: IPropertyReference): IAsyncValue<String?> {
-        return tree.getProperty(nodeId, role)
+        return tree().getProperty(nodeId, role)
     }
 
     override fun getAllChildren(): IAsyncValue<List<IAsyncNode>> {
-        return tree.getAllChildren(nodeId).map { it.map { it.asNode() } }
+        return tree().getAllChildren(nodeId).map { it.map { it.asNode() } }
     }
 
     override fun getChildren(role: IChildLinkReference): IAsyncValue<List<IAsyncNode>> {
-        return tree.getChildren(nodeId, role).map { it.map { it.asNode() } }
+        return tree().getChildren(nodeId, role).map { it.map { it.asNode() } }
     }
 
     override fun getReferenceTarget(role: IReferenceLinkReference): IAsyncValue<IAsyncNode?> {
@@ -54,15 +62,15 @@ class AsyncNode(val nodeId: Long, val tree: IAsyncTree) : IAsyncNode {
     }
 
     override fun getReferenceTargetRef(role: IReferenceLinkReference): IAsyncValue<INodeReference?> {
-        return tree.getReferenceTarget(nodeId, role)
+        return tree().getReferenceTarget(nodeId, role)
     }
 
     override fun getAllReferenceTargetRefs(): IAsyncValue<List<Pair<IReferenceLinkReference, INodeReference>>> {
-        return tree.getAllReferenceTargetRefs(nodeId)
+        return tree().getAllReferenceTargetRefs(nodeId)
     }
 
     override fun getAllReferenceTargets(): IAsyncValue<List<Pair<IReferenceLinkReference, IAsyncNode>>> {
-        return tree.getAllReferenceTargetRefs(nodeId).map {
+        return tree().getAllReferenceTargetRefs(nodeId).map {
             it.mapNotNull {
                 it.first to (it.second.resolveInCurrentContext() ?: return@mapNotNull null).asAsyncNode()
             }

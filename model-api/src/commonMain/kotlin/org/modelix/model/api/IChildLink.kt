@@ -20,7 +20,8 @@ import kotlinx.serialization.Serializable
 /**
  * Representation of a parent-child relationship between [IConcept]s.
  */
-interface IChildLink : ILink, IChildLinkReference {
+@Deprecated("Use IChildLinkReference or IChildLinkDefinition")
+interface IChildLink : ILink {
     /**
      * Specifies if the parent-child relation ship is 1:n.
      */
@@ -43,52 +44,74 @@ interface IChildLink : ILink, IChildLinkReference {
      */
     val isOrdered
         get() = true
+
+    override fun toReference(): IChildLinkReference
 }
 
-@Deprecated("For compatibility with methods that still require an IChildLink instead of just an IChildLinkReference")
-fun IChildLinkReference.toLink() = this as IChildLink
-fun IChildLink?.toReference(): IChildLinkReference = when (this) {
-    null -> NullChildLinkReference
-    is IChildLinkReference -> this
-    is ChildLinkFromName -> IChildLinkReference.fromName(this.name)
-    else -> IChildLinkReference.fromUID(this.getUID())
-}
+fun IChildLink?.toReference(): IChildLinkReference = this?.toReference() ?: NullChildLinkReference
 
 @Serializable
 sealed interface IChildLinkReference : IRoleReference {
+
+    override fun toLegacy(): IChildLink
+
+    fun getIdOrNameOrNull(): String? = getIdOrName()
+
+    fun getNameOrIdOrNull(): String? = getNameOrId()
+
     companion object {
         /**
          * Can be a name or UID or anything else. INode will decide how to resolve it.
          */
-        fun fromString(value: String?): IChildLinkReference {
+        fun fromUnclassifiedString(value: String?): IChildLinkReference {
             return if (value == null) NullChildLinkReference else UnclassifiedChildLinkReference(value)
         }
         fun fromName(value: String): IChildLinkReference = ChildLinkReferenceByName(value)
-        fun fromUID(value: String): IChildLinkReference = ChildLinkReferenceByUID(value)
-        fun fromIdAndName(id: String, name: String): IChildLinkReference = ChildLinkReferenceByIdAndName(id, name)
+        fun fromId(value: String): IChildLinkReference = ChildLinkReferenceByUID(value)
+        fun fromIdAndName(id: String?, name: String?): IChildLinkReference{
+            return if (id == null) {
+                if (name == null) {
+                    throw IllegalArgumentException("Both 'id' and 'name' are null")
+                } else {
+                    ChildLinkReferenceByName(name)
+                }
+            } else {
+                if (name == null) {
+                    ChildLinkReferenceByUID(id)
+                } else {
+                    ChildLinkReferenceByIdAndName(id, name)
+                }
+            }
+        }
     }
 }
 
 @Serializable
 sealed class AbstractChildLinkReference : AbstractRoleReference(), IChildLinkReference, IChildLink {
-    override fun getConcept(): IConcept = throw UnsupportedOperationException()
     override fun getUID(): String = throw UnsupportedOperationException()
     override fun getSimpleName(): String = throw UnsupportedOperationException()
+    override val childConcept: IConcept get() = throw UnsupportedOperationException()
+    override fun getConcept(): IConcept = throw UnsupportedOperationException()
+    override val isMultiple: Boolean get() = throw UnsupportedOperationException()
     override val isOptional: Boolean get() = throw UnsupportedOperationException()
     override val targetConcept: IConcept get() = throw UnsupportedOperationException()
-    override val childConcept: IConcept get() = throw UnsupportedOperationException()
-    override val isMultiple: Boolean get() = throw UnsupportedOperationException()
+    override fun toLegacy(): IChildLink = this
+    override fun toReference(): IChildLinkReference = this
 }
 
 @Serializable
 object NullChildLinkReference : AbstractChildLinkReference() {
     override fun getIdOrName(): String {
-        throw NullPointerException("link is null")
+        throw NullPointerException("link is a NullChildLinkReference")
     }
 
     override fun getNameOrId(): String {
-        throw NullPointerException("link is null")
+        throw NullPointerException("link is a NullChildLinkReference")
     }
+
+    override fun getIdOrNameOrNull(): String? = null
+
+    override fun getNameOrIdOrNull(): String? = null
 }
 
 @Serializable
@@ -126,8 +149,8 @@ data class ChildLinkFromName(override val name: String) : LinkFromName(), IChild
         get() = throw UnsupportedOperationException()
     override val childConcept: IConcept
         get() = throw UnsupportedOperationException()
-    override fun getIdOrName(): String = name
-    override fun getNameOrId(): String = name
+
+    override fun toReference(): IChildLinkReference = UnclassifiedChildLinkReference(name)
 }
 
 @Deprecated("Use NullChildLinkReference")
@@ -154,11 +177,5 @@ object NullChildLink : IChildLink {
     override val isOptional: Boolean
         get() = true
 
-    override fun getIdOrName(): String {
-        throw UnsupportedOperationException()
-    }
-
-    override fun getNameOrId(): String {
-        throw UnsupportedOperationException()
-    }
+    override fun toReference(): IChildLinkReference = NullChildLinkReference
 }

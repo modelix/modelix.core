@@ -21,25 +21,42 @@ import kotlinx.serialization.Serializable
  * Representation of a non-containment reference link between [IConcept]s.
  */
 @Deprecated("Use IReferenceLinkReference or IReferenceLinkDefinition")
-interface IReferenceLink : ILink, IReferenceLinkReference {
+interface IReferenceLink : ILink {
+
+    override fun toReference(): IReferenceLinkReference
+
     companion object {
         fun fromName(name: String): IReferenceLink = ReferenceLinkFromName(name)
     }
 }
 
-@Deprecated("For compatibility with methods that still require an IReferenceLink instead of just an IReferenceLinkReference")
-fun IReferenceLinkReference.toLink() = this as IReferenceLink
-
 @Serializable
 sealed interface IReferenceLinkReference : IRoleReference {
+
+    override fun toLegacy(): IReferenceLink
+
     companion object {
         /**
          * Can be a name or UID or anything else. INode will decide how to resolve it.
          */
-        fun fromString(value: String): IReferenceLinkReference = UnclassifiedReferenceLinkReference(value)
+        fun fromUnclassifiedString(value: String): IReferenceLinkReference = UnclassifiedReferenceLinkReference(value)
         fun fromName(value: String): IReferenceLinkReference = ReferenceLinkReferenceByName(value)
-        fun fromUID(value: String): IReferenceLinkReference = ReferenceLinkReferenceByUID(value)
-        fun fromIdAndName(id: String, name: String): IReferenceLinkReference = ReferenceLinkReferenceByIdAndName(id, name)
+        fun fromId(value: String): IReferenceLinkReference = ReferenceLinkReferenceByUID(value)
+        fun fromIdAndName(id: String?, name: String?): IReferenceLinkReference {
+            return if (id == null) {
+                if (name == null) {
+                    throw IllegalArgumentException("Both 'id' and 'name' are null")
+                } else {
+                    ReferenceLinkReferenceByName(name)
+                }
+            } else {
+                if (name == null) {
+                    ReferenceLinkReferenceByUID(id)
+                } else {
+                    ReferenceLinkReferenceByIdAndName(id, name)
+                }
+            }
+        }
     }
 }
 
@@ -50,6 +67,8 @@ sealed class AbstractReferenceLinkReference : AbstractRoleReference(), IReferenc
     override fun getSimpleName(): String = throw UnsupportedOperationException()
     override val isOptional: Boolean get() = throw UnsupportedOperationException()
     override val targetConcept: IConcept get() = throw UnsupportedOperationException()
+    override fun toLegacy(): IReferenceLink = this
+    override fun toReference(): IReferenceLinkReference = this
 }
 
 @Serializable
@@ -82,6 +101,5 @@ data class ReferenceLinkReferenceByIdAndName(val uid: String, override val name:
 }
 
 data class ReferenceLinkFromName(override val name: String) : LinkFromName(), IReferenceLink {
-    override fun getIdOrName(): String = name
-    override fun getNameOrId(): String = name
+    override fun toReference(): IReferenceLinkReference = UnclassifiedReferenceLinkReference(name)
 }

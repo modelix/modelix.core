@@ -8,7 +8,7 @@ import org.modelix.kotlin.utils.ContextValue
  * It can either be an [IProperty] or an [ILink].
  */
 @Deprecated("Use IRoleReference or IRoleDefinition")
-interface IRole : IRoleReference {
+interface IRole {
     /**
      * Returns the concept this role belongs to.
      *
@@ -21,14 +21,14 @@ interface IRole : IRoleReference {
      *
      * @return uid
      */
-    override fun getUID(): String
+    fun getUID(): String
 
     /**
      * Returns the unqualified name of this role.
      *
      * @return simple name
      */
-    override fun getSimpleName(): String
+    fun getSimpleName(): String
 
     @Deprecated("Use getSimpleName() when showing it to the user or when accessing the model use the INode functions that accept an IRole or use IRole.key(...)")
     val name: String get() = RoleAccessContext.getKey(this)
@@ -39,6 +39,8 @@ interface IRole : IRoleReference {
      * @return true if this role's value is optional, false otherwise
      */
     val isOptional: Boolean
+
+    fun toReference(): IRoleReference
 }
 
 @Serializable
@@ -55,6 +57,9 @@ sealed interface IRoleReference {
      * Get whichever is available, but prefer the UID.
      */
     fun getIdOrName(): String
+
+    @Deprecated("use IRoleReference or IRoleDefinition instead of IRole")
+    fun toLegacy(): IRole
 }
 
 @Serializable
@@ -73,11 +78,9 @@ sealed interface IRoleReferenceByUID : IRoleReference {
 }
 
 @Serializable
-abstract class AbstractRoleReference : IRoleReference, IRole {
-    override fun getConcept(): IConcept = throw UnsupportedOperationException()
+abstract class AbstractRoleReference : IRoleReference {
     override fun getUID(): String = throw UnsupportedOperationException()
     override fun getSimpleName(): String = throw UnsupportedOperationException()
-    override val isOptional: Boolean get() = throw UnsupportedOperationException()
 }
 
 @Deprecated("Will be removed after all usages of IRole.name are migrated.")

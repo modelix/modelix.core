@@ -242,15 +242,31 @@ interface INode {
     // </editor-fold>
 
     // <editor-fold desc="flow API">
+    @Deprecated("use IAsyncNode")
     fun getParentAsFlow(): Flow<INode> = flowOf(parent).filterNotNull()
+
+    @Deprecated("use IAsyncNode")
     fun getPropertyValueAsFlow(role: IProperty): Flow<String?> = flowOf(getPropertyValue(role))
+
+    @Deprecated("use IAsyncNode")
     fun getAllChildrenAsFlow(): Flow<INode> = allChildren.asFlow()
+
+    @Deprecated("use IAsyncNode")
     fun getAllReferenceTargetsAsFlow(): Flow<Pair<IReferenceLink, INode>> = getAllReferenceTargets().asFlow()
+
+    @Deprecated("use IAsyncNode")
     fun getAllReferenceTargetRefsAsFlow(): Flow<Pair<IReferenceLink, INodeReference>> = getAllReferenceTargetRefs().asFlow()
+
+    @Deprecated("use IAsyncNode")
     fun getChildrenAsFlow(role: IChildLink): Flow<INode> = getChildren(role).asFlow()
+
+    @Deprecated("use IAsyncNode")
     fun getReferenceTargetAsFlow(role: IReferenceLink): Flow<INode> = flowOf(getReferenceTarget(role)).filterNotNull()
+
+    @Deprecated("use IAsyncNode")
     fun getReferenceTargetRefAsFlow(role: IReferenceLink): Flow<INodeReference> = flowOf(getReferenceTargetRef(role)).filterNotNull()
 
+    @Deprecated("use IAsyncNode")
     fun getDescendantsAsFlow(includeSelf: Boolean = false): Flow<INode> {
         return if (includeSelf) {
             flowOf(flowOf(this), getDescendantsAsFlow(false)).flattenConcat()
@@ -313,7 +329,7 @@ interface IReplaceableNode : INode {
 
 @Deprecated("Use .key(INode), .key(IBranch), .key(ITransaction) or .key(ITree)")
 fun IRole.key(): String = RoleAccessContext.getKey(this)
-fun IRole.key(node: INode): String = if (node.usesRoleIds()) getIdOrName() else getNameOrId()
+fun IRole.key(node: INode): String = toReference().key(node)
 fun IRoleReference.key(node: INode): String = if (node.usesRoleIds()) getIdOrName() else getNameOrId()
 fun IChildLink.key(node: INode): String? = when (this) {
     is NullChildLink -> null

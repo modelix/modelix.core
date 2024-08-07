@@ -28,11 +28,14 @@ import org.modelix.model.api.IRoleReferenceByUID
 import org.modelix.model.api.IUnclassifiedRoleReference
 import org.modelix.model.api.NullChildLinkReference
 import org.modelix.model.api.PNodeReference
+import org.modelix.model.api.async.IAsyncTree
+import org.modelix.model.api.async.IAsyncTreeChangeVisitor
 import org.modelix.model.api.async.IAsyncValue
 import org.modelix.model.api.async.checkNotNull
 import org.modelix.model.api.async.flatMapBoth
 import org.modelix.model.api.async.mapBoth
 import org.modelix.model.api.async.mapList
+import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.persistent.CPHamtNode
@@ -41,18 +44,18 @@ import org.modelix.model.persistent.CPNodeRef
 import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.IKVValue
 
-class AsyncTree(private val treeData: CPTree, private val bulkQuery: IBulkQuery) : IAsyncTree {
+class AsyncTree(private val treeData: () -> CPTree, private val bulkQuery: () -> IBulkQuery) : IAsyncTree {
 
-    private val nodesMap: KVEntryReference<CPHamtNode> = treeData.idToHash
+    private val nodesMap: KVEntryReference<CPHamtNode> = treeData().idToHash
 
-    private fun <T : IKVValue> KVEntryReference<T>.query(): IAsyncValue<T> = bulkQuery.queryNotNull(this)
-    private fun <T : IKVValue> KVEntryReference<T>.tryQuery(): IAsyncValue<T?> = bulkQuery.query(this)
+    private fun <T : IKVValue> KVEntryReference<T>.query(): IAsyncValue<T> = bulkQuery().queryNotNull(this)
+    private fun <T : IKVValue> KVEntryReference<T>.tryQuery(): IAsyncValue<T?> = bulkQuery().query(this)
 
     private fun getNode(id: Long): IAsyncValue<CPNode> = tryGetNodeRef(id)
         .checkNotNull { "Node ${id.toString(16)} not found in $nodesMap" }
         .flatMap { it.query() }
 
-    private fun tryGetNodeRef(id: Long): IAsyncValue<KVEntryReference<CPNode>?> = nodesMap.query().flatMap { it.get(id, bulkQuery) }
+    private fun tryGetNodeRef(id: Long): IAsyncValue<KVEntryReference<CPNode>?> = nodesMap.query().flatMap { it.get(id, bulkQuery()) }
 
     override fun containsNode(nodeId: Long): IAsyncValue<Boolean> {
         return tryGetNodeRef(nodeId).map { it != null }
@@ -60,7 +63,7 @@ class AsyncTree(private val treeData: CPTree, private val bulkQuery: IBulkQuery)
 
     override fun visitChanges(oldVersion: IAsyncTree, visitor: IAsyncTreeChangeVisitor): IAsyncValue<Unit> {
         require(oldVersion is AsyncTree)
-        require(oldVersion.bulkQuery == bulkQuery) { "Both trees should operate with the same IBulkQuery" }
+        require(oldVersion.bulkQuery() == bulkQuery()) { "Both trees should operate with the same IBulkQuery" }
         if (nodesMap == oldVersion.nodesMap) return IAsyncValue.UNIT
         return (nodesMap.query() to oldVersion.nodesMap.query()).flatMapBoth { newMap, oldMap ->
             visitChanges(newMap, oldMap, visitor)
@@ -150,12 +153,12 @@ class AsyncTree(private val treeData: CPTree, private val bulkQuery: IBulkQuery)
                     }
                 }
             },
-            bulkQuery,
+            bulkQuery(),
         )
     }
 
-    override fun getConceptReference(nodeId: Long): IAsyncValue<ConceptReference?> {
-        return getNode(nodeId).map { it.concept?.let { ConceptReference(it) } }
+    override fun getConceptReference(nodeId: Long): IAsyncValue<ConceptReference> {
+        return getNode(nodeId).map { ConceptReference(it.concept ?: NullConcept.getUID()) }
     }
 
     override fun getParent(nodeId: Long): IAsyncValue<Long> {
@@ -166,7 +169,7 @@ class AsyncTree(private val treeData: CPTree, private val bulkQuery: IBulkQuery)
         return getNode(nodeId).map { it.roleInParent }.map {
             when {
                 it == null -> NullChildLinkReference
-                treeData.usesRoleIds -> IChildLinkReference.fromUID(it)
+                treeData().usesRoleIds -> IChildLinkReference.fromId(it)
                 else -> IChildLinkReference.fromName(it)
             }
         }
@@ -181,7 +184,7 @@ class AsyncTree(private val treeData: CPTree, private val bulkQuery: IBulkQuery)
     private fun CPNodeRef.convertReference(): INodeReference {
         val targetRef = this
         return when {
-            targetRef.isLocal -> PNodeReference(targetRef.elementId, treeData.id)
+            targetRef.isLocal -> PNodeReference(targetRef.elementId, treeData().id)
             targetRef is CPNodeRef.ForeignRef -> org.modelix.model.api.INodeReferenceSerializer.deserialize(targetRef.serializedRef)
             else -> throw UnsupportedOperationException("Unsupported reference: $targetRef")
         }
@@ -210,7 +213,7 @@ class AsyncTree(private val treeData: CPTree, private val bulkQuery: IBulkQuery)
     override fun getAllReferenceTargetRefs(sourceId: Long): IAsyncValue<List<Pair<IReferenceLinkReference, INodeReference>>> {
         return getNode(sourceId).map { data ->
             data.referenceRoles.mapIndexed { index, role ->
-                val link = if (treeData.usesRoleIds) IReferenceLinkReference.fromUID(role) else IReferenceLinkReference.fromUID(role)
+                val link = if (treeData().usesRoleIds) IReferenceLinkReference.fromId(role) else IReferenceLinkReference.fromId(role)
                 link to data.referenceTargets[index].convertReference()
             }
         }
@@ -235,7 +238,7 @@ class AsyncTree(private val treeData: CPTree, private val bulkQuery: IBulkQuery)
     private fun IChildLinkReference.key() = if (this is NullChildLinkReference) null else getRoleKey(this)
 
     fun getRoleKey(role: IRoleReference): String {
-        if (treeData.usesRoleIds) {
+        if (treeData().usesRoleIds) {
             return when (role) {
                 is IRoleReferenceByName -> throw IllegalArgumentException("ID needed, but was $role")
                 is IRoleReferenceByUID -> role.getUID()

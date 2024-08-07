@@ -15,6 +15,7 @@
 
 package org.modelix.model.lazy
 
+import org.modelix.kotlin.utils.ContextValue
 import org.modelix.model.api.async.IAsyncValue
 import org.modelix.model.persistent.IKVValue
 
@@ -24,6 +25,10 @@ interface IBulkQuery {
     fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IAsyncValue<O>): IAsyncValue<List<O>>
     fun <T> constant(value: T): IAsyncValue<T>
     fun <T : IKVValue> query(hash: KVEntryReference<T>): IAsyncValue<T?>
+
+    companion object {
+        val CONTEXT_QUERY = ContextValue<IBulkQuery>()
+    }
 }
 
 open class BulkQueryConfiguration {

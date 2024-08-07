@@ -22,11 +22,14 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flowOf
+import org.modelix.model.api.async.IAsyncTree
 
 /**
  * Consists of [INode]s.
  */
 interface ITree {
+    fun asAsyncTree(): IAsyncTree
+
     /**
      * Checks whether this tree uses uids or names for roles.
      *

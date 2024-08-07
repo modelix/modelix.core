@@ -44,8 +44,7 @@ class ReferenceTraversalStep(val link: IReferenceLinkReference) : MonoTransformi
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
         return input.flatMapConcat {
             it.value.asAsyncNode().getReferenceTarget(link).asFlow().filterNotNull().map { it.asNode() }
-        }
-            .asStepFlow(this)
+        }.asStepFlow(this)
     }
 
     override fun canBeEmpty(): Boolean = true
@@ -60,9 +59,9 @@ class ReferenceTraversalStep(val link: IReferenceLinkReference) : MonoTransformi
 
     @Serializable
     @SerialName("untyped.referenceTarget")
-    class Descriptor(val role: String, val link: IReferenceLinkReference?) : StepDescriptor() {
+    class Descriptor(val role: String, val link: IReferenceLinkReference? = null) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
-            return ReferenceTraversalStep(link ?: IReferenceLinkReference.fromString(role))
+            return ReferenceTraversalStep(link ?: IReferenceLinkReference.fromUnclassifiedString(role))
         }
     }
 
@@ -76,13 +75,13 @@ fun IMonoStep<INode>.referenceOrNull(role: IReferenceLinkReference): IMonoStep<I
 fun IFluxStep<INode>.referenceOrNull(role: IReferenceLinkReference): IFluxStep<INode?> = map { it.referenceOrNull(role) }
 
 @Deprecated("provide an IReferenceLinkReference")
-fun IMonoStep<INode>.reference(role: String) = reference(IReferenceLinkReference.fromString(role))
+fun IMonoStep<INode>.reference(role: String) = reference(IReferenceLinkReference.fromUnclassifiedString(role))
 
 @Deprecated("provide an IReferenceLinkReference")
-fun IFluxStep<INode>.reference(role: String) = reference(IReferenceLinkReference.fromString(role))
+fun IFluxStep<INode>.reference(role: String) = reference(IReferenceLinkReference.fromUnclassifiedString(role))
 
 @Deprecated("provide an IReferenceLinkReference")
-fun IMonoStep<INode>.referenceOrNull(role: String): IMonoStep<INode?> = referenceOrNull(IReferenceLinkReference.fromString(role))
+fun IMonoStep<INode>.referenceOrNull(role: String): IMonoStep<INode?> = referenceOrNull(IReferenceLinkReference.fromUnclassifiedString(role))
 
 @Deprecated("provide an IReferenceLinkReference")
-fun IFluxStep<INode>.referenceOrNull(role: String): IFluxStep<INode?> = referenceOrNull(IReferenceLinkReference.fromString(role))
+fun IFluxStep<INode>.referenceOrNull(role: String): IFluxStep<INode?> = referenceOrNull(IReferenceLinkReference.fromUnclassifiedString(role))

@@ -33,8 +33,5 @@ class SimpleReferenceLink
     }
 
     override fun getSimpleName(): String = simpleName
-
-    override fun getIdOrName(): String = uid ?: simpleName
-
-    override fun getNameOrId(): String = simpleName
+    override fun toReference(): IReferenceLinkReference = IReferenceLinkReference.fromIdAndName(uid, simpleName)
 }

@@ -9,7 +9,6 @@ import org.modelix.model.api.PBranch
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.deepUnwrapNode
-import org.modelix.model.async.PNodeAdapterWithAsyncSupport
 import org.modelix.model.client.IModelClient
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.BranchReference
@@ -28,7 +27,7 @@ object ModelFacade {
     }
 
     fun getRootNode(branch: IBranch): INode {
-        return PNodeAdapterWithAsyncSupport(ITree.ROOT_ID, branch)
+        return PNodeAdapter(ITree.ROOT_ID, branch)
     }
 
 //    fun connectToServer(url: String): IModelClient {
@@ -57,7 +56,7 @@ object ModelFacade {
     fun toLocalBranch(tree: ITree): IBranch = TreePointer(tree, IdGenerator.getInstance(1))
 
     fun toNode(tree: ITree): INode {
-        return PNodeAdapterWithAsyncSupport(ITree.ROOT_ID, toLocalBranch(tree))
+        return PNodeAdapter(ITree.ROOT_ID, toLocalBranch(tree))
     }
 
     fun <T> readNode(node: INode, body: () -> T): T {

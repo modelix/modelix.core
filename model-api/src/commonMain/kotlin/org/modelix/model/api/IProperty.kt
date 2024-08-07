@@ -21,7 +21,10 @@ import kotlinx.serialization.Serializable
  * Representation of a property within an [IConcept].
  */
 @Deprecated("Use IPropertyReference or IPropertyDefinition")
-interface IProperty : IRole, IPropertyReference {
+interface IProperty : IRole {
+
+    override fun toReference(): IPropertyReference
+
     companion object {
         fun fromName(name: String): IProperty = PropertyFromName(name)
     }
@@ -29,14 +32,31 @@ interface IProperty : IRole, IPropertyReference {
 
 @Serializable
 sealed interface IPropertyReference : IRoleReference {
+
+    override fun toLegacy(): IProperty
+
     companion object {
         /**
          * Can be a name or UID or anything else. INode will decide how to resolve it.
          */
-        fun fromString(value: String): IPropertyReference = UnclassifiedPropertyReference(value)
+        fun fromUnclassifiedString(value: String): IPropertyReference = UnclassifiedPropertyReference(value)
         fun fromName(value: String): IPropertyReference = PropertyReferenceByName(value)
-        fun fromUID(value: String): IPropertyReference = PropertyReferenceByUID(value)
-        fun fromIdAndName(id: String, name: String): IPropertyReference = PropertyReferenceByIdAndName(id, name)
+        fun fromId(value: String): IPropertyReference = PropertyReferenceByUID(value)
+        fun fromIdAndName(id: String?, name: String?): IPropertyReference {
+            return if (id == null) {
+                if (name == null) {
+                    throw IllegalArgumentException("Both 'id' and 'name' are null")
+                } else {
+                    PropertyReferenceByName(name)
+                }
+            } else {
+                if (name == null) {
+                    PropertyReferenceByUID(id)
+                } else {
+                    PropertyReferenceByIdAndName(id, name)
+                }
+            }
+        }
     }
 }
 
@@ -49,6 +69,8 @@ sealed class AbstractPropertyReference : AbstractRoleReference(), IPropertyRefer
     override fun getUID(): String = throw UnsupportedOperationException()
     override fun getSimpleName(): String = throw UnsupportedOperationException()
     override val isOptional: Boolean get() = throw UnsupportedOperationException()
+    override fun toLegacy(): IProperty = this
+    override fun toReference(): IPropertyReference = this
 }
 
 @Serializable
@@ -87,6 +109,5 @@ data class PropertyReferenceByIdAndName(val uid: String, override val name: Stri
 data class PropertyFromName(override val name: String) : RoleFromName(), IProperty {
     override val isOptional: Boolean
         get() = throw UnsupportedOperationException()
-    override fun getIdOrName(): String = name
-    override fun getNameOrId(): String = name
+    override fun toReference(): IPropertyReference = UnclassifiedPropertyReference(name)
 }

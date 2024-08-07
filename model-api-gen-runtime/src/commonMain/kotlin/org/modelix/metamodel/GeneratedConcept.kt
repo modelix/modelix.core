@@ -203,6 +203,10 @@ class GeneratedProperty<ValueT>(
     override fun deserializeValue(serialized: String?): ValueT = serializer.deserialize(serialized)
 
     override fun getSimpleName(): String = simpleName
+
+    override fun getIdOrName(): String = uid ?: simpleName
+
+    override fun getNameOrId(): String = simpleName
 }
 fun IProperty.typed() = this as? ITypedProperty<*>
 
@@ -233,6 +237,10 @@ abstract class GeneratedChildLink<ChildNodeT : ITypedNode, ChildConceptT : IConc
     }
 
     override fun getSimpleName(): String = simpleName
+
+    override fun getIdOrName(): String = uid ?: simpleName
+
+    override fun getNameOrId(): String = simpleName
 }
 fun IChildLink.typed(): ITypedChildLink<ITypedNode> {
     return this as? ITypedChildLink<ITypedNode>
@@ -286,5 +294,9 @@ class GeneratedReferenceLink<TargetNodeT : ITypedNode, TargetConceptT : IConcept
     }
 
     override fun getSimpleName(): String = simpleName
+
+    override fun getIdOrName(): String = uid ?: simpleName
+
+    override fun getNameOrId(): String = simpleName
 }
 fun IReferenceLink.typed() = this as? ITypedReferenceLink<ITypedNode> ?: UnknownTypedReferenceLink(this)

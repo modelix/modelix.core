@@ -32,4 +32,8 @@ data class SimpleProperty
     }
 
     override fun getSimpleName(): String = simpleName
+
+    override fun getIdOrName(): String = uid ?: simpleName
+
+    override fun getNameOrId(): String = simpleName
 }

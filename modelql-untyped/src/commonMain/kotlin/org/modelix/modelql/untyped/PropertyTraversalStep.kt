@@ -20,6 +20,8 @@ import kotlinx.serialization.Serializable
 import org.modelix.model.api.INode
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.asProperty
+import org.modelix.model.api.async.asAsyncNode
+import org.modelix.model.api.async.asFlow
 import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
@@ -37,7 +39,7 @@ import org.modelix.modelql.core.stepOutputSerializer
 // TODO replace `role: String` with a more specific IPropertyReference
 class PropertyTraversalStep(val role: String) : MonoTransformingStep<INode, String?>(), IMonoStep<String?> {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<String?> {
-        return input.flatMapConcat { it.value.getPropertyValueAsFlow(IPropertyReference.fromString(role).asProperty()) }.asStepFlow(this)
+        return input.flatMapConcat { it.value.asAsyncNode().getPropertyValue(IPropertyReference.fromString(role)).asFlow() }.asStepFlow(this)
     }
 
     override fun canBeEmpty(): Boolean = getProducer().canBeEmpty()

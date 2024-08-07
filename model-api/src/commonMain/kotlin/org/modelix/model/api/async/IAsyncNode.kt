@@ -34,6 +34,10 @@ interface IAsyncNode {
     fun getAllReferenceTargets(): IAsyncValue<List<Pair<IReferenceLinkReference, IAsyncNode>>>
 }
 
+interface INodeWithAsyncSupport : INode {
+    fun getAsyncNode(): IAsyncNode
+}
+
 fun IAsyncNode.asNode(): INode {
     return when (this) {
         is NodeAsAsyncNode -> this.node
@@ -43,7 +47,7 @@ fun IAsyncNode.asNode(): INode {
 
 fun INode.asAsyncNode(): IAsyncNode {
     return when (this) {
-        is AsyncNodeAsNode -> this.node
+        is INodeWithAsyncSupport -> this.getAsyncNode()
         else -> NodeAsAsyncNode(this)
     }
 }

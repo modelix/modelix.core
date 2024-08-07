@@ -43,4 +43,8 @@ data class MPSChildLink(val link: SContainmentLinkAdapter) : IChildLink {
 
     override val isOptional: Boolean
         get() = link.isOptional
+
+    override fun getIdOrName(): String = getUID()
+
+    override fun getNameOrId(): String = getSimpleName()
 }

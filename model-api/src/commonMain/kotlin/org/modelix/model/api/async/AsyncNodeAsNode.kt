@@ -32,7 +32,9 @@ import org.modelix.model.api.toLink
 import org.modelix.model.api.toReference
 import org.modelix.model.area.IArea
 
-class AsyncNodeAsNode(val node: IAsyncNode) : INode {
+class AsyncNodeAsNode(val node: IAsyncNode) : INode, INodeWithAsyncSupport {
+    override fun getAsyncNode(): IAsyncNode = node
+
     override fun addNewChild(role: String?, index: Int, concept: IConcept?): INode {
         TODO("Not yet implemented")
     }

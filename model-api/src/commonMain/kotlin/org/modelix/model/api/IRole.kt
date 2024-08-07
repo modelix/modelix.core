@@ -44,6 +44,16 @@ interface IRole {
 sealed interface IRoleReference {
     fun getSimpleName(): String?
     fun getUID(): String?
+
+    /**
+     * Get whichever is available, but prefer the name.
+     */
+    fun getNameOrId(): String
+
+    /**
+     * Get whichever is available, but prefer the UID.
+     */
+    fun getIdOrName(): String
 }
 
 @Serializable

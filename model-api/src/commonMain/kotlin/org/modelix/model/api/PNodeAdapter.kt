@@ -61,25 +61,25 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx,
     }
 
     override fun addNewChild(role: String?, index: Int, concept: IConcept?): INode {
-        return PNodeAdapter(branch.writeTransaction.addNewChild(nodeId, role, index, concept), branch)
+        return createAdapter(branch.writeTransaction.addNewChild(nodeId, role, index, concept))
     }
 
     override fun addNewChild(role: String?, index: Int, concept: IConceptReference?): INode {
-        return PNodeAdapter(branch.writeTransaction.addNewChild(nodeId, role, index, concept), branch)
+        return createAdapter(branch.writeTransaction.addNewChild(nodeId, role, index, concept))
     }
 
     override fun addNewChildren(role: String?, index: Int, concepts: List<IConceptReference?>): List<INode> {
         return branch.writeTransaction.addNewChildren(nodeId, role, index, concepts.toTypedArray()).map {
-            PNodeAdapter(it, branch)
+            createAdapter(it)
         }
     }
 
     override fun addNewChild(role: IChildLink, index: Int, concept: IConcept?): INode {
-        return PNodeAdapter(branch.writeTransaction.addNewChild(nodeId, role.key(this), index, concept), branch)
+        return createAdapter(branch.writeTransaction.addNewChild(nodeId, role.key(this), index, concept))
     }
 
     override fun addNewChild(role: IChildLink, index: Int, concept: IConceptReference?): INode {
-        return PNodeAdapter(branch.writeTransaction.addNewChild(nodeId, role.key(this), index, concept), branch)
+        return createAdapter(branch.writeTransaction.addNewChild(nodeId, role.key(this), index, concept))
     }
 
     override fun replaceNode(concept: ConceptReference?): INode {
@@ -90,14 +90,12 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx,
     override val allChildren: Iterable<INode>
         get() {
             notifyAccess()
-            return branch.transaction.getAllChildren(nodeId)
-                .map { id: Long -> wrap(id) ?: throw RuntimeException("Unexpected null child") }
+            return branch.transaction.getAllChildren(nodeId).map { createAdapter(it) }
         }
 
     override fun getChildren(role: String?): Iterable<INode> {
         notifyAccess()
-        return branch.transaction.getChildren(nodeId, role)
-            .map { id: Long -> wrap(id) ?: throw RuntimeException("Unexpected null child") }
+        return branch.transaction.getChildren(nodeId, role).map { createAdapter(it) }
     }
 
     override val concept: IConcept?
@@ -123,7 +121,7 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx,
         get() {
             notifyAccess()
             val parent = branch.transaction.getParent(nodeId)
-            return if (parent == 0L) null else wrap(parent)
+            return createAdapterIfNot0(parent)
         }
 
     override fun getPropertyValue(role: String): String? {
@@ -137,17 +135,17 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx,
     override fun getReferenceTarget(role: String): INode? {
         notifyAccess()
         val targetRef = getReferenceTargetRef(role) ?: return null
-        return tryResolveNodeRef(targetRef)
+        return tryResolveNodeRef(targetRef)?.let { createAdapter(it) }
     }
 
     private fun tryResolveNodeRef(targetRef: INodeReference): INode? {
         return INodeResolutionScope.runWithAdditionalScope(getArea()) {
             targetRef.resolveInCurrentContext()
-        }
+        }?.let { createAdapter(it) }
     }
 
     private suspend fun resolveNodeRefInCoroutine(targetRef: INodeReference): INode {
-        return tryResolveNodeRef(targetRef) ?: throw RuntimeException("Failed to resolve node: $targetRef")
+        return (tryResolveNodeRef(targetRef) ?: throw RuntimeException("Failed to resolve node: $targetRef")).let { createAdapter(it) }
     }
 
     override fun getReferenceTargetRef(role: String): INodeReference? {
@@ -192,11 +190,11 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx,
     }
 
     override fun getAllChildrenAsFlow(): Flow<INode> {
-        return getTree().getAllChildrenAsFlow(nodeId).map { wrap(it)!! }
+        return getTree().getAllChildrenAsFlow(nodeId).map { createAdapter(it) }
     }
 
     override fun getDescendantsAsFlow(includeSelf: Boolean): Flow<INode> {
-        return getTree().getDescendantsAsFlow(nodeId, includeSelf).map { wrap(it)!! }
+        return getTree().getDescendantsAsFlow(nodeId, includeSelf).map { createAdapter(it) }
     }
 
     override fun getAllReferenceTargetsAsFlow(): Flow<Pair<IReferenceLink, INode>> {
@@ -209,11 +207,11 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx,
 
     override fun getChildrenAsFlow(role: IChildLink): Flow<INode> {
         val tree = getTree()
-        return tree.getChildrenAsFlow(nodeId, role.key(tree)).map { wrap(it)!! }
+        return tree.getChildrenAsFlow(nodeId, role.key(tree)).map { createAdapter(it) }
     }
 
     override fun getParentAsFlow(): Flow<INode> {
-        return getTree().getParentAsFlow(nodeId).map { wrap(it)!! }
+        return getTree().getParentAsFlow(nodeId).map { createAdapter(it) }
     }
 
     override fun getPropertyValueAsFlow(role: IProperty): Flow<String?> {
@@ -264,14 +262,16 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) : INode, INodeEx,
         return str
     }
 
-    private fun wrap(id: Long): INode? {
-        return Companion.wrap(id, this.branch)
+    protected open fun createAdapter(id: Long): INode {
+        return PNodeAdapter(id, branch)
     }
 
-    companion object {
-        fun wrap(id: Long, branch: IBranch): INode? {
-            return if (id == 0L) null else PNodeAdapter(id, branch)
-        }
+    protected open fun createAdapter(node: INode): INode {
+        return node
+    }
+
+    private fun createAdapterIfNot0(id: Long): INode? {
+        return if (id == 0L) null else createAdapter(id)
     }
 
     init {

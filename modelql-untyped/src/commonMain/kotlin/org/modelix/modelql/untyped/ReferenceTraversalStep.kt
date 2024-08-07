@@ -13,12 +13,17 @@
  */
 package org.modelix.modelql.untyped
 
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.modelix.model.api.INode
 import org.modelix.model.api.IReferenceLinkReference
+import org.modelix.model.api.async.asAsyncNode
+import org.modelix.model.api.async.asFlow
+import org.modelix.model.api.async.asNode
 import org.modelix.model.api.toLink
 import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
@@ -36,9 +41,10 @@ import org.modelix.modelql.core.map
 import org.modelix.modelql.core.orNull
 import org.modelix.modelql.core.stepOutputSerializer
 
-class ReferenceTraversalStep(val role: String) : MonoTransformingStep<INode, INode>(), IMonoStep<INode> {
+class ReferenceTraversalStep(val link: IReferenceLinkReference) : MonoTransformingStep<INode, INode>(), IMonoStep<INode> {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
-        return input.flatMapConcat { it.value.getReferenceTargetAsFlow(IReferenceLinkReference.fromString(role).toLink()) }
+        return input.flatMapConcat {
+            it.value.asAsyncNode().getReferenceTarget(link).asFlow().filterNotNull().map { it.asNode() } }
             .asStepFlow(this)
     }
 
@@ -50,22 +56,33 @@ class ReferenceTraversalStep(val role: String) : MonoTransformingStep<INode, INo
         return serializationContext.serializer<INode>().stepOutputSerializer(this)
     }
 
-    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor(role)
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor(link.getIdOrName(), link)
 
     @Serializable
     @SerialName("untyped.referenceTarget")
-    class Descriptor(val role: String) : StepDescriptor() {
+    class Descriptor(val role: String, val link: IReferenceLinkReference?) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
-            return ReferenceTraversalStep(role)
+            return ReferenceTraversalStep(link ?: IReferenceLinkReference.fromString(role))
         }
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.reference("$role")"""
+        return """${getProducers().single()}.reference("$link")"""
     }
 }
+fun IMonoStep<INode>.reference(role: IReferenceLinkReference) = ReferenceTraversalStep(role).connectAndDowncast(this)
+fun IFluxStep<INode>.reference(role: IReferenceLinkReference) = ReferenceTraversalStep(role).connectAndDowncast(this)
+fun IMonoStep<INode>.referenceOrNull(role: IReferenceLinkReference): IMonoStep<INode?> = reference(role).orNull()
+fun IFluxStep<INode>.referenceOrNull(role: IReferenceLinkReference): IFluxStep<INode?> = map { it.referenceOrNull(role) }
 
-fun IMonoStep<INode>.reference(role: String) = ReferenceTraversalStep(role).connectAndDowncast(this)
-fun IFluxStep<INode>.reference(role: String) = ReferenceTraversalStep(role).connectAndDowncast(this)
-fun IMonoStep<INode>.referenceOrNull(role: String): IMonoStep<INode?> = reference(role).orNull()
-fun IFluxStep<INode>.referenceOrNull(role: String): IFluxStep<INode?> = map { it.referenceOrNull(role) }
+@Deprecated("provide an IReferenceLinkReference")
+fun IMonoStep<INode>.reference(role: String) = reference(IReferenceLinkReference.fromString(role))
+
+@Deprecated("provide an IReferenceLinkReference")
+fun IFluxStep<INode>.reference(role: String) = reference(IReferenceLinkReference.fromString(role))
+
+@Deprecated("provide an IReferenceLinkReference")
+fun IMonoStep<INode>.referenceOrNull(role: String): IMonoStep<INode?> = referenceOrNull(IReferenceLinkReference.fromString(role))
+
+@Deprecated("provide an IReferenceLinkReference")
+fun IFluxStep<INode>.referenceOrNull(role: String): IFluxStep<INode?> = referenceOrNull(IReferenceLinkReference.fromString(role))

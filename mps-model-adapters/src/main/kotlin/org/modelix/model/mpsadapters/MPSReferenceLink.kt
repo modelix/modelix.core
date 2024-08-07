@@ -37,4 +37,8 @@ data class MPSReferenceLink(val link: SReferenceLinkAdapter) : IReferenceLink {
 
     override val targetConcept: IConcept
         get() = MPSConcept(link.targetConcept)
+
+    override fun getIdOrName(): String = getUID()
+
+    override fun getNameOrId(): String = getSimpleName()
 }

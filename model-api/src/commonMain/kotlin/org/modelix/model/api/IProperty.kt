@@ -44,39 +44,50 @@ sealed interface IPropertyReference : IRoleReference {
 fun IPropertyReference.asProperty() = this as IProperty
 
 @Serializable
-abstract class AbstractPropertyReference : AbstractRoleReference(), IPropertyReference, IProperty {
+sealed class AbstractPropertyReference : AbstractRoleReference(), IPropertyReference, IProperty {
     override fun getConcept(): IConcept = throw UnsupportedOperationException()
     override fun getUID(): String = throw UnsupportedOperationException()
-    override fun getSimpleName(): String = throw UnsupportedOperationException()
+    override fun getSimpleName(): String = throw UnsupportedOperationException(this::class.qualifiedName)
     override val isOptional: Boolean get() = throw UnsupportedOperationException()
 }
 
 @Serializable
 data class UnclassifiedPropertyReference(val value: String) : AbstractPropertyReference(), IUnclassifiedRoleReference {
     override fun getStringValue(): String = value
+    override fun getIdOrName(): String = value
+    override fun getNameOrId(): String = value
 }
 
 @Serializable
 data class PropertyReferenceByName(override val name: String) : AbstractPropertyReference(), IRoleReferenceByName {
     override fun getSimpleName(): String = name
+    override fun getIdOrName(): String = name
+    override fun getNameOrId(): String = name
 }
 
 @Serializable
 data class PropertyReferenceByUID(val uid: String) : AbstractPropertyReference(), IRoleReferenceByUID {
     override fun getUID(): String = uid
+    override fun getIdOrName(): String = uid
+    override fun getNameOrId(): String = uid
 }
 
 @Serializable
 data class PropertyReferenceByIdAndName(val uid: String, override val name: String) : AbstractPropertyReference(), IRoleReferenceByUID, IRoleReferenceByName {
     override fun getUID(): String = uid
     override fun getSimpleName(): String = name
+    override fun getIdOrName(): String = uid
+    override fun getNameOrId(): String = name
 }
 
 
 /**
  * Legacy. It's not guaranteed that name is actually a name. Could also be a UID.
  */
+@Deprecated("use PropertyReferenceByName")
 data class PropertyFromName(override val name: String) : RoleFromName(), IProperty {
     override val isOptional: Boolean
         get() = throw UnsupportedOperationException()
+    override fun getIdOrName(): String = name
+    override fun getNameOrId(): String = name
 }

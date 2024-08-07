@@ -20,7 +20,7 @@ import kotlinx.serialization.Serializable
 /**
  * Representation of a parent-child relationship between [IConcept]s.
  */
-interface IChildLink : ILink {
+interface IChildLink : ILink, IChildLinkReference {
     /**
      * Specifies if the parent-child relation ship is 1:n.
      */
@@ -65,11 +65,12 @@ sealed interface IChildLinkReference : IRoleReference {
         }
         fun fromName(value: String): IChildLinkReference = ChildLinkReferenceByName(value)
         fun fromUID(value: String): IChildLinkReference = ChildLinkReferenceByUID(value)
+        fun fromIdAndName(id: String, name: String): IChildLinkReference = ChildLinkReferenceByIdAndName(id, name)
     }
 }
 
 @Serializable
-abstract class AbstractChildLinkReference : AbstractRoleReference(), IChildLinkReference, IChildLink {
+sealed class AbstractChildLinkReference : AbstractRoleReference(), IChildLinkReference, IChildLink {
     override fun getConcept(): IConcept = throw UnsupportedOperationException()
     override fun getUID(): String = throw UnsupportedOperationException()
     override fun getSimpleName(): String = throw UnsupportedOperationException()
@@ -80,21 +81,43 @@ abstract class AbstractChildLinkReference : AbstractRoleReference(), IChildLinkR
 }
 
 @Serializable
-object NullChildLinkReference : AbstractChildLinkReference()
+object NullChildLinkReference : AbstractChildLinkReference() {
+    override fun getIdOrName(): String {
+        throw NullPointerException("link is null")
+    }
+
+    override fun getNameOrId(): String {
+        throw NullPointerException("link is null")
+    }
+}
 
 @Serializable
 data class UnclassifiedChildLinkReference(val value: String) : AbstractChildLinkReference(), IUnclassifiedRoleReference {
     override fun getStringValue(): String = value
+    override fun getIdOrName(): String = value
+    override fun getNameOrId(): String = value
 }
 
 @Serializable
 data class ChildLinkReferenceByName(override val name: String) : AbstractChildLinkReference(), IRoleReferenceByName {
     override fun getSimpleName(): String = name
+    override fun getIdOrName(): String = name
+    override fun getNameOrId(): String = name
 }
 
 @Serializable
 data class ChildLinkReferenceByUID(val uid: String) : AbstractChildLinkReference(), IRoleReferenceByUID {
     override fun getUID(): String = uid
+    override fun getIdOrName(): String = uid
+    override fun getNameOrId(): String = uid
+}
+
+@Serializable
+data class ChildLinkReferenceByIdAndName(val uid: String, override val name: String) : AbstractChildLinkReference(), IRoleReferenceByUID, IRoleReferenceByName {
+    override fun getUID(): String = uid
+    override fun getSimpleName(): String = name
+    override fun getIdOrName(): String = uid
+    override fun getNameOrId(): String = name
 }
 
 @Deprecated("Use ChildLinkReferenceByName")
@@ -103,6 +126,8 @@ data class ChildLinkFromName(override val name: String) : LinkFromName(), IChild
         get() = throw UnsupportedOperationException()
     override val childConcept: IConcept
         get() = throw UnsupportedOperationException()
+    override fun getIdOrName(): String = name
+    override fun getNameOrId(): String = name
 }
 
 @Deprecated("Use NullChildLinkReference")
@@ -128,4 +153,12 @@ object NullChildLink : IChildLink {
 
     override val isOptional: Boolean
         get() = true
+
+    override fun getIdOrName(): String {
+        throw UnsupportedOperationException()
+    }
+
+    override fun getNameOrId(): String {
+        throw UnsupportedOperationException()
+    }
 }

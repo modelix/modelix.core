@@ -38,11 +38,12 @@ sealed interface IReferenceLinkReference : IRoleReference {
         fun fromString(value: String): IReferenceLinkReference = UnclassifiedReferenceLinkReference(value)
         fun fromName(value: String): IReferenceLinkReference = ReferenceLinkReferenceByName(value)
         fun fromUID(value: String): IReferenceLinkReference = ReferenceLinkReferenceByUID(value)
+        fun fromIdAndName(id: String, name: String): IReferenceLinkReference = ReferenceLinkReferenceByIdAndName(id, name)
     }
 }
 
 @Serializable
-abstract class AbstractReferenceLinkReference : AbstractRoleReference(), IReferenceLinkReference, IReferenceLink {
+sealed class AbstractReferenceLinkReference : AbstractRoleReference(), IReferenceLinkReference, IReferenceLink {
     override fun getConcept(): IConcept = throw UnsupportedOperationException()
     override fun getUID(): String = throw UnsupportedOperationException()
     override fun getSimpleName(): String = throw UnsupportedOperationException()
@@ -53,16 +54,33 @@ abstract class AbstractReferenceLinkReference : AbstractRoleReference(), IRefere
 @Serializable
 data class UnclassifiedReferenceLinkReference(val value: String) : AbstractReferenceLinkReference(), IUnclassifiedRoleReference {
     override fun getStringValue(): String = value
+    override fun getIdOrName(): String = value
+    override fun getNameOrId(): String = value
 }
 
 @Serializable
 data class ReferenceLinkReferenceByName(override val name: String) : AbstractReferenceLinkReference(), IRoleReferenceByName {
     override fun getSimpleName(): String = name
+    override fun getIdOrName(): String = name
+    override fun getNameOrId(): String = name
 }
 
 @Serializable
 data class ReferenceLinkReferenceByUID(val uid: String) : AbstractReferenceLinkReference(), IRoleReferenceByUID {
     override fun getUID(): String = uid
+    override fun getIdOrName(): String = uid
+    override fun getNameOrId(): String = uid
 }
 
-data class ReferenceLinkFromName(override val name: String) : LinkFromName(), IReferenceLink
+@Serializable
+data class ReferenceLinkReferenceByIdAndName(val uid: String, override val name: String) : AbstractReferenceLinkReference(), IRoleReferenceByUID, IRoleReferenceByName {
+    override fun getUID(): String = uid
+    override fun getSimpleName(): String = name
+    override fun getIdOrName(): String = uid
+    override fun getNameOrId(): String = name
+}
+
+data class ReferenceLinkFromName(override val name: String) : LinkFromName(), IReferenceLink {
+    override fun getIdOrName(): String = name
+    override fun getNameOrId(): String = name
+}

@@ -40,12 +40,6 @@ kotlin {
                 implementation(libs.kotlin.logging)
                 implementation(libs.kotlin.coroutines.core)
                 implementation(libs.kotlin.serialization.json)
-
-//                implementation("io.ktor:ktor-client-core:$ktorVersion")
-//                implementation("io.ktor:ktor-client-cio:$ktorVersion")
-//                implementation("io.ktor:ktor-client-auth:$ktorVersion")
-//                implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
-//                implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
             }
         }
         val commonTest by getting {
@@ -63,7 +57,7 @@ kotlin {
             dependencies {
 
                 implementation(project(":authorization"))
-//                implementation(project(":model-client"))
+                implementation(project(":model-client", configuration = "jvmRuntimeElements"))
                 implementation(project(":model-server"))
                 implementation(project(":model-server-lib"))
                 implementation(libs.modelix.incremental)

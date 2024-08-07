@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2024.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.modelix.model.server.handlers
+
+package org.modelix.client.light
 
 import io.ktor.server.application.Application
 import io.ktor.server.request.host
@@ -22,8 +25,6 @@ import io.ktor.server.websocket.webSocket
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import io.ktor.websocket.send
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -55,14 +56,17 @@ import org.modelix.model.server.api.OperationData
 import org.modelix.model.server.api.SetPropertyOpData
 import org.modelix.model.server.api.SetReferenceOpData
 import org.modelix.model.server.api.VersionData
+import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.ContextScopedStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import java.util.Date
-import kotlin.collections.set
 
 private val LOG = KotlinLogging.logger {}
 
-class LightModelServer(val client: LocalModelClient, val repositoriesManager: RepositoriesManager) {
+/**
+ * Simplified fake implementation of [org.modelix.model.server.light.LightModelServer].
+ */
+class FakeLightModelServer(val client: LocalModelClient, val repositoriesManager: RepositoriesManager) {
 
     fun init(application: Application) {
         application.routing {
@@ -193,7 +197,16 @@ class LightModelServer(val client: LocalModelClient, val repositoriesManager: Re
                                         }
                                     }
                                 } catch (ex: Exception) {
-                                    send(MessageFromServer(exception = ExceptionData(RuntimeException("Failed to process message: $text", ex))).toJson())
+                                    send(
+                                        MessageFromServer(
+                                            exception = ExceptionData(
+                                                RuntimeException(
+                                                    "Failed to process message: $text",
+                                                    ex,
+                                                ),
+                                            ),
+                                        ).toJson(),
+                                    )
                                 }
                             }
                             else -> {}
@@ -364,11 +377,4 @@ class LightModelServer(val client: LocalModelClient, val repositoriesManager: Re
             node.allChildren.forEach { node2json(it, true, outputList) }
         }
     }
-}
-
-@OptIn(ExperimentalCoroutinesApi::class)
-private suspend fun <T> Channel<T>.receiveLast(): T {
-    var latest = receive()
-    while (!isEmpty) latest = receive()
-    return latest
 }

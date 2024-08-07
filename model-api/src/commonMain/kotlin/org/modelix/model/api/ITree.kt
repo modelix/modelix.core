@@ -290,4 +290,5 @@ interface ITree {
  * @return uid of the role, if the tree uses role ids, or
  *          the role name otherwise
  */
-fun IRole.key(tree: ITree): String = if (tree.usesRoleIds()) getUID() else getSimpleName()
+fun IRole.key(tree: ITree): String = toReference().key(tree)
+fun IRoleReference.key(tree: ITree): String = if (tree.usesRoleIds()) getIdOrName() else getNameOrId()

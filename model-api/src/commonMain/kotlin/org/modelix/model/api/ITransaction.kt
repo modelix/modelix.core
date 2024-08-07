@@ -137,4 +137,5 @@ interface ITransaction {
  * @return uid of the role, if the tree of the transaction uses role ids, or
  *          the role name otherwise
  */
-fun IRole.key(t: ITransaction): String = if (t.tree.usesRoleIds()) getUID() else getSimpleName()
+fun IRole.key(t: ITransaction): String = toReference().key(t)
+fun IRoleReference.key(t: ITransaction): String = if (t.tree.usesRoleIds()) getIdOrName() else getNameOrId()

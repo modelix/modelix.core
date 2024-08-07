@@ -21,14 +21,12 @@ import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.ILanguageRepository
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.INodeReferenceSerializer
-import org.modelix.model.api.IRole
 import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitor
 import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.async.IAsyncValue
-import org.modelix.model.api.tryResolve
 import org.modelix.model.async.AsyncTree
 import org.modelix.model.lazy.COWArrays.insert
 import org.modelix.model.lazy.COWArrays.remove
@@ -113,7 +111,6 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
         get() = resolveElement(ITree.ROOT_ID)
 
     override fun setProperty(nodeId: Long, role: String, value: String?): ITree {
-        checkPropertyRoleId(nodeId, role)
         var newIdToHash = nodesMap
         val newNodeData = resolveElement(nodeId)!!.withPropertyValue(role, value)
         newIdToHash = newIdToHash!!.put(newNodeData, store)
@@ -125,7 +122,6 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
     }
 
     override fun addNewChild(parentId: Long, role: String?, index: Int, childId: Long, concept: IConcept?): ITree {
-        checkChildRoleId(parentId, role)
         return addNewChild(parentId, role, index, childId, concept?.getReference())
     }
 
@@ -134,7 +130,6 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
     }
 
     override fun addNewChildren(parentId: Long, role: String?, index: Int, newIds: LongArray, concepts: Array<IConceptReference?>): ITree {
-        checkChildRoleId(parentId, role)
         for (childId in newIds) {
             if (containsNode(childId)) {
                 throw DuplicateNodeId("Node ID already exists: ${childId.toString(16)}")
@@ -229,7 +224,6 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
     }
 
     override fun setReferenceTarget(sourceId: Long, role: String, target: INodeReference?): ITree {
-        checkReferenceRoleId(sourceId, role)
         val source = resolveElement(sourceId)!!
         val refData: CPNodeRef? = when (target) {
             null -> null
@@ -351,7 +345,6 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
     }
 
     override fun getChildren(parentId: Long, role: String?): Iterable<Long> {
-        checkChildRoleId(parentId, role)
         val parent = resolveElement(parentId)
         val children = getChildren(parent!!, store.newBulkQuery()).awaitBlocking()
         return children
@@ -388,7 +381,6 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
     }
 
     override fun getProperty(nodeId: Long, role: String): String? {
-        checkPropertyRoleId(nodeId, role)
         val node = resolveElement(nodeId)
         return node!!.getPropertyValue(role)
     }
@@ -404,7 +396,6 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
     }
 
     override fun getReferenceTarget(sourceId: Long, role: String): INodeReference? {
-        checkReferenceRoleId(sourceId, role)
         val node = resolveElement(sourceId)!!
         val targetRef = node.getReferenceTarget(role)
         return when {
@@ -421,7 +412,6 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
     }
 
     override fun moveChild(targetParentId: Long, targetRole: String?, targetIndex_: Int, childId: Long): ITree {
-        checkChildRoleId(targetParentId, targetRole)
         if (childId == ITree.ROOT_ID) throw RuntimeException("Moving the root node is not allowed")
         var ancestor = targetParentId
         while (ancestor != ITree.ROOT_ID) {
@@ -640,20 +630,6 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
 
     override fun toString(): String {
         return "CLTree[$hash]"
-    }
-
-    private fun checkChildRoleId(nodeId: Long, role: String?) = checkRoleId(nodeId, role) { it.getAllChildLinks() }
-    private fun checkReferenceRoleId(nodeId: Long, role: String?) = checkRoleId(nodeId, role) { it.getAllReferenceLinks() }
-    private fun checkPropertyRoleId(nodeId: Long, role: String?) = checkRoleId(nodeId, role) { it.getAllProperties() }
-    private fun checkRoleId(nodeId: Long, role: String?, rolesGetter: (IConcept) -> Iterable<IRole>) {
-        if (role != null && usesRoleIds()) {
-            val isKnownRoleName = getConceptReference(nodeId)?.tryResolve()?.let { concept ->
-                runCatching { rolesGetter(concept).any { it.getSimpleName() == role } }.getOrNull()
-            } ?: false
-            if (isKnownRoleName) {
-                throw IllegalArgumentException("A role UID is expected, but a name was provided: $role")
-            }
-        }
     }
 
     private fun getChildren(node: CPNode, bulkQuery: IBulkQuery): IAsyncValue<List<CPNode>> {

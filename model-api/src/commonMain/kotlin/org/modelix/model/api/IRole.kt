@@ -97,9 +97,9 @@ object RoleAccessContext {
     fun getKey(role: IRole): String {
         return if (isUsingRoleIds()) {
             // Some implementations use the name to construct a UID. Avoid endless recursions.
-            runWith(false) { role.getUID() }
+            runWith(false) { role.toReference().getIdOrName() }
         } else {
-            role.getSimpleName()
+            role.toReference().getNameOrId()
         }
     }
 

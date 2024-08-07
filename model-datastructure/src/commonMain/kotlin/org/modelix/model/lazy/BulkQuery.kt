@@ -183,7 +183,7 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
             if (!done) {
                 throw RuntimeException("No value received")
             }
-            return value!!
+            return value as T
         }
 
         override fun <R> map(body: (T) -> R): IAsyncValue<R> {

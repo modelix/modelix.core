@@ -18,6 +18,8 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 import org.modelix.model.api.INode
+import org.modelix.model.api.IProperty
+import org.modelix.model.api.PropertyFromName
 import org.modelix.model.api.RoleAccessContext
 import org.modelix.modelql.core.IFluxQuery
 import org.modelix.modelql.core.IFluxStep
@@ -34,6 +36,7 @@ object UntypedModelQL {
         polymorphic(StepDescriptor::class) {
             subclass(AddNewChildNodeStep.Descriptor::class)
             subclass(AllChildrenTraversalStep.AllChildrenStepDescriptor::class)
+            subclass(AllPropertiesTraversalStep.AllPropertiesStepDescriptor::class)
             subclass(AllReferencesTraversalStep.Descriptor::class)
             subclass(ChildrenTraversalStep.ChildrenStepDescriptor::class)
             subclass(ConceptReferenceTraversalStep.Descriptor::class)
@@ -55,6 +58,9 @@ object UntypedModelQL {
             subclass(SetReferenceStep.Descriptor::class)
         }
         polymorphicDefaultSerializer(INode::class) { NodeKSerializer() }
+        polymorphic(IProperty::class) {
+            subclass(PropertyFromName::class)
+        }
     }
     val json = Json {
         serializersModule = UntypedModelQL.serializersModule

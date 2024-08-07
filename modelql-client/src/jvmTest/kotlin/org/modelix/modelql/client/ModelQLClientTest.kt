@@ -19,6 +19,7 @@ import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.withTimeout
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
+import org.modelix.model.api.IProperty
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
@@ -42,6 +43,7 @@ import org.modelix.modelql.core.zip
 import org.modelix.modelql.server.ModelQLServer
 import org.modelix.modelql.untyped.addNewChild
 import org.modelix.modelql.untyped.allChildren
+import org.modelix.modelql.untyped.allProperties
 import org.modelix.modelql.untyped.allReferences
 import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.descendants
@@ -64,6 +66,7 @@ class ModelQLClientTest {
                 branch.runWrite {
                     val module1 = rootNode.addNewChild("modules", -1, null as IConceptReference?)
                     module1.setPropertyValue("name", "abc")
+                    module1.setPropertyValue("description", "xyz")
                     val model1a = module1.addNewChild("models", -1, null as IConceptReference?)
                     model1a.setPropertyValue("name", "model1a")
                 }
@@ -93,6 +96,21 @@ class ModelQLClientTest {
             root.children("modules").property("name").toList()
         }
         assertEquals(listOf("abc"), result)
+    }
+
+    @Test
+    fun test_allProperties() = runTest { httpClient ->
+        val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
+        val result: Set<Pair<IProperty, String?>> = client.query { root ->
+            root.children("modules").allProperties().toSet()
+        }
+        assertEquals(
+            setOf(
+                IProperty.fromName("name") to "abc",
+                IProperty.fromName("description") to "xyz",
+            ),
+            result,
+        )
     }
 
     @Test

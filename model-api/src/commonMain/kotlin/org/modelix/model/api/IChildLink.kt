@@ -68,7 +68,7 @@ sealed interface IChildLinkReference : IRoleReference {
         }
         fun fromName(value: String): IChildLinkReference = ChildLinkReferenceByName(value)
         fun fromId(value: String): IChildLinkReference = ChildLinkReferenceByUID(value)
-        fun fromIdAndName(id: String?, name: String?): IChildLinkReference{
+        fun fromIdAndName(id: String?, name: String?): IChildLinkReference {
             return if (id == null) {
                 if (name == null) {
                     throw IllegalArgumentException("Both 'id' and 'name' are null")

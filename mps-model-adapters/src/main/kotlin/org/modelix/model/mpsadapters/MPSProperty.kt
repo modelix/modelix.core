@@ -15,7 +15,6 @@ package org.modelix.model.mpsadapters
 
 import jetbrains.mps.smodel.adapter.structure.property.SPropertyAdapter
 import org.jetbrains.mps.openapi.language.SProperty
-import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IPropertyReference

@@ -27,7 +27,6 @@ import org.modelix.model.api.ITreeChangeVisitor
 import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
-import org.modelix.model.api.async.IAsyncTree
 import org.modelix.model.api.async.IAsyncValue
 import org.modelix.model.api.tryResolve
 import org.modelix.model.async.AsyncTree
@@ -61,7 +60,7 @@ fun createNewTreeData(
     return CPTree(
         repositoryId.id,
         KVEntryReference<CPHamtNode>(CPHamtInternal.createEmpty().put(root.id, KVEntryReference<CPNode>(root), store)!!),
-        useRoleIds
+        useRoleIds,
     )
 }
 
@@ -71,7 +70,7 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
 
     constructor(data: CPTree?, repositoryId: RepositoryId?, store: IDeserializingKeyValueStore, useRoleIds: Boolean = false) : this(
         data ?: createNewTreeData(store, repositoryId ?: RepositoryId.random(), useRoleIds),
-        store
+        store,
     )
 
     fun withNewNodesMap(newMap: CPHamtNode) = CLTree(CPTree(data.id, KVEntryReference(newMap), data.usesRoleIds), store)

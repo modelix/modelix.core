@@ -62,7 +62,6 @@ class SetReferenceStep(val link: IReferenceLinkReference) :
     }
 }
 
-
 fun IMonoStep<INode>.setReference(role: IReferenceLinkReference, target: IMonoStep<INode?>): IMonoStep<INode> {
     return SetReferenceStep(role).also {
         connect(it)

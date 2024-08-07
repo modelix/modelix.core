@@ -21,10 +21,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INode
-import org.modelix.model.api.async.asAsync
 import org.modelix.model.api.async.asAsyncNode
 import org.modelix.model.api.async.asFlattenedFlow
-import org.modelix.model.api.resolveChildLinkOrFallback
 import org.modelix.modelql.core.FluxTransformingStep
 import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep

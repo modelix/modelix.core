@@ -15,7 +15,6 @@ package org.modelix.model.mpsadapters
 
 import jetbrains.mps.smodel.adapter.structure.ref.SReferenceLinkAdapter
 import org.jetbrains.mps.openapi.language.SReferenceLink
-import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.IReferenceLinkReference

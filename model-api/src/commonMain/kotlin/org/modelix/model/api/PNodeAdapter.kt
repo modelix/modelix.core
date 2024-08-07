@@ -20,13 +20,12 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import org.modelix.model.api.async.AsyncNode
 import org.modelix.model.api.async.IAsyncNode
-import org.modelix.model.api.async.IAsyncTree
 import org.modelix.model.api.async.INodeWithAsyncSupport
 import org.modelix.model.api.async.asAsyncNode
 import org.modelix.model.area.PArea
 
-open class PNodeAdapter(val nodeId: Long, val branch: IBranch)
-    : INode,
+open class PNodeAdapter(val nodeId: Long, val branch: IBranch) :
+    INode,
     INodeEx,
     IReplaceableNode,
     INodeWithAsyncSupport {

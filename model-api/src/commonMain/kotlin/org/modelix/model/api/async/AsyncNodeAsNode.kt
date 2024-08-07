@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.model.async
+package org.modelix.model.api.async
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
@@ -28,7 +28,8 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
-import org.modelix.model.api.asLink
+import org.modelix.model.api.toLink
+import org.modelix.model.api.toReference
 import org.modelix.model.area.IArea
 
 class AsyncNodeAsNode(val node: IAsyncNode) : INode {
@@ -128,7 +129,7 @@ class AsyncNodeAsNode(val node: IAsyncNode) : INode {
 
     override fun getAllReferenceTargetRefsAsFlow(): Flow<Pair<IReferenceLink, INodeReference>> {
         return node.getAllReferenceTargetRefs().asFlow().flatMapConcat { it.asFlow() }
-            .map { it.first.asLink() to it.second }
+            .map { it.first.toLink() to it.second }
     }
 
     override fun getAllReferenceTargets(): List<Pair<IReferenceLink, INode>> {
@@ -137,7 +138,7 @@ class AsyncNodeAsNode(val node: IAsyncNode) : INode {
 
     override fun getAllReferenceTargetsAsFlow(): Flow<Pair<IReferenceLink, INode>> {
         return node.getAllReferenceTargets().asFlattenedFlow()
-            .map { it.first.asLink() to it.second.asNode() }
+            .map { it.first.toLink() to it.second.asNode() }
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
@@ -145,7 +146,7 @@ class AsyncNodeAsNode(val node: IAsyncNode) : INode {
     }
 
     override fun getChildrenAsFlow(role: IChildLink): Flow<INode> {
-        return node.getChildren(role).asFlattenedFlow().map { it.asNode() }
+        return node.getChildren(role.toReference()).asFlattenedFlow().map { it.asNode() }
     }
 
     override fun getContainmentLink(): IChildLink? {

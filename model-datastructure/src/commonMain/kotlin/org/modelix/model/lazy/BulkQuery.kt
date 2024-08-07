@@ -15,7 +15,7 @@
 
 package org.modelix.model.lazy
 
-import org.modelix.model.async.IAsyncValue
+import org.modelix.model.api.async.IAsyncValue
 import org.modelix.model.persistent.IKVValue
 
 /**

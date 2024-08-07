@@ -1,5 +1,6 @@
 package org.modelix.model.api
 
+import kotlinx.serialization.Serializable
 import org.modelix.kotlin.utils.ContextValue
 
 /**
@@ -37,6 +38,35 @@ interface IRole {
      * @return true if this role's value is optional, false otherwise
      */
     val isOptional: Boolean
+}
+
+@Serializable
+sealed interface IRoleReference {
+    fun getSimpleName(): String?
+    fun getUID(): String?
+}
+
+@Serializable
+sealed interface IUnclassifiedRoleReference : IRoleReference {
+    fun getStringValue(): String
+}
+
+@Serializable
+sealed interface IRoleReferenceByName : IRoleReference {
+    override fun getSimpleName(): String
+}
+
+@Serializable
+sealed interface IRoleReferenceByUID : IRoleReference {
+    override fun getUID(): String
+}
+
+@Serializable
+abstract class AbstractRoleReference : IRoleReference, IRole {
+    override fun getConcept(): IConcept = throw UnsupportedOperationException()
+    override fun getUID(): String = throw UnsupportedOperationException()
+    override fun getSimpleName(): String = throw UnsupportedOperationException()
+    override val isOptional: Boolean get() = throw UnsupportedOperationException()
 }
 
 @Deprecated("Will be removed after all usages of IRole.name are migrated.")

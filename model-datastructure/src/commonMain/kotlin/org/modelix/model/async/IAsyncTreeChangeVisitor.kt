@@ -16,6 +16,8 @@
 
 package org.modelix.model.async
 
+import org.modelix.model.api.async.IAsyncValue
+
 /**
  * Returning IAsyncValue<Unit> allows the event handler to execute further queries and guarantees that they are executed
  * before the event is considered as being fully processed.

@@ -15,6 +15,8 @@
 
 package org.modelix.model.api
 
+import kotlinx.serialization.Serializable
+
 /**
  * Representation of a non-containment reference link between [IConcept]s.
  */
@@ -25,13 +27,10 @@ interface IReferenceLink : ILink, IReferenceLinkReference {
 }
 
 @Deprecated("For compatibility with methods that still require an IReferenceLink instead of just an IReferenceLinkReference")
-fun IReferenceLinkReference.asLink() = this as IReferenceLink
+fun IReferenceLinkReference.toLink() = this as IReferenceLink
 
-interface IReferenceLinkReference {
-
-    fun getSimpleName(): String?
-    fun getUID(): String?
-
+@Serializable
+sealed interface IReferenceLinkReference : IRoleReference {
     companion object {
         /**
          * Can be a name or UID or anything else. INode will decide how to resolve it.
@@ -42,7 +41,8 @@ interface IReferenceLinkReference {
     }
 }
 
-abstract class AbstractReferenceLinkReference : IReferenceLinkReference, IReferenceLink {
+@Serializable
+abstract class AbstractReferenceLinkReference : AbstractRoleReference(), IReferenceLinkReference, IReferenceLink {
     override fun getConcept(): IConcept = throw UnsupportedOperationException()
     override fun getUID(): String = throw UnsupportedOperationException()
     override fun getSimpleName(): String = throw UnsupportedOperationException()
@@ -50,11 +50,18 @@ abstract class AbstractReferenceLinkReference : IReferenceLinkReference, IRefere
     override val targetConcept: IConcept get() = throw UnsupportedOperationException()
 }
 
-data class UnclassifiedReferenceLinkReference(val value: String) : AbstractReferenceLinkReference()
-data class ReferenceLinkReferenceByName(override val name: String) : AbstractReferenceLinkReference() {
+@Serializable
+data class UnclassifiedReferenceLinkReference(val value: String) : AbstractReferenceLinkReference(), IUnclassifiedRoleReference {
+    override fun getStringValue(): String = value
+}
+
+@Serializable
+data class ReferenceLinkReferenceByName(override val name: String) : AbstractReferenceLinkReference(), IRoleReferenceByName {
     override fun getSimpleName(): String = name
 }
-data class ReferenceLinkReferenceByUID(val uid: String) : AbstractReferenceLinkReference() {
+
+@Serializable
+data class ReferenceLinkReferenceByUID(val uid: String) : AbstractReferenceLinkReference(), IRoleReferenceByUID {
     override fun getUID(): String = uid
 }
 

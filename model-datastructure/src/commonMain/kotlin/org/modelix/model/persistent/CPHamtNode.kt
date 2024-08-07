@@ -15,7 +15,7 @@
 
 package org.modelix.model.persistent
 
-import org.modelix.model.async.IAsyncValue
+import org.modelix.model.api.async.IAsyncValue
 import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.KVEntryReference

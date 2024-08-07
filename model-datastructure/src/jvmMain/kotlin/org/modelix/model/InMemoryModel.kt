@@ -34,11 +34,11 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.NodeReference
 import org.modelix.model.api.PNodeReference
+import org.modelix.model.api.async.IAsyncValue
 import org.modelix.model.api.resolveInCurrentContext
 import org.modelix.model.area.IArea
 import org.modelix.model.area.IAreaListener
 import org.modelix.model.area.IAreaReference
-import org.modelix.model.async.IAsyncValue
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.NonCachingObjectStore

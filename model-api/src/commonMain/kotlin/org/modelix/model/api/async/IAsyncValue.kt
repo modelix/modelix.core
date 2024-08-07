@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.model.async
+package org.modelix.model.api.async
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.asFlow

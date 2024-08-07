@@ -17,9 +17,9 @@ import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
-import org.modelix.model.api.resolveReferenceLinkOrFallback
+import org.modelix.model.api.IReferenceLinkReference
+import org.modelix.model.api.toLink
 import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
@@ -38,7 +38,7 @@ import org.modelix.modelql.core.stepOutputSerializer
 
 class ReferenceTraversalStep(val role: String) : MonoTransformingStep<INode, INode>(), IMonoStep<INode> {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
-        return input.flatMapConcat { it.value.getReferenceTargetAsFlow(it.value.resolveReferenceLinkOrFallback(role)) }
+        return input.flatMapConcat { it.value.getReferenceTargetAsFlow(IReferenceLinkReference.fromString(role).toLink()) }
             .asStepFlow(this)
     }
 

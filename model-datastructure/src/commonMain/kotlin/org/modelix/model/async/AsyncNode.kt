@@ -20,7 +20,9 @@ import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
-import org.modelix.model.api.asLink
+import org.modelix.model.api.async.IAsyncNode
+import org.modelix.model.api.async.IAsyncValue
+import org.modelix.model.api.async.asAsyncNode
 import org.modelix.model.api.resolveInCurrentContext
 
 class AsyncNode(val nodeId: Long, val tree: IAsyncTree) : IAsyncNode {
@@ -29,6 +31,10 @@ class AsyncNode(val nodeId: Long, val tree: IAsyncTree) : IAsyncNode {
 
     override fun getParent(): IAsyncValue<IAsyncNode> {
         return tree.getParent(nodeId).map { it.asNode() }
+    }
+
+    override fun getRoleInParent(): IAsyncValue<IChildLinkReference> {
+        return tree.getRole(nodeId)
     }
 
     override fun getPropertyValue(role: IPropertyReference): IAsyncValue<String?> {
@@ -40,7 +46,7 @@ class AsyncNode(val nodeId: Long, val tree: IAsyncTree) : IAsyncNode {
     }
 
     override fun getChildren(role: IChildLinkReference): IAsyncValue<List<IAsyncNode>> {
-        return tree.getChildren(nodeId, role.asLink()).map { it.map { it.asNode() } }
+        return tree.getChildren(nodeId, role).map { it.map { it.asNode() } }
     }
 
     override fun getReferenceTarget(role: IReferenceLinkReference): IAsyncValue<IAsyncNode?> {

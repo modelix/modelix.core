@@ -14,19 +14,24 @@
  * limitations under the License.
  */
 
-package org.modelix.model.async
+package org.modelix.model.api.async
 
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
-import org.modelix.model.api.asLink
+import org.modelix.model.api.toLink
 import org.modelix.model.api.asProperty
+import org.modelix.model.api.toReference
 
 class NodeAsAsyncNode(val node: INode) : IAsyncNode {
     override fun getParent(): IAsyncValue<IAsyncNode?> {
         return node.parent?.asAsyncNode().asAsync()
+    }
+
+    override fun getRoleInParent(): IAsyncValue<IChildLinkReference> {
+        return node.getContainmentLink().toReference().asAsync()
     }
 
     override fun getPropertyValue(role: IPropertyReference): IAsyncValue<String?> {
@@ -38,15 +43,15 @@ class NodeAsAsyncNode(val node: INode) : IAsyncNode {
     }
 
     override fun getChildren(role: IChildLinkReference): IAsyncValue<List<IAsyncNode>> {
-        return node.getChildren(role.asLink()).map { it.asAsyncNode() }.asAsync()
+        return node.getChildren(role.toLink()).map { it.asAsyncNode() }.asAsync()
     }
 
     override fun getReferenceTarget(role: IReferenceLinkReference): IAsyncValue<IAsyncNode?> {
-        return node.getReferenceTarget(role.asLink())?.asAsyncNode().asAsync()
+        return node.getReferenceTarget(role.toLink())?.asAsyncNode().asAsync()
     }
 
     override fun getReferenceTargetRef(role: IReferenceLinkReference): IAsyncValue<INodeReference?> {
-        return node.getReferenceTargetRef(role.asLink()).asAsync()
+        return node.getReferenceTargetRef(role.toLink()).asAsync()
     }
 
     override fun getAllReferenceTargetRefs(): IAsyncValue<List<Pair<IReferenceLinkReference, INodeReference>>> {

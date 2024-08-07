@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.model.async
+package org.modelix.model.api.async
 
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INode
@@ -23,6 +23,7 @@ import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 
 interface IAsyncNode {
+    fun getRoleInParent(): IAsyncValue<IChildLinkReference>
     fun getParent(): IAsyncValue<IAsyncNode?>
     fun getPropertyValue(role: IPropertyReference): IAsyncValue<String?>
     fun getAllChildren(): IAsyncValue<List<IAsyncNode>>

@@ -22,6 +22,8 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.ITree
+import org.modelix.model.api.async.IAsyncNode
+import org.modelix.model.api.async.IAsyncValue
 
 interface IAsyncTree {
     fun visitChanges(oldVersion: IAsyncTree, visitor: IAsyncTreeChangeVisitor): IAsyncValue<Unit>
@@ -30,7 +32,7 @@ interface IAsyncTree {
     fun getChildren(parentId: Long, role: IChildLinkReference): IAsyncValue<List<Long>>
     fun getConceptReference(nodeId: Long): IAsyncValue<ConceptReference?>
     fun getParent(nodeId: Long): IAsyncValue<Long>
-    fun getRole(nodeId: Long): IAsyncValue<String?>
+    fun getRole(nodeId: Long): IAsyncValue<IChildLinkReference>
     fun getAllReferenceTargetRefs(sourceId: Long): IAsyncValue<List<Pair<IReferenceLinkReference, INodeReference>>>
     fun getReferenceTarget(sourceId: Long, role: IReferenceLinkReference): IAsyncValue<INodeReference?>
     fun getReferenceRoles(sourceId: Long): IAsyncValue<List<String>>

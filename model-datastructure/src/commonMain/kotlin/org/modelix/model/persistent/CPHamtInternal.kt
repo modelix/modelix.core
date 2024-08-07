@@ -15,8 +15,8 @@
 
 package org.modelix.model.persistent
 
-import org.modelix.model.async.IAsyncValue
-import org.modelix.model.async.mapList
+import org.modelix.model.api.async.IAsyncValue
+import org.modelix.model.api.async.mapList
 import org.modelix.model.bitCount
 import org.modelix.model.lazy.COWArrays
 import org.modelix.model.lazy.IBulkQuery

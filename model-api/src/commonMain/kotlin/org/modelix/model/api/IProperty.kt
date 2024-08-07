@@ -15,6 +15,8 @@
 
 package org.modelix.model.api
 
+import kotlinx.serialization.Serializable
+
 /**
  * Representation of a property within an [IConcept].
  */
@@ -25,11 +27,8 @@ interface IProperty : IRole, IPropertyReference {
     }
 }
 
-interface IPropertyReference {
-
-    fun getSimpleName(): String?
-    fun getUID(): String?
-
+@Serializable
+sealed interface IPropertyReference : IRoleReference {
     companion object {
         /**
          * Can be a name or UID or anything else. INode will decide how to resolve it.
@@ -37,26 +36,42 @@ interface IPropertyReference {
         fun fromString(value: String): IPropertyReference = UnclassifiedPropertyReference(value)
         fun fromName(value: String): IPropertyReference = PropertyReferenceByName(value)
         fun fromUID(value: String): IPropertyReference = PropertyReferenceByUID(value)
+        fun fromIdAndName(id: String, name: String): IPropertyReference = PropertyReferenceByIdAndName(id, name)
     }
 }
 
 @Deprecated("For compatibility with methods that still require an IProperty instead of just an IPropertyReference")
 fun IPropertyReference.asProperty() = this as IProperty
 
-abstract class AbstractPropertyReference : IPropertyReference, IProperty {
+@Serializable
+abstract class AbstractPropertyReference : AbstractRoleReference(), IPropertyReference, IProperty {
     override fun getConcept(): IConcept = throw UnsupportedOperationException()
     override fun getUID(): String = throw UnsupportedOperationException()
     override fun getSimpleName(): String = throw UnsupportedOperationException()
     override val isOptional: Boolean get() = throw UnsupportedOperationException()
 }
 
-data class UnclassifiedPropertyReference(val value: String) : AbstractPropertyReference()
-data class PropertyReferenceByName(override val name: String) : AbstractPropertyReference() {
+@Serializable
+data class UnclassifiedPropertyReference(val value: String) : AbstractPropertyReference(), IUnclassifiedRoleReference {
+    override fun getStringValue(): String = value
+}
+
+@Serializable
+data class PropertyReferenceByName(override val name: String) : AbstractPropertyReference(), IRoleReferenceByName {
     override fun getSimpleName(): String = name
 }
-data class PropertyReferenceByUID(val uid: String) : AbstractPropertyReference() {
+
+@Serializable
+data class PropertyReferenceByUID(val uid: String) : AbstractPropertyReference(), IRoleReferenceByUID {
     override fun getUID(): String = uid
 }
+
+@Serializable
+data class PropertyReferenceByIdAndName(val uid: String, override val name: String) : AbstractPropertyReference(), IRoleReferenceByUID, IRoleReferenceByName {
+    override fun getUID(): String = uid
+    override fun getSimpleName(): String = name
+}
+
 
 /**
  * Legacy. It's not guaranteed that name is actually a name. Could also be a UID.

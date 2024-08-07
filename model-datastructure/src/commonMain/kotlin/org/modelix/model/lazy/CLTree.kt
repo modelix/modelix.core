@@ -27,9 +27,9 @@ import org.modelix.model.api.ITreeChangeVisitor
 import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
+import org.modelix.model.api.async.IAsyncValue
 import org.modelix.model.api.tryResolve
 import org.modelix.model.async.AsyncTree
-import org.modelix.model.async.IAsyncValue
 import org.modelix.model.lazy.COWArrays.insert
 import org.modelix.model.lazy.COWArrays.remove
 import org.modelix.model.persistent.CPHamtInternal

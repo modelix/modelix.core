@@ -21,8 +21,18 @@ import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
+import org.modelix.model.api.IRole
+import org.modelix.model.api.IRoleReference
+import org.modelix.model.api.IRoleReferenceByName
+import org.modelix.model.api.IRoleReferenceByUID
+import org.modelix.model.api.IUnclassifiedRoleReference
 import org.modelix.model.api.NullChildLinkReference
 import org.modelix.model.api.PNodeReference
+import org.modelix.model.api.async.IAsyncValue
+import org.modelix.model.api.async.checkNotNull
+import org.modelix.model.api.async.flatMapBoth
+import org.modelix.model.api.async.mapBoth
+import org.modelix.model.api.async.mapList
 import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.persistent.CPHamtNode
@@ -152,14 +162,19 @@ class AsyncTree(private val treeData: CPTree, private val bulkQuery: IBulkQuery)
         return getNode(nodeId).map { it.parentId }
     }
 
-    override fun getRole(nodeId: Long): IAsyncValue<String?> {
-        return getNode(nodeId).map { it.roleInParent }
+    override fun getRole(nodeId: Long): IAsyncValue<IChildLinkReference> {
+        return getNode(nodeId).map { it.roleInParent }.map {
+            when {
+                it == null -> NullChildLinkReference
+                treeData.usesRoleIds -> IChildLinkReference.fromUID(it)
+                else -> IChildLinkReference.fromName(it)
+            }
+        }
     }
 
     override fun getReferenceTarget(sourceId: Long, role: IReferenceLinkReference): IAsyncValue<INodeReference?> {
         return getNode(sourceId).map { node ->
-            val roleString = if (treeData.usesRoleIds) role.getUID() else role.getSimpleName()
-            node.getReferenceTarget(roleString)?.convertReference()
+            node.getReferenceTarget(role.key())?.convertReference()
         }
     }
 
@@ -203,16 +218,38 @@ class AsyncTree(private val treeData: CPTree, private val bulkQuery: IBulkQuery)
 
     override fun getProperty(nodeId: Long, role: IPropertyReference): IAsyncValue<String?> {
         return getNode(nodeId).map { node ->
-            val roleString = if (treeData.usesRoleIds) role.getUID() else role.getSimpleName()
-            node.getPropertyValue(roleString)
+            node.getPropertyValue(role.key())
         }
     }
 
     override fun getChildren(parentId: Long, role: IChildLinkReference): IAsyncValue<List<Long>> {
-        val roleString = if (role == NullChildLinkReference) null else if (treeData.usesRoleIds) role.getUID() else role.getSimpleName()
+        val roleString = role.key()
         return getAllChildren(parentId).flatMap {
             it.map { getNode(it) }.mapList {
                 it.filter { it.roleInParent == roleString }.map { it.id }
+            }
+        }
+    }
+
+    private fun IRoleReference.key() = getRoleKey(this)
+    private fun IChildLinkReference.key() = if (this is NullChildLinkReference) null else getRoleKey(this)
+
+    fun getRoleKey(role: IRoleReference): String {
+        if (treeData.usesRoleIds) {
+            return when (role) {
+                is IRoleReferenceByName -> throw IllegalArgumentException("ID needed, but was $role")
+                is IRoleReferenceByUID -> role.getUID()
+                is IUnclassifiedRoleReference -> role.getStringValue()
+                is IRole -> role.getUID()
+                else -> throw IllegalArgumentException("Unknown IRoleReference type: $role")
+            }
+        } else {
+            return when (role) {
+                is IRoleReferenceByName -> role.getSimpleName()
+                is IRoleReferenceByUID -> throw IllegalArgumentException("Name needed, but was $role")
+                is IUnclassifiedRoleReference -> role.getStringValue()
+                is IRole -> role.getSimpleName()
+                else -> throw IllegalArgumentException("Unknown IRoleReference type: $role")
             }
         }
     }

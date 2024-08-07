@@ -42,7 +42,7 @@ class TypedModelQLTestWithLightModelServer : TypedModelQLTest() {
     @BeforeTest
     fun setup() {
         ApigenTestLanguages.registerAll()
-        val tree = CLTree(ObjectStoreCache(MapBasedStore()))
+        val tree = CLTree(ObjectStoreCache(MapBasedStore()), useRoleIds = true)
         branch = PBranch(tree, IdGenerator.getInstance(1))
         branch.runWrite {
             createTestData(branch.getRootNode())

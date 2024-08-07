@@ -34,7 +34,7 @@ class GeneratedApiTest {
 
     @Test
     fun `can handle enums`() {
-        val branch = ModelFacade.toLocalBranch(ModelFacade.newLocalTree())
+        val branch = ModelFacade.toLocalBranch(ModelFacade.newLocalTree(useRoleIds = false))
         TypedLanguagesRegistry.register(L_jetbrains_mps_lang_editor)
         TypedLanguagesRegistry.register(L_jetbrains_mps_lang_core)
         val data = ModelData.fromJson(File("../metamodel-export/build/metamodel/exported-modules/jetbrains.mps.baseLanguage.blTypes.json").readText())

@@ -22,8 +22,8 @@ import org.modelix.model.persistent.MapBaseStore
 
 object ModelFacade {
 
-    fun newLocalTree(): ITree {
-        return CLTree(ObjectStoreCache(MapBaseStore()))
+    fun newLocalTree(useRoleIds: Boolean = true): ITree {
+        return CLTree(ObjectStoreCache(MapBaseStore()), useRoleIds = useRoleIds)
     }
 
     fun getRootNode(branch: IBranch): INode {

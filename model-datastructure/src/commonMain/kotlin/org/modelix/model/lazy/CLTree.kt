@@ -66,9 +66,9 @@ fun createNewTreeData(
 
 class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, IBulkTree {
 
-    constructor(store: IDeserializingKeyValueStore) : this(createNewTreeData(store), store)
+    constructor(store: IDeserializingKeyValueStore, useRoleIds: Boolean = true) : this(createNewTreeData(store, useRoleIds = useRoleIds), store)
 
-    constructor(data: CPTree?, repositoryId: RepositoryId?, store: IDeserializingKeyValueStore, useRoleIds: Boolean = false) : this(
+    constructor(data: CPTree?, repositoryId: RepositoryId?, store: IDeserializingKeyValueStore, useRoleIds: Boolean = true) : this(
         data ?: createNewTreeData(store, repositoryId ?: RepositoryId.random(), useRoleIds),
         store,
     )

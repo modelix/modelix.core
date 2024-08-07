@@ -313,7 +313,8 @@ interface IReplaceableNode : INode {
 
 @Deprecated("Use .key(INode), .key(IBranch), .key(ITransaction) or .key(ITree)")
 fun IRole.key(): String = RoleAccessContext.getKey(this)
-fun IRole.key(node: INode): String = if (node.usesRoleIds()) getUID() else getSimpleName()
+fun IRole.key(node: INode): String = if (node.usesRoleIds()) getIdOrName() else getNameOrId()
+fun IRoleReference.key(node: INode): String = if (node.usesRoleIds()) getIdOrName() else getNameOrId()
 fun IChildLink.key(node: INode): String? = when (this) {
     is NullChildLink -> null
     else -> (this as IRole).key(node)

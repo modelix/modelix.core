@@ -7,7 +7,8 @@ import org.modelix.kotlin.utils.ContextValue
  * An [IRole] is a structural feature of a concept.
  * It can either be an [IProperty] or an [ILink].
  */
-interface IRole {
+@Deprecated("Use IRoleReference or IRoleDefinition")
+interface IRole : IRoleReference {
     /**
      * Returns the concept this role belongs to.
      *
@@ -20,14 +21,14 @@ interface IRole {
      *
      * @return uid
      */
-    fun getUID(): String
+    override fun getUID(): String
 
     /**
      * Returns the unqualified name of this role.
      *
      * @return simple name
      */
-    fun getSimpleName(): String
+    override fun getSimpleName(): String
 
     @Deprecated("Use getSimpleName() when showing it to the user or when accessing the model use the INode functions that accept an IRole or use IRole.key(...)")
     val name: String get() = RoleAccessContext.getKey(this)

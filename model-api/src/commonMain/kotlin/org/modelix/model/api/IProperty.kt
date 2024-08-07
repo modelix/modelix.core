@@ -47,7 +47,7 @@ fun IPropertyReference.asProperty() = this as IProperty
 sealed class AbstractPropertyReference : AbstractRoleReference(), IPropertyReference, IProperty {
     override fun getConcept(): IConcept = throw UnsupportedOperationException()
     override fun getUID(): String = throw UnsupportedOperationException()
-    override fun getSimpleName(): String = throw UnsupportedOperationException(this::class.qualifiedName)
+    override fun getSimpleName(): String = throw UnsupportedOperationException()
     override val isOptional: Boolean get() = throw UnsupportedOperationException()
 }
 
@@ -79,7 +79,6 @@ data class PropertyReferenceByIdAndName(val uid: String, override val name: Stri
     override fun getIdOrName(): String = uid
     override fun getNameOrId(): String = name
 }
-
 
 /**
  * Legacy. It's not guaranteed that name is actually a name. Could also be a UID.

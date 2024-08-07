@@ -19,7 +19,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.modelix.model.api.INode
 import org.modelix.model.api.IPropertyReference
-import org.modelix.model.api.asProperty
 import org.modelix.model.api.async.asAsyncNode
 import org.modelix.model.api.async.asFlow
 import org.modelix.modelql.core.IFlowInstantiationContext

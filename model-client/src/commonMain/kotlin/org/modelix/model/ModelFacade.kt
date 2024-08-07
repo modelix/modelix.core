@@ -10,7 +10,6 @@ import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.deepUnwrapNode
 import org.modelix.model.async.PNodeAdapterWithAsyncSupport
-import org.modelix.model.async.withAsyncSupport
 import org.modelix.model.client.IModelClient
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.BranchReference

@@ -20,6 +20,7 @@ import kotlinx.serialization.Serializable
 /**
  * Representation of a non-containment reference link between [IConcept]s.
  */
+@Deprecated("Use IReferenceLinkReference or IReferenceLinkDefinition")
 interface IReferenceLink : ILink, IReferenceLinkReference {
     companion object {
         fun fromName(name: String): IReferenceLink = ReferenceLinkFromName(name)

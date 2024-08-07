@@ -21,7 +21,6 @@ import kotlinx.serialization.Serializable
 import org.modelix.model.api.INode
 import org.modelix.model.api.async.asAsyncNode
 import org.modelix.model.api.async.asFlattenedFlow
-import org.modelix.model.api.async.asNode
 import org.modelix.modelql.core.FluxTransformingStep
 import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
@@ -40,7 +39,7 @@ import org.modelix.modelql.core.stepOutputSerializer
 class AllChildrenTraversalStep() : FluxTransformingStep<INode, INode>() {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
         return input.flatMapConcat {
-            it.value.asAsyncNode().getAllChildren().asFlattenedFlow().map { it.asNode() }
+            it.value.asAsyncNode().getAllChildren().asFlattenedFlow().map { it.asRegularNode() }
         }.asStepFlow(this)
     }
 

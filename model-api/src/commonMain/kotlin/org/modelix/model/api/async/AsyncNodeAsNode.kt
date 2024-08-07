@@ -116,7 +116,7 @@ class AsyncNodeAsNode(val node: IAsyncNode) : INode, INodeWithAsyncSupport {
     }
 
     override fun getAllChildrenAsFlow(): Flow<INode> {
-        return node.getAllChildren().asFlow().flatMapConcat { it.asFlow() }.map { it.asNode() }
+        return node.getAllChildren().asFlow().flatMapConcat { it.asFlow() }.map { it.asRegularNode() }
     }
 
     override fun getAllProperties(): List<Pair<IProperty, String>> {
@@ -138,7 +138,7 @@ class AsyncNodeAsNode(val node: IAsyncNode) : INode, INodeWithAsyncSupport {
 
     override fun getAllReferenceTargetsAsFlow(): Flow<Pair<IReferenceLink, INode>> {
         return node.getAllReferenceTargets().asFlattenedFlow()
-            .map { it.first.toLegacy() to it.second.asNode() }
+            .map { it.first.toLegacy() to it.second.asRegularNode() }
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {
@@ -146,7 +146,7 @@ class AsyncNodeAsNode(val node: IAsyncNode) : INode, INodeWithAsyncSupport {
     }
 
     override fun getChildrenAsFlow(role: IChildLink): Flow<INode> {
-        return node.getChildren(role.toReference()).asFlattenedFlow().map { it.asNode() }
+        return node.getChildren(role.toReference()).asFlattenedFlow().map { it.asRegularNode() }
     }
 
     override fun getContainmentLink(): IChildLink? {
@@ -162,7 +162,7 @@ class AsyncNodeAsNode(val node: IAsyncNode) : INode, INodeWithAsyncSupport {
     }
 
     override fun getParentAsFlow(): Flow<INode> {
-        return node.getParent().asFlow().filterNotNull().map { it.asNode() }
+        return node.getParent().asFlow().filterNotNull().map { it.asRegularNode() }
     }
 
     override fun getPropertyLinks(): List<IProperty> {
@@ -186,7 +186,7 @@ class AsyncNodeAsNode(val node: IAsyncNode) : INode, INodeWithAsyncSupport {
     }
 
     override fun getReferenceTargetAsFlow(role: IReferenceLink): Flow<INode> {
-        return node.getReferenceTarget(role.toReference()).asFlow().filterNotNull().map { it.asNode() }
+        return node.getReferenceTarget(role.toReference()).asFlow().filterNotNull().map { it.asRegularNode() }
     }
 
     override fun getReferenceTargetRef(role: IReferenceLink): INodeReference? {

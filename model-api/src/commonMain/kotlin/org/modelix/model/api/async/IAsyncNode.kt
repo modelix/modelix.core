@@ -16,6 +16,7 @@
 
 package org.modelix.model.api.async
 
+import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -25,6 +26,7 @@ import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 
 interface IAsyncNode {
+    fun asRegularNode(): INode
     fun getConcept(): IAsyncValue<IConcept>
     fun getConceptRef(): IAsyncValue<ConceptReference>
     fun getRoleInParent(): IAsyncValue<IChildLinkReference>
@@ -40,13 +42,6 @@ interface IAsyncNode {
 
 interface INodeWithAsyncSupport : INode {
     fun getAsyncNode(): IAsyncNode
-}
-
-fun IAsyncNode.asNode(): INode {
-    return when (this) {
-        is NodeAsAsyncNode -> this.node
-        else -> AsyncNodeAsNode(this)
-    }
 }
 
 fun INode.asAsyncNode(): IAsyncNode {

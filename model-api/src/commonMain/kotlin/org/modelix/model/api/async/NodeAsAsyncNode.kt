@@ -28,6 +28,8 @@ import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.api.toReference
 
 class NodeAsAsyncNode(val node: INode) : IAsyncNode {
+    override fun asRegularNode(): INode = node
+
     override fun getConcept(): IAsyncValue<IConcept> {
         return (node.concept ?: NullConcept).asAsync()
     }

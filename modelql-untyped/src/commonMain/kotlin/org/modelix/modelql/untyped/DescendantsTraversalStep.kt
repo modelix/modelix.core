@@ -25,7 +25,6 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.async.IAsyncNode
 import org.modelix.model.api.async.asAsyncNode
 import org.modelix.model.api.async.asFlattenedFlow
-import org.modelix.model.api.async.asNode
 import org.modelix.modelql.core.FluxTransformingStep
 import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
@@ -79,7 +78,7 @@ fun IProducingStep<INode>.descendants(includeSelf: Boolean = false): IFluxStep<I
 
 private fun IAsyncNode.getDescendantsAsFlow(includeSelf: Boolean = false): Flow<INode> {
     return if (includeSelf) {
-        flowOf(flowOf(this.asNode()), getDescendantsAsFlow(false)).flattenConcat()
+        flowOf(flowOf(this.asRegularNode()), getDescendantsAsFlow(false)).flattenConcat()
     } else {
         getAllChildren().asFlattenedFlow().flatMapConcat { it.getDescendantsAsFlow(true) }
     }

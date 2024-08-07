@@ -23,7 +23,6 @@ import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
 import org.modelix.model.api.async.asAsyncNode
 import org.modelix.model.api.async.asFlow
-import org.modelix.model.api.async.asNode
 import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
@@ -42,7 +41,7 @@ class ParentTraversalStep() : MonoTransformingStep<INode, INode>(), IMonoStep<IN
 
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
         return input.flatMapConcat {
-            it.value.asAsyncNode().getParent().asFlow().filterNotNull().map { it.asNode() }
+            it.value.asAsyncNode().getParent().asFlow().filterNotNull().map { it.asRegularNode() }
         }.asStepFlow(this)
     }
 

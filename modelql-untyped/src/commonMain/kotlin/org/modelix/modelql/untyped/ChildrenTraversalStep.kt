@@ -24,7 +24,6 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.async.asAsync
 import org.modelix.model.api.async.asAsyncNode
 import org.modelix.model.api.async.asFlattenedFlow
-import org.modelix.model.api.async.asNode
 import org.modelix.model.api.resolveChildLinkOrFallback
 import org.modelix.modelql.core.FluxTransformingStep
 import org.modelix.modelql.core.IFlowInstantiationContext
@@ -44,7 +43,7 @@ import org.modelix.modelql.core.stepOutputSerializer
 class ChildrenTraversalStep(val link: IChildLinkReference) : FluxTransformingStep<INode, INode>(), IFluxStep<INode> {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
         return input.flatMapConcat {
-            it.value.asAsyncNode().getChildren(link).asFlattenedFlow().map { it.asNode() }
+            it.value.asAsyncNode().getChildren(link).asFlattenedFlow().map { it.asRegularNode() }
         }.asStepFlow(this)
     }
 

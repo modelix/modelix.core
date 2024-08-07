@@ -23,7 +23,6 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.async.asAsyncNode
 import org.modelix.model.api.async.asFlow
-import org.modelix.model.api.async.asNode
 import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
@@ -43,7 +42,7 @@ import org.modelix.modelql.core.stepOutputSerializer
 class ReferenceTraversalStep(val link: IReferenceLinkReference) : MonoTransformingStep<INode, INode>(), IMonoStep<INode> {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
         return input.flatMapConcat {
-            it.value.asAsyncNode().getReferenceTarget(link).asFlow().filterNotNull().map { it.asNode() }
+            it.value.asAsyncNode().getReferenceTarget(link).asFlow().filterNotNull().map { it.asRegularNode() }
         }.asStepFlow(this)
     }
 

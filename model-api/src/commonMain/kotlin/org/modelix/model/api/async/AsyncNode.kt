@@ -19,13 +19,15 @@ package org.modelix.model.api.async
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
+import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.resolve
 import org.modelix.model.api.resolveInCurrentContext
 
-class AsyncNode(private val nodeId: Long, private val tree: () -> IAsyncTree, private val createNodeAdapter: (Long) -> IAsyncNode) : IAsyncNode {
+class AsyncNode(private val regularNode: INode, private val nodeId: Long, private val tree: () -> IAsyncTree, private val createNodeAdapter: (Long) -> IAsyncNode) : IAsyncNode {
+    override fun asRegularNode(): INode = regularNode
 
     private fun Long.asNode(): IAsyncNode = createNodeAdapter(this)
 

@@ -36,7 +36,7 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch)
     }
 
     override fun getAsyncNode(): IAsyncNode {
-        return AsyncNode(nodeId, { branch.transaction.tree.asAsyncTree() }, { createAdapter(it).asAsyncNode() })
+        return AsyncNode(this, nodeId, { branch.transaction.tree.asAsyncTree() }, { createAdapter(it).asAsyncNode() })
     }
 
     private fun getTree(): ITree = branch.transaction.tree

@@ -100,6 +100,6 @@ To enable it you can specify the following environment variables.
 
 The `permissions` claim of the token is expected to list directly granted permission.
 Additional granted permissions may be derived from that list.
-For example, an `admin` permission on a repository will grant write permission on all branches.
+For example, an `model-server/admin` permission gives access to all repositories and administrative actions. `repository/someRepository/admin` on the other hand, gives only permission to all actions on the repository "someRepository".
 
 A detailed list of all permissions can be found on the model server at `/permissions`.

@@ -73,6 +73,10 @@ fun INode.createQueryExecutor(): IQueryExecutor<INode> {
 }
 
 suspend fun <R> INode.query(body: (IMonoStep<INode>) -> IMonoStep<R>): R {
+    // Option A: Should we automatically set the scope?
+//    return this.getArea().runWithAdditionalScopeInCoroutine {
+//        buildQuery(body).execute().value
+//    }
     return buildQuery(body).execute().value
 }
 

@@ -128,7 +128,7 @@ class KeyValueLikeModelServerTest {
 
         val bulkQuery = clientV1.storeCache.newBulkQuery()
         val bulkQueryValue = bulkQuery.query(treeHash)
-        val bulkQueryResult = bulkQueryValue.executeQuery()
+        val bulkQueryResult = bulkQueryValue.awaitBlocking()
 
         assertNotNull(bulkQueryResult)
     }

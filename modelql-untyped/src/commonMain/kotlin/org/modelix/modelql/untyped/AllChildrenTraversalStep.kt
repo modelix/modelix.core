@@ -14,11 +14,13 @@
 package org.modelix.modelql.untyped
 
 import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
+import org.modelix.model.api.async.asAsyncNode
+import org.modelix.model.api.async.asFlattenedFlow
 import org.modelix.modelql.core.FluxTransformingStep
 import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
@@ -36,7 +38,9 @@ import org.modelix.modelql.core.stepOutputSerializer
 
 class AllChildrenTraversalStep() : FluxTransformingStep<INode, INode>() {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
-        return input.flatMapConcat { it.value.getAllChildrenAsFlow() }.asStepFlow(this)
+        return input.flatMapConcat {
+            it.value.asAsyncNode().getAllChildren().asFlattenedFlow().map { it.asRegularNode() }
+        }.asStepFlow(this)
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<INode>> {

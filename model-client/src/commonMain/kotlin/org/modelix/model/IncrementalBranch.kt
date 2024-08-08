@@ -14,6 +14,7 @@ import org.modelix.model.api.ITransaction
 import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitor
 import org.modelix.model.api.IWriteTransaction
+import org.modelix.model.api.async.IAsyncTree
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.lazy.NodeNotFoundException
 
@@ -346,6 +347,11 @@ class IncrementalBranch(val branch: IBranch) : IBranch, IBranchWrapper {
     }
 
     inner class IncrementalTree(val tree: ITree) : ITree {
+
+        override fun asAsyncTree(): IAsyncTree {
+            // TODO is it even possible to properly record dependencies for async code?
+            return tree.asAsyncTree()
+        }
 
         override fun usesRoleIds(): Boolean {
             return tree.usesRoleIds()

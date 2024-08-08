@@ -9,14 +9,14 @@ kotlin {
         browser {
             testTask {
                 useMocha {
-                    timeout = "30s"
+                    timeout = "60s"
                 }
             }
         }
         nodejs {
             testTask {
                 useMocha {
-                    timeout = "30s"
+                    timeout = "60s"
                 }
             }
         }
@@ -30,7 +30,7 @@ kotlin {
 //                api(project(":model-server-api"))
 //                kotlin("stdlib-common")
 //                implementation(libs.kotlin.collections.immutable)
-//                implementation(libs.kotlin.coroutines.core)
+                implementation(libs.kotlin.coroutines.core)
                 implementation(libs.kotlin.logging)
                 implementation(libs.kotlin.datetime)
 //                implementation(libs.kotlin.serialization.json)

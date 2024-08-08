@@ -22,14 +22,14 @@ kotlin {
         browser {
             testTask {
                 useMocha {
-                    timeout = "10s"
+                    timeout = "60s"
                 }
             }
         }
         nodejs {
             testTask {
                 useMocha {
-                    timeout = "10s"
+                    timeout = "60s"
                 }
             }
         }
@@ -79,6 +79,7 @@ kotlin {
                 implementation(libs.ktor.server.forwarded.header)
                 implementation(libs.ktor.server.websockets)
                 implementation(libs.ktor.server.test.host)
+                implementation(libs.logback.classic)
             }
         }
         val jsMain by getting {

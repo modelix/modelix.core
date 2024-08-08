@@ -17,8 +17,8 @@ import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INode
-import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.async.asAsyncNode
 import org.modelix.model.api.async.asFlow
 import org.modelix.modelql.core.IFlowInstantiationContext
@@ -35,36 +35,30 @@ import org.modelix.modelql.core.StepFlow
 import org.modelix.modelql.core.asStepFlow
 import org.modelix.modelql.core.stepOutputSerializer
 
-// TODO replace `role: String` with a more specific IPropertyReference
-class PropertyTraversalStep(val role: String) : MonoTransformingStep<INode, String?>(), IMonoStep<String?> {
-    override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<String?> {
-        return input.flatMapConcat {
-            it.value.asAsyncNode().getPropertyValue(IPropertyReference.fromUnclassifiedString(role)).asFlow()
-        }.asStepFlow(this)
+class LinkInParentTraversalStep() : MonoTransformingStep<INode, IChildLinkReference>() {
+
+    override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<IChildLinkReference> {
+        return input.flatMapConcat { it.value.asAsyncNode().getRoleInParent().asFlow() }.asStepFlow(this)
     }
 
-    override fun canBeEmpty(): Boolean = getProducer().canBeEmpty()
-
-    override fun canBeMultiple(): Boolean = getProducer().canBeMultiple()
-
-    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<String?>> {
-        return serializationContext.serializer<String?>().stepOutputSerializer(this)
+    override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<IChildLinkReference>> {
+        return serializationContext.serializer<IChildLinkReference>().stepOutputSerializer(this)
     }
 
-    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = PropertyStepDescriptor(role)
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
     @Serializable
-    @SerialName("untyped.property")
-    class PropertyStepDescriptor(val role: String) : StepDescriptor() {
+    @SerialName("untyped.linkInParent")
+    class Descriptor() : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
-            return PropertyTraversalStep(role)
+            return RoleInParentTraversalStep()
         }
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.property("$role")"""
+        return """${getProducers().single()}.linkInParent()"""
     }
 }
 
-fun IMonoStep<INode>.property(role: String) = PropertyTraversalStep(role).connectAndDowncast(this)
-fun IFluxStep<INode>.property(role: String) = PropertyTraversalStep(role).connectAndDowncast(this)
+fun IMonoStep<INode>.linkInParent() = LinkInParentTraversalStep().connectAndDowncast(this)
+fun IFluxStep<INode>.linkInParent() = LinkInParentTraversalStep().connectAndDowncast(this)

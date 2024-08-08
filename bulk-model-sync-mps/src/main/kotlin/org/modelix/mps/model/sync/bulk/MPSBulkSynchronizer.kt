@@ -97,6 +97,15 @@ object MPSBulkSynchronizer {
             val includedModules = allModules.filter {
                 isModuleIncluded(it.moduleName!!, includedModuleNames, includedModulePrefixes)
             }
+
+            require(includedModules.isNotEmpty()) {
+                """
+                    No module matched the inclusion criteria.
+                    [includedModules] = $includedModuleNames
+                    [includedModulePrefixes] = $includedModulePrefixes
+                """.trimIndent()
+            }
+
             val numIncludedModules = includedModules.count()
             val outputPath = System.getProperty("modelix.mps.model.sync.bulk.output.path")
             val counter = AtomicInteger()

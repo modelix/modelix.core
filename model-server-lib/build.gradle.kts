@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm")
+    `modelix-kotlin-jvm`
     `maven-publish`
 }
 

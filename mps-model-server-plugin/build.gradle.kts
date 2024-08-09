@@ -1,8 +1,7 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.modelix.mpsHomeDir
 
 plugins {
-    kotlin("jvm")
+    `modelix-kotlin-jvm`
     alias(libs.plugins.intellij)
     id("modelix-project-repositories")
 }
@@ -19,22 +18,7 @@ intellij {
     instrumentCode = false
 }
 
-java {
-    sourceCompatibility = JavaVersion.toVersion(11)
-    targetCompatibility = JavaVersion.toVersion(11)
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_11)
-    }
-}
-
 tasks {
-    withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions.jvmTarget = "11"
-    }
-
     patchPluginXml {
         sinceBuild.set("203")
         untilBuild.set("241.*")

@@ -15,7 +15,7 @@
  */
 
 plugins {
-    kotlin("jvm")
+    `modelix-kotlin-jvm`
     id("org.modelix.bulk-model-sync")
 }
 
@@ -30,14 +30,6 @@ dependencies {
     testImplementation("org.modelix:bulk-model-sync-lib")
     testImplementation(kotlin("test"))
     testImplementation(libs.xmlunit.core)
-}
-
-tasks.test {
-    useJUnitPlatform()
-}
-
-kotlin {
-    jvmToolchain(11)
 }
 
 val repoDir = project.layout.buildDirectory.dir("test-repo").get().asFile

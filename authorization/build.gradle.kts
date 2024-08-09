@@ -1,7 +1,7 @@
 description = "Library that checks is allowed to do something"
 
 plugins {
-    kotlin("jvm")
+    `modelix-kotlin-jvm-with-junit`
     kotlin("plugin.serialization")
 }
 
@@ -20,16 +20,6 @@ dependencies {
     implementation(libs.kotlin.reflect)
     implementation(libs.kotlin.logging)
     testImplementation(kotlin("test"))
-}
-
-tasks.getByName<Test>("test") {
-    useJUnitPlatform()
-}
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(11))
-    }
 }
 
 publishing {

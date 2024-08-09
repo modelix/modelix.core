@@ -1,7 +1,7 @@
 import org.modelix.copyMps
 
 plugins {
-    kotlin("jvm")
+    `modelix-kotlin-jvm`
     alias(libs.plugins.intellij)
     id("modelix-project-repositories")
 }

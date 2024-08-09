@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm")
+    `modelix-kotlin-jvm-with-junit`
     `java-gradle-plugin`
 }
 
@@ -13,10 +13,6 @@ dependencies {
     implementation(libs.ktor.client.cio)
     testImplementation(libs.kotest.assertions.coreJvm)
     testImplementation(kotlin("test"))
-}
-
-kotlin {
-    jvmToolchain(11)
 }
 
 gradlePlugin {

@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm")
+    `modelix-kotlin-jvm-with-junit`
     alias(libs.plugins.docker.compose)
 }
 

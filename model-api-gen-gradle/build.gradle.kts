@@ -4,8 +4,7 @@ plugins {
     `java-gradle-plugin`
     java
 
-    // Apply the Kotlin JVM plugin to add support for Kotlin.
-    kotlin("jvm")
+    `modelix-kotlin-jvm`
 }
 
 dependencies {

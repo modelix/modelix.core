@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm")
+    `modelix-kotlin-jvm`
     `java-gradle-plugin`
 }
 
@@ -11,10 +11,6 @@ dependencies {
     implementation(libs.modelix.buildtools.lib)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.cio)
-}
-
-kotlin {
-    jvmToolchain(11)
 }
 
 gradlePlugin {

@@ -34,6 +34,7 @@ dependencies {
     testImplementation(project(":mps-model-adapters"))
     testImplementation(libs.kotlin.serialization.json)
     testImplementation(libs.xmlunit.matchers)
+    testImplementation(libs.jimfs)
 }
 
 intellij {

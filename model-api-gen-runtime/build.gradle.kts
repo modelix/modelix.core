@@ -1,30 +1,11 @@
 plugins {
-    kotlin("multiplatform")
+    `modelix-kotlin-multiplatform`
     kotlin("plugin.serialization")
 }
 
 val mpsExtensionsVersion: String by rootProject
 
 kotlin {
-    jvm()
-    js(IR) {
-        browser {
-            testTask {
-                useMocha {
-                    timeout = "10s"
-                }
-            }
-        }
-        nodejs {
-            testTask {
-                useMocha {
-                    timeout = "10s"
-                }
-            }
-        }
-        useCommonJs()
-    }
-
     sourceSets {
         all {
             languageSettings.optIn("kotlin.js.ExperimentalJsExport")

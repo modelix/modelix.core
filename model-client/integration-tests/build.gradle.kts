@@ -15,29 +15,11 @@
 // The solution with Docker Compose works for now
 // because the number of tests is small and only one container configuration is enough.
 plugins {
-    kotlin("multiplatform")
+    `modelix-kotlin-multiplatform`
     alias(libs.plugins.docker.compose)
 }
 
 kotlin {
-    jvm()
-    js(IR) {
-        browser {
-            testTask {
-                useMocha {
-                    timeout = "30s"
-                }
-            }
-        }
-        nodejs {
-            testTask {
-                useMocha {
-                    timeout = "30s"
-                }
-            }
-        }
-        useCommonJs()
-    }
     sourceSets {
         val commonTest by getting {
             dependencies {

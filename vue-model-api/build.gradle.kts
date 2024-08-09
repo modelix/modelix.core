@@ -7,7 +7,7 @@ plugins {
     base
     alias(libs.plugins.node)
     alias(libs.plugins.npm.publish)
-    id("modelix-project-repositories")
+    `modelix-project-repositories`
 }
 
 val updateModelClient = tasks.register<NpmTask>("updateModelClient") {

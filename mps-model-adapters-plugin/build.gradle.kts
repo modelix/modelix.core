@@ -3,7 +3,7 @@ import org.modelix.copyMps
 plugins {
     `modelix-kotlin-jvm`
     alias(libs.plugins.intellij)
-    id("modelix-project-repositories")
+    `modelix-project-repositories`
 }
 
 dependencies {

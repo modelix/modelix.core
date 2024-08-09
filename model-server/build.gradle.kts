@@ -84,10 +84,6 @@ dependencies {
     testImplementation(project(":modelql-untyped"))
 }
 
-tasks.test {
-    useJUnitPlatform()
-}
-
 tasks.named<ShadowJar>("shadowJar") {
     archiveBaseName.set("model-server")
     archiveClassifier.set("fatJar")

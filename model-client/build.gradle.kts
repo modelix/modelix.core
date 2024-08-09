@@ -2,17 +2,11 @@ import dev.petuska.npm.publish.task.NpmPackTask
 
 plugins {
     `maven-publish`
-    kotlin("multiplatform")
+    `modelix-kotlin-multiplatform`
     alias(libs.plugins.spotless)
     alias(libs.plugins.npm.publish)
     `java-library`
     jacoco
-}
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(11))
-    }
 }
 
 val kotlinCoroutinesVersion: String by rootProject
@@ -21,26 +15,9 @@ val ktorVersion: String by rootProject
 val kotlinxSerializationVersion: String by rootProject
 
 kotlin {
-    jvmToolchain(11)
-    jvm()
     js(IR) {
-        browser {
-            testTask {
-                useMocha {
-                    timeout = "30s"
-                }
-            }
-        }
-        nodejs {
-            testTask {
-                useMocha {
-                    timeout = "30s"
-                }
-            }
-        }
         binaries.library()
         generateTypeScriptDefinitions()
-        useCommonJs()
     }
     sourceSets {
         val commonMain by getting {

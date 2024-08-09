@@ -1,23 +1,8 @@
 plugins {
-    kotlin("multiplatform")
+    `modelix-kotlin-multiplatform`
 }
 
 kotlin {
-    jvmToolchain(11)
-    js(IR) {
-        browser {
-            testTask {
-                useMocha {
-                    timeout = "60s"
-                }
-            }
-        }
-    }
-    jvm {
-        testRuns["test"].executionTask.configure {
-            useJUnitPlatform()
-        }
-    }
     sourceSets {
         val commonMain by getting {
             dependencies {

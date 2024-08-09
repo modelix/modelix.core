@@ -14,31 +14,12 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
  * limitations under the License.
  */
 plugins {
-    kotlin("multiplatform")
+    `modelix-kotlin-multiplatform`
     kotlin("plugin.serialization")
     `maven-publish`
 }
 
 kotlin {
-    jvm()
-    js(IR) {
-        browser {
-            testTask {
-                useMocha {
-                    timeout = "10s"
-                }
-            }
-        }
-        nodejs {
-            testTask {
-                useMocha {
-                    timeout = "10s"
-                }
-            }
-        }
-        useCommonJs()
-    }
-
     sourceSets {
         val commonMain by getting {
             dependencies {

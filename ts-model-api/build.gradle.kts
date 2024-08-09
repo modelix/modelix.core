@@ -2,7 +2,7 @@ plugins {
   base
   alias(libs.plugins.node)
   alias(libs.plugins.npm.publish)
-  id("modelix-project-repositories")
+  `modelix-project-repositories`
 }
 
 val npmRunBuild = tasks.named("npm_run_build") {

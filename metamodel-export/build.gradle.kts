@@ -2,7 +2,7 @@ import org.modelix.mpsHomeDir
 
 plugins {
     base
-    kotlin("jvm")
+    `modelix-kotlin-jvm`
 }
 
 group = "org.modelix.mps"

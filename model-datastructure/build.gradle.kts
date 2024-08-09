@@ -1,27 +1,9 @@
 plugins {
     `maven-publish`
-    kotlin("multiplatform")
+    `modelix-kotlin-multiplatform`
 }
 
 kotlin {
-    jvm()
-    js(IR) {
-        browser {
-            testTask {
-                useMocha {
-                    timeout = "30s"
-                }
-            }
-        }
-        nodejs {
-            testTask {
-                useMocha {
-                    timeout = "30s"
-                }
-            }
-        }
-        useCommonJs()
-    }
     sourceSets {
         val commonMain by getting {
             dependencies {

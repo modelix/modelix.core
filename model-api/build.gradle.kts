@@ -1,23 +1,12 @@
 plugins {
     `maven-publish`
-    kotlin("multiplatform")
+    `modelix-kotlin-multiplatform`
     kotlin("plugin.serialization")
 }
 
 description = "API to access models stored in Modelix"
 
 kotlin {
-    jvm()
-    js(IR) {
-        nodejs {
-            testTask {
-                useMocha {
-                    timeout = "10s"
-                }
-            }
-        }
-        useCommonJs()
-    }
     sourceSets {
         val commonMain by getting {
             dependencies {

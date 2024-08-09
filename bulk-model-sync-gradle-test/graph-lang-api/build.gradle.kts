@@ -1,6 +1,6 @@
 plugins {
     id("org.modelix.model-api-gen")
-    kotlin("jvm")
+    `modelix-kotlin-jvm`
 }
 
 repositories {
@@ -30,7 +30,6 @@ kotlin {
     sourceSets.named("main") {
         kotlin.srcDir(kotlinGenDir)
     }
-    jvmToolchain(11)
 }
 
 metamodel {

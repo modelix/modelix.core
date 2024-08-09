@@ -16,7 +16,6 @@
 
 package org.modelix.model
 
-import org.junit.Test
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.getRootNode
@@ -26,6 +25,7 @@ import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.MapBasedStore
+import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class InMemoryModelTest {

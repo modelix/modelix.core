@@ -25,7 +25,7 @@ plugins {
     // and build something custom using the relevant parts.
     // For the time being, this solution works without much overhead and great benefit.)
     alias(libs.plugins.intellij)
-    id("modelix-project-repositories")
+    `modelix-project-repositories`
 }
 
 dependencies {

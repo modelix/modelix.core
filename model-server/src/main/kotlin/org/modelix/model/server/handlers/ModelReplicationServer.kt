@@ -287,9 +287,9 @@ class ModelReplicationServer(
         val branchRef = repositoryId(repository).getBranchReference(branch)
         checkPermission(ModelServerPermissionSchema.branch(branchRef).query)
         runWithRepository(repository) {
-            val version = repositoriesManager.getVersion(branchRef)
+            val version = repositoriesManager.getVersion(branchRef) ?: throw BranchNotFoundException(branchRef)
             LOG.trace("Running query on {} @ {}", branchRef, version)
-            val initialTree = version!!.getTree()
+            val initialTree = version.getTree()
             val otBranch = OTBranch(
                 PBranch(initialTree, modelClient.idGenerator),
                 modelClient.idGenerator,

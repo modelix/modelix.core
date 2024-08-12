@@ -38,7 +38,7 @@
     "@typescript-eslint/eslint-plugin": "^8.0.1",
     "@typescript-eslint/parser": "^8.0.1",
     "dukat": "^0.5.8-rc.4",
-    "eslint": "^9.8.0",
+    "eslint": "^9.9.0",
     "husky": "^9.1.4",
     "shx": "^0.3.2",
     "typescript": "^5.5.4"

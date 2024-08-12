@@ -66,6 +66,7 @@ import org.modelix.model.operations.RevertToOp
 import org.modelix.model.operations.applyOperation
 import org.modelix.model.persistent.CPVersion.Companion.DESERIALIZER
 import org.modelix.model.server.ModelServerPermissionSchema
+import org.modelix.model.server.handlers.BranchNotFoundException
 import org.modelix.model.server.handlers.IRepositoriesManager
 import org.modelix.model.server.templates.PageWithMenuBar
 import java.time.LocalDateTime
@@ -128,7 +129,7 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
     }
 
     private suspend fun revert(repositoryAndBranch: BranchReference, from: String?, to: String?, author: String?) {
-        val version = repositoriesManager.getVersion(repositoryAndBranch) ?: throw RuntimeException("Branch doesn't exist: $repositoryAndBranch")
+        val version = repositoriesManager.getVersion(repositoryAndBranch) ?: throw BranchNotFoundException(repositoryAndBranch)
         val branch = OTBranch(PBranch(version.getTree(), client.idGenerator), client.idGenerator, client.storeCache)
         branch.runWriteT { t ->
             t.applyOperation(RevertToOp(KVEntryReference(from!!, DESERIALIZER), KVEntryReference(to!!, DESERIALIZER)))

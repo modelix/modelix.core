@@ -28,6 +28,7 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.accept
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
+import io.ktor.client.request.post
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -189,6 +190,15 @@ class ModelReplicationServerTest {
             assertEquals(HttpStatusCode.BadRequest, response.status)
             assertContains(response.bodyAsText(), "Invalid repository name")
         }
+    }
+
+    @Test
+    fun `responds with 404 when querying non-existent branch`() = runWithTestModelServer { _, _ ->
+        val repositoryId = "abc"
+        val branch = "non-existing-branch"
+        val response = client.post("/v2/repositories/$repositoryId/branches/$branch/query")
+        response shouldHaveStatus 404
+        assertContains(response.bodyAsText(), "Branch '$branch' does not exist in repository '$repositoryId'")
     }
 
     @Test

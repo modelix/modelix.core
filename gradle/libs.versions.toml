@@ -128,3 +128,5 @@ micrometer-registry-prometheus = { group = "io.micrometer", name = "micrometer-r
 
 detekt-api = { group = "io.gitlab.arturbosch.detekt", name= "detekt-api", version.ref = "detekt" }
 detekt-test = { group = "io.gitlab.arturbosch.detekt", name= "detekt-test", version.ref = "detekt" }
+
+jimfs = { group = "com.google.jimfs", name = "jimfs", version = "1.3.0" }

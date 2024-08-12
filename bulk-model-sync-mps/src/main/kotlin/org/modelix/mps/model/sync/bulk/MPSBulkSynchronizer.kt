@@ -33,6 +33,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
+import org.jetbrains.annotations.VisibleForTesting
 import org.jetbrains.mps.openapi.model.EditableSModel
 import org.jetbrains.mps.openapi.module.ModelAccess
 import org.jetbrains.mps.openapi.module.SModule
@@ -55,6 +56,7 @@ import org.modelix.model.sync.bulk.ModelImporter
 import org.modelix.model.sync.bulk.ModelSynchronizer
 import org.modelix.model.sync.bulk.isModuleIncluded
 import java.io.File
+import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -91,14 +93,38 @@ object MPSBulkSynchronizer {
         val includedModuleNames = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.output.modules"))
         val includedModulePrefixes =
             parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.output.modules.prefixes"))
+        val outputPathName = System.getProperty("modelix.mps.model.sync.bulk.output.path")
+        val outputPath = Path.of(outputPathName)
+        exportModulesFromRepository(repository, includedModuleNames, includedModulePrefixes, outputPath)
+    }
 
+    /**
+     * Export modules that are included either by [includedModuleNames] or [includedModulePrefixes]
+     * as files into [outputPath].
+     */
+    @JvmStatic
+    @VisibleForTesting
+    fun exportModulesFromRepository(
+        repository: SRepository,
+        includedModuleNames: Set<String>,
+        includedModulePrefixes: Set<String>,
+        outputPath: Path,
+    ) {
         repository.modelAccess.runReadAction {
             val allModules = repository.modules
             val includedModules = allModules.filter {
                 isModuleIncluded(it.moduleName!!, includedModuleNames, includedModulePrefixes)
             }
+
+            require(includedModules.isNotEmpty()) {
+                """
+                    No module matched the inclusion criteria.
+                    [includedModules] = $includedModuleNames
+                    [includedModulePrefixes] = $includedModulePrefixes
+                """.trimIndent()
+            }
+
             val numIncludedModules = includedModules.count()
-            val outputPath = System.getProperty("modelix.mps.model.sync.bulk.output.path")
             val counter = AtomicInteger()
 
             includedModules.parallelStream().forEach { module ->
@@ -107,7 +133,7 @@ object MPSBulkSynchronizer {
                 repository.modelAccess.runReadAction {
                     println("Exporting module $pos of $numIncludedModules: '${module.moduleName}'")
                     val exporter = ModelExporter(MPSModuleAsNode(module))
-                    val outputFile = File(outputPath + File.separator + module.moduleName + ".json")
+                    val outputFile = outputPath.resolve(module.moduleName + ".json")
                     exporter.export(outputFile)
                     println("Exported module $pos of $numIncludedModules: '${module.moduleName}'")
                 }
@@ -162,6 +188,7 @@ object MPSBulkSynchronizer {
      * [getModulesToImport] is a lambda to be executed with read access in MPS.
      */
     @JvmStatic
+    @VisibleForTesting
     fun importModelsIntoRepository(
         repository: SRepository,
         rootOfImport: INode,

@@ -84,7 +84,7 @@ abstract class ExportFromModelServer : DefaultTask() {
             branch.runRead {
                 val root = branch.getRootNode()
                 logger.info("Got root node: {}", root)
-                val outputDir = outputDir.get().asFile
+                val outputDir = outputDir.get().asFile.toPath()
 
                 getIncludedModules(root).forEach {
                     val fileName = it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)

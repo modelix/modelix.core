@@ -77,7 +77,7 @@ class CPHamtLeaf(
             IAsyncValue.UNIT
         } else if (visitor.visitChangesOnly()) {
             if (oldNode != null) {
-                oldNode.get(key, shift, bulkQuery).flatMap { oldValue ->
+                oldNode.get(key, shift, bulkQuery).thenRequest { oldValue ->
                     if (oldValue != null && value != oldValue) visitor.entryChanged(key, oldValue, value) else IAsyncValue.UNIT
                 }
             } else {
@@ -93,7 +93,7 @@ class CPHamtLeaf(
                     visitor.entryRemoved(k, v)
                 }
             }
-            oldNode!!.visitEntries(bulkQuery, bp).flatMap {
+            oldNode!!.visitEntries(bulkQuery, bp).thenRequest {
                 val oldValue = oldValue
                 if (oldValue == null) {
                     visitor.entryAdded(key, value)

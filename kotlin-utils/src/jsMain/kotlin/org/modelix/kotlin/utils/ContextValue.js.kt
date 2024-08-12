@@ -99,4 +99,8 @@ actual class ContextValue<E> {
     }
 
     inner class ContextValueElement<E>(val stack: List<E>) : AbstractCoroutineContextElement(contextElementKey)
+
+    actual fun getContextElement(newValue: E): CoroutineContext.Element {
+        return ContextValueElement(listOf(newValue))
+    }
 }

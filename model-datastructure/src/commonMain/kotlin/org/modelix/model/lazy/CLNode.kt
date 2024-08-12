@@ -83,7 +83,7 @@ class CLNode(private val tree: CLTree, private val data: CPNode) {
             getDescendants(bulkQuery, false)
                 .map { descendants -> (sequenceOf(this) + descendants).asIterable() }
         } else {
-            getChildren(bulkQuery).flatMap { children ->
+            getChildren(bulkQuery).thenRequest { children ->
                 bulkQuery
                     .flatMap(children) { child -> child.getDescendants(bulkQuery, true) }
                     .map { it.flatten() }

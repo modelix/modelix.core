@@ -331,14 +331,14 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
     override fun getDescendants(rootIds: Iterable<Long>, includeSelf: Boolean): Iterable<CLNode> {
         val bulkQuery = store.newBulkQuery()
         val roots: IAsyncValue<List<CPNode>> = resolveElements(rootIds.toList(), bulkQuery)
-        val descendants = roots.flatMap { bulkQuery.flatMap(it) { getDescendants(it, bulkQuery, includeSelf) } }
+        val descendants = roots.thenRequest { bulkQuery.flatMap(it) { getDescendants(it, bulkQuery, includeSelf) } }
         return descendants.awaitBlocking().flatten().map { CLNode(this, it) }
     }
 
     override fun getAncestors(nodeIds: Iterable<Long>, includeSelf: Boolean): Set<Long> {
         val bulkQuery = store.newBulkQuery()
         val nodes: IAsyncValue<List<CPNode>> = resolveElements(nodeIds, bulkQuery)
-        val ancestors = nodes.flatMap { bulkQuery.flatMap(it) { getAncestors(it, bulkQuery, includeSelf) } }
+        val ancestors = nodes.thenRequest { bulkQuery.flatMap(it) { getAncestors(it, bulkQuery, includeSelf) } }
         val result = HashSet<Long>()
         ancestors.awaitBlocking().forEach { result.addAll(it.map { it.id }) }
         return result
@@ -579,7 +579,7 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
             return bulkQuery.constant(null)
         }
         val hash = nodesMap!!.get(id, bulkQuery)
-        return hash.flatMap {
+        return hash.thenRequest {
             if (it == null) throw NodeNotFoundException(id)
             createElement(it, bulkQuery)
         }
@@ -591,7 +591,7 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
         val b: IAsyncValue<List<KVEntryReference<CPNode>>> = a.map { hashes: List<KVEntryReference<CPNode>?> ->
             hashes.mapIndexed { index, s -> s ?: throw NodeNotFoundException(ids[index]) }
         }
-        return b.flatMap { hashes -> createElements(hashes, bulkQuery) }
+        return b.thenRequest { hashes -> createElements(hashes, bulkQuery) }
     }
 
     fun createElement(hash: KVEntryReference<CPNode>?, query: IBulkQuery): IAsyncValue<CPNode?> {
@@ -641,7 +641,7 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
             getDescendants(node, bulkQuery, false)
                 .map { descendants -> (sequenceOf(node) + descendants).asIterable() }
         } else {
-            getChildren(node, bulkQuery).flatMap { children: Iterable<CPNode> ->
+            getChildren(node, bulkQuery).thenRequest { children: Iterable<CPNode> ->
                 val d: IAsyncValue<Iterable<CPNode>> = bulkQuery
                     .flatMap(children) { child: CPNode -> getDescendants(child, bulkQuery, true) }
                     .map { it.flatten() }

@@ -15,6 +15,7 @@ package org.modelix.kotlin.utils
 
 import kotlinx.coroutines.asContextElement
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.CoroutineContext
 
 actual class ContextValue<E>(private val initialStack: List<E>) {
 
@@ -52,5 +53,9 @@ actual class ContextValue<E>(private val initialStack: List<E>) {
 
     actual fun getAllValues(): List<E> {
         return valueStack.get()
+    }
+
+    actual fun getContextElement(newValue: E): CoroutineContext.Element {
+        return valueStack.asContextElement(listOf(newValue))
     }
 }

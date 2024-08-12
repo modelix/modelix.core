@@ -16,7 +16,7 @@
 package org.modelix.model.persistent
 
 import org.modelix.model.api.async.IAsyncValue
-import org.modelix.model.api.async.mapList
+import org.modelix.model.api.async.requestAll
 import org.modelix.model.bitCount
 import org.modelix.model.lazy.COWArrays
 import org.modelix.model.lazy.IBulkQuery
@@ -64,7 +64,7 @@ class CPHamtInternal(
         val childRefs: Array<KVEntryReference<CPHamtNode>> = data.children
         return bulkQuery
             .flatMap(childRefs.asIterable(), { bulkQuery.query(it) })
-            .flatMap { resolvedChildren: List<CPHamtNode?> ->
+            .thenRequest { resolvedChildren: List<CPHamtNode?> ->
                 val resolvedChildrenNN = resolvedChildren.mapIndexed { index, child ->
                     child ?: throw RuntimeException("Entry not found in store: " + childRefs[index].getHash())
                 }
@@ -98,7 +98,7 @@ class CPHamtInternal(
     override fun get(key: Long, shift: Int, bulkQuery: IBulkQuery): IAsyncValue<KVEntryReference<CPNode>?> {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         val childIndex = CPHamtNode.indexFromKey(key, shift)
-        return getChild(childIndex, bulkQuery).flatMap { child: CPHamtNode? ->
+        return getChild(childIndex, bulkQuery).thenRequest { child: CPHamtNode? ->
             if (child == null) {
                 bulkQuery.constant(null)
             } else {
@@ -172,7 +172,7 @@ class CPHamtInternal(
     }
 
     override fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IAsyncValue<Unit> {
-        return bulkQuery.flatMap(data.children.asIterable()) { bulkQuery.query(it) }.flatMap { children ->
+        return bulkQuery.flatMap(data.children.asIterable()) { bulkQuery.query(it) }.thenRequest { children ->
             bulkQuery.flatMap(children) { it!!.visitEntries(bulkQuery, visitor) }.map { }
         }
     }
@@ -197,11 +197,11 @@ class CPHamtInternal(
                         } else {
                             IAsyncValue.UNIT
                         }
-                    }.mapList().map { }
+                    }.requestAll().map { }
                 } else {
                     (0 until CPHamtNode.ENTRIES_PER_LEVEL).map { logicalIndex ->
                         getChild(logicalIndex, bulkQuery).map { child ->
-                            oldInternalNode.getChild(logicalIndex, bulkQuery).flatMap { oldChild ->
+                            oldInternalNode.getChild(logicalIndex, bulkQuery).thenRequest { oldChild ->
                                 if (child == null) {
                                     if (oldChild == null) {
                                         // no change
@@ -230,7 +230,7 @@ class CPHamtInternal(
                                 }
                             }
                         }
-                    }.mapList().map { }
+                    }.requestAll().map { }
                 }
             }
             is CPHamtLeaf -> {
@@ -254,7 +254,7 @@ class CPHamtInternal(
                         } else {
                             visitor.entryAdded(k, v)
                         }
-                    }.flatMap {
+                    }.thenRequest {
                         entryVisitingDone = true
                         if (!oldEntryExists) visitor.entryRemoved(oldNode.key, oldNode.value) else IAsyncValue.UNIT
                     }

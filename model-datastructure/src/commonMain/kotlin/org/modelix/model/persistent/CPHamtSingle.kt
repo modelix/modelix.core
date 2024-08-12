@@ -46,7 +46,7 @@ class CPHamtSingle(
     }
 
     override fun calculateSize(bulkQuery: IBulkQuery): IAsyncValue<Long> {
-        return getChild(bulkQuery).flatMap { it.calculateSize(bulkQuery) }
+        return getChild(bulkQuery).thenRequest { it.calculateSize(bulkQuery) }
     }
 
     private fun maskBits(key: Long, shift: Int): Long = (key ushr (CPHamtNode.MAX_BITS - CPHamtNode.BITS_PER_LEVEL * numLevels - shift)) and mask
@@ -55,7 +55,7 @@ class CPHamtSingle(
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         if (maskBits(key, shift) == bits) {
             return bulkQuery.query(child)
-                .flatMap {
+                .thenRequest {
                     val childData = it ?: throw RuntimeException("Entry not found in store: " + child.getHash())
                     childData.get(key, shift + numLevels * CPHamtNode.BITS_PER_LEVEL, bulkQuery)
                 }
@@ -114,15 +114,15 @@ class CPHamtSingle(
     }
 
     override fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IAsyncValue<Unit> {
-        return getChild(bulkQuery).flatMap { it.visitEntries(bulkQuery, visitor) }
+        return getChild(bulkQuery).thenRequest { it.visitEntries(bulkQuery, visitor) }
     }
 
     override fun visitChanges(oldNode: CPHamtNode?, shift: Int, visitor: CPHamtNode.IChangeVisitor, bulkQuery: IBulkQuery): IAsyncValue<Unit> {
         return if (oldNode === this || hash == oldNode?.hash) {
             return IAsyncValue.UNIT
         } else if (oldNode is CPHamtSingle && oldNode.numLevels == numLevels) {
-            getChild(bulkQuery).flatMap { child ->
-                oldNode.getChild(bulkQuery).flatMap { oldNode ->
+            getChild(bulkQuery).thenRequest { child ->
+                oldNode.getChild(bulkQuery).thenRequest { oldNode ->
                     child.visitChanges(oldNode, shift + numLevels * CPHamtNode.BITS_PER_LEVEL, visitor, bulkQuery)
                 }
             }

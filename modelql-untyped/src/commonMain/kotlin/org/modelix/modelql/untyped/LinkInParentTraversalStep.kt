@@ -20,7 +20,6 @@ import kotlinx.serialization.Serializable
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.async.asAsyncNode
-import org.modelix.model.api.async.asFlow
 import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep

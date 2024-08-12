@@ -15,7 +15,9 @@ package org.modelix.modelql.untyped
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flattenConcat
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -38,11 +40,12 @@ import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
 import org.modelix.modelql.core.asStepFlow
 import org.modelix.modelql.core.connect
+import org.modelix.modelql.core.flatMapConcatConcurrent
 import org.modelix.modelql.core.stepOutputSerializer
 
 class DescendantsTraversalStep(val includeSelf: Boolean) : FluxTransformingStep<INode, INode>(), IFluxStep<INode> {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
-        return input.flatMapConcat {
+        return input.flatMapConcatConcurrent {
             it.value.asAsyncNode().getDescendantsAsFlow(includeSelf)
         }.asStepFlow(this)
     }

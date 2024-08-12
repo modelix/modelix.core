@@ -54,6 +54,7 @@ abstract class StoreClientAdapter(val client: IsolatingStore) : IStoreClient {
                 it.key,
             )
         }.toSet()
+        if (missingKeys.isEmpty()) return fromRepository
         val fromGlobal = client.getAll(missingKeys).mapKeys { it.key.key }
 
         return fromRepository + fromGlobal

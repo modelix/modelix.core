@@ -16,16 +16,17 @@
 package org.modelix.model.lazy
 
 import org.modelix.model.api.async.IAsyncValue
+import org.modelix.model.api.async.NonAsyncValue
 import org.modelix.model.persistent.IKVValue
 
 class NonBulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery {
     override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IAsyncValue<O>): IAsyncValue<List<O>> {
         val list = input.asSequence().map(f).map { it.awaitBlocking() }.toList()
-        return Value(list)
+        return NonAsyncValue(list)
     }
 
     override fun <T> constant(value: T): IAsyncValue<T> {
-        return Value(value)
+        return NonAsyncValue(value)
     }
 
     override fun offerPrefetch(key: IPrefetchGoal) {
@@ -38,27 +39,5 @@ class NonBulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery 
 
     override fun executeQuery() {
         // all requests are processed immediately
-    }
-
-    class Value<T>(private val value: T) : IAsyncValue<T> {
-        override fun <R> flatMap(handler: (T) -> IAsyncValue<R>): IAsyncValue<R> {
-            return handler(value)
-        }
-
-        override fun <R> map(handler: (T) -> R): IAsyncValue<R> {
-            return Value(handler(value))
-        }
-
-        override fun onReceive(handler: (T) -> Unit) {
-            handler(value)
-        }
-
-        override suspend fun await(): T {
-            return value
-        }
-
-        override fun awaitBlocking(): T {
-            return value
-        }
     }
 }

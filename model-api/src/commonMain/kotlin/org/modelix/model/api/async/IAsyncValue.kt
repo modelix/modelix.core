@@ -17,16 +17,19 @@
 package org.modelix.model.api.async
 
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 
 interface IAsyncValue<out E> {
     fun onReceive(callback: (E) -> Unit)
     fun <R> map(body: (E) -> R): IAsyncValue<R>
-    fun <R> flatMap(body: (E) -> IAsyncValue<R>): IAsyncValue<R>
+    fun <R> thenRequest(body: (E) -> IAsyncValue<R>): IAsyncValue<R>
     fun awaitBlocking(): E
     suspend fun await(): E
+    fun asFlow(): Flow<E>
 
     companion object {
         private val NULL_CONSTANT = NonAsyncValue<Any?>(null)
@@ -39,12 +42,9 @@ interface IAsyncValue<out E> {
 fun <T> T.asAsync(): IAsyncValue<T> = IAsyncValue.constant(this)
 fun <T> IAsyncValue<T>.asNonAsync(): T = (this as NonAsyncValue<T>).value
 
-fun <T> IAsyncValue<T>.asFlow() = flow<T> { emit(await()) }
-fun <T> IAsyncValue<Iterable<T>>.asFlattenedFlow() = asFlow().flatMapConcat { it.asFlow() }
+fun <T> List<IAsyncValue<T>>.requestAll(): IAsyncValue<List<T>> = requestAllAndMap { it }
 
-fun <T> List<IAsyncValue<T>>.mapList(): IAsyncValue<List<T>> = mapList { it }
-
-fun <T, R> List<IAsyncValue<T>>.mapList(body: (List<T>) -> R): IAsyncValue<R> {
+fun <T, R> List<IAsyncValue<T>>.requestAllAndMap(body: (List<T>) -> R): IAsyncValue<R> {
     val input = this
     if (input.isEmpty()) {
         return body(emptyList()).asAsync()
@@ -52,7 +52,7 @@ fun <T, R> List<IAsyncValue<T>>.mapList(body: (List<T>) -> R): IAsyncValue<R> {
     val output = arrayOfNulls<Any>(input.size)
     val done = BooleanArray(input.size)
     var remaining = input.size
-    val result = AsyncValue<R>()
+    val result = CompletableDeferred<R>()
     for (i in input.indices) {
         input[i].onReceive {
             if (done[i]) return@onReceive
@@ -60,11 +60,11 @@ fun <T, R> List<IAsyncValue<T>>.mapList(body: (List<T>) -> R): IAsyncValue<R> {
             output[i] = it
             remaining--
             if (remaining == 0) {
-                result.done(body(output.asList() as List<T>))
+                result.complete(body(output.asList() as List<T>))
             }
         }
     }
-    return result
+    return DeferredAsAsyncValue(result)
 }
 
 fun <T1, T2, R> Pair<IAsyncValue<T1>, IAsyncValue<T2>>.flatMapBoth(body: (T1, T2) -> IAsyncValue<R>): IAsyncValue<R> {
@@ -72,11 +72,11 @@ fun <T1, T2, R> Pair<IAsyncValue<T1>, IAsyncValue<T2>>.flatMapBoth(body: (T1, T2
 }
 
 fun <T1, T2, R> Pair<IAsyncValue<T1>, IAsyncValue<T2>>.mapBoth(body: (T1, T2) -> R): IAsyncValue<R> {
-    return toList().mapList { body(it[0] as T1, it[1] as T2) }
+    return toList().requestAllAndMap { body(it[0] as T1, it[1] as T2) }
 }
 
 fun <T> IAsyncValue<IAsyncValue<T>>.flatten(): IAsyncValue<T> {
-    return flatMap { it }
+    return thenRequest { it }
 }
 
 fun <T : Any> IAsyncValue<T?>.checkNotNull(message: () -> String): IAsyncValue<T> {
@@ -84,7 +84,7 @@ fun <T : Any> IAsyncValue<T?>.checkNotNull(message: () -> String): IAsyncValue<T
 }
 
 class NonAsyncValue<out E>(val value: E) : IAsyncValue<E> {
-    override fun <R> flatMap(body: (E) -> IAsyncValue<R>): IAsyncValue<R> {
+    override fun <R> thenRequest(body: (E) -> IAsyncValue<R>): IAsyncValue<R> {
         return body(value)
     }
 
@@ -103,14 +103,13 @@ class NonAsyncValue<out E>(val value: E) : IAsyncValue<E> {
     override suspend fun await(): E {
         return value
     }
+
+    override fun asFlow(): Flow<E> {
+        return flowOf(value)
+    }
 }
 
-class AsyncValue<E> : IAsyncValue<E> {
-    private val value: CompletableDeferred<E> = CompletableDeferred()
-
-    fun done(value: E) {
-        this.value.complete(value)
-    }
+class DeferredAsAsyncValue<E>(val value: Deferred<E>) : IAsyncValue<E> {
 
     override fun awaitBlocking(): E {
         return value.getCompleted()
@@ -127,14 +126,53 @@ class AsyncValue<E> : IAsyncValue<E> {
     }
 
     override fun <R> map(body: (E) -> R): IAsyncValue<R> {
-        val output = AsyncValue<R>()
-        onReceive {
-            output.done(body(it))
-        }
-        return output
+        return MappingAsyncValue(this, body)
     }
 
-    override fun <R> flatMap(body: (E) -> IAsyncValue<R>): IAsyncValue<R> {
-        TODO("Not yet implemented")
+    override fun <R> thenRequest(body: (E) -> IAsyncValue<R>): IAsyncValue<R> {
+        val result = CompletableDeferred<R>()
+        onReceive { body(it).onReceive { result.complete(it) } }
+        return DeferredAsAsyncValue(result)
+    }
+
+    override fun asFlow(): Flow<E> {
+        return DeferredAsFlow(value)
     }
 }
+
+class MappingAsyncValue<In, Out>(val input: IAsyncValue<In>, val mappingFunction: (In) -> Out): IAsyncValue<Out> {
+    override fun asFlow(): Flow<Out> {
+        return input.asFlow().map(mappingFunction)
+    }
+
+    override fun onReceive(callback: (Out) -> Unit) {
+        input.onReceive { callback(mappingFunction(it)) }
+    }
+
+    override fun <R> map(body: (Out) -> R): IAsyncValue<R> {
+        return MappingAsyncValue(this, body)
+    }
+
+    override fun <R> thenRequest(body: (Out) -> IAsyncValue<R>): IAsyncValue<R> {
+        val result = CompletableDeferred<R>()
+        onReceive { body(it).onReceive { result.complete(it) } }
+        return DeferredAsAsyncValue(result)
+    }
+
+    override fun awaitBlocking(): Out {
+        return mappingFunction(input.awaitBlocking())
+    }
+
+    override suspend fun await(): Out {
+        return mappingFunction(input.await())
+    }
+}
+
+
+class DeferredAsFlow<E>(val deferred: Deferred<E>): Flow<E> {
+    override suspend fun collect(collector: FlowCollector<E>) {
+        collector.emit(deferred.await())
+    }
+}
+
+fun <T> Deferred<T>.asFlow(): Flow<T> = DeferredAsFlow(this)

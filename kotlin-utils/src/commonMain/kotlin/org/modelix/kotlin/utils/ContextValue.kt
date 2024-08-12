@@ -13,6 +13,8 @@
  */
 package org.modelix.kotlin.utils
 
+import kotlin.coroutines.CoroutineContext
+
 /**
  * A common abstraction over ThreadLocal and CoroutineContext that integrates both worlds.
  * Allows to set a value that can be read from everywhere on the current thread or coroutine.
@@ -33,6 +35,7 @@ expect class ContextValue<E> {
     fun <T> computeWith(newValue: E, body: () -> T): T
 
     suspend fun <T> runInCoroutine(newValue: E, body: suspend () -> T): T
+    fun getContextElement(newValue: E): CoroutineContext.Element
 }
 
 fun <E, T> ContextValue<E>.offer(value: E, body: () -> T): T {

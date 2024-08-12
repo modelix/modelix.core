@@ -34,7 +34,8 @@ import org.modelix.model.api.async.IAsyncValue
 import org.modelix.model.api.async.checkNotNull
 import org.modelix.model.api.async.flatMapBoth
 import org.modelix.model.api.async.mapBoth
-import org.modelix.model.api.async.mapList
+import org.modelix.model.api.async.requestAll
+import org.modelix.model.api.async.requestAllAndMap
 import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.KVEntryReference
@@ -53,9 +54,9 @@ class AsyncTree(private val treeData: () -> CPTree, private val bulkQuery: () ->
 
     private fun getNode(id: Long): IAsyncValue<CPNode> = tryGetNodeRef(id)
         .checkNotNull { "Node ${id.toString(16)} not found in $nodesMap" }
-        .flatMap { it.query() }
+        .thenRequest { it.query() }
 
-    private fun tryGetNodeRef(id: Long): IAsyncValue<KVEntryReference<CPNode>?> = nodesMap.query().flatMap { it.get(id, bulkQuery()) }
+    private fun tryGetNodeRef(id: Long): IAsyncValue<KVEntryReference<CPNode>?> = nodesMap.query().thenRequest { it.get(id, bulkQuery()) }
 
     override fun containsNode(nodeId: Long): IAsyncValue<Boolean> {
         return tryGetNodeRef(nodeId).map { it != null }
@@ -127,7 +128,7 @@ class AsyncTree(private val treeData: () -> CPTree, private val bulkQuery: () ->
                                 }
                             }
 
-                        notifiedChanges += (newNode.childrenIdArray.map { getNode(it) }.mapList() to oldNode.childrenIdArray.map { getNode(it) }.mapList()).flatMapBoth { newChildrenList, oldChildrenList ->
+                        notifiedChanges += (newNode.childrenIdArray.map { getNode(it) }.requestAll() to oldNode.childrenIdArray.map { getNode(it) }.requestAll()).flatMapBoth { newChildrenList, oldChildrenList ->
                             val oldChildren: MutableMap<String?, MutableList<CPNode>> = HashMap()
                             val newChildren: MutableMap<String?, MutableList<CPNode>> = HashMap()
                             oldChildrenList.forEach { oldChildren.getOrPut(it.roleInParent, { ArrayList() }).add(it) }
@@ -146,10 +147,10 @@ class AsyncTree(private val treeData: () -> CPTree, private val bulkQuery: () ->
                                 } else {
                                     null
                                 }
-                            }.mapList()
+                            }.requestAll()
                         }.map { }
 
-                        notifiedChanges.mapList()
+                        notifiedChanges.requestAll()
                     }
                 }
             },
@@ -199,8 +200,8 @@ class AsyncTree(private val treeData: () -> CPTree, private val bulkQuery: () ->
     }
 
     override fun getChildRoles(sourceId: Long): IAsyncValue<List<String?>> {
-        return getAllChildren(sourceId).flatMap {
-            it.map { getNode(it) }.mapList {
+        return getAllChildren(sourceId).thenRequest {
+            it.map { getNode(it) }.requestAllAndMap {
                 it.map { it.roleInParent }.distinct()
             }
         }
@@ -227,8 +228,8 @@ class AsyncTree(private val treeData: () -> CPTree, private val bulkQuery: () ->
 
     override fun getChildren(parentId: Long, role: IChildLinkReference): IAsyncValue<List<Long>> {
         val roleString = role.key()
-        return getAllChildren(parentId).flatMap {
-            it.map { getNode(it) }.mapList {
+        return getAllChildren(parentId).thenRequest {
+            it.map { getNode(it) }.requestAllAndMap {
                 it.filter { it.roleInParent == roleString }.map { it.id }
             }
         }

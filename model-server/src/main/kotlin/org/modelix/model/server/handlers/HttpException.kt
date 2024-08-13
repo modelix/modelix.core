@@ -66,22 +66,6 @@ open class HttpException(problem: Problem, cause: Throwable? = null) : RuntimeEx
 }
 
 /**
- * Indicates a bad request from the client with missing or invalid information provided.
- *
- * @param details the detailed message to expose to the caller
- * @param typeSuffix A detailed type making this bad request instance uniquely identifiable. [PROBLEM_NAMESPACE] will
- *                   automatically be prepended. This field should be written in kebab-case.
- * @param cause The causing exception for the bad request or null if none.
- */
-class BadRequestException(details: String, typeSuffix: String, cause: Throwable? = null) : HttpException(
-    HttpStatusCode.BadRequest,
-    title = "Bad request",
-    details = details,
-    type = problemType(typeSuffix),
-    cause = cause,
-)
-
-/**
  * A [HttpException] indicating that a branch was not found in a repository.
  *
  * @param branch name of the missing branch
@@ -105,7 +89,7 @@ class BranchNotFoundException(branch: String, repositoryId: String, cause: Throw
 /**
  * A [HttpException] indicating that a version inside a repository or branch was not found.
  *
- * @param versionHash has of the missing version
+ * @param versionHash hash of the missing version
  * @param cause The causing exception for the bad request or null if none.
  */
 class VersionNotFoundException(versionHash: String, cause: Throwable? = null) :
@@ -114,5 +98,81 @@ class VersionNotFoundException(versionHash: String, cause: Throwable? = null) :
         title = "Version not found",
         details = "Version '$versionHash' doesn't exist",
         type = "/problems/version-not-found",
+        cause = cause,
+    )
+
+/**
+ * An [HttpException] indicating that a provided repository name is not valid.
+ *
+ * @param invalidRepositoryId the invalid repository ID
+ * @param cause The causing exception for the bad request or null if none.
+ */
+class InvalidRepositoryIdException(invalidRepositoryId: String, cause: Throwable? = null) :
+    HttpException(
+        HttpStatusCode.BadRequest,
+        title = "Invalid repository ID.",
+        details = "Repository ID `$invalidRepositoryId` is not valid.",
+        type = "/problems/invalid-repository-id",
+        cause = cause,
+    )
+
+/**
+ * An [HttpException] indicating that an object key was uploaded without the corresponding value.
+ *
+ * @param objectKey the uploaded object key
+ */
+class ObjectKeyWithoutObjectValueException(objectKey: String) :
+    HttpException(
+        HttpStatusCode.BadRequest,
+        title = "Uploaded object key without object value.",
+        details = "Uploaded object key `$objectKey` without object value.",
+        type = "/problems/object-key-without-object-value",
+    )
+
+/**
+ * An [HttpException] indicating that an invalid object key was uploaded.
+ *
+ * @param objectKey the uploaded object key
+ */
+class InvalidObjectKeyException(objectKey: String) :
+    HttpException(
+        HttpStatusCode.BadRequest,
+        title = "Uploaded invalid object key.",
+        details = "Uploaded invalid object key `$objectKey`.",
+        type = "/problems/invalid-object-key",
+    )
+
+/**
+ * An [HttpException] indicating that an object key and value were uploaded that do not match.
+ *
+ * @param uploadedObjectKey the uploaded object key
+ * @param expectedObjectKey the expected object key based on the object value
+ * @param objectValue the uploaded object value
+ */
+class MismatchingObjectKeyAndValueException(
+    uploadedObjectKey: String,
+    expectedObjectKey: String,
+    objectValue: String,
+) :
+    HttpException(
+        HttpStatusCode.BadRequest,
+        title = "Uploaded mismatching object key and value.",
+        details = "Uploaded object key `$uploadedObjectKey` does not match expected object key `$expectedObjectKey` " +
+            "for object value `$objectValue`.",
+        type = "/problems/mismatching-object-and-value",
+    )
+
+/**
+ * A [HttpException] indicating that an object value was not found.
+ *
+ * @param objectHash hash of the missing object
+ * @param cause The causing exception for the bad request or null if none.
+ */
+class ObjectValueNotFoundException(objectHash: String, cause: Throwable? = null) :
+    HttpException(
+        HttpStatusCode.NotFound,
+        title = "Object value not found.",
+        details = "Object value with hash `$objectHash` does not exist.",
+        type = "/problems/object-value-not-found",
         cause = cause,
     )

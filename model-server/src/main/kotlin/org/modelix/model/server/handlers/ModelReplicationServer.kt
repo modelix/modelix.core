@@ -21,7 +21,7 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.request.acceptItems
 import io.ktor.server.request.receive
-import io.ktor.server.request.receiveStream
+import io.ktor.server.request.receiveChannel
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytesWriter
 import io.ktor.server.response.respondText
@@ -31,6 +31,7 @@ import io.ktor.util.cio.use
 import io.ktor.util.pipeline.PipelineContext
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.close
+import io.ktor.utils.io.readUTF8Line
 import io.ktor.utils.io.writeStringUtf8
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -239,16 +240,28 @@ class ModelReplicationServer(
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.postRepositoryObjectsGetAll(repository: String) {
         checkPermission(ModelServerPermissionSchema.repository(repository).objects.read)
-        runWithRepository(repository) {
-            val keys = call.receiveStream().bufferedReader().use { reader ->
-                reader.lineSequence().toHashSet()
+        val channel = call.receiveChannel()
+        val keys = hashSetOf<String>()
+        while (true) {
+            val line = channel.readUTF8Line() ?: break
+            keys.add(line)
+        }
+
+        val objects = runWithRepository(repository) {
+            withContext(Dispatchers.IO) {
+                modelClient.store.getAll(keys)
             }
-            val objects = withContext(Dispatchers.IO) { modelClient.store.getAll(keys) }.checkValuesNotNull {
-                "Object not found: $it"
+        }
+
+        for (entry in objects) {
+            if (entry.value == null) {
+                throw IllegalStateException("Object not found: ${entry.value}")
             }
-            call.respondTextWriter(contentType = ImmutableObjectsStream.CONTENT_TYPE) {
-                ImmutableObjectsStream.encode(this, objects)
-            }
+        }
+        @Suppress("UNCHECKED_CAST")
+        objects as Map<String, String>
+        call.respondTextWriter(contentType = ImmutableObjectsStream.CONTENT_TYPE) {
+            ImmutableObjectsStream.encode(this, objects)
         }
     }
 
@@ -336,30 +349,33 @@ class ModelReplicationServer(
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.putRepositoryObjects(repository: String) {
         checkPermission(ModelServerPermissionSchema.repository(parameter("repository")).objects.add)
-        runWithRepository(repository) {
-            val writtenEntries = withContext(Dispatchers.IO) {
-                val entries = call.receiveStream().bufferedReader().use { reader ->
-                    reader.lineSequence().windowed(2, 2).map {
-                        val key = it[0]
-                        val value = it[1]
 
-                        require(HashUtil.isSha256(key)) {
-                            "This API cannot be used to store other entries than serialized objects." +
-                                " The key is expected to be a SHA256 hash over the value: $key -> $value"
-                        }
-                        val expectedKey = HashUtil.sha256(value)
-                        require(expectedKey == key) { "Hash mismatch. Expected $expectedKey, but $key was provided. Value: $value" }
+        val channel = call.receiveChannel()
+        // Hash map can be used. Server does not expect entries in any order.
+        val entries = hashMapOf<String, String>()
 
-                        key to value
-                    }.toMap()
-                }
+        while (true) {
+            val key = channel.readUTF8Line() ?: break
+            val value = channel.readUTF8Line()!!
 
-                storeClient.putAll(entries, true)
-
-                entries.size
+            if (!HashUtil.isSha256(key)) {
+                throw IllegalStateException(
+                    "This API cannot be used to store other entries than serialized objects." +
+                        " The key is expected to be a SHA256 hash over the value: $key -> $value",
+                )
             }
-            call.respondText("$writtenEntries objects received")
+
+            val expectedKey = HashUtil.sha256(value)
+            if (expectedKey != key) {
+                throw IllegalStateException(
+                    "Hash mismatch. Expected $expectedKey, but $key was provided. Value: $value",
+                )
+            }
+            entries[key] = value
         }
+
+        runWithRepository(repository) { withContext(Dispatchers.IO) { storeClient.putAll(entries, true) } }
+        call.respondText("${entries.size} objects received")
     }
 
     @Deprecated("deprecated flag is set in the OpenAPI specification")

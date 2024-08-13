@@ -17,6 +17,7 @@
 package org.modelix.model.lazy
 
 import kotlinx.coroutines.flow.Flow
+import org.modelix.kotlin.utils.IMonoFlow
 import org.modelix.model.api.async.IAsyncValue
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.persistent.IKVValue
@@ -77,7 +78,7 @@ class SynchronizedBulkQuery(val nonThreadSafeQuery: IBulkQuery) : IBulkQuery {
             }
         }
 
-        override fun asFlow(): Flow<E> {
+        override fun asFlow(): IMonoFlow<E> {
             runSynchronized(this@SynchronizedBulkQuery) {
                 return nonThreadSafeValue.asFlow()
             }

@@ -16,6 +16,9 @@
 
 package org.modelix.model.api.async
 
+import kotlinx.coroutines.flow.Flow
+import org.modelix.kotlin.utils.IMonoFlow
+import org.modelix.kotlin.utils.IOptionalMonoFlow
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -26,17 +29,17 @@ import org.modelix.model.api.IReferenceLinkReference
 
 interface IAsyncNode {
     fun asRegularNode(): INode
-    fun getConcept(): IAsyncValue<IConcept>
-    fun getConceptRef(): IAsyncValue<ConceptReference>
-    fun getRoleInParent(): IAsyncValue<IChildLinkReference>
-    fun getParent(): IAsyncValue<IAsyncNode?>
-    fun getPropertyValue(role: IPropertyReference): IAsyncValue<String?>
-    fun getAllChildren(): IAsyncValue<List<IAsyncNode>>
-    fun getChildren(role: IChildLinkReference): IAsyncValue<List<IAsyncNode>>
-    fun getReferenceTarget(role: IReferenceLinkReference): IAsyncValue<IAsyncNode?>
-    fun getReferenceTargetRef(role: IReferenceLinkReference): IAsyncValue<INodeReference?>
-    fun getAllReferenceTargetRefs(): IAsyncValue<List<Pair<IReferenceLinkReference, INodeReference>>>
-    fun getAllReferenceTargets(): IAsyncValue<List<Pair<IReferenceLinkReference, IAsyncNode>>>
+    fun getConcept(): IMonoFlow<IConcept>
+    fun getConceptRef(): IMonoFlow<ConceptReference>
+    fun getRoleInParent(): IOptionalMonoFlow<IChildLinkReference>
+    fun getParent(): IOptionalMonoFlow<IAsyncNode>
+    fun getPropertyValue(role: IPropertyReference): IOptionalMonoFlow<String>
+    fun getAllChildren(): Flow<IAsyncNode>
+    fun getChildren(role: IChildLinkReference): Flow<IAsyncNode>
+    fun getReferenceTarget(role: IReferenceLinkReference): IOptionalMonoFlow<IAsyncNode>
+    fun getReferenceTargetRef(role: IReferenceLinkReference): IOptionalMonoFlow<INodeReference>
+    fun getAllReferenceTargetRefs(): Flow<Pair<IReferenceLinkReference, INodeReference>>
+    fun getAllReferenceTargets(): Flow<Pair<IReferenceLinkReference, IAsyncNode>>
 }
 
 interface INodeWithAsyncSupport : INode {

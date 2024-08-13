@@ -23,15 +23,11 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.count
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.single
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import org.modelix.authorization.installAuthentication
 import org.modelix.kotlin.utils.flatMapConcatConcurrent
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.IVersion
-import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.NullChildLink
 import org.modelix.model.api.PBranch
@@ -39,23 +35,13 @@ import org.modelix.model.api.TreePointer
 import org.modelix.model.api.addNewChild
 import org.modelix.model.api.async.asFlow
 import org.modelix.model.api.getRootNode
-import org.modelix.model.async.SimpleBulkQuery
 import org.modelix.model.client.IdGenerator
-import org.modelix.model.client2.IModelClientV2
-import org.modelix.model.client2.IModelClientV2Internal
-import org.modelix.model.client2.lazyLoadVersion
-import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
-import org.modelix.model.lazy.CacheConfiguration
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.persistent.MapBasedStore
-import org.modelix.model.server.api.v2.ObjectHash
-import org.modelix.model.server.api.v2.SerializedObject
 import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.ModelReplicationServer
-import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.server.store.forContextRepository
@@ -65,12 +51,9 @@ import org.modelix.modelql.core.buildMonoQuery
 import org.modelix.modelql.core.count
 import org.modelix.modelql.untyped.createQueryExecutor
 import org.modelix.modelql.untyped.descendants
-import java.time.Instant
 import kotlin.random.Random
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.time.TimeSource
-import kotlin.time.measureTime
 
 @Suppress("ktlint:standard:annotation", "ktlint:standard:spacing-between-declarations-with-annotations")
 class ModelQLBulkQueryTest {
@@ -116,9 +99,7 @@ class ModelQLBulkQueryTest {
         val rootNode = model.getRootNode()
         val requestCountBefore = statistics.getTotalRequests()
         val result = rootNode.getArea().runWithAdditionalScopeInCoroutine {
-            SimpleBulkQuery.runQuery(store2) {
-                rootNode.createQueryExecutor().createFlow(query).single()
-            }
+            query.bind(rootNode.createQueryExecutor()).execute()
         }
         val requestCountAfter = statistics.getTotalRequests()
         println("Number of requests: ${requestCountAfter - requestCountBefore}")

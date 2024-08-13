@@ -24,17 +24,19 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.modelix.kotlin.utils.ContextValue
+import org.modelix.kotlin.utils.IMonoFlow
 import org.modelix.kotlin.utils.runSynchronized
 import org.modelix.model.api.async.DeferredAsAsyncValue
 import org.modelix.model.api.async.IAsyncValue
 import org.modelix.model.api.async.NonAsyncValue
 import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.IDeserializingKeyValueStore
+import org.modelix.model.lazy.IKVEntryReference
 import org.modelix.model.lazy.IPrefetchGoal
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.persistent.IKVValue
 
-class SimpleBulkQuery(val store: IDeserializingKeyValueStore) : IBulkQuery {
+class SimpleBulkQuery(val store: IDeserializingKeyValueStore) : IAsyncObjectStore {
     companion object {
         private val contextValue = ContextValue<SimpleBulkQuery>()
 
@@ -107,24 +109,20 @@ class SimpleBulkQuery(val store: IDeserializingKeyValueStore) : IBulkQuery {
 
     private class RequestedValue<E : IKVValue>(val key: KVEntryReference<E>, val deferred: CompletableDeferred<E>)
 
-    override fun <T> constant(value: T): IAsyncValue<T> {
-        return NonAsyncValue(value)
+    override fun <T : IKVValue> get(key: IKVEntryReference<T>): IAsyncValue<T?> {
+        return DeferredAsAsyncValue(queryAsDeferred(key as KVEntryReference<T>))
     }
 
-    override fun offerPrefetch(key: IPrefetchGoal) {
+    override suspend fun getAll(keys: List<IKVEntryReference<*>>): Map<IKVEntryReference<*>, Any?> {
         TODO("Not yet implemented")
     }
 
-    override fun executeQuery() {
+    override suspend fun putAll(entries: Map<IKVEntryReference<*>, Any?>) {
         TODO("Not yet implemented")
     }
 
-    override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IAsyncValue<O>): IAsyncValue<List<O>> {
+    override fun <T : IKVValue> getAsFlow(key: IKVEntryReference<T>): IMonoFlow<T> {
         TODO("Not yet implemented")
-    }
-
-    override fun <T : IKVValue> query(hash: KVEntryReference<T>): IAsyncValue<T?> {
-        return DeferredAsAsyncValue(queryAsDeferred(hash))
     }
 }
 

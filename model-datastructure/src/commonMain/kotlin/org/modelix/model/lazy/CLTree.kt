@@ -26,8 +26,12 @@ import org.modelix.model.api.ITreeChangeVisitor
 import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
+import org.modelix.model.api.async.IAsyncTree
 import org.modelix.model.api.async.IAsyncValue
+import org.modelix.model.async.AsyncObjectStoreAdapter
 import org.modelix.model.async.AsyncTree
+import org.modelix.model.async.IAsyncObjectStore
+import org.modelix.model.async.asStore
 import org.modelix.model.lazy.COWArrays.insert
 import org.modelix.model.lazy.COWArrays.remove
 import org.modelix.model.persistent.CPHamtInternal
@@ -73,7 +77,8 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
 
     fun withNewNodesMap(newMap: CPHamtNode) = CLTree(CPTree(data.id, KVEntryReference(newMap), data.usesRoleIds), store)
 
-    override fun asAsyncTree() = AsyncTree({ data }, { store.newBulkQuery() })
+    private val asyncTree: IAsyncTree by lazy { AsyncTree({ data }, AsyncObjectStoreAdapter(store.newBulkQuery())) }
+    override fun asAsyncTree() = asyncTree
 
     override fun usesRoleIds(): Boolean {
         return data.usesRoleIds

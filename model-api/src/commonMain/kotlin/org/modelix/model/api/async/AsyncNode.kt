@@ -16,6 +16,13 @@
 
 package org.modelix.model.api.async
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
+import org.modelix.kotlin.utils.IMonoFlow
+import org.modelix.kotlin.utils.IOptionalMonoFlow
+import org.modelix.kotlin.utils.filterNotNull
+import org.modelix.kotlin.utils.mapValue
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -31,51 +38,49 @@ class AsyncNode(private val regularNode: INode, private val nodeId: Long, privat
 
     private fun Long.asNode(): IAsyncNode = createNodeAdapter(this)
 
-    override fun getParent(): IAsyncValue<IAsyncNode> {
-        return tree().getParent(nodeId).map { it.asNode() }
+    override fun getParent(): IOptionalMonoFlow<IAsyncNode> {
+        return tree().getParent(nodeId).mapValue { it.asNode() }
     }
 
-    override fun getConcept(): IAsyncValue<IConcept> {
-        return tree().getConceptReference(nodeId).map { it.resolve() }
+    override fun getConcept(): IMonoFlow<IConcept> {
+        return tree().getConceptReference(nodeId).mapValue { it.resolve() }
     }
 
-    override fun getConceptRef(): IAsyncValue<ConceptReference> {
+    override fun getConceptRef(): IMonoFlow<ConceptReference> {
         return tree().getConceptReference(nodeId)
     }
 
-    override fun getRoleInParent(): IAsyncValue<IChildLinkReference> {
+    override fun getRoleInParent(): IOptionalMonoFlow<IChildLinkReference> {
         return tree().getRole(nodeId)
     }
 
-    override fun getPropertyValue(role: IPropertyReference): IAsyncValue<String?> {
+    override fun getPropertyValue(role: IPropertyReference): IOptionalMonoFlow<String> {
         return tree().getProperty(nodeId, role)
     }
 
-    override fun getAllChildren(): IAsyncValue<List<IAsyncNode>> {
-        return tree().getAllChildren(nodeId).map { it.map { it.asNode() } }
+    override fun getAllChildren(): Flow<IAsyncNode> {
+        return tree().getAllChildren(nodeId).map { it.asNode() }
     }
 
-    override fun getChildren(role: IChildLinkReference): IAsyncValue<List<IAsyncNode>> {
-        return tree().getChildren(nodeId, role).map { it.map { it.asNode() } }
+    override fun getChildren(role: IChildLinkReference): Flow<IAsyncNode> {
+        return tree().getChildren(nodeId, role).map { it.asNode() }
     }
 
-    override fun getReferenceTarget(role: IReferenceLinkReference): IAsyncValue<IAsyncNode?> {
-        return getReferenceTargetRef(role).map { it?.resolveInCurrentContext()?.asAsyncNode() }
+    override fun getReferenceTarget(role: IReferenceLinkReference): IOptionalMonoFlow<IAsyncNode> {
+        return getReferenceTargetRef(role).mapValue { it.resolveInCurrentContext()?.asAsyncNode() }.filterNotNull()
     }
 
-    override fun getReferenceTargetRef(role: IReferenceLinkReference): IAsyncValue<INodeReference?> {
+    override fun getReferenceTargetRef(role: IReferenceLinkReference): IOptionalMonoFlow<INodeReference> {
         return tree().getReferenceTarget(nodeId, role)
     }
 
-    override fun getAllReferenceTargetRefs(): IAsyncValue<List<Pair<IReferenceLinkReference, INodeReference>>> {
+    override fun getAllReferenceTargetRefs(): Flow<Pair<IReferenceLinkReference, INodeReference>> {
         return tree().getAllReferenceTargetRefs(nodeId)
     }
 
-    override fun getAllReferenceTargets(): IAsyncValue<List<Pair<IReferenceLinkReference, IAsyncNode>>> {
-        return tree().getAllReferenceTargetRefs(nodeId).map {
-            it.mapNotNull {
-                it.first to (it.second.resolveInCurrentContext() ?: return@mapNotNull null).asAsyncNode()
-            }
+    override fun getAllReferenceTargets(): Flow<Pair<IReferenceLinkReference, IAsyncNode>> {
+        return tree().getAllReferenceTargetRefs(nodeId).mapNotNull {
+            it.first to (it.second.resolveInCurrentContext() ?: return@mapNotNull null).asAsyncNode()
         }
     }
 }

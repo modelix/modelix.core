@@ -25,7 +25,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.modelix.kotlin.utils.AtomicBoolean
+import org.modelix.kotlin.utils.IMonoFlow
 import org.modelix.kotlin.utils.runSynchronized
+import org.modelix.kotlin.utils.toMono
 import org.modelix.model.api.async.DeferredAsFlow
 import org.modelix.model.api.async.IAsyncValue
 import org.modelix.model.api.async.asFlow
@@ -215,9 +217,14 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
             return value.getCompleted()
         }
 
-        override fun asFlow(): Flow<T> {
-            if (value.isCompleted) return flowOf(value.getCompleted())
-            return DeferredAsFlow(value)
+        override fun asFlow(): IMonoFlow<T> {
+            if (value.isCompleted) return flowOf(value.getCompleted()).toMono()
+            return flow<T> {
+                if (!value.isCompleted) {
+                    executeQuerySuspending()
+                }
+                emit(value.getCompleted())
+            }.toMono()
         }
     }
 
@@ -237,8 +244,8 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
             throw UnsupportedOperationException()
         }
 
-        override fun asFlow(): Flow<E> {
-            TODO("Not yet implemented")
+        override fun asFlow(): IMonoFlow<E> {
+            throw UnsupportedOperationException()
         }
     }
 }

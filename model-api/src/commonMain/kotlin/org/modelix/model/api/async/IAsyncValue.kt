@@ -22,6 +22,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import org.modelix.kotlin.utils.ConstantMonoFlow
+import org.modelix.kotlin.utils.IMonoFlow
+import org.modelix.kotlin.utils.toMono
 
 interface IAsyncValue<out E> {
     fun onReceive(callback: (E) -> Unit)
@@ -29,7 +32,7 @@ interface IAsyncValue<out E> {
     fun <R> thenRequest(body: (E) -> IAsyncValue<R>): IAsyncValue<R>
     fun awaitBlocking(): E
     suspend fun await(): E
-    fun asFlow(): Flow<E>
+    fun asFlow(): IMonoFlow<E>
 
     companion object {
         private val NULL_CONSTANT = NonAsyncValue<Any?>(null)
@@ -83,7 +86,7 @@ fun <T : Any> IAsyncValue<T?>.checkNotNull(message: () -> String): IAsyncValue<T
     return map { checkNotNull(it, message) }
 }
 
-class NonAsyncValue<out E>(val value: E) : IAsyncValue<E> {
+class NonAsyncValue<out E>(val value: E) : IAsyncValue<E>, IMonoFlow<E> {
     override fun <R> thenRequest(body: (E) -> IAsyncValue<R>): IAsyncValue<R> {
         return body(value)
     }
@@ -104,8 +107,12 @@ class NonAsyncValue<out E>(val value: E) : IAsyncValue<E> {
         return value
     }
 
-    override fun asFlow(): Flow<E> {
-        return flowOf(value)
+    override suspend fun collect(collector: FlowCollector<E>) {
+        collector.emit(value)
+    }
+
+    override fun asFlow(): IMonoFlow<E> {
+        return this
     }
 }
 
@@ -135,14 +142,14 @@ class DeferredAsAsyncValue<E>(val value: Deferred<E>) : IAsyncValue<E> {
         return DeferredAsAsyncValue(result)
     }
 
-    override fun asFlow(): Flow<E> {
-        return DeferredAsFlow(value)
+    override fun asFlow(): IMonoFlow<E> {
+        return DeferredAsFlow(value).toMono()
     }
 }
 
 class MappingAsyncValue<In, Out>(val input: IAsyncValue<In>, val mappingFunction: (In) -> Out): IAsyncValue<Out> {
-    override fun asFlow(): Flow<Out> {
-        return input.asFlow().map(mappingFunction)
+    override fun asFlow(): IMonoFlow<Out> {
+        return input.asFlow().map(mappingFunction).toMono()
     }
 
     override fun onReceive(callback: (Out) -> Unit) {

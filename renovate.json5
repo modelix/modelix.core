@@ -1,0 +1,10 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: [
+    "config:best-practices",
+    // Opt-in to beta support for pre-commit.
+    // See https://docs.renovatebot.com/modules/manager/pre-commit/
+    ":enablePreCommit"
+  ],
+  enabledManagers: ["pre-commit"],
+}

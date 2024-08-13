@@ -37,6 +37,7 @@ object UntypedModelQL {
             subclass(AllReferencesTraversalStep.Descriptor::class)
             subclass(ChildrenTraversalStep.ChildrenStepDescriptor::class)
             subclass(ConceptReferenceTraversalStep.Descriptor::class)
+            subclass(ConceptReferenceSetSourceStep.Descriptor::class)
             subclass(ConceptReferenceUIDTraversalStep.Descriptor::class)
             subclass(DescendantsTraversalStep.WithSelfDescriptor::class)
             subclass(DescendantsTraversalStep.WithoutSelfDescriptor::class)

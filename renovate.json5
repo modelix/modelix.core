@@ -4,7 +4,9 @@
     "config:best-practices",
     // Opt-in to beta support for pre-commit.
     // See https://docs.renovatebot.com/modules/manager/pre-commit/
-    ":enablePreCommit"
+    ":enablePreCommit",
+    // Use the same commit type as with Dependabot.
+    ":semanticCommitTypeAll(build)"
   ],
   enabledManagers: ["pre-commit"],
 }

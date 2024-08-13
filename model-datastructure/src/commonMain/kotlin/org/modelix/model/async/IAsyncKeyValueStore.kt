@@ -17,10 +17,15 @@
 package org.modelix.model.async
 
 import org.modelix.kotlin.utils.IMonoFlow
+import org.modelix.model.IKeyValueStore
 import org.modelix.model.api.async.IAsyncValue
+import org.modelix.model.api.async.asAsync
 import org.modelix.model.api.async.checkNotNull
+import org.modelix.model.lazy.BulkQueryConfiguration
 import org.modelix.model.lazy.IBulkQuery
+import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.IKVEntryReference
+import org.modelix.model.lazy.IPrefetchGoal
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.persistent.IKVValue
 
@@ -30,13 +35,14 @@ interface IAsyncKeyValueStore {
 }
 
 interface IAsyncObjectStore {
+    fun <T : IKVValue> getIfCached(key: IKVEntryReference<T>): T?
     fun <T : IKVValue> get(key: IKVEntryReference<T>): IAsyncValue<T?>
     fun <T : IKVValue> getAsFlow(key: IKVEntryReference<T>): IMonoFlow<T>
     suspend fun getAll(keys: List<IKVEntryReference<*>>): Map<IKVEntryReference<*>, Any?>
     suspend fun putAll(entries: Map<IKVEntryReference<*>, Any?>)
 }
 
-class AsyncObjectStoreAdapter(val bulkQuery: IBulkQuery): IAsyncObjectStore {
+class BulkQueryAsAsyncStore(val bulkQuery: IBulkQuery): IAsyncObjectStore {
     override fun <T : IKVValue> get(key: IKVEntryReference<T>): IAsyncValue<T?> {
         return bulkQuery.query(key as KVEntryReference<T>)
     }
@@ -52,7 +58,106 @@ class AsyncObjectStoreAdapter(val bulkQuery: IBulkQuery): IAsyncObjectStore {
     override suspend fun putAll(entries: Map<IKVEntryReference<*>, Any?>) {
         TODO("Not yet implemented")
     }
+
+    override fun <T : IKVValue> getIfCached(key: IKVEntryReference<T>): T? {
+        TODO("Not yet implemented")
+    }
 }
 
-fun IBulkQuery.asStore(): IAsyncObjectStore = AsyncObjectStoreAdapter(this)
-fun IAsyncObjectStore.asBulkQuery(): IBulkQuery = (this as AsyncObjectStoreAdapter).bulkQuery
+class AsyncStoreAsBulkQuery(val store: IAsyncObjectStore) : IBulkQuery {
+    override fun <T> constant(value: T): IAsyncValue<T> {
+        return IAsyncValue.constant(value)
+    }
+
+    override fun offerPrefetch(key: IPrefetchGoal) {
+        TODO("Not yet implemented")
+    }
+
+    override fun executeQuery() {
+        TODO("Not yet implemented")
+    }
+
+    override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IAsyncValue<O>): IAsyncValue<List<O>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <T : IKVValue> query(hash: KVEntryReference<T>): IAsyncValue<T?> {
+        return store.get(hash)
+    }
+}
+
+fun IBulkQuery.asStore(): IAsyncObjectStore = BulkQueryAsAsyncStore(this)
+fun IAsyncObjectStore.asBulkQuery(): IBulkQuery {
+    return when (this) {
+        is BulkQueryAsAsyncStore -> bulkQuery
+        else -> AsyncStoreAsBulkQuery(this)
+    }
+}
+
+class SynchronousStoreAsAsyncStore(val store: IDeserializingKeyValueStore): IAsyncObjectStore {
+    override fun <T : IKVValue> get(key: IKVEntryReference<T>): IAsyncValue<T?> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <T : IKVValue> getIfCached(key: IKVEntryReference<T>): T? {
+        return store.getIfCached(key.getHash(), key.getDeserializer(), false)
+    }
+
+    override fun <T : IKVValue> getAsFlow(key: IKVEntryReference<T>): IMonoFlow<T> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getAll(keys: List<IKVEntryReference<*>>): Map<IKVEntryReference<*>, Any?> {
+        val refMap = keys.associateBy { it.getHash() }
+        return store.getAll(keys, emptyList()).entries.associate { refMap[it.key]!! to it.value }
+    }
+
+    override suspend fun putAll(entries: Map<IKVEntryReference<*>, Any?>) {
+        TODO("Not yet implemented")
+    }
+}
+
+class AsyncStoreAsStore(val store: IAsyncObjectStore) : IDeserializingKeyValueStore {
+    override fun getAsyncStore(): IAsyncObjectStore {
+        return store
+    }
+
+    override fun <T> get(hash: String, deserializer: (String) -> T): T? {
+        deserializer as ((String) -> IKVValue)
+        return store.get(KVEntryReference(hash, deserializer)).awaitBlocking() as T?
+    }
+
+    override val keyValueStore: IKeyValueStore
+        get() = TODO("Not yet implemented")
+
+    override fun <T> getIfCached(hash: String, deserializer: (String) -> T, isPrefetch: Boolean): T? {
+        TODO("Not yet implemented")
+    }
+
+    override fun <T> getAll(hash: Iterable<String>, deserializer: (String, String) -> T): Iterable<T> {
+        TODO("Not yet implemented")
+    }
+
+    override fun put(hash: String, deserialized: Any, serialized: String) {
+        TODO("Not yet implemented")
+    }
+
+    override fun prefetch(hash: String) {
+        TODO("Not yet implemented")
+    }
+
+    override fun <T : IKVValue> getAll(
+        regular: List<IKVEntryReference<T>>,
+        prefetch: List<IKVEntryReference<T>>,
+    ): Map<String, T?> {
+        return super.getAll(regular, prefetch)
+    }
+
+    override fun newBulkQuery(): IBulkQuery {
+        return super.newBulkQuery()
+    }
+
+    override fun newBulkQuery(wrapper: IDeserializingKeyValueStore, config: BulkQueryConfiguration?): IBulkQuery {
+        return super.newBulkQuery(wrapper, config)
+    }
+}

@@ -16,6 +16,7 @@
 package org.modelix.model.lazy
 
 import org.modelix.model.IKeyValueStore
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.persistent.IKVValue
 
 interface IDeserializingKeyValueStore {
@@ -30,4 +31,6 @@ interface IDeserializingKeyValueStore {
 
     @Deprecated("BulkQuery is now responsible for prefetching")
     fun prefetch(hash: String)
+
+    fun getAsyncStore(): IAsyncObjectStore = TODO()
 }

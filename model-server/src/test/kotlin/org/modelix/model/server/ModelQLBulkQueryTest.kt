@@ -35,11 +35,18 @@ import org.modelix.model.api.TreePointer
 import org.modelix.model.api.addNewChild
 import org.modelix.model.api.async.asFlow
 import org.modelix.model.api.getRootNode
+import org.modelix.model.async.AsyncStoreAsStore
+import org.modelix.model.async.AsyncBulkQuery
+import org.modelix.model.async.AsyncTree
+import org.modelix.model.async.SynchronousStoreAsAsyncStore
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
+import org.modelix.model.lazy.KVEntryReference
+import org.modelix.model.lazy.NonCachingObjectStore
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.persistent.CPTree
 import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.store.InMemoryStoreClient
@@ -89,13 +96,16 @@ class ModelQLBulkQueryTest {
     }
 
     private fun <T> runModelQLTest(query: IMonoUnboundQuery<INode, T>) = kotlinx.coroutines.test.runTest {
-        val store = InMemoryStoreClient()
-        val statistics = StoreClientWithStatistics(store)
-        val localClient = LocalModelClient(statistics.forRepository(RepositoryId("my-repo")))
-        val version = createModel(localClient, 1234)
+        val db = InMemoryStoreClient()
+        val statistics = StoreClientWithStatistics(db)
+        val treeHash: String = suspend {
+            val localClient = LocalModelClient(statistics.forRepository(RepositoryId("my-repo")))
+            (createModel(localClient, 1234).getTree() as CLTree).hash
+        }()
 
-        val store2 = LocalModelClient(statistics.forRepository(RepositoryId("my-repo"))).storeCache
-        val model = TreePointer(CLVersion.loadFromHash(version.getContentHash(), store2).getTree())
+        val kvStore = LocalModelClient(statistics.forRepository(RepositoryId("my-repo")))
+        val asyncStore = AsyncBulkQuery(SynchronousStoreAsAsyncStore(NonCachingObjectStore(kvStore)))
+        val model = TreePointer(asyncStore.get(KVEntryReference(treeHash, CPTree.DESERIALIZER)).await().let { CLTree(it!!, AsyncStoreAsStore(asyncStore)) })
         val rootNode = model.getRootNode()
         val requestCountBefore = statistics.getTotalRequests()
         val result = rootNode.getArea().runWithAdditionalScopeInCoroutine {

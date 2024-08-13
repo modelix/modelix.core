@@ -34,8 +34,8 @@ import kotlinx.coroutines.launch
 fun <T> Flow<Flow<T>>.flattenConcatConcurrent(): Flow<T> {
     val nested = this
     return flow {
-        val results = Channel<Deferred<List<T>>>()
         coroutineScope {
+            val results = Channel<Deferred<List<T>>>()
             launch {
                 nested.collect { inner ->
                     results.send(async { inner.toList() })

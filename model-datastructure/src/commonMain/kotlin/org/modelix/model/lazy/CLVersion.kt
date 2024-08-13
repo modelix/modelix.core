@@ -29,6 +29,8 @@ import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.async.IAsyncValue
+import org.modelix.model.async.AsyncStoreAsStore
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.SetReferenceOp
@@ -259,6 +261,10 @@ class CLVersion : IVersion {
         fun tryLoadFromHash(hash: String, store: IDeserializingKeyValueStore): CLVersion? {
             val data = store[hash, { CPVersion.deserialize(it) }] ?: return null
             return CLVersion(data, store)
+        }
+
+        fun tryLoadFromHash(hash: String, store: IAsyncObjectStore): IAsyncValue<CLVersion?> {
+            return store.get(KVEntryReference(hash, CPVersion.DESERIALIZER)).map { CLVersion(it, AsyncStoreAsStore(store)) }
         }
     }
 

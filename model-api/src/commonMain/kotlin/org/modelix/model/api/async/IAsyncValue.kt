@@ -20,10 +20,14 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.single
 import org.modelix.kotlin.utils.ConstantMonoFlow
 import org.modelix.kotlin.utils.IMonoFlow
+import org.modelix.kotlin.utils.mapMono
+import org.modelix.kotlin.utils.mapValue
 import org.modelix.kotlin.utils.toMono
 
 interface IAsyncValue<out E> {
@@ -67,7 +71,7 @@ fun <T, R> List<IAsyncValue<T>>.requestAllAndMap(body: (List<T>) -> R): IAsyncVa
             }
         }
     }
-    return DeferredAsAsyncValue(result)
+    return DeferredAsAsyncValue(result) { input.forEach { it.await() } }
 }
 
 fun <T1, T2, R> Pair<IAsyncValue<T1>, IAsyncValue<T2>>.flatMapBoth(body: (T1, T2) -> IAsyncValue<R>): IAsyncValue<R> {
@@ -116,14 +120,41 @@ class NonAsyncValue<out E>(val value: E) : IAsyncValue<E>, IMonoFlow<E> {
     }
 }
 
-class DeferredAsAsyncValue<E>(val value: Deferred<E>) : IAsyncValue<E> {
+class MonoFlowAsAsyncValue<E>(val flow: IMonoFlow<E>): IAsyncValue<E> {
+    override fun asFlow(): IMonoFlow<E> {
+        return flow
+    }
 
+    override fun onReceive(callback: (E) -> Unit) {
+        TODO("Not yet implemented")
+    }
+
+    override fun <R> map(body: (E) -> R): IAsyncValue<R> {
+        return MonoFlowAsAsyncValue(flow.mapValue(body))
+    }
+
+    override fun <R> thenRequest(body: (E) -> IAsyncValue<R>): IAsyncValue<R> {
+        return MonoFlowAsAsyncValue(flow.mapMono { body(it).asFlow() })
+    }
+
+    override fun awaitBlocking(): E {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun await(): E {
+        return flow.single()
+    }
+}
+
+class DeferredAsAsyncValue<E>(val value: Deferred<E>, val enforceCompletion: suspend () -> Unit = {}) : IAsyncValue<E> {
+    private val creationStack = Exception()
     override fun awaitBlocking(): E {
         return value.getCompleted()
     }
 
     override suspend fun await(): E {
-        return value.await()
+        if (!value.isCompleted) enforceCompletion()
+        return value.getCompleted()
     }
 
     override fun onReceive(callback: (E) -> Unit) {
@@ -138,12 +169,19 @@ class DeferredAsAsyncValue<E>(val value: Deferred<E>) : IAsyncValue<E> {
 
     override fun <R> thenRequest(body: (E) -> IAsyncValue<R>): IAsyncValue<R> {
         val result = CompletableDeferred<R>()
-        onReceive { body(it).onReceive { result.complete(it) } }
-        return DeferredAsAsyncValue(result)
+        onReceive {
+            val fromBody = body(it)
+            fromBody.onReceive { result.complete(it) }
+        }
+        return DeferredAsAsyncValue(result, enforceCompletion)
     }
 
     override fun asFlow(): IMonoFlow<E> {
-        return DeferredAsFlow(value).toMono()
+        return flow<E> {
+            if (!value.isCompleted) enforceCompletion()
+            if (!value.isCompleted) enforceCompletion()
+            emit(value.getCompleted())
+        }.toMono()
     }
 }
 

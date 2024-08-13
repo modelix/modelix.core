@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flowOf
 import org.modelix.kotlin.utils.IMonoFlow
 import org.modelix.kotlin.utils.IOptionalMonoFlow
+import org.modelix.kotlin.utils.flatMapConcatConcurrent
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -48,7 +49,7 @@ interface IAsyncNode {
         return if (includeSelf) {
             flowOf(flowOf(this), getDescendants()).flattenConcat()
         } else {
-            getAllChildren().flatMapConcat { it.getDescendants(true) }
+            getAllChildren().flatMapConcatConcurrent { it.getDescendants(true) }
         }
     }
 }

@@ -87,9 +87,9 @@ class ModelQLBulkQueryTest {
         val rootNode = model.getRootNode()
         val requestCountBefore = statistics.getTotalRequests()
         val result = rootNode.getArea().runWithAdditionalScopeInCoroutine {
-            SimpleBulkQuery.startQuery(store2) {
-                rootNode.createQueryExecutor().createFlow(query)
-            }.single()
+            SimpleBulkQuery.runQuery(store2) {
+                rootNode.createQueryExecutor().createFlow(query).single()
+            }
         }
         val requestCountAfter = statistics.getTotalRequests()
         println("Number of requests: ${requestCountAfter - requestCountBefore}")

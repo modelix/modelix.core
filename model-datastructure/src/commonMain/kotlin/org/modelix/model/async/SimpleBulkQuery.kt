@@ -17,43 +17,66 @@
 package org.modelix.model.async
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
 import org.modelix.kotlin.utils.ContextValue
 import org.modelix.kotlin.utils.runSynchronized
+import org.modelix.model.api.async.DeferredAsAsyncValue
+import org.modelix.model.api.async.IAsyncValue
+import org.modelix.model.api.async.NonAsyncValue
+import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.IDeserializingKeyValueStore
+import org.modelix.model.lazy.IPrefetchGoal
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.persistent.IKVValue
-import kotlin.coroutines.coroutineContext
+import kotlin.coroutines.CoroutineContext
 
-class SimpleBulkQuery(val store: IDeserializingKeyValueStore) {
+class SimpleBulkQuery(val store: IDeserializingKeyValueStore) : IBulkQuery {
     companion object {
         private val contextValue = ContextValue<SimpleBulkQuery>()
 
         fun <T : IKVValue> query(hash: KVEntryReference<T>): Deferred<T> {
-            return contextValue.getValue().query(hash)
+            return contextValue.getValue().queryAsDeferred(hash)
         }
 
-        suspend fun <R> startQuery(store: IDeserializingKeyValueStore, body: () -> Flow<R>): Flow<R> {
+        suspend fun <R> runQuery(store: IDeserializingKeyValueStore, body: suspend () -> R): R {
             val newQuery = SimpleBulkQuery(store)
-            return flow<R> {
-                val inputFlow = body()
-                newQuery.processQueue()
-                inputFlow.collect {
-                    emit(it)
-                    newQuery.processQueue()
+            return contextValue.runInCoroutine(newQuery) {
+                coroutineScope {
+                    val queueProcessingJob = launch {
+                        newQuery.processQueue()
+                    }
+                    val result = body()
+                    queueProcessingJob.cancel("done")
+                    result
                 }
-            }.flowOn(contextValue.getContextElement(newQuery))
+            }
         }
     }
 
     private val newRequests = LinkedHashMap<String, RequestedValue<*>>()
+    private val queueTrigger = Channel<Unit>(capacity = 1, onBufferOverflow = BufferOverflow.DROP_LATEST)
 
-    fun <T : IKVValue> query(hash: KVEntryReference<T>): Deferred<T> {
+    suspend fun processQueue() {
+        processCurrentQueue()
+        for (x in queueTrigger) {
+            processCurrentQueue()
+        }
+    }
+
+    fun <T : IKVValue> queryAsDeferred(hash: KVEntryReference<T>): Deferred<T> {
+        store.getIfCached(hash.getHash(), hash.getDeserializer(), false)?.let { return CompletableDeferred(it) }
         return runSynchronized(newRequests) {
             val request = newRequests.getOrPut(hash.getHash()) { RequestedValue<T>(hash, CompletableDeferred()) } as RequestedValue<T>
+            queueTrigger.trySend(Unit)
             request.deferred
         }
     }
@@ -66,7 +89,7 @@ class SimpleBulkQuery(val store: IDeserializingKeyValueStore) {
         }
     }
 
-    private fun processQueue() {
+    private fun processCurrentQueue() {
         var requests = copyCurrentRequests()
         while (requests.isNotEmpty()) {
             processRequests(requests)
@@ -88,5 +111,25 @@ class SimpleBulkQuery(val store: IDeserializingKeyValueStore) {
     }
 
     private class RequestedValue<E : IKVValue>(val key: KVEntryReference<E>, val deferred: CompletableDeferred<E>)
+
+    override fun <T> constant(value: T): IAsyncValue<T> {
+        return NonAsyncValue(value)
+    }
+
+    override fun offerPrefetch(key: IPrefetchGoal) {
+        TODO("Not yet implemented")
+    }
+
+    override fun executeQuery() {
+        TODO("Not yet implemented")
+    }
+
+    override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IAsyncValue<O>): IAsyncValue<List<O>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <T : IKVValue> query(hash: KVEntryReference<T>): IAsyncValue<T?> {
+        return DeferredAsAsyncValue(queryAsDeferred(hash))
+    }
 }
 

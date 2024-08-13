@@ -26,6 +26,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.modelix.kotlin.utils.AtomicBoolean
 import org.modelix.kotlin.utils.runSynchronized
+import org.modelix.model.api.async.DeferredAsFlow
 import org.modelix.model.api.async.IAsyncValue
 import org.modelix.model.api.async.asFlow
 import org.modelix.model.persistent.IKVValue
@@ -216,12 +217,7 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
 
         override fun asFlow(): Flow<T> {
             if (value.isCompleted) return flowOf(value.getCompleted())
-            return flow<T> {
-                coroutineScope {
-                    value.invokeOnCompletion { launch { emit(value.getCompleted()) } }
-                    executeQuerySuspending()
-                }
-            }
+            return DeferredAsFlow(value)
         }
     }
 

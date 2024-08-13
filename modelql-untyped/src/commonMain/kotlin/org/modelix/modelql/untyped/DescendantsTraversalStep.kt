@@ -40,12 +40,11 @@ import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
 import org.modelix.modelql.core.asStepFlow
 import org.modelix.modelql.core.connect
-import org.modelix.modelql.core.flatMapConcatConcurrent
 import org.modelix.modelql.core.stepOutputSerializer
 
 class DescendantsTraversalStep(val includeSelf: Boolean) : FluxTransformingStep<INode, INode>(), IFluxStep<INode> {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
-        return input.flatMapConcatConcurrent {
+        return input.flatMapConcat {
             it.value.asAsyncNode().getDescendantsAsFlow(includeSelf)
         }.asStepFlow(this)
     }

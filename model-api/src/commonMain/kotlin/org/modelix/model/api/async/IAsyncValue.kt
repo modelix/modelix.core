@@ -168,7 +168,6 @@ class MappingAsyncValue<In, Out>(val input: IAsyncValue<In>, val mappingFunction
     }
 }
 
-
 class DeferredAsFlow<E>(val deferred: Deferred<E>): Flow<E> {
     override suspend fun collect(collector: FlowCollector<E>) {
         collector.emit(deferred.await())

@@ -154,7 +154,7 @@ class ModelReplicationServer(
         val repositoryId = try {
             RepositoryId(repository)
         } catch (e: IllegalArgumentException) {
-            throw BadRequestException("Invalid repository name", "invalid-request", cause = e)
+            throw InvalidRepositoryIdException(repository, e)
         }
 
         checkPermission(ModelServerPermissionSchema.repository(repositoryId).branch(branch).delete)
@@ -254,9 +254,7 @@ class ModelReplicationServer(
         }
 
         for (entry in objects) {
-            if (entry.value == null) {
-                throw IllegalStateException("Object not found: ${entry.value}")
-            }
+            if (entry.value == null) { throw ObjectValueNotFoundException(entry.key) }
         }
         @Suppress("UNCHECKED_CAST")
         objects as Map<String, String>
@@ -356,21 +354,15 @@ class ModelReplicationServer(
 
         while (true) {
             val key = channel.readUTF8Line() ?: break
-            val value = channel.readUTF8Line()!!
 
             if (!HashUtil.isSha256(key)) {
-                throw IllegalStateException(
-                    "This API cannot be used to store other entries than serialized objects." +
-                        " The key is expected to be a SHA256 hash over the value: $key -> $value",
-                )
+                throw InvalidObjectKeyException(key)
             }
 
+            val value = channel.readUTF8Line() ?: throw ObjectKeyWithoutObjectValueException(key)
+
             val expectedKey = HashUtil.sha256(value)
-            if (expectedKey != key) {
-                throw IllegalStateException(
-                    "Hash mismatch. Expected $expectedKey, but $key was provided. Value: $value",
-                )
-            }
+            if (expectedKey != key) { throw MismatchingObjectKeyAndValueException(key, expectedKey, value) }
             entries[key] = value
         }
 

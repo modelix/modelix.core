@@ -29,6 +29,8 @@ import io.ktor.client.request.accept
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
+import io.ktor.client.request.put
+import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -182,13 +184,17 @@ class ModelReplicationServerTest {
     @Test
     fun `responds with 400 when deleting from an invalid repository ID`() {
         runWithTestModelServer { _, _ ->
+            val client = createClient { install(ContentNegotiation) { json() } }
+
             val response = client.delete {
                 url {
                     appendPathSegments("v2", "repositories", "invalid with spaces", "branches", "master")
                 }
             }
-            assertEquals(HttpStatusCode.BadRequest, response.status)
-            assertContains(response.bodyAsText(), "Invalid repository name")
+            val problem = response.body<Problem>()
+
+            response shouldHaveStatus HttpStatusCode.BadRequest
+            problem.type shouldBe "/problems/invalid-repository-id"
         }
     }
 
@@ -370,7 +376,7 @@ class ModelReplicationServerTest {
             ),
         ) { _, _ ->
             val client = createClient {
-                install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) { json() }
+                install(ContentNegotiation) { json() }
             }
             val response = client.get {
                 url {
@@ -439,5 +445,93 @@ class ModelReplicationServerTest {
                 fixture.repositoriesManager.pollVersionHash(repositoryId.getBranchReference("master"), null),
             )
         }
+    }
+
+    @Test
+    fun `putRepositoryObjects detects missing values`() = runWithTestModelServer { _, _ ->
+        val client = createClient { install(ContentNegotiation) { json() } }
+        val modelClient = ModelClientV2.builder().url("v2").client(client).build().also { it.init() }
+        val repositoryId = RepositoryId("repo1")
+        modelClient.initRepository(repositoryId)
+        val invalidRequestBody = "7-m7S*flQz_CNc9F3ipSQ5Iz7SZJSyn2r0_1PPVvh8yA"
+
+        val response = client.put {
+            url {
+                takeFrom("v2")
+                appendPathSegments("repositories", repositoryId.id, "objects")
+            }
+            contentType(ContentType.Text.Plain)
+            setBody(invalidRequestBody)
+        }
+        val problem = response.body<Problem>()
+
+        response shouldHaveStatus HttpStatusCode.BadRequest
+        problem.type shouldBe "/problems/object-key-without-object-value"
+    }
+
+    @Test
+    fun `putRepositoryObjects reports invalid key`() = runWithTestModelServer { _, _ ->
+        val client = createClient { install(ContentNegotiation) { json() } }
+        val modelClient = ModelClientV2.builder().url("v2").client(client).build().also { it.init() }
+        val repositoryId = RepositoryId("repo1")
+        modelClient.initRepository(repositoryId)
+        val invalidRequestBody = "not-a-valid-key"
+
+        val response = client.put {
+            url {
+                takeFrom("v2")
+                appendPathSegments("repositories", repositoryId.id, "objects")
+            }
+            contentType(ContentType.Text.Plain)
+            setBody(invalidRequestBody)
+        }
+        val problem = response.body<Problem>()
+
+        response shouldHaveStatus HttpStatusCode.BadRequest
+        problem.type shouldBe "/problems/invalid-object-key"
+    }
+
+    @Test
+    fun `putRepositoryObjects detects mismatch between object key and object value`() = runWithTestModelServer { _, _ ->
+        val client = createClient { install(ContentNegotiation) { json() } }
+        val modelClient = ModelClientV2.builder().url("v2").client(client).build().also { it.init() }
+        val repositoryId = RepositoryId("repo1")
+        modelClient.initRepository(repositoryId)
+        val invalidRequestBody = "7-m7S*flQz_CNc9F3ipSQ5Iz7SZJSyn2r0_1PPVvh8yA\ninvalidObjectValue"
+
+        val response = client.put {
+            url {
+                takeFrom("v2")
+                appendPathSegments("repositories", repositoryId.id, "objects")
+            }
+            contentType(ContentType.Text.Plain)
+            setBody(invalidRequestBody)
+        }
+        val problem = response.body<Problem>()
+
+        response shouldHaveStatus HttpStatusCode.BadRequest
+        problem.type shouldBe "/problems/mismatching-object-and-value"
+    }
+
+    @Test
+    fun `postRepositoryObjectsGetAll fails for missing object value value`() = runWithTestModelServer { _, _ ->
+        val client = createClient { install(ContentNegotiation) { json() } }
+        val modelClient = ModelClientV2.builder().url("v2").client(client).build().also { it.init() }
+        val repositoryId = RepositoryId("repo1")
+        modelClient.initRepository(repositoryId)
+        val invalidRequestBody = "7-m7S*flQz_CNc9F3ipSQ5Iz7SZJSyn2r0_1PPVvh8yA"
+
+        val response = client.post {
+            url {
+                takeFrom("v2")
+                appendPathSegments("repositories", repositoryId.id, "objects", "getAll")
+            }
+            contentType(ContentType.Text.Plain)
+            setBody(invalidRequestBody)
+        }
+        val problem = response.body<Problem>()
+
+        response shouldHaveStatus HttpStatusCode.NotFound
+        problem.type shouldBe "/problems/object-value-not-found"
     }
 }

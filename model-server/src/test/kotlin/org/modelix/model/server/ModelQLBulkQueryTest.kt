@@ -18,9 +18,17 @@ package org.modelix.model.server
 
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.count
+import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import org.modelix.authorization.installAuthentication
+import org.modelix.kotlin.utils.flatMapConcatConcurrent
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.IVersion
 import org.modelix.model.api.IBranch
@@ -29,6 +37,7 @@ import org.modelix.model.api.NullChildLink
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.addNewChild
+import org.modelix.model.api.async.asFlow
 import org.modelix.model.api.getRootNode
 import org.modelix.model.async.SimpleBulkQuery
 import org.modelix.model.client.IdGenerator
@@ -56,9 +65,12 @@ import org.modelix.modelql.core.buildMonoQuery
 import org.modelix.modelql.core.count
 import org.modelix.modelql.untyped.createQueryExecutor
 import org.modelix.modelql.untyped.descendants
+import java.time.Instant
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.TimeSource
+import kotlin.time.measureTime
 
 @Suppress("ktlint:standard:annotation", "ktlint:standard:spacing-between-declarations-with-annotations")
 class ModelQLBulkQueryTest {
@@ -75,6 +87,23 @@ class ModelQLBulkQueryTest {
 
     @Test
     fun test1() = runModelQLTest(buildMonoQuery { it.descendants(true).count() })
+
+    @Test
+    fun coroutinePerformanceTest() = runTest {
+
+        val deferredValues = (1..100_000).map { CompletableDeferred<Int>() to it }
+
+        val start = TimeSource.Monotonic.markNow()
+        val size = coroutineScope {
+            val size = async { deferredValues.asFlow().flatMapConcatConcurrent { it.first.asFlow() }.count() }
+            launch {
+                deferredValues.forEach { it.first.complete(it.second) }
+            }
+            size.await()
+        }
+        println(start.elapsedNow())
+        println(size)
+    }
 
     private fun <T> runModelQLTest(query: IMonoUnboundQuery<INode, T>) = kotlinx.coroutines.test.runTest {
         val store = InMemoryStoreClient()

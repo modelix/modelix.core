@@ -17,15 +17,11 @@
 package org.modelix.model.async
 
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import org.modelix.kotlin.utils.ContextValue
 import org.modelix.kotlin.utils.runSynchronized
@@ -37,7 +33,6 @@ import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.IPrefetchGoal
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.persistent.IKVValue
-import kotlin.coroutines.CoroutineContext
 
 class SimpleBulkQuery(val store: IDeserializingKeyValueStore) : IBulkQuery {
     companion object {

@@ -17,6 +17,7 @@ import io.ktor.client.HttpClient
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.withTimeout
+import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.PBranch
@@ -43,6 +44,7 @@ import org.modelix.modelql.server.ModelQLServer
 import org.modelix.modelql.untyped.addNewChild
 import org.modelix.modelql.untyped.allChildren
 import org.modelix.modelql.untyped.allReferences
+import org.modelix.modelql.untyped.asMono
 import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.descendants
 import org.modelix.modelql.untyped.nodeReference
@@ -249,5 +251,13 @@ class ModelQLClientTest {
         val nullNode = client.getRootNode().getReferenceTarget("nonExistentReference")
 
         assertEquals(null, nullNode)
+    }
+
+    @Test
+    fun `mono can be created from set of concept references`() = runTest { httpClient ->
+        val client = ModelQLClient("http://localhost/query", httpClient)
+        val refSet = setOf(ConceptReference("abc"), ConceptReference("def"))
+        val result = client.query { refSet.asMono() }
+        assertEquals(refSet, result)
     }
 }

@@ -33,7 +33,7 @@ repos:
           - --autofix
   - repo: https://github.com/pre-commit/mirrors-prettier
     # IMPORTANT: keep in sync with the version configured in `vue-model-api/package.json`
-    rev: v3.0.3
+    rev: v3.1.0
     hooks:
       - id: prettier
         files: ^(vue-model-api)|(model-api-gen-gradle-test/vue-integration)|(model-client-js-test/model-client-connection)/

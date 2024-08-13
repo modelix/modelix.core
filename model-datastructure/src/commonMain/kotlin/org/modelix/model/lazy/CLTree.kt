@@ -77,7 +77,7 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
 
     fun withNewNodesMap(newMap: CPHamtNode) = CLTree(CPTree(data.id, KVEntryReference(newMap), data.usesRoleIds), store)
 
-    private val asyncTree: IAsyncTree by lazy { AsyncTree({ data }, AsyncObjectStoreAdapter(store.newBulkQuery())) }
+    private val asyncTree: IAsyncTree by lazy { AsyncTree({ data }, AsyncObjectStoreAdapter(store.newBulkQuery(config = BulkQueryConfiguration().also { it.prefetchBatchSize = 0 }))) }
     override fun asAsyncTree() = asyncTree
 
     override fun usesRoleIds(): Boolean {

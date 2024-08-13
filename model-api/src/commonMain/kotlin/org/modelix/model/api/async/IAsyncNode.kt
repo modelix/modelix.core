@@ -17,6 +17,9 @@
 package org.modelix.model.api.async
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flattenConcat
+import kotlinx.coroutines.flow.flowOf
 import org.modelix.kotlin.utils.IMonoFlow
 import org.modelix.kotlin.utils.IOptionalMonoFlow
 import org.modelix.model.api.ConceptReference
@@ -40,6 +43,14 @@ interface IAsyncNode {
     fun getReferenceTargetRef(role: IReferenceLinkReference): IOptionalMonoFlow<INodeReference>
     fun getAllReferenceTargetRefs(): Flow<Pair<IReferenceLinkReference, INodeReference>>
     fun getAllReferenceTargets(): Flow<Pair<IReferenceLinkReference, IAsyncNode>>
+
+    fun getDescendants(includeSelf: Boolean = false): Flow<IAsyncNode> {
+        return if (includeSelf) {
+            flowOf(flowOf(this), getDescendants()).flattenConcat()
+        } else {
+            getAllChildren().flatMapConcat { it.getDescendants(true) }
+        }
+    }
 }
 
 interface INodeWithAsyncSupport : INode {

@@ -20,7 +20,7 @@ import org.modelix.model.persistent.IKVValue
 
 interface IDeserializingKeyValueStore {
     fun newBulkQuery(): IBulkQuery = newBulkQuery(this)
-    fun newBulkQuery(wrapper: IDeserializingKeyValueStore, config: BulkQueryConfiguration? = null): IBulkQuery = keyValueStore.newBulkQuery(wrapper, config ?: BulkQueryConfiguration())
+    fun newBulkQuery(wrapper: IDeserializingKeyValueStore = this, config: BulkQueryConfiguration? = null): IBulkQuery = keyValueStore.newBulkQuery(wrapper, config ?: BulkQueryConfiguration())
     val keyValueStore: IKeyValueStore
     operator fun <T> get(hash: String, deserializer: (String) -> T): T?
     fun <T> getIfCached(hash: String, deserializer: (String) -> T, isPrefetch: Boolean): T?

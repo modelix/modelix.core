@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -44,7 +45,7 @@ import org.modelix.modelql.core.stepOutputSerializer
 
 class DescendantsTraversalStep(val includeSelf: Boolean) : FluxTransformingStep<INode, INode>(), IFluxStep<INode> {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
-        return input.flatMapConcat { it.value.getDescendantsAsFlow(includeSelf) }.asStepFlow(this)
+        return input.flatMapConcat { it.value.asAsyncNode().getDescendants(includeSelf) }.map { it.asRegularNode() }.asStepFlow(this)
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<INode>> {

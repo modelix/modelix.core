@@ -19,6 +19,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -114,8 +116,8 @@ fun <T> IOptionalMonoFlow<T>.orNull(): IMonoFlow<T?> = NullIfEmptyMonoFlow(this)
 fun <T> IOptionalMonoFlow<T>.checkNotEmpty(message: () -> String): IMonoFlow<T> {
     return MonoFlow(this, messageIfEmpty = message)
 }
-fun <T : Any> IOptionalMonoFlow<T?>.filterNotNull(): IOptionalMonoFlow<T> = OptionalMonoFlow(filterNotNull())
-fun <T : Any> IMonoFlow<T?>.checkNotNull(message: () -> String): IMonoFlow<T> = filterNotNull().checkNotEmpty(message)
+fun <T : Any> IOptionalMonoFlow<T?>.filterNotNull(): IOptionalMonoFlow<T> = OptionalMonoFlow((this as Flow<T?>).filterNotNull())
+fun <T : Any> IMonoFlow<T?>.checkNotNull(message: () -> String): IMonoFlow<T> = MonoFlow((this as Flow<T?>).filterNotNull(), messageIfEmpty = message)
 fun <In, Out> IMonoFlow<In>.mapValue(transform: suspend (In) -> Out): IMonoFlow<Out> = map(transform).toMono()
 fun <In, Out> IMonoFlow<In>.mapMono(transform: suspend (In) -> IMonoFlow<Out>): IMonoFlow<Out> {
     return flatMapConcat(transform).toMono()

@@ -40,9 +40,8 @@ import org.modelix.modelql.core.stepOutputSerializer
 
 class ReferenceTraversalStep(val link: IReferenceLinkReference) : MonoTransformingStep<INode, INode>(), IMonoStep<INode> {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
-        return input.flatMapConcat {
-            it.value.asAsyncNode().getReferenceTarget(link).asFlow().filterNotNull().map { it.asRegularNode() }
-        }.asStepFlow(this)
+        return input.flatMapConcat { it.value.getReferenceTargetAsFlow(link.toLegacy()) }
+            .asStepFlow(this)
     }
 
     override fun canBeEmpty(): Boolean = true

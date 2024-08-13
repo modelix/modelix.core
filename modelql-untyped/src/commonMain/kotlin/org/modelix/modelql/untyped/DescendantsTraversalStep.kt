@@ -44,9 +44,7 @@ import org.modelix.modelql.core.stepOutputSerializer
 
 class DescendantsTraversalStep(val includeSelf: Boolean) : FluxTransformingStep<INode, INode>(), IFluxStep<INode> {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
-        return input.flatMapConcat {
-            it.value.asAsyncNode().getDescendantsAsFlow(includeSelf)
-        }.asStepFlow(this)
+        return input.flatMapConcat { it.value.getDescendantsAsFlow(includeSelf) }.asStepFlow(this)
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<INode>> {
@@ -77,11 +75,3 @@ class DescendantsTraversalStep(val includeSelf: Boolean) : FluxTransformingStep<
 }
 
 fun IProducingStep<INode>.descendants(includeSelf: Boolean = false): IFluxStep<INode> = DescendantsTraversalStep(includeSelf).also { connect(it) }
-
-private fun IAsyncNode.getDescendantsAsFlow(includeSelf: Boolean = false): Flow<INode> {
-    return if (includeSelf) {
-        flowOf(flowOf(this.asRegularNode()), getDescendantsAsFlow(false)).flattenConcat()
-    } else {
-        getAllChildren().asFlattenedFlow().flatMapConcat { it.getDescendantsAsFlow(true) }
-    }
-}

@@ -38,9 +38,7 @@ import org.modelix.modelql.core.stepOutputSerializer
 class ParentTraversalStep() : MonoTransformingStep<INode, INode>(), IMonoStep<INode> {
 
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
-        return input.flatMapConcat {
-            it.value.asAsyncNode().getParent().asFlow().filterNotNull().map { it.asRegularNode() }
-        }.asStepFlow(this)
+        return input.flatMapConcat { it.value.getParentAsFlow() }.asStepFlow(this)
     }
 
     override fun canBeEmpty(): Boolean = true

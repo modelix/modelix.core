@@ -202,6 +202,7 @@ object Main {
                 install(CORS) {
                     anyHost()
                     allowHeader(HttpHeaders.ContentType)
+                    allowHeader(HttpHeaders.Authorization)
                     allowMethod(HttpMethod.Options)
                     allowMethod(HttpMethod.Get)
                     allowMethod(HttpMethod.Put)

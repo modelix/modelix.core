@@ -89,8 +89,8 @@ class NullIfEmptyMonoFlow<out E>(private val input: IOptionalMonoFlow<E>) : IMon
     }
 }
 class OptionalMonoFlow<out E>(
-    private val input: Flow<E>,
-    private val messageIfMultiple: () -> String = { "Flow returned more than one element" }
+    val input: Flow<E>,
+    val messageIfMultiple: () -> String = { "Flow returned more than one element" }
 ): IOptionalMonoFlow<E> {
     override suspend fun collect(collector: FlowCollector<E>) {
         var elementCount = 0
@@ -110,14 +110,30 @@ fun <T : Any> monoFlowOf(value: T): IMonoFlow<T> = ConstantMonoFlow(value)
 fun <T> nullableMonoFlowOf(value: T): IMonoFlow<T> = ConstantMonoFlow(value)
 fun <T : Any> optionalMonoFlowOf(value: T?): IOptionalMonoFlow<T> = if (value == null) emptyMonoFlow<T>() else monoFlowOf(value)
 fun <T> monoFlow(value: suspend () -> T): IMonoFlow<T> = flow<T> { emit(value()) }.toMono()
-fun <T> Flow<T>.toMono(): IMonoFlow<T> = MonoFlow<T>(this)
-fun <T> Flow<T>.toOptionalMono(): IOptionalMonoFlow<T> = OptionalMonoFlow<T>(this)
+fun <T> Flow<T>.toMono(): IMonoFlow<T> {
+    return if (this is IMonoFlow) this else MonoFlow(this)
+}
+
+fun <T> Flow<T>.toOptionalMono(): IOptionalMonoFlow<T> {
+    return if (this is IOptionalMonoFlow) this else OptionalMonoFlow<T>(this)
+}
+
 fun <T> IOptionalMonoFlow<T>.orNull(): IMonoFlow<T?> = NullIfEmptyMonoFlow(this)
 fun <T> IOptionalMonoFlow<T>.checkNotEmpty(message: () -> String): IMonoFlow<T> {
-    return MonoFlow(this, messageIfEmpty = message)
+    return if (this is OptionalMonoFlow) {
+        MonoFlow(this.input, messageIfEmpty = message, messageIfMultiple = this.messageIfMultiple)
+    } else {
+        MonoFlow(this, messageIfEmpty = message)
+    }
 }
-fun <T : Any> IOptionalMonoFlow<T?>.filterNotNull(): IOptionalMonoFlow<T> = OptionalMonoFlow((this as Flow<T?>).filterNotNull())
-fun <T : Any> IMonoFlow<T?>.checkNotNull(message: () -> String): IMonoFlow<T> = MonoFlow((this as Flow<T?>).filterNotNull(), messageIfEmpty = message)
+fun <T : Any> IOptionalMonoFlow<T?>.filterNotNull(): IOptionalMonoFlow<T> {
+    return OptionalMonoFlow((this as Flow<T?>).filterNotNull())
+}
+
+fun <T : Any> IMonoFlow<T?>.checkNotNull(message: () -> String): IMonoFlow<T> {
+    return MonoFlow((this as Flow<T?>).filterNotNull(), messageIfEmpty = message)
+}
+
 fun <In, Out> IMonoFlow<In>.mapValue(transform: suspend (In) -> Out): IMonoFlow<Out> = map(transform).toMono()
 fun <In, Out> IMonoFlow<In>.mapMono(transform: suspend (In) -> IMonoFlow<Out>): IMonoFlow<Out> {
     return flatMapConcat(transform).toMono()
@@ -131,3 +147,7 @@ fun <In, Out> IOptionalMonoFlow<In>.mapMono(transform: suspend (In) -> IOptional
 fun <In, Out> IOptionalMonoFlow<In>.mapValue(transform: suspend (In) -> Out): IOptionalMonoFlow<Out> {
     return map(transform).toOptionalMono()
 }
+
+fun <T> IMonoFlow<T>.print(message: (T) -> String): IMonoFlow<T> = mapValue { println(message(it)); it }
+fun <T> IOptionalMonoFlow<T>.print(message: (T) -> String): IOptionalMonoFlow<T> = mapValue { println(message(it)); it }
+fun <T> Flow<T>.print(message: (T) -> String): Flow<T> = map { println(message(it)); it }

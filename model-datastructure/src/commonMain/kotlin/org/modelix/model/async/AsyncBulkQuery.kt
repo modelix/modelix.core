@@ -18,14 +18,17 @@ package org.modelix.model.async
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.modelix.kotlin.utils.IMonoFlow
 import org.modelix.kotlin.utils.flatMapConcatConcurrent
+import org.modelix.kotlin.utils.print
 import org.modelix.kotlin.utils.runSynchronized
 import org.modelix.kotlin.utils.toMono
 import org.modelix.model.api.async.DeferredAsAsyncValue
@@ -61,20 +64,21 @@ class AsyncBulkQuery(val store: IAsyncObjectStore) : IAsyncObjectStore {
 //    }
 
     private val newRequests = LinkedHashMap<String, RequestedValue<*>>()
-    private val processMutex = Mutex()
-    private val deferredCache = HashMap<String, Deferred<*>>()
+    private val pendingRequests = LinkedHashMap<String, RequestedValue<*>>()
 
-    fun <T : IKVValue> queryAsDeferred(hash: KVEntryReference<T>): Deferred<T> {
+    private fun <T : IKVValue> queryAsDeferred(hash: KVEntryReference<T>): Deferred<T> {
         store.getIfCached(hash)?.let { return CompletableDeferred(it) }
-        return runSynchronized(newRequests) {
-            val request = newRequests.getOrPut(hash.getHash()) {
-                val deferred = runSynchronized(deferredCache) {
-                    deferredCache.getOrPut(hash.getHash()) { CompletableDeferred<T>() }
-                }
-                RequestedValue<T>(hash, deferred as CompletableDeferred<T>)
-            } as RequestedValue<T>
-            request.deferred
-        }
+        return (runSynchronized(pendingRequests) { pendingRequests[hash.getHash()] }
+            ?: runSynchronized(newRequests) {
+                    val request = newRequests.getOrPut(hash.getHash()) {
+                        runSynchronized(pendingRequests) {
+                            pendingRequests.getOrPut(hash.getHash()) {
+                                RequestedValue<T>(hash, CompletableDeferred<T>())
+                            }
+                        }
+                    } as RequestedValue<T>
+                    request
+                }).deferred as Deferred<T>
     }
 
     override fun <T : IKVValue> getIfCached(key: IKVEntryReference<T>): T? {
@@ -89,11 +93,10 @@ class AsyncBulkQuery(val store: IAsyncObjectStore) : IAsyncObjectStore {
         }
     }
 
-    private suspend fun processCurrentRequests() {
-        processMutex.withLock {
-            val requests = copyCurrentRequests()
-            if (requests.isNotEmpty()) processRequests(requests)
-        }
+    private suspend fun processCurrentRequests(): Boolean {
+        val requests = copyCurrentRequests()
+        if (requests.isNotEmpty()) processRequests(requests)
+        return requests.isNotEmpty()
     }
 
     private suspend fun processRequests(requests: List<RequestedValue<*>>) {
@@ -105,6 +108,9 @@ class AsyncBulkQuery(val store: IAsyncObjectStore) : IAsyncObjectStore {
                 request.deferred.completeExceptionally(RuntimeException("Entry not found: ${request.key}"))
             } else {
                 (request as RequestedValue<IKVValue>).deferred.complete(value as IKVValue)
+            }
+            runSynchronized(pendingRequests) {
+                pendingRequests.remove(request.key.getHash())
             }
         }
     }
@@ -126,11 +132,17 @@ class AsyncBulkQuery(val store: IAsyncObjectStore) : IAsyncObjectStore {
     override fun <T : IKVValue> getAsFlow(key: IKVEntryReference<T>): IMonoFlow<T> {
         val deferred = queryAsDeferred(key as KVEntryReference<T>)
         return flow<T> {
-            if (!deferred.isCompleted) {
-                sleep(1)
-                if (!deferred.isCompleted) processCurrentRequests()
+            if (deferred.isCompleted) {
+                emit(deferred.getCompleted())
+                return@flow
             }
-            emit(deferred.getCompleted())
+
+            coroutineScope {
+                launch {
+                    if (!deferred.isCompleted) processCurrentRequests()
+                }
+                emit(deferred.await())
+            }
         }.toMono()
     }
 

@@ -39,7 +39,7 @@ class StoreClientWithStatistics(val store: IsolatingStore) : IsolatingStore by s
         println("requested entries: ${keys.size}")
         totalRequests.incrementAndGet()
         val result = store.getAll(keys)
-        result.forEach { println("    " + it.key.key + " = " + it.value) }
+        // result.forEach { println("    " + it.key.key + " = " + it.value) }
         return result
     }
 

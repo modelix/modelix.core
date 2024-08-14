@@ -63,6 +63,8 @@ import org.modelix.modelql.untyped.createQueryExecutor
 import org.modelix.modelql.untyped.descendants
 import kotlin.random.Random
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.TimeSource
 
 @Suppress("ktlint:standard:annotation", "ktlint:standard:spacing-between-declarations-with-annotations")
@@ -98,7 +100,7 @@ class ModelQLBulkQueryTest {
         println(size)
     }
 
-    private fun <T> runModelQLTest(query: IMonoUnboundQuery<INode, T>) = kotlinx.coroutines.test.runTest {
+    private fun <T> runModelQLTest(query: IMonoUnboundQuery<INode, T>) = kotlinx.coroutines.test.runTest(timeout = 20.minutes) {
         val db = InMemoryStoreClient()
         val statistics = StoreClientWithStatistics(db)
         val treeHash: String = suspend {

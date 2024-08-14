@@ -66,7 +66,7 @@ class CPHamtLeaf(
 
     override fun get(key: Long, shift: Int, store: IAsyncObjectStore): IAsyncValue<KVEntryReference<CPNode>?> {
         require(shift <= CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL) { "$shift > ${CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL}" }
-        return IAsyncValue.constant(if (key == this.key) value else null)
+        return if (key == this.key) IAsyncValue.constant(value) else IAsyncValue.nullConstant()
     }
 
     override fun visitEntries(store: IAsyncObjectStore, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IAsyncValue<Unit> {

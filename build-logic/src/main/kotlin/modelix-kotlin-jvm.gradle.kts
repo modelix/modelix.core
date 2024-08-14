@@ -30,6 +30,7 @@ kotlin {
     jvmToolchain(11)
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_11)
+        freeCompilerArgs.addAll(listOf("-Xjvm-default=all-compatibility"))
     }
 }
 

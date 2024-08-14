@@ -5,11 +5,6 @@ import io.gitlab.arturbosch.detekt.Detekt
 import org.jetbrains.dokka.base.DokkaBase
 import org.jetbrains.dokka.base.DokkaBaseConfiguration
 import org.jetbrains.dokka.gradle.DokkaTaskPartial
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
-import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
-import org.jetbrains.kotlin.gradle.plugin.KotlinMultiplatformPluginWrapper
-import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformJvmPlugin
 
 buildscript {
     dependencies {
@@ -62,6 +57,7 @@ subprojects {
     val subproject = this
     apply(plugin = "maven-publish")
     apply(plugin = "org.jetbrains.dokka")
+    apply(plugin = "modelix-kotlin-api-version")
     if (subproject.name !in setOf("model-server-openapi")) {
         apply(plugin = "org.jetbrains.kotlinx.kover")
     }
@@ -72,58 +68,6 @@ subprojects {
     tasks.withType<DokkaTaskPartial>().configureEach {
         pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
             footerMessage = dokkaFooterMessage
-        }
-    }
-
-    val kotlinApiVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_6
-    subproject.tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-        if (!name.lowercase().contains("test")) {
-            this.compilerOptions {
-                jvmTarget.set(JvmTarget.JVM_11)
-                freeCompilerArgs.addAll(listOf("-Xjvm-default=all-compatibility", "-Xexpect-actual-classes"))
-                apiVersion.set(kotlinApiVersion)
-            }
-        }
-    }
-    subproject.tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile>().configureEach {
-        if (!name.lowercase().contains("test")) {
-            this.compilerOptions {
-                jvmTarget.set(JvmTarget.JVM_11)
-                freeCompilerArgs.addAll(listOf("-Xjvm-default=all-compatibility"))
-                apiVersion.set(kotlinApiVersion)
-            }
-        }
-    }
-
-    subproject.plugins.withType<JavaPlugin> {
-        subproject.extensions.configure<JavaPluginExtension> {
-            toolchain {
-                languageVersion.set(JavaLanguageVersion.of(11))
-            }
-            sourceCompatibility = JavaVersion.VERSION_11
-            targetCompatibility = JavaVersion.VERSION_11
-        }
-    }
-
-    subproject.plugins.withType<KotlinPlatformJvmPlugin> {
-        subproject.extensions.configure<KotlinJvmProjectExtension> {
-            jvmToolchain(11)
-            compilerOptions {
-                jvmTarget.set(JvmTarget.JVM_11)
-            }
-        }
-    }
-
-    subproject.plugins.withType<KotlinMultiplatformPluginWrapper> {
-        subproject.extensions.configure<KotlinMultiplatformExtension> {
-            jvmToolchain(11)
-            sourceSets.all {
-                if (!name.lowercase().contains("test")) {
-                    languageSettings {
-                        apiVersion = kotlinApiVersion.version
-                    }
-                }
-            }
         }
     }
 

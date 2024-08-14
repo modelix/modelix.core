@@ -81,8 +81,13 @@ internal fun buildMpsRunConfigurationForLocalTarget(
             if (source is ServerSource && source.baseRevision != null) {
                 add("-Dmodelix.mps.model.sync.bulk.server.repository=${source.repositoryId}")
                 add("-Dmodelix.mps.model.sync.bulk.server.url=${source.url}")
-                add("-Dmodelix.mps.model.sync.bulk.server.version.hash=${source.revision}")
                 add("-Dmodelix.mps.model.sync.bulk.server.version.base.hash=${source.baseRevision}")
+                if (source.branchName != null) {
+                    add("-Dmodelix.mps.model.sync.bulk.server.branch=${source.branchName}")
+                }
+                if (source.revision != null) {
+                    add("-Dmodelix.mps.model.sync.bulk.server.version.hash=${source.revision}")
+                }
             }
         },
     )

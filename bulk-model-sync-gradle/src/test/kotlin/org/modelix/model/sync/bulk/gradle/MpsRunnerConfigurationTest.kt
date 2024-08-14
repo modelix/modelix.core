@@ -59,7 +59,7 @@ class MpsRunnerConfigurationTest {
             "-Dmodelix.mps.model.sync.bulk.input.continueOnError=false",
             "-Xmx2g",
             "-Dmodelix.mps.model.sync.bulk.server.repository=aRepositoryId",
-            "-Dmodelix.mps.model.sync.bulk.server.version.hash=null",
+            "-Dmodelix.mps.model.sync.bulk.server.branch=aBranchName",
             "-Dmodelix.mps.model.sync.bulk.server.url=aUrl",
             "-Dmodelix.mps.model.sync.bulk.server.version.base.hash=aBaseRevision",
         )

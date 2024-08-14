@@ -39,6 +39,7 @@ import org.modelix.model.api.resolveInCurrentContext
 import org.modelix.model.area.IArea
 import org.modelix.model.area.IAreaListener
 import org.modelix.model.area.IAreaReference
+import org.modelix.model.async.BulkQueryAsAsyncStore
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.NonCachingObjectStore
@@ -137,7 +138,7 @@ class InMemoryModel private constructor(
             LOG.info { "Start loading model into memory" }
             val duration = measureTimeMillis {
                 bulkQuery.query(slowMapRef).onReceive { slowMap ->
-                    slowMap!!.visitEntries(bulkQuery) { nodeId, nodeDataRef ->
+                    slowMap!!.visitEntries(BulkQueryAsAsyncStore(bulkQuery)) { nodeId, nodeDataRef ->
                         bulkQuery.query(nodeDataRef).onReceive { nodeData ->
                             if (nodeData != null) {
                                 fastMap.put(nodeId, nodeData)
@@ -193,7 +194,7 @@ class InMemoryModel private constructor(
                             }
                         }
                     },
-                    bulkQuery,
+                    BulkQueryAsAsyncStore(bulkQuery),
                 )
             }
             bulkQuery.executeQuery()

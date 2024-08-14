@@ -372,7 +372,7 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
                         return if (newValue != null) bulkQuery.query(newValue).map { } else IAsyncValue.UNIT
                     }
                 },
-                bulkQuery,
+                store.getAsyncStore(),
             )
             v1 = v2
         }
@@ -393,7 +393,7 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
 
         val nodesMap = oldTree.nodesMap!!
         changedNodeIds.forEach { changedNodeId ->
-            nodesMap.get(changedNodeId, 0, bulkQuery).onReceive { nodeRef: KVEntryReference<CPNode>? ->
+            nodesMap.get(changedNodeId, 0, store.getAsyncStore()).onReceive { nodeRef: KVEntryReference<CPNode>? ->
                 if (nodeRef != null) bulkQuery.query(nodeRef)
             }
         }

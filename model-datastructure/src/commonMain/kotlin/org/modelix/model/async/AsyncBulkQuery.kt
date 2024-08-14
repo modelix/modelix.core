@@ -19,18 +19,23 @@ package org.modelix.model.async
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.modelix.kotlin.utils.IMonoFlow
+import org.modelix.kotlin.utils.flatMapConcatConcurrent
 import org.modelix.kotlin.utils.runSynchronized
 import org.modelix.kotlin.utils.toMono
 import org.modelix.model.api.async.DeferredAsAsyncValue
 import org.modelix.model.api.async.IAsyncValue
 import org.modelix.model.api.async.MonoFlowAsAsyncValue
+import org.modelix.model.api.async.asFlow
 import org.modelix.model.lazy.IKVEntryReference
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.persistent.IKVValue
+import org.modelix.model.sleep
 
 class AsyncBulkQuery(val store: IAsyncObjectStore) : IAsyncObjectStore {
 //    companion object {
@@ -57,11 +62,17 @@ class AsyncBulkQuery(val store: IAsyncObjectStore) : IAsyncObjectStore {
 
     private val newRequests = LinkedHashMap<String, RequestedValue<*>>()
     private val processMutex = Mutex()
+    private val deferredCache = HashMap<String, Deferred<*>>()
 
     fun <T : IKVValue> queryAsDeferred(hash: KVEntryReference<T>): Deferred<T> {
         store.getIfCached(hash)?.let { return CompletableDeferred(it) }
         return runSynchronized(newRequests) {
-            val request = newRequests.getOrPut(hash.getHash()) { RequestedValue<T>(hash, CompletableDeferred()) } as RequestedValue<T>
+            val request = newRequests.getOrPut(hash.getHash()) {
+                val deferred = runSynchronized(deferredCache) {
+                    deferredCache.getOrPut(hash.getHash()) { CompletableDeferred<T>() }
+                }
+                RequestedValue<T>(hash, deferred as CompletableDeferred<T>)
+            } as RequestedValue<T>
             request.deferred
         }
     }
@@ -81,11 +92,12 @@ class AsyncBulkQuery(val store: IAsyncObjectStore) : IAsyncObjectStore {
     private suspend fun processCurrentRequests() {
         processMutex.withLock {
             val requests = copyCurrentRequests()
-            processRequests(requests)
+            if (requests.isNotEmpty()) processRequests(requests)
         }
     }
 
     private suspend fun processRequests(requests: List<RequestedValue<*>>) {
+        delay(1)
         val response = store.getAll(requests.map { it.key })
         for (request in requests) {
             val value = response[request.key]
@@ -114,9 +126,22 @@ class AsyncBulkQuery(val store: IAsyncObjectStore) : IAsyncObjectStore {
     override fun <T : IKVValue> getAsFlow(key: IKVEntryReference<T>): IMonoFlow<T> {
         val deferred = queryAsDeferred(key as KVEntryReference<T>)
         return flow<T> {
-            if (!deferred.isCompleted) processCurrentRequests()
+            if (!deferred.isCompleted) {
+                sleep(1)
+                if (!deferred.isCompleted) processCurrentRequests()
+            }
             emit(deferred.getCompleted())
         }.toMono()
+    }
+
+    override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IAsyncValue<O>): IAsyncValue<List<O>> {
+        return requestAll(input.map(f))
+    }
+
+    override fun <T> requestAll(values: List<IAsyncValue<T>>): IAsyncValue<List<T>> {
+        return MonoFlowAsAsyncValue(flow<List<T>> {
+            values.asFlow().flatMapConcatConcurrent { it.asFlow() }.toList()
+        }.toMono())
     }
 }
 

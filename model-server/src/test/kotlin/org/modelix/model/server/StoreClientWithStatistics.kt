@@ -36,8 +36,11 @@ class StoreClientWithStatistics(val store: IsolatingStore) : IsolatingStore by s
     }
 
     override fun getAll(keys: Set<ObjectInRepository>): Map<ObjectInRepository, String?> {
+        println("requested entries: ${keys.size}")
         totalRequests.incrementAndGet()
-        return store.getAll(keys)
+        val result = store.getAll(keys)
+        result.forEach { println("    " + it.key.key + " = " + it.value) }
+        return result
     }
 
     override fun getAll(): Map<ObjectInRepository, String?> {

@@ -16,6 +16,7 @@
 package org.modelix.model.persistent
 
 import org.modelix.model.api.async.IAsyncValue
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.KVEntryReference
@@ -31,8 +32,8 @@ class CPHamtLeaf(
         return """L/${longToHex(key)}/${value.getHash()}"""
     }
 
-    override fun calculateSize(bulkQuery: IBulkQuery): IAsyncValue<Long> {
-        return bulkQuery.constant(1L)
+    override fun calculateSize(store: IAsyncObjectStore): IAsyncValue<Long> {
+        return IAsyncValue.constant(1L)
     }
 
     override fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
@@ -63,21 +64,21 @@ class CPHamtLeaf(
         }
     }
 
-    override fun get(key: Long, shift: Int, bulkQuery: IBulkQuery): IAsyncValue<KVEntryReference<CPNode>?> {
+    override fun get(key: Long, shift: Int, store: IAsyncObjectStore): IAsyncValue<KVEntryReference<CPNode>?> {
         require(shift <= CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL) { "$shift > ${CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL}" }
-        return bulkQuery.constant(if (key == this.key) value else null)
+        return IAsyncValue.constant(if (key == this.key) value else null)
     }
 
-    override fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IAsyncValue<Unit> {
-        return bulkQuery.constant(visitor(key, value))
+    override fun visitEntries(store: IAsyncObjectStore, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IAsyncValue<Unit> {
+        return IAsyncValue.constant(visitor(key, value))
     }
 
-    override fun visitChanges(oldNode: CPHamtNode?, shift: Int, visitor: CPHamtNode.IChangeVisitor, bulkQuery: IBulkQuery): IAsyncValue<Unit> {
+    override fun visitChanges(oldNode: CPHamtNode?, shift: Int, visitor: CPHamtNode.IChangeVisitor, store: IAsyncObjectStore): IAsyncValue<Unit> {
         return if (oldNode === this || hash == oldNode?.hash) {
             IAsyncValue.UNIT
         } else if (visitor.visitChangesOnly()) {
             if (oldNode != null) {
-                oldNode.get(key, shift, bulkQuery).thenRequest { oldValue ->
+                oldNode.get(key, shift, store).thenRequest { oldValue ->
                     if (oldValue != null && value != oldValue) visitor.entryChanged(key, oldValue, value) else IAsyncValue.UNIT
                 }
             } else {
@@ -93,7 +94,7 @@ class CPHamtLeaf(
                     visitor.entryRemoved(k, v)
                 }
             }
-            oldNode!!.visitEntries(bulkQuery, bp).thenRequest {
+            oldNode!!.visitEntries(store, bp).thenRequest {
                 val oldValue = oldValue
                 if (oldValue == null) {
                     visitor.entryAdded(key, value)

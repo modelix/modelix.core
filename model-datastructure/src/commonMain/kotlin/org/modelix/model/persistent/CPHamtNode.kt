@@ -16,6 +16,7 @@
 package org.modelix.model.persistent
 
 import org.modelix.model.api.async.IAsyncValue
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.KVEntryReference
@@ -38,15 +39,10 @@ abstract class CPHamtNode : IKVValue {
         return CPHamtInternal(0, arrayOf())
     }
 
-    abstract fun calculateSize(bulkQuery: IBulkQuery): IAsyncValue<Long>
+    abstract fun calculateSize(store: IAsyncObjectStore): IAsyncValue<Long>
 
-    fun get(key: Long, store: IDeserializingKeyValueStore): KVEntryReference<CPNode>? {
-        val bulkQuery: IBulkQuery = NonBulkQuery(store)
-        return get(key, 0, bulkQuery).awaitBlocking()
-    }
-
-    fun getAll(keys: Iterable<Long>, bulkQuery: IBulkQuery): IAsyncValue<List<KVEntryReference<CPNode>?>> {
-        return bulkQuery.flatMap(keys) { key: Long -> get(key, 0, bulkQuery) }
+    fun getAll(keys: Iterable<Long>, store: IAsyncObjectStore): IAsyncValue<List<KVEntryReference<CPNode>?>> {
+        return store.requestAll(keys.map { get(it, 0, store) })
     }
 
     fun put(key: Long, value: KVEntryReference<CPNode>?, store: IDeserializingKeyValueStore): CPHamtNode? {
@@ -65,14 +61,14 @@ abstract class CPHamtNode : IKVValue {
         return remove(element.id, store)
     }
 
-    fun get(key: Long, bulkQuery: IBulkQuery): IAsyncValue<KVEntryReference<CPNode>?> = get(key, 0, bulkQuery)
+    fun get(key: Long, store: IAsyncObjectStore): IAsyncValue<KVEntryReference<CPNode>?> = get(key, 0, store)
 
-    abstract fun get(key: Long, shift: Int, bulkQuery: IBulkQuery): IAsyncValue<KVEntryReference<CPNode>?>
+    abstract fun get(key: Long, shift: Int, store: IAsyncObjectStore): IAsyncValue<KVEntryReference<CPNode>?>
     abstract fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode?
     abstract fun remove(key: Long, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode?
-    abstract fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IAsyncValue<Unit>
-    abstract fun visitChanges(oldNode: CPHamtNode?, shift: Int, visitor: IChangeVisitor, bulkQuery: IBulkQuery): IAsyncValue<Unit>
-    fun visitChanges(oldNode: CPHamtNode?, visitor: IChangeVisitor, bulkQuery: IBulkQuery) = visitChanges(oldNode, 0, visitor, bulkQuery)
+    abstract fun visitEntries(store: IAsyncObjectStore, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IAsyncValue<Unit>
+    abstract fun visitChanges(oldNode: CPHamtNode?, shift: Int, visitor: IChangeVisitor, store: IAsyncObjectStore): IAsyncValue<Unit>
+    fun visitChanges(oldNode: CPHamtNode?, visitor: IChangeVisitor, store: IAsyncObjectStore) = visitChanges(oldNode, 0, visitor, store)
     interface IChangeVisitor {
         fun visitChangesOnly(): Boolean
         fun entryAdded(key: Long, value: KVEntryReference<CPNode>): IAsyncValue<Unit>

@@ -71,7 +71,7 @@ class AsyncTree(private val treeData: () -> CPTree, private val store: IAsyncObj
         .mapMono { it.query() }
 
     private fun tryGetNodeRef(id: Long): IOptionalMonoFlow<KVEntryReference<CPNode>> {
-        return nodesMap.query().mapMono { it.get(id, store.asBulkQuery()).asFlow() }.filterNotNull()
+        return nodesMap.query().mapMono { it.get(id, store).asFlow() }.filterNotNull()
     }
 
     override fun containsNode(nodeId: Long): IMonoFlow<Boolean> {

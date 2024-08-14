@@ -16,6 +16,7 @@
 package org.modelix.model.persistent
 
 import org.modelix.model.api.async.IAsyncValue
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.bitCount
 import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.IDeserializingKeyValueStore
@@ -45,29 +46,29 @@ class CPHamtSingle(
         require(numLevels <= CPHamtNode.MAX_LEVELS) { "Only ${CPHamtNode.MAX_LEVELS} levels expected, but was $numLevels" }
     }
 
-    override fun calculateSize(bulkQuery: IBulkQuery): IAsyncValue<Long> {
-        return getChild(bulkQuery).thenRequest { it.calculateSize(bulkQuery) }
+    override fun calculateSize(store: IAsyncObjectStore): IAsyncValue<Long> {
+        return getChild(store).thenRequest { it.calculateSize(store) }
     }
 
     private fun maskBits(key: Long, shift: Int): Long = (key ushr (CPHamtNode.MAX_BITS - CPHamtNode.BITS_PER_LEVEL * numLevels - shift)) and mask
 
-    override fun get(key: Long, shift: Int, bulkQuery: IBulkQuery): IAsyncValue<KVEntryReference<CPNode>?> {
+    override fun get(key: Long, shift: Int, store: IAsyncObjectStore): IAsyncValue<KVEntryReference<CPNode>?> {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         if (maskBits(key, shift) == bits) {
-            return bulkQuery.query(child)
+            return store.get(child)
                 .thenRequest {
                     val childData = it ?: throw RuntimeException("Entry not found in store: " + child.getHash())
-                    childData.get(key, shift + numLevels * CPHamtNode.BITS_PER_LEVEL, bulkQuery)
+                    childData.get(key, shift + numLevels * CPHamtNode.BITS_PER_LEVEL, store)
                 }
         } else {
-            return bulkQuery.constant(null)
+            return IAsyncValue.nullConstant()
         }
     }
 
     override fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         if (maskBits(key, shift) == bits) {
-            return withNewChild(getChild(NonBulkQuery(store)).awaitBlocking().put(key, value, shift + CPHamtNode.BITS_PER_LEVEL * numLevels, store))
+            return withNewChild(getChild(store.getAsyncStore()).awaitBlocking().put(key, value, shift + CPHamtNode.BITS_PER_LEVEL * numLevels, store))
         } else {
             if (numLevels > 1) {
                 return splitOneLevel().put(key, value, shift, store)
@@ -109,27 +110,27 @@ class CPHamtSingle(
         return put(key, null, shift, store)
     }
 
-    fun getChild(bulkQuery: IBulkQuery): IAsyncValue<CPHamtNode> {
-        return bulkQuery.query(child).map { childData -> checkNotNull(childData) { "Entry not found: $child" } }
+    fun getChild(store: IAsyncObjectStore): IAsyncValue<CPHamtNode> {
+        return store.get(child).map { childData -> checkNotNull(childData) { "Entry not found: $child" } }
     }
 
-    override fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IAsyncValue<Unit> {
-        return getChild(bulkQuery).thenRequest { it.visitEntries(bulkQuery, visitor) }
+    override fun visitEntries(store: IAsyncObjectStore, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IAsyncValue<Unit> {
+        return getChild(store).thenRequest { it.visitEntries(store, visitor) }
     }
 
-    override fun visitChanges(oldNode: CPHamtNode?, shift: Int, visitor: CPHamtNode.IChangeVisitor, bulkQuery: IBulkQuery): IAsyncValue<Unit> {
+    override fun visitChanges(oldNode: CPHamtNode?, shift: Int, visitor: CPHamtNode.IChangeVisitor, store: IAsyncObjectStore): IAsyncValue<Unit> {
         return if (oldNode === this || hash == oldNode?.hash) {
             return IAsyncValue.UNIT
         } else if (oldNode is CPHamtSingle && oldNode.numLevels == numLevels) {
-            getChild(bulkQuery).thenRequest { child ->
-                oldNode.getChild(bulkQuery).thenRequest { oldNode ->
-                    child.visitChanges(oldNode, shift + numLevels * CPHamtNode.BITS_PER_LEVEL, visitor, bulkQuery)
+            getChild(store).thenRequest { child ->
+                oldNode.getChild(store).thenRequest { oldNode ->
+                    child.visitChanges(oldNode, shift + numLevels * CPHamtNode.BITS_PER_LEVEL, visitor, store)
                 }
             }
         } else if (numLevels == 1) {
-            CPHamtInternal.replace(this).visitChanges(oldNode, shift, visitor, bulkQuery)
+            CPHamtInternal.replace(this).visitChanges(oldNode, shift, visitor, store)
         } else {
-            splitOneLevel().visitChanges(oldNode, shift, visitor, bulkQuery)
+            splitOneLevel().visitChanges(oldNode, shift, visitor, store)
         }
     }
 

@@ -34,6 +34,8 @@ import org.modelix.model.api.PBranch
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.addNewChild
 import org.modelix.model.api.async.asFlow
+import org.modelix.model.api.getAncestors
+import org.modelix.model.api.getDescendants
 import org.modelix.model.api.getRootNode
 import org.modelix.model.async.AsyncStoreAsStore
 import org.modelix.model.async.AsyncBulkQuery
@@ -42,6 +44,7 @@ import org.modelix.model.async.SynchronousStoreAsAsyncStore
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
+import org.modelix.model.lazy.CacheConfiguration
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.NonCachingObjectStore
 import org.modelix.model.lazy.ObjectStoreCache
@@ -104,7 +107,7 @@ class ModelQLBulkQueryTest {
         }()
 
         val kvStore = LocalModelClient(statistics.forRepository(RepositoryId("my-repo")))
-        val asyncStore = AsyncBulkQuery(SynchronousStoreAsAsyncStore(NonCachingObjectStore(kvStore)))
+        val asyncStore = AsyncBulkQuery(SynchronousStoreAsAsyncStore(ObjectStoreCache(kvStore, CacheConfiguration().also { it.prefetchCacheSize = 0 })))
         val model = TreePointer(asyncStore.get(KVEntryReference(treeHash, CPTree.DESERIALIZER)).await().let { CLTree(it!!, AsyncStoreAsStore(asyncStore)) })
         val rootNode = model.getRootNode()
         val requestCountBefore = statistics.getTotalRequests()
@@ -127,7 +130,7 @@ class ModelQLBulkQueryTest {
                     parentNode.addNewChild(NullChildLink, 0)
                     return
                 }
-                val numChildren = rand.nextInt(2, 10.coerceAtMost(numberOfNodes) + 1)
+                val numChildren = rand.nextInt(10, 20).coerceAtMost(numberOfNodes)
                 val subtreeSize = numberOfNodes / numChildren
                 val remainder = numberOfNodes % numChildren
                 for (i in 1..numChildren) {
@@ -136,6 +139,8 @@ class ModelQLBulkQueryTest {
             }
 
             createNodes(rootNode, numberOfNodes, Random(10001))
+
+            println("Max depth: " + rootNode.getDescendants(true).maxOf { it.getAncestors(true).count() })
         }
         val initialVersion = CLVersion.createRegularVersion(
             id = 1000L,

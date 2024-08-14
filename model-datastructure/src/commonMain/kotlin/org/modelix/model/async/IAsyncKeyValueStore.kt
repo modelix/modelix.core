@@ -40,6 +40,9 @@ interface IAsyncObjectStore {
     fun <T : IKVValue> getAsFlow(key: IKVEntryReference<T>): IMonoFlow<T>
     suspend fun getAll(keys: List<IKVEntryReference<*>>): Map<IKVEntryReference<*>, Any?>
     suspend fun putAll(entries: Map<IKVEntryReference<*>, Any?>)
+
+    fun <T> requestAll(values: List<IAsyncValue<T>>): IAsyncValue<List<T>>
+    fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IAsyncValue<O>): IAsyncValue<List<O>>
 }
 
 class BulkQueryAsAsyncStore(val bulkQuery: IBulkQuery): IAsyncObjectStore {
@@ -61,6 +64,14 @@ class BulkQueryAsAsyncStore(val bulkQuery: IBulkQuery): IAsyncObjectStore {
 
     override fun <T : IKVValue> getIfCached(key: IKVEntryReference<T>): T? {
         TODO("Not yet implemented")
+    }
+
+    override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IAsyncValue<O>): IAsyncValue<List<O>> {
+        return bulkQuery.flatMap(input, f)
+    }
+
+    override fun <T> requestAll(values: List<IAsyncValue<T>>): IAsyncValue<List<T>> {
+        return bulkQuery.flatMap(values) { it }
     }
 }
 
@@ -113,6 +124,14 @@ class SynchronousStoreAsAsyncStore(val store: IDeserializingKeyValueStore): IAsy
     }
 
     override suspend fun putAll(entries: Map<IKVEntryReference<*>, Any?>) {
+        TODO("Not yet implemented")
+    }
+
+    override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IAsyncValue<O>): IAsyncValue<List<O>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <T> requestAll(values: List<IAsyncValue<T>>): IAsyncValue<List<T>> {
         TODO("Not yet implemented")
     }
 }

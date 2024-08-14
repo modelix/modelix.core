@@ -58,7 +58,7 @@ class CLNode(private val tree: CLTree, private val data: CPNode) {
     }
 
     val parent: CLNode?
-        get() = tree.resolveElement(data.parentId)?.let { CLNode(tree, it) }
+        get() = tree.resolveElement(data.parentId).awaitBlocking()?.let { CLNode(tree, it) }
 
     val parentId: Long
         get() = data.parentId
@@ -74,7 +74,7 @@ class CLNode(private val tree: CLTree, private val data: CPNode) {
     }
 
     fun getChildren(bulkQuery: IBulkQuery): IAsyncValue<Iterable<CLNode>> {
-        return (getTree() as CLTree).resolveElements(getData().getChildrenIds().toList(), bulkQuery)
+        return (getTree() as CLTree).resolveElements(getData().getChildrenIds().toList())
             .map { elements -> elements.map { CLNode(tree, it) } }
     }
 

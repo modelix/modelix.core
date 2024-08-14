@@ -18,7 +18,9 @@ package org.modelix.model.api.async
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flattenConcat
+import kotlinx.coroutines.flow.flattenMerge
 import kotlinx.coroutines.flow.flowOf
 import org.modelix.kotlin.utils.IMonoFlow
 import org.modelix.kotlin.utils.IOptionalMonoFlow
@@ -47,9 +49,9 @@ interface IAsyncNode {
 
     fun getDescendants(includeSelf: Boolean = false): Flow<IAsyncNode> {
         return if (includeSelf) {
-            flowOf(flowOf(this), getDescendants()).flattenConcat()
+            flowOf(flowOf(this), getDescendants()).flattenMerge(concurrency = 1000)
         } else {
-            getAllChildren().flatMapConcatConcurrent { it.getDescendants(true) }
+            getAllChildren().flatMapMerge(concurrency = 1000) { it.getDescendants(true) }
         }
     }
 }

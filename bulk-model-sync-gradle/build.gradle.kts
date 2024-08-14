@@ -11,6 +11,8 @@ dependencies {
     implementation(libs.modelix.buildtools.lib)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.cio)
+    testImplementation(libs.kotest.assertions.coreJvm)
+    testImplementation(kotlin("test"))
 }
 
 kotlin {
@@ -35,4 +37,8 @@ val writeVersionFile by tasks.registering {
 }
 tasks.named("processResources") {
     dependsOn(writeVersionFile)
+}
+
+tasks.test {
+    useJUnitPlatform()
 }

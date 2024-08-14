@@ -56,7 +56,8 @@ internal fun buildMpsRunConfigurationForLocalTarget(
     val repositoryDir = checkNotNull(localTarget.repositoryDir) {
         "syncDirection.target has no `repositoryDir` specified."
     }
-    val hasBaseRevision = (syncDirection.source as? ServerSource)?.baseRevision != null
+    val source = syncDirection.source
+    val hasBaseRevision = (source as? ServerSource)?.baseRevision != null
     val config = MPSRunnerConfig(
         mainClassName = "org.modelix.mps.model.sync.bulk.MPSBulkSynchronizer",
         mainMethodName = if (hasBaseRevision) "importRepositoryFromModelServer" else "importRepository",
@@ -65,19 +66,25 @@ internal fun buildMpsRunConfigurationForLocalTarget(
         workDir = jsonDir,
         additionalModuleDirs = localTarget.mpsLibraries.toList() + repositoryDir,
         plugins = createPluginConfig(localTarget.mpsPlugins),
-        jvmArgs = listOfNotNull(
-            "-Dmodelix.mps.model.sync.bulk.input.path=${jsonDir.absolutePath}",
-            "-Dmodelix.mps.model.sync.bulk.input.modules=${syncDirection.includedModules.joinToString(",")}",
-            "-Dmodelix.mps.model.sync.bulk.input.modules.prefixes=${syncDirection.includedModulePrefixes.joinToString(",")}",
-            "-Dmodelix.mps.model.sync.bulk.repo.path=${repositoryDir.absolutePath}",
-            "-Dmodelix.mps.model.sync.bulk.input.continueOnError=${syncDirection.continueOnError}",
-            "-Dmodelix.mps.model.sync.bulk.server.repository=${(syncDirection.source as ServerSource).repositoryId}".takeIf { hasBaseRevision },
-            "-Dmodelix.mps.model.sync.bulk.server.url=${(syncDirection.source as ServerSource).url}".takeIf { hasBaseRevision },
-            "-Dmodelix.mps.model.sync.bulk.server.version.hash=${(syncDirection.source as ServerSource).revision}".takeIf { hasBaseRevision },
-            "-Dmodelix.mps.model.sync.bulk.server.version.base.hash=${(syncDirection.source as ServerSource).baseRevision}".takeIf { hasBaseRevision },
-            "-Xmx${localTarget.mpsHeapSize}",
-            localTarget.mpsDebugPort?.let { "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=$it" },
-        ),
+        jvmArgs = buildList {
+            add("-Dmodelix.mps.model.sync.bulk.input.path=${jsonDir.absolutePath}")
+            val includeModuleValue = syncDirection.includedModules.joinToString(",")
+            add("-Dmodelix.mps.model.sync.bulk.input.modules=$includeModuleValue")
+            val includeModulePrefixesValue = syncDirection.includedModulePrefixes.joinToString(",")
+            add("-Dmodelix.mps.model.sync.bulk.input.modules.prefixes=$includeModulePrefixesValue")
+            add("-Dmodelix.mps.model.sync.bulk.repo.path=${repositoryDir.absolutePath}")
+            add("-Dmodelix.mps.model.sync.bulk.input.continueOnError=${syncDirection.continueOnError}")
+            add("-Xmx${localTarget.mpsHeapSize}")
+            if (localTarget.mpsDebugPort != null) {
+                add("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=${localTarget.mpsDebugPort}")
+            }
+            if (source is ServerSource && source.baseRevision != null) {
+                add("-Dmodelix.mps.model.sync.bulk.server.repository=${source.repositoryId}")
+                add("-Dmodelix.mps.model.sync.bulk.server.url=${source.url}")
+                add("-Dmodelix.mps.model.sync.bulk.server.version.hash=${source.revision}")
+                add("-Dmodelix.mps.model.sync.bulk.server.version.base.hash=${source.baseRevision}")
+            }
+        },
     )
     return config
 }

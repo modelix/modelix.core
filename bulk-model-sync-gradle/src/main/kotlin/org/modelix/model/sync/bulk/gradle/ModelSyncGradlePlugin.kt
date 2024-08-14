@@ -20,17 +20,10 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.tasks.TaskProvider
-import org.modelix.buildtools.runner.BundledPluginPath
-import org.modelix.buildtools.runner.ExternalPluginPath
-import org.modelix.buildtools.runner.MPSRunnerConfig
-import org.modelix.buildtools.runner.PluginConfig
 import org.modelix.gradle.mpsbuild.MPSBuildPlugin
-import org.modelix.model.sync.bulk.gradle.config.BundledPluginSpec
-import org.modelix.model.sync.bulk.gradle.config.ExternalPluginSpec
 import org.modelix.model.sync.bulk.gradle.config.LocalSource
 import org.modelix.model.sync.bulk.gradle.config.LocalTarget
 import org.modelix.model.sync.bulk.gradle.config.ModelSyncGradleSettings
-import org.modelix.model.sync.bulk.gradle.config.PluginSpec
 import org.modelix.model.sync.bulk.gradle.config.ServerSource
 import org.modelix.model.sync.bulk.gradle.config.ServerTarget
 import org.modelix.model.sync.bulk.gradle.config.SyncDirection
@@ -148,25 +141,8 @@ class ModelSyncGradlePlugin : Plugin<Project> {
         previousTask: TaskProvider<*>,
         jsonDir: File,
     ): TaskProvider<*> {
-        val localSource = syncDirection.source as LocalSource
         val resolvedDependencies = mpsDependencies.resolvedConfiguration.files
-        val config = MPSRunnerConfig(
-            mainClassName = "org.modelix.mps.model.sync.bulk.MPSBulkSynchronizer",
-            mainMethodName = "exportRepository",
-            classPathElements = resolvedDependencies.toList(),
-            mpsHome = localSource.mpsHome,
-            workDir = jsonDir,
-            additionalModuleDirs = localSource.mpsLibraries.toList() + listOfNotNull(localSource.repositoryDir),
-            plugins = createPluginConfig(localSource.mpsPlugins),
-            jvmArgs = listOfNotNull(
-                "-Dmodelix.mps.model.sync.bulk.output.path=${jsonDir.absolutePath}",
-                "-Dmodelix.mps.model.sync.bulk.output.modules=${syncDirection.includedModules.joinToString(",")}",
-                "-Dmodelix.mps.model.sync.bulk.output.modules.prefixes=${syncDirection.includedModulePrefixes.joinToString(",")}",
-                "-Dmodelix.mps.model.sync.bulk.repo.path=${localSource.repositoryDir?.absolutePath}",
-                "-Xmx${localSource.mpsHeapSize}",
-                localSource.mpsDebugPort?.let { "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=$it" },
-            ),
-        )
+        val config = buildMpsRunConfigurationForLocalSources(syncDirection, resolvedDependencies, jsonDir)
         return mpsBuildPlugin.createRunMPSTask("${syncDirection.name}ExportFromMps", config, arrayOf(previousTask)).also {
             it.configure { task ->
                 task.outputs.dir(jsonDir)
@@ -208,32 +184,9 @@ class ModelSyncGradlePlugin : Plugin<Project> {
         previousTask: TaskProvider<*>,
         jsonDir: File,
     ) {
-        val localTarget = syncDirection.target as LocalTarget
-        val importName = "${syncDirection.name}ImportIntoMps"
         val resolvedDependencies = mpsDependencies.resolvedConfiguration.files
-        val hasBaseRevision = (syncDirection.source as? ServerSource)?.baseRevision != null
-        val config = MPSRunnerConfig(
-            mainClassName = "org.modelix.mps.model.sync.bulk.MPSBulkSynchronizer",
-            mainMethodName = if (hasBaseRevision) "importRepositoryFromModelServer" else "importRepository",
-            classPathElements = resolvedDependencies.toList(),
-            mpsHome = localTarget.mpsHome,
-            workDir = jsonDir,
-            additionalModuleDirs = localTarget.mpsLibraries.toList() + listOfNotNull(localTarget.repositoryDir),
-            plugins = createPluginConfig(localTarget.mpsPlugins),
-            jvmArgs = listOfNotNull(
-                "-Dmodelix.mps.model.sync.bulk.input.path=${jsonDir.absolutePath}",
-                "-Dmodelix.mps.model.sync.bulk.input.modules=${syncDirection.includedModules.joinToString(",")}",
-                "-Dmodelix.mps.model.sync.bulk.input.modules.prefixes=${syncDirection.includedModulePrefixes.joinToString(",")}",
-                "-Dmodelix.mps.model.sync.bulk.repo.path=${localTarget.repositoryDir?.absolutePath}",
-                "-Dmodelix.mps.model.sync.bulk.input.continueOnError=${syncDirection.continueOnError}",
-                "-Dmodelix.mps.model.sync.bulk.server.repository=${(syncDirection.source as ServerSource).repositoryId}".takeIf { hasBaseRevision },
-                "-Dmodelix.mps.model.sync.bulk.server.url=${(syncDirection.source as ServerSource).url}".takeIf { hasBaseRevision },
-                "-Dmodelix.mps.model.sync.bulk.server.version.hash=${(syncDirection.source as ServerSource).revision}".takeIf { hasBaseRevision },
-                "-Dmodelix.mps.model.sync.bulk.server.version.base.hash=${(syncDirection.source as ServerSource).baseRevision}".takeIf { hasBaseRevision },
-                "-Xmx${localTarget.mpsHeapSize}",
-                localTarget.mpsDebugPort?.let { "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=$it" },
-            ),
-        )
+        val config = buildMpsRunConfigurationForLocalTarget(syncDirection, resolvedDependencies, jsonDir)
+        val importName = "${syncDirection.name}ImportIntoMps"
         val importIntoMps = mpsBuildPlugin.createRunMPSTask(importName, config, arrayOf(previousTask)).also {
             it.configure { task ->
                 task.inputs.dir(jsonDir)
@@ -243,16 +196,6 @@ class ModelSyncGradlePlugin : Plugin<Project> {
         project.tasks.register("runSync${syncDirection.name.replaceFirstChar { it.uppercaseChar() }}") {
             it.dependsOn(importIntoMps)
             it.group = "modelix"
-        }
-    }
-
-    private fun createPluginConfig(mpsPlugins: Set<PluginSpec>): List<PluginConfig> {
-        return mpsPlugins.map {
-            val pluginPath = when (it) {
-                is BundledPluginSpec -> BundledPluginPath(it.folder)
-                is ExternalPluginSpec -> ExternalPluginPath(it.folder)
-            }
-            PluginConfig(it.id, pluginPath)
         }
     }
 

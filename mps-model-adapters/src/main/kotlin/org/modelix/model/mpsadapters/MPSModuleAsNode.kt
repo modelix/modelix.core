@@ -183,9 +183,11 @@ data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
         if (module !is AbstractModule) {
             return null
         }
-        module.moduleDescriptor?.dependencyVersions?.forEach { entry ->
-            if (entry.key.moduleId == dependencyId) {
-                return MPSSingleLanguageDependencyAsNode(entry.key, entry.value, moduleImporter = module)
+        val languageDependencies = module.moduleDescriptor?.languageVersions
+        languageDependencies?.forEach { entry ->
+            val sourceModelReference = entry.key.sourceModuleReference
+            if (sourceModelReference.moduleId == dependencyId) {
+                return MPSSingleLanguageDependencyAsNode(sourceModelReference, entry.value, moduleImporter = module)
             }
         }
         return null

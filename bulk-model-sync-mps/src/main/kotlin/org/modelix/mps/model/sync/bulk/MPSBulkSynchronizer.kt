@@ -35,7 +35,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import org.jetbrains.annotations.VisibleForTesting
 import org.jetbrains.mps.openapi.model.EditableSModel
-import org.jetbrains.mps.openapi.module.ModelAccess
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.INode
@@ -195,40 +194,34 @@ object MPSBulkSynchronizer {
         continueOnError: Boolean,
         getModulesToImport: () -> Sequence<ExistingAndExpectedNode>,
     ) {
-        val access = repository.modelAccess
-        ThreadUtils.runInUIThreadAndWait {
-            access.executeCommand {
-                println("Importing modules...")
-                try {
-                    println("Importing modules...")
-                    // `modulesToImport` lazily produces modules to import
-                    // so that loaded model data can be garbage collected.
-                    val modulesToImport = getModulesToImport()
-                    ModelImporter(rootOfImport, continueOnError).importIntoNodes(modulesToImport)
-                    println("Import finished.")
-                } catch (ex: Exception) {
-                    // Exceptions are only visible in the MPS log file by default
-                    ex.printStackTrace()
-                }
-                println("Import finished.")
-            }
+        executeCommandWithExceptionHandling(repository) {
+            println("Importing modules...")
+            // `modulesToImport` lazily produces modules to import
+            // so that loaded model data can be garbage collected.
+            val modulesToImport = getModulesToImport()
+            ModelImporter(rootOfImport, continueOnError).importIntoNodes(modulesToImport)
+            println("Import finished.")
         }
 
-        persistChanges(access, repository)
+        persistChanges(repository)
     }
 
-    private fun persistChanges(
-        access: ModelAccess,
-        repository: SRepository,
-    ) {
-        ThreadUtils.runInUIThreadAndWait {
-            println("Persisting changes...")
-            access.executeCommand {
-                enableWorkaroundForFilePerRootPersistence(repository)
-                updateUnsetResolveInfo(repository)
-                repository.saveAll()
+    private fun persistChanges(repository: SRepository) = executeCommandWithExceptionHandling(repository) {
+        println("Persisting changes...")
+        enableWorkaroundForFilePerRootPersistence(repository)
+        updateUnsetResolveInfo(repository)
+        repository.saveAll()
+        println("Changes persisted.")
+    }
+
+    private fun executeCommandWithExceptionHandling(repository: SRepository, block: () -> Unit) {
+        val exception = ThreadUtils.runInUIThreadAndWait {
+            repository.modelAccess.executeCommand {
+                block()
             }
-            println("Changes persisted.")
+        }
+        if (exception != null) {
+            throw exception
         }
     }
 
@@ -242,7 +235,6 @@ object MPSBulkSynchronizer {
 
         val includedModuleNames = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.input.modules"))
         val includedModulePrefixes = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.input.modules.prefixes"))
-        val continueOnError = System.getProperty("modelix.mps.model.sync.bulk.input.continueOnError", "false").toBoolean()
 
         val includedModulesFilter = IncludedModulesFilter(includedModuleNames, includedModulePrefixes)
 
@@ -261,8 +253,7 @@ object MPSBulkSynchronizer {
         }
         println("Loading version ${version.getContentHash()}")
 
-        val access = repository.modelAccess
-        access.executeCommandInEDT {
+        executeCommandWithExceptionHandling(repository) {
             val invalidationTree = InvalidationTree(1_000_000)
             val newTree = version.getTree()
             newTree.visitChanges(
@@ -277,17 +268,11 @@ object MPSBulkSynchronizer {
                     MPSRepositoryAsNode(repository),
                     NodeAssociationToMps(MPSArea(repository)),
                 )
-                try {
-                    synchronizer.synchronize()
-                } catch (e: Exception) {
-                    // Exceptions are only visible in the MPS log file by default
-                    e.printStackTrace()
-                    throw e
-                }
+                synchronizer.synchronize()
             }
         }
         println("Import finished.")
-        persistChanges(access, repository)
+        persistChanges(repository)
     }
 
     /**

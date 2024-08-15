@@ -16,12 +16,7 @@
 
 plugins {
     kotlin("multiplatform")
-}
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(11))
-    }
+    id("modelix-language-config")
 }
 
 kotlin {

@@ -4,7 +4,7 @@ plugins {
     `java-gradle-plugin`
     java
 
-    `modelix-kotlin-jvm`
+    `modelix-kotlin-jvm-with-junit-platform`
 }
 
 dependencies {

@@ -1,6 +1,6 @@
 plugins {
     id("org.modelix.model-api-gen")
-    `modelix-kotlin-jvm`
+    `modelix-kotlin-jvm-with-junit-platform`
 }
 
 repositories {

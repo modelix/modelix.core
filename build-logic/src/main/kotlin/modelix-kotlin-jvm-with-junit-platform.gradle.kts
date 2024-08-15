@@ -1,4 +1,5 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import gradle.kotlin.dsl.accessors._8758bf21ec0488ee6f70886b9f0e8378.test
+import org.gradle.kotlin.dsl.invoke
 
 /*
  * Copyright (c) 2024.
@@ -17,19 +18,9 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
  */
 
 plugins {
-    kotlin("jvm")
+    id("modelix-kotlin-jvm")
 }
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(11))
-    }
-}
-
-kotlin {
-    jvmToolchain(11)
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_11)
-        freeCompilerArgs.addAll(listOf("-Xjvm-default=all-compatibility"))
-    }
+tasks.test {
+    useJUnitPlatform()
 }

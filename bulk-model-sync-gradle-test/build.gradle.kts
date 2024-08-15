@@ -15,7 +15,7 @@
  */
 
 plugins {
-    `modelix-kotlin-jvm`
+    `modelix-kotlin-jvm-with-junit-platform`
     id("org.modelix.bulk-model-sync")
 }
 

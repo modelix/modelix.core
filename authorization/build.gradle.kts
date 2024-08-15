@@ -1,7 +1,7 @@
 description = "Library that checks is allowed to do something"
 
 plugins {
-    `modelix-kotlin-jvm`
+    `modelix-kotlin-jvm-with-junit-platform`
     kotlin("plugin.serialization")
 }
 

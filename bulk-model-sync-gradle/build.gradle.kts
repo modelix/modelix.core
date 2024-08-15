@@ -1,5 +1,5 @@
 plugins {
-    `modelix-kotlin-jvm`
+    `modelix-kotlin-jvm-with-junit-platform`
     `java-gradle-plugin`
 }
 

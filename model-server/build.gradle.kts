@@ -10,7 +10,7 @@ plugins {
     alias(libs.plugins.spotless)
     alias(libs.plugins.test.logger)
     alias(libs.plugins.shadow)
-    `modelix-kotlin-jvm`
+    `modelix-kotlin-jvm-with-junit-platform`
     kotlin("plugin.serialization")
     alias(libs.plugins.openapi.generator)
 }

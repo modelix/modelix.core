@@ -1,5 +1,3 @@
-import gradle.kotlin.dsl.accessors._8758bf21ec0488ee6f70886b9f0e8378.test
-
 /*
  * Copyright (c) 2024.
  *
@@ -15,6 +13,9 @@ import gradle.kotlin.dsl.accessors._8758bf21ec0488ee6f70886b9f0e8378.test
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import org.gradle.kotlin.dsl.invoke
+
 
 plugins {
     id("modelix-kotlin-jvm")

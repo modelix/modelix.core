@@ -1,7 +1,3 @@
-
-import org.modelix.MODELIX_JDK_VERSION
-import org.modelix.MODELIX_JVM_TARGET
-
 /*
  * Copyright (c) 2024.
  *
@@ -17,6 +13,10 @@ import org.modelix.MODELIX_JVM_TARGET
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import org.modelix.MODELIX_JDK_VERSION
+import org.modelix.MODELIX_JVM_TARGET
+
 
 plugins {
     kotlin("jvm")

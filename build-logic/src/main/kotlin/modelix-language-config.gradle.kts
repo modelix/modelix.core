@@ -15,28 +15,28 @@
  */
 
 import gradle.kotlin.dsl.accessors._9d6accdeac6876c73060866945fb6d8c.java
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
-import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.plugin.KotlinMultiplatformPluginWrapper
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformJvmPlugin
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
+import org.modelix.MODELIX_JDK_VERSION
+import org.modelix.MODELIX_JVM_TARGET
+import org.modelix.MODELIX_KOTLIN_API_VERSION
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(11))
+        languageVersion.set(JavaLanguageVersion.of(MODELIX_JDK_VERSION))
     }
 }
 
-val kotlinApiVersion = KotlinVersion.KOTLIN_1_6
 tasks.withType<KotlinCompile>().configureEach {
     if (!name.lowercase().contains("test")) {
         this.compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
+            jvmTarget.set(MODELIX_JVM_TARGET)
             freeCompilerArgs.addAll(listOf("-Xjvm-default=all-compatibility", "-Xexpect-actual-classes"))
-            apiVersion.set(kotlinApiVersion)
+            apiVersion.set(MODELIX_KOTLIN_API_VERSION)
         }
     }
 }
@@ -44,29 +44,29 @@ tasks.withType<KotlinCompile>().configureEach {
 tasks.withType<KotlinJvmCompile>().configureEach {
     if (!name.lowercase().contains("test")) {
         this.compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
+            jvmTarget.set(MODELIX_JVM_TARGET)
             freeCompilerArgs.addAll(listOf("-Xjvm-default=all-compatibility"))
-            apiVersion.set(kotlinApiVersion)
+            apiVersion.set(MODELIX_KOTLIN_API_VERSION)
         }
     }
 }
 
 plugins.withType<KotlinPlatformJvmPlugin> {
     extensions.configure<KotlinJvmProjectExtension> {
-        jvmToolchain(11)
+        jvmToolchain(MODELIX_JDK_VERSION)
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
+            jvmTarget.set(MODELIX_JVM_TARGET)
         }
     }
 }
 
 plugins.withType<KotlinMultiplatformPluginWrapper> {
     extensions.configure<KotlinMultiplatformExtension> {
-        jvmToolchain(11)
+        jvmToolchain(MODELIX_JDK_VERSION)
         sourceSets.all {
             if (!name.lowercase().contains("test")) {
                 languageSettings {
-                    apiVersion = kotlinApiVersion.version
+                    apiVersion = MODELIX_KOTLIN_API_VERSION.version
                 }
             }
         }

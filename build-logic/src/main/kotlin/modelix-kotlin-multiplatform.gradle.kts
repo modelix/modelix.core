@@ -1,3 +1,5 @@
+import org.modelix.MODELIX_JDK_VERSION
+
 /*
  * Copyright (c) 2024.
  *
@@ -20,7 +22,7 @@ plugins {
 }
 
 kotlin {
-    jvmToolchain(11)
+    jvmToolchain(MODELIX_JDK_VERSION)
     js(IR) {
         browser {
             testTask {

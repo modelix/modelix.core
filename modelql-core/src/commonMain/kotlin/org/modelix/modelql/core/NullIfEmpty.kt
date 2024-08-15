@@ -13,11 +13,10 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEmpty
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.modelix.kotlin.utils.ifEmptyThenStream
 
 class NullIfEmpty<E>() : MonoTransformingStep<E, E?>() {
 
@@ -33,8 +32,8 @@ class NullIfEmpty<E>() : MonoTransformingStep<E, E?>() {
 
     override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E?> {
         val downcast: StepFlow<E?> = input
-        return downcast.map { MultiplexedOutput(0, it) }.onEmpty {
-            emit(MultiplexedOutput(1, null.asStepOutput(this@NullIfEmpty)))
+        return downcast.map { MultiplexedOutput(0, it) }.ifEmptyThenStream {
+            context.getFactory().constant(MultiplexedOutput(1, null.asStepOutput(this@NullIfEmpty)))
         }
     }
 

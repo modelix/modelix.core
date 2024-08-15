@@ -16,21 +16,6 @@
 
 package org.modelix.model.async
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.map
-import org.modelix.kotlin.utils.IMonoFlow
-import org.modelix.kotlin.utils.IOptionalMonoFlow
-import org.modelix.kotlin.utils.checkNotEmpty
-import org.modelix.kotlin.utils.filterNotNull
-import org.modelix.kotlin.utils.flatMapConcatConcurrent
-import org.modelix.kotlin.utils.mapMono
-import org.modelix.kotlin.utils.mapValue
-import org.modelix.kotlin.utils.orNull
-import org.modelix.kotlin.utils.print
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INodeReference
@@ -43,9 +28,16 @@ import org.modelix.model.api.IRoleReferenceByUID
 import org.modelix.model.api.IUnclassifiedRoleReference
 import org.modelix.model.api.NullChildLinkReference
 import org.modelix.model.api.PNodeReference
+import org.modelix.model.api.async.IAsyncSequence
 import org.modelix.model.api.async.IAsyncTree
 import org.modelix.model.api.async.IAsyncTreeChangeVisitor
+import org.modelix.model.api.async.IAsyncValue
 import org.modelix.model.api.async.checkNotNull
+import org.modelix.model.api.async.distinct
+import org.modelix.model.api.async.filter
+import org.modelix.model.api.async.flatMapBoth
+import org.modelix.model.api.async.mapBoth
+import org.modelix.model.api.async.requestAll
 import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.KVEntryReference
@@ -59,134 +51,125 @@ class AsyncTree(private val treeData: () -> CPTree, private val store: IAsyncObj
 
     private val nodesMap: KVEntryReference<CPHamtNode> = treeData().idToHash
 
-    private fun <T : IKVValue> KVEntryReference<T>.query(): IMonoFlow<T> {
-        val ref = this
-        return tryQuery().checkNotEmpty { "$ref not found" }
-    }
-    private fun <T : IKVValue> KVEntryReference<T>.tryQuery(): IOptionalMonoFlow<T> {
-        val ref= this
-        return store.get(ref).asFlow().filterNotNull()
-    }
+    private fun <T : IKVValue> KVEntryReference<T>.query(): IAsyncValue<T> = store.getNotNull(this)
+    private fun <T : IKVValue> KVEntryReference<T>.tryQuery(): IAsyncValue<T?> = store.get(this)
 
-    private fun getNode(id: Long): IMonoFlow<CPNode> = tryGetNodeRef(id)
-        .checkNotEmpty { "Node ${id.toString(16)} not found in $nodesMap" }
-        .mapMono { it.query() }
+    private fun getNode(id: Long): IAsyncValue<CPNode> = tryGetNodeRef(id)
+        .checkNotNull { "Node ${id.toString(16)} not found in $nodesMap" }
+        .thenRequest { it.query() }
 
-    private fun tryGetNodeRef(id: Long): IOptionalMonoFlow<KVEntryReference<CPNode>> {
-        return nodesMap.query().mapMono { it.get(id, store).asFlow() }.filterNotNull()
+    private fun tryGetNodeRef(id: Long): IAsyncValue<KVEntryReference<CPNode>?> = nodesMap.query().thenRequest { it.get(id, store) }
+
+    override fun containsNode(nodeId: Long): IAsyncValue<Boolean> {
+        return tryGetNodeRef(nodeId).map { it != null }
     }
 
-    override fun containsNode(nodeId: Long): IMonoFlow<Boolean> {
-        return tryGetNodeRef(nodeId).orNull().mapValue { it != null }
-    }
-
-    override suspend fun visitChanges(oldVersion: IAsyncTree, visitor: IAsyncTreeChangeVisitor) {
+    override fun visitChanges(oldVersion: IAsyncTree, visitor: IAsyncTreeChangeVisitor): IAsyncValue<Unit> {
         require(oldVersion is AsyncTree)
-        require(oldVersion.store == store) { "Both trees should operate with the same IBulkQuery" }
-        if (nodesMap == oldVersion.nodesMap) return
-//        return (nodesMap.query() to oldVersion.nodesMap.query()).flatMapBoth { newMap, oldMap ->
-//            visitChanges(newMap, oldMap, visitor)
-//        }
-        TODO()
+        require(oldVersion.store == store) { "Both trees should operate with the same IAsyncObjectStore" }
+        if (nodesMap == oldVersion.nodesMap) return IAsyncValue.UNIT
+        return (nodesMap.query() to oldVersion.nodesMap.query()).flatMapBoth { newMap, oldMap ->
+            visitChanges(newMap, oldMap, visitor)
+        }
     }
 
-//    private fun visitChanges(newNodesMap: CPHamtNode, oldNodesMap: CPHamtNode, visitor: IAsyncTreeChangeVisitor): IAsyncValue<Unit> {
-//        val changesOnly = !visitor.interestedInNodeRemoveOrAdd()
-//        return newNodesMap.visitChanges(
-//            oldNodesMap,
-//            object : CPHamtNode.IChangeVisitor {
-//                private val childrenChangeEvents = HashSet<Pair<Long, String?>>()
-//
-//                private fun notifyChildrenChange(parent: Long, role: String?): IAsyncValue<Unit> {
-//                    return if (childrenChangeEvents.add(parent to role)) visitor.childrenChanged(parent, role) else IAsyncValue.UNIT
-//                }
-//
-//                override fun visitChangesOnly(): Boolean {
-//                    return changesOnly
-//                }
-//
-//                override fun entryAdded(key: Long, value: KVEntryReference<CPNode>): IAsyncValue<Unit> {
-//                    return visitor.nodeAdded(key)
-//                }
-//
-//                override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>): IAsyncValue<Unit> {
-//                    return visitor.nodeRemoved(key)
-//                }
-//
-//                override fun entryChanged(key: Long, oldValue: KVEntryReference<CPNode>, newValue: KVEntryReference<CPNode>): IAsyncValue<Unit> {
-//                    return (newValue.query() to oldValue.query()).mapBoth { newNode, oldNode ->
-//                        val notifiedChanges = ArrayList<IAsyncValue<Unit>>()
-//                        if (oldNode.parentId != newNode.parentId) {
-//                            notifiedChanges += visitor.containmentChanged(key)
-//                        } else if (oldNode.roleInParent != newNode.roleInParent) {
-//                            notifiedChanges += visitor.containmentChanged(key)
-//                            notifiedChanges += notifyChildrenChange(oldNode.parentId, oldNode.roleInParent)
-//                            notifiedChanges += notifyChildrenChange(newNode.parentId, newNode.roleInParent)
-//                        }
-//                        if (oldNode.concept != newNode.concept) {
-//                            notifiedChanges += visitor.conceptChanged(key)
-//                        }
-//                        notifiedChanges += oldNode.propertyRoles.asSequence()
-//                            .plus(newNode.propertyRoles.asSequence())
-//                            .distinct()
-//                            .mapNotNull { role: String ->
-//                                if (oldNode.getPropertyValue(role) != newNode.getPropertyValue(role)) {
-//                                    visitor.propertyChanged(newNode.id, role)
-//                                } else {
-//                                    null
-//                                }
-//                            }
-//                        notifiedChanges += oldNode.referenceRoles.asSequence()
-//                            .plus(newNode.referenceRoles.asSequence())
-//                            .distinct()
-//                            .mapNotNull { role: String ->
-//                                if (oldNode.getReferenceTarget(role) != newNode.getReferenceTarget(role)) {
-//                                    visitor.referenceChanged(newNode.id, role)
-//                                } else {
-//                                    null
-//                                }
-//                            }
-//
-//                        notifiedChanges += (newNode.childrenIdArray.map { getNode(it) }.requestAll() to oldNode.childrenIdArray.map { getNode(it) }.requestAll()).flatMapBoth { newChildrenList, oldChildrenList ->
-//                            val oldChildren: MutableMap<String?, MutableList<CPNode>> = HashMap()
-//                            val newChildren: MutableMap<String?, MutableList<CPNode>> = HashMap()
-//                            oldChildrenList.forEach { oldChildren.getOrPut(it.roleInParent, { ArrayList() }).add(it) }
-//                            newChildrenList.forEach { newChildren.getOrPut(it.roleInParent, { ArrayList() }).add(it) }
-//
-//                            val roles: MutableSet<String?> = HashSet()
-//                            roles.addAll(oldChildren.keys)
-//                            roles.addAll(newChildren.keys)
-//                            roles.mapNotNull { role ->
-//                                val oldChildrenInRole = oldChildren[role]
-//                                val newChildrenInRole = newChildren[role]
-//                                val oldValues = oldChildrenInRole?.map { it.id }
-//                                val newValues = newChildrenInRole?.map { it.id }
-//                                if (oldValues != newValues) {
-//                                    notifyChildrenChange(newNode.id, role)
-//                                } else {
-//                                    null
-//                                }
-//                            }.requestAll()
-//                        }.map { }
-//
-//                        notifiedChanges.requestAll()
-//                    }
-//                }
-//            },
-//            bulkQuery(),
-//        )
-//    }
+    private fun visitChanges(newNodesMap: CPHamtNode, oldNodesMap: CPHamtNode, visitor: IAsyncTreeChangeVisitor): IAsyncValue<Unit> {
+        val changesOnly = !visitor.interestedInNodeRemoveOrAdd()
+        return newNodesMap.visitChanges(
+            oldNodesMap,
+            object : CPHamtNode.IChangeVisitor {
+                private val childrenChangeEvents = HashSet<Pair<Long, String?>>()
 
-    override fun getConceptReference(nodeId: Long): IMonoFlow<ConceptReference> {
-        return getNode(nodeId).mapValue { ConceptReference(it.concept ?: NullConcept.getUID()) }
+                private fun notifyChildrenChange(parent: Long, role: String?): IAsyncValue<Unit> {
+                    return if (childrenChangeEvents.add(parent to role)) visitor.childrenChanged(parent, role) else IAsyncValue.UNIT
+                }
+
+                override fun visitChangesOnly(): Boolean {
+                    return changesOnly
+                }
+
+                override fun entryAdded(key: Long, value: KVEntryReference<CPNode>): IAsyncValue<Unit> {
+                    return visitor.nodeAdded(key)
+                }
+
+                override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>): IAsyncValue<Unit> {
+                    return visitor.nodeRemoved(key)
+                }
+
+                override fun entryChanged(key: Long, oldValue: KVEntryReference<CPNode>, newValue: KVEntryReference<CPNode>): IAsyncValue<Unit> {
+                    return (newValue.query() to oldValue.query()).mapBoth { newNode, oldNode ->
+                        val notifiedChanges = ArrayList<IAsyncValue<Unit>>()
+                        if (oldNode.parentId != newNode.parentId) {
+                            notifiedChanges += visitor.containmentChanged(key)
+                        } else if (oldNode.roleInParent != newNode.roleInParent) {
+                            notifiedChanges += visitor.containmentChanged(key)
+                            notifiedChanges += notifyChildrenChange(oldNode.parentId, oldNode.roleInParent)
+                            notifiedChanges += notifyChildrenChange(newNode.parentId, newNode.roleInParent)
+                        }
+                        if (oldNode.concept != newNode.concept) {
+                            notifiedChanges += visitor.conceptChanged(key)
+                        }
+                        notifiedChanges += oldNode.propertyRoles.asSequence()
+                            .plus(newNode.propertyRoles.asSequence())
+                            .distinct()
+                            .mapNotNull { role: String ->
+                                if (oldNode.getPropertyValue(role) != newNode.getPropertyValue(role)) {
+                                    visitor.propertyChanged(newNode.id, role)
+                                } else {
+                                    null
+                                }
+                            }
+                        notifiedChanges += oldNode.referenceRoles.asSequence()
+                            .plus(newNode.referenceRoles.asSequence())
+                            .distinct()
+                            .mapNotNull { role: String ->
+                                if (oldNode.getReferenceTarget(role) != newNode.getReferenceTarget(role)) {
+                                    visitor.referenceChanged(newNode.id, role)
+                                } else {
+                                    null
+                                }
+                            }
+
+                        notifiedChanges += (newNode.childrenIdArray.map { getNode(it) }.requestAll() to oldNode.childrenIdArray.map { getNode(it) }.requestAll()).flatMapBoth { newChildrenList, oldChildrenList ->
+                            val oldChildren: MutableMap<String?, MutableList<CPNode>> = HashMap()
+                            val newChildren: MutableMap<String?, MutableList<CPNode>> = HashMap()
+                            oldChildrenList.forEach { oldChildren.getOrPut(it.roleInParent, { ArrayList() }).add(it) }
+                            newChildrenList.forEach { newChildren.getOrPut(it.roleInParent, { ArrayList() }).add(it) }
+
+                            val roles: MutableSet<String?> = HashSet()
+                            roles.addAll(oldChildren.keys)
+                            roles.addAll(newChildren.keys)
+                            roles.mapNotNull { role ->
+                                val oldChildrenInRole = oldChildren[role]
+                                val newChildrenInRole = newChildren[role]
+                                val oldValues = oldChildrenInRole?.map { it.id }
+                                val newValues = newChildrenInRole?.map { it.id }
+                                if (oldValues != newValues) {
+                                    notifyChildrenChange(newNode.id, role)
+                                } else {
+                                    null
+                                }
+                            }.requestAll()
+                        }.map { }
+
+                        notifiedChanges.requestAll()
+                    }
+                }
+            },
+            store,
+        )
     }
 
-    override fun getParent(nodeId: Long): IOptionalMonoFlow<Long> {
-        return getNode(nodeId).mapValue { it.parentId }
+    override fun getConceptReference(nodeId: Long): IAsyncValue<ConceptReference> {
+        return getNode(nodeId).map { ConceptReference(it.concept ?: NullConcept.getUID()) }
     }
 
-    override fun getRole(nodeId: Long): IMonoFlow<IChildLinkReference> {
-        return getNode(nodeId).mapValue { it.roleInParent }.mapValue {
+    override fun getParent(nodeId: Long): IAsyncValue<Long> {
+        return getNode(nodeId).map { it.parentId }
+    }
+
+    override fun getRole(nodeId: Long): IAsyncValue<IChildLinkReference> {
+        return getNode(nodeId).map { it.roleInParent }.map {
             when {
                 it == null -> NullChildLinkReference
                 treeData().usesRoleIds -> IChildLinkReference.fromId(it)
@@ -195,10 +178,10 @@ class AsyncTree(private val treeData: () -> CPTree, private val store: IAsyncObj
         }
     }
 
-    override fun getReferenceTarget(sourceId: Long, role: IReferenceLinkReference): IOptionalMonoFlow<INodeReference> {
-        return getNode(sourceId).mapValue { node ->
+    override fun getReferenceTarget(sourceId: Long, role: IReferenceLinkReference): IAsyncValue<INodeReference?> {
+        return getNode(sourceId).map { node ->
             node.getReferenceTarget(role.key())?.convertReference()
-        }.filterNotNull()
+        }
     }
 
     private fun CPNodeRef.convertReference(): INodeReference {
@@ -210,43 +193,42 @@ class AsyncTree(private val treeData: () -> CPTree, private val store: IAsyncObj
         }
     }
 
-    override fun getReferenceRoles(sourceId: Long): Flow<String> {
-        return getNode(sourceId).flatMapConcat { it.referenceRoles.asFlow() }
+    override fun getReferenceRoles(sourceId: Long): IAsyncSequence<String> {
+        return getNode(sourceId).flatMap { it.referenceRoles.toList() }
     }
 
-    override fun getPropertyRoles(sourceId: Long): Flow<String> {
-        return getNode(sourceId).flatMapConcat { it.propertyRoles.asFlow() }
+    override fun getPropertyRoles(sourceId: Long): IAsyncSequence<String> {
+        return getNode(sourceId).flatMap { it.propertyRoles.toList() }
     }
 
-    override fun getChildRoles(sourceId: Long): Flow<String?> {
-        return getAllChildren(sourceId).flatMapConcat { getNode(it) }.map { it.roleInParent }.distinctUntilChanged()
+    override fun getChildRoles(sourceId: Long): IAsyncSequence<String?> {
+        return getAllChildren(sourceId).thenRequest {
+            getNode(it).map { it.roleInParent }
+        }.distinct()
     }
 
-    override fun getAllChildren(parentId: Long): Flow<Long> {
-        return getNode(parentId).flatMapConcat { it.childrenIdArray.asFlow() }
+    override fun getAllChildren(parentId: Long): IAsyncSequence<Long> {
+        return getNode(parentId).flatMap { it.childrenIdArray.toList() }
     }
 
-    override fun getAllReferenceTargetRefs(sourceId: Long): Flow<Pair<IReferenceLinkReference, INodeReference>> {
-        return getNode(sourceId).flatMapConcat { data ->
+    override fun getAllReferenceTargetRefs(sourceId: Long): IAsyncSequence<Pair<IReferenceLinkReference, INodeReference>> {
+        return getNode(sourceId).flatMap { data ->
             data.referenceRoles.mapIndexed { index, role ->
                 val link = if (treeData().usesRoleIds) IReferenceLinkReference.fromId(role) else IReferenceLinkReference.fromId(role)
                 link to data.referenceTargets[index].convertReference()
-            }.asFlow()
+            }
         }
     }
 
-    override fun getProperty(nodeId: Long, role: IPropertyReference): IOptionalMonoFlow<String> {
-        return getNode(nodeId).mapValue { node ->
+    override fun getProperty(nodeId: Long, role: IPropertyReference): IAsyncValue<String?> {
+        return getNode(nodeId).map { node ->
             node.getPropertyValue(role.key())
-        }.filterNotNull()
+        }
     }
 
-    override fun getChildren(parentId: Long, role: IChildLinkReference): Flow<Long> {
+    override fun getChildren(parentId: Long, role: IChildLinkReference): IAsyncSequence<Long> {
         val roleString = role.key()
-        return getAllChildren(parentId)
-            .flatMapConcat { getNode(it) }
-            .filter { it.roleInParent == roleString }
-            .map { it.id }
+        return getAllChildren(parentId).thenRequest { getNode(it) }.filter { it.roleInParent == roleString }.map { it.id }
     }
 
     private fun IRoleReference.key() = getRoleKey(this)
@@ -274,3 +256,4 @@ class AsyncTree(private val treeData: () -> CPTree, private val store: IAsyncObj
 }
 
 private fun <T : IKVValue> IBulkQuery.queryNotNull(ref: KVEntryReference<T>) = query(ref).checkNotNull { "$ref not found" }
+private fun <T : IKVValue> IAsyncObjectStore.getNotNull(ref: KVEntryReference<T>) = get(ref).checkNotNull { "$ref not found" }

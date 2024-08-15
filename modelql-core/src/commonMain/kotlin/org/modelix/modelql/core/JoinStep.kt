@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.modelix.kotlin.utils.flatten
 
 class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
     override fun canBeEmpty(): Boolean = getProducers().all { it.canBeEmpty() }
@@ -48,8 +49,9 @@ class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
     }
 
     override fun createFlow(context: IFlowInstantiationContext): StepFlow<E> {
-        return producers.mapIndexed { prodIndex, it -> context.getOrCreateFlow(it).map { MultiplexedOutput(prodIndex, it) } }
-            .asFlow().flattenConcat()
+        return context.getFactory().fromIterable(
+            producers.mapIndexed { prodIndex, it -> context.getOrCreateFlow(it).map { MultiplexedOutput(prodIndex, it) } }
+        ).flatten()
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>> {

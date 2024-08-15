@@ -13,14 +13,14 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.single
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.modelix.kotlin.utils.IMonoStream
 
 class SingleStep<E>() : AggregationStep<E, E>() {
 
-    override suspend fun aggregate(input: StepFlow<E>): IStepOutput<E> {
+    override fun aggregate(input: StepFlow<E>): IMonoStream<IStepOutput<E>> {
         return input.single()
     }
 

@@ -41,10 +41,8 @@ abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonI
             return input.map { transformElement(it.upcast<In>(), staticParameterValue as IStepOutput<ParameterT>) }
         } else {
             val parameterFlow = context.getOrCreateFlow<ParameterT>(getParameterProducer())
-            return flow {
-                val parameterValue = parameterFlow.firstOrNull()
-                emitAll(input.map { transformElement(it.upcast<In>(), parameterValue) })
-            }
+            val parameterValue = parameterFlow.firstOrNull()
+            return context.getFactory().zip(listOf(input, parameterValue)).map { transformElement(it[0]!!.upcast(), it[1]?.upcast()) }
         }
     }
 

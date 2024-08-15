@@ -16,6 +16,7 @@
 
 package org.modelix.model.server
 
+import kotlinx.coroutines.delay
 import org.modelix.model.server.store.IsolatingStore
 import org.modelix.model.server.store.ObjectInRepository
 import java.util.concurrent.atomic.AtomicLong
@@ -36,7 +37,7 @@ class StoreClientWithStatistics(val store: IsolatingStore) : IsolatingStore by s
     }
 
     override fun getAll(keys: Set<ObjectInRepository>): Map<ObjectInRepository, String?> {
-        println("requested entries: ${keys.size}")
+        //println("requested entries: ${keys.size}")
         totalRequests.incrementAndGet()
         val result = store.getAll(keys)
         // result.forEach { println("    " + it.key.key + " = " + it.value) }

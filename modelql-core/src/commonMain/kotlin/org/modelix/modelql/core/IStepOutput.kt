@@ -13,12 +13,12 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import org.modelix.kotlin.utils.IMonoStream
+import org.modelix.kotlin.utils.IStream
 
 /**
  * Can carry some additional data required for processing the result on the client side.
@@ -29,9 +29,12 @@ interface IStepOutput<out E> {
 
 fun <T> IStepOutput<*>.upcast(): IStepOutput<T> = this as IStepOutput<T>
 
-typealias StepFlow<E> = Flow<IStepOutput<E>>
-val <T> Flow<IStepOutput<T>>.value: Flow<T> get() = map { it.value }
-fun <T> Flow<T>.asStepFlow(owner: IProducingStep<T>?): StepFlow<T> = map { it.asStepOutput(owner) }
+typealias StepFlow<E> = IStream<IStepOutput<E>>
+typealias MonoStepFlow<E> = IMonoStream<IStepOutput<E>>
+val <T> IStream<IStepOutput<T>>.value: IStream<T> get() = map { it.value }
+fun <T> IStream<T>.asStepFlow(owner: IProducingStep<T>?): StepFlow<T> = map { it.asStepOutput(owner) }
+fun <T> IMonoStream<T>.asStepFlow(owner: IProducingStep<T>?): MonoStepFlow<T> = map { it.asStepOutput(owner) }
+fun <T> StepFlow<*>.upcast(): StepFlow<T> = this as StepFlow<T>
 
 class SimpleStepOutput<out E>(override val value: E, val owner: IProducingStep<E>?) : IStepOutput<E> {
     override fun toString(): String {

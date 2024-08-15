@@ -13,16 +13,16 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.modelix.kotlin.utils.IMonoStream
+import org.modelix.kotlin.utils.ifEmpty
 
 class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
-
-    override suspend fun aggregate(input: StepFlow<E>): IStepOutput<E?> {
-        return input.firstOrNull()?.let { MultiplexedOutput(0, it) }
-            ?: MultiplexedOutput(1, null.asStepOutput(this))
+    override fun aggregate(input: StepFlow<E>): IMonoStream<IStepOutput<E?>> {
+        return input.first().map { MultiplexedOutput(0, it) }
+            .ifEmpty { MultiplexedOutput(1, null.asStepOutput(this)) }
     }
 
     override fun toString(): String {

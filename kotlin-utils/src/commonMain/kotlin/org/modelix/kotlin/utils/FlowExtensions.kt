@@ -19,11 +19,12 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
-import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 
@@ -32,12 +33,12 @@ import kotlinx.coroutines.launch
  * This allows the bulk query to collect all low level request into bigger batches.
  */
 fun <T> Flow<Flow<T>>.flattenConcatConcurrent(): Flow<T> {
-    val nested = this
+    val outerFlow = this
     return flow {
         coroutineScope {
             val results = Channel<Deferred<List<T>>>()
             launch {
-                nested.collect { inner ->
+                outerFlow.collect { inner ->
                     results.send(async { inner.toList() })
                 }
                 results.close()

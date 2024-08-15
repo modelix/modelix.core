@@ -13,18 +13,14 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEmpty
-import kotlinx.coroutines.flow.single
-import kotlinx.coroutines.flow.take
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
+import org.modelix.kotlin.utils.IMonoStream
 
 class IsEmptyStep() : AggregationStep<Any?, Boolean>() {
-    override suspend fun aggregate(input: StepFlow<Any?>): IStepOutput<Boolean> {
-        return input.take(1).map { false }.onEmpty { emit(true) }.single().asStepOutput(this)
+    override fun aggregate(input: StepFlow<Any?>): IMonoStream<IStepOutput<Boolean>> {
+        return input.isEmpty().asStepFlow(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()

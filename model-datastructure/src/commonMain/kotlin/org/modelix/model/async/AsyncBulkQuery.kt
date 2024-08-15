@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.modelix.kotlin.utils.AtomicBoolean
 import org.modelix.kotlin.utils.IMonoFlow
 import org.modelix.kotlin.utils.flatMapConcatConcurrent
 import org.modelix.kotlin.utils.print
@@ -65,6 +66,7 @@ class AsyncBulkQuery(val store: IAsyncObjectStore) : IAsyncObjectStore {
 
     private val newRequests = LinkedHashMap<String, RequestedValue<*>>()
     private val pendingRequests = LinkedHashMap<String, RequestedValue<*>>()
+    private val queueProcessingActive = AtomicBoolean(false)
 
     private fun <T : IKVValue> queryAsDeferred(hash: KVEntryReference<T>): Deferred<T> {
         store.getIfCached(hash)?.let { return CompletableDeferred(it) }
@@ -100,7 +102,6 @@ class AsyncBulkQuery(val store: IAsyncObjectStore) : IAsyncObjectStore {
     }
 
     private suspend fun processRequests(requests: List<RequestedValue<*>>) {
-        delay(1)
         val response = store.getAll(requests.map { it.key })
         for (request in requests) {
             val value = response[request.key]

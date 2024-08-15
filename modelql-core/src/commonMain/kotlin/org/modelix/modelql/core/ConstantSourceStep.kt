@@ -60,7 +60,7 @@ open class ConstantSourceStep<E>(val element: E, val type: KType) : ProducingSte
     }
 
     override fun createFlow(context: IFlowInstantiationContext): StepFlow<E> {
-        return flowOf(element.asStepOutput(this))
+        return context.getFactory().constant(element.asStepOutput(this))
     }
 
     override fun toString(): String {

@@ -39,7 +39,7 @@ import org.modelix.modelql.core.stepOutputSerializer
 
 class AllReferencesTraversalStep() : FluxTransformingStep<INode, INode>(), IMonoStep<INode> {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
-        return input.flatMapConcat { it.value.getAllReferenceTargetsAsFlow().map { it.second } }.asStepFlow(this)
+        return input.flatMapConcat { it.value.asAsyncNode().getAllReferenceTargets().map { it.second.asRegularNode() }.asFlowBuilder() }.asStepFlow(this)
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<INode>> {

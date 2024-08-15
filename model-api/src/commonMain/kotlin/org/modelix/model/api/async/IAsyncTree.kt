@@ -16,10 +16,6 @@
 
 package org.modelix.model.api.async
 
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.flow.Flow
-import org.modelix.kotlin.utils.IMonoFlow
-import org.modelix.kotlin.utils.IOptionalMonoFlow
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INodeReference
@@ -27,33 +23,17 @@ import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 
 interface IAsyncTree {
-    suspend fun visitChanges(oldVersion: IAsyncTree, visitor: IAsyncTreeChangeVisitor)
-    fun containsNode(nodeId: Long): IMonoFlow<Boolean>
-    fun getProperty(nodeId: Long, role: IPropertyReference): IOptionalMonoFlow<String>
-    fun getChildren(parentId: Long, role: IChildLinkReference): Flow<Long>
-    fun getConceptReference(nodeId: Long): IMonoFlow<ConceptReference>
-    fun getParent(nodeId: Long): IOptionalMonoFlow<Long>
-    fun getRole(nodeId: Long): IMonoFlow<IChildLinkReference>
-    fun getAllReferenceTargetRefs(sourceId: Long): Flow<Pair<IReferenceLinkReference, INodeReference>>
-    fun getReferenceTarget(sourceId: Long, role: IReferenceLinkReference): IOptionalMonoFlow<INodeReference>
-    fun getReferenceRoles(sourceId: Long): Flow<String>
-    fun getPropertyRoles(sourceId: Long): Flow<String>
-    fun getChildRoles(sourceId: Long): Flow<String?>
-    fun getAllChildren(parentId: Long): Flow<Long>
-}
-
-interface IFlowBasedTree {
-    suspend fun visitChanges(oldVersion: IAsyncTree, visitor: IAsyncTreeChangeVisitor)
-    fun containsNode(nodeId: Long): IMonoFlow<Boolean>
-    fun getProperty(nodeId: Long, role: IPropertyReference): IMonoFlow<String?>
-    fun getChildren(parentId: Long, role: IChildLinkReference): Flow<Long>
-    fun getConceptReference(nodeId: Long): IMonoFlow<ConceptReference>
-    fun getParent(nodeId: Long): IOptionalMonoFlow<Long>
-    fun getRole(nodeId: Long): IMonoFlow<IChildLinkReference>
-    fun getAllReferenceTargetRefs(sourceId: Long): Flow<Pair<IReferenceLinkReference, INodeReference>>
-    fun getReferenceTarget(sourceId: Long, role: IReferenceLinkReference): IMonoFlow<INodeReference?>
-    fun getReferenceRoles(sourceId: Long): Flow<String>
-    fun getPropertyRoles(sourceId: Long): Flow<String>
-    fun getChildRoles(sourceId: Long): Flow<String?>
-    fun getAllChildren(parentId: Long): Flow<Long>
+    fun visitChanges(oldVersion: IAsyncTree, visitor: IAsyncTreeChangeVisitor): IAsyncValue<Unit>
+    fun containsNode(nodeId: Long): IAsyncValue<Boolean>
+    fun getProperty(nodeId: Long, role: IPropertyReference): IAsyncValue<String?>
+    fun getChildren(parentId: Long, role: IChildLinkReference): IAsyncSequence<Long>
+    fun getConceptReference(nodeId: Long): IAsyncValue<ConceptReference>
+    fun getParent(nodeId: Long): IAsyncValue<Long>
+    fun getRole(nodeId: Long): IAsyncValue<IChildLinkReference>
+    fun getAllReferenceTargetRefs(sourceId: Long): IAsyncSequence<Pair<IReferenceLinkReference, INodeReference>>
+    fun getReferenceTarget(sourceId: Long, role: IReferenceLinkReference): IAsyncValue<INodeReference?>
+    fun getReferenceRoles(sourceId: Long): IAsyncSequence<String>
+    fun getPropertyRoles(sourceId: Long): IAsyncSequence<String>
+    fun getChildRoles(sourceId: Long): IAsyncSequence<String?>
+    fun getAllChildren(parentId: Long): IAsyncSequence<Long>
 }

@@ -13,12 +13,11 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.modelix.kotlin.utils.flatten
+import org.modelix.kotlin.utils.ifEmpty
 import kotlin.experimental.ExperimentalTypeInference
 
 class WhenStep<In, Out>(
@@ -74,15 +73,16 @@ class WhenStep<In, Out>(
     }
 
     override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
-        return input.flatMapConcat {
-            for ((index, case) in cases.withIndex()) {
-                if (case.first.evaluate(context.evaluationContext, it.value).presentAndEqual(true)) {
-                    return@flatMapConcat case.second.asFlow(context.evaluationContext, it).map { MultiplexedOutput(index, it) }
-                }
-            }
-            val elseCaseIndex = cases.size
-            return@flatMapConcat elseCase?.asFlow(context.evaluationContext, it)?.map { MultiplexedOutput(elseCaseIndex, it) }
-                ?: emptyFlow<Out>().asStepFlow(this)
+        return input.flatMapConcat { inputElement ->
+            context.getFactory().fromIterable(cases.withIndex()).filterByMono { (index, case) ->
+                case.first.asFlow(context, inputElement).firstOrNull().presentAndEqual(true)
+            }.map { (index, case) ->
+                case.second.asFlow(context, inputElement).map { MultiplexedOutput(index, it) }
+            }.first().ifEmpty {
+                val elseCaseIndex = cases.size
+                elseCase?.asFlow(context, inputElement)?.map { MultiplexedOutput(elseCaseIndex, it) }
+                    ?: context.getFactory().empty<Out>().asStepFlow(this)
+            }.flatten()
         }
     }
 }

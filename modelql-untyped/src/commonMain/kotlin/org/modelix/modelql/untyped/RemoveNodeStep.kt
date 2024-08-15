@@ -14,11 +14,10 @@
 package org.modelix.modelql.untyped
 
 import kotlinx.coroutines.flow.count
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
+import org.modelix.kotlin.utils.IMonoStream
 import org.modelix.model.api.INode
 import org.modelix.model.api.remove
 import org.modelix.modelql.core.AggregationStep
@@ -41,7 +40,7 @@ class RemoveNodeStep() : AggregationStep<INode, Int>() {
         return serializationContext.serializer<Int>().stepOutputSerializer(this)
     }
 
-    override suspend fun aggregate(input: StepFlow<INode>): IStepOutput<Int> {
+    override suspend fun aggregate(input: StepFlow<INode>): IMonoStream<IStepOutput<Int>> {
         return input.map { it.value.remove() }.count().asStepOutput(this)
     }
 

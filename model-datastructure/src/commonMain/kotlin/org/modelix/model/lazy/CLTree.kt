@@ -15,6 +15,8 @@
 
 package org.modelix.model.lazy
 
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.channelFlow
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
@@ -631,16 +633,19 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
     }
 
     private fun getChildren(node: CPNode): IAsyncValue<List<CPNode>> {
-        return resolveElements(node.getChildrenIds().toList()).map { elements -> elements }
+        return resolveElements(node.getChildrenIds().toList())
     }
 
     private fun getDescendants(node: CPNode, includeSelf: Boolean): IAsyncValue<Iterable<CPNode>> {
+        channelFlow<CPNode> {
+
+        }
         return if (includeSelf) {
             getDescendants(node, false)
                 .map { descendants -> (sequenceOf(node) + descendants).asIterable() }
         } else {
             getChildren(node).thenRequest { children: Iterable<CPNode> ->
-                val d: IAsyncValue<List<CPNode>> = asyncStore.requestAll(children.map { getDescendants(it, true) }).map { it.flatten() }
+                val d: IAsyncValue<List<CPNode>> = asyncStore.flatMap(children) { getDescendants(it, true) }.map { it.flatten() }
                 d
             }
         }

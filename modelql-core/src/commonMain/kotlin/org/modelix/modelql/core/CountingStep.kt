@@ -13,15 +13,14 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.count
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
+import org.modelix.kotlin.utils.IMonoStream
 
 class CountingStep() : AggregationStep<Any?, Int>() {
-    override suspend fun aggregate(input: StepFlow<Any?>): IStepOutput<Int> {
-        return input.count().asStepOutput(this)
+    override fun aggregate(input: StepFlow<Any?>): IMonoStream<IStepOutput<Int>> {
+        return input.count().asStepFlow(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = CountDescriptor()

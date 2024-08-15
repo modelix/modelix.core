@@ -20,17 +20,24 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.single
+import org.modelix.kotlin.utils.IStream
 import org.modelix.kotlin.utils.IMonoFlow
 import org.modelix.kotlin.utils.mapMono
 import org.modelix.kotlin.utils.mapValue
 import org.modelix.kotlin.utils.toMono
 
+/**
+ * Unlike Flows, IAsyncValue and IAsyncSequence are computed as soon a possible and not only when the value is accessed.
+ * This gives IBulkQuery more control over the execution and allows it to effectively combine requests into bigger ones.
+ */
 interface IAsyncValue<out E> {
     fun onReceive(callback: (E) -> Unit)
     fun <R> map(body: (E) -> R): IAsyncValue<R>
+    fun <R> flatMap(body: (E) -> Iterable<R>): IAsyncSequence<R>
     fun <R> thenRequest(body: (E) -> IAsyncValue<R>): IAsyncValue<R>
     fun awaitBlocking(): E
     suspend fun await(): E
@@ -43,6 +50,22 @@ interface IAsyncValue<out E> {
         fun <T> nullConstant(): IAsyncValue<T?> = NULL_CONSTANT as IAsyncValue<T?>
     }
 }
+
+interface IAsyncSequence<out E> {
+    fun onEach(callback: (E) -> Unit)
+    fun <R> map(transform: (E) -> R): IAsyncSequence<R>
+    fun <R> thenRequest(transform: (E) -> IAsyncValue<R>): IAsyncSequence<R>
+    fun <R> thenRequestMany(transform: (E) -> IAsyncSequence<R>): IAsyncSequence<R>
+    fun toList(): IAsyncValue<List<E>>
+    fun toSet(): IAsyncValue<Set<E>>
+    fun visitAll(visitor: (E) -> Unit): IAsyncValue<Unit>
+    fun asFlow(): Flow<E> = AsyncSequenceAsFlow(this)
+    fun asFlowBuilder(): IStream<E>
+}
+
+fun <T> IAsyncSequence<T>.distinct(): IAsyncSequence<T> = TODO()
+fun <T> IAsyncSequence<T>.filter(condition: (T) -> Boolean): IAsyncSequence<T> = TODO()
+fun <T, R : Any> IAsyncSequence<T>.mapNotNull(transform: (T) -> R?): IAsyncSequence<R> = TODO()
 
 fun <T> T.asAsync(): IAsyncValue<T> = IAsyncValue.constant(this)
 fun <T> IAsyncValue<T>.asNonAsync(): T = (this as NonAsyncValue<T>).value
@@ -116,6 +139,10 @@ class NonAsyncValue<out E>(val value: E) : IAsyncValue<E>, IMonoFlow<E> {
     override fun asFlow(): IMonoFlow<E> {
         return this
     }
+
+    override fun <R> flatMap(body: (E) -> Iterable<R>): IAsyncSequence<R> {
+        TODO("Not yet implemented")
+    }
 }
 
 class MonoFlowAsAsyncValue<E>(val flow: IMonoFlow<E>): IAsyncValue<E> {
@@ -141,6 +168,10 @@ class MonoFlowAsAsyncValue<E>(val flow: IMonoFlow<E>): IAsyncValue<E> {
 
     override suspend fun await(): E {
         return flow.single()
+    }
+
+    override fun <R> flatMap(body: (E) -> Iterable<R>): IAsyncSequence<R> {
+        TODO("Not yet implemented")
     }
 }
 
@@ -181,6 +212,10 @@ class DeferredAsAsyncValue<E>(val value: Deferred<E>, val enforceCompletion: sus
             emit(value.getCompleted())
         }.toMono()
     }
+
+    override fun <R> flatMap(body: (E) -> Iterable<R>): IAsyncSequence<R> {
+        TODO("Not yet implemented")
+    }
 }
 
 class MappingAsyncValue<In, Out>(val input: IAsyncValue<In>, val mappingFunction: (In) -> Out): IAsyncValue<Out> {
@@ -209,6 +244,10 @@ class MappingAsyncValue<In, Out>(val input: IAsyncValue<In>, val mappingFunction
     override suspend fun await(): Out {
         return mappingFunction(input.await())
     }
+
+    override fun <R> flatMap(body: (Out) -> Iterable<R>): IAsyncSequence<R> {
+        TODO("Not yet implemented")
+    }
 }
 
 class DeferredAsFlow<E>(val deferred: Deferred<E>): Flow<E> {
@@ -218,3 +257,11 @@ class DeferredAsFlow<E>(val deferred: Deferred<E>): Flow<E> {
 }
 
 fun <T> Deferred<T>.asFlow(): Flow<T> = DeferredAsFlow(this)
+
+class AsyncSequenceAsFlow<E>(val sequence: IAsyncSequence<E>): Flow<E> {
+    override suspend fun collect(collector: FlowCollector<E>) {
+        channelFlow<E> {
+            sequence.visitAll { trySend(it) }.await()
+        }.collect(collector)
+    }
+}

@@ -57,6 +57,7 @@ import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.server.store.forContextRepository
 import org.modelix.model.server.store.forRepository
 import org.modelix.modelql.core.IMonoUnboundQuery
+import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.buildMonoQuery
 import org.modelix.modelql.core.count
 import org.modelix.modelql.untyped.createQueryExecutor
@@ -114,12 +115,23 @@ class ModelQLBulkQueryTest {
         val rootNode = model.getRootNode()
         val requestCountBefore = statistics.getTotalRequests()
         val result = rootNode.getArea().runWithAdditionalScopeInCoroutine {
-            query.bind(rootNode.createQueryExecutor()).execute()
+            runQuery(query, rootNode)
         }
         val requestCountAfter = statistics.getTotalRequests()
         println("Number of requests: ${requestCountAfter - requestCountBefore}")
         println(result.value)
     }
+
+    private suspend fun <T> runQuery(
+        query: IMonoUnboundQuery<INode, T>,
+        rootNode: INode,
+    ): IStepOutput<T> {
+        val start = TimeSource.Monotonic.markNow()
+        val result = query.bind(rootNode.createQueryExecutor()).execute()
+        println(start.elapsedNow())
+        return result
+    }
+
 
     private suspend fun createModel(store: IKeyValueStore, numberOfNodes: Int): IVersion {
         val initialTree = CLTree.builder(ObjectStoreCache(store)).repositoryId(RepositoryId("xxx")).build()

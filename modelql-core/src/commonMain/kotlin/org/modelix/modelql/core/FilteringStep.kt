@@ -34,7 +34,7 @@ class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : Transform
 
     override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E> {
         // return condition.asFlow(input).zip(input) { c, it -> c to it }.filter { it.first == true }.map { it.second }
-        return input.filter { condition.asFlow(context.evaluationContext, it).value.optionalSingle().presentAndEqual(true) }
+        return input.filterByMono { condition.asFlow(context, it).value.optionalSingle().presentAndEqual(true) }
         // return input.filter { condition.evaluate(it.value).presentAndEqual(true) }
     }
 

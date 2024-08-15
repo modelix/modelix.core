@@ -1,11 +1,7 @@
 import org.modelix.mpsHomeDir
 
 plugins {
-    kotlin("jvm")
-}
-
-kotlin {
-    jvmToolchain(11)
+    `modelix-kotlin-jvm-with-junit`
 }
 
 dependencies {

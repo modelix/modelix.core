@@ -17,7 +17,7 @@
 import org.modelix.copyMps
 
 plugins {
-    kotlin("jvm")
+    `modelix-kotlin-jvm`
     // We are not building an actual plugin here.
     // We use/abuse the gradle-intellij-plugin run tests with MPS.
     // (With enough time and effort,
@@ -25,7 +25,7 @@ plugins {
     // and build something custom using the relevant parts.
     // For the time being, this solution works without much overhead and great benefit.)
     alias(libs.plugins.intellij)
-    id("modelix-project-repositories")
+    `modelix-project-repositories`
 }
 
 dependencies {

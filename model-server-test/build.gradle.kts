@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm")
+    `modelix-kotlin-jvm-with-junit`
     alias(libs.plugins.docker.compose)
 }
 
@@ -10,7 +10,6 @@ dependencies {
 
 tasks.test {
     dependsOn(":model-server:compileTestKotlin")
-    useJUnitPlatform()
     doFirst {
         val db = dockerCompose.servicesInfos.getValue("db")
         systemProperty("jdbc.url", "jdbc:postgresql://${db.host}:${db.port}/")

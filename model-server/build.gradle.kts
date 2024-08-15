@@ -10,7 +10,7 @@ plugins {
     alias(libs.plugins.spotless)
     alias(libs.plugins.test.logger)
     alias(libs.plugins.shadow)
-    kotlin("jvm")
+    `modelix-kotlin-jvm-with-junit`
     kotlin("plugin.serialization")
     alias(libs.plugins.openapi.generator)
 }
@@ -18,12 +18,6 @@ plugins {
 description = "Model Server offering access to model storage"
 
 defaultTasks.add("build")
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(11))
-    }
-}
 
 val mpsExtensionsVersion: String by project
 
@@ -88,10 +82,6 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(kotlin("test"))
     testImplementation(project(":modelql-untyped"))
-}
-
-tasks.test {
-    useJUnitPlatform()
 }
 
 tasks.named<ShadowJar>("shadowJar") {

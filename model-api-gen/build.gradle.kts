@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm")
+    `modelix-kotlin-jvm-with-junit`
     kotlin("plugin.serialization")
 }
 

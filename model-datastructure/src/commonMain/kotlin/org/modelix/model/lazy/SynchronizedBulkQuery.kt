@@ -18,6 +18,8 @@ package org.modelix.model.lazy
 
 import kotlinx.coroutines.flow.Flow
 import org.modelix.kotlin.utils.IMonoFlow
+import org.modelix.kotlin.utils.IMonoStream
+import org.modelix.model.api.async.IAsyncSequence
 import org.modelix.model.api.async.IAsyncValue
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.persistent.IKVValue
@@ -50,6 +52,19 @@ class SynchronizedBulkQuery(val nonThreadSafeQuery: IBulkQuery) : IBulkQuery {
     }
 
     inner class Value<E>(val nonThreadSafeValue: IAsyncValue<E>) : IAsyncValue<E> {
+        override fun asStream(): IMonoStream<E> {
+            runSynchronized(this@SynchronizedBulkQuery) {
+                return nonThreadSafeValue.asStream()
+            }
+        }
+
+        override fun <R> flatMap(body: (E) -> Iterable<R>): IAsyncSequence<R> {
+            runSynchronized(this@SynchronizedBulkQuery) {
+                return nonThreadSafeValue.flatMap(body)
+            }
+
+        }
+
         override fun <R> thenRequest(handler: (E) -> IAsyncValue<R>): IAsyncValue<R> {
             runSynchronized(this@SynchronizedBulkQuery) {
                 return nonThreadSafeValue.thenRequest(handler)

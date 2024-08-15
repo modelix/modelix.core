@@ -13,7 +13,6 @@
  */
 package org.modelix.modelql.untyped
 
-import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -37,7 +36,7 @@ import org.modelix.modelql.core.stepOutputSerializer
 class LinkInParentTraversalStep() : MonoTransformingStep<INode, IChildLinkReference>() {
 
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<IChildLinkReference> {
-        return input.flatMapConcat { it.value.asAsyncNode().getRoleInParent() }.asStepFlow(this)
+        return input.flatMapConcat { it.value.asAsyncNode().getRoleInParent().asStream() }.asStepFlow(this)
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<IChildLinkReference>> {

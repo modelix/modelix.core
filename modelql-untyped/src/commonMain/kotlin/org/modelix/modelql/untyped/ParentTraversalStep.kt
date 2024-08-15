@@ -13,9 +13,6 @@
  */
 package org.modelix.modelql.untyped
 
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -38,7 +35,9 @@ import org.modelix.modelql.core.stepOutputSerializer
 class ParentTraversalStep() : MonoTransformingStep<INode, INode>(), IMonoStep<INode> {
 
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
-        return input.flatMapConcat { it.value.getParentAsFlow() }.asStepFlow(this)
+        return input.flatMapConcat {
+            it.value.asAsyncNode().getParent().asStream().filterNotNull().map { it.asRegularNode() }
+        }.asStepFlow(this)
     }
 
     override fun canBeEmpty(): Boolean = true

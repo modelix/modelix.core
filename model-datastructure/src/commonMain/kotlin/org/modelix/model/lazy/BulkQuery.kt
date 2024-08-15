@@ -16,21 +16,17 @@
 package org.modelix.model.lazy
 
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.internal.synchronized
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.modelix.kotlin.utils.AtomicBoolean
 import org.modelix.kotlin.utils.IMonoFlow
-import org.modelix.kotlin.utils.runSynchronized
+import org.modelix.kotlin.utils.IMonoStream
 import org.modelix.kotlin.utils.toMono
-import org.modelix.model.api.async.DeferredAsFlow
+import org.modelix.model.api.async.AsyncSequence
+import org.modelix.model.api.async.IAsyncSequence
 import org.modelix.model.api.async.IAsyncValue
-import org.modelix.model.api.async.asFlow
 import org.modelix.model.persistent.IKVValue
 
 /**
@@ -178,6 +174,10 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
             this.value = CompletableDeferred(value)
         }
 
+        override fun asStream(): IMonoStream<T> {
+            TODO("Not yet implemented")
+        }
+
         fun isDone() = value.isCompleted
 
         fun success(value: T) {
@@ -226,9 +226,16 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
                 emit(value.getCompleted())
             }.toMono()
         }
+
+        override fun <R> flatMap(body: (T) -> Iterable<R>): IAsyncSequence<R> {
+            return AsyncSequence(map { body(it).asSequence() })
+        }
     }
 
     class DummyValue<E> : IAsyncValue<E> {
+        override fun asStream(): IMonoStream<E> {
+            TODO("Not yet implemented")
+        }
 
         override fun <R> thenRequest(handler: (E) -> IAsyncValue<R>): IAsyncValue<R> = DummyValue()
 
@@ -246,6 +253,10 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
 
         override fun asFlow(): IMonoFlow<E> {
             throw UnsupportedOperationException()
+        }
+
+        override fun <R> flatMap(body: (E) -> Iterable<R>): IAsyncSequence<R> {
+            TODO("Not yet implemented")
         }
     }
 }

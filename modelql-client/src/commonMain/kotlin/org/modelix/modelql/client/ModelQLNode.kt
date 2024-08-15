@@ -16,6 +16,7 @@ package org.modelix.modelql.client
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import org.modelix.kotlin.utils.SimpleMonoStream
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
@@ -31,6 +32,8 @@ import org.modelix.model.api.resolveChildLinkOrFallback
 import org.modelix.model.api.resolvePropertyOrFallback
 import org.modelix.model.api.resolveReferenceLinkOrFallback
 import org.modelix.model.area.IArea
+import org.modelix.modelql.core.FlowBasedStream
+import org.modelix.modelql.core.FlowBasedStreamFactory
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IFluxUnboundQuery
 import org.modelix.modelql.core.IMonoStep
@@ -87,7 +90,7 @@ abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL,
                     emitAll(client.runQuery(queryOnNode).asFlow())
                 }
             }
-        }
+        }.let { FlowBasedStream(it, FlowBasedStreamFactory(coroutineScope = null)) }
     }
 
     fun <R> blockingQuery(body: (IMonoStep<INode>) -> IMonoStep<R>): R {

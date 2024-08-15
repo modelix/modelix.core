@@ -13,7 +13,6 @@
  */
 package org.modelix.modelql.untyped
 
-import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -38,7 +37,7 @@ import org.modelix.modelql.core.stepOutputSerializer
 class PropertyTraversalStep(val role: String) : MonoTransformingStep<INode, String?>(), IMonoStep<String?> {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<String?> {
         return input.flatMapConcat {
-            it.value.getPropertyValueAsFlow(IPropertyReference.fromUnclassifiedString(role).toLegacy())
+            it.value.asAsyncNode().getPropertyValue(IPropertyReference.fromUnclassifiedString(role)).asStream()
         }.asStepFlow(this)
     }
 

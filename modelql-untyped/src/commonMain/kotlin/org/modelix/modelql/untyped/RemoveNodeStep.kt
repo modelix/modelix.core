@@ -30,6 +30,7 @@ import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
+import org.modelix.modelql.core.asStepFlow
 import org.modelix.modelql.core.asStepOutput
 import org.modelix.modelql.core.connect
 import org.modelix.modelql.core.stepOutputSerializer
@@ -40,8 +41,8 @@ class RemoveNodeStep() : AggregationStep<INode, Int>() {
         return serializationContext.serializer<Int>().stepOutputSerializer(this)
     }
 
-    override suspend fun aggregate(input: StepFlow<INode>): IMonoStream<IStepOutput<Int>> {
-        return input.map { it.value.remove() }.count().asStepOutput(this)
+    override fun aggregate(input: StepFlow<INode>): IMonoStream<IStepOutput<Int>> {
+        return input.map { it.value.remove() }.count().asStepFlow(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {

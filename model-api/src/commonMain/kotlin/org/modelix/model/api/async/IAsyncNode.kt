@@ -16,6 +16,7 @@
 
 package org.modelix.model.api.async
 
+import org.modelix.kotlin.utils.IMonoStream
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -25,6 +26,7 @@ import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 
 interface IAsyncNode {
+    fun asStream(): IMonoStream<IAsyncNode>
     fun asRegularNode(): INode
     fun getConcept(): IAsyncValue<IConcept>
     fun getConceptRef(): IAsyncValue<ConceptReference>
@@ -51,3 +53,5 @@ fun INode.asAsyncNode(): IAsyncNode {
         else -> NodeAsAsyncNode(this)
     }
 }
+
+fun INode.asStream(): IMonoStream<IAsyncNode> = asAsyncNode().asStream()

@@ -16,13 +16,7 @@
 
 package org.modelix.model.api.async
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.map
-import org.modelix.kotlin.utils.IMonoFlow
-import org.modelix.kotlin.utils.IOptionalMonoFlow
-import org.modelix.kotlin.utils.monoFlowOf
-import org.modelix.kotlin.utils.optionalMonoFlowOf
+import org.modelix.kotlin.utils.IMonoStream
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -31,52 +25,62 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.asProperty
+import org.modelix.model.api.getDescendants
 import org.modelix.model.api.meta.NullConcept
+import org.modelix.model.api.toReference
 
 class NodeAsAsyncNode(val node: INode) : IAsyncNode {
     override fun asRegularNode(): INode = node
 
-    override fun getConcept(): IMonoFlow<IConcept> {
-        return monoFlowOf(node.concept ?: NullConcept)
+    override fun asStream(): IMonoStream<IAsyncNode> {
+        TODO("Not yet implemented")
     }
 
-    override fun getConceptRef(): IMonoFlow<ConceptReference> {
-        return monoFlowOf((node.getConceptReference() ?: NullConcept.getReference()) as ConceptReference)
+    override fun getConcept(): IAsyncValue<IConcept> {
+        return (node.concept ?: NullConcept).asAsync()
     }
 
-    override fun getParent(): IOptionalMonoFlow<IAsyncNode> {
-        return optionalMonoFlowOf(node.parent?.asAsyncNode())
+    override fun getConceptRef(): IAsyncValue<ConceptReference> {
+        return ((node.getConceptReference() ?: NullConcept.getReference()) as ConceptReference).asAsync()
     }
 
-    override fun getRoleInParent(): IOptionalMonoFlow<IChildLinkReference> {
-        return optionalMonoFlowOf(node.getContainmentLink()?.toReference())
+    override fun getParent(): IAsyncValue<IAsyncNode?> {
+        return node.parent?.asAsyncNode().asAsync()
     }
 
-    override fun getPropertyValue(role: IPropertyReference): IOptionalMonoFlow<String> {
-        return optionalMonoFlowOf(node.getPropertyValue(role.asProperty()))
+    override fun getRoleInParent(): IAsyncValue<IChildLinkReference> {
+        return node.getContainmentLink().toReference().asAsync()
     }
 
-    override fun getAllChildren(): Flow<IAsyncNode> {
-        return node.allChildren.asFlow().map { it.asAsyncNode() }
+    override fun getPropertyValue(role: IPropertyReference): IAsyncValue<String?> {
+        return node.getPropertyValue(role.asProperty()).asAsync()
     }
 
-    override fun getChildren(role: IChildLinkReference): Flow<IAsyncNode> {
-        return node.getChildren(role.toLegacy()).asFlow().map { it.asAsyncNode() }
+    override fun getAllChildren(): IAsyncSequence<IAsyncNode> {
+        return node.allChildren.map { it.asAsyncNode() }.asAsyncSequence()
     }
 
-    override fun getReferenceTarget(role: IReferenceLinkReference): IOptionalMonoFlow<IAsyncNode> {
-        return optionalMonoFlowOf(node.getReferenceTarget(role.toLegacy())?.asAsyncNode())
+    override fun getChildren(role: IChildLinkReference): IAsyncSequence<IAsyncNode> {
+        return node.getChildren(role.toLegacy()).map { it.asAsyncNode() }.asAsyncSequence()
     }
 
-    override fun getReferenceTargetRef(role: IReferenceLinkReference): IOptionalMonoFlow<INodeReference> {
-        return optionalMonoFlowOf(node.getReferenceTargetRef(role.toLegacy()))
+    override fun getReferenceTarget(role: IReferenceLinkReference): IAsyncValue<IAsyncNode?> {
+        return node.getReferenceTarget(role.toLegacy())?.asAsyncNode().asAsync()
     }
 
-    override fun getAllReferenceTargetRefs(): Flow<Pair<IReferenceLinkReference, INodeReference>> {
-        return node.getAllReferenceTargetRefs().asFlow().map { it.first.toReference() to it.second }
+    override fun getReferenceTargetRef(role: IReferenceLinkReference): IAsyncValue<INodeReference?> {
+        return node.getReferenceTargetRef(role.toLegacy()).asAsync()
     }
 
-    override fun getAllReferenceTargets(): Flow<Pair<IReferenceLinkReference, IAsyncNode>> {
-        return node.getAllReferenceTargets().asFlow().map { it.first.toReference() to it.second.asAsyncNode() }
+    override fun getAllReferenceTargetRefs(): IAsyncSequence<Pair<IReferenceLinkReference, INodeReference>> {
+        return node.getAllReferenceTargetRefs().map { it.first.toReference() to it.second }.asAsyncSequence()
+    }
+
+    override fun getAllReferenceTargets(): IAsyncSequence<Pair<IReferenceLinkReference, IAsyncNode>> {
+        return node.getAllReferenceTargets().map { it.first.toReference() to it.second.asAsyncNode() }.asAsyncSequence()
+    }
+
+    override fun getDescendants(includeSelf: Boolean): IAsyncSequence<IAsyncNode> {
+        return node.getDescendants(includeSelf).map { it.asAsyncNode() }.asAsyncSequence()
     }
 }

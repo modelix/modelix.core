@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.single
 import org.modelix.kotlin.utils.IStream
 import org.modelix.kotlin.utils.IMonoFlow
+import org.modelix.kotlin.utils.IMonoStream
 import org.modelix.kotlin.utils.mapMono
 import org.modelix.kotlin.utils.mapValue
 import org.modelix.kotlin.utils.toMono
@@ -42,6 +43,7 @@ interface IAsyncValue<out E> {
     fun awaitBlocking(): E
     suspend fun await(): E
     fun asFlow(): IMonoFlow<E>
+    fun asStream(): IMonoStream<E>
 
     companion object {
         private val NULL_CONSTANT = NonAsyncValue<Any?>(null)
@@ -57,6 +59,7 @@ interface IAsyncSequence<out E> {
     fun <R> thenRequest(transform: (E) -> IAsyncValue<R>): IAsyncSequence<R>
     fun <R> thenRequestMany(transform: (E) -> IAsyncSequence<R>): IAsyncSequence<R>
     fun toList(): IAsyncValue<List<E>>
+    fun toSequence(): IAsyncValue<Sequence<E>>
     fun toSet(): IAsyncValue<Set<E>>
     fun visitAll(visitor: (E) -> Unit): IAsyncValue<Unit>
     fun asFlow(): Flow<E> = AsyncSequenceAsFlow(this)
@@ -112,6 +115,10 @@ fun <T : Any> IAsyncValue<T?>.checkNotNull(message: () -> String): IAsyncValue<T
 }
 
 class NonAsyncValue<out E>(val value: E) : IAsyncValue<E>, IMonoFlow<E> {
+    override fun asStream(): IMonoStream<E> {
+        TODO("Not yet implemented")
+    }
+
     override fun <R> thenRequest(body: (E) -> IAsyncValue<R>): IAsyncValue<R> {
         return body(value)
     }
@@ -150,6 +157,10 @@ class MonoFlowAsAsyncValue<E>(val flow: IMonoFlow<E>): IAsyncValue<E> {
         return flow
     }
 
+    override fun asStream(): IMonoStream<E> {
+        TODO("Not yet implemented")
+    }
+
     override fun onReceive(callback: (E) -> Unit) {
         TODO("Not yet implemented")
     }
@@ -177,6 +188,10 @@ class MonoFlowAsAsyncValue<E>(val flow: IMonoFlow<E>): IAsyncValue<E> {
 
 class DeferredAsAsyncValue<E>(val value: Deferred<E>, val enforceCompletion: suspend () -> Unit = {}) : IAsyncValue<E> {
     private val creationStack = Exception()
+    override fun asStream(): IMonoStream<E> {
+        TODO("Not yet implemented")
+    }
+
     override fun awaitBlocking(): E {
         return value.getCompleted()
     }
@@ -219,6 +234,10 @@ class DeferredAsAsyncValue<E>(val value: Deferred<E>, val enforceCompletion: sus
 }
 
 class MappingAsyncValue<In, Out>(val input: IAsyncValue<In>, val mappingFunction: (In) -> Out): IAsyncValue<Out> {
+    override fun asStream(): IMonoStream<Out> {
+        TODO("Not yet implemented")
+    }
+
     override fun asFlow(): IMonoFlow<Out> {
         return input.asFlow().map(mappingFunction).toMono()
     }
@@ -265,3 +284,49 @@ class AsyncSequenceAsFlow<E>(val sequence: IAsyncSequence<E>): Flow<E> {
         }.collect(collector)
     }
 }
+
+class AsyncSequence<E>(val sequence: IAsyncValue<Sequence<E>>): IAsyncSequence<E> {
+
+    override fun toSequence(): IAsyncValue<Sequence<E>> {
+        return sequence
+    }
+
+    override fun asFlowBuilder(): IStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun onEach(callback: (E) -> Unit) {
+        sequence.onReceive {
+            it.forEach(callback)
+        }
+    }
+
+    override fun <R> map(transform: (E) -> R): IAsyncSequence<R> {
+        return AsyncSequence(sequence.map { it.map(transform) })
+    }
+
+    override fun <R> thenRequest(transform: (E) -> IAsyncValue<R>): IAsyncSequence<R> {
+        return AsyncSequence(sequence.map { it.toList().map(transform).requestAll().map { it.asSequence() } }.flatten())
+    }
+
+    override fun <R> thenRequestMany(transform: (E) -> IAsyncSequence<R>): IAsyncSequence<R> {
+        return AsyncSequence(sequence.thenRequest { it.map { transform(it).toSequence() }.toList().requestAllAndMap { it.asSequence().flatten() } })
+    }
+
+    override fun toList(): IAsyncValue<List<E>> {
+        return sequence.map { it.toList() }
+    }
+
+    override fun toSet(): IAsyncValue<Set<E>> {
+        return sequence.map { it.toSet() }
+    }
+
+    override fun visitAll(visitor: (E) -> Unit): IAsyncValue<Unit> {
+        return sequence.map {
+            it.forEach(visitor)
+        }
+    }
+}
+
+fun <T> Sequence<T>.asAsyncSequence(): IAsyncSequence<T> = AsyncSequence(this.asAsync())
+fun <T> List<T>.asAsyncSequence(): IAsyncSequence<T> = asSequence().asAsyncSequence()

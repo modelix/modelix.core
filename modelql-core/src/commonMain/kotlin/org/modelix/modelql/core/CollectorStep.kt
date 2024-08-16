@@ -19,7 +19,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import org.modelix.kotlin.utils.IMonoStream
+import org.modelix.streams.IMonoStream
 
 abstract class CollectorStep<E, CollectionT>() : AggregationStep<E, CollectionT>() {
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<CollectionT>> {

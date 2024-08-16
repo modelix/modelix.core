@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.count
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.modelix.kotlin.utils.IMonoStream
+import org.modelix.streams.IMonoStream
 import org.modelix.model.api.INode
 import org.modelix.model.api.remove
 import org.modelix.modelql.core.AggregationStep

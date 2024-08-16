@@ -16,7 +16,8 @@
 
 package org.modelix.model.api.async
 
-import org.modelix.kotlin.utils.IMonoStream
+import org.modelix.streams.IMonoStream
+import org.modelix.streams.SimpleMonoStream
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -30,7 +31,7 @@ import org.modelix.model.api.resolveInCurrentContext
 class AsyncNode(private val regularNode: INode, private val nodeId: Long, private val tree: () -> IAsyncTree, private val createNodeAdapter: (Long) -> IAsyncNode) : IAsyncNode {
     override fun asRegularNode(): INode = regularNode
     override fun asStream(): IMonoStream<IAsyncNode> {
-        TODO("Not yet implemented")
+        return SimpleMonoStream(this, tree().asStream().getFactory())
     }
 
     private fun Long.asNode(): IAsyncNode = createNodeAdapter(this)

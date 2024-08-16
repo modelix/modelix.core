@@ -16,6 +16,8 @@
 
 package org.modelix.model.async
 
+import org.modelix.streams.IMonoStream
+import org.modelix.streams.SimpleMonoStream
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INodeReference
@@ -59,6 +61,10 @@ class AsyncTree(private val treeData: () -> CPTree, private val store: IAsyncObj
         .thenRequest { it.query() }
 
     private fun tryGetNodeRef(id: Long): IAsyncValue<KVEntryReference<CPNode>?> = nodesMap.query().thenRequest { it.get(id, store) }
+
+    override fun asStream(): IMonoStream<IAsyncTree> {
+        return SimpleMonoStream(this, store.getStreamFactory())
+    }
 
     override fun containsNode(nodeId: Long): IAsyncValue<Boolean> {
         return tryGetNodeRef(nodeId).map { it != null }

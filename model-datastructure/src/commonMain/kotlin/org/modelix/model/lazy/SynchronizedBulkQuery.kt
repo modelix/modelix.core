@@ -18,7 +18,7 @@ package org.modelix.model.lazy
 
 import kotlinx.coroutines.flow.Flow
 import org.modelix.kotlin.utils.IMonoFlow
-import org.modelix.kotlin.utils.IMonoStream
+import org.modelix.streams.IMonoStream
 import org.modelix.model.api.async.IAsyncSequence
 import org.modelix.model.api.async.IAsyncValue
 import org.modelix.model.api.runSynchronized

@@ -28,11 +28,11 @@ import kotlinx.serialization.builtins.NothingSerializer
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
-import org.modelix.kotlin.utils.IMonoStream
-import org.modelix.kotlin.utils.IStream
-import org.modelix.kotlin.utils.IStreamFactory
-import org.modelix.kotlin.utils.ifEmpty
-import org.modelix.kotlin.utils.plus
+import org.modelix.streams.IMonoStream
+import org.modelix.streams.IStream
+import org.modelix.streams.IStreamFactory
+import org.modelix.streams.ifEmpty
+import org.modelix.streams.plus
 
 interface IQueryExecutor<out In> {
     fun <Out> createFlow(query: IUnboundQuery<In, *, Out>): StepFlow<Out>

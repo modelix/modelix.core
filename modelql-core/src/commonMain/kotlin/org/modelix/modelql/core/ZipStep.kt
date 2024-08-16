@@ -30,8 +30,8 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeCollection
-import org.modelix.kotlin.utils.IStream
-import org.modelix.kotlin.utils.flatten
+import org.modelix.streams.IStream
+import org.modelix.streams.flatten
 
 open class ZipStep<CommonIn, Out : ZipNOutputC<CommonIn>>() : ProducingStep<Out>(), IConsumingStep<CommonIn>, IMonoStep<Out>, IFluxStep<Out> {
     private val producers = ArrayList<IProducingStep<CommonIn>>()

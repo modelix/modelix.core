@@ -16,8 +16,8 @@ package org.modelix.modelql.core
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.modelix.kotlin.utils.flatten
-import org.modelix.kotlin.utils.ifEmpty
+import org.modelix.streams.flatten
+import org.modelix.streams.ifEmpty
 import kotlin.experimental.ExperimentalTypeInference
 
 class WhenStep<In, Out>(

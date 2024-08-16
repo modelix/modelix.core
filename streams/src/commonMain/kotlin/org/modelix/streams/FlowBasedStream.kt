@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.modelql.core
+package org.modelix.streams
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -33,15 +33,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.single
-import kotlinx.coroutines.flow.singleOrNull
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.flow.toSet
 import kotlinx.coroutines.flow.withIndex
-import org.modelix.streams.IMonoStream
-import org.modelix.streams.IOptionalMonoStream
-import org.modelix.streams.IStream
-import org.modelix.streams.IStreamFactory
 
 class FlowBasedStreamFactory(val coroutineScope: CoroutineScope?) : IStreamFactory {
     private fun <T> Flow<T>.asStream() = FlowBasedStream(this, this@FlowBasedStreamFactory)
@@ -131,7 +126,7 @@ open class FlowBasedStream<E>(val flow: Flow<E>, private val factory: FlowBasedS
     }
 
     override suspend fun toSequence(): Sequence<E> {
-        return flow.asSequence()
+        return flow.toList().asSequence()
     }
 
     override fun toSequenceBlocking(): Sequence<E> {
@@ -262,4 +257,8 @@ class CombiningSequence<Common>(private val sequences: Array<Sequence<Common>>) 
         }
     }
     object UNINITIALIZED
+}
+
+fun <T> Flow<T>.assertNotEmpty(additionalMessage: () -> String = { "" }): Flow<T> {
+    return onEmpty { throw IllegalArgumentException("At least one element was expected. " + additionalMessage()) }
 }

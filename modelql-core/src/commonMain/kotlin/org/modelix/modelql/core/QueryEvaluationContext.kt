@@ -13,7 +13,7 @@
  */
 package org.modelix.modelql.core
 
-import org.modelix.kotlin.utils.IMonoStream
+import org.modelix.streams.IMonoStream
 
 data class QueryEvaluationContext private constructor(private val values: Map<IProducingStep<*>, Any?>) {
 

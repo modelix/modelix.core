@@ -16,7 +16,7 @@ package org.modelix.modelql.core
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.modelix.kotlin.utils.ifEmptyThenStream
+import org.modelix.streams.ifEmptyThenStream
 
 class NullIfEmpty<E>() : MonoTransformingStep<E, E?>() {
 

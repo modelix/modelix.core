@@ -16,7 +16,6 @@
 
 package org.modelix.model.api.async
 
-import org.modelix.kotlin.utils.IMonoStream
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -28,8 +27,13 @@ import org.modelix.model.api.asProperty
 import org.modelix.model.api.getDescendants
 import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.api.toReference
+import org.modelix.streams.FlowBasedStreamFactory
+import org.modelix.streams.IMonoStream
 
 class NodeAsAsyncNode(val node: INode) : IAsyncNode {
+
+    private val streamFactory = FlowBasedStreamFactory(null)
+
     override fun asRegularNode(): INode = node
 
     override fun asStream(): IMonoStream<IAsyncNode> {
@@ -57,11 +61,11 @@ class NodeAsAsyncNode(val node: INode) : IAsyncNode {
     }
 
     override fun getAllChildren(): IAsyncSequence<IAsyncNode> {
-        return node.allChildren.map { it.asAsyncNode() }.asAsyncSequence()
+        return node.allChildren.map { it.asAsyncNode() }.asAsyncSequence(streamFactory)
     }
 
     override fun getChildren(role: IChildLinkReference): IAsyncSequence<IAsyncNode> {
-        return node.getChildren(role.toLegacy()).map { it.asAsyncNode() }.asAsyncSequence()
+        return node.getChildren(role.toLegacy()).map { it.asAsyncNode() }.asAsyncSequence(streamFactory)
     }
 
     override fun getReferenceTarget(role: IReferenceLinkReference): IAsyncValue<IAsyncNode?> {
@@ -73,14 +77,14 @@ class NodeAsAsyncNode(val node: INode) : IAsyncNode {
     }
 
     override fun getAllReferenceTargetRefs(): IAsyncSequence<Pair<IReferenceLinkReference, INodeReference>> {
-        return node.getAllReferenceTargetRefs().map { it.first.toReference() to it.second }.asAsyncSequence()
+        return node.getAllReferenceTargetRefs().map { it.first.toReference() to it.second }.asAsyncSequence(streamFactory)
     }
 
     override fun getAllReferenceTargets(): IAsyncSequence<Pair<IReferenceLinkReference, IAsyncNode>> {
-        return node.getAllReferenceTargets().map { it.first.toReference() to it.second.asAsyncNode() }.asAsyncSequence()
+        return node.getAllReferenceTargets().map { it.first.toReference() to it.second.asAsyncNode() }.asAsyncSequence(streamFactory)
     }
 
     override fun getDescendants(includeSelf: Boolean): IAsyncSequence<IAsyncNode> {
-        return node.getDescendants(includeSelf).map { it.asAsyncNode() }.asAsyncSequence()
+        return node.getDescendants(includeSelf).map { it.asAsyncNode() }.asAsyncSequence(streamFactory)
     }
 }

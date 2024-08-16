@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.modelix.kotlin.utils
+package org.modelix.streams
 
 import kotlinx.coroutines.flow.Flow
 
@@ -112,7 +112,7 @@ class SequenceBasedStream<out E> : IStream<E> {
     }
 }
 
-class SimpleMonoStream<E>(val value: E) : IMonoStream<E> {
+class SimpleMonoStream<E>(val value: E, private val factory: IStreamFactory) : IMonoStream<E> {
     override fun asFlow(): Flow<E> {
         TODO("Not yet implemented")
     }
@@ -120,7 +120,7 @@ class SimpleMonoStream<E>(val value: E) : IMonoStream<E> {
     override suspend fun getValue(): E = value
 
     override fun <R> map(transform: (E) -> R): IMonoStream<R> {
-        return SimpleMonoStream(transform(value))
+        return SimpleMonoStream(transform(value), factory)
     }
 
     override fun filterNotNull(): IOptionalMonoStream<E & Any> {
@@ -147,12 +147,10 @@ class SimpleMonoStream<E>(val value: E) : IMonoStream<E> {
         TODO("Not yet implemented")
     }
 
-    override fun getFactory(): IStreamFactory {
-        TODO("Not yet implemented")
-    }
+    override fun getFactory(): IStreamFactory = factory
 
     override fun <R> flatMapConcat(transform: (E) -> IStream<R>): IStream<R> {
-        TODO("Not yet implemented")
+        return transform(value)
     }
 
     override fun toList(): IMonoStream<List<E>> {

@@ -13,7 +13,7 @@
  */
 package org.modelix.modelql.core
 
-import org.modelix.kotlin.utils.IMonoStream
+import org.modelix.streams.IMonoStream
 
 abstract class FoldingStep<In, Out>(private val initial: Out) : AggregationStep<In, Out>() {
 

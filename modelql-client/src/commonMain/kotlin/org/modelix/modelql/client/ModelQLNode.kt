@@ -16,7 +16,7 @@ package org.modelix.modelql.client
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
-import org.modelix.kotlin.utils.SimpleMonoStream
+import org.modelix.streams.SimpleMonoStream
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept

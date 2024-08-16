@@ -16,7 +16,7 @@ package org.modelix.modelql.core
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.modelix.kotlin.utils.IMonoStream
+import org.modelix.streams.IMonoStream
 
 class IsEmptyStep() : AggregationStep<Any?, Boolean>() {
     override fun aggregate(input: StepFlow<Any?>): IMonoStream<IStepOutput<Boolean>> {

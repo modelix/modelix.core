@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.modelix.kotlin.utils.flatten
+import org.modelix.streams.flatten
 
 class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
     override fun canBeEmpty(): Boolean = getProducers().all { it.canBeEmpty() }

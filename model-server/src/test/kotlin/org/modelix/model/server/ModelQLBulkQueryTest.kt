@@ -38,15 +38,12 @@ import org.modelix.model.api.getAncestors
 import org.modelix.model.api.getDescendants
 import org.modelix.model.api.getRootNode
 import org.modelix.model.async.AsyncStoreAsStore
-import org.modelix.model.async.AsyncBulkQuery
-import org.modelix.model.async.AsyncTree
 import org.modelix.model.async.SynchronousStoreAsAsyncStore
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.CacheConfiguration
 import org.modelix.model.lazy.KVEntryReference
-import org.modelix.model.lazy.NonCachingObjectStore
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.persistent.CPTree
@@ -64,7 +61,6 @@ import org.modelix.modelql.untyped.createQueryExecutor
 import org.modelix.modelql.untyped.descendants
 import kotlin.random.Random
 import kotlin.test.Test
-import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.TimeSource
 
@@ -110,28 +106,23 @@ class ModelQLBulkQueryTest {
         }()
 
         val kvStore = LocalModelClient(statistics.forRepository(RepositoryId("my-repo")))
-        val asyncStore = AsyncBulkQuery(SynchronousStoreAsAsyncStore(ObjectStoreCache(kvStore, CacheConfiguration().also { it.prefetchCacheSize = 0 })))
+        val objectStore = ObjectStoreCache(kvStore, CacheConfiguration().also { it.prefetchCacheSize = 0 })
+        val bulkQuery = objectStore.newBulkQuery()
+        val asyncStore = SynchronousStoreAsAsyncStore(objectStore, bulkQuery)
         val model = TreePointer(asyncStore.get(KVEntryReference(treeHash, CPTree.DESERIALIZER)).await().let { CLTree(it!!, AsyncStoreAsStore(asyncStore)) })
         val rootNode = model.getRootNode()
         val requestCountBefore = statistics.getTotalRequests()
         val result = rootNode.getArea().runWithAdditionalScopeInCoroutine {
-            runQuery(query, rootNode)
+            val start = TimeSource.Monotonic.markNow()
+            val result = query.bind(rootNode.createQueryExecutor()).asFlow().toList()
+            bulkQuery.executeQuery()
+            println(start.elapsedNow())
+            result.getValue()
         }
         val requestCountAfter = statistics.getTotalRequests()
         println("Number of requests: ${requestCountAfter - requestCountBefore}")
-        println(result.value)
+        println(result)
     }
-
-    private suspend fun <T> runQuery(
-        query: IMonoUnboundQuery<INode, T>,
-        rootNode: INode,
-    ): IStepOutput<T> {
-        val start = TimeSource.Monotonic.markNow()
-        val result = query.bind(rootNode.createQueryExecutor()).execute()
-        println(start.elapsedNow())
-        return result
-    }
-
 
     private suspend fun createModel(store: IKeyValueStore, numberOfNodes: Int): IVersion {
         val initialTree = CLTree.builder(ObjectStoreCache(store)).repositoryId(RepositoryId("xxx")).build()

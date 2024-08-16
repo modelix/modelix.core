@@ -19,9 +19,9 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
-import org.modelix.kotlin.utils.IMonoStream
-import org.modelix.kotlin.utils.IStream
-import org.modelix.kotlin.utils.IStreamFactory
+import org.modelix.streams.IMonoStream
+import org.modelix.streams.IStream
+import org.modelix.streams.IStreamFactory
 import kotlin.reflect.KType
 
 interface IStep {

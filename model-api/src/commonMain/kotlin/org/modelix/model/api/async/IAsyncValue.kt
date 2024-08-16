@@ -24,9 +24,14 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.single
-import org.modelix.kotlin.utils.IStream
+import org.modelix.streams.IStream
 import org.modelix.kotlin.utils.IMonoFlow
-import org.modelix.kotlin.utils.IMonoStream
+import org.modelix.streams.IMonoStream
+import org.modelix.streams.IOptionalMonoStream
+import org.modelix.streams.IStreamFactory
+import org.modelix.streams.SequenceAsStream
+import org.modelix.streams.SequenceBasedStream
+import org.modelix.streams.flatten
 import org.modelix.kotlin.utils.mapMono
 import org.modelix.kotlin.utils.mapValue
 import org.modelix.kotlin.utils.toMono
@@ -63,7 +68,7 @@ interface IAsyncSequence<out E> {
     fun toSet(): IAsyncValue<Set<E>>
     fun visitAll(visitor: (E) -> Unit): IAsyncValue<Unit>
     fun asFlow(): Flow<E> = AsyncSequenceAsFlow(this)
-    fun asFlowBuilder(): IStream<E>
+    fun asStream(): IStream<E>
 }
 
 fun <T> IAsyncSequence<T>.distinct(): IAsyncSequence<T> = TODO()
@@ -285,14 +290,14 @@ class AsyncSequenceAsFlow<E>(val sequence: IAsyncSequence<E>): Flow<E> {
     }
 }
 
-class AsyncSequence<E>(val sequence: IAsyncValue<Sequence<E>>): IAsyncSequence<E> {
+class AsyncSequence<E>(val sequence: IAsyncValue<Sequence<E>>, private val streamFactory: IStreamFactory): IAsyncSequence<E> {
 
     override fun toSequence(): IAsyncValue<Sequence<E>> {
         return sequence
     }
 
-    override fun asFlowBuilder(): IStream<E> {
-        TODO("Not yet implemented")
+    override fun asStream(): IStream<E> {
+        return AsyncValueAsStream(sequence.map { SequenceAsStream(it, streamFactory) }, streamFactory).flatten()
     }
 
     override fun onEach(callback: (E) -> Unit) {
@@ -302,15 +307,15 @@ class AsyncSequence<E>(val sequence: IAsyncValue<Sequence<E>>): IAsyncSequence<E
     }
 
     override fun <R> map(transform: (E) -> R): IAsyncSequence<R> {
-        return AsyncSequence(sequence.map { it.map(transform) })
+        return AsyncSequence(sequence.map { it.map(transform) }, streamFactory)
     }
 
     override fun <R> thenRequest(transform: (E) -> IAsyncValue<R>): IAsyncSequence<R> {
-        return AsyncSequence(sequence.map { it.toList().map(transform).requestAll().map { it.asSequence() } }.flatten())
+        return AsyncSequence(sequence.map { it.toList().map(transform).requestAll().map { it.asSequence() } }.flatten(), streamFactory)
     }
 
     override fun <R> thenRequestMany(transform: (E) -> IAsyncSequence<R>): IAsyncSequence<R> {
-        return AsyncSequence(sequence.thenRequest { it.map { transform(it).toSequence() }.toList().requestAllAndMap { it.asSequence().flatten() } })
+        return AsyncSequence(sequence.thenRequest { it.map { transform(it).toSequence() }.toList().requestAllAndMap { it.asSequence().flatten() } }, streamFactory)
     }
 
     override fun toList(): IAsyncValue<List<E>> {
@@ -328,5 +333,107 @@ class AsyncSequence<E>(val sequence: IAsyncValue<Sequence<E>>): IAsyncSequence<E
     }
 }
 
-fun <T> Sequence<T>.asAsyncSequence(): IAsyncSequence<T> = AsyncSequence(this.asAsync())
-fun <T> List<T>.asAsyncSequence(): IAsyncSequence<T> = asSequence().asAsyncSequence()
+fun <T> Sequence<T>.asAsyncSequence(streamFactory: IStreamFactory): IAsyncSequence<T> = AsyncSequence(this.asAsync(), streamFactory)
+fun <T> List<T>.asAsyncSequence(streamFactory: IStreamFactory): IAsyncSequence<T> = asSequence().asAsyncSequence(streamFactory)
+
+class AsyncValueAsStream<E>(val value: IAsyncValue<E>, private val factory: IStreamFactory) : IMonoStream<E> {
+    override fun asFlow(): Flow<E> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getValue(): E {
+        return value.await()
+    }
+
+    override fun <R> map(transform: (E) -> R): IMonoStream<R> {
+        TODO("Not yet implemented")
+    }
+
+    override fun filterNotNull(): IOptionalMonoStream<E & Any> {
+        TODO("Not yet implemented")
+    }
+
+    override fun cached(): IMonoStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun presentAndEqual(value: Any?): IMonoStream<Boolean> {
+        TODO("Not yet implemented")
+    }
+
+    override fun assertNotEmpty(message: () -> String): IMonoStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun toSequence(): Sequence<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun toSequenceBlocking(): Sequence<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getFactory(): IStreamFactory {
+        TODO("Not yet implemented")
+    }
+
+    override fun <R> flatMapConcat(transform: (E) -> IStream<R>): IStream<R> {
+        return AsyncValueAsStream(value.map(transform), factory).flatten()
+    }
+
+    override fun toList(): IMonoStream<List<E>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun toSet(): IMonoStream<Set<E>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun count(): IMonoStream<Int> {
+        TODO("Not yet implemented")
+    }
+
+    override fun drop(count: Int): IStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun filter(predicate: (E) -> Boolean): IStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun filterByMono(predicate: (E) -> IMonoStream<Boolean>): IStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun optionalSingle(): IOptionalMonoStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun single(): IMonoStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun take(count: Int): IStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun firstOrNull(): IMonoStream<E?> {
+        TODO("Not yet implemented")
+    }
+
+    override fun first(): IOptionalMonoStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun isEmpty(): IMonoStream<Boolean> {
+        TODO("Not yet implemented")
+    }
+
+    override fun withIndex(): IStream<IndexedValue<E>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <T> fold(initial: T, f: (acc: T, value: E) -> T): IMonoStream<T> {
+        TODO("Not yet implemented")
+    }
+}

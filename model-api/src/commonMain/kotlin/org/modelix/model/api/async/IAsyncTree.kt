@@ -16,6 +16,7 @@
 
 package org.modelix.model.api.async
 
+import org.modelix.streams.IMonoStream
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INodeReference
@@ -23,6 +24,7 @@ import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 
 interface IAsyncTree {
+    fun asStream(): IMonoStream<IAsyncTree>
     fun visitChanges(oldVersion: IAsyncTree, visitor: IAsyncTreeChangeVisitor): IAsyncValue<Unit>
     fun containsNode(nodeId: Long): IAsyncValue<Boolean>
     fun getProperty(nodeId: Long, role: IPropertyReference): IAsyncValue<String?>

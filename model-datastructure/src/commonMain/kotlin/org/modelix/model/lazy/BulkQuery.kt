@@ -22,11 +22,13 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.modelix.kotlin.utils.AtomicBoolean
 import org.modelix.kotlin.utils.IMonoFlow
-import org.modelix.kotlin.utils.IMonoStream
+import org.modelix.streams.IMonoStream
 import org.modelix.kotlin.utils.toMono
 import org.modelix.model.api.async.AsyncSequence
+import org.modelix.model.api.async.AsyncValueAsStream
 import org.modelix.model.api.async.IAsyncSequence
 import org.modelix.model.api.async.IAsyncValue
+import org.modelix.model.async.BulkQueryAsStreamFactory
 import org.modelix.model.persistent.IKVValue
 
 /**
@@ -175,7 +177,7 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
         }
 
         override fun asStream(): IMonoStream<T> {
-            TODO("Not yet implemented")
+            return AsyncValueAsStream(this, BulkQueryAsStreamFactory(this@BulkQuery))
         }
 
         fun isDone() = value.isCompleted
@@ -228,7 +230,7 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
         }
 
         override fun <R> flatMap(body: (T) -> Iterable<R>): IAsyncSequence<R> {
-            return AsyncSequence(map { body(it).asSequence() })
+            return AsyncSequence(map { body(it).asSequence() }, BulkQueryAsStreamFactory(this@BulkQuery))
         }
     }
 

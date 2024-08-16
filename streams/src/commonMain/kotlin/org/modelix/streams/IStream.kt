@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.modelix.kotlin.utils
+package org.modelix.streams
 
 import kotlinx.coroutines.flow.Flow
 
 interface IStreamFactory {
     fun <T> lazyConstant(provider: () -> T): IMonoStream<T>
-    fun <T> constant(provider: T): IMonoStream<T>
+    fun <T> constant(value: T): IMonoStream<T>
     fun <T> fromIterable(input: Iterable<T>): IStream<T>
     fun <T> ifEmpty(stream: IStream<T>, alternative: () -> IStream<T>): IStream<T>
     fun <T> ifEmpty(stream: IOptionalMonoStream<T>, alternative: () -> IMonoStream<T>): IMonoStream<T>
@@ -75,4 +75,98 @@ interface IMonoStream<out E> : IOptionalMonoStream<E> {
     override fun <R> map(transform: (E) -> R): IMonoStream<R>
     override fun filterNotNull(): IOptionalMonoStream<E & Any>
     override fun cached(): IMonoStream<E>
+}
+
+class SequenceAsStream<E>(val sequence: Sequence<E>, private val factory: IStreamFactory) : IStream<E> {
+    override fun asFlow(): Flow<E> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun toSequence(): Sequence<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun toSequenceBlocking(): Sequence<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getFactory(): IStreamFactory {
+        return factory
+    }
+
+    override fun <R> map(transform: (E) -> R): IStream<R> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <R> flatMapConcat(transform: (E) -> IStream<R>): IStream<R> {
+        TODO("Not yet implemented")
+    }
+
+    override fun cached(): IStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun toList(): IMonoStream<List<E>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun toSet(): IMonoStream<Set<E>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun count(): IMonoStream<Int> {
+        TODO("Not yet implemented")
+    }
+
+    override fun drop(count: Int): IStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun filter(predicate: (E) -> Boolean): IStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun filterByMono(predicate: (E) -> IMonoStream<Boolean>): IStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun filterNotNull(): IStream<E & Any> {
+        TODO("Not yet implemented")
+    }
+
+    override fun optionalSingle(): IOptionalMonoStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun single(): IMonoStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun take(count: Int): IStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun firstOrNull(): IMonoStream<E?> {
+        TODO("Not yet implemented")
+    }
+
+    override fun first(): IOptionalMonoStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun isEmpty(): IMonoStream<Boolean> {
+        TODO("Not yet implemented")
+    }
+
+    override fun assertNotEmpty(message: () -> String): IStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun withIndex(): IStream<IndexedValue<E>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <T> fold(initial: T, f: (acc: T, value: E) -> T): IMonoStream<T> {
+        TODO("Not yet implemented")
+    }
 }

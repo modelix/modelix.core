@@ -16,8 +16,8 @@ package org.modelix.modelql.core
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.modelix.kotlin.utils.IMonoStream
-import org.modelix.kotlin.utils.ifEmpty
+import org.modelix.streams.IMonoStream
+import org.modelix.streams.ifEmpty
 
 class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
     override fun aggregate(input: StepFlow<E>): IMonoStream<IStepOutput<E?>> {

@@ -16,7 +16,7 @@
 
 package org.modelix.model.api.async
 
-import org.modelix.kotlin.utils.IMonoStream
+import org.modelix.streams.IMonoStream
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept

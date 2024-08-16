@@ -17,8 +17,8 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import org.modelix.kotlin.utils.IMonoStream
-import org.modelix.kotlin.utils.IStream
+import org.modelix.streams.IMonoStream
+import org.modelix.streams.IStream
 
 /**
  * Can carry some additional data required for processing the result on the client side.

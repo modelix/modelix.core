@@ -28,6 +28,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.modelix.kotlin.utils.AtomicBoolean
 import org.modelix.kotlin.utils.IMonoFlow
+import org.modelix.streams.IStreamFactory
 import org.modelix.kotlin.utils.flatMapConcatConcurrent
 import org.modelix.kotlin.utils.print
 import org.modelix.kotlin.utils.runSynchronized
@@ -67,6 +68,10 @@ class AsyncBulkQuery(val store: IAsyncObjectStore) : IAsyncObjectStore {
     private val newRequests = LinkedHashMap<String, RequestedValue<*>>()
     private val pendingRequests = LinkedHashMap<String, RequestedValue<*>>()
     private val queueProcessingActive = AtomicBoolean(false)
+
+    override fun getStreamFactory(): IStreamFactory {
+        TODO("Not yet implemented")
+    }
 
     private fun <T : IKVValue> queryAsDeferred(hash: KVEntryReference<T>): Deferred<T> {
         store.getIfCached(hash)?.let { return CompletableDeferred(it) }

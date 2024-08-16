@@ -21,7 +21,7 @@ import com.badoo.reaktive.single.Single
 import com.badoo.reaktive.single.SingleObserver
 import kotlin.jvm.Synchronized
 
-class CompletableObservable<E> : Single<E> {
+class CompletableObservable<E>(val afterSubscribe: () -> Unit) : Single<E> {
     private var value: E? = null
     private var throwable: Throwable? = null
     private var done: Boolean = false
@@ -75,6 +75,7 @@ class CompletableObservable<E> : Single<E> {
                 }
                 override var isDisposed: Boolean = false
             })
+            afterSubscribe()
         }
     }
 

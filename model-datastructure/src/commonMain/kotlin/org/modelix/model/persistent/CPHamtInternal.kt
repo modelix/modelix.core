@@ -19,25 +19,16 @@ import com.badoo.reaktive.maybe.Maybe
 import com.badoo.reaktive.maybe.asSingleOrError
 import com.badoo.reaktive.maybe.blockingGet
 import com.badoo.reaktive.maybe.flatMap
-import com.badoo.reaktive.maybe.map
-import com.badoo.reaktive.maybe.maybeOf
-import com.badoo.reaktive.maybe.maybeOfNever
-import com.badoo.reaktive.observable.asObservable
-import com.badoo.reaktive.observable.flatMap
-import com.badoo.reaktive.observable.flatMapMaybe
-import com.badoo.reaktive.observable.toObservable
+import com.badoo.reaktive.maybe.maybeOfEmpty
 import com.badoo.reaktive.single.Single
 import com.badoo.reaktive.single.asMaybe
 import com.badoo.reaktive.single.blockingGet
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.bitCount
 import org.modelix.model.lazy.COWArrays
-import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.KVEntryReference
-import org.modelix.model.lazy.NonBulkQuery
 import org.modelix.model.persistent.SerializationUtil.intToHex
-import org.modelix.streams.fold
 
 class CPHamtInternal(
     val bitmap: Int,
@@ -106,7 +97,7 @@ class CPHamtInternal(
 
     protected fun getChild(logicalIndex: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
         if (isBitNotSet(data.bitmap, logicalIndex)) {
-            return maybeOfNever()
+            return maybeOfEmpty()
         }
         val physicalIndex = logicalToPhysicalIndex(data.bitmap, logicalIndex)
         require(physicalIndex < data.children.size) { "Invalid physical index ($physicalIndex). N. children: ${data.children.size}. Logical index: $logicalIndex" }

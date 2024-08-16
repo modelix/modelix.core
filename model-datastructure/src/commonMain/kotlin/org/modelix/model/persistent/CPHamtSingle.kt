@@ -18,7 +18,7 @@ package org.modelix.model.persistent
 import com.badoo.reaktive.maybe.Maybe
 import com.badoo.reaktive.maybe.asSingleOrError
 import com.badoo.reaktive.maybe.flatMap
-import com.badoo.reaktive.maybe.maybeOfNever
+import com.badoo.reaktive.maybe.maybeOfEmpty
 import com.badoo.reaktive.single.Single
 import com.badoo.reaktive.single.blockingGet
 import com.badoo.reaktive.single.flatMap
@@ -59,7 +59,7 @@ class CPHamtSingle(
                 it.get(key, shift + numLevels * CPHamtNode.BITS_PER_LEVEL, store)
             }
         } else {
-            return maybeOfNever()
+            return maybeOfEmpty()
         }
     }
 

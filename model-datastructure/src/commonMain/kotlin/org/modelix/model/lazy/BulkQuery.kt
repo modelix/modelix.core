@@ -16,12 +16,9 @@
 package org.modelix.model.lazy
 
 import com.badoo.reaktive.maybe.Maybe
-import com.badoo.reaktive.maybe.maybeOfNever
+import com.badoo.reaktive.maybe.maybeOfEmpty
 import com.badoo.reaktive.maybe.toMaybe
 import com.badoo.reaktive.single.notNull
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.modelix.kotlin.utils.AtomicBoolean
@@ -68,8 +65,8 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
         if (existingValue != null && existingValue.isDone()) return existingValue.notNull()
 
         if (prefetchQueue.isLoadingGoal()) {
-            prefetchQueue.addRequest(hash, getValueInstance(hash) ?: CompletableObservable())
-            return maybeOfNever() // transitive objects are loaded when the prefetch queue is processed the next time
+            prefetchQueue.addRequest(hash, getValueInstance(hash) ?: CompletableObservable(::executeQuery))
+            return maybeOfEmpty() // transitive objects are loaded when the prefetch queue is processed the next time
         } else {
             if (queue.size >= batchSize && !processing.get()) executeQuery()
 
@@ -77,7 +74,7 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
             val result = if (existingQueueElement != null) {
                 existingQueueElement.value
             } else {
-                val result: CompletableObservable<T?> = getValueInstance(hash) ?: CompletableObservable()
+                val result: CompletableObservable<T?> = getValueInstance(hash) ?: CompletableObservable(::executeQuery)
                 queue.put(hash.getHash(), QueueElement<T>(hash, result))
                 result
             }
@@ -125,7 +122,7 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
                 processing.set(false)
             }
         } else {
-            throw RuntimeException("Already processing")
+            //throw RuntimeException("Already processing")
         }
     }
 

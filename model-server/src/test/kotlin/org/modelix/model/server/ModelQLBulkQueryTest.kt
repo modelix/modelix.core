@@ -79,7 +79,7 @@ class ModelQLBulkQueryTest {
         val statistics = StoreClientWithStatistics(db)
         val treeHash: String = suspend {
             val localClient = LocalModelClient(statistics.forRepository(RepositoryId("my-repo")))
-            (createModel(localClient, 1234).getTree() as CLTree).hash
+            (createModel(localClient, 100_000).getTree() as CLTree).hash
         }()
 
         val kvStore = LocalModelClient(statistics.forRepository(RepositoryId("my-repo")))

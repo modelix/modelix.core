@@ -13,21 +13,16 @@
  */
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.maybe.maybeOfEmpty
-import com.badoo.reaktive.maybe.maybeOfNever
 import com.badoo.reaktive.observable.asObservable
-import com.badoo.reaktive.observable.filter
 import com.badoo.reaktive.observable.firstOrDefault
 import com.badoo.reaktive.observable.flatMap
 import com.badoo.reaktive.observable.map
 import com.badoo.reaktive.observable.observableOfEmpty
-import com.badoo.reaktive.observable.observableOfNever
 import com.badoo.reaktive.single.flatten
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.modelix.streams.filterBySingle
-import org.modelix.streams.firstOrNull
 import kotlin.experimental.ExperimentalTypeInference
 
 class WhenStep<In, Out>(
@@ -91,7 +86,7 @@ class WhenStep<In, Out>(
             }.firstOrDefault {
                 val elseCaseIndex = cases.size
                 elseCase?.asFlow(context.evaluationContext, inputElement)?.map { MultiplexedOutput(elseCaseIndex, it) }
-                    ?: observableOfNever()
+                    ?: observableOfEmpty()
             }.flatten()
         }
     }

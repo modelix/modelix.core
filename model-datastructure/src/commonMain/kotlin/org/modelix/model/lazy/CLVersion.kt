@@ -18,7 +18,6 @@ package org.modelix.model.lazy
 import com.badoo.reaktive.maybe.Maybe
 import com.badoo.reaktive.maybe.defaultIfEmpty
 import com.badoo.reaktive.maybe.map
-import com.badoo.reaktive.maybe.maybeOfNever
 import com.badoo.reaktive.maybe.subscribe
 import com.badoo.reaktive.single.Single
 import com.badoo.reaktive.single.singleOf

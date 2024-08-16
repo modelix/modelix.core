@@ -18,24 +18,19 @@ package org.modelix.model.lazy
 import com.badoo.reaktive.maybe.Maybe
 import com.badoo.reaktive.maybe.blockingGet
 import com.badoo.reaktive.maybe.defaultIfEmpty
-import com.badoo.reaktive.maybe.flatMap
 import com.badoo.reaktive.maybe.map
-import com.badoo.reaktive.maybe.maybeOfNever
-import com.badoo.reaktive.maybe.subscribe
+import com.badoo.reaktive.maybe.maybeOfEmpty
 import com.badoo.reaktive.observable.Observable
 import com.badoo.reaktive.observable.asObservable
 import com.badoo.reaktive.observable.flatMapSingle
 import com.badoo.reaktive.observable.toList
 import com.badoo.reaktive.single.Single
 import com.badoo.reaktive.single.blockingGet
-import com.badoo.reaktive.single.flatMap
 import com.badoo.reaktive.single.flatMapMaybe
 import com.badoo.reaktive.single.flatMapObservable
 import com.badoo.reaktive.single.map
 import com.badoo.reaktive.single.singleOf
 import com.badoo.reaktive.single.subscribe
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.channelFlow
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
@@ -44,13 +39,11 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.INodeReferenceSerializer
 import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitor
-import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.async.IAsyncTree
-import org.modelix.model.async.BulkQueryAsAsyncStore
 import org.modelix.model.async.AsyncTree
-import org.modelix.model.async.IAsyncObjectStore
+import org.modelix.model.async.BulkQueryAsAsyncStore
 import org.modelix.model.lazy.COWArrays.insert
 import org.modelix.model.lazy.COWArrays.remove
 import org.modelix.model.persistent.CPHamtInternal
@@ -597,7 +590,7 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
 
     fun resolveElement(id: Long): Maybe<CPNode> {
         if (id == 0L) {
-            return maybeOfNever()
+            return maybeOfEmpty()
         }
         val hash = nodesMap!!.get(id, asyncStore)
         return hash.orNull().flatMapMaybe {
@@ -617,7 +610,7 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
 
     fun createElement(hash: KVEntryReference<CPNode>?): Maybe<CPNode> {
         return if (hash == null) {
-            maybeOfNever()
+            maybeOfEmpty()
         } else {
             asyncStore.get(hash).also {
                 val bulkQuery = (store as? BulkQueryAsAsyncStore)?.bulkQuery

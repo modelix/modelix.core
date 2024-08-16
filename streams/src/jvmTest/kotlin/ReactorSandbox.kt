@@ -45,8 +45,8 @@ class ReactorSandbox {
     @Test
     fun test() {
         val requests = ArrayList<CompletableObservable<Int>>()
-        val value = CompletableObservable<Int>().also { requests.add(it) }
-        value.flatMapIterable { (0..10) }.flatMapSingle { CompletableObservable<Int>().also { requests.add(it) } }.subscribe {
+        val value = CompletableObservable<Int>({}).also { requests.add(it) }
+        value.flatMapIterable { (0..10) }.flatMapSingle { CompletableObservable<Int>({}).also { requests.add(it) } }.subscribe {
             println("result: $it")
         }
         value.complete(1)

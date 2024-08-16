@@ -18,13 +18,10 @@ package org.modelix.model.api.async
 
 import com.badoo.reaktive.maybe.Maybe
 import com.badoo.reaktive.maybe.maybeOf
-import com.badoo.reaktive.maybe.maybeOfNever
-import com.badoo.reaktive.maybe.toMaybe
+import com.badoo.reaktive.maybe.maybeOfEmpty
 import com.badoo.reaktive.observable.Observable
 import com.badoo.reaktive.observable.asObservable
-import com.badoo.reaktive.observable.toObservable
 import com.badoo.reaktive.single.Single
-import com.badoo.reaktive.single.notNull
 import com.badoo.reaktive.single.singleOf
 import com.badoo.reaktive.single.toSingle
 import org.modelix.model.api.ConceptReference
@@ -41,7 +38,7 @@ import org.modelix.model.api.toReference
 
 class NodeAsAsyncNode(val node: INode) : IAsyncNode {
 
-    private fun <T : Any> T?.asOptionalMono(): Maybe<T> = if (this != null) maybeOf(this) else maybeOfNever()
+    private fun <T : Any> T?.asOptionalMono(): Maybe<T> = if (this != null) maybeOf(this) else maybeOfEmpty()
     private fun <T> T.asMono(): Single<T> = singleOf(this)
 
     override fun asRegularNode(): INode = node

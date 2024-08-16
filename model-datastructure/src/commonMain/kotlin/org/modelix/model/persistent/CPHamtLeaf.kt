@@ -16,13 +16,9 @@
 package org.modelix.model.persistent
 
 import com.badoo.reaktive.maybe.Maybe
-import com.badoo.reaktive.maybe.defaultIfEmpty
-import com.badoo.reaktive.maybe.flatMap
 import com.badoo.reaktive.maybe.maybeOf
-import com.badoo.reaktive.maybe.maybeOfNever
+import com.badoo.reaktive.maybe.maybeOfEmpty
 import com.badoo.reaktive.single.Single
-import com.badoo.reaktive.single.flatMap
-import com.badoo.reaktive.single.flatMapMaybe
 import com.badoo.reaktive.single.singleOf
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.IDeserializingKeyValueStore
@@ -69,7 +65,7 @@ class CPHamtLeaf(
 
     override fun get(key: Long, shift: Int, store: IAsyncObjectStore): Maybe<KVEntryReference<CPNode>> {
         require(shift <= CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL) { "$shift > ${CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL}" }
-        return if (key == this.key) maybeOf(value) else maybeOfNever()
+        return if (key == this.key) maybeOf(value) else maybeOfEmpty()
     }
 
     override fun visitEntries(store: IAsyncObjectStore, visitor: (Long, KVEntryReference<CPNode>) -> Unit): Single<Unit> {

@@ -13,15 +13,18 @@
  */
 package org.modelix.modelql.core
 
+import com.badoo.reaktive.observable.Observable
+import com.badoo.reaktive.observable.asObservable
+import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.single.Single
+import com.badoo.reaktive.single.asObservable
+import com.badoo.reaktive.single.repeat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
-import org.modelix.streams.IMonoStream
-import org.modelix.streams.IStream
-import org.modelix.streams.IStreamFactory
 import kotlin.reflect.KType
 
 interface IStep {
@@ -41,30 +44,24 @@ interface IStep {
 interface IFlowInstantiationContext {
     val evaluationContext: QueryEvaluationContext
     fun <T> getOrCreateFlow(step: IProducingStep<T>): StepFlow<T>
-    fun <T> getFlow(step: IProducingStep<T>): IStream<T>?
-    fun getFactory(): IStreamFactory
+    fun <T> getFlow(step: IProducingStep<T>): Observable<T>?
 }
 class FlowInstantiationContext(
     override var evaluationContext: QueryEvaluationContext,
-    private val streamFactory: IStreamFactory,
     val query: UnboundQuery<*, *, *>,
 ) : IFlowInstantiationContext {
-    private val createdProducers = HashMap<IProducingStep<*>, IStream<*>>()
-    fun <T> put(step: IProducingStep<T>, producer: IStream<T>) {
+    private val createdProducers = HashMap<IProducingStep<*>, Observable<*>>()
+    fun <T> put(step: IProducingStep<T>, producer: Observable<T>) {
         createdProducers[step] = producer
     }
     override fun <T> getOrCreateFlow(step: IProducingStep<T>): StepFlow<T> {
-        if (evaluationContext.hasValue(step)) return getFactory().fromIterable(evaluationContext.getValue(step))
+        if (evaluationContext.hasValue(step)) return evaluationContext.getValue(step).asObservable()
         return (createdProducers as MutableMap<IProducingStep<T>, StepFlow<T>>)
             .getOrPut(step) { step.createFlow(this) }
     }
 
-    override fun <T> getFlow(step: IProducingStep<T>): IStream<T>? {
-        return (createdProducers as MutableMap<IProducingStep<T>, IStream<T>>)[step]
-    }
-
-    override fun getFactory(): IStreamFactory {
-        return streamFactory
+    override fun <T> getFlow(step: IProducingStep<T>): Observable<T>? {
+        return (createdProducers as MutableMap<IProducingStep<T>, Observable<T>>)[step]
     }
 }
 
@@ -212,7 +209,7 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
 
     override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
         val aggregated = aggregate(input)
-        return if (outputIsConsumedMultipleTimes()) aggregated.cached() else aggregated
+        return if (outputIsConsumedMultipleTimes()) aggregated.repeat() else aggregated.asObservable()
     }
 
     override fun needsCoroutineScope() = outputIsConsumedMultipleTimes()
@@ -221,5 +218,5 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
         return false
     }
 
-    protected abstract fun aggregate(input: StepFlow<In>): IMonoStream<IStepOutput<Out>>
+    protected abstract fun aggregate(input: StepFlow<In>): Single<IStepOutput<Out>>
 }

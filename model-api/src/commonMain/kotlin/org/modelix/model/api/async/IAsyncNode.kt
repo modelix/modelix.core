@@ -16,7 +16,9 @@
 
 package org.modelix.model.api.async
 
-import org.modelix.streams.IMonoStream
+import com.badoo.reaktive.maybe.Maybe
+import com.badoo.reaktive.observable.Observable
+import com.badoo.reaktive.single.Single
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -24,25 +26,22 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
-import org.modelix.streams.IOptionalMonoStream
-import org.modelix.streams.IStream
 
 interface IAsyncNode {
-    fun asStream(): IMonoStream<IAsyncNode>
     fun asRegularNode(): INode
-    fun getConcept(): IMonoStream<IConcept>
-    fun getConceptRef(): IMonoStream<ConceptReference>
-    fun getRoleInParent(): IMonoStream<IChildLinkReference>
-    fun getParent(): IOptionalMonoStream<IAsyncNode>
-    fun getPropertyValue(role: IPropertyReference): IOptionalMonoStream<String>
-    fun getAllChildren(): IStream<IAsyncNode>
-    fun getChildren(role: IChildLinkReference): IStream<IAsyncNode>
-    fun getReferenceTarget(role: IReferenceLinkReference): IOptionalMonoStream<IAsyncNode>
-    fun getReferenceTargetRef(role: IReferenceLinkReference): IOptionalMonoStream<INodeReference>
-    fun getAllReferenceTargetRefs(): IStream<Pair<IReferenceLinkReference, INodeReference>>
-    fun getAllReferenceTargets(): IStream<Pair<IReferenceLinkReference, IAsyncNode>>
+    fun getConcept(): Single<IConcept>
+    fun getConceptRef(): Single<ConceptReference>
+    fun getRoleInParent(): Single<IChildLinkReference>
+    fun getParent(): Maybe<IAsyncNode>
+    fun getPropertyValue(role: IPropertyReference): Maybe<String>
+    fun getAllChildren(): Observable<IAsyncNode>
+    fun getChildren(role: IChildLinkReference): Observable<IAsyncNode>
+    fun getReferenceTarget(role: IReferenceLinkReference): Maybe<IAsyncNode>
+    fun getReferenceTargetRef(role: IReferenceLinkReference): Maybe<INodeReference>
+    fun getAllReferenceTargetRefs(): Observable<Pair<IReferenceLinkReference, INodeReference>>
+    fun getAllReferenceTargets(): Observable<Pair<IReferenceLinkReference, IAsyncNode>>
 
-    fun getDescendants(includeSelf: Boolean): IStream<IAsyncNode>
+    fun getDescendants(includeSelf: Boolean): Observable<IAsyncNode>
 }
 
 interface INodeWithAsyncSupport : INode {
@@ -55,5 +54,3 @@ fun INode.asAsyncNode(): IAsyncNode {
         else -> NodeAsAsyncNode(this)
     }
 }
-
-fun INode.asStream(): IMonoStream<IAsyncNode> = asAsyncNode().asStream()

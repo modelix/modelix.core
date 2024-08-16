@@ -13,6 +13,8 @@
  */
 package org.modelix.modelql.untyped
 
+import com.badoo.reaktive.observable.flatMap
+import com.badoo.reaktive.observable.flatMapMaybe
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -36,7 +38,7 @@ import org.modelix.modelql.core.stepOutputSerializer
 // TODO replace `role: String` with a more specific IPropertyReference
 class PropertyTraversalStep(val role: String) : MonoTransformingStep<INode, String?>(), IMonoStep<String?> {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<String?> {
-        return input.flatMapConcat {
+        return input.flatMapMaybe {
             it.value.asAsyncNode().getPropertyValue(IPropertyReference.fromUnclassifiedString(role))
         }.asStepFlow(this)
     }

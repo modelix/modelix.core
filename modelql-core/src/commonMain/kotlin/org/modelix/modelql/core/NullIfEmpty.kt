@@ -13,10 +13,12 @@
  */
 package org.modelix.modelql.core
 
+import com.badoo.reaktive.observable.defaultIfEmpty
+import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.observable.observableOf
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.modelix.streams.ifEmptyThenStream
 
 class NullIfEmpty<E>() : MonoTransformingStep<E, E?>() {
 
@@ -32,9 +34,8 @@ class NullIfEmpty<E>() : MonoTransformingStep<E, E?>() {
 
     override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E?> {
         val downcast: StepFlow<E?> = input
-        return downcast.map { MultiplexedOutput(0, it) }.ifEmptyThenStream {
-            context.getFactory().constant(MultiplexedOutput(1, null.asStepOutput(this@NullIfEmpty)))
-        }
+        return downcast.map { MultiplexedOutput(0, it) }
+            .defaultIfEmpty(MultiplexedOutput(1, null.asStepOutput(this@NullIfEmpty)))
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = OrNullDescriptor()

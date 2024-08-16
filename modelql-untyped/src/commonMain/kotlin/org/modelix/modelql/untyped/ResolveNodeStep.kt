@@ -13,6 +13,7 @@
  */
 package org.modelix.modelql.untyped
 
+import com.badoo.reaktive.observable.map
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName

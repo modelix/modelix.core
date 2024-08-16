@@ -15,8 +15,20 @@
 
 package org.modelix.model.persistent
 
-import org.modelix.model.api.async.IAsyncValue
-import org.modelix.model.api.async.requestAll
+import com.badoo.reaktive.maybe.Maybe
+import com.badoo.reaktive.maybe.asSingleOrError
+import com.badoo.reaktive.maybe.blockingGet
+import com.badoo.reaktive.maybe.flatMap
+import com.badoo.reaktive.maybe.map
+import com.badoo.reaktive.maybe.maybeOf
+import com.badoo.reaktive.maybe.maybeOfNever
+import com.badoo.reaktive.observable.asObservable
+import com.badoo.reaktive.observable.flatMap
+import com.badoo.reaktive.observable.flatMapMaybe
+import com.badoo.reaktive.observable.toObservable
+import com.badoo.reaktive.single.Single
+import com.badoo.reaktive.single.asMaybe
+import com.badoo.reaktive.single.blockingGet
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.bitCount
 import org.modelix.model.lazy.COWArrays
@@ -25,6 +37,7 @@ import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.NonBulkQuery
 import org.modelix.model.persistent.SerializationUtil.intToHex
+import org.modelix.streams.fold
 
 class CPHamtInternal(
     val bitmap: Int,
@@ -61,23 +74,10 @@ class CPHamtInternal(
         }
     }
 
-    override fun calculateSize(store: IAsyncObjectStore): IAsyncValue<Long> {
-        val childRefs: Array<KVEntryReference<CPHamtNode>> = data.children
-        return store
-            .flatMap(childRefs.asIterable(), { store.get(it) })
-            .thenRequest { resolvedChildren: List<CPHamtNode?> ->
-                val resolvedChildrenNN = resolvedChildren.mapIndexed { index, child ->
-                    child ?: throw RuntimeException("Entry not found in store: " + childRefs[index].getHash())
-                }
-                store.flatMap(resolvedChildrenNN) { it.calculateSize(store) }
-            }
-            .map { it.reduce { a, b -> a + b } }
-    }
-
     override fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         val childIndex = CPHamtNode.indexFromKey(key, shift)
-        val child = getChild(childIndex, store.getAsyncStore()).awaitBlocking()
+        val child = getChild(childIndex, store.getAsyncStore()).blockingGet()
         return if (child == null) {
             setChild(childIndex, CPHamtLeaf.create(key, value), shift, store)
         } else {
@@ -88,7 +88,7 @@ class CPHamtInternal(
     override fun remove(key: Long, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         val childIndex = CPHamtNode.indexFromKey(key, shift)
-        val child = getChild(childIndex, store.getAsyncStore()).awaitBlocking()
+        val child = getChild(childIndex, store.getAsyncStore()).blockingGet()
         return if (child == null) {
             this
         } else {
@@ -96,41 +96,34 @@ class CPHamtInternal(
         }
     }
 
-    override fun get(key: Long, shift: Int, store: IAsyncObjectStore): IAsyncValue<KVEntryReference<CPNode>?> {
+    override fun get(key: Long, shift: Int, store: IAsyncObjectStore): Maybe<KVEntryReference<CPNode>> {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         val childIndex = CPHamtNode.indexFromKey(key, shift)
-        return getChild(childIndex, store).thenRequest { child: CPHamtNode? ->
-            if (child == null) {
-                IAsyncValue.nullConstant()
-            } else {
-                child.get(key, shift + CPHamtNode.BITS_PER_LEVEL, store)
-            }
+        return getChild(childIndex, store).flatMap { child ->
+            child.get(key, shift + CPHamtNode.BITS_PER_LEVEL, store)
         }
     }
 
-    protected fun getChild(logicalIndex: Int, store: IAsyncObjectStore): IAsyncValue<CPHamtNode?> {
+    protected fun getChild(logicalIndex: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
         if (isBitNotSet(data.bitmap, logicalIndex)) {
-            return IAsyncValue.nullConstant()
+            return maybeOfNever()
         }
         val physicalIndex = logicalToPhysicalIndex(data.bitmap, logicalIndex)
         require(physicalIndex < data.children.size) { "Invalid physical index ($physicalIndex). N. children: ${data.children.size}. Logical index: $logicalIndex" }
         val childHash = data.children[physicalIndex]
-        return getChild(childHash, store)
+        return getChild(childHash, store).asMaybe()
     }
 
-    protected fun getChild(childHash: KVEntryReference<CPHamtNode>, store: IAsyncObjectStore): IAsyncValue<CPHamtNode> {
-        return store.get(childHash).map { childData ->
-            if (childData == null) throw RuntimeException("Entry not found in store: ${childHash.getHash()}")
-            childData
-        }
+    protected fun getChild(childHash: KVEntryReference<CPHamtNode>, store: IAsyncObjectStore): Single<CPHamtNode> {
+        return store.get(childHash).asSingleOrError { IllegalStateException("Entry not found in store: ${childHash.getHash()}") }
     }
 
     protected fun getChild(logicalIndex: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
-        return getChild(logicalIndex, store.getAsyncStore()).awaitBlocking()
+        return getChild(logicalIndex, store.getAsyncStore()).blockingGet()
     }
 
     protected fun getChild(childHash: KVEntryReference<CPHamtNode>, store: IDeserializingKeyValueStore): CPHamtNode? {
-        return getChild(childHash, store.getAsyncStore()).awaitBlocking()
+        return getChild(childHash, store.getAsyncStore()).blockingGet()
     }
 
     fun setChild(logicalIndex: Int, child: CPHamtNode?, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
@@ -164,7 +157,7 @@ class CPHamtInternal(
         }
         val newChildren = COWArrays.removeAt(data.children, physicalIndex)
         if (newChildren.size == 1) {
-            val child0 = getChild(newChildren[0], store.getAsyncStore()).awaitBlocking()
+            val child0 = getChild(newChildren[0], store.getAsyncStore()).blockingGet()
             if (child0 is CPHamtLeaf) {
                 return child0
             }
@@ -172,106 +165,108 @@ class CPHamtInternal(
         return create(newBitmap, newChildren)
     }
 
-    override fun visitEntries(store: IAsyncObjectStore, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IAsyncValue<Unit> {
-        return store.requestAll(data.children.asIterable().map { store.get(it) }).thenRequest { children ->
-            store.requestAll(children.map { it!!.visitEntries(store, visitor) }).map { }
-        }
+    override fun visitEntries(store: IAsyncObjectStore, visitor: (Long, KVEntryReference<CPNode>) -> Unit): Single<Unit> {
+        TODO()
+//        return store.requestAll(data.children.asIterable().map { store.get(it) }).thenRequest { children ->
+//            store.requestAll(children.map { it!!.visitEntries(store, visitor) }).map { }
+//        }
     }
 
-    override fun visitChanges(oldNode: CPHamtNode?, shift: Int, visitor: CPHamtNode.IChangeVisitor, store: IAsyncObjectStore): IAsyncValue<Unit> {
-        if (oldNode === this || data.hash == oldNode?.hash) {
-            return IAsyncValue.UNIT
-        }
-        return when (oldNode) {
-            is CPHamtInternal -> {
-                val oldInternalNode: CPHamtInternal = oldNode
-                if (data.bitmap == oldInternalNode.data.bitmap) {
-                    data.children.indices.map { i ->
-                        val oldChildHash = oldInternalNode.data.children[i]
-                        val newChildHash = data.children[i]
-                        if (oldChildHash != newChildHash) {
-                            getChild(newChildHash, store).map { child ->
-                                oldInternalNode.getChild(oldChildHash, store).map { oldChild ->
-                                    child!!.visitChanges(oldChild, shift + CPHamtNode.BITS_PER_LEVEL, visitor, store)
-                                }
-                            }
-                        } else {
-                            IAsyncValue.UNIT
-                        }
-                    }.requestAll().map { }
-                } else {
-                    (0 until CPHamtNode.ENTRIES_PER_LEVEL).map { logicalIndex ->
-                        getChild(logicalIndex, store).map { child ->
-                            oldInternalNode.getChild(logicalIndex, store).thenRequest { oldChild ->
-                                if (child == null) {
-                                    if (oldChild == null) {
-                                        // no change
-                                        IAsyncValue.UNIT
-                                    } else {
-                                        if (!visitor.visitChangesOnly()) {
-                                            oldChild.visitEntries(store) { key, value ->
-                                                visitor.entryRemoved(key, value)
-                                            }
-                                        } else {
-                                            IAsyncValue.UNIT
-                                        }
-                                    }
-                                } else {
-                                    if (oldChild == null) {
-                                        if (!visitor.visitChangesOnly()) {
-                                            child.visitEntries(store) { key, value ->
-                                                visitor.entryAdded(key, value)
-                                            }
-                                        } else {
-                                            IAsyncValue.UNIT
-                                        }
-                                    } else {
-                                        child.visitChanges(oldChild, shift + CPHamtNode.BITS_PER_LEVEL, visitor, store)
-                                    }
-                                }
-                            }
-                        }
-                    }.requestAll().map { }
-                }
-            }
-            is CPHamtLeaf -> {
-                if (visitor.visitChangesOnly()) {
-                    get(oldNode.key, shift, store).map { newValue ->
-                        if (newValue != null && newValue != oldNode.value) {
-                            visitor.entryChanged(oldNode.key, oldNode.value, newValue)
-                        }
-                    }
-                } else {
-                    var oldEntryExists = false
-                    var entryVisitingDone = false
-                    visitEntries(store) { k, v ->
-                        check(!entryVisitingDone)
-                        if (k == oldNode.key) {
-                            oldEntryExists = true
-                            val oldValue = oldNode.value
-                            if (v != oldValue) {
-                                visitor.entryChanged(k, oldValue, v)
-                            }
-                        } else {
-                            visitor.entryAdded(k, v)
-                        }
-                    }.thenRequest {
-                        entryVisitingDone = true
-                        if (!oldEntryExists) visitor.entryRemoved(oldNode.key, oldNode.value) else IAsyncValue.UNIT
-                    }
-                }
-            }
-            is CPHamtSingle -> {
-                if (oldNode.numLevels == 1) {
-                    visitChanges(CPHamtInternal.replace(oldNode), shift, visitor, store)
-                } else {
-                    visitChanges(CPHamtInternal.replace(oldNode.splitOneLevel()), shift, visitor, store)
-                }
-            }
-            else -> {
-                throw RuntimeException("Unknown type: " + oldNode!!::class.simpleName)
-            }
-        }
+    override fun visitChanges(oldNode: CPHamtNode?, shift: Int, visitor: CPHamtNode.IChangeVisitor, store: IAsyncObjectStore): Single<Unit> {
+        TODO()
+//        if (oldNode === this || data.hash == oldNode?.hash) {
+//            return IAsyncValue.UNIT
+//        }
+//        return when (oldNode) {
+//            is CPHamtInternal -> {
+//                val oldInternalNode: CPHamtInternal = oldNode
+//                if (data.bitmap == oldInternalNode.data.bitmap) {
+//                    data.children.indices.map { i ->
+//                        val oldChildHash = oldInternalNode.data.children[i]
+//                        val newChildHash = data.children[i]
+//                        if (oldChildHash != newChildHash) {
+//                            getChild(newChildHash, store).map { child ->
+//                                oldInternalNode.getChild(oldChildHash, store).map { oldChild ->
+//                                    child!!.visitChanges(oldChild, shift + CPHamtNode.BITS_PER_LEVEL, visitor, store)
+//                                }
+//                            }
+//                        } else {
+//                            IAsyncValue.UNIT
+//                        }
+//                    }.requestAll().map { }
+//                } else {
+//                    (0 until CPHamtNode.ENTRIES_PER_LEVEL).map { logicalIndex ->
+//                        getChild(logicalIndex, store).map { child ->
+//                            oldInternalNode.getChild(logicalIndex, store).thenRequest { oldChild ->
+//                                if (child == null) {
+//                                    if (oldChild == null) {
+//                                        // no change
+//                                        IAsyncValue.UNIT
+//                                    } else {
+//                                        if (!visitor.visitChangesOnly()) {
+//                                            oldChild.visitEntries(store) { key, value ->
+//                                                visitor.entryRemoved(key, value)
+//                                            }
+//                                        } else {
+//                                            IAsyncValue.UNIT
+//                                        }
+//                                    }
+//                                } else {
+//                                    if (oldChild == null) {
+//                                        if (!visitor.visitChangesOnly()) {
+//                                            child.visitEntries(store) { key, value ->
+//                                                visitor.entryAdded(key, value)
+//                                            }
+//                                        } else {
+//                                            IAsyncValue.UNIT
+//                                        }
+//                                    } else {
+//                                        child.visitChanges(oldChild, shift + CPHamtNode.BITS_PER_LEVEL, visitor, store)
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }.requestAll().map { }
+//                }
+//            }
+//            is CPHamtLeaf -> {
+//                if (visitor.visitChangesOnly()) {
+//                    get(oldNode.key, shift, store).map { newValue ->
+//                        if (newValue != null && newValue != oldNode.value) {
+//                            visitor.entryChanged(oldNode.key, oldNode.value, newValue)
+//                        }
+//                    }
+//                } else {
+//                    var oldEntryExists = false
+//                    var entryVisitingDone = false
+//                    visitEntries(store) { k, v ->
+//                        check(!entryVisitingDone)
+//                        if (k == oldNode.key) {
+//                            oldEntryExists = true
+//                            val oldValue = oldNode.value
+//                            if (v != oldValue) {
+//                                visitor.entryChanged(k, oldValue, v)
+//                            }
+//                        } else {
+//                            visitor.entryAdded(k, v)
+//                        }
+//                    }.thenRequest {
+//                        entryVisitingDone = true
+//                        if (!oldEntryExists) visitor.entryRemoved(oldNode.key, oldNode.value) else IAsyncValue.UNIT
+//                    }
+//                }
+//            }
+//            is CPHamtSingle -> {
+//                if (oldNode.numLevels == 1) {
+//                    visitChanges(CPHamtInternal.replace(oldNode), shift, visitor, store)
+//                } else {
+//                    visitChanges(CPHamtInternal.replace(oldNode.splitOneLevel()), shift, visitor, store)
+//                }
+//            }
+//            else -> {
+//                throw RuntimeException("Unknown type: " + oldNode!!::class.simpleName)
+//            }
+//        }
     }
 
     private fun isBitNotSet(bitmap: Int, logicalIndex: Int): Boolean {

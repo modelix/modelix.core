@@ -13,6 +13,7 @@
  */
 package org.modelix.modelql.untyped
 
+import com.badoo.reaktive.observable.filter
 import kotlinx.coroutines.flow.filter
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName

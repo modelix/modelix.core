@@ -13,6 +13,7 @@
  */
 package org.modelix.model.server.handlers
 
+import com.badoo.reaktive.maybe.subscribe
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -361,7 +362,7 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
     }
 
     private fun allObjectDataAsFlow(versionHash: String): ObjectDataFlow {
-        val hashObjectFlow = channelFlow {
+        val hashObjectFlow = channelFlow<Pair<String, String>> {
             // Our bulk query is blocking, therefor we explicitly launch it on one of the Dispatchers.IO.
             // Without it, the consumer could accidentally start the flow on this thread and block it.
             launch(Dispatchers.IO) {
@@ -374,7 +375,7 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
                 fun emitObjects(entry: KVEntryReference<*>) {
                     if (seenHashes.contains(entry.getHash())) return
                     seenHashes.add(entry.getHash())
-                    bulkQuery.query(entry).onReceive {
+                    bulkQuery.query(entry).subscribe {
                         val value = checkNotNull(it) { "No value received for ${entry.getHash()}" }
                         // Use `send` instead of `trySend`,
                         // because `trySend` fails if the channel capacity is full.

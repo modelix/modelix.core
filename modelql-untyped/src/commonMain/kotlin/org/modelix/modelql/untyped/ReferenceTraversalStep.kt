@@ -13,6 +13,10 @@
  */
 package org.modelix.modelql.untyped
 
+import com.badoo.reaktive.maybe.map
+import com.badoo.reaktive.maybe.notNull
+import com.badoo.reaktive.observable.flatMap
+import com.badoo.reaktive.observable.flatMapMaybe
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -37,8 +41,8 @@ import org.modelix.modelql.core.stepOutputSerializer
 
 class ReferenceTraversalStep(val link: IReferenceLinkReference) : MonoTransformingStep<INode, INode>(), IMonoStep<INode> {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
-        return input.flatMapConcat {
-            it.value.asAsyncNode().getReferenceTarget(link).filterNotNull().map { it.asRegularNode() }
+        return input.flatMapMaybe {
+            it.value.asAsyncNode().getReferenceTarget(link).notNull().map { it.asRegularNode() }
         }.asStepFlow(this)
     }
 

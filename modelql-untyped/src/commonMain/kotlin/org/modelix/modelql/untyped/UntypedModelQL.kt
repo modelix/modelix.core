@@ -13,6 +13,8 @@
  */
 package org.modelix.modelql.untyped
 
+import com.badoo.reaktive.single.map
+import com.badoo.reaktive.single.toSingle
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
@@ -69,7 +71,7 @@ interface ISupportsModelQL : INode {
 fun INode.createQueryExecutor(): IQueryExecutor<INode> {
     return when (this) {
         is ISupportsModelQL -> this.createQueryExecutor()
-        else -> SimpleQueryExecutor(this.asAsyncNode().asStream().map { it.asRegularNode() })
+        else -> SimpleQueryExecutor(this.asAsyncNode().toSingle().map { it.asRegularNode() })
     }
 }
 

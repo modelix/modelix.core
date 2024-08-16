@@ -13,6 +13,20 @@
  */
 package org.modelix.modelql.core
 
+import com.badoo.reaktive.observable.Observable
+import com.badoo.reaktive.observable.asObservable
+import com.badoo.reaktive.observable.combineLatest
+import com.badoo.reaktive.observable.flatMapSingle
+import com.badoo.reaktive.observable.flatten
+import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.observable.repeat
+import com.badoo.reaktive.observable.toList
+import com.badoo.reaktive.observable.zip
+import com.badoo.reaktive.observable.zipWith
+import com.badoo.reaktive.single.asObservable
+import com.badoo.reaktive.single.flatMap
+import com.badoo.reaktive.single.flatMapObservable
+import com.badoo.reaktive.single.map
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.emitAll
@@ -30,8 +44,8 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeCollection
-import org.modelix.streams.IStream
-import org.modelix.streams.flatten
+import org.modelix.streams.assertNotEmpty
+import org.modelix.streams.exactlyOne
 
 open class ZipStep<CommonIn, Out : ZipNOutputC<CommonIn>>() : ProducingStep<Out>(), IConsumingStep<CommonIn>, IMonoStep<Out>, IFluxStep<Out> {
     private val producers = ArrayList<IProducingStep<CommonIn>>()
@@ -88,8 +102,8 @@ open class ZipStep<CommonIn, Out : ZipNOutputC<CommonIn>>() : ProducingStep<Out>
 
     private fun ZipNOutputC<CommonIn>.upcast(): Out = this as Out
 
-    override fun createFlow(context: IFlowInstantiationContext): IStream<ZipStepOutput<Out, CommonIn>> {
-        val inputFlows: List<IStream<IStepOutput<CommonIn>>> = producers.map {
+    override fun createFlow(context: IFlowInstantiationContext): Observable<ZipStepOutput<Out, CommonIn>> {
+        val inputFlows: List<Observable<IStepOutput<CommonIn>>> = producers.map {
             val possiblyEmptyFlow = context.getOrCreateFlow(it)
             if (it is AllowEmptyStep) {
                 possiblyEmptyFlow
@@ -100,24 +114,25 @@ open class ZipStep<CommonIn, Out : ZipNOutputC<CommonIn>>() : ProducingStep<Out>
 
         // optimization if all inputs are mono steps
         if (producers.all { it.isSingle() }) {
-            return context.getFactory().flatten(inputFlows.map { it.single() }).toList().map { ZipStepOutput(it) }
+            return inputFlows.asObservable().flatMapSingle { it.exactlyOne() }.toList().map { ZipStepOutput<Out, CommonIn>(it) }.asObservable()
         }
 
         // optimization for a pair of flux and mono inputs
         if (producers.size == 2) {
             if (producers[0].isSingle()) {
-                return inputFlows[0].single().flatMapConcat { value0 ->
+                return inputFlows[0].exactlyOne().flatMapObservable { value0 ->
                     inputFlows[1].map { value1 -> ZipStepOutput(listOf(value0, value1)) }
                 }
             } else if (producers[1].isSingle()) {
-                return inputFlows[1].single().flatMapConcat { value1 ->
+                return inputFlows[1].exactlyOne().flatMapObservable { value1 ->
                     inputFlows[0].map { value0 -> ZipStepOutput(listOf(value0, value1)) }
                 }
             }
         }
 
-        // TODO this might be slower, but combine seems to be buggy (elements get lost)
-        return context.getFactory().zip(inputFlows).map { ZipStepOutput(it) }
+        return  inputFlows.mapIndexed { index, it ->
+            if (producers[index].isSingle()) it.repeat() else it
+        }.zip { ZipStepOutput(it) }
     }
 }
 

@@ -16,6 +16,16 @@
 
 package org.modelix.model
 
+import com.badoo.reaktive.maybe.defaultIfEmpty
+import com.badoo.reaktive.maybe.map
+import com.badoo.reaktive.maybe.subscribe
+import com.badoo.reaktive.observable.flatMapSingle
+import com.badoo.reaktive.observable.observableOf
+import com.badoo.reaktive.observable.subscribe
+import com.badoo.reaktive.observable.toList
+import com.badoo.reaktive.single.Single
+import com.badoo.reaktive.single.singleOf
+import com.badoo.reaktive.single.subscribe
 import gnu.trove.map.TLongObjectMap
 import gnu.trove.map.hash.TLongObjectHashMap
 import kotlinx.coroutines.CompletableDeferred
@@ -34,7 +44,6 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.NodeReference
 import org.modelix.model.api.PNodeReference
-import org.modelix.model.api.async.IAsyncValue
 import org.modelix.model.api.resolveInCurrentContext
 import org.modelix.model.area.IArea
 import org.modelix.model.area.IAreaListener
@@ -137,9 +146,9 @@ class InMemoryModel private constructor(
             val bulkQuery = NonCachingObjectStore(store).newBulkQuery()
             LOG.info { "Start loading model into memory" }
             val duration = measureTimeMillis {
-                bulkQuery.query(slowMapRef).onReceive { slowMap ->
+                bulkQuery.query(slowMapRef).subscribe { slowMap ->
                     slowMap!!.visitEntries(BulkQueryAsAsyncStore(bulkQuery)) { nodeId, nodeDataRef ->
-                        bulkQuery.query(nodeDataRef).onReceive { nodeData ->
+                        bulkQuery.query(nodeDataRef).subscribe { nodeData ->
                             if (nodeData != null) {
                                 fastMap.put(nodeId, nodeData)
                             }
@@ -164,34 +173,34 @@ class InMemoryModel private constructor(
         LOG.debug { "Model update started" }
         fastMap.putAll(nodeMap)
         val duration = measureTimeMillis {
-            bulkQuery.flatMap(listOf(slowMapRef, loadedMapRef)) { bulkQuery.query(it) }.onReceive {
+            observableOf(slowMapRef, loadedMapRef).flatMapSingle { bulkQuery.query(it).defaultIfEmpty(null) }.toList().subscribe {
                 val newSlowMap = it[0]!!
                 val oldSlowMap = it[1]!!
                 newSlowMap.visitChanges(
                     oldSlowMap,
                     object : CPHamtNode.IChangeVisitor {
                         override fun visitChangesOnly(): Boolean = false
-                        override fun entryAdded(key: Long, value: KVEntryReference<CPNode>): IAsyncValue<Unit> {
+                        override fun entryAdded(key: Long, value: KVEntryReference<CPNode>): Single<Unit> {
                             return bulkQuery.query(value).map { nodeData ->
                                 if (nodeData != null) {
                                     fastMap.put(key, nodeData)
                                 }
-                            }
+                            }.defaultIfEmpty(Unit)
                         }
-                        override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>): IAsyncValue<Unit> {
+                        override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>): Single<Unit> {
                             fastMap.remove(key)
-                            return IAsyncValue.UNIT
+                            return singleOf(Unit)
                         }
                         override fun entryChanged(
                             key: Long,
                             oldValue: KVEntryReference<CPNode>,
                             newValue: KVEntryReference<CPNode>,
-                        ): IAsyncValue<Unit> {
+                        ): Single<Unit> {
                             return bulkQuery.query(newValue).map { nodeData ->
                                 if (nodeData != null) {
                                     fastMap.put(key, nodeData)
                                 }
-                            }
+                            }.defaultIfEmpty(Unit)
                         }
                     },
                     BulkQueryAsAsyncStore(bulkQuery),

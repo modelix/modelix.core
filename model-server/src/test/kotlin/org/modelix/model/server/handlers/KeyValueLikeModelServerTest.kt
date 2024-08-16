@@ -15,6 +15,7 @@
 
 package org.modelix.model.server.handlers
 
+import com.badoo.reaktive.maybe.blockingGet
 import io.ktor.client.request.get
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
@@ -128,7 +129,7 @@ class KeyValueLikeModelServerTest {
 
         val bulkQuery = clientV1.storeCache.newBulkQuery()
         val bulkQueryValue = bulkQuery.query(treeHash)
-        val bulkQueryResult = bulkQueryValue.awaitBlocking()
+        val bulkQueryResult = bulkQueryValue.blockingGet()
 
         assertNotNull(bulkQueryResult)
     }

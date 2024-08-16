@@ -13,17 +13,18 @@
  */
 package org.modelix.modelql.core
 
+import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.observable.switchIfEmpty
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.modelix.streams.ifEmptyThenStream
 import kotlin.jvm.JvmName
 
 class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : TransformingStep<In, Out>(), IFluxOrMonoStep<Out> {
     override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
         val downCastedInput: StepFlow<Out> = input
-        return downCastedInput.map { MultiplexedOutput(0, it) }.ifEmptyThenStream {
-            alternative.asFlow(context, Unit.asStepOutput(null)).map { MultiplexedOutput(1, it) }
+        return downCastedInput.map { MultiplexedOutput(0, it) }.switchIfEmpty {
+            alternative.asFlow(context.evaluationContext, Unit.asStepOutput(null)).map { MultiplexedOutput(1, it) }
         }
     }
 

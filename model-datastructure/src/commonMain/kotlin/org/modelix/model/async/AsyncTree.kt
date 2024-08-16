@@ -16,8 +16,23 @@
 
 package org.modelix.model.async
 
-import org.modelix.streams.IMonoStream
-import org.modelix.streams.SimpleMonoStream
+import com.badoo.reaktive.maybe.Maybe
+import com.badoo.reaktive.maybe.asSingleOrError
+import com.badoo.reaktive.maybe.defaultIfEmpty
+import com.badoo.reaktive.maybe.map
+import com.badoo.reaktive.observable.Observable
+import com.badoo.reaktive.observable.distinctUntilChanged
+import com.badoo.reaktive.observable.filter
+import com.badoo.reaktive.observable.flatMapSingle
+import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.single.Single
+import com.badoo.reaktive.single.filter
+import com.badoo.reaktive.single.flatMap
+import com.badoo.reaktive.single.flatMapIterable
+import com.badoo.reaktive.single.flatMapMaybe
+import com.badoo.reaktive.single.map
+import com.badoo.reaktive.single.notNull
+import com.badoo.reaktive.single.singleOf
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INodeReference
@@ -30,50 +45,38 @@ import org.modelix.model.api.IRoleReferenceByUID
 import org.modelix.model.api.IUnclassifiedRoleReference
 import org.modelix.model.api.NullChildLinkReference
 import org.modelix.model.api.PNodeReference
-import org.modelix.model.api.async.IAsyncSequence
 import org.modelix.model.api.async.IAsyncTree
 import org.modelix.model.api.async.IAsyncTreeChangeVisitor
-import org.modelix.model.api.async.IAsyncValue
-import org.modelix.model.api.async.checkNotNull
-import org.modelix.model.api.async.distinct
-import org.modelix.model.api.async.filter
-import org.modelix.model.api.async.flatMapBoth
-import org.modelix.model.api.async.mapBoth
-import org.modelix.model.api.async.requestAll
 import org.modelix.model.api.meta.NullConcept
-import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.persistent.CPHamtNode
 import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPNodeRef
 import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.IKVValue
-import org.modelix.streams.IOptionalMonoStream
-import org.modelix.streams.IStream
-import org.modelix.streams.mapBothMono
 
 class AsyncTree(private val treeData: () -> CPTree, private val store: IAsyncObjectStore) : IAsyncTree {
 
     private val nodesMap: KVEntryReference<CPHamtNode> = treeData().idToHash
 
-    private fun <T : IKVValue> KVEntryReference<T>.query(): IMonoStream<T> = store.getNotNull(this).asStream()
-    private fun <T : IKVValue> KVEntryReference<T>.tryQuery(): IOptionalMonoStream<T> = store.get(this).asStream().filterNotNull()
+    private fun <T : IKVValue> KVEntryReference<T>.query(): Single<T> = tryQuery().asSingleOrError { throw IllegalStateException("Entry not found: $this") }
+    private fun <T : IKVValue> KVEntryReference<T>.tryQuery(): Maybe<T> = store.get(this)
 
-    private fun getNode(id: Long): IMonoStream<CPNode> = tryGetNodeRef(id)
-        .assertNotEmpty { "Node ${id.toString(16)} not found in $nodesMap" }
-        .mapMono { it.query() }
+    private fun getNode(id: Long): Single<CPNode> = tryGetNodeRef(id)
+        .asSingleOrError { IllegalStateException("Node ${id.toString(16)} not found in $nodesMap") }
+        .flatMap { it.query() }
 
-    private fun tryGetNodeRef(id: Long): IOptionalMonoStream<KVEntryReference<CPNode>> = nodesMap.query().mapOptionalMono { it.get(id, store).asStream().filterNotNull() }
+    private fun tryGetNodeRef(id: Long): Maybe<KVEntryReference<CPNode>> = nodesMap.query().flatMapMaybe { it.get(id, store) }
 
-    override fun asStream(): IMonoStream<IAsyncTree> {
-        return SimpleMonoStream(this, store.getStreamFactory())
+    override fun asStream(): Single<IAsyncTree> {
+        return singleOf(this)
     }
 
-    override fun containsNode(nodeId: Long): IMonoStream<Boolean> {
-        return tryGetNodeRef(nodeId).isNotEmpty()
+    override fun containsNode(nodeId: Long): Single<Boolean> {
+        return tryGetNodeRef(nodeId).map { true }.defaultIfEmpty(false)
     }
 
-    override fun visitChanges(oldVersion: IAsyncTree, visitor: IAsyncTreeChangeVisitor): IMonoStream<Unit> {
+    override fun visitChanges(oldVersion: IAsyncTree, visitor: IAsyncTreeChangeVisitor): Maybe<Unit> {
         TODO()
 //        require(oldVersion is AsyncTree)
 //        require(oldVersion.store == store) { "Both trees should operate with the same IAsyncObjectStore" }
@@ -83,7 +86,7 @@ class AsyncTree(private val treeData: () -> CPTree, private val store: IAsyncObj
 //        }
     }
 
-    private fun visitChanges(newNodesMap: CPHamtNode, oldNodesMap: CPHamtNode, visitor: IAsyncTreeChangeVisitor): IMonoStream<Unit> {
+    private fun visitChanges(newNodesMap: CPHamtNode, oldNodesMap: CPHamtNode, visitor: IAsyncTreeChangeVisitor): Single<Unit> {
         TODO()
 //        val changesOnly = !visitor.interestedInNodeRemoveOrAdd()
 //        return newNodesMap.visitChanges(
@@ -171,15 +174,15 @@ class AsyncTree(private val treeData: () -> CPTree, private val store: IAsyncObj
 //        ).asStream()
     }
 
-    override fun getConceptReference(nodeId: Long): IMonoStream<ConceptReference> {
+    override fun getConceptReference(nodeId: Long): Single<ConceptReference> {
         return getNode(nodeId).map { ConceptReference(it.concept ?: NullConcept.getUID()) }
     }
 
-    override fun getParent(nodeId: Long): IOptionalMonoStream<Long> {
-        return getNode(nodeId).map { it.parentId }
+    override fun getParent(nodeId: Long): Maybe<Long> {
+        return getNode(nodeId).map { it.parentId }.filter { it != 0L }
     }
 
-    override fun getRole(nodeId: Long): IMonoStream<IChildLinkReference> {
+    override fun getRole(nodeId: Long): Single<IChildLinkReference> {
         return getNode(nodeId).map { it.roleInParent }.map {
             when {
                 it == null -> NullChildLinkReference
@@ -189,10 +192,10 @@ class AsyncTree(private val treeData: () -> CPTree, private val store: IAsyncObj
         }
     }
 
-    override fun getReferenceTarget(sourceId: Long, role: IReferenceLinkReference): IMonoStream<INodeReference?> {
+    override fun getReferenceTarget(sourceId: Long, role: IReferenceLinkReference): Maybe<INodeReference> {
         return getNode(sourceId).map { node ->
             node.getReferenceTarget(role.key())?.convertReference()
-        }
+        }.notNull()
     }
 
     private fun CPNodeRef.convertReference(): INodeReference {
@@ -204,42 +207,42 @@ class AsyncTree(private val treeData: () -> CPTree, private val store: IAsyncObj
         }
     }
 
-    override fun getReferenceRoles(sourceId: Long): IStream<String> {
-        return getNode(sourceId).mapMany { it.referenceRoles.asSequence() }
+    override fun getReferenceRoles(sourceId: Long): Observable<String> {
+        return getNode(sourceId).flatMapIterable { it.referenceRoles.toList() }
     }
 
-    override fun getPropertyRoles(sourceId: Long): IStream<String> {
-        return getNode(sourceId).mapMany { it.propertyRoles.asSequence() }
+    override fun getPropertyRoles(sourceId: Long): Observable<String> {
+        return getNode(sourceId).flatMapIterable { it.propertyRoles.toList() }
     }
 
-    override fun getChildRoles(sourceId: Long): IStream<String?> {
-        return getAllChildren(sourceId).flatMapConcat {
+    override fun getChildRoles(sourceId: Long): Observable<String?> {
+        return getAllChildren(sourceId).flatMapSingle {
             getNode(it).map { it.roleInParent }
-        }.distinct()
+        }.distinctUntilChanged()
     }
 
-    override fun getAllChildren(parentId: Long): IStream<Long> {
-        return getNode(parentId).mapMany { it.childrenIdArray.asSequence() }
+    override fun getAllChildren(parentId: Long): Observable<Long> {
+        return getNode(parentId).flatMapIterable { it.childrenIdArray.toList() }
     }
 
-    override fun getAllReferenceTargetRefs(sourceId: Long): IStream<Pair<IReferenceLinkReference, INodeReference>> {
-        return getNode(sourceId).mapMany { data ->
+    override fun getAllReferenceTargetRefs(sourceId: Long): Observable<Pair<IReferenceLinkReference, INodeReference>> {
+        return getNode(sourceId).flatMapIterable { data ->
             data.referenceRoles.mapIndexed { index, role ->
                 val link = if (treeData().usesRoleIds) IReferenceLinkReference.fromId(role) else IReferenceLinkReference.fromId(role)
                 link to data.referenceTargets[index].convertReference()
-            }.asSequence()
+            }
         }
     }
 
-    override fun getProperty(nodeId: Long, role: IPropertyReference): IOptionalMonoStream<String> {
+    override fun getProperty(nodeId: Long, role: IPropertyReference): Maybe<String> {
         return getNode(nodeId).map { node ->
             node.getPropertyValue(role.key())
-        }.filterNotNull()
+        }.notNull()
     }
 
-    override fun getChildren(parentId: Long, role: IChildLinkReference): IStream<Long> {
+    override fun getChildren(parentId: Long, role: IChildLinkReference): Observable<Long> {
         val roleString = role.key()
-        return getAllChildren(parentId).flatMapConcat { getNode(it) }.filter { it.roleInParent == roleString }.map { it.id }
+        return getAllChildren(parentId).flatMapSingle { getNode(it) }.filter { it.roleInParent == roleString }.map { it.id }
     }
 
     private fun IRoleReference.key() = getRoleKey(this)
@@ -265,6 +268,3 @@ class AsyncTree(private val treeData: () -> CPTree, private val store: IAsyncObj
         }
     }
 }
-
-private fun <T : IKVValue> IBulkQuery.queryNotNull(ref: KVEntryReference<T>) = query(ref).checkNotNull { "$ref not found" }
-private fun <T : IKVValue> IAsyncObjectStore.getNotNull(ref: KVEntryReference<T>) = get(ref).checkNotNull { "$ref not found" }

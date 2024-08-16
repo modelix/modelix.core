@@ -13,6 +13,7 @@
  */
 package org.modelix.modelql.core
 
+import com.badoo.reaktive.observable.flatMap
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -28,7 +29,7 @@ class FlatMapStep<In, Out>(val query: FluxUnboundQuery<In, Out>) : TransformingS
     }
 
     override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
-        return input.flatMapConcat { query.asFlow(context, it) }
+        return input.flatMap { query.asFlow(context.evaluationContext, it) }
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Out>> {

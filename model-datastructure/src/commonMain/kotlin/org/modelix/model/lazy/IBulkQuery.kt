@@ -15,16 +15,21 @@
 
 package org.modelix.model.lazy
 
+import com.badoo.reaktive.maybe.Maybe
+import com.badoo.reaktive.observable.Observable
+import com.badoo.reaktive.observable.asObservable
+import com.badoo.reaktive.observable.flatMap
+import com.badoo.reaktive.single.Single
+import com.badoo.reaktive.single.singleOf
 import org.modelix.kotlin.utils.ContextValue
-import org.modelix.model.api.async.IAsyncValue
 import org.modelix.model.persistent.IKVValue
 
 interface IBulkQuery {
     fun offerPrefetch(key: IPrefetchGoal)
     fun executeQuery()
-    fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IAsyncValue<O>): IAsyncValue<List<O>>
-    fun <T> constant(value: T): IAsyncValue<T>
-    fun <T : IKVValue> query(hash: KVEntryReference<T>): IAsyncValue<T?>
+    fun <I, O> flatMap(input: Iterable<I>, f: (I) -> Observable<O>): Observable<O> = input.asObservable().flatMap { f(it) }
+    fun <T> constant(value: T): Single<T> = singleOf(value)
+    fun <T : IKVValue> query(hash: KVEntryReference<T>): Maybe<T>
 
     companion object {
         val CONTEXT_QUERY = ContextValue<IBulkQuery>()

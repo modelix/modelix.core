@@ -15,8 +15,19 @@
 
 package org.modelix.model.lazy
 
+import com.badoo.reaktive.maybe.blockingGet
+import com.badoo.reaktive.observable.Observable
+import com.badoo.reaktive.observable.asObservable
+import com.badoo.reaktive.observable.flatMap
+import com.badoo.reaktive.observable.flatMapSingle
+import com.badoo.reaktive.observable.flatten
+import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.observable.observableOf
+import com.badoo.reaktive.single.Single
+import com.badoo.reaktive.single.asObservable
+import com.badoo.reaktive.single.flatMap
+import com.badoo.reaktive.single.map
 import org.modelix.model.api.ITree
-import org.modelix.model.api.async.IAsyncValue
 import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPNodeRef
 import kotlin.jvm.JvmStatic
@@ -58,7 +69,7 @@ class CLNode(private val tree: CLTree, private val data: CPNode) {
     }
 
     val parent: CLNode?
-        get() = tree.resolveElement(data.parentId).awaitBlocking()?.let { CLNode(tree, it) }
+        get() = tree.resolveElement(data.parentId).blockingGet()?.let { CLNode(tree, it) }
 
     val parentId: Long
         get() = data.parentId
@@ -73,25 +84,22 @@ class CLNode(private val tree: CLTree, private val data: CPNode) {
         return data
     }
 
-    fun getChildren(bulkQuery: IBulkQuery): IAsyncValue<Iterable<CLNode>> {
+    fun getChildren(bulkQuery: IBulkQuery): Observable<CLNode> {
         return (getTree() as CLTree).resolveElements(getData().getChildrenIds().toList())
-            .map { elements -> elements.map { CLNode(tree, it) } }
+            .map { CLNode(tree, it) }
     }
 
-    fun getDescendants(bulkQuery: IBulkQuery, includeSelf: Boolean): IAsyncValue<Iterable<CLNode>> {
+    fun getDescendants(bulkQuery: IBulkQuery, includeSelf: Boolean): Observable<CLNode> {
         return if (includeSelf) {
-            getDescendants(bulkQuery, false)
-                .map { descendants -> (sequenceOf(this) + descendants).asIterable() }
+            observableOf(observableOf(this), getDescendants(bulkQuery, false)).flatten()
         } else {
-            getChildren(bulkQuery).thenRequest { children ->
-                bulkQuery
-                    .flatMap(children) { child -> child.getDescendants(bulkQuery, true) }
-                    .map { it.flatten() }
+            getChildren(bulkQuery).flatMap {
+                it.getDescendants(bulkQuery, true)
             }
         }
     }
 
-    fun getAncestors(bulkQuery: IBulkQuery, includeSelf: Boolean): IAsyncValue<List<CLNode>> {
+    fun getAncestors(bulkQuery: IBulkQuery, includeSelf: Boolean): Single<List<CLNode>> {
         return if (includeSelf) {
             getAncestors(bulkQuery, false).map { ancestors -> (listOf(this) + ancestors) }
         } else {

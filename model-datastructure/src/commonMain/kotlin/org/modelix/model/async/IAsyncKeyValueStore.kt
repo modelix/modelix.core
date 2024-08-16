@@ -16,14 +16,10 @@
 
 package org.modelix.model.async
 
-import org.modelix.kotlin.utils.IMonoFlow
-import org.modelix.streams.IMonoStream
-import org.modelix.streams.IOptionalMonoStream
-import org.modelix.streams.IStream
-import org.modelix.streams.IStreamFactory
+import com.badoo.reaktive.maybe.Maybe
+import com.badoo.reaktive.maybe.defaultIfEmpty
+import com.badoo.reaktive.single.blockingGet
 import org.modelix.model.IKeyValueStore
-import org.modelix.model.api.async.IAsyncValue
-import org.modelix.model.api.async.checkNotNull
 import org.modelix.model.lazy.BulkQueryConfiguration
 import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.IDeserializingKeyValueStore
@@ -38,29 +34,16 @@ interface IAsyncKeyValueStore {
 }
 
 interface IAsyncObjectStore {
-    fun getStreamFactory(): IStreamFactory
-
     fun <T : IKVValue> getIfCached(key: IKVEntryReference<T>): T?
-    fun <T : IKVValue> get(key: IKVEntryReference<T>): IAsyncValue<T?>
-    fun <T : IKVValue> getAsFlow(key: IKVEntryReference<T>): IMonoFlow<T>
+    fun <T : IKVValue> get(key: IKVEntryReference<T>): Maybe<T>
     suspend fun getAll(keys: List<IKVEntryReference<*>>): Map<IKVEntryReference<*>, Any?>
     suspend fun putAll(entries: Map<IKVEntryReference<*>, Any?>)
-
-    fun <T> requestAll(values: List<IAsyncValue<T>>): IAsyncValue<List<T>>
-    fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IAsyncValue<O>): IAsyncValue<List<O>>
 }
 
 class BulkQueryAsAsyncStore(val bulkQuery: IBulkQuery): IAsyncObjectStore {
-    override fun getStreamFactory(): IStreamFactory {
-        return BulkQueryAsStreamFactory(bulkQuery)
-    }
 
-    override fun <T : IKVValue> get(key: IKVEntryReference<T>): IAsyncValue<T?> {
+    override fun <T : IKVValue> get(key: IKVEntryReference<T>): Maybe<T> {
         return bulkQuery.query(key as KVEntryReference<T>)
-    }
-
-    override fun <T : IKVValue> getAsFlow(key: IKVEntryReference<T>): IMonoFlow<T> {
-        return get(key).checkNotNull { "Entry not found: $key" }.asFlow()
     }
 
     override suspend fun getAll(keys: List<IKVEntryReference<*>>): Map<IKVEntryReference<*>, Any?> {
@@ -74,21 +57,9 @@ class BulkQueryAsAsyncStore(val bulkQuery: IBulkQuery): IAsyncObjectStore {
     override fun <T : IKVValue> getIfCached(key: IKVEntryReference<T>): T? {
         TODO("Not yet implemented")
     }
-
-    override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IAsyncValue<O>): IAsyncValue<List<O>> {
-        return bulkQuery.flatMap(input, f)
-    }
-
-    override fun <T> requestAll(values: List<IAsyncValue<T>>): IAsyncValue<List<T>> {
-        return bulkQuery.flatMap(values) { it }
-    }
 }
 
 class AsyncStoreAsBulkQuery(val store: IAsyncObjectStore) : IBulkQuery {
-    override fun <T> constant(value: T): IAsyncValue<T> {
-        return IAsyncValue.constant(value)
-    }
-
     override fun offerPrefetch(key: IPrefetchGoal) {
         TODO("Not yet implemented")
     }
@@ -97,11 +68,7 @@ class AsyncStoreAsBulkQuery(val store: IAsyncObjectStore) : IBulkQuery {
         TODO("Not yet implemented")
     }
 
-    override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IAsyncValue<O>): IAsyncValue<List<O>> {
-        TODO("Not yet implemented")
-    }
-
-    override fun <T : IKVValue> query(hash: KVEntryReference<T>): IAsyncValue<T?> {
+    override fun <T : IKVValue> query(hash: KVEntryReference<T>): Maybe<T> {
         return store.get(hash)
     }
 }
@@ -115,20 +82,13 @@ fun IAsyncObjectStore.asBulkQuery(): IBulkQuery {
 }
 
 class SynchronousStoreAsAsyncStore(val store: IDeserializingKeyValueStore, val bulkQuery: IBulkQuery): IAsyncObjectStore {
-    override fun getStreamFactory(): IStreamFactory {
-        return BulkQueryAsStreamFactory(bulkQuery)
-    }
 
-    override fun <T : IKVValue> get(key: IKVEntryReference<T>): IAsyncValue<T?> {
+    override fun <T : IKVValue> get(key: IKVEntryReference<T>): Maybe<T> {
         return bulkQuery.query(key as KVEntryReference<T>)
     }
 
     override fun <T : IKVValue> getIfCached(key: IKVEntryReference<T>): T? {
         return store.getIfCached(key.getHash(), key.getDeserializer(), false)
-    }
-
-    override fun <T : IKVValue> getAsFlow(key: IKVEntryReference<T>): IMonoFlow<T> {
-        TODO("Not yet implemented")
     }
 
     override suspend fun getAll(keys: List<IKVEntryReference<*>>): Map<IKVEntryReference<*>, Any?> {
@@ -137,14 +97,6 @@ class SynchronousStoreAsAsyncStore(val store: IDeserializingKeyValueStore, val b
     }
 
     override suspend fun putAll(entries: Map<IKVEntryReference<*>, Any?>) {
-        TODO("Not yet implemented")
-    }
-
-    override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IAsyncValue<O>): IAsyncValue<List<O>> {
-        TODO("Not yet implemented")
-    }
-
-    override fun <T> requestAll(values: List<IAsyncValue<T>>): IAsyncValue<List<T>> {
         TODO("Not yet implemented")
     }
 }
@@ -156,7 +108,7 @@ class AsyncStoreAsStore(val store: IAsyncObjectStore) : IDeserializingKeyValueSt
 
     override fun <T> get(hash: String, deserializer: (String) -> T): T? {
         deserializer as ((String) -> IKVValue)
-        return store.get(KVEntryReference(hash, deserializer)).awaitBlocking() as T?
+        return store.get(KVEntryReference(hash, deserializer)).defaultIfEmpty(null).blockingGet() as T?
     }
 
     override val keyValueStore: IKeyValueStore
@@ -191,43 +143,5 @@ class AsyncStoreAsStore(val store: IAsyncObjectStore) : IDeserializingKeyValueSt
 
     override fun newBulkQuery(wrapper: IDeserializingKeyValueStore, config: BulkQueryConfiguration?): IBulkQuery {
         return super.newBulkQuery(wrapper, config)
-    }
-}
-
-class BulkQueryAsStreamFactory(val bulkQuery: IBulkQuery) : IStreamFactory {
-    override fun <T> constant(value: T): IMonoStream<T> {
-        return bulkQuery.constant(value).asStream()
-    }
-
-    override fun <T> lazyConstant(provider: () -> T): IMonoStream<T> {
-        return bulkQuery.constant(provider()).asStream()
-    }
-
-    override fun <T> fromIterable(input: Iterable<T>): IStream<T> {
-        TODO("Not yet implemented")
-    }
-
-    override fun <T> ifEmpty(stream: IStream<T>, alternative: () -> IStream<T>): IStream<T> {
-        TODO("Not yet implemented")
-    }
-
-    override fun <T> ifEmpty(stream: IOptionalMonoStream<T>, alternative: () -> IMonoStream<T>): IMonoStream<T> {
-        TODO("Not yet implemented")
-    }
-
-    override fun <T> flatten(streams: Iterable<IStream<T>>): IStream<T> {
-        TODO("Not yet implemented")
-    }
-
-    override fun <T> empty(): IOptionalMonoStream<T> {
-        TODO("Not yet implemented")
-    }
-
-    override fun <T> zip(streams: List<IStream<T>>): IStream<List<T>> {
-        TODO("Not yet implemented")
-    }
-
-    override fun <T> fromSequence(input: Sequence<T>): IStream<T> {
-        TODO("Not yet implemented")
     }
 }

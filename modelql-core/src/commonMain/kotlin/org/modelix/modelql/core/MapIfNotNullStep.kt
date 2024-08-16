@@ -13,6 +13,9 @@
  */
 package org.modelix.modelql.core
 
+import com.badoo.reaktive.observable.flatMap
+import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.observable.observableOf
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -24,9 +27,9 @@ class MapIfNotNullStep<In : Any, Out>(val query: MonoUnboundQuery<In, Out>) : Mo
     }
 
     override fun createFlow(input: StepFlow<In?>, context: IFlowInstantiationContext): StepFlow<Out?> {
-        return input.flatMapConcat { stepOutput ->
-            stepOutput.value?.let { query.asFlow(context, stepOutput.upcast()).map { MultiplexedOutput(1, it) } }
-                ?: context.getFactory().constant(MultiplexedOutput(0, stepOutput.upcast()))
+        return input.flatMap { stepOutput ->
+            stepOutput.value?.let { query.asFlow(context.evaluationContext, stepOutput.upcast()).map { MultiplexedOutput(1, it) } }
+                ?: observableOf(MultiplexedOutput(0, stepOutput.upcast()))
         }
     }
 

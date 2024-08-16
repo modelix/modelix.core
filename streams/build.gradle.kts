@@ -26,6 +26,11 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(libs.kotlin.coroutines.core)
+
+                api("com.badoo.reaktive:reaktive:2.2.0")
+                api("com.badoo.reaktive:reaktive-annotations:2.2.0")
+                api("com.badoo.reaktive:coroutines-interop:2.2.0")
+
             }
         }
         val commonTest by getting {

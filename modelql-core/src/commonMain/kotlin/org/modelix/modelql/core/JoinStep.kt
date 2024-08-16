@@ -13,13 +13,14 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.flattenConcat
+import com.badoo.reaktive.observable.asObservable
+import com.badoo.reaktive.observable.flatMap
+import com.badoo.reaktive.observable.flatten
+import com.badoo.reaktive.observable.map
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.modelix.streams.flatten
 
 class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
     override fun canBeEmpty(): Boolean = getProducers().all { it.canBeEmpty() }
@@ -49,9 +50,7 @@ class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
     }
 
     override fun createFlow(context: IFlowInstantiationContext): StepFlow<E> {
-        return context.getFactory().fromIterable(
-            producers.mapIndexed { prodIndex, it -> context.getOrCreateFlow(it).map { MultiplexedOutput(prodIndex, it) } }
-        ).flatten()
+        return producers.mapIndexed { prodIndex, it -> context.getOrCreateFlow(it).map { MultiplexedOutput(prodIndex, it) } }.asObservable().flatten()
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>> {

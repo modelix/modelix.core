@@ -15,26 +15,18 @@
 
 package org.modelix.model.lazy
 
-import org.modelix.model.api.async.IAsyncValue
-import org.modelix.model.api.async.NonAsyncValue
+import com.badoo.reaktive.maybe.Maybe
+import com.badoo.reaktive.maybe.maybeOf
 import org.modelix.model.persistent.IKVValue
 
 class NonBulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery {
-    override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IAsyncValue<O>): IAsyncValue<List<O>> {
-        val list = input.asSequence().map(f).map { it.awaitBlocking() }.toList()
-        return NonAsyncValue(list)
-    }
-
-    override fun <T> constant(value: T): IAsyncValue<T> {
-        return NonAsyncValue(value)
-    }
 
     override fun offerPrefetch(key: IPrefetchGoal) {
         // Since no real bulk queries are executed, prefetching doesn't provide any benefit.
     }
 
-    override fun <T : IKVValue> query(hash: KVEntryReference<T>): IAsyncValue<T?> {
-        return constant(hash.getValue(store))
+    override fun <T : IKVValue> query(hash: KVEntryReference<T>): Maybe<T> {
+        return maybeOf(hash.getValue(store))
     }
 
     override fun executeQuery() {

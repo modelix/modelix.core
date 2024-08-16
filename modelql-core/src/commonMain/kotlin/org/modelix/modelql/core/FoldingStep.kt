@@ -13,11 +13,12 @@
  */
 package org.modelix.modelql.core
 
-import org.modelix.streams.IMonoStream
+import com.badoo.reaktive.single.Single
+import org.modelix.streams.fold
 
 abstract class FoldingStep<In, Out>(private val initial: Out) : AggregationStep<In, Out>() {
 
-    override fun aggregate(input: StepFlow<In>): IMonoStream<IStepOutput<Out>> {
+    override fun aggregate(input: StepFlow<In>): Single<IStepOutput<Out>> {
         return input.fold(initial) { acc, value -> fold(acc, value.value) }.asStepFlow(this)
     }
 

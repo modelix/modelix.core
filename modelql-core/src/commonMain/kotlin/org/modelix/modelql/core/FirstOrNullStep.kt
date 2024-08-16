@@ -13,16 +13,20 @@
  */
 package org.modelix.modelql.core
 
+import com.badoo.reaktive.maybe.defaultIfEmpty
+import com.badoo.reaktive.maybe.map
+import com.badoo.reaktive.observable.firstOrComplete
+import com.badoo.reaktive.observable.firstOrDefault
+import com.badoo.reaktive.single.Single
+import com.badoo.reaktive.single.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.modelix.streams.IMonoStream
-import org.modelix.streams.ifEmpty
 
 class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
-    override fun aggregate(input: StepFlow<E>): IMonoStream<IStepOutput<E?>> {
-        return input.first().map { MultiplexedOutput(0, it) }
-            .ifEmpty { MultiplexedOutput(1, null.asStepOutput(this)) }
+    override fun aggregate(input: StepFlow<E>): Single<IStepOutput<E?>> {
+        return input.firstOrComplete().map { MultiplexedOutput(0, it) }
+            .defaultIfEmpty(MultiplexedOutput(1, null.asStepOutput(this)))
     }
 
     override fun toString(): String {

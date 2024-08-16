@@ -45,9 +45,11 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import org.modelix.authorization.installAuthentication
@@ -430,4 +432,8 @@ class ModelReplicationServerTest {
             )
         }
     }
+}
+
+fun <T> Flow<T>.assertNotEmpty(additionalMessage: () -> String = { "" }): Flow<T> {
+    return onEmpty { throw IllegalArgumentException("At least one element was expected. " + additionalMessage()) }
 }

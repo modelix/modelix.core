@@ -15,6 +15,13 @@
 
 package org.modelix.model.lazy
 
+import com.badoo.reaktive.maybe.Maybe
+import com.badoo.reaktive.maybe.defaultIfEmpty
+import com.badoo.reaktive.maybe.map
+import com.badoo.reaktive.maybe.maybeOfNever
+import com.badoo.reaktive.maybe.subscribe
+import com.badoo.reaktive.single.Single
+import com.badoo.reaktive.single.singleOf
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -28,7 +35,6 @@ import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.TreePointer
-import org.modelix.model.api.async.IAsyncValue
 import org.modelix.model.async.AsyncStoreAsStore
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.operations.IOperation
@@ -263,7 +269,7 @@ class CLVersion : IVersion {
             return CLVersion(data, store)
         }
 
-        fun tryLoadFromHash(hash: String, store: IAsyncObjectStore): IAsyncValue<CLVersion?> {
+        fun tryLoadFromHash(hash: String, store: IAsyncObjectStore): Maybe<CLVersion> {
             return store.get(KVEntryReference(hash, CPVersion.DESERIALIZER)).map { CLVersion(it, AsyncStoreAsStore(store)) }
         }
     }
@@ -353,23 +359,23 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
                 oldTree.nodesMap!!,
                 object : CPHamtNode.IChangeVisitor {
                     override fun visitChangesOnly(): Boolean = false
-                    override fun entryAdded(key: Long, value: KVEntryReference<CPNode>): IAsyncValue<Unit> {
+                    override fun entryAdded(key: Long, value: KVEntryReference<CPNode>): Single<Unit> {
                         changedNodeIds += key
-                        return if (value != null) bulkQuery.query(value).map { } else IAsyncValue.UNIT
+                        return if (value != null) bulkQuery.query(value).map {  }.defaultIfEmpty(Unit) else singleOf(Unit)
                     }
 
-                    override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>): IAsyncValue<Unit> {
+                    override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>): Single<Unit> {
                         changedNodeIds += key
-                        return IAsyncValue.UNIT
+                        return singleOf(Unit)
                     }
 
                     override fun entryChanged(
                         key: Long,
                         oldValue: KVEntryReference<CPNode>,
                         newValue: KVEntryReference<CPNode>,
-                    ): IAsyncValue<Unit> {
+                    ): Single<Unit> {
                         changedNodeIds += key
-                        return if (newValue != null) bulkQuery.query(newValue).map { } else IAsyncValue.UNIT
+                        return if (newValue != null) bulkQuery.query(newValue).map { }.defaultIfEmpty(Unit) else singleOf(Unit)
                     }
                 },
                 store.getAsyncStore(),
@@ -393,7 +399,7 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
 
         val nodesMap = oldTree.nodesMap!!
         changedNodeIds.forEach { changedNodeId ->
-            nodesMap.get(changedNodeId, 0, store.getAsyncStore()).onReceive { nodeRef: KVEntryReference<CPNode>? ->
+            nodesMap.get(changedNodeId, 0, store.getAsyncStore()).subscribe { nodeRef: KVEntryReference<CPNode>? ->
                 if (nodeRef != null) bulkQuery.query(nodeRef)
             }
         }

@@ -15,12 +15,15 @@
 
 package org.modelix.model.persistent
 
-import org.modelix.model.api.async.IAsyncValue
+import com.badoo.reaktive.maybe.Maybe
+import com.badoo.reaktive.maybe.defaultIfEmpty
+import com.badoo.reaktive.observable.asObservable
+import com.badoo.reaktive.observable.flatMapSingle
+import com.badoo.reaktive.observable.toList
+import com.badoo.reaktive.single.Single
 import org.modelix.model.async.IAsyncObjectStore
-import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.KVEntryReference
-import org.modelix.model.lazy.NonBulkQuery
 import org.modelix.model.persistent.SerializationUtil.intFromHex
 import org.modelix.model.persistent.SerializationUtil.longFromHex
 import kotlin.jvm.JvmStatic
@@ -39,10 +42,8 @@ abstract class CPHamtNode : IKVValue {
         return CPHamtInternal(0, arrayOf())
     }
 
-    abstract fun calculateSize(store: IAsyncObjectStore): IAsyncValue<Long>
-
-    fun getAll(keys: Iterable<Long>, store: IAsyncObjectStore): IAsyncValue<List<KVEntryReference<CPNode>?>> {
-        return store.requestAll(keys.map { get(it, 0, store) })
+    fun getAll(keys: Iterable<Long>, store: IAsyncObjectStore): Single<List<KVEntryReference<CPNode>?>> {
+        return keys.asObservable().flatMapSingle { get(it, 0, store).defaultIfEmpty(null) }.toList()
     }
 
     fun put(key: Long, value: KVEntryReference<CPNode>?, store: IDeserializingKeyValueStore): CPHamtNode? {
@@ -61,19 +62,19 @@ abstract class CPHamtNode : IKVValue {
         return remove(element.id, store)
     }
 
-    fun get(key: Long, store: IAsyncObjectStore): IAsyncValue<KVEntryReference<CPNode>?> = get(key, 0, store)
+    fun get(key: Long, store: IAsyncObjectStore): Maybe<KVEntryReference<CPNode>> = get(key, 0, store)
 
-    abstract fun get(key: Long, shift: Int, store: IAsyncObjectStore): IAsyncValue<KVEntryReference<CPNode>?>
+    abstract fun get(key: Long, shift: Int, store: IAsyncObjectStore): Maybe<KVEntryReference<CPNode>>
     abstract fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode?
     abstract fun remove(key: Long, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode?
-    abstract fun visitEntries(store: IAsyncObjectStore, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IAsyncValue<Unit>
-    abstract fun visitChanges(oldNode: CPHamtNode?, shift: Int, visitor: IChangeVisitor, store: IAsyncObjectStore): IAsyncValue<Unit>
+    abstract fun visitEntries(store: IAsyncObjectStore, visitor: (Long, KVEntryReference<CPNode>) -> Unit): Single<Unit>
+    abstract fun visitChanges(oldNode: CPHamtNode?, shift: Int, visitor: IChangeVisitor, store: IAsyncObjectStore): Single<Unit>
     fun visitChanges(oldNode: CPHamtNode?, visitor: IChangeVisitor, store: IAsyncObjectStore) = visitChanges(oldNode, 0, visitor, store)
     interface IChangeVisitor {
         fun visitChangesOnly(): Boolean
-        fun entryAdded(key: Long, value: KVEntryReference<CPNode>): IAsyncValue<Unit>
-        fun entryRemoved(key: Long, value: KVEntryReference<CPNode>): IAsyncValue<Unit>
-        fun entryChanged(key: Long, oldValue: KVEntryReference<CPNode>, newValue: KVEntryReference<CPNode>): IAsyncValue<Unit>
+        fun entryAdded(key: Long, value: KVEntryReference<CPNode>): Single<Unit>
+        fun entryRemoved(key: Long, value: KVEntryReference<CPNode>): Single<Unit>
+        fun entryChanged(key: Long, oldValue: KVEntryReference<CPNode>, newValue: KVEntryReference<CPNode>): Single<Unit>
     }
 
     companion object {

@@ -13,6 +13,7 @@
  */
 package org.modelix.modelql.core
 
+import com.badoo.reaktive.observable.observableOf
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -60,7 +61,7 @@ open class ConstantSourceStep<E>(val element: E, val type: KType) : ProducingSte
     }
 
     override fun createFlow(context: IFlowInstantiationContext): StepFlow<E> {
-        return context.getFactory().constant(element.asStepOutput(this))
+        return observableOf(element.asStepOutput(this))
     }
 
     override fun toString(): String {

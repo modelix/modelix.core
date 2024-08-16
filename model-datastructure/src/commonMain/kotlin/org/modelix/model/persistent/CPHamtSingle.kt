@@ -15,13 +15,17 @@
 
 package org.modelix.model.persistent
 
-import org.modelix.model.api.async.IAsyncValue
+import com.badoo.reaktive.maybe.Maybe
+import com.badoo.reaktive.maybe.asSingleOrError
+import com.badoo.reaktive.maybe.flatMap
+import com.badoo.reaktive.maybe.maybeOfNever
+import com.badoo.reaktive.single.Single
+import com.badoo.reaktive.single.blockingGet
+import com.badoo.reaktive.single.flatMap
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.bitCount
-import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.KVEntryReference
-import org.modelix.model.lazy.NonBulkQuery
 import org.modelix.model.persistent.SerializationUtil.longToHex
 
 class CPHamtSingle(
@@ -46,29 +50,23 @@ class CPHamtSingle(
         require(numLevels <= CPHamtNode.MAX_LEVELS) { "Only ${CPHamtNode.MAX_LEVELS} levels expected, but was $numLevels" }
     }
 
-    override fun calculateSize(store: IAsyncObjectStore): IAsyncValue<Long> {
-        return getChild(store).thenRequest { it.calculateSize(store) }
-    }
-
     private fun maskBits(key: Long, shift: Int): Long = (key ushr (CPHamtNode.MAX_BITS - CPHamtNode.BITS_PER_LEVEL * numLevels - shift)) and mask
 
-    override fun get(key: Long, shift: Int, store: IAsyncObjectStore): IAsyncValue<KVEntryReference<CPNode>?> {
+    override fun get(key: Long, shift: Int, store: IAsyncObjectStore): Maybe<KVEntryReference<CPNode>> {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         if (maskBits(key, shift) == bits) {
-            return store.get(child)
-                .thenRequest {
-                    val childData = it ?: throw RuntimeException("Entry not found in store: " + child.getHash())
-                    childData.get(key, shift + numLevels * CPHamtNode.BITS_PER_LEVEL, store)
-                }
+            return store.get(child).flatMap {
+                it.get(key, shift + numLevels * CPHamtNode.BITS_PER_LEVEL, store)
+            }
         } else {
-            return IAsyncValue.nullConstant()
+            return maybeOfNever()
         }
     }
 
     override fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         if (maskBits(key, shift) == bits) {
-            return withNewChild(getChild(store.getAsyncStore()).awaitBlocking().put(key, value, shift + CPHamtNode.BITS_PER_LEVEL * numLevels, store))
+            return withNewChild(getChild(store.getAsyncStore()).blockingGet().put(key, value, shift + CPHamtNode.BITS_PER_LEVEL * numLevels, store))
         } else {
             if (numLevels > 1) {
                 return splitOneLevel().put(key, value, shift, store)
@@ -110,28 +108,29 @@ class CPHamtSingle(
         return put(key, null, shift, store)
     }
 
-    fun getChild(store: IAsyncObjectStore): IAsyncValue<CPHamtNode> {
-        return store.get(child).map { childData -> checkNotNull(childData) { "Entry not found: $child" } }
+    fun getChild(store: IAsyncObjectStore): Single<CPHamtNode> {
+        return store.get(child).asSingleOrError { IllegalStateException("Entry not found: $child" ) }
     }
 
-    override fun visitEntries(store: IAsyncObjectStore, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IAsyncValue<Unit> {
-        return getChild(store).thenRequest { it.visitEntries(store, visitor) }
+    override fun visitEntries(store: IAsyncObjectStore, visitor: (Long, KVEntryReference<CPNode>) -> Unit): Single<Unit> {
+        return getChild(store).flatMap { it.visitEntries(store, visitor) }
     }
 
-    override fun visitChanges(oldNode: CPHamtNode?, shift: Int, visitor: CPHamtNode.IChangeVisitor, store: IAsyncObjectStore): IAsyncValue<Unit> {
-        return if (oldNode === this || hash == oldNode?.hash) {
-            return IAsyncValue.UNIT
-        } else if (oldNode is CPHamtSingle && oldNode.numLevels == numLevels) {
-            getChild(store).thenRequest { child ->
-                oldNode.getChild(store).thenRequest { oldNode ->
-                    child.visitChanges(oldNode, shift + numLevels * CPHamtNode.BITS_PER_LEVEL, visitor, store)
-                }
-            }
-        } else if (numLevels == 1) {
-            CPHamtInternal.replace(this).visitChanges(oldNode, shift, visitor, store)
-        } else {
-            splitOneLevel().visitChanges(oldNode, shift, visitor, store)
-        }
+    override fun visitChanges(oldNode: CPHamtNode?, shift: Int, visitor: CPHamtNode.IChangeVisitor, store: IAsyncObjectStore): Single<Unit> {
+        TODO()
+//        return if (oldNode === this || hash == oldNode?.hash) {
+//            return IAsyncValue.UNIT
+//        } else if (oldNode is CPHamtSingle && oldNode.numLevels == numLevels) {
+//            getChild(store).thenRequest { child ->
+//                oldNode.getChild(store).thenRequest { oldNode ->
+//                    child.visitChanges(oldNode, shift + numLevels * CPHamtNode.BITS_PER_LEVEL, visitor, store)
+//                }
+//            }
+//        } else if (numLevels == 1) {
+//            CPHamtInternal.replace(this).visitChanges(oldNode, shift, visitor, store)
+//        } else {
+//            splitOneLevel().visitChanges(oldNode, shift, visitor, store)
+//        }
     }
 
     companion object {

@@ -13,13 +13,16 @@
  */
 package org.modelix.modelql.core
 
+import com.badoo.reaktive.observable.toList
+import com.badoo.reaktive.single.Single
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.modelix.streams.IMonoStream
+import org.modelix.streams.count
 
 class CountingStep() : AggregationStep<Any?, Int>() {
-    override fun aggregate(input: StepFlow<Any?>): IMonoStream<IStepOutput<Int>> {
+    override fun aggregate(input: StepFlow<Any?>): Single<IStepOutput<Int>> {
+        input.toList()
         return input.count().asStepFlow(this)
     }
 

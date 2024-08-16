@@ -16,18 +16,21 @@
 
 package org.modelix.model.api.async
 
+import com.badoo.reaktive.maybe.Maybe
+import com.badoo.reaktive.single.Single
+
 /**
  * Returning IAsyncValue<Unit> allows the event handler to execute further queries and guarantees that they are executed
  * before the event is considered as being fully processed.
  */
 interface IAsyncTreeChangeVisitor {
-    fun containmentChanged(nodeId: Long): IAsyncValue<Unit>
-    fun conceptChanged(nodeId: Long): IAsyncValue<Unit>
-    fun childrenChanged(nodeId: Long, role: String?): IAsyncValue<Unit>
-    fun referenceChanged(nodeId: Long, role: String): IAsyncValue<Unit>
-    fun propertyChanged(nodeId: Long, role: String): IAsyncValue<Unit>
+    fun containmentChanged(nodeId: Long): Maybe<Unit>
+    fun conceptChanged(nodeId: Long): Maybe<Unit>
+    fun childrenChanged(nodeId: Long, role: String?): Maybe<Unit>
+    fun referenceChanged(nodeId: Long, role: String): Maybe<Unit>
+    fun propertyChanged(nodeId: Long, role: String): Maybe<Unit>
 
     fun interestedInNodeRemoveOrAdd(): Boolean
-    fun nodeRemoved(nodeId: Long): IAsyncValue<Unit>
-    fun nodeAdded(nodeId: Long): IAsyncValue<Unit>
+    fun nodeRemoved(nodeId: Long): Maybe<Unit>
+    fun nodeAdded(nodeId: Long): Maybe<Unit>
 }

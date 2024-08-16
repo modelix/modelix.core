@@ -13,13 +13,22 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.CoroutineScope
+import com.badoo.reaktive.observable.Observable
+import com.badoo.reaktive.observable.asObservable
+import com.badoo.reaktive.observable.defaultIfEmpty
+import com.badoo.reaktive.observable.filter
+import com.badoo.reaktive.observable.flatMap
+import com.badoo.reaktive.observable.flatten
+import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.observable.mapNotNull
+import com.badoo.reaktive.observable.observableOf
+import com.badoo.reaktive.observable.toList
+import com.badoo.reaktive.single.Single
+import com.badoo.reaktive.single.asObservable
+import com.badoo.reaktive.single.blockingGet
+import com.badoo.reaktive.single.filter
+import com.badoo.reaktive.single.singleOf
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -28,19 +37,17 @@ import kotlinx.serialization.builtins.NothingSerializer
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
-import org.modelix.streams.IMonoStream
-import org.modelix.streams.IStream
-import org.modelix.streams.IStreamFactory
-import org.modelix.streams.ifEmpty
-import org.modelix.streams.plus
+import org.modelix.streams.cached
+import org.modelix.streams.count
+import org.modelix.streams.exactlyOne
 
 interface IQueryExecutor<out In> {
     fun <Out> createFlow(query: IUnboundQuery<In, *, Out>): StepFlow<Out>
 }
 
-class SimpleQueryExecutor<E>(val input: IMonoStream<E>) : IQueryExecutor<E> {
+class SimpleQueryExecutor<E>(val input: Single<E>) : IQueryExecutor<E> {
     override fun <ElementOut> createFlow(query: IUnboundQuery<E, *, ElementOut>): StepFlow<ElementOut> {
-        return query.asFlow(QueryEvaluationContext.EMPTY, input.asStepFlow(null))
+        return query.asFlow(QueryEvaluationContext.EMPTY, input.asStepFlow(null).asObservable())
     }
 }
 
@@ -75,7 +82,7 @@ private class MonoBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val
 
     override suspend fun execute(): IStepOutput<Out> {
         try {
-            return executor.createFlow(query).single().getValue()
+            return executor.createFlow(query).exactlyOne().blockingGet()
         } catch (ex: NoSuchElementException) {
             throw RuntimeException("Empty query result: " + this, ex)
         }
@@ -94,7 +101,7 @@ private class FluxBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val
     BoundQuery<In, List<IStepOutput<Out>>, Out>(executor), IFluxQuery<Out> {
 
     override suspend fun execute(): IStepOutput<List<IStepOutput<Out>>> {
-        return executor.createFlow(query).toList().getValue().asStepOutput(null)
+        return executor.createFlow(query).toList().blockingGet().asStepOutput(null)
     }
 
     override fun <T> flatMap(body: (IMonoStep<Out>) -> IFluxStep<T>): IFluxQuery<T> {
@@ -108,9 +115,9 @@ private class FluxBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val
 
 interface IUnboundQuery<in In, out AggregationOut, out ElementOut> {
     val reference: IQueryReference<IUnboundQuery<In, AggregationOut, ElementOut>>
-    suspend fun execute(evaluationContext: QueryEvaluationContext, input: IMonoStream<IStepOutput<In>>): IStepOutput<AggregationOut>
+    suspend fun execute(evaluationContext: QueryEvaluationContext, input: Single<IStepOutput<In>>): IStepOutput<AggregationOut>
     fun asFlow(evaluationContext: QueryEvaluationContext, input: StepFlow<In>): StepFlow<ElementOut>
-    fun asFlow(context: IFlowInstantiationContext, input: IStepOutput<In>): StepFlow<ElementOut> = asFlow(context.evaluationContext, context.getFactory().constant(input))
+    fun asFlow(context: QueryEvaluationContext, input: IStepOutput<In>): StepFlow<ElementOut> = asFlow(context, observableOf(input))
 
     fun requiresWriteAccess(): Boolean
     fun canBeEmpty(): Boolean
@@ -134,15 +141,12 @@ interface IMonoUnboundQuery<in In, out Out> : IUnboundQuery<In, Out, Out> {
 }
 
 suspend fun <In, Out> IMonoUnboundQuery<In, Out>.evaluate(evaluationContext: QueryEvaluationContext, input: In): Optional<Out> {
-    return coroutineScope {
-        val factory = FlowBasedStreamFactory(this)
-        SimpleQueryExecutor(factory.constant(input))
-            .createFlow(this@evaluate)
-            .map { Optional.of(it.value) }
-            .ifEmpty { Optional.empty() }
-            .single()
-            .getValue()
-    }
+    return SimpleQueryExecutor(singleOf(input))
+        .createFlow(this@evaluate)
+        .map { Optional.of(it.value) }
+        .defaultIfEmpty(Optional.empty())
+        .exactlyOne()
+        .blockingGet()
 }
 
 fun <In, Out, AggregationT, T> IMonoUnboundQuery<In, Out>.map(query: IUnboundQuery<Out, AggregationT, T>): IUnboundQuery<In, AggregationT, T> {
@@ -177,9 +181,9 @@ class MonoUnboundQuery<In, ElementOut>(
 
     override fun bind(executor: IQueryExecutor<In>): IMonoQuery<ElementOut> = MonoBoundQuery(executor, this)
 
-    override suspend fun execute(evaluationContext: QueryEvaluationContext, input: IMonoStream<IStepOutput<In>>): IStepOutput<ElementOut> {
+    override suspend fun execute(evaluationContext: QueryEvaluationContext, input: Single<IStepOutput<In>>): IStepOutput<ElementOut> {
         try {
-            return asFlow(evaluationContext, input).single().getValue()
+            return asFlow(evaluationContext, input.asObservable()).exactlyOne().blockingGet()
         } catch (ex: NoSuchElementException) {
             throw RuntimeException("Empty query result: " + this, ex)
         }
@@ -220,8 +224,8 @@ class FluxUnboundQuery<In, ElementOut>(
 
     override fun bind(executor: IQueryExecutor<In>): IFluxQuery<ElementOut> = FluxBoundQuery(executor, this)
 
-    override suspend fun execute(evaluationContext: QueryEvaluationContext, input: IMonoStream<IStepOutput<In>>): IStepOutput<List<IStepOutput<ElementOut>>> {
-        return asFlow(evaluationContext, input).toList().getValue().asStepOutput(null)
+    override suspend fun execute(evaluationContext: QueryEvaluationContext, input: Single<IStepOutput<In>>): IStepOutput<List<IStepOutput<ElementOut>>> {
+        return asFlow(evaluationContext, input.asObservable()).toList().blockingGet().asStepOutput(null)
     }
 
     override fun <T> map(body: (IMonoStep<ElementOut>) -> IMonoStep<T>): IFluxUnboundQuery<In, T> {
@@ -346,29 +350,32 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
     override fun asFlow(evaluationContext: QueryEvaluationContext, input: StepFlow<In>): StepFlow<ElementOut> {
         check(validated) { "call validate() first" }
         if (canOptimizeFlows) {
-            return SinglePathFlowInstantiationContext(evaluationContext, input.getFactory(), inputStep, input).getOrCreateFlow(outputStep)
+            return SinglePathFlowInstantiationContext(evaluationContext, inputStep, input).getOrCreateFlow(outputStep)
             // return input.flatMapConcat { SinglePathFlowInstantiationContext(inputStep, flowOf(it)).getOrCreateFlow(outputStep) }
         } else {
-            val context = FlowInstantiationContext(evaluationContext, input.getFactory(), this@UnboundQuery)
-            return input.flatMapConcat { inputElement ->
-                context.put(inputStep, input.getFactory().constant(inputElement))
+            val context = FlowInstantiationContext(evaluationContext, this@UnboundQuery)
+            return input.flatMap { inputElement ->
+                context.put(inputStep, observableOf(inputElement))
 
                 for (sharedStep in sharedSteps) {
-                    val values: IMonoStream<List<IStepOutput<Any?>>> = context.getOrCreateFlow(sharedStep.getProducer()).toList().cached()
-                    context.put(sharedStep, values)
+                    val values: Single<List<IStepOutput<Any?>>> = context.getOrCreateFlow(sharedStep.getProducer()).toList().cached()
+                    context.put(sharedStep, values.asObservable())
                     context.evaluationContext = context.evaluationContext + (sharedStep to values)
                 }
 
-                var outputFlow: IStream<IStepOutput<ElementOut>> = context.getOrCreateFlow(outputStep)
+                var outputFlow: Observable<IStepOutput<ElementOut>> = context.getOrCreateFlow(outputStep)
 
                 // ensure all write operations are executed
                 if (unconsumedSideEffectSteps.isNotEmpty()) {
 
-                    val sideEffectsStream: IStream<IStepOutput<ElementOut>> = context.getFactory().fromIterable(unconsumedSideEffectSteps
-                        .mapNotNull { if (context.getFlow(it) == null) context.getOrCreateFlow(it) else null })
-                        .map { it.count() }.filter { false } as IStream<IStepOutput<ElementOut>>
+                    val sideEffectsStream: Observable<IStepOutput<ElementOut>> = unconsumedSideEffectSteps.asObservable()
+                        .flatMap {
+                            it as IProducingStep<ElementOut>
+                            if (context.getFlow(it) == null) context.getOrCreateFlow(it) else observableOf<IStepOutput<ElementOut>>()
+                        }
+                        .filter { false } // just consume everything
 
-                    outputFlow = outputFlow + sideEffectsStream
+                    outputFlow = observableOf(outputFlow, sideEffectsStream).flatten()
 
                 }
 
@@ -448,17 +455,15 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
 
 class SinglePathFlowInstantiationContext(
     override val evaluationContext: QueryEvaluationContext,
-    private val streamFactory: IStreamFactory,
     val queryInput: QueryInput<*>,
     val inputFlow: StepFlow<*>,
 ) : IFlowInstantiationContext {
-    override fun getFactory(): IStreamFactory = streamFactory
 
     override fun <T> getOrCreateFlow(step: IProducingStep<T>): StepFlow<T> {
         return if (step == queryInput) inputFlow.upcast() else step.createFlow(this)
     }
 
-    override fun <T> getFlow(step: IProducingStep<T>): IStream<T>? {
+    override fun <T> getFlow(step: IProducingStep<T>): Observable<T>? {
         return null
     }
 }

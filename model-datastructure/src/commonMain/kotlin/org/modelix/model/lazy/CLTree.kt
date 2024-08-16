@@ -15,6 +15,25 @@
 
 package org.modelix.model.lazy
 
+import com.badoo.reaktive.maybe.Maybe
+import com.badoo.reaktive.maybe.blockingGet
+import com.badoo.reaktive.maybe.defaultIfEmpty
+import com.badoo.reaktive.maybe.flatMap
+import com.badoo.reaktive.maybe.map
+import com.badoo.reaktive.maybe.maybeOfNever
+import com.badoo.reaktive.maybe.subscribe
+import com.badoo.reaktive.observable.Observable
+import com.badoo.reaktive.observable.asObservable
+import com.badoo.reaktive.observable.flatMapSingle
+import com.badoo.reaktive.observable.toList
+import com.badoo.reaktive.single.Single
+import com.badoo.reaktive.single.blockingGet
+import com.badoo.reaktive.single.flatMap
+import com.badoo.reaktive.single.flatMapMaybe
+import com.badoo.reaktive.single.flatMapObservable
+import com.badoo.reaktive.single.map
+import com.badoo.reaktive.single.singleOf
+import com.badoo.reaktive.single.subscribe
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.channelFlow
 import org.modelix.model.api.ConceptReference
@@ -29,7 +48,6 @@ import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.async.IAsyncTree
-import org.modelix.model.api.async.IAsyncValue
 import org.modelix.model.async.BulkQueryAsAsyncStore
 import org.modelix.model.async.AsyncTree
 import org.modelix.model.async.IAsyncObjectStore
@@ -43,6 +61,7 @@ import org.modelix.model.persistent.CPNodeRef.Companion.foreign
 import org.modelix.model.persistent.CPNodeRef.Companion.global
 import org.modelix.model.persistent.CPNodeRef.Companion.local
 import org.modelix.model.persistent.CPTree
+import org.modelix.streams.orNull
 
 fun createNewTreeData(
     store: IDeserializingKeyValueStore,
@@ -92,7 +111,7 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
     }
 
     fun getSize(): Long {
-        return (nodesMap ?: return 0L).calculateSize(asyncStore).awaitBlocking()
+        return -1
     }
 
     @Deprecated("BulkQuery is now responsible for prefetching")
@@ -116,11 +135,11 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
     }
 
     val root: CPNode?
-        get() = resolveElement(ITree.ROOT_ID).awaitBlocking()
+        get() = resolveElement(ITree.ROOT_ID).blockingGet()
 
     override fun setProperty(nodeId: Long, role: String, value: String?): ITree {
         var newIdToHash = nodesMap
-        val newNodeData = resolveElement(nodeId).map { it!!.withPropertyValue(role, value) }.awaitBlocking()
+        val newNodeData = resolveElement(nodeId).map { it.withPropertyValue(role, value) }.blockingGet()!!
         newIdToHash = newIdToHash!!.put(newNodeData, store)
         return withNewNodesMap(newIdToHash!!)
     }
@@ -179,9 +198,9 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
      * Incomplete operation. The child has to exist in the map, but not be part of the tree.
      */
     protected fun addChildren(parentId: Long, role: String?, index: Int, childIds: LongArray): ITree {
-        val parent = resolveElement(parentId).awaitBlocking()
+        val parent = resolveElement(parentId).blockingGet()
         var newIdToHash = nodesMap
-        val childData = childIds.map { resolveElement(it).awaitBlocking()!! }
+        val childData = childIds.map { resolveElement(it).blockingGet()!! }
         val newChildData = childData.map {
             CPNode.create(
                 it.id,
@@ -232,7 +251,7 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
     }
 
     override fun setReferenceTarget(sourceId: Long, role: String, target: INodeReference?): ITree {
-        val source = resolveElement(sourceId).awaitBlocking()!!
+        val source = resolveElement(sourceId).blockingGet()!!
         val refData: CPNodeRef? = when (target) {
             null -> null
             is LocalPNodeReference -> {
@@ -255,7 +274,7 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
 
     override fun setConcept(nodeId: Long, concept: IConceptReference?): ITree {
         // manually throw NullPointerException for consistency, should be replaced for all methods in the future.
-        val node = resolveElement(nodeId).awaitBlocking() ?: throw NullPointerException("nodeId could not be resolved. id=$nodeId")
+        val node = resolveElement(nodeId).blockingGet() ?: throw NullPointerException("nodeId could not be resolved. id=$nodeId")
         val newData = CPNode.create(
             node.id,
             concept?.getUID(),
@@ -283,8 +302,8 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
      * Make sure to delete the descendants or add them to the tree at a new location.
      */
     protected fun deleteNode(nodeId: Long, recursive: Boolean): CLTree {
-        val node = resolveElement(nodeId).awaitBlocking()
-        val parent = resolveElement(node!!.parentId).awaitBlocking()
+        val node = resolveElement(nodeId).blockingGet()
+        val parent = resolveElement(node!!.parentId).blockingGet()
         var newIdToHash: CPHamtNode = nodesMap
             ?: throw RuntimeException("nodesMap not found for hash: " + this.data.idToHash)
         val newParentData = CPNode.create(
@@ -308,15 +327,15 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
     }
 
     override fun containsNode(nodeId: Long): Boolean {
-        return nodesMap!!.get(nodeId, asyncStore).awaitBlocking() != null
+        return nodesMap!!.get(nodeId, asyncStore).blockingGet() != null
     }
 
     override fun getAllChildren(parentId: Long): Iterable<Long> {
-        return getAllChildrenAsync(parentId).awaitBlocking()
+        return getAllChildrenAsync(parentId).blockingGet()
     }
 
-    fun getAllChildrenAsync(parentId: Long): IAsyncValue<Iterable<Long>> {
-        return resolveElement(parentId).map {
+    fun getAllChildrenAsync(parentId: Long): Single<Iterable<Long>> {
+        return resolveElement(parentId).defaultIfEmpty(null).map {
             it?.childrenIdArray?.asIterable() ?: emptyList()
         }
     }
@@ -334,38 +353,38 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
     override fun getDescendants(root: Long, includeSelf: Boolean): Iterable<CLNode> {
         TODO()
 //        val parent = resolveElement(root)
-//        return getDescendants(parent!!, includeSelf).awaitBlocking().map { CLNode(this, it) }
+//        return getDescendants(parent!!, includeSelf).blockingGet().map { CLNode(this, it) }
     }
 
     override fun getDescendants(rootIds: Iterable<Long>, includeSelf: Boolean): Iterable<CLNode> {
         TODO()
 //        val bulkQuery = store.newBulkQuery()
-//        val roots: IAsyncValue<List<CPNode>> = resolveElements(rootIds.toList(), bulkQuery)
+//        val roots: Single<List<CPNode>> = resolveElements(rootIds.toList(), bulkQuery)
 //        val descendants = roots.thenRequest { bulkQuery.flatMap(it) { getDescendants(it, bulkQuery, includeSelf) } }
-//        return descendants.awaitBlocking().flatten().map { CLNode(this, it) }
+//        return descendants.blockingGet().flatten().map { CLNode(this, it) }
     }
 
     override fun getAncestors(nodeIds: Iterable<Long>, includeSelf: Boolean): Set<Long> {
         TODO()
 //        val bulkQuery = store.newBulkQuery()
-//        val nodes: IAsyncValue<List<CPNode>> = resolveElements(nodeIds, bulkQuery)
+//        val nodes: Single<List<CPNode>> = resolveElements(nodeIds, bulkQuery)
 //        val ancestors = nodes.thenRequest { bulkQuery.flatMap(it) { getAncestors(it, bulkQuery, includeSelf) } }
 //        val result = HashSet<Long>()
-//        ancestors.awaitBlocking().forEach { result.addAll(it.map { it.id }) }
+//        ancestors.blockingGet().forEach { result.addAll(it.map { it.id }) }
 //        return result
     }
 
     override fun getChildren(parentId: Long, role: String?): Iterable<Long> {
-        val parent = resolveElement(parentId).awaitBlocking()
-        val children = getChildren(parent!!).awaitBlocking()
+        val parent = resolveElement(parentId).blockingGet()
+        val children = getChildren(parent!!).blockingGet()
         return children
             .filter { it.roleInParent == role }
             .map { it.id }
     }
 
     override fun getChildRoles(sourceId: Long): Iterable<String?> {
-        val parent = resolveElement(sourceId).awaitBlocking()
-        val children: Iterable<CPNode> = getChildren(parent!!).awaitBlocking()
+        val parent = resolveElement(sourceId).blockingGet()
+        val children: Iterable<CPNode> = getChildren(parent!!).blockingGet()
         return children.map { it.roleInParent }.distinct()
     }
 
@@ -379,7 +398,7 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
 
     override fun getConceptReference(nodeId: Long): IConceptReference? {
         try {
-            val node = resolveElement(nodeId).awaitBlocking()
+            val node = resolveElement(nodeId).blockingGet()
             return node!!.concept?.let { ConceptReference(it) }
         } catch (e: Exception) {
             throw RuntimeException("Unable to find concept for node $nodeId", e)
@@ -387,27 +406,27 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
     }
 
     override fun getParent(nodeId: Long): Long {
-        val node = resolveElement(nodeId).awaitBlocking()
+        val node = resolveElement(nodeId).blockingGet()
         return node!!.parentId
     }
 
     override fun getProperty(nodeId: Long, role: String): String? {
-        val node = resolveElement(nodeId).awaitBlocking()
+        val node = resolveElement(nodeId).blockingGet()
         return node!!.getPropertyValue(role)
     }
 
     override fun getPropertyRoles(sourceId: Long): Iterable<String> {
-        val node = resolveElement(sourceId).awaitBlocking()
+        val node = resolveElement(sourceId).blockingGet()
         return node!!.propertyRoles.toList()
     }
 
     override fun getReferenceRoles(sourceId: Long): Iterable<String> {
-        val node = resolveElement(sourceId).awaitBlocking()
+        val node = resolveElement(sourceId).blockingGet()
         return node!!.referenceRoles.toList()
     }
 
     override fun getReferenceTarget(sourceId: Long, role: String): INodeReference? {
-        val node = resolveElement(sourceId).awaitBlocking()!!
+        val node = resolveElement(sourceId).blockingGet()!!
         val targetRef = node.getReferenceTarget(role)
         return when {
             targetRef == null -> null
@@ -418,7 +437,7 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
     }
 
     override fun getRole(nodeId: Long): String? {
-        val node = resolveElement(nodeId).awaitBlocking()
+        val node = resolveElement(nodeId).blockingGet()
         return node!!.roleInParent
     }
 
@@ -452,108 +471,109 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
     }
 
     override fun visitChanges(oldVersion: ITree, visitor: ITreeChangeVisitor) {
-        require(oldVersion is CLTree) { "Diff is only supported between two instances of CLTree" }
-        if (data.idToHash == oldVersion.data.idToHash) return
-        val changesOnly = visitor !is ITreeChangeVisitorEx
-        nodesMap!!.visitChanges(
-            oldVersion.nodesMap,
-            object : CPHamtNode.IChangeVisitor {
-                private val childrenChangeEvents = HashSet<Pair<Long, String?>>()
-
-                private fun notifyChildrenChange(parent: Long, role: String?) {
-                    if (childrenChangeEvents.add(parent to role)) visitor.childrenChanged(parent, role)
-                }
-
-                override fun visitChangesOnly(): Boolean {
-                    return changesOnly
-                }
-
-                override fun entryAdded(key: Long, value: KVEntryReference<CPNode>): IAsyncValue<Unit> {
-                    return if (visitor is ITreeChangeVisitorEx) {
-                        createElement(value).map { element ->
-                            visitor.nodeAdded(element!!.id)
-                        }
-                    } else {
-                        IAsyncValue.UNIT
-                    }
-                }
-
-                override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>): IAsyncValue<Unit> {
-                    return if (visitor is ITreeChangeVisitorEx) {
-                        oldVersion.createElement(value).map { element ->
-                            visitor.nodeRemoved(element!!.id)
-                        }
-                    } else {
-                        IAsyncValue.UNIT
-                    }
-                }
-
-                override fun entryChanged(key: Long, oldValue: KVEntryReference<CPNode>, newValue: KVEntryReference<CPNode>): IAsyncValue<Unit> {
-                    return oldVersion.createElement(oldValue).map { oldElement ->
-                        createElement(newValue).map { newElement ->
-                            if (oldElement!!::class != newElement!!::class) {
-                                throw RuntimeException("Unsupported type change of node " + key + "from " + oldElement::class.simpleName + " to " + newElement::class.simpleName)
-                            }
-                            if (oldElement.parentId != newElement.parentId) {
-                                visitor.containmentChanged(key)
-                            } else if (oldElement.roleInParent != newElement.roleInParent) {
-                                visitor.containmentChanged(key)
-                                notifyChildrenChange(oldElement.parentId, oldElement.roleInParent)
-                                notifyChildrenChange(newElement.parentId, newElement.roleInParent)
-                            }
-                            if (oldElement.concept != newElement.concept) {
-                                visitor.conceptChanged(key)
-                            }
-                            oldElement.propertyRoles.asSequence()
-                                .plus(newElement.propertyRoles.asSequence())
-                                .distinct()
-                                .forEach { role: String ->
-                                    if (oldElement.getPropertyValue(role) != newElement.getPropertyValue(role)) {
-                                        visitor.propertyChanged(newElement.id, role)
-                                    }
-                                }
-                            oldElement.referenceRoles.asSequence()
-                                .plus(newElement.referenceRoles.asSequence())
-                                .distinct()
-                                .forEach { role: String ->
-                                    if (oldElement.getReferenceTarget(role) != newElement.getReferenceTarget(role)) {
-                                        visitor.referenceChanged(newElement.id, role)
-                                    }
-                                }
-
-                            asyncStore.flatMap(listOf(oldVersion.getChildren(oldElement), getChildren(newElement))) { it }.onReceive { childrenLists ->
-                                val (oldChildrenList, newChildrenList) = childrenLists
-                                val oldChildren: MutableMap<String?, MutableList<CPNode>> = HashMap()
-                                val newChildren: MutableMap<String?, MutableList<CPNode>> = HashMap()
-                                oldChildrenList.forEach { oldChildren.getOrPut(it.roleInParent, { ArrayList() }).add(it) }
-                                newChildrenList.forEach { newChildren.getOrPut(it.roleInParent, { ArrayList() }).add(it) }
-
-                                val roles: MutableSet<String?> = HashSet()
-                                roles.addAll(oldChildren.keys)
-                                roles.addAll(newChildren.keys)
-                                for (role in roles) {
-                                    val oldChildrenInRole = oldChildren[role]
-                                    val newChildrenInRole = newChildren[role]
-                                    val oldValues = oldChildrenInRole?.map { it.id }
-                                    val newValues = newChildrenInRole?.map { it.id }
-                                    if (oldValues != newValues) {
-                                        notifyChildrenChange(newElement.id, role)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            asyncStore
-        )
+        TODO()
+//        require(oldVersion is CLTree) { "Diff is only supported between two instances of CLTree" }
+//        if (data.idToHash == oldVersion.data.idToHash) return
+//        val changesOnly = visitor !is ITreeChangeVisitorEx
+//        nodesMap!!.visitChanges(
+//            oldVersion.nodesMap,
+//            object : CPHamtNode.IChangeVisitor {
+//                private val childrenChangeEvents = HashSet<Pair<Long, String?>>()
+//
+//                private fun notifyChildrenChange(parent: Long, role: String?) {
+//                    if (childrenChangeEvents.add(parent to role)) visitor.childrenChanged(parent, role)
+//                }
+//
+//                override fun visitChangesOnly(): Boolean {
+//                    return changesOnly
+//                }
+//
+//                override fun entryAdded(key: Long, value: KVEntryReference<CPNode>): Single<Unit> {
+//                    return if (visitor is ITreeChangeVisitorEx) {
+//                        createElement(value).map { element ->
+//                            visitor.nodeAdded(element!!.id)
+//                        }
+//                    } else {
+//                        singleOf(Unit)
+//                    }
+//                }
+//
+//                override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>): Single<Unit> {
+//                    return if (visitor is ITreeChangeVisitorEx) {
+//                        oldVersion.createElement(value).defaultIfEmpty(null).map { element ->
+//                            visitor.nodeRemoved(element!!.id)
+//                        }
+//                    } else {
+//                        singleOf(Unit)
+//                    }
+//                }
+//
+//                override fun entryChanged(key: Long, oldValue: KVEntryReference<CPNode>, newValue: KVEntryReference<CPNode>): Single<Unit> {
+//                    return oldVersion.createElement(oldValue).map { oldElement ->
+//                        createElement(newValue).defaultIfEmpty(null).map { newElement ->
+//                            if (oldElement!!::class != newElement!!::class) {
+//                                throw RuntimeException("Unsupported type change of node " + key + "from " + oldElement::class.simpleName + " to " + newElement::class.simpleName)
+//                            }
+//                            if (oldElement.parentId != newElement.parentId) {
+//                                visitor.containmentChanged(key)
+//                            } else if (oldElement.roleInParent != newElement.roleInParent) {
+//                                visitor.containmentChanged(key)
+//                                notifyChildrenChange(oldElement.parentId, oldElement.roleInParent)
+//                                notifyChildrenChange(newElement.parentId, newElement.roleInParent)
+//                            }
+//                            if (oldElement.concept != newElement.concept) {
+//                                visitor.conceptChanged(key)
+//                            }
+//                            oldElement.propertyRoles.asSequence()
+//                                .plus(newElement.propertyRoles.asSequence())
+//                                .distinct()
+//                                .forEach { role: String ->
+//                                    if (oldElement.getPropertyValue(role) != newElement.getPropertyValue(role)) {
+//                                        visitor.propertyChanged(newElement.id, role)
+//                                    }
+//                                }
+//                            oldElement.referenceRoles.asSequence()
+//                                .plus(newElement.referenceRoles.asSequence())
+//                                .distinct()
+//                                .forEach { role: String ->
+//                                    if (oldElement.getReferenceTarget(role) != newElement.getReferenceTarget(role)) {
+//                                        visitor.referenceChanged(newElement.id, role)
+//                                    }
+//                                }
+//
+//                            asyncStore.flatMap(listOf(oldVersion.getChildren(oldElement), getChildren(newElement))) { it }.onReceive { childrenLists ->
+//                                val (oldChildrenList, newChildrenList) = childrenLists
+//                                val oldChildren: MutableMap<String?, MutableList<CPNode>> = HashMap()
+//                                val newChildren: MutableMap<String?, MutableList<CPNode>> = HashMap()
+//                                oldChildrenList.forEach { oldChildren.getOrPut(it.roleInParent, { ArrayList() }).add(it) }
+//                                newChildrenList.forEach { newChildren.getOrPut(it.roleInParent, { ArrayList() }).add(it) }
+//
+//                                val roles: MutableSet<String?> = HashSet()
+//                                roles.addAll(oldChildren.keys)
+//                                roles.addAll(newChildren.keys)
+//                                for (role in roles) {
+//                                    val oldChildrenInRole = oldChildren[role]
+//                                    val newChildrenInRole = newChildren[role]
+//                                    val oldValues = oldChildrenInRole?.map { it.id }
+//                                    val newValues = newChildrenInRole?.map { it.id }
+//                                    if (oldValues != newValues) {
+//                                        notifyChildrenChange(newElement.id, role)
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            },
+//            asyncStore
+//        )
     }
 
     protected fun deleteElements(node: CPNode, idToHash: CPHamtNode): CPHamtNode? {
         var newIdToHash: CPHamtNode? = idToHash
         for (childId in node.getChildrenIds()) {
             if (newIdToHash == null) throw RuntimeException("node $childId not found")
-            val childHash: KVEntryReference<CPNode> = newIdToHash.get(childId, asyncStore).awaitBlocking() ?: throw RuntimeException("node $childId not found")
+            val childHash: KVEntryReference<CPNode> = newIdToHash.get(childId, asyncStore).blockingGet() ?: throw RuntimeException("node $childId not found")
             val child = childHash.getValue(store)
             newIdToHash = deleteElements(child, newIdToHash)
         }
@@ -562,48 +582,48 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
         return newIdToHash
     }
 
-    fun resolveElement(ref: CPNodeRef?): IAsyncValue<CPNode?> {
+    fun resolveElement(ref: CPNodeRef?): Single<CPNode?> {
         if (ref == null) {
-            return IAsyncValue.nullConstant()
+            return singleOf(null)
         }
         if (ref.isGlobal && ref.treeId != data.id) {
             throw RuntimeException("Cannot resolve " + ref + " in tree " + data.id)
         }
         if (ref.isLocal) {
-            return resolveElement(ref.elementId)
+            return resolveElement(ref.elementId).defaultIfEmpty(null)
         }
         throw RuntimeException("Unsupported reference type: $ref")
     }
 
-    fun resolveElement(id: Long): IAsyncValue<CPNode?> {
+    fun resolveElement(id: Long): Maybe<CPNode> {
         if (id == 0L) {
-            return IAsyncValue.nullConstant()
+            return maybeOfNever()
         }
         val hash = nodesMap!!.get(id, asyncStore)
-        return hash.thenRequest {
+        return hash.orNull().flatMapMaybe {
             if (it == null) throw NodeNotFoundException(id)
             createElement(it)
         }
     }
 
-    fun resolveElements(ids_: Iterable<Long>): IAsyncValue<List<CPNode>> {
+    fun resolveElements(ids_: Iterable<Long>): Observable<CPNode> {
         val ids = ids_.toList()
-        val a: IAsyncValue<List<KVEntryReference<CPNode>?>> = nodesMap!!.getAll(ids, asyncStore)
-        val b: IAsyncValue<List<KVEntryReference<CPNode>>> = a.map { hashes: List<KVEntryReference<CPNode>?> ->
+        val a: Single<List<KVEntryReference<CPNode>?>> = nodesMap!!.getAll(ids, asyncStore)
+        val b: Single<List<KVEntryReference<CPNode>>> = a.map { hashes: List<KVEntryReference<CPNode>?> ->
             hashes.mapIndexed { index, s -> s ?: throw NodeNotFoundException(ids[index]) }
         }
-        return b.thenRequest { hashes -> createElements(hashes) }
+        return b.flatMapObservable { hashes -> createElements(hashes).flatMapObservable { it.asObservable() } }
     }
 
-    fun createElement(hash: KVEntryReference<CPNode>?): IAsyncValue<CPNode?> {
+    fun createElement(hash: KVEntryReference<CPNode>?): Maybe<CPNode> {
         return if (hash == null) {
-            IAsyncValue.nullConstant()
+            maybeOfNever()
         } else {
             asyncStore.get(hash).also {
                 val bulkQuery = (store as? BulkQueryAsAsyncStore)?.bulkQuery
                 if (bulkQuery != null) {
-                    it.onReceive { node ->
-                        if (node == null) return@onReceive
+                    it.orNull().subscribe { node ->
+                        if (node == null) return@subscribe
                         val children: LongArray = node.childrenIdArray
                         if (children.isNotEmpty()) {
                             children.reversedArray().forEach {
@@ -622,48 +642,16 @@ class CLTree(val data: CPTree, val store: IDeserializingKeyValueStore) : ITree, 
         }
     }
 
-    fun createElements(hashes: List<KVEntryReference<CPNode>>): IAsyncValue<List<CPNode>> {
-        return asyncStore.flatMap(hashes) { hash: KVEntryReference<CPNode> ->
-            asyncStore.get(hash).map { n -> n!! }
-        }
+    fun createElements(hashes: List<KVEntryReference<CPNode>>): Single<List<CPNode>> {
+        return hashes.asObservable().flatMapSingle { asyncStore.get(it).orNull().map { it!! } }.toList()
     }
 
     override fun toString(): String {
         return "CLTree[$hash]"
     }
 
-    private fun getChildren(node: CPNode): IAsyncValue<List<CPNode>> {
-        return resolveElements(node.getChildrenIds().toList())
-    }
-
-    private fun getDescendants(node: CPNode, includeSelf: Boolean): IAsyncValue<Iterable<CPNode>> {
-        channelFlow<CPNode> {
-
-        }
-        return if (includeSelf) {
-            getDescendants(node, false)
-                .map { descendants -> (sequenceOf(node) + descendants).asIterable() }
-        } else {
-            getChildren(node).thenRequest { children: Iterable<CPNode> ->
-                val d: IAsyncValue<List<CPNode>> = asyncStore.flatMap(children) { getDescendants(it, true) }.map { it.flatten() }
-                d
-            }
-        }
-    }
-
-    private fun getAncestors(node: CPNode, includeSelf: Boolean): IAsyncValue<List<CPNode>> {
-        return if (includeSelf) {
-            getAncestors(node, false).map { ancestors -> (listOf(node) + ancestors) }
-        } else {
-            val parentNode = resolveElement(node.parentId)
-            parentNode.thenRequest {
-                if (it == null) {
-                    IAsyncValue.constant(listOf())
-                } else {
-                    getAncestors(it, true)
-                }
-            }
-        }
+    private fun getChildren(node: CPNode): Single<List<CPNode>> {
+        return resolveElements(node.getChildrenIds().toList()).toList()
     }
 
     companion object {

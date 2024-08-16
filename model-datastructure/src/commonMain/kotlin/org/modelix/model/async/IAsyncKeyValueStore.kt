@@ -226,4 +226,8 @@ class BulkQueryAsStreamFactory(val bulkQuery: IBulkQuery) : IStreamFactory {
     override fun <T> zip(streams: List<IStream<T>>): IStream<List<T>> {
         TODO("Not yet implemented")
     }
+
+    override fun <T> fromSequence(input: Sequence<T>): IStream<T> {
+        TODO("Not yet implemented")
+    }
 }

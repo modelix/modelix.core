@@ -22,6 +22,7 @@ interface IStreamFactory {
     fun <T> lazyConstant(provider: () -> T): IMonoStream<T>
     fun <T> constant(value: T): IMonoStream<T>
     fun <T> fromIterable(input: Iterable<T>): IStream<T>
+    fun <T> fromSequence(input: Sequence<T>): IStream<T>
     fun <T> ifEmpty(stream: IStream<T>, alternative: () -> IStream<T>): IStream<T>
     fun <T> ifEmpty(stream: IOptionalMonoStream<T>, alternative: () -> IMonoStream<T>): IMonoStream<T>
     fun <T> flatten(streams: Iterable<IStream<T>>): IStream<T>
@@ -35,6 +36,7 @@ interface IStream<out E> {
     fun asFlow(): Flow<E>
     fun getFactory(): IStreamFactory
     fun <R> map(transform: (E) -> R): IStream<R>
+    fun <R> mapMany(transform: (E) -> Sequence<R>): IStream<R>
     fun <R> flatMapConcat(transform: (E) -> IStream<R>): IStream<R>
     fun cached(): IStream<E>
     fun toList(): IMonoStream<List<E>>
@@ -50,9 +52,11 @@ interface IStream<out E> {
     fun firstOrNull(): IMonoStream<E?>
     fun first(): IOptionalMonoStream<E>
     fun isEmpty(): IMonoStream<Boolean>
+    fun isNotEmpty(): IMonoStream<Boolean>
     fun assertNotEmpty(message: () -> String): IStream<E>
     fun withIndex(): IStream<IndexedValue<E>>
     fun <T> fold(initial: T, f: (acc: T, value: E) -> T): IMonoStream<T>
+    fun distinct(): IStream<E>
 }
 
 fun <T> IStream<T>.ifEmptyThenStream(alternative: () -> IStream<T>): IStream<T> = getFactory().ifEmpty(this, alternative)
@@ -63,16 +67,25 @@ fun <T> IStream<IStream<T>>.flatten() = flatMapConcat { it }
 operator fun <T> IStream<T>.plus(other: IStream<T>): IStream<T> = getFactory().flatten(listOf(this, other))
 operator fun <T> IStream<T>.plus(others: Iterable<IStream<T>>): IStream<T> = getFactory().flatten(listOf(this) + others)
 
+fun <T1, T2, R> Pair<IMonoStream<T1>, IMonoStream<T2>>.mapBothMono(transform: (T1, T2) -> IMonoStream<R>): IMonoStream<R> {
+    return this.first.getFactory().zip(this.toList()).single().mapMono { transform(it[0] as T1, it[1] as T2) }
+}
+
 interface IOptionalMonoStream<out E> : IStream<E> {
     fun presentAndEqual(value: Any?): IMonoStream<Boolean>
     override fun assertNotEmpty(message: () -> String): IMonoStream<E>
     override fun <R> map(transform: (E) -> R): IOptionalMonoStream<R>
+    fun <R : Any> mapNotNull(transform: (E) -> R?): IOptionalMonoStream<R>
     override fun cached(): IOptionalMonoStream<E>
+    fun <R> mapOptionalMono(transform: (E) -> IOptionalMonoStream<R>): IOptionalMonoStream<R>
+    fun <R> mapMono(transform: (E) -> IMonoStream<R>): IOptionalMonoStream<R>
+    override fun filterNotNull(): IOptionalMonoStream<E & Any>
 }
 
 interface IMonoStream<out E> : IOptionalMonoStream<E> {
     suspend fun getValue(): E
     override fun <R> map(transform: (E) -> R): IMonoStream<R>
+    override fun <R> mapMono(transform: (E) -> IMonoStream<R>): IMonoStream<R>
     override fun filterNotNull(): IOptionalMonoStream<E & Any>
     override fun cached(): IMonoStream<E>
 }
@@ -167,6 +180,18 @@ class SequenceAsStream<E>(val sequence: Sequence<E>, private val factory: IStrea
     }
 
     override fun <T> fold(initial: T, f: (acc: T, value: E) -> T): IMonoStream<T> {
+        TODO("Not yet implemented")
+    }
+
+    override fun distinct(): IStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <R> mapMany(transform: (E) -> Sequence<R>): IStream<R> {
+        TODO("Not yet implemented")
+    }
+
+    override fun isNotEmpty(): IMonoStream<Boolean> {
         TODO("Not yet implemented")
     }
 }

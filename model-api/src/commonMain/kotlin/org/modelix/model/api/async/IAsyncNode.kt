@@ -24,23 +24,25 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
+import org.modelix.streams.IOptionalMonoStream
+import org.modelix.streams.IStream
 
 interface IAsyncNode {
     fun asStream(): IMonoStream<IAsyncNode>
     fun asRegularNode(): INode
-    fun getConcept(): IAsyncValue<IConcept>
-    fun getConceptRef(): IAsyncValue<ConceptReference>
-    fun getRoleInParent(): IAsyncValue<IChildLinkReference>
-    fun getParent(): IAsyncValue<IAsyncNode?>
-    fun getPropertyValue(role: IPropertyReference): IAsyncValue<String?>
-    fun getAllChildren(): IAsyncSequence<IAsyncNode>
-    fun getChildren(role: IChildLinkReference): IAsyncSequence<IAsyncNode>
-    fun getReferenceTarget(role: IReferenceLinkReference): IAsyncValue<IAsyncNode?>
-    fun getReferenceTargetRef(role: IReferenceLinkReference): IAsyncValue<INodeReference?>
-    fun getAllReferenceTargetRefs(): IAsyncSequence<Pair<IReferenceLinkReference, INodeReference>>
-    fun getAllReferenceTargets(): IAsyncSequence<Pair<IReferenceLinkReference, IAsyncNode>>
+    fun getConcept(): IMonoStream<IConcept>
+    fun getConceptRef(): IMonoStream<ConceptReference>
+    fun getRoleInParent(): IMonoStream<IChildLinkReference>
+    fun getParent(): IOptionalMonoStream<IAsyncNode>
+    fun getPropertyValue(role: IPropertyReference): IOptionalMonoStream<String>
+    fun getAllChildren(): IStream<IAsyncNode>
+    fun getChildren(role: IChildLinkReference): IStream<IAsyncNode>
+    fun getReferenceTarget(role: IReferenceLinkReference): IOptionalMonoStream<IAsyncNode>
+    fun getReferenceTargetRef(role: IReferenceLinkReference): IOptionalMonoStream<INodeReference>
+    fun getAllReferenceTargetRefs(): IStream<Pair<IReferenceLinkReference, INodeReference>>
+    fun getAllReferenceTargets(): IStream<Pair<IReferenceLinkReference, IAsyncNode>>
 
-    fun getDescendants(includeSelf: Boolean): IAsyncSequence<IAsyncNode>
+    fun getDescendants(includeSelf: Boolean): IStream<IAsyncNode>
 }
 
 interface INodeWithAsyncSupport : INode {

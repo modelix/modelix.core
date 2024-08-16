@@ -36,7 +36,7 @@ class ParentTraversalStep() : MonoTransformingStep<INode, INode>(), IMonoStep<IN
 
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
         return input.flatMapConcat {
-            it.value.asAsyncNode().getParent().asStream().filterNotNull().map { it.asRegularNode() }
+            it.value.asAsyncNode().getParent().filterNotNull().map { it.asRegularNode() }
         }.asStepFlow(this)
     }
 

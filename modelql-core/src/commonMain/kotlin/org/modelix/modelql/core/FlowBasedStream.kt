@@ -33,7 +33,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.single
-import kotlinx.coroutines.flow.singleOrNull
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.flow.toSet
@@ -42,6 +41,7 @@ import org.modelix.streams.IMonoStream
 import org.modelix.streams.IOptionalMonoStream
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamFactory
+import org.modelix.streams.SequenceAsStream
 
 class FlowBasedStreamFactory(val coroutineScope: CoroutineScope?) : IStreamFactory {
     private fun <T> Flow<T>.asStream() = FlowBasedStream(this, this@FlowBasedStreamFactory)
@@ -50,6 +50,10 @@ class FlowBasedStreamFactory(val coroutineScope: CoroutineScope?) : IStreamFacto
 
     override fun <T> fromIterable(input: Iterable<T>): IStream<T> {
         return input.asFlow().asStream()
+    }
+
+    override fun <T> fromSequence(input: Sequence<T>): IStream<T> {
+        return SequenceAsStream(input, this)
     }
 
     override fun <T> lazyConstant(provider: () -> T): IMonoStream<T> {
@@ -206,6 +210,18 @@ open class FlowBasedStream<E>(val flow: Flow<E>, private val factory: FlowBasedS
             emit(flow.fold(initial, f))
         }.asMonoStream()
     }
+
+    override fun distinct(): IStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <R> mapMany(transform: (E) -> Sequence<R>): IStream<R> {
+        TODO("Not yet implemented")
+    }
+
+    override fun isNotEmpty(): IMonoStream<Boolean> {
+        TODO("Not yet implemented")
+    }
 }
 
 open class FlowBasedOptionalMonoStream<E>(flow: Flow<E>, factory: FlowBasedStreamFactory) : FlowBasedStream<E>(flow, factory), IOptionalMonoStream<E> {
@@ -224,6 +240,22 @@ open class FlowBasedOptionalMonoStream<E>(flow: Flow<E>, factory: FlowBasedStrea
     override fun cached(): IOptionalMonoStream<E> {
         return super.cached().asFlow().asOptionalMonoStream()
     }
+
+    override fun filterNotNull(): IOptionalMonoStream<E & Any> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <R : Any> mapNotNull(transform: (E) -> R?): IOptionalMonoStream<R> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <R> mapOptionalMono(transform: (E) -> IOptionalMonoStream<R>): IOptionalMonoStream<R> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <R> mapMono(transform: (E) -> IMonoStream<R>): IOptionalMonoStream<R> {
+        TODO("Not yet implemented")
+    }
 }
 
 class FlowBasedMonoStream<E>(flow: Flow<E>, factory: FlowBasedStreamFactory) : FlowBasedOptionalMonoStream<E>(flow, factory), IMonoStream<E> {
@@ -241,6 +273,10 @@ class FlowBasedMonoStream<E>(flow: Flow<E>, factory: FlowBasedStreamFactory) : F
 
     override fun cached(): IMonoStream<E> {
         return super.cached().asFlow().asMonoStream()
+    }
+
+    override fun <R> mapMono(transform: (E) -> IMonoStream<R>): IMonoStream<R> {
+        TODO("Not yet implemented")
     }
 }
 

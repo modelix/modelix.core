@@ -436,4 +436,28 @@ class AsyncValueAsStream<E>(val value: IAsyncValue<E>, private val factory: IStr
     override fun <T> fold(initial: T, f: (acc: T, value: E) -> T): IMonoStream<T> {
         TODO("Not yet implemented")
     }
+
+    override fun distinct(): IStream<E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <R> mapMono(transform: (E) -> IMonoStream<R>): IMonoStream<R> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <R : Any> mapNotNull(transform: (E) -> R?): IOptionalMonoStream<R> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <R> mapOptionalMono(transform: (E) -> IOptionalMonoStream<R>): IOptionalMonoStream<R> {
+        return value.map { transform(it) }.asStream().flatten().optionalSingle()
+    }
+
+    override fun <R> mapMany(transform: (E) -> Sequence<R>): IStream<R> {
+        TODO("Not yet implemented")
+    }
+
+    override fun isNotEmpty(): IMonoStream<Boolean> {
+        TODO("Not yet implemented")
+    }
 }

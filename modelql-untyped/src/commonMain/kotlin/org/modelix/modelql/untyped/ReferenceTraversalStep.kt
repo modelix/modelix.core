@@ -38,7 +38,7 @@ import org.modelix.modelql.core.stepOutputSerializer
 class ReferenceTraversalStep(val link: IReferenceLinkReference) : MonoTransformingStep<INode, INode>(), IMonoStep<INode> {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
         return input.flatMapConcat {
-            it.value.asAsyncNode().getReferenceTarget(link).asStream().filterNotNull().map { it.asRegularNode() }
+            it.value.asAsyncNode().getReferenceTarget(link).filterNotNull().map { it.asRegularNode() }
         }.asStepFlow(this)
     }
 

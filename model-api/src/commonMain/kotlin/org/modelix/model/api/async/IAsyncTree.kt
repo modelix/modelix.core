@@ -22,20 +22,22 @@ import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
+import org.modelix.streams.IOptionalMonoStream
+import org.modelix.streams.IStream
 
 interface IAsyncTree {
     fun asStream(): IMonoStream<IAsyncTree>
-    fun visitChanges(oldVersion: IAsyncTree, visitor: IAsyncTreeChangeVisitor): IAsyncValue<Unit>
-    fun containsNode(nodeId: Long): IAsyncValue<Boolean>
-    fun getProperty(nodeId: Long, role: IPropertyReference): IAsyncValue<String?>
-    fun getChildren(parentId: Long, role: IChildLinkReference): IAsyncSequence<Long>
-    fun getConceptReference(nodeId: Long): IAsyncValue<ConceptReference>
-    fun getParent(nodeId: Long): IAsyncValue<Long>
-    fun getRole(nodeId: Long): IAsyncValue<IChildLinkReference>
-    fun getAllReferenceTargetRefs(sourceId: Long): IAsyncSequence<Pair<IReferenceLinkReference, INodeReference>>
-    fun getReferenceTarget(sourceId: Long, role: IReferenceLinkReference): IAsyncValue<INodeReference?>
-    fun getReferenceRoles(sourceId: Long): IAsyncSequence<String>
-    fun getPropertyRoles(sourceId: Long): IAsyncSequence<String>
-    fun getChildRoles(sourceId: Long): IAsyncSequence<String?>
-    fun getAllChildren(parentId: Long): IAsyncSequence<Long>
+    fun visitChanges(oldVersion: IAsyncTree, visitor: IAsyncTreeChangeVisitor): IMonoStream<Unit>
+    fun containsNode(nodeId: Long): IMonoStream<Boolean>
+    fun getProperty(nodeId: Long, role: IPropertyReference): IOptionalMonoStream<String>
+    fun getChildren(parentId: Long, role: IChildLinkReference): IStream<Long>
+    fun getConceptReference(nodeId: Long): IMonoStream<ConceptReference>
+    fun getParent(nodeId: Long): IOptionalMonoStream<Long>
+    fun getRole(nodeId: Long): IMonoStream<IChildLinkReference>
+    fun getAllReferenceTargetRefs(sourceId: Long): IStream<Pair<IReferenceLinkReference, INodeReference>>
+    fun getReferenceTarget(sourceId: Long, role: IReferenceLinkReference): IMonoStream<INodeReference?>
+    fun getReferenceRoles(sourceId: Long): IStream<String>
+    fun getPropertyRoles(sourceId: Long): IStream<String>
+    fun getChildRoles(sourceId: Long): IStream<String?>
+    fun getAllChildren(parentId: Long): IStream<Long>
 }

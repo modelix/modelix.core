@@ -29,8 +29,16 @@ import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.api.toReference
 import org.modelix.streams.FlowBasedStreamFactory
 import org.modelix.streams.IMonoStream
+import org.modelix.streams.IOptionalMonoStream
+import org.modelix.streams.IStream
+import org.modelix.streams.SequenceAsStream
 
 class NodeAsAsyncNode(val node: INode) : IAsyncNode {
+
+    private fun <T : Any> T?.asOptionalMono(): IOptionalMonoStream<T> = if (this != null) streamFactory.constant(this) else streamFactory.empty()
+    private fun <T> T.asMono(): IMonoStream<T> = streamFactory.constant(this)
+    private fun <T> Iterable<T>.asStream(): IStream<T> = streamFactory.fromIterable(this)
+    private fun <T> Sequence<T>.asStream(): IStream<T> = streamFactory.fromSequence(this)
 
     private val streamFactory = FlowBasedStreamFactory(null)
 
@@ -40,51 +48,51 @@ class NodeAsAsyncNode(val node: INode) : IAsyncNode {
         TODO("Not yet implemented")
     }
 
-    override fun getConcept(): IAsyncValue<IConcept> {
-        return (node.concept ?: NullConcept).asAsync()
+    override fun getConcept(): IMonoStream<IConcept> {
+        return (node.concept ?: NullConcept).asMono()
     }
 
-    override fun getConceptRef(): IAsyncValue<ConceptReference> {
-        return ((node.getConceptReference() ?: NullConcept.getReference()) as ConceptReference).asAsync()
+    override fun getConceptRef(): IMonoStream<ConceptReference> {
+        return ((node.getConceptReference() ?: NullConcept.getReference()) as ConceptReference).asMono()
     }
 
-    override fun getParent(): IAsyncValue<IAsyncNode?> {
-        return node.parent?.asAsyncNode().asAsync()
+    override fun getParent(): IOptionalMonoStream<IAsyncNode> {
+        return node.parent?.asAsyncNode().asOptionalMono()
     }
 
-    override fun getRoleInParent(): IAsyncValue<IChildLinkReference> {
-        return node.getContainmentLink().toReference().asAsync()
+    override fun getRoleInParent(): IMonoStream<IChildLinkReference> {
+        return node.getContainmentLink().toReference().asMono()
     }
 
-    override fun getPropertyValue(role: IPropertyReference): IAsyncValue<String?> {
-        return node.getPropertyValue(role.asProperty()).asAsync()
+    override fun getPropertyValue(role: IPropertyReference): IOptionalMonoStream<String> {
+        return node.getPropertyValue(role.asProperty()).asOptionalMono()
     }
 
-    override fun getAllChildren(): IAsyncSequence<IAsyncNode> {
-        return node.allChildren.map { it.asAsyncNode() }.asAsyncSequence(streamFactory)
+    override fun getAllChildren(): IStream<IAsyncNode> {
+        return node.allChildren.map { it.asAsyncNode() }.asStream()
     }
 
-    override fun getChildren(role: IChildLinkReference): IAsyncSequence<IAsyncNode> {
-        return node.getChildren(role.toLegacy()).map { it.asAsyncNode() }.asAsyncSequence(streamFactory)
+    override fun getChildren(role: IChildLinkReference): IStream<IAsyncNode> {
+        return node.getChildren(role.toLegacy()).map { it.asAsyncNode() }.asStream()
     }
 
-    override fun getReferenceTarget(role: IReferenceLinkReference): IAsyncValue<IAsyncNode?> {
-        return node.getReferenceTarget(role.toLegacy())?.asAsyncNode().asAsync()
+    override fun getReferenceTarget(role: IReferenceLinkReference): IOptionalMonoStream<IAsyncNode> {
+        return node.getReferenceTarget(role.toLegacy())?.asAsyncNode().asOptionalMono()
     }
 
-    override fun getReferenceTargetRef(role: IReferenceLinkReference): IAsyncValue<INodeReference?> {
-        return node.getReferenceTargetRef(role.toLegacy()).asAsync()
+    override fun getReferenceTargetRef(role: IReferenceLinkReference): IOptionalMonoStream<INodeReference> {
+        return node.getReferenceTargetRef(role.toLegacy()).asOptionalMono()
     }
 
-    override fun getAllReferenceTargetRefs(): IAsyncSequence<Pair<IReferenceLinkReference, INodeReference>> {
-        return node.getAllReferenceTargetRefs().map { it.first.toReference() to it.second }.asAsyncSequence(streamFactory)
+    override fun getAllReferenceTargetRefs(): IStream<Pair<IReferenceLinkReference, INodeReference>> {
+        return node.getAllReferenceTargetRefs().map { it.first.toReference() to it.second }.asStream()
     }
 
-    override fun getAllReferenceTargets(): IAsyncSequence<Pair<IReferenceLinkReference, IAsyncNode>> {
-        return node.getAllReferenceTargets().map { it.first.toReference() to it.second.asAsyncNode() }.asAsyncSequence(streamFactory)
+    override fun getAllReferenceTargets(): IStream<Pair<IReferenceLinkReference, IAsyncNode>> {
+        return node.getAllReferenceTargets().map { it.first.toReference() to it.second.asAsyncNode() }.asStream()
     }
 
-    override fun getDescendants(includeSelf: Boolean): IAsyncSequence<IAsyncNode> {
-        return node.getDescendants(includeSelf).map { it.asAsyncNode() }.asAsyncSequence(streamFactory)
+    override fun getDescendants(includeSelf: Boolean): IStream<IAsyncNode> {
+        return node.getDescendants(includeSelf).map { it.asAsyncNode() }.asStream()
     }
 }

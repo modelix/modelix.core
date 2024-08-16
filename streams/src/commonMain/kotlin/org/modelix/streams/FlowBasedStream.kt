@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.count
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.emptyFlow
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.fold
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.single
@@ -80,6 +82,10 @@ class FlowBasedStreamFactory(val coroutineScope: CoroutineScope?) : IStreamFacto
 
     override fun <T> ifEmpty(stream: IOptionalMonoStream<T>, alternative: () -> IMonoStream<T>): IMonoStream<T> {
         return stream.asFlow().onEmpty { emitAll(alternative().asFlow()) }.asMonoStream()
+    }
+
+    override fun <T> fromSequence(input: Sequence<T>): IStream<T> {
+        return input.asFlow().asStream()
     }
 }
 
@@ -201,6 +207,18 @@ open class FlowBasedStream<E>(val flow: Flow<E>, private val factory: FlowBasedS
             emit(flow.fold(initial, f))
         }.asMonoStream()
     }
+
+    override fun distinct(): IStream<E> {
+        return flow.distinctUntilChanged().asStream()
+    }
+
+    override fun <R> mapMany(transform: (E) -> Sequence<R>): IStream<R> {
+        return flow.flatMapConcat { transform(it).asFlow() }.asStream()
+    }
+
+    override fun isNotEmpty(): IMonoStream<Boolean> {
+        return flow<Boolean> { flow.count() != 0 }.asMonoStream()
+    }
 }
 
 open class FlowBasedOptionalMonoStream<E>(flow: Flow<E>, factory: FlowBasedStreamFactory) : FlowBasedStream<E>(flow, factory), IOptionalMonoStream<E> {
@@ -219,6 +237,22 @@ open class FlowBasedOptionalMonoStream<E>(flow: Flow<E>, factory: FlowBasedStrea
     override fun cached(): IOptionalMonoStream<E> {
         return super.cached().asFlow().asOptionalMonoStream()
     }
+
+    override fun <R> mapMono(transform: (E) -> IMonoStream<R>): IOptionalMonoStream<R> {
+        return flow.flatMapConcat { transform(it).asFlow() }.asOptionalMonoStream()
+    }
+
+    override fun <R> mapOptionalMono(transform: (E) -> IOptionalMonoStream<R>): IOptionalMonoStream<R> {
+        return flow.flatMapConcat { transform(it).asFlow() }.asOptionalMonoStream()
+    }
+
+    override fun filterNotNull(): IOptionalMonoStream<E & Any> {
+        return flow.mapNotNull { it }.asOptionalMonoStream()
+    }
+
+    override fun <R : Any> mapNotNull(transform: (E) -> R?): IOptionalMonoStream<R> {
+        return flow.mapNotNull { transform(it) }.asOptionalMonoStream()
+    }
 }
 
 class FlowBasedMonoStream<E>(flow: Flow<E>, factory: FlowBasedStreamFactory) : FlowBasedOptionalMonoStream<E>(flow, factory), IMonoStream<E> {
@@ -236,6 +270,10 @@ class FlowBasedMonoStream<E>(flow: Flow<E>, factory: FlowBasedStreamFactory) : F
 
     override fun cached(): IMonoStream<E> {
         return super.cached().asFlow().asMonoStream()
+    }
+
+    override fun <R> mapMono(transform: (E) -> IMonoStream<R>): IMonoStream<R> {
+        return flow.flatMapConcat { transform(it).asFlow() }.asMonoStream()
     }
 }
 

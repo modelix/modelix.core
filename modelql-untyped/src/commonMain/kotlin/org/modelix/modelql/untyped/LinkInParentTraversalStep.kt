@@ -36,7 +36,7 @@ import org.modelix.modelql.core.stepOutputSerializer
 class LinkInParentTraversalStep() : MonoTransformingStep<INode, IChildLinkReference>() {
 
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<IChildLinkReference> {
-        return input.flatMapConcat { it.value.asAsyncNode().getRoleInParent().asStream() }.asStepFlow(this)
+        return input.flatMapConcat { it.value.asAsyncNode().getRoleInParent() }.asStepFlow(this)
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<IChildLinkReference>> {

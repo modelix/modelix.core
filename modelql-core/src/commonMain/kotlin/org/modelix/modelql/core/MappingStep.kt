@@ -36,6 +36,10 @@ class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : MonoTransform
         return query.requiresWriteAccess()
     }
 
+    override fun needsCoroutineScope(): Boolean {
+        return false
+    }
+
     override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
         return query.asFlow(context.evaluationContext, input)
     }

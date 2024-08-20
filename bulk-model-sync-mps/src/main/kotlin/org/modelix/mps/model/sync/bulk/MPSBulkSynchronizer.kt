@@ -92,9 +92,18 @@ object MPSBulkSynchronizer {
         val includedModuleNames = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.output.modules"))
         val includedModulePrefixes =
             parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.output.modules.prefixes"))
+        val excludedModuleNames = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.output.modules.excluded"))
+        val excludedModulePrefixes = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.output.modules.prefixes.excluded"))
         val outputPathName = System.getProperty("modelix.mps.model.sync.bulk.output.path")
         val outputPath = Path.of(outputPathName)
-        exportModulesFromRepository(repository, includedModuleNames, includedModulePrefixes, outputPath)
+        exportModulesFromRepository(
+            repository = repository,
+            includedModuleNames = includedModuleNames,
+            includedModulePrefixes = includedModulePrefixes,
+            outputPath = outputPath,
+            excludedModuleNames = excludedModuleNames,
+            excludedModulePrefixes = excludedModulePrefixes,
+        )
     }
 
     /**
@@ -108,11 +117,19 @@ object MPSBulkSynchronizer {
         includedModuleNames: Set<String>,
         includedModulePrefixes: Set<String>,
         outputPath: Path,
+        excludedModuleNames: Set<String> = emptySet(),
+        excludedModulePrefixes: Set<String> = emptySet(),
     ) {
         repository.modelAccess.runReadAction {
             val allModules = repository.modules
             val includedModules = allModules.filter {
-                isModuleIncluded(it.moduleName!!, includedModuleNames, includedModulePrefixes)
+                isModuleIncluded(
+                    moduleName = requireNotNull(it.moduleName) { "module name not found" },
+                    includedModules = includedModuleNames,
+                    includedPrefixes = includedModulePrefixes,
+                    excludedModules = excludedModuleNames,
+                    excludedPrefixes = excludedModulePrefixes,
+                )
             }
 
             require(includedModules.isNotEmpty()) {
@@ -146,13 +163,17 @@ object MPSBulkSynchronizer {
         val repository = getRepository()
         val includedModuleNames = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.input.modules"))
         val includedModulePrefixes = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.input.modules.prefixes"))
+        val excludedModuleNames = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.input.modules.excluded"))
+        val excludedModulePrefixes = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.input.modules.prefixes.excluded"))
         val inputPath = System.getProperty("modelix.mps.model.sync.bulk.input.path")
         val continueOnError = System.getProperty("modelix.mps.model.sync.bulk.input.continueOnError", "false").toBoolean()
         val jsonFiles = File(inputPath).listFiles()?.filter {
             it.extension == "json" && isModuleIncluded(
-                it.nameWithoutExtension,
-                includedModuleNames,
-                includedModulePrefixes,
+                moduleName = it.nameWithoutExtension,
+                includedModules = includedModuleNames,
+                includedPrefixes = includedModulePrefixes,
+                excludedModules = excludedModuleNames,
+                excludedPrefixes = excludedModulePrefixes,
             )
         }
 
@@ -162,7 +183,13 @@ object MPSBulkSynchronizer {
         val getModulesToImport = {
             val allModules = repository.modules
             val includedModules: Iterable<SModule> = allModules.filter {
-                isModuleIncluded(it.moduleName!!, includedModuleNames, includedModulePrefixes)
+                isModuleIncluded(
+                    moduleName = requireNotNull(it.moduleName) { "module name not found" },
+                    includedModules = includedModuleNames,
+                    includedPrefixes = includedModulePrefixes,
+                    excludedModules = excludedModuleNames,
+                    excludedPrefixes = excludedModulePrefixes,
+                )
             }
             val numIncludedModules = includedModules.count()
             val modulesToImport = includedModules.asSequence().flatMapIndexed { index, module ->
@@ -235,8 +262,15 @@ object MPSBulkSynchronizer {
 
         val includedModuleNames = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.input.modules"))
         val includedModulePrefixes = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.input.modules.prefixes"))
+        val excludedModuleNames = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.input.modules.excluded"))
+        val excludedModulePrefixes = parseRawPropertySet(System.getProperty("modelix.mps.model.sync.bulk.input.modules.prefixes.excluded"))
 
-        val includedModulesFilter = IncludedModulesFilter(includedModuleNames, includedModulePrefixes)
+        val includedModulesFilter = IncludedModulesFilter(
+            includedModules = includedModuleNames,
+            includedModulePrefixes = includedModulePrefixes,
+            excludedModules = excludedModuleNames,
+            excludedModulesPrefixes = excludedModulePrefixes,
+        )
 
         val modelServerUrl = System.getProperty("modelix.mps.model.sync.bulk.server.url")
         val repositoryId = RepositoryId(requireNotNull(System.getProperty("modelix.mps.model.sync.bulk.server.repository")) { "modelix.mps.model.sync.bulk.server.repository not specified" })

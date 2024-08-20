@@ -42,6 +42,8 @@ data class SyncDirection(
     internal var target: SyncEndpoint? = null,
     internal val includedModules: Set<String> = mutableSetOf(),
     internal val includedModulePrefixes: Set<String> = mutableSetOf(),
+    internal val excludedModules: Set<String> = mutableSetOf(),
+    internal val excludedModulePrefixes: Set<String> = mutableSetOf(),
     internal var continueOnError: Boolean = false,
 ) {
     fun fromModelServer(action: Action<ServerSource>) {
@@ -74,6 +76,14 @@ data class SyncDirection(
 
     fun includeModulesByPrefix(prefix: String) {
         (includedModulePrefixes as MutableSet).add(prefix)
+    }
+
+    fun excludeModule(module: String) {
+        (excludedModules as MutableSet).add(module)
+    }
+
+    fun excludeModulesByPrefix(prefix: String) {
+        (excludedModulePrefixes as MutableSet).add(prefix)
     }
 
     @Deprecated("Registering languages is not necessary. This call can be safely removed.", ReplaceWith(""))

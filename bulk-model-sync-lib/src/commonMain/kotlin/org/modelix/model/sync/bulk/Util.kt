@@ -25,19 +25,28 @@ import kotlin.math.max
 /**
  * Checks if a module is included in the sync.
  *
- * @param moduleName name of the module to be checked
- * @param includedModules collection of included module names
- * @param includedPrefixes collection of included module name prefixes
+ * Modules can be included via name ([includedModules]) or prefix ([includedPrefixes])
+ * Exclusion works analogously.
+ *
+ * Returns true iff the module is included and not excluded.
  */
 fun isModuleIncluded(
     moduleName: String,
     includedModules: Collection<String>,
     includedPrefixes: Collection<String>,
+    excludedModules: Collection<String> = emptySet(),
+    excludedPrefixes: Collection<String> = emptySet(),
 ): Boolean {
     val includedDirectly = includedModules.contains(moduleName)
     val includedByPrefix = includedPrefixes.any { prefix -> moduleName.startsWith(prefix) }
+    val included = includedDirectly || includedByPrefix
+    if (!included) return false
 
-    return includedDirectly || includedByPrefix
+    val excludedDirectly = excludedModules.contains(moduleName)
+    val excludedByPrefix = excludedPrefixes.any { prefix -> moduleName.startsWith(prefix) }
+    val excluded = excludedDirectly || excludedByPrefix
+
+    return !excluded
 }
 
 fun mergeModelData(models: Collection<ModelData>): ModelData {

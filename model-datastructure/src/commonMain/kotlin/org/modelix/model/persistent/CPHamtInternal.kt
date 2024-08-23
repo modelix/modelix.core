@@ -15,13 +15,37 @@
 
 package org.modelix.model.persistent
 
+import com.badoo.reaktive.maybe.Maybe
+import com.badoo.reaktive.maybe.asObservable
+import com.badoo.reaktive.maybe.filter
+import com.badoo.reaktive.maybe.flatMap
+import com.badoo.reaktive.maybe.map
+import com.badoo.reaktive.maybe.maybeOf
+import com.badoo.reaktive.maybe.maybeOfEmpty
+import com.badoo.reaktive.maybe.toMaybe
+import com.badoo.reaktive.observable.Observable
+import com.badoo.reaktive.observable.asObservable
+import com.badoo.reaktive.observable.filter
+import com.badoo.reaktive.observable.flatMap
+import com.badoo.reaktive.observable.flatMapMaybe
+import com.badoo.reaktive.observable.flatMapSingle
+import com.badoo.reaktive.observable.flatten
+import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.observable.observableOf
+import com.badoo.reaktive.observable.observableOfEmpty
+import com.badoo.reaktive.single.Single
+import com.badoo.reaktive.single.asMaybe
+import com.badoo.reaktive.single.flatMapMaybe
+import com.badoo.reaktive.single.flatten
+import com.badoo.reaktive.single.zipWith
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.bitCount
 import org.modelix.model.lazy.COWArrays
-import org.modelix.model.lazy.IBulkQuery
-import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.KVEntryReference
-import org.modelix.model.lazy.NonBulkQuery
 import org.modelix.model.persistent.SerializationUtil.intToHex
+import org.modelix.streams.asObservable
+import org.modelix.streams.getSynchronous
+import org.modelix.streams.orNull
 
 class CPHamtInternal(
     val bitmap: Int,
@@ -46,7 +70,7 @@ class CPHamtInternal(
             return CPHamtInternal(bitmap, childHashes)
         }
 
-        fun create(key: Long, childHash: KVEntryReference<CPNode>, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
+        fun create(key: Long, childHash: KVEntryReference<CPNode>, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
             return createEmpty().put(key, childHash, shift, store)
         }
 
@@ -58,79 +82,57 @@ class CPHamtInternal(
         }
     }
 
-    override fun calculateSize(bulkQuery: IBulkQuery): IBulkQuery.Value<Long> {
-        val childRefs = data.children
-        return bulkQuery
-            .flatMap(childRefs.asIterable(), { bulkQuery.query(it) })
-            .flatMap { resolvedChildren: List<CPHamtNode?> ->
-                val resolvedChildrenNN = resolvedChildren.mapIndexed { index, child ->
-                    child ?: throw RuntimeException("Entry not found in store: " + childRefs[index].getHash())
-                }
-                bulkQuery.flatMap(resolvedChildrenNN) { it.calculateSize(bulkQuery) }
-            }
-            .map { it.reduce { a, b -> a + b } }
-    }
-
-    override fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
+    override fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         val childIndex = CPHamtNode.indexFromKey(key, shift)
-        val child = getChild(childIndex, NonBulkQuery(store)).executeQuery()
-        return if (child == null) {
-            setChild(childIndex, CPHamtLeaf.create(key, value), shift, store)
-        } else {
-            setChild(childIndex, child.put(key, value, shift + CPHamtNode.BITS_PER_LEVEL, store), shift, store)
-        }
-    }
-
-    override fun remove(key: Long, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
-        require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
-        val childIndex = CPHamtNode.indexFromKey(key, shift)
-        val child = getChild(childIndex, NonBulkQuery(store)).executeQuery()
-        return if (child == null) {
-            this
-        } else {
-            setChild(childIndex, child.remove(key, shift + CPHamtNode.BITS_PER_LEVEL, store), shift, store)
-        }
-    }
-
-    override fun get(key: Long, shift: Int, bulkQuery: IBulkQuery): IBulkQuery.Value<KVEntryReference<CPNode>?> {
-        require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
-        val childIndex = CPHamtNode.indexFromKey(key, shift)
-        return getChild(childIndex, bulkQuery).flatMap { child: CPHamtNode? ->
+        return getChild(childIndex, store).orNull().flatMapMaybe { child ->
             if (child == null) {
-                bulkQuery.constant(null)
+                setChild(childIndex, CPHamtLeaf.create(key, value), shift, store)
             } else {
-                child.get(key, shift + CPHamtNode.BITS_PER_LEVEL, bulkQuery)
+                child.put(key, value, shift + CPHamtNode.BITS_PER_LEVEL, store).orNull().flatMapMaybe {
+                    setChild(childIndex, it, shift, store)
+                }
             }
         }
     }
 
-    protected fun getChild(logicalIndex: Int, bulkQuery: IBulkQuery): IBulkQuery.Value<CPHamtNode?> {
+    override fun remove(key: Long, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
+        require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
+        val childIndex = CPHamtNode.indexFromKey(key, shift)
+        return getChild(childIndex, store).orNull().flatMapMaybe { child ->
+            if (child == null) {
+                this.toMaybe()
+            } else {
+                child.remove(key, shift + CPHamtNode.BITS_PER_LEVEL, store).orNull().flatMapMaybe {
+                    setChild(childIndex, it, shift, store)
+                }
+            }
+        }
+    }
+
+    override fun get(key: Long, shift: Int, store: IAsyncObjectStore): Maybe<KVEntryReference<CPNode>> {
+        require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
+        val childIndex = CPHamtNode.indexFromKey(key, shift)
+        return getChild(childIndex, store).flatMap { child ->
+            child.get(key, shift + CPHamtNode.BITS_PER_LEVEL, store)
+        }
+    }
+
+    protected fun getChild(logicalIndex: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
         if (isBitNotSet(data.bitmap, logicalIndex)) {
-            return bulkQuery.constant(null as CPHamtNode?)
+            return maybeOfEmpty()
         }
         val physicalIndex = logicalToPhysicalIndex(data.bitmap, logicalIndex)
         require(physicalIndex < data.children.size) { "Invalid physical index ($physicalIndex). N. children: ${data.children.size}. Logical index: $logicalIndex" }
         val childHash = data.children[physicalIndex]
-        return getChild(childHash, bulkQuery)
+        return getChild(childHash, store).asMaybe()
     }
 
-    protected fun getChild(childHash: KVEntryReference<CPHamtNode>, bulkQuery: IBulkQuery): IBulkQuery.Value<CPHamtNode> {
-        return bulkQuery.query(childHash).map { childData ->
-            if (childData == null) throw RuntimeException("Entry not found in store: ${childHash.getHash()}")
-            childData
-        }
+    protected fun getChild(childHash: KVEntryReference<CPHamtNode>, store: IAsyncObjectStore): Single<CPHamtNode> {
+        return childHash.getValue(store)
     }
 
-    protected fun getChild(logicalIndex: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
-        return getChild(logicalIndex, NonBulkQuery(store)).executeQuery()
-    }
-
-    protected fun getChild(childHash: KVEntryReference<CPHamtNode>, store: IDeserializingKeyValueStore): CPHamtNode? {
-        return getChild(childHash, NonBulkQuery(store)).executeQuery()
-    }
-
-    fun setChild(logicalIndex: Int, child: CPHamtNode?, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
+    fun setChild(logicalIndex: Int, child: CPHamtNode?, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
         if (child == null) {
             return deleteChild(logicalIndex, store)
         }
@@ -147,115 +149,114 @@ class CPHamtInternal(
                 COWArrays.set(data.children, physicalIndex, childHash),
             )
         }
-        return if (shift < CPHamtNode.MAX_BITS - CPHamtNode.BITS_PER_LEVEL) CPHamtSingle.replaceIfSingleChild(newNode, store) else newNode
+        return if (shift < CPHamtNode.MAX_BITS - CPHamtNode.BITS_PER_LEVEL) {
+            CPHamtSingle.replaceIfSingleChild(newNode, store).asMaybe()
+        } else {
+            newNode.toMaybe()
+        }
     }
 
-    fun deleteChild(logicalIndex: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
+    fun deleteChild(logicalIndex: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
         if (isBitNotSet(data.bitmap, logicalIndex)) {
-            return this
+            return this.toMaybe()
         }
         val physicalIndex = logicalToPhysicalIndex(data.bitmap, logicalIndex)
         val newBitmap = data.bitmap and (1 shl logicalIndex).inv()
         if (newBitmap == 0) {
-            return null
+            return maybeOfEmpty()
         }
         val newChildren = COWArrays.removeAt(data.children, physicalIndex)
         if (newChildren.size == 1) {
-            val child0 = getChild(newChildren[0], NonBulkQuery(store)).executeQuery()
+            val child0 = getChild(newChildren[0], store).getSynchronous()
             if (child0 is CPHamtLeaf) {
-                return child0
+                return child0.toMaybe()
             }
         }
-        return create(newBitmap, newChildren)
+        return create(newBitmap, newChildren).toMaybe()
     }
 
-    override fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IBulkQuery.Value<Unit> {
-        return bulkQuery.flatMap(data.children.asIterable()) { bulkQuery.query(it) }.flatMap { children ->
-            bulkQuery.flatMap(children) { it!!.visitEntries(bulkQuery, visitor) }.map { }
-        }
+    override fun getEntries(store: IAsyncObjectStore): Observable<Pair<Long, KVEntryReference<CPNode>>> {
+        return data.children.asObservable().flatMapSingle { it.getValue(store) }.flatMap { it.getEntries(store) }
     }
 
-    override fun visitChanges(oldNode: CPHamtNode?, shift: Int, visitor: CPHamtNode.IChangeVisitor, bulkQuery: IBulkQuery) {
+    override fun getChanges(oldNode: CPHamtNode?, shift: Int, store: IAsyncObjectStore, changesOnly: Boolean): Observable<MapChangeEvent> {
         if (oldNode === this || data.hash == oldNode?.hash) {
-            return
+            return observableOfEmpty()
         }
-        when (oldNode) {
+        return when (oldNode) {
             is CPHamtInternal -> {
                 val oldInternalNode: CPHamtInternal = oldNode
                 if (data.bitmap == oldInternalNode.data.bitmap) {
-                    for (i in data.children.indices) {
+                    data.children.indices.asObservable().flatMap { i ->
                         val oldChildHash = oldInternalNode.data.children[i]
                         val newChildHash = data.children[i]
                         if (oldChildHash != newChildHash) {
-                            getChild(newChildHash, bulkQuery).map { child ->
-                                oldInternalNode.getChild(oldChildHash, bulkQuery).map { oldChild ->
-                                    child!!.visitChanges(oldChild, shift + CPHamtNode.BITS_PER_LEVEL, visitor, bulkQuery)
-                                }
-                            }
+                            getChild(newChildHash, store).zipWith(oldInternalNode.getChild(oldChildHash, store)) { child, oldChild ->
+                                child.getChanges(oldChild, shift + CPHamtNode.BITS_PER_LEVEL, store, changesOnly)
+                            }.flatten()
+                        } else {
+                            observableOfEmpty<MapChangeEvent>()
                         }
                     }
                 } else {
-                    for (logicalIndex in 0 until CPHamtNode.ENTRIES_PER_LEVEL) {
-                        getChild(logicalIndex, bulkQuery).map { child ->
-                            oldInternalNode.getChild(logicalIndex, bulkQuery).map { oldChild ->
-                                if (child == null) {
-                                    if (oldChild == null) {
-                                        // no change
-                                    } else {
-                                        if (!visitor.visitChangesOnly()) {
-                                            oldChild.visitEntries(bulkQuery) { key, value ->
-                                                visitor.entryRemoved(key, value)
-                                            }
-                                        }
-                                    }
+                    (0 until CPHamtNode.ENTRIES_PER_LEVEL).asObservable().flatMap<Int, MapChangeEvent> { logicalIndex ->
+                        getChild(logicalIndex, store).orNull().zipWith(oldInternalNode.getChild(logicalIndex, store).orNull()) { child, oldChild ->
+                            if (child == null) {
+                                if (oldChild == null) {
+                                    // no change
+                                    observableOfEmpty<MapChangeEvent>()
                                 } else {
-                                    if (oldChild == null) {
-                                        if (!visitor.visitChangesOnly()) {
-                                            child.visitEntries(bulkQuery) { key, value ->
-                                                visitor.entryAdded(key, value)
-                                            }
+                                    if (!changesOnly) {
+                                        oldChild.getEntries(store).map { (key, value) ->
+                                            EntryRemovedEvent(key, value)
                                         }
                                     } else {
-                                        child.visitChanges(oldChild, shift + CPHamtNode.BITS_PER_LEVEL, visitor, bulkQuery)
+                                        observableOfEmpty<MapChangeEvent>()
                                     }
                                 }
+                            } else {
+                                if (oldChild == null) {
+                                    if (!changesOnly) {
+                                        child.getEntries(store).map { (key, value) ->
+                                            EntryAddedEvent(key, value)
+                                        }
+                                    } else {
+                                        observableOfEmpty<MapChangeEvent>()
+                                    }
+                                } else {
+                                    child.getChanges(oldChild, shift + CPHamtNode.BITS_PER_LEVEL, store, changesOnly)
+                                }
                             }
-                        }
+                        }.flatten()
                     }
                 }
             }
             is CPHamtLeaf -> {
-                if (visitor.visitChangesOnly()) {
-                    get(oldNode.key, shift, bulkQuery).map { newValue ->
-                        if (newValue != null && newValue != oldNode.value) {
-                            visitor.entryChanged(oldNode.key, oldNode.value, newValue)
-                        }
-                    }
+                if (changesOnly) {
+                    get(oldNode.key, shift, store).filter { it != oldNode.value }.map { newValue ->
+                        EntryChangedEvent(oldNode.key, oldNode.value, newValue)
+                    }.asObservable()
                 } else {
-                    var oldEntryExists = false
-                    var entryVisitingDone = false
-                    visitEntries(bulkQuery) { k, v ->
-                        check(!entryVisitingDone)
-                        if (k == oldNode.key) {
-                            oldEntryExists = true
-                            val oldValue = oldNode.value
-                            if (v != oldValue) {
-                                visitor.entryChanged(k, oldValue, v)
-                            }
+                    val entries = getEntries(store)
+                    val newEntry = get(oldNode.key, shift, store)
+                    val changeOrRemoveEvent = newEntry.orNull().flatMapMaybe { newValue ->
+                        if (newValue == null) {
+                            maybeOf(EntryRemovedEvent(oldNode.key, oldNode.value))
+                        } else if (newValue != oldNode.value) {
+                            maybeOf(EntryChangedEvent(oldNode.key, oldNode.value, newValue))
                         } else {
-                            visitor.entryAdded(k, v)
+                            maybeOfEmpty()
                         }
-                    }.onReceive {
-                        entryVisitingDone = true
-                        if (!oldEntryExists) visitor.entryRemoved(oldNode.key, oldNode.value)
-                    }
+                    }.asObservable()
+                    val entryAddedEvents = entries.filter { it.first != oldNode.key }.map { EntryAddedEvent(it.first, it.second) }
+                    observableOf(changeOrRemoveEvent, entryAddedEvents).flatten()
                 }
             }
             is CPHamtSingle -> {
                 if (oldNode.numLevels == 1) {
-                    visitChanges(CPHamtInternal.replace(oldNode), shift, visitor, bulkQuery)
+                    getChanges(CPHamtInternal.replace(oldNode), shift, store, changesOnly)
                 } else {
-                    visitChanges(CPHamtInternal.replace(oldNode.splitOneLevel()), shift, visitor, bulkQuery)
+                    getChanges(CPHamtInternal.replace(oldNode.splitOneLevel()), shift, store, changesOnly)
                 }
             }
             else -> {

@@ -13,15 +13,16 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.single
+import com.badoo.reaktive.single.Single
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.modelix.streams.exactlyOne
 
 class SingleStep<E>() : AggregationStep<E, E>() {
 
-    override suspend fun aggregate(input: StepFlow<E>): IStepOutput<E> {
-        return input.single()
+    override fun aggregate(input: StepFlow<E>): Single<IStepOutput<E>> {
+        return input.exactlyOne()
     }
 
     override fun toString(): String {

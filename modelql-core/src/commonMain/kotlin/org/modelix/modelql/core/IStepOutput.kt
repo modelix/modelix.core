@@ -13,8 +13,10 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import com.badoo.reaktive.observable.Observable
+import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.single.Single
+import com.badoo.reaktive.single.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
@@ -29,9 +31,12 @@ interface IStepOutput<out E> {
 
 fun <T> IStepOutput<*>.upcast(): IStepOutput<T> = this as IStepOutput<T>
 
-typealias StepFlow<E> = Flow<IStepOutput<E>>
-val <T> Flow<IStepOutput<T>>.value: Flow<T> get() = map { it.value }
-fun <T> Flow<T>.asStepFlow(owner: IProducingStep<T>?): StepFlow<T> = map { it.asStepOutput(owner) }
+typealias StepFlow<E> = Observable<IStepOutput<E>>
+typealias MonoStepFlow<E> = Single<IStepOutput<E>>
+val <T> Observable<IStepOutput<T>>.value: Observable<T> get() = map { it.value }
+fun <T> Observable<T>.asStepFlow(owner: IProducingStep<T>?): StepFlow<T> = map { it.asStepOutput(owner) }
+fun <T> Single<T>.asStepFlow(owner: IProducingStep<T>?): MonoStepFlow<T> = map { it.asStepOutput(owner) }
+fun <T> StepFlow<*>.upcast(): StepFlow<T> = this as StepFlow<T>
 
 class SimpleStepOutput<out E>(override val value: E, val owner: IProducingStep<E>?) : IStepOutput<E> {
     override fun toString(): String {

@@ -13,12 +13,16 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.map
+import com.badoo.reaktive.observable.asObservable
+import com.badoo.reaktive.observable.firstOrDefault
+import com.badoo.reaktive.observable.flatMap
+import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.observable.observableOfEmpty
+import com.badoo.reaktive.single.flatten
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.modelix.streams.filterBySingle
 import kotlin.experimental.ExperimentalTypeInference
 
 class WhenStep<In, Out>(
@@ -74,15 +78,16 @@ class WhenStep<In, Out>(
     }
 
     override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
-        return input.flatMapConcat {
-            for ((index, case) in cases.withIndex()) {
-                if (case.first.evaluate(context.evaluationContext, it.value).presentAndEqual(true)) {
-                    return@flatMapConcat case.second.asFlow(context.evaluationContext, it).map { MultiplexedOutput(index, it) }
-                }
-            }
-            val elseCaseIndex = cases.size
-            return@flatMapConcat elseCase?.asFlow(context.evaluationContext, it)?.map { MultiplexedOutput(elseCaseIndex, it) }
-                ?: emptyFlow<Out>().asStepFlow(this)
+        return input.flatMap { inputElement ->
+            cases.withIndex().asObservable().filterBySingle { (index, case) ->
+                case.first.asFlow(context.evaluationContext, inputElement).map { it.value == true }.firstOrDefault(false)
+            }.map { (index, case) ->
+                case.second.asFlow(context.evaluationContext, inputElement).map { MultiplexedOutput(index, it) }
+            }.firstOrDefault {
+                val elseCaseIndex = cases.size
+                elseCase?.asFlow(context.evaluationContext, inputElement)?.map { MultiplexedOutput(elseCaseIndex, it) }
+                    ?: observableOfEmpty()
+            }.flatten()
         }
     }
 }

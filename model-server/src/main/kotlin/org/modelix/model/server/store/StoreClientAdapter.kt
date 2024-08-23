@@ -16,7 +16,6 @@
 
 package org.modelix.model.server.store
 
-import org.modelix.kotlin.utils.ContextValue
 import org.modelix.model.IGenericKeyListener
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.persistent.HashUtil
@@ -54,6 +53,7 @@ abstract class StoreClientAdapter(val client: IsolatingStore) : IStoreClient {
                 it.key,
             )
         }.toSet()
+        if (missingKeys.isEmpty()) return fromRepository
         val fromGlobal = client.getAll(missingKeys).mapKeys { it.key.key }
 
         return fromRepository + fromGlobal
@@ -101,43 +101,11 @@ class GlobalStoreClient(client: IsolatingStore) : StoreClientAdapter(client) {
     override fun getRepositoryId() = null
 }
 
-class ContextScopedStoreClient(client: IsolatingStore) : StoreClientAdapter(client) {
-    companion object {
-        val CONTEXT_REPOSITORY = ContextValue<RepositoryId?>()
-    }
-
-    override fun getRepositoryId() = CONTEXT_REPOSITORY.getValue()
-}
-
 fun IsolatingStore.forRepository(repository: RepositoryId): RepositoryScopedStoreClient {
     return RepositoryScopedStoreClient(repository, this)
 }
 
 fun IsolatingStore.forGlobalRepository() = GlobalStoreClient(this)
-
-fun IsolatingStore.forContextRepository() = ContextScopedStoreClient(this)
-
-fun <R> IStoreClient.withGlobalRepository(body: () -> R): R = withRepository(null, body)
-
-fun <R> IStoreClient.withRepository(repository: RepositoryId?, body: () -> R): R {
-    assert(this is ContextScopedStoreClient || this is StoreClientAdapter && this.getRepositoryId() == repository) {
-        "Store is not context scoped: $this"
-    }
-    return ContextScopedStoreClient.CONTEXT_REPOSITORY.computeWith(repository, body)
-}
-
-suspend fun <R> IStoreClient.withGlobalRepositoryInCoroutine(body: suspend () -> R): R = withRepositoryInCoroutine(null, body)
-
-suspend fun <R> IStoreClient.withRepositoryInCoroutine(repository: RepositoryId?, body: suspend () -> R): R {
-    assert(this is ContextScopedStoreClient || this is StoreClientAdapter && this.getRepositoryId() == repository) {
-        "Store is not context scoped: $this"
-    }
-    return ContextScopedStoreClient.CONTEXT_REPOSITORY.runInCoroutine(repository, body)
-}
-
-fun IStoreClient.forRepository(repository: RepositoryId): IStoreClient {
-    return RepositoryScopedStoreClient(repository, getGenericStore())
-}
 
 fun IStoreClient.getGenericStore(): IsolatingStore {
     return (this as StoreClientAdapter).client

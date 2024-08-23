@@ -13,12 +13,13 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.fold
+import com.badoo.reaktive.single.Single
+import org.modelix.streams.fold
 
 abstract class FoldingStep<In, Out>(private val initial: Out) : AggregationStep<In, Out>() {
 
-    override suspend fun aggregate(input: StepFlow<In>): IStepOutput<Out> {
-        return input.fold(initial) { acc, value -> fold(acc, value.value) }.asStepOutput(this)
+    override fun aggregate(input: StepFlow<In>): Single<IStepOutput<Out>> {
+        return input.fold(initial) { acc, value -> fold(acc, value.value) }.asStepFlow(this)
     }
 
     private var result: Out = initial

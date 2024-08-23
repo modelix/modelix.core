@@ -17,6 +17,7 @@ package org.modelix.model.persistent
 
 import org.modelix.model.lazy.COWArrays.copy
 import org.modelix.model.lazy.COWArrays.insert
+import org.modelix.model.lazy.COWArrays.remove
 import org.modelix.model.lazy.COWArrays.removeAt
 import org.modelix.model.lazy.COWArrays.set
 import org.modelix.model.lazy.KVEntryReference
@@ -89,6 +90,36 @@ class CPNode private constructor(
     fun getReferenceTarget(role: String?): CPNodeRef? {
         val index = referenceRoles.asList().binarySearch(role)
         return if (index < 0) null else referenceTargets[index]
+    }
+
+    fun withConcept(newValue: String?): CPNode {
+        if (concept == newValue) return this
+        return create(
+            id,
+            newValue,
+            parentId,
+            roleInParent,
+            childrenIds,
+            propertyRoles,
+            propertyValues,
+            referenceRoles,
+            referenceTargets,
+        )
+    }
+
+    fun withContainment(newParent: Long, newRole: String?): CPNode {
+        if (newRole == roleInParent && parentId == newParent) return this
+        return create(
+            id,
+            concept,
+            newParent,
+            newRole,
+            childrenIds,
+            propertyRoles,
+            propertyValues,
+            referenceRoles,
+            referenceTargets,
+        )
     }
 
     fun withPropertyValue(role: String, value: String?): CPNode {
@@ -180,6 +211,21 @@ class CPNode private constructor(
             }
         }
     }
+
+    fun withChildRemoved(childId: Long): CPNode {
+        return create(
+            id,
+            concept,
+            parentId,
+            roleInParent,
+            remove(childrenIdArray, childId),
+            propertyRoles,
+            propertyValues,
+            referenceRoles,
+            referenceTargets,
+        )
+    }
+
     override fun getDeserializer(): (String) -> IKVValue = DESERIALIZER
     override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = listOf()
 
@@ -219,7 +265,7 @@ class CPNode private constructor(
             copy.sort()
             for (i in 1 until copy.size) {
                 if (copy[i - 1] == copy[i]) {
-                    throw RuntimeException("Duplicate value: " + copy[i])
+                    throw RuntimeException("Duplicate value " + copy[i].toString(16) + "  in " + values.map { it.toString(16) })
                 }
             }
         }

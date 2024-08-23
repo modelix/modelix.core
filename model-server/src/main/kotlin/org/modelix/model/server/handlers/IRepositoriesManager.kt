@@ -16,9 +16,13 @@
 
 package org.modelix.model.server.handlers
 
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
+import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.server.store.IStoreClient
+import org.modelix.model.server.store.StoreManager
 
 interface IRepositoriesManager {
     /**
@@ -55,9 +59,7 @@ interface IRepositoriesManager {
      * Caller is expected to execute it outside the request thread.
      */
     fun mergeChangesBlocking(branch: BranchReference, newVersionHash: String): String
-    suspend fun computeDelta(versionHash: String, baseVersionHash: String?): ObjectData
-
-    suspend fun <R> runWithRepository(repository: RepositoryId, body: suspend () -> R): R
+    suspend fun computeDelta(repository: RepositoryId?, versionHash: String, baseVersionHash: String?): ObjectData
 
     /**
      * The data of a repository is stored separately from other repositories, but that wasn't always the case.
@@ -66,8 +68,22 @@ interface IRepositoriesManager {
      * @return null if the repository doesn't exist
      */
     fun isIsolated(repository: RepositoryId): Boolean?
+
+    fun getStoreManager(): StoreManager
 }
 
 fun IRepositoriesManager.getBranchNames(repositoryId: RepositoryId): Set<String> {
     return getBranches(repositoryId).map { it.branchName }.toSet()
+}
+
+fun IRepositoriesManager.getStoreClient(repository: RepositoryId?): IStoreClient {
+    return getStoreManager().getStoreClient(repository?.takeIf { isIsolated(it) ?: false })
+}
+
+fun IRepositoriesManager.getAsyncStore(repository: RepositoryId?): IAsyncObjectStore {
+    return getStoreManager().getAsyncStore(repository?.takeIf { isIsolated(it) ?: false })
+}
+
+fun IRepositoriesManager.getLegacyObjectStore(repository: RepositoryId?): IDeserializingKeyValueStore {
+    return getStoreManager().getLegacyObjectStore(repository?.takeIf { isIsolated(it) ?: false })
 }

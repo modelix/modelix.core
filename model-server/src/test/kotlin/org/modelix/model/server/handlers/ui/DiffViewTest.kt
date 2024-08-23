@@ -57,6 +57,7 @@ import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPNodeRef
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.installDefaultServerPlugins
+import org.modelix.streams.getSynchronous
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -168,7 +169,7 @@ class DiffViewTest {
                     referenceRole = refB,
                     oldTarget = v1.getTree().root,
                     oldTargetRef = CPNodeRef.local(ITree.ROOT_ID),
-                    newTarget = v2.getTree().resolveElement(node2Id),
+                    newTarget = v2.getTree().resolveElement(node2Id).getSynchronous(),
                     newTargetRef = CPNodeRef.local(node2Id),
                 ),
             )
@@ -178,14 +179,14 @@ class DiffViewTest {
                     referenceRole = refC,
                     oldTarget = null,
                     oldTargetRef = null,
-                    newTarget = v2.getTree().resolveElement(node1Id),
+                    newTarget = v2.getTree().resolveElement(node1Id).getSynchronous(),
                     newTargetRef = CPNodeRef.local(node1Id),
                 ),
             )
 
             val diff = requireNotNull(calculateDiff(v1, v2))
-            val node1 = v2.getTree().resolveElement(node1Id)
-            val node2 = v2.getTree().resolveElement(node2Id)
+            val node1 = v2.getTree().resolveElement(node1Id).getSynchronous()
+            val node2 = v2.getTree().resolveElement(node2Id).getSynchronous()
 
             diff.referenceChanges.size() shouldBe 3
             diff.referenceChanges.keySet().shouldContainOnly(node1, node2)
@@ -215,8 +216,8 @@ class DiffViewTest {
             }
 
             val expectedChildrenChange = ChildrenChange(
-                oldParent = v1.getTree().resolveElement(10)!!,
-                newParent = v2.getTree().resolveElement(10)!!,
+                oldParent = v1.getTree().resolveElement(10).getSynchronous()!!,
+                newParent = v2.getTree().resolveElement(10).getSynchronous()!!,
                 roles = mutableSetOf(childRemovalRole, childAdditionRole, childMoveFromRole, childMoveToRole),
             )
 
@@ -246,15 +247,15 @@ class DiffViewTest {
 
             val expectedContainmentChanges = setOf(
                 ContainmentChange(
-                    node = v2.getTree().resolveElement(101)!!,
-                    oldParent = v1.getTree().resolveElement(10)!!,
+                    node = v2.getTree().resolveElement(101).getSynchronous()!!,
+                    oldParent = v1.getTree().resolveElement(10).getSynchronous()!!,
                     oldRole = "preRoleChange",
-                    newParent = v2.getTree().resolveElement(10)!!,
+                    newParent = v2.getTree().resolveElement(10).getSynchronous()!!,
                     newRole = "postRoleChange",
                 ),
                 ContainmentChange(
-                    node = v2.getTree().resolveElement(102)!!,
-                    oldParent = v1.getTree().resolveElement(10)!!,
+                    node = v2.getTree().resolveElement(102).getSynchronous()!!,
+                    oldParent = v1.getTree().resolveElement(10).getSynchronous()!!,
                     oldRole = "moveAcrossParents",
                     newParent = v2.getTree().root!!,
                     newRole = "moveAcrossParents",
@@ -288,12 +289,12 @@ class DiffViewTest {
                     newConcept = BuiltinLanguages.MPSRepositoryConcepts.Repository.getUID(),
                 ),
                 ConceptChange(
-                    node = v2.getTree().resolveElement(1234)!!,
+                    node = v2.getTree().resolveElement(1234).getSynchronous()!!,
                     oldConcept = BuiltinLanguages.MPSRepositoryConcepts.Module.getUID(),
                     newConcept = BuiltinLanguages.MPSRepositoryConcepts.Project.getUID(),
                 ),
                 ConceptChange(
-                    node = v2.getTree().resolveElement(5678)!!,
+                    node = v2.getTree().resolveElement(5678).getSynchronous()!!,
                     oldConcept = BuiltinLanguages.MPSRepositoryConcepts.Model.getUID(),
                     newConcept = null,
                 ),

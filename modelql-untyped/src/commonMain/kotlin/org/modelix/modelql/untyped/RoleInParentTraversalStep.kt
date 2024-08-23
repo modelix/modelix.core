@@ -17,7 +17,6 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.nullable
-import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
@@ -55,5 +54,8 @@ class RoleInParentTraversalStep() : SimpleMonoTransformingStep<INode, String?>()
     }
 }
 
+@Deprecated("use .linkInParent()", ReplaceWith("linkInParent()"))
 fun IMonoStep<INode>.roleInParent() = RoleInParentTraversalStep().connectAndDowncast(this)
+
+@Deprecated("use .linkInParent()", ReplaceWith("linkInParent()"))
 fun IFluxStep<INode>.roleInParent() = RoleInParentTraversalStep().connectAndDowncast(this)

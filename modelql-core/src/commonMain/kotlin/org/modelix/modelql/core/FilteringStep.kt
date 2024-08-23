@@ -13,10 +13,12 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.filter
+import com.badoo.reaktive.observable.firstOrDefault
+import com.badoo.reaktive.observable.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.modelix.streams.filterBySingle
 
 class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : TransformingStep<E, E>(), IMonoStep<E>, IFluxStep<E> {
 
@@ -33,9 +35,7 @@ class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : Transform
     }
 
     override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E> {
-        // return condition.asFlow(input).zip(input) { c, it -> c to it }.filter { it.first == true }.map { it.second }
-        return input.filter { condition.asFlow(context.evaluationContext, it).value.optionalSingle().presentAndEqual(true) }
-        // return input.filter { condition.evaluate(it.value).presentAndEqual(true) }
+        return input.filterBySingle { condition.asFlow(context.evaluationContext, it).map { it.value == true }.firstOrDefault(false) }
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>> {

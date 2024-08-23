@@ -13,17 +13,15 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.shareIn
-import kotlinx.coroutines.flow.take
+import com.badoo.reaktive.observable.Observable
+import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.single.Single
+import com.badoo.reaktive.single.asObservable
+import com.badoo.reaktive.single.flatMapIterable
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
+import org.modelix.streams.cached
 import kotlin.reflect.KType
 
 interface IStep {
@@ -34,7 +32,6 @@ interface IStep {
 
     fun requiresWriteAccess(): Boolean = false
     fun hasSideEffect(): Boolean = requiresWriteAccess()
-    fun needsCoroutineScope() = false
     fun requiresSingularQueryInput(): Boolean
 
     fun getRootInputSteps(): Set<IStep> = if (this is IConsumingStep<*>) getProducers().flatMap { it.getRootInputSteps() }.toSet() else setOf(this)
@@ -42,27 +39,25 @@ interface IStep {
 
 interface IFlowInstantiationContext {
     val evaluationContext: QueryEvaluationContext
-    val coroutineScope: CoroutineScope?
     fun <T> getOrCreateFlow(step: IProducingStep<T>): StepFlow<T>
-    fun <T> getFlow(step: IProducingStep<T>): Flow<T>?
+    fun <T> getFlow(step: IProducingStep<T>): Observable<T>?
 }
 class FlowInstantiationContext(
     override var evaluationContext: QueryEvaluationContext,
-    override val coroutineScope: CoroutineScope?,
     val query: UnboundQuery<*, *, *>,
 ) : IFlowInstantiationContext {
-    private val createdProducers = HashMap<IProducingStep<*>, Flow<*>>()
-    fun <T> put(step: IProducingStep<T>, producer: Flow<T>) {
+    private val createdProducers = HashMap<IProducingStep<*>, Observable<*>>()
+    fun <T> put(step: IProducingStep<T>, producer: Observable<T>) {
         createdProducers[step] = producer
     }
     override fun <T> getOrCreateFlow(step: IProducingStep<T>): StepFlow<T> {
-        if (evaluationContext.hasValue(step)) return evaluationContext.getValue(step).asFlow()
+        if (evaluationContext.hasValue(step)) return evaluationContext.getValue(step).flatMapIterable { it }
         return (createdProducers as MutableMap<IProducingStep<T>, StepFlow<T>>)
             .getOrPut(step) { step.createFlow(this) }
     }
 
-    override fun <T> getFlow(step: IProducingStep<T>): Flow<T>? {
-        return (createdProducers as MutableMap<IProducingStep<T>, Flow<T>>)[step]
+    override fun <T> getFlow(step: IProducingStep<T>): Observable<T>? {
+        return (createdProducers as MutableMap<IProducingStep<T>, Observable<T>>)[step]
     }
 }
 
@@ -209,23 +204,13 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
     override fun requiresSingularQueryInput(): Boolean = true
 
     override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
-        val flow = flow {
-            emit(aggregate(input))
-        }
-        return if (outputIsConsumedMultipleTimes()) {
-            val scope = context.coroutineScope ?: throw RuntimeException("Coroutine scope required for caching of $this")
-            flow.shareIn(scope, SharingStarted.Lazily, 1)
-                .take(1) // The shared flow seems to ignore that there are no more elements and keeps the subscribers active.
-        } else {
-            flow
-        }
+        val aggregated = aggregate(input)
+        return (if (outputIsConsumedMultipleTimes()) aggregated.cached() else aggregated).asObservable()
     }
-
-    override fun needsCoroutineScope() = outputIsConsumedMultipleTimes()
 
     override fun inputIsConsumedMultipleTimes(): Boolean {
         return false
     }
 
-    protected abstract suspend fun aggregate(input: StepFlow<In>): IStepOutput<Out>
+    protected abstract fun aggregate(input: StepFlow<In>): Single<IStepOutput<Out>>
 }

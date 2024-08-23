@@ -13,12 +13,13 @@
  */
 package org.modelix.modelql.untyped
 
-import kotlinx.coroutines.flow.flatMapConcat
+import com.badoo.reaktive.maybe.map
+import com.badoo.reaktive.observable.flatMapMaybe
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
+import org.modelix.model.api.async.asAsyncNode
 import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
@@ -36,7 +37,9 @@ import org.modelix.modelql.core.stepOutputSerializer
 class ParentTraversalStep() : MonoTransformingStep<INode, INode>(), IMonoStep<INode> {
 
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
-        return input.flatMapConcat { it.value.getParentAsFlow() }.asStepFlow(this)
+        return input.flatMapMaybe {
+            it.value.asAsyncNode().getParent().map { it.asRegularNode() }
+        }.asStepFlow(this)
     }
 
     override fun canBeEmpty(): Boolean = true

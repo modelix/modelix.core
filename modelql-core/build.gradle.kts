@@ -25,6 +25,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(project(":kotlin-utils"))
+                api(project(":streams"))
                 implementation(kotlin("stdlib-common"))
                 implementation(libs.kotlin.reflect)
                 implementation(libs.kotlin.logging)

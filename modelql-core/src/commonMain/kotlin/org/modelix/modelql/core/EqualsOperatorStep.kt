@@ -16,7 +16,6 @@ package org.modelix.modelql.core
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
 
 class EqualsOperatorStep<E>() : TransformingStepWithParameter<E, E, E, Boolean>() {
 

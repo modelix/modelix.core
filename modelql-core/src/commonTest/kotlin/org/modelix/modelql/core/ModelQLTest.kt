@@ -13,11 +13,8 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.fold
+import com.badoo.reaktive.observable.asObservable
+import com.badoo.reaktive.observable.flatMap
 import kotlinx.coroutines.test.TestResult
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -300,19 +297,6 @@ class ModelQLTest {
     }
 
     @Test
-    fun testZipFlowVsSequence() = runTestWithTimeout {
-        val flowSize = (1..10).asFlow().flatMapConcat {
-            combine(listOf(flowOf(it), (30..60).asFlow())) { it[0] to it[1] }
-        }.fold(0) { acc, it -> acc + it.first * it.second }
-
-        val sequenceSize = (1..10).asSequence().flatMap {
-            CombiningSequence(arrayOf(sequenceOf(it), (30..60).asSequence()))
-        }.fold(0) { acc, it -> acc + (it[0] as Int) * (it[1] as Int) }
-
-        assertEquals(flowSize, sequenceSize)
-    }
-
-    @Test
     fun test_firstOrNull_nullIfEmpty() = runTestWithTimeout {
         val result = remoteProductDatabaseQuery { db ->
             db.products.firstOrNull().nullIfEmpty()
@@ -419,7 +403,7 @@ suspend fun <ResultT> doRemoteProductDatabaseQuery(body: (IMonoStep<ProductDatab
 
 class ProductsTraversal() : FluxTransformingStep<ProductDatabase, Product>() {
     override fun createFlow(input: StepFlow<ProductDatabase>, context: IFlowInstantiationContext): StepFlow<Product> {
-        return input.flatMapConcat { it.value.products.asFlow() }.asStepFlow(this)
+        return input.flatMap { it.value.products.asObservable() }.asStepFlow(this)
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Product>> = serializationContext.serializer<Product>().stepOutputSerializer(this)
@@ -498,7 +482,7 @@ class ProductIdTraversal : SimpleMonoTransformingStep<Product, Int>() {
 }
 class ProductImagesTraversal : FluxTransformingStep<Product, String>() {
     override fun createFlow(input: StepFlow<Product>, context: IFlowInstantiationContext): StepFlow<String> {
-        return input.flatMapConcat { it.value.images.asFlow() }.asStepFlow(this)
+        return input.flatMap { it.value.images.asObservable() }.asStepFlow(this)
     }
 
     override fun toString(): String {

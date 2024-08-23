@@ -17,17 +17,8 @@ package org.modelix.model.server.store
 import org.apache.commons.collections4.IterableUtils
 import org.modelix.model.IKeyListener
 import org.modelix.model.IKeyValueStore
-import org.modelix.model.api.IIdGenerator
-import org.modelix.model.client.IModelClient
-import org.modelix.model.client.IdGenerator
-import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.ObjectStoreCache
 
-class LocalModelClient(val store: IStoreClient) : IModelClient {
-    constructor(store: IsolatingStore) : this(store.forContextRepository())
-    override val clientId: Int by lazy { store.generateId("clientId").toInt() }
-    override val idGenerator: IIdGenerator by lazy { IdGenerator.getInstance(clientId) }
-    private val objectCache: IDeserializingKeyValueStore = ObjectStoreCache(this)
+class StoreClientAsKeyValueStore(val store: IStoreClient) : IKeyValueStore {
 
     override fun get(key: String): String? {
         return store[key]
@@ -70,9 +61,4 @@ class LocalModelClient(val store: IStoreClient) : IModelClient {
     override fun getPendingSize(): Int {
         return 0
     }
-
-    override val storeCache: IDeserializingKeyValueStore
-        get() = objectCache
-    override val asyncStore: IKeyValueStore
-        get() = this
 }

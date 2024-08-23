@@ -15,10 +15,16 @@
 
 package org.modelix.model.persistent
 
-import org.modelix.model.lazy.IBulkQuery
-import org.modelix.model.lazy.IDeserializingKeyValueStore
+import com.badoo.reaktive.maybe.Maybe
+import com.badoo.reaktive.maybe.asSingleOrError
+import com.badoo.reaktive.maybe.defaultIfEmpty
+import com.badoo.reaktive.observable.Observable
+import com.badoo.reaktive.observable.asObservable
+import com.badoo.reaktive.observable.flatMapSingle
+import com.badoo.reaktive.observable.toList
+import com.badoo.reaktive.single.Single
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.KVEntryReference
-import org.modelix.model.lazy.NonBulkQuery
 import org.modelix.model.persistent.SerializationUtil.intFromHex
 import org.modelix.model.persistent.SerializationUtil.longFromHex
 import kotlin.jvm.JvmStatic
@@ -37,47 +43,35 @@ abstract class CPHamtNode : IKVValue {
         return CPHamtInternal(0, arrayOf())
     }
 
-    abstract fun calculateSize(bulkQuery: IBulkQuery): IBulkQuery.Value<Long>
-
-    fun get(key: Long, store: IDeserializingKeyValueStore): KVEntryReference<CPNode>? {
-        val bulkQuery: IBulkQuery = NonBulkQuery(store)
-        return get(key, 0, bulkQuery).executeQuery()
+    fun getAll(keys: Iterable<Long>, store: IAsyncObjectStore): Single<List<KVEntryReference<CPNode>?>> {
+        return keys.asObservable().flatMapSingle { get(it, 0, store).defaultIfEmpty(null) }.toList()
     }
 
-    fun getAll(keys: Iterable<Long>, bulkQuery: IBulkQuery): IBulkQuery.Value<List<KVEntryReference<CPNode>?>> {
-        return bulkQuery.flatMap(keys) { key: Long -> get(key, 0, bulkQuery) }
-    }
-
-    fun put(key: Long, value: KVEntryReference<CPNode>?, store: IDeserializingKeyValueStore): CPHamtNode? {
+    fun put(key: Long, value: KVEntryReference<CPNode>?, store: IAsyncObjectStore): Maybe<CPHamtNode> {
         return put(key, value, 0, store)
     }
 
-    fun put(data: CPNode, store: IDeserializingKeyValueStore): CPHamtNode? {
+    fun put(data: CPNode, store: IAsyncObjectStore): Single<CPHamtNode> {
         return put(data.id, KVEntryReference(data), store)
+            .asSingleOrError { RuntimeException("Map should not be empty after putting a non-null value") }
     }
 
-    fun remove(key: Long, store: IDeserializingKeyValueStore): CPHamtNode? {
+    fun remove(key: Long, store: IAsyncObjectStore): Maybe<CPHamtNode> {
         return remove(key, 0, store)
     }
 
-    fun remove(element: CPNode, store: IDeserializingKeyValueStore): CPHamtNode? {
+    fun remove(element: CPNode, store: IAsyncObjectStore): Maybe<CPHamtNode> {
         return remove(element.id, store)
     }
 
-    fun get(key: Long, bulkQuery: IBulkQuery): IBulkQuery.Value<KVEntryReference<CPNode>?> = get(key, 0, bulkQuery)
+    fun get(key: Long, store: IAsyncObjectStore): Maybe<KVEntryReference<CPNode>> = get(key, 0, store)
 
-    abstract fun get(key: Long, shift: Int, bulkQuery: IBulkQuery): IBulkQuery.Value<KVEntryReference<CPNode>?>
-    abstract fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode?
-    abstract fun remove(key: Long, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode?
-    abstract fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IBulkQuery.Value<Unit>
-    abstract fun visitChanges(oldNode: CPHamtNode?, shift: Int, visitor: IChangeVisitor, bulkQuery: IBulkQuery)
-    fun visitChanges(oldNode: CPHamtNode?, visitor: IChangeVisitor, bulkQuery: IBulkQuery) = visitChanges(oldNode, 0, visitor, bulkQuery)
-    interface IChangeVisitor {
-        fun visitChangesOnly(): Boolean
-        fun entryAdded(key: Long, value: KVEntryReference<CPNode>)
-        fun entryRemoved(key: Long, value: KVEntryReference<CPNode>)
-        fun entryChanged(key: Long, oldValue: KVEntryReference<CPNode>, newValue: KVEntryReference<CPNode>)
-    }
+    abstract fun get(key: Long, shift: Int, store: IAsyncObjectStore): Maybe<KVEntryReference<CPNode>>
+    abstract fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode>
+    abstract fun remove(key: Long, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode>
+    abstract fun getEntries(store: IAsyncObjectStore): Observable<Pair<Long, KVEntryReference<CPNode>>>
+    abstract fun getChanges(oldNode: CPHamtNode?, shift: Int, store: IAsyncObjectStore, changesOnly: Boolean): Observable<MapChangeEvent>
+    fun getChanges(oldNode: CPHamtNode?, store: IAsyncObjectStore, changesOnly: Boolean) = getChanges(oldNode, 0, store, changesOnly)
 
     companion object {
         const val BITS_PER_LEVEL = 5

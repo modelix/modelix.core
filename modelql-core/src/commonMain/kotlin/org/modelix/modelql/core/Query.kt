@@ -13,17 +13,18 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEmpty
-import kotlinx.coroutines.flow.single
-import kotlinx.coroutines.flow.toList
+import com.badoo.reaktive.observable.Observable
+import com.badoo.reaktive.observable.asObservable
+import com.badoo.reaktive.observable.defaultIfEmpty
+import com.badoo.reaktive.observable.filter
+import com.badoo.reaktive.observable.flatMap
+import com.badoo.reaktive.observable.flatten
+import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.observable.observableOf
+import com.badoo.reaktive.observable.toList
+import com.badoo.reaktive.single.Single
+import com.badoo.reaktive.single.asObservable
+import com.badoo.reaktive.single.singleOf
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -32,20 +33,24 @@ import kotlinx.serialization.builtins.NothingSerializer
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
+import org.modelix.streams.cached
+import org.modelix.streams.exactlyOne
+import org.modelix.streams.getSuspending
+import org.modelix.streams.getSynchronous
 
 interface IQueryExecutor<out In> {
     fun <Out> createFlow(query: IUnboundQuery<In, *, Out>): StepFlow<Out>
 }
 
-class SimpleQueryExecutor<E>(val input: E) : IQueryExecutor<E> {
+class SimpleQueryExecutor<E>(val input: Single<E>) : IQueryExecutor<E> {
     override fun <ElementOut> createFlow(query: IUnboundQuery<E, *, ElementOut>): StepFlow<ElementOut> {
-        return query.asFlow(QueryEvaluationContext.EMPTY, input.asStepOutput(null))
+        return query.asFlow(QueryEvaluationContext.EMPTY, input.asStepFlow(null).asObservable())
     }
 }
 
 interface IQuery<out AggregationOut, out ElementOut> {
     suspend fun execute(): IStepOutput<AggregationOut>
-    suspend fun asFlow(): StepFlow<ElementOut>
+    fun asFlow(): StepFlow<ElementOut>
 }
 
 interface IMonoQuery<out Out> : IQuery<Out, Out> {
@@ -61,7 +66,7 @@ interface IFluxQuery<out Out> : IQuery<List<IStepOutput<Out>>, Out> {
 private abstract class BoundQuery<In, out AggregationOut, out ElementOut>(val executor: IQueryExecutor<In>) : IQuery<AggregationOut, ElementOut> {
     abstract val query: IUnboundQuery<In, AggregationOut, ElementOut>
 
-    override suspend fun asFlow(): StepFlow<ElementOut> {
+    override fun asFlow(): StepFlow<ElementOut> {
         return executor.createFlow(query)
     }
 
@@ -74,7 +79,7 @@ private class MonoBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val
 
     override suspend fun execute(): IStepOutput<Out> {
         try {
-            return executor.createFlow(query).single()
+            return executor.createFlow(query).exactlyOne().getSuspending()
         } catch (ex: NoSuchElementException) {
             throw RuntimeException("Empty query result: " + this, ex)
         }
@@ -93,7 +98,7 @@ private class FluxBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val
     BoundQuery<In, List<IStepOutput<Out>>, Out>(executor), IFluxQuery<Out> {
 
     override suspend fun execute(): IStepOutput<List<IStepOutput<Out>>> {
-        return executor.createFlow(query).toList().asStepOutput(null)
+        return executor.createFlow(query).toList().getSuspending().asStepOutput(null)
     }
 
     override fun <T> flatMap(body: (IMonoStep<Out>) -> IFluxStep<T>): IFluxQuery<T> {
@@ -107,9 +112,10 @@ private class FluxBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val
 
 interface IUnboundQuery<in In, out AggregationOut, out ElementOut> {
     val reference: IQueryReference<IUnboundQuery<In, AggregationOut, ElementOut>>
-    suspend fun execute(evaluationContext: QueryEvaluationContext, input: IStepOutput<In>): IStepOutput<AggregationOut>
+    suspend fun execute(evaluationContext: QueryEvaluationContext, input: Single<IStepOutput<In>>): IStepOutput<AggregationOut>
+    suspend fun execute(evaluationContext: QueryEvaluationContext, input: IStepOutput<In>) = execute(evaluationContext, singleOf(input))
     fun asFlow(evaluationContext: QueryEvaluationContext, input: StepFlow<In>): StepFlow<ElementOut>
-    fun asFlow(evaluationContext: QueryEvaluationContext, input: IStepOutput<In>): StepFlow<ElementOut> = asFlow(evaluationContext, flowOf(input))
+    fun asFlow(context: QueryEvaluationContext, input: IStepOutput<In>): StepFlow<ElementOut> = asFlow(context, observableOf(input))
 
     fun requiresWriteAccess(): Boolean
     fun canBeEmpty(): Boolean
@@ -133,11 +139,12 @@ interface IMonoUnboundQuery<in In, out Out> : IUnboundQuery<In, Out, Out> {
 }
 
 suspend fun <In, Out> IMonoUnboundQuery<In, Out>.evaluate(evaluationContext: QueryEvaluationContext, input: In): Optional<Out> {
-    return SimpleQueryExecutor(input)
-        .createFlow(this)
+    return SimpleQueryExecutor(singleOf(input))
+        .createFlow(this@evaluate)
         .map { Optional.of(it.value) }
-        .onEmpty { Optional.empty<Out>() }
-        .single()
+        .defaultIfEmpty(Optional.empty())
+        .exactlyOne()
+        .getSynchronous()
 }
 
 fun <In, Out, AggregationT, T> IMonoUnboundQuery<In, Out>.map(query: IUnboundQuery<Out, AggregationT, T>): IUnboundQuery<In, AggregationT, T> {
@@ -172,9 +179,9 @@ class MonoUnboundQuery<In, ElementOut>(
 
     override fun bind(executor: IQueryExecutor<In>): IMonoQuery<ElementOut> = MonoBoundQuery(executor, this)
 
-    override suspend fun execute(evaluationContext: QueryEvaluationContext, input: IStepOutput<In>): IStepOutput<ElementOut> {
+    override suspend fun execute(evaluationContext: QueryEvaluationContext, input: Single<IStepOutput<In>>): IStepOutput<ElementOut> {
         try {
-            return asFlow(evaluationContext, input).single()
+            return asFlow(evaluationContext, input.asObservable()).exactlyOne().getSynchronous()
         } catch (ex: NoSuchElementException) {
             throw RuntimeException("Empty query result: " + this, ex)
         }
@@ -215,8 +222,8 @@ class FluxUnboundQuery<In, ElementOut>(
 
     override fun bind(executor: IQueryExecutor<In>): IFluxQuery<ElementOut> = FluxBoundQuery(executor, this)
 
-    override suspend fun execute(evaluationContext: QueryEvaluationContext, input: IStepOutput<In>): IStepOutput<List<IStepOutput<ElementOut>>> {
-        return asFlow(evaluationContext, input).toList().asStepOutput(null)
+    override suspend fun execute(evaluationContext: QueryEvaluationContext, input: Single<IStepOutput<In>>): IStepOutput<List<IStepOutput<ElementOut>>> {
+        return asFlow(evaluationContext, input.asObservable()).toList().getSynchronous().asStepOutput(null)
     }
 
     override fun <T> map(body: (IMonoStep<ElementOut>) -> IMonoStep<T>): IFluxUnboundQuery<In, T> {
@@ -295,7 +302,6 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
             .filterIsInstance<IProducingStep<*>>()
             .filter { it.hasSideEffect() }
             .filter { !isConsumed(it) }
-        anyStepNeedsCoroutineScope = sharedSteps.isNotEmpty() || getOwnSteps().any { it.needsCoroutineScope() }
         requiresSingularInput = getOwnSteps().any { it.requiresSingularQueryInput() } // inputStep.requiresSingularQueryInput()
         isSinglePath = (getOwnSteps() - setOf(outputStep)).all { it is IProducingStep<*> && it.getConsumers().size == 1 } &&
             (getOwnSteps() - setOf(inputStep)).all { it is IConsumingStep<*> && it.getProducers().size == 1 }
@@ -344,38 +350,31 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
             return SinglePathFlowInstantiationContext(evaluationContext, inputStep, input).getOrCreateFlow(outputStep)
             // return input.flatMapConcat { SinglePathFlowInstantiationContext(inputStep, flowOf(it)).getOrCreateFlow(outputStep) }
         } else {
-            return flow<IStepOutput<ElementOut>> {
-                input.collect { inputElement ->
-                    suspend fun body(context: FlowInstantiationContext) {
-                        context.put(inputStep, flowOf(inputElement))
+            return input.flatMap { inputElement ->
+                val context = FlowInstantiationContext(evaluationContext, this@UnboundQuery)
+                context.put(inputStep, observableOf(inputElement))
 
-                        for (sharedStep in sharedSteps) {
-                            val values: List<IStepOutput<Any?>> = context.getOrCreateFlow(sharedStep.getProducer()).toList()
-                            context.put(sharedStep, values.asFlow())
-                            context.evaluationContext = context.evaluationContext + (sharedStep to values)
-                        }
-
-                        val outputFlow = context.getOrCreateFlow(outputStep)
-
-                        // ensure all write operations are executed
-                        unconsumedSideEffectSteps
-                            .mapNotNull {
-                                if (context.getFlow(it) == null) context.getOrCreateFlow(it) else null
-                            }
-                            .forEach { it.collect() }
-
-                        outputFlow.collect { outputElement ->
-                            emit(outputElement)
-                        }
-                    }
-                    if (anyStepNeedsCoroutineScope) {
-                        coroutineScope {
-                            body(FlowInstantiationContext(evaluationContext, this, this@UnboundQuery))
-                        }
-                    } else {
-                        body(FlowInstantiationContext(evaluationContext, null, this@UnboundQuery))
-                    }
+                for (sharedStep in sharedSteps) {
+                    val values: Single<List<IStepOutput<Any?>>> = context.getOrCreateFlow(sharedStep.getProducer()).toList().cached()
+                    context.put(sharedStep, values.asObservable())
+                    context.evaluationContext = context.evaluationContext + (sharedStep to values)
                 }
+
+                var outputFlow: Observable<IStepOutput<ElementOut>> = context.getOrCreateFlow(outputStep)
+
+                // ensure all write operations are executed
+                if (unconsumedSideEffectSteps.isNotEmpty()) {
+                    val sideEffectsStream: Observable<IStepOutput<ElementOut>> = unconsumedSideEffectSteps.asObservable()
+                        .flatMap {
+                            it as IProducingStep<ElementOut>
+                            if (context.getFlow(it) == null) context.getOrCreateFlow(it) else observableOf<IStepOutput<ElementOut>>()
+                        }
+                        .filter { false } // just consume everything
+
+                    outputFlow = observableOf(sideEffectsStream, outputFlow).flatten()
+                }
+
+                outputFlow
             }
         }
     }
@@ -452,14 +451,12 @@ class SinglePathFlowInstantiationContext(
     val queryInput: QueryInput<*>,
     val inputFlow: StepFlow<*>,
 ) : IFlowInstantiationContext {
-    override val coroutineScope: CoroutineScope?
-        get() = null
 
     override fun <T> getOrCreateFlow(step: IProducingStep<T>): StepFlow<T> {
-        return if (step == queryInput) inputFlow as StepFlow<T> else step.createFlow(this)
+        return if (step == queryInput) inputFlow.upcast() else step.createFlow(this)
     }
 
-    override fun <T> getFlow(step: IProducingStep<T>): Flow<T>? {
+    override fun <T> getFlow(step: IProducingStep<T>): Observable<T>? {
         return null
     }
 }

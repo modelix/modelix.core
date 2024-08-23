@@ -29,7 +29,6 @@ import org.modelix.model.api.addNewChild
 import org.modelix.model.api.getDescendants
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
-import org.modelix.model.server.store.LocalModelClient
 import org.modelix.model.test.RandomModelChangeGenerator
 import kotlin.random.Random
 import kotlin.test.Ignore
@@ -41,8 +40,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class LightModelClientTest {
     private fun runTest(block: suspend (HttpClient) -> Unit) = testApplication {
-        val modelClient = LocalModelClient(InMemoryStoreClient())
-        val repositoryManager = RepositoriesManager(modelClient)
+        val repositoryManager = RepositoriesManager(InMemoryStoreClient())
         repositoryManager.createRepository(org.modelix.model.lazy.RepositoryId("test-repo"), userName = "unit-test")
 
         application {
@@ -53,7 +51,7 @@ class LightModelClientTest {
             // to test against the actual implementation.
             // But just using it does not work.
             // Might be caused by the setup here or actual bugs in the server or client.
-            FakeLightModelServer(modelClient, repositoryManager).init(this)
+            FakeLightModelServer(repositoryManager).init(this)
         }
         val client = createClient {
             install(WebSockets)

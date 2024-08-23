@@ -4,6 +4,24 @@ on:
   pull_request:
 
 jobs:
+  npm-linting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Cache Node packages
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: release-${{ hashFiles('package.json') }}-${{ hashFiles('package-lock.json') }}
+      - name: Install dependencies
+        run: npm ci
+      - name: Check with Prettier
+        run: npm run prettier:check
+
   pre-commit:
     runs-on: ubuntu-latest
     steps:
@@ -33,6 +51,6 @@ jobs:
         id: breaking
         uses: oasdiff/oasdiff-action/breaking@main
         with:
-          base: 'model-server-openapi/specifications-before/*.yaml'
-          revision: 'model-server-openapi/specifications/*.yaml'
+          base: "model-server-openapi/specifications-before/*.yaml"
+          revision: "model-server-openapi/specifications/*.yaml"
           composed: true

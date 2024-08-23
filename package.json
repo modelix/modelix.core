@@ -4,6 +4,17 @@
     "@commitlint/config-conventional": "19.2.2",
     "@semantic-release/changelog": "6.0.3",
     "@semantic-release/git": "10.0.1",
+    "husky": "^9.1.5",
+    "lint-staged": "^15.2.9",
+    "prettier": "3.3.3",
     "semantic-release": "24.1.0"
+  },
+  "scripts": {
+    "prettier:check": "prettier --check --ignore-unknown .",
+    "prettier:write": "prettier --write --ignore-unknown .",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
   }
 }

@@ -1,4 +1,1 @@
-
-export interface ILanguage {
-
-}
+export interface ILanguage {}

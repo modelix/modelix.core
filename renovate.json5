@@ -6,7 +6,7 @@
     // See https://docs.renovatebot.com/modules/manager/pre-commit/
     ":enablePreCommit",
     // Use the same commit type as with Dependabot.
-    ":semanticCommitTypeAll(build)"
+    ":semanticCommitTypeAll(build)",
   ],
   enabledManagers: ["pre-commit"],
 }

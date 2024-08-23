@@ -13,7 +13,7 @@ info:
   description: "modelix public API"
   version: "1.0.0"
 servers:
-  - url: '/v2'
+  - url: "/v2"
     description: model-server
 tags:
   - name: ids
@@ -27,9 +27,9 @@ paths:
       operationId: getServerId
       responses:
         "200":
-          $ref: '#/components/responses/200'
+          $ref: "#/components/responses/200"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
   /user-id:
     get:
       tags:
@@ -37,9 +37,9 @@ paths:
       operationId: getUserId
       responses:
         "200":
-          $ref: '#/components/responses/200'
+          $ref: "#/components/responses/200"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
   /generate-client-id:
     post:
       tags:
@@ -47,9 +47,9 @@ paths:
       operationId: generateClientId
       responses:
         "200":
-          $ref: '#/components/responses/200'
+          $ref: "#/components/responses/200"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
   /repositories:
     get:
       tags:
@@ -57,9 +57,9 @@ paths:
       operationId: getRepositories
       responses:
         "200":
-          $ref: '#/components/responses/200'
+          $ref: "#/components/responses/200"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
   /repositories/{repository}/objects:
     put:
       tags:
@@ -73,13 +73,13 @@ paths:
             type: string
       responses:
         "403":
-          $ref: '#/components/responses/403'
+          $ref: "#/components/responses/403"
         "401":
-          $ref: '#/components/responses/401'
+          $ref: "#/components/responses/401"
         "200":
-          $ref: '#/components/responses/200json'
+          $ref: "#/components/responses/200json"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
   /repositories/{repository}/objects/getAll:
     post:
       tags:
@@ -93,7 +93,7 @@ paths:
             type: string
       responses:
         "200":
-          $ref: '#/components/responses/200'
+          $ref: "#/components/responses/200"
   /repositories/{repository}/branches:
     get:
       tags:
@@ -107,9 +107,9 @@ paths:
             type: string
       responses:
         "200":
-          $ref: '#/components/responses/200'
+          $ref: "#/components/responses/200"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
   /repositories/{repository}/branches/{branch}:
     delete:
       tags:
@@ -128,11 +128,11 @@ paths:
             type: string
       responses:
         "404":
-          $ref: '#/components/responses/404'
+          $ref: "#/components/responses/404"
         "204":
           description: "Branch successfully deleted"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
     get:
       tags:
         - v2
@@ -155,36 +155,36 @@ paths:
             type: string
       x-modelix-media-type-handlers:
         - v1:
-            - 'application/x.modelix.branch+json;version=1'
+            - "application/x.modelix.branch+json;version=1"
         - delta:
-            - 'application/x-modelix-objects-v2'
-            - 'application/x-modelix-objects'
-            - 'application/json'
-            - 'text/plain'
-            - '*/*'
+            - "application/x-modelix-objects-v2"
+            - "application/x-modelix-objects"
+            - "application/json"
+            - "text/plain"
+            - "*/*"
       responses:
         "404":
-          $ref: '#/components/responses/404'
+          $ref: "#/components/responses/404"
         "200":
           description: "Information about a branch for content type `application/x.modelix.branch+json;version=*'. Else all model data of the branch in version delta format."
           content:
-            'application/x.modelix.branch+json;version=1':
+            "application/x.modelix.branch+json;version=1":
               schema:
                 $ref: "#/components/schemas/BranchV1"
-            'application/x-modelix-objects-v2':
+            "application/x-modelix-objects-v2":
               schema:
                 type: string
-            'application/x-modelix-objects':
+            "application/x-modelix-objects":
               schema:
                 type: string
-            'application/json':
+            "application/json":
               schema:
                 type: object
-            'text/plain':
+            "text/plain":
               schema:
                 type: string
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
     post:
       tags:
         - v2
@@ -200,21 +200,21 @@ paths:
           required: true
           schema:
             type: string
-# this was autogenerated but will break tests
-# we need to manually design the content to allow
-# type safe access on our APIs
-#      requestBody:
-#        content:
-#          '*/*':
-#            schema:
-#              type: string
-##              $ref: "#/components/schemas/VersionDelta"
-#        required: true
+      # this was autogenerated but will break tests
+      # we need to manually design the content to allow
+      # type safe access on our APIs
+      #      requestBody:
+      #        content:
+      #          '*/*':
+      #            schema:
+      #              type: string
+      ##              $ref: "#/components/schemas/VersionDelta"
+      #        required: true
       responses:
         "200":
-          $ref: '#/components/responses/versionDelta'
+          $ref: "#/components/responses/versionDelta"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
   /repositories/{repository}/branches/{branch}/hash:
     get:
       tags:
@@ -233,11 +233,11 @@ paths:
             type: string
       responses:
         "404":
-          $ref: '#/components/responses/404'
+          $ref: "#/components/responses/404"
         "200":
-          $ref: '#/components/responses/200'
+          $ref: "#/components/responses/200"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
   /repositories/{repository}/branches/{branch}/poll:
     get:
       tags:
@@ -261,13 +261,13 @@ paths:
             type: string
       responses:
         "403":
-          $ref: '#/components/responses/403'
+          $ref: "#/components/responses/403"
         "401":
-          $ref: '#/components/responses/401'
+          $ref: "#/components/responses/401"
         "200":
-          $ref: '#/components/responses/versionDelta'
+          $ref: "#/components/responses/versionDelta"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
   /repositories/{repository}/branches/{branch}/pollHash:
     get:
       tags:
@@ -296,13 +296,13 @@ paths:
             type: string
       responses:
         "403":
-          $ref: '#/components/responses/403'
+          $ref: "#/components/responses/403"
         "401":
-          $ref: '#/components/responses/401'
+          $ref: "#/components/responses/401"
         "200":
-          $ref: '#/components/responses/200'
+          $ref: "#/components/responses/200"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
   /repositories/{repository}/branches/{branch}/query:
     post:
       tags:
@@ -321,9 +321,9 @@ paths:
             type: string
       responses:
         "200":
-          $ref: '#/components/responses/200json'
+          $ref: "#/components/responses/200json"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
   /repositories/{repository}/init:
     post:
       tags:
@@ -349,13 +349,13 @@ paths:
             type: string
       responses:
         "403":
-          $ref: '#/components/responses/403'
+          $ref: "#/components/responses/403"
         "401":
-          $ref: '#/components/responses/401'
+          $ref: "#/components/responses/401"
         "200":
-          $ref: '#/components/responses/versionDelta'
+          $ref: "#/components/responses/versionDelta"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
   /repositories/{repository}/delete:
     post:
       tags:
@@ -375,7 +375,7 @@ paths:
               schema:
                 type: string
         "404":
-          $ref: '#/components/responses/404'
+          $ref: "#/components/responses/404"
   /repositories/{repository}/versions/{versionHash}:
     get:
       tags:
@@ -399,15 +399,15 @@ paths:
             type: string
       responses:
         "404":
-          $ref: '#/components/responses/404'
+          $ref: "#/components/responses/404"
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: object
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
   /repositories/{repository}/versions/{versionHash}/query:
     post:
       tags:
@@ -426,9 +426,9 @@ paths:
             type: string
       responses:
         "200":
-          $ref: '#/components/responses/200json'
+          $ref: "#/components/responses/200json"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
 
   /versions/{versionHash}:
     get:
@@ -449,11 +449,11 @@ paths:
             type: string
       responses:
         "404":
-          $ref: '#/components/responses/404'
+          $ref: "#/components/responses/404"
         "200":
-          $ref: '#/components/responses/versionDelta'
+          $ref: "#/components/responses/versionDelta"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
 components:
   responses:
     "200":
@@ -480,45 +480,45 @@ components:
       content:
         application/problem+json:
           schema:
-            $ref: 'problem.yaml#/Problem'
+            $ref: "problem.yaml#/Problem"
     "401":
       description: "Unauthorized"
       content:
         application/problem+json:
           schema:
-            $ref: 'problem.yaml#/Problem'
+            $ref: "problem.yaml#/Problem"
     "403":
       description: "Forbidden"
       content:
         application/problem+json:
           schema:
-            $ref: 'problem.yaml#/Problem'
+            $ref: "problem.yaml#/Problem"
     "404":
       description: "Not Found"
       content:
         application/problem+json:
           schema:
-            $ref: 'problem.yaml#/Problem'
+            $ref: "problem.yaml#/Problem"
     GeneralError:
       description: Unexpected error
       content:
         application/problem+json:
           schema:
-            $ref: 'problem.yaml#/Problem'
+            $ref: "problem.yaml#/Problem"
 
     "versionDelta":
       description: OK
       content:
-        'application/x-modelix-objects':
+        "application/x-modelix-objects":
           schema:
             type: string
-        'application/x-modelix-objects-v2':
+        "application/x-modelix-objects-v2":
           schema:
             type: string
-        'application/json':
+        "application/json":
           schema:
             type: object
-        'text/plain':
+        "text/plain":
           schema:
             type: string
 
@@ -528,13 +528,13 @@ components:
       type: object
       properties:
         versionHash:
-            type: string
+          type: string
         baseVersion:
-            type: string
+          type: string
         objects:
-            $ref: '#/components/schemas/MapItem'
+          $ref: "#/components/schemas/MapItem"
         objectsMap:
-            $ref: '#/components/schemas/MapItem'
+          $ref: "#/components/schemas/MapItem"
       required:
         - versionHash
         - objects
@@ -546,7 +546,7 @@ components:
         value2:
           type: string
     BranchV1:
-      x-modelix-media-type: 'application/x.modelix.branch+json;version=1'
+      x-modelix-media-type: "application/x.modelix.branch+json;version=1"
       type: object
       properties:
         name:

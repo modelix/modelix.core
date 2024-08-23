@@ -3,14 +3,13 @@ name: Build
 on:
   push:
     branches:
-      - 'main'
+      - "main"
   pull_request: {}
   # allow manual execution just in case
   workflow_dispatch:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
@@ -26,8 +25,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          distribution: "temurin"
+          java-version: "21"
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
       - name: Build
@@ -61,7 +60,7 @@ jobs:
         # exceeds this limit. Therefore, we combine the individual runs in the SARIF files.
       - uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: "20.x"
       - name: Combine SARIF files
         run: |
           npx @microsoft/sarif-multitool merge --merge-runs --output-file merged.sarif  $(find . -iname '*.sarif*')
@@ -78,8 +77,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          distribution: "temurin"
+          java-version: "21"
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
       - name: Assemble
@@ -98,8 +97,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          distribution: "temurin"
+          java-version: "21"
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
       - name: Assemble
@@ -118,8 +117,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          distribution: "temurin"
+          java-version: "21"
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
       - name: Assemble

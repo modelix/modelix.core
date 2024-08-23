@@ -1,4 +1,5 @@
 # The Modelix Project
+
 The modelix project develops an open source platform for (meta-)models on the web. We are native to the web and the cloud.
 
 For general information on modelix, please refer to the [official modelix homepage](https://modelix.org) as well as the [platform documentation](https://docs.modelix.org).
@@ -11,7 +12,6 @@ This repository contains the core components of the modelix platform.
 All components in this repository have no dependencies to JetBrains MPS.
 If you are looking for MPS-related modelix components,
 see https://github.com/modelix/modelix.mps and https://github.com/modelix/modelix.mps-plugins.
-
 
 ## Development
 
@@ -60,7 +60,6 @@ In PRs, detekt finding will be provided as annotations on the PR.
 # Authors
 
 Development of modelix is supported by [itemis](https://itemis.com)
-
 
 # Copyright and License
 

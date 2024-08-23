@@ -15,7 +15,7 @@ info:
   version: "1.0.0"
 
 servers:
-  - url: '/'
+  - url: "/"
     description: model-server
 
 paths:
@@ -26,7 +26,7 @@ paths:
         - metrics
       responses:
         "200":
-          $ref: '#/components/responses/MetricsResponse'
+          $ref: "#/components/responses/MetricsResponse"
 
   /health:
     get:
@@ -35,23 +35,23 @@ paths:
         - health
       responses:
         "200":
-          $ref: '#/components/responses/Healthy'
+          $ref: "#/components/responses/Healthy"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
 
   /about:
     get:
       operationId: getAboutInformation
       x-modelix-media-type-handlers:
         - v1:
-            - 'application/x.modelix.about+json;version=1'
+            - "application/x.modelix.about+json;version=1"
       tags:
         - about
       responses:
         "200":
           description: Response with information about the model server.
           content:
-            'application/x.modelix.about+json;version=1':
+            "application/x.modelix.about+json;version=1":
               schema:
                 $ref: "#/components/schemas/AboutV1"
 
@@ -77,11 +77,11 @@ components:
       content:
         application/problem+json:
           schema:
-            $ref: 'problem.yaml#/Problem'
+            $ref: "problem.yaml#/Problem"
 
   schemas:
     AboutV1:
-      x-modelix-media-type: 'application/x.modelix.about+json;version=1'
+      x-modelix-media-type: "application/x.modelix.about+json;version=1"
       description: Information about the model server
       type: object
       properties:

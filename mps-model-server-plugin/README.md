@@ -1,6 +1,7 @@
 To test changes during development
 add the property `mps.plugins.dir` to `~/.gradle.gradle.properties`, for example
 when using the JetBrains toolbox on Mac this would be similar to this:
+
 ```
 mps.plugins.dir=/Users/yourUserName/Library/Application Support/JetBrains/Toolbox/apps/MPS/ch-2/211.7628.1509/MPS 2021.1.app.plugins/
 ```

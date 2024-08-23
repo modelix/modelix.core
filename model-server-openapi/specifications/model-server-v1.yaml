@@ -13,7 +13,7 @@ info:
   description: "modelix public API"
   version: "1.0.0"
 servers:
-  - url: '/'
+  - url: "/"
     description: model-server
 paths:
   /headers:
@@ -23,9 +23,9 @@ paths:
         - v1
       responses:
         "200":
-          $ref: '#/components/responses/200'
+          $ref: "#/components/responses/200"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
   /counter/{key}:
     post:
       tags:
@@ -38,13 +38,13 @@ paths:
             type: string
       responses:
         "403":
-          $ref: '#/components/responses/403'
+          $ref: "#/components/responses/403"
         "401":
-          $ref: '#/components/responses/401'
+          $ref: "#/components/responses/401"
         "200":
-          $ref: '#/components/responses/200'
+          $ref: "#/components/responses/200"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
   /get/{key}:
     get:
       tags:
@@ -57,37 +57,37 @@ paths:
             type: string
       responses:
         "403":
-          $ref: '#/components/responses/403'
+          $ref: "#/components/responses/403"
         "401":
-          $ref: '#/components/responses/401'
+          $ref: "#/components/responses/401"
         "404":
-          $ref: '#/components/responses/404'
+          $ref: "#/components/responses/404"
         "200":
-          $ref: '#/components/responses/200'
+          $ref: "#/components/responses/200"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
   /getAll:
     put:
       tags:
         - v1
       responses:
         "403":
-          $ref: '#/components/responses/403'
+          $ref: "#/components/responses/403"
         "401":
-          $ref: '#/components/responses/401'
+          $ref: "#/components/responses/401"
         "200":
-          $ref: '#/components/responses/200json'
+          $ref: "#/components/responses/200json"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
   /getEmail:
     get:
       tags:
         - v1
       responses:
         "200":
-          $ref: '#/components/responses/200'
+          $ref: "#/components/responses/200"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
   /getRecursively/{key}:
     get:
       tags:
@@ -100,9 +100,9 @@ paths:
             type: string
       responses:
         "200":
-          $ref: '#/components/responses/200json'
+          $ref: "#/components/responses/200json"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
   /poll/{key}:
     get:
       tags:
@@ -120,15 +120,15 @@ paths:
             type: string
       responses:
         "403":
-          $ref: '#/components/responses/403'
+          $ref: "#/components/responses/403"
         "401":
-          $ref: '#/components/responses/401'
+          $ref: "#/components/responses/401"
         "404":
-          $ref: '#/components/responses/404'
+          $ref: "#/components/responses/404"
         "200":
-          $ref: '#/components/responses/200'
+          $ref: "#/components/responses/200"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
   /put/{key}:
     put:
       tags:
@@ -141,30 +141,30 @@ paths:
             type: string
       responses:
         "403":
-          $ref: '#/components/responses/403'
+          $ref: "#/components/responses/403"
         "401":
-          $ref: '#/components/responses/401'
+          $ref: "#/components/responses/401"
         "200":
-          $ref: '#/components/responses/200'
+          $ref: "#/components/responses/200"
         "404":
-          $ref: '#/components/responses/404'
+          $ref: "#/components/responses/404"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
   /putAll:
     put:
       tags:
         - v1
       responses:
         "403":
-          $ref: '#/components/responses/403'
+          $ref: "#/components/responses/403"
         "401":
-          $ref: '#/components/responses/401'
+          $ref: "#/components/responses/401"
         "200":
-          $ref: '#/components/responses/200'
+          $ref: "#/components/responses/200"
         "404":
-          $ref: '#/components/responses/404'
+          $ref: "#/components/responses/404"
         default:
-          $ref: '#/components/responses/GeneralError'
+          $ref: "#/components/responses/GeneralError"
 components:
   responses:
     "200":
@@ -185,28 +185,28 @@ components:
       content:
         application/problem+json:
           schema:
-            $ref: 'problem.yaml#/Problem'
+            $ref: "problem.yaml#/Problem"
     "401":
       description: "Unauthorized"
       content:
         application/problem+json:
           schema:
-            $ref: 'problem.yaml#/Problem'
+            $ref: "problem.yaml#/Problem"
     "403":
       description: "Forbidden"
       content:
         application/problem+json:
           schema:
-            $ref: 'problem.yaml#/Problem'
+            $ref: "problem.yaml#/Problem"
     "404":
       description: "Not Found"
       content:
         application/problem+json:
           schema:
-            $ref: 'problem.yaml#/Problem'
+            $ref: "problem.yaml#/Problem"
     GeneralError:
       description: Unexpected error
       content:
         application/problem+json:
           schema:
-            $ref: 'problem.yaml#/Problem'
+            $ref: "problem.yaml#/Problem"

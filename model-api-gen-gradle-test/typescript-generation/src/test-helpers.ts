@@ -21,9 +21,7 @@ export function useFakeRootNode(nodeData: object = DEFAULT_NODE_DATA) {
   registerLanguages();
 
   const { loadModelsFromJson } = org.modelix.model.client2;
-  const rootNode = loadModelsFromJson(
-    [JSON.stringify(nodeData)],
-  );
+  const rootNode = loadModelsFromJson([JSON.stringify(nodeData)]);
 
   function getUntypedNode(role: string = "children1") {
     return rootNode.getChildren(role)[0];
@@ -42,7 +40,7 @@ export function useFakeRootNode(nodeData: object = DEFAULT_NODE_DATA) {
 
 export function useFakeNode<T extends ITypedNode>(
   role?: string,
-  nodeData?: object
+  nodeData?: object,
 ) {
   const { getUntypedNode, getTypedNode, rootNode } = useFakeRootNode(nodeData);
   return {

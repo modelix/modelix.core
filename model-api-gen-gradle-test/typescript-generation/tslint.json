@@ -1,7 +1,5 @@
 {
-  "extends": [
-    "@reallyland/tslint-config"
-  ],
+  "extends": ["@reallyland/tslint-config"],
   "rules": {
     "object-curly-spacing": false,
     "quotemark": false,

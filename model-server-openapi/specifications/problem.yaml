@@ -9,8 +9,8 @@ Problem:
         context of the provided API. Opposed to the specification in RFC-9457,
         it is neither recommended to be dereferenceable and point to a
         human-readable documentation nor globally unique for the problem type.
-      default: 'about:blank'
-      example: '/some/uri-reference'
+      default: "about:blank"
+      example: "/some/uri-reference"
     title:
       type: string
       description: >
@@ -42,4 +42,4 @@ Problem:
         A URI reference that identifies the specific occurrence of the problem,
         e.g. by adding a fragment identifier or sub-path to the problem type.
         May be used to locate the root of this problem in the source code.
-      example: '/some/uri-reference#specific-occurrence-context'
+      example: "/some/uri-reference#specific-occurrence-context"

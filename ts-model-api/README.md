@@ -59,13 +59,13 @@ $ npm install --save ts-model-api
 #### Node.js
 
 ```js
-const greeting = require('ts-model-api');
+const greeting = require("ts-model-api");
 ```
 
 #### Native ES modules or TypeScript
 
 ```ts
-import greeting from 'ts-model-api';
+import greeting from "ts-model-api";
 ```
 
 ## API Reference
@@ -84,12 +84,14 @@ This methods works the same as `greeting(name)` except that this is the synchron
 [MIT License](https://.mit-license.org/) © Sascha Lisson
 
 <!-- References -->
+
 [typescript-url]: https://github.com/Microsoft/TypeScript
 [nodejs-url]: https://nodejs.org
 [npm-url]: https://www.npmjs.com
 [node-releases-url]: https://nodejs.org/en/download/releases
 
 <!-- MDN -->
+
 [array-mdn-url]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array
 [boolean-mdn-url]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean
 [function-mdn-url]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function
@@ -102,40 +104,34 @@ This methods works the same as `greeting(name)` except that this is the synchron
 [string-mdn-url]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String
 
 <!-- Badges -->
-[follow-me-badge]: https://flat.badgen.net/twitter/follow/?icon=twitter
 
+[follow-me-badge]: https://flat.badgen.net/twitter/follow/?icon=twitter
 [version-badge]: https://flat.badgen.net/npm/v/ts-model-api?icon=npm
 [node-version-badge]: https://flat.badgen.net/npm/node/ts-model-api
 [mit-license-badge]: https://flat.badgen.net/npm/license/ts-model-api
-
 [downloads-badge]: https://flat.badgen.net/npm/dm/ts-model-api
 [total-downloads-badge]: https://flat.badgen.net/npm/dt/ts-model-api?label=total%20downloads
 [packagephobia-badge]: https://flat.badgen.net/packagephobia/install/ts-model-api
 [bundlephobia-badge]: https://flat.badgen.net/bundlephobia/minzip/ts-model-api
-
 [daviddm-badge]: https://flat.badgen.net/david/dep//ts-model-api
 [codecov-badge]: https://flat.badgen.net/codecov/c/github//ts-model-api?label=codecov&icon=codecov
 [coveralls-badge]: https://flat.badgen.net/coveralls/c/github//ts-model-api?label=coveralls
-
 [codebeat-badge]: https://codebeat.co/badges/123
 [codacy-badge]: https://api.codacy.com/project/badge/Grade/123
 [coc-badge]: https://flat.badgen.net/badge/code%20of/conduct/pink
 
 <!-- Links -->
-[follow-me-url]: https://twitter.com/?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=/ts-model-api
 
+[follow-me-url]: https://twitter.com/?utm_source=github.com&utm_medium=referral&utm_content=/ts-model-api
 [version-url]: https://www.npmjs.com/package/ts-model-api
 [node-version-url]: https://nodejs.org/en/download
 [mit-license-url]: https://github.com//ts-model-api/blob/master/LICENSE
-
 [downloads-url]: https://www.npmtrends.com/ts-model-api
 [packagephobia-url]: https://packagephobia.now.sh/result?p=ts-model-api
 [bundlephobia-url]: https://bundlephobia.com/result?p=ts-model-api
-
 [daviddm-url]: https://david-dm.org//ts-model-api
 [codecov-url]: https://codecov.io/gh//ts-model-api
 [coveralls-url]: https://coveralls.io/github//ts-model-api?branch=master
-
 [codebeat-url]: https://codebeat.co/projects/github-com--ts-model-api-master
-[codacy-url]: https://www.codacy.com/app//ts-model-api?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=/ts-model-api&amp;utm_campaign=Badge_Grade
+[codacy-url]: https://www.codacy.com/app//ts-model-api?utm_source=github.com&utm_medium=referral&utm_content=/ts-model-api&utm_campaign=Badge_Grade
 [coc-url]: https://github.com//ts-model-api/blob/master/CODE_OF_CONDUCT.md

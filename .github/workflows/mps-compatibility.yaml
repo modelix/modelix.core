@@ -3,14 +3,13 @@ name: MPS compatibility
 on:
   push:
     branches:
-      - 'main'
+      - "main"
   pull_request: {}
   # allow manual execution just in case
   workflow_dispatch:
 
 jobs:
   build-mps-components:
-
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
@@ -31,8 +30,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          distribution: "temurin"
+          java-version: "21"
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
       - name: Build with ${{ matrix.version }}

@@ -3,7 +3,7 @@ name: Build and Publish Docs
 on:
   push:
     tags:
-      - '[0-9]+.[0-9]+.0'  # New Major or Minor Releases
+      - "[0-9]+.[0-9]+.0" # New Major or Minor Releases
 jobs:
   docs:
     runs-on: ubuntu-latest
@@ -13,8 +13,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          distribution: "temurin"
+          java-version: "21"
       - name: Use tag as version
         run: echo "${GITHUB_REF#refs/*/}" > version.txt
       - name: Checkout Old Docs Versions for Index Page

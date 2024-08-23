@@ -1,8 +1,7 @@
-import type {INodeJS} from "./INodeJS.js";
+import type { INodeJS } from "./INodeJS.js";
 
 export class TypedNode implements ITypedNode {
-  constructor(public _node: INodeJS) {
-  }
+  constructor(public _node: INodeJS) {}
 
   unwrap(): INodeJS {
     return this._node;
@@ -14,8 +13,8 @@ export class TypedNode implements ITypedNode {
 }
 
 export interface ITypedNode {
-  unwrap(): INodeJS
-  remove(): void
+  unwrap(): INodeJS;
+  remove(): void;
 }
 
 export class UnknownTypedNode extends TypedNode {

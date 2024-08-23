@@ -31,7 +31,7 @@ const NODE_DATA_WITH_SINGLE_CHILD_ACCESSOR = {
 test("new element can be added to SingleChildAccessor when provided the correct base concept", () => {
   const { typedNode } = useFakeNode<BaseCommentAttribute>(
     "withSingleChildAccessor",
-    NODE_DATA_WITH_SINGLE_CHILD_ACCESSOR
+    NODE_DATA_WITH_SINGLE_CHILD_ACCESSOR,
   );
   const childNode = typedNode.commentedNode.setNew(C_BaseConcept);
   expect(isOfConcept_BaseConcept(childNode)).toBeTruthy();
@@ -40,7 +40,7 @@ test("new element can be added to SingleChildAccessor when provided the correct 
 test("new element can be added to SingleChildAccessor when provided a sub concept", () => {
   const { typedNode } = useFakeNode<BaseCommentAttribute>(
     "withSingleChildAccessor",
-    NODE_DATA_WITH_SINGLE_CHILD_ACCESSOR
+    NODE_DATA_WITH_SINGLE_CHILD_ACCESSOR,
   );
   const childNode = typedNode.commentedNode.setNew(C_TypeAnnotated);
   expect(isOfConcept_TypeAnnotated(childNode)).toBeTruthy();

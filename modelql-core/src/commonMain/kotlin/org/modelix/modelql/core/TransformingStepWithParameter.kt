@@ -13,10 +13,9 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
+import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.single.asObservable
+import org.modelix.streams.firstOrNull
 
 abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonIn, CommonIn, Out> : MonoTransformingStep<CommonIn, Out>() {
     private var hasStaticParameter: Boolean = false
@@ -41,9 +40,9 @@ abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonI
             return input.map { transformElement(it.upcast<In>(), staticParameterValue as IStepOutput<ParameterT>) }
         } else {
             val parameterFlow = context.getOrCreateFlow<ParameterT>(getParameterProducer())
-            return flow {
-                val parameterValue = parameterFlow.firstOrNull()
-                emitAll(input.map { transformElement(it.upcast<In>(), parameterValue) })
+            val parameterValue = parameterFlow.firstOrNull()
+            return listOf(input, parameterValue.asObservable()).zipRepeating().map {
+                transformElement(it[0]!!.upcast(), it[1]?.upcast())
             }
         }
     }

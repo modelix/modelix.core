@@ -1,11 +1,13 @@
 package org.modelix.model.api
 
+import kotlinx.serialization.Serializable
 import org.modelix.kotlin.utils.ContextValue
 
 /**
  * An [IRole] is a structural feature of a concept.
  * It can either be an [IProperty] or an [ILink].
  */
+@Deprecated("Use IRoleReference or IRoleDefinition")
 interface IRole {
     /**
      * Returns the concept this role belongs to.
@@ -37,6 +39,48 @@ interface IRole {
      * @return true if this role's value is optional, false otherwise
      */
     val isOptional: Boolean
+
+    fun toReference(): IRoleReference
+}
+
+@Serializable
+sealed interface IRoleReference {
+    fun getSimpleName(): String?
+    fun getUID(): String?
+
+    /**
+     * Get whichever is available, but prefer the name.
+     */
+    fun getNameOrId(): String
+
+    /**
+     * Get whichever is available, but prefer the UID.
+     */
+    fun getIdOrName(): String
+
+    @Deprecated("use IRoleReference or IRoleDefinition instead of IRole")
+    fun toLegacy(): IRole
+}
+
+@Serializable
+sealed interface IUnclassifiedRoleReference : IRoleReference {
+    fun getStringValue(): String
+}
+
+@Serializable
+sealed interface IRoleReferenceByName : IRoleReference {
+    override fun getSimpleName(): String
+}
+
+@Serializable
+sealed interface IRoleReferenceByUID : IRoleReference {
+    override fun getUID(): String
+}
+
+@Serializable
+abstract class AbstractRoleReference : IRoleReference {
+    override fun getUID(): String = throw UnsupportedOperationException()
+    override fun getSimpleName(): String = throw UnsupportedOperationException()
 }
 
 @Deprecated("Will be removed after all usages of IRole.name are migrated.")
@@ -53,9 +97,9 @@ object RoleAccessContext {
     fun getKey(role: IRole): String {
         return if (isUsingRoleIds()) {
             // Some implementations use the name to construct a UID. Avoid endless recursions.
-            runWith(false) { role.getUID() }
+            runWith(false) { role.toReference().getIdOrName() }
         } else {
-            role.getSimpleName()
+            role.toReference().getNameOrId()
         }
     }
 

@@ -13,7 +13,7 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.map
+import com.badoo.reaktive.observable.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -53,7 +53,7 @@ val <T> IMonoStep<IZip2Output<*, *, T>>.second: IMonoStep<T>
 val <T> IMonoStep<IZip3Output<*, *, *, T>>.third: IMonoStep<T>
     get() = ZipElementAccessStep<T>(2).also { connect(it) }
 
-@Deprecated("Use fourth, the version without type", ReplaceWith("fourth"))
+@Deprecated("Use fourth, the version without typo", ReplaceWith("fourth"))
 val <T> IMonoStep<IZip4Output<*, *, *, *, T>>.forth: IMonoStep<T>
     get() = ZipElementAccessStep<T>(3).also { connect(it) }
 val <T> IMonoStep<IZip4Output<*, *, *, *, T>>.fourth: IMonoStep<T>

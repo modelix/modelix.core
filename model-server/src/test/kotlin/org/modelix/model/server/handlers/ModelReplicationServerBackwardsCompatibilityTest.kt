@@ -20,14 +20,11 @@ import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import org.modelix.authorization.installAuthentication
-import org.modelix.model.InMemoryModels
 import org.modelix.model.client.RestWebModelClient
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.store.InMemoryStoreClient
-import org.modelix.model.server.store.LocalModelClient
-import org.modelix.model.server.store.forGlobalRepository
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -38,16 +35,15 @@ class ModelReplicationServerBackwardsCompatibilityTest {
         block: suspend ApplicationTestBuilder.(scope: CoroutineScope) -> Unit,
     ) = testApplication {
         val storeClient = InMemoryStoreClient()
-        val modelClient = LocalModelClient(storeClient)
-        val repositoriesManager = RepositoriesManager(modelClient)
-        val modelReplicationServer = ModelReplicationServer(repositoriesManager, modelClient, InMemoryModels())
-        val keyValueLikeModelServer = KeyValueLikeModelServer(repositoriesManager, storeClient.forGlobalRepository(), InMemoryModels())
+        val repositoriesManager = RepositoriesManager(storeClient)
+        val modelReplicationServer = ModelReplicationServer(repositoriesManager)
+        val keyValueLikeModelServer = KeyValueLikeModelServer(repositoriesManager)
         application {
             installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
             modelReplicationServer.init(this)
             keyValueLikeModelServer.init(this)
-            IdsApiImpl(repositoriesManager, modelClient).init(this)
+            IdsApiImpl(repositoriesManager).init(this)
         }
 
         coroutineScope {

@@ -18,8 +18,11 @@ package org.modelix.model.server
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import org.modelix.model.api.IConceptReference
+import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
+import org.modelix.model.api.NullChildLink
 import org.modelix.model.api.PBranch
+import org.modelix.model.api.addNewChild
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.VersionNotFoundException
 import org.modelix.model.client2.runWrite
@@ -33,11 +36,15 @@ import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.IKVValue
 import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.ModelReplicationServer
+import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
-import org.modelix.model.server.store.forContextRepository
 import org.modelix.modelql.core.count
+import org.modelix.modelql.core.filter
+import org.modelix.modelql.core.isNotEmpty
 import org.modelix.modelql.untyped.allChildren
+import org.modelix.modelql.untyped.descendants
 import java.util.UUID
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -46,12 +53,14 @@ import kotlin.test.assertTrue
 
 class ModelClientV2Test {
 
+    private lateinit var statistics: StoreClientWithStatistics
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         application {
             installDefaultServerPlugins()
-            val storeClient = InMemoryStoreClient().forContextRepository()
-            ModelReplicationServer(storeClient).init(this)
-            IdsApiImpl(storeClient).init(this)
+            statistics = StoreClientWithStatistics(InMemoryStoreClient())
+            val repoManager = RepositoriesManager(statistics)
+            ModelReplicationServer(repoManager).init(this)
+            IdsApiImpl(repoManager).init(this)
         }
         block()
     }
@@ -104,6 +113,38 @@ class ModelClientV2Test {
 
         val size2 = client.query(repositoryId, initialVersion.getContentHash()) { it.allChildren().count() }
         assertEquals(0, size2)
+    }
+
+    @Test
+    fun `modelQL is executed efficiently using bulk requests`() = runTest {
+        val client = createModelClient()
+        val repositoryId = RepositoryId("repo1")
+        val branchRef = repositoryId.getBranchReference()
+        client.initRepository(repositoryId)
+
+        client.runWrite(branchRef) { rootNode ->
+            fun createNodes(parentNode: INode, numberOfNodes: Int, rand: Random) {
+                if (numberOfNodes == 0) return
+                if (numberOfNodes == 1) {
+                    parentNode.addNewChild(NullChildLink, 0)
+                    return
+                }
+                val numChildren = rand.nextInt(10, 20).coerceAtMost(numberOfNodes)
+                val subtreeSize = numberOfNodes / numChildren
+                val remainder = numberOfNodes % numChildren
+                for (i in 1..numChildren) {
+                    createNodes(parentNode.addNewChild(NullChildLink, 0), subtreeSize - 1 + (if (i == 1) remainder else 0), rand)
+                }
+            }
+
+            createNodes(rootNode, 10_000, Random(76398))
+        }
+
+        val requestsBefore = statistics.getTotalRequests()
+        val size = client.query(branchRef) { it.descendants(false).filter { it.allChildren().isNotEmpty() }.count() }
+        val requestsAfter = statistics.getTotalRequests()
+        assertEquals(2581, size)
+        assertEquals(4, requestsAfter - requestsBefore)
     }
 
     @Test

@@ -33,4 +33,5 @@ class SimpleChildLink(
     }
 
     override fun getSimpleName(): String = simpleName
+    override fun toReference(): IChildLinkReference = IChildLinkReference.fromIdAndName(uid, simpleName)
 }

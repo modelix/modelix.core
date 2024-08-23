@@ -13,7 +13,7 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.flowOf
+import com.badoo.reaktive.observable.observableOf
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -53,14 +53,13 @@ open class ConstantSourceStep<E>(val element: E, val type: KType) : ProducingSte
     override fun requiresSingularQueryInput(): Boolean = false
     override fun hasSideEffect(): Boolean = false
     override fun requiresWriteAccess(): Boolean = false
-    override fun needsCoroutineScope(): Boolean = false
 
     override fun evaluateStatically(): E {
         return element
     }
 
     override fun createFlow(context: IFlowInstantiationContext): StepFlow<E> {
-        return flowOf(element.asStepOutput(this))
+        return observableOf(element.asStepOutput(this))
     }
 
     override fun toString(): String {

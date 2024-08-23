@@ -15,45 +15,22 @@
 
 package org.modelix.model.lazy
 
+import com.badoo.reaktive.maybe.Maybe
+import com.badoo.reaktive.maybe.maybeOf
 import org.modelix.model.persistent.IKVValue
 
+@Deprecated("use IAsyncStore")
 class NonBulkQuery(private val store: IDeserializingKeyValueStore) : IBulkQuery {
-    override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IBulkQuery.Value<O>): IBulkQuery.Value<List<O>> {
-        val list = input.asSequence().map(f).map { it.executeQuery() }.toList()
-        return Value(list)
-    }
-
-    override fun <T> constant(value: T): IBulkQuery.Value<T> {
-        return Value(value)
-    }
 
     override fun offerPrefetch(key: IPrefetchGoal) {
         // Since no real bulk queries are executed, prefetching doesn't provide any benefit.
     }
 
-    override fun <T : IKVValue> query(hash: KVEntryReference<T>): IBulkQuery.Value<T?> {
-        return constant(hash.getValue(store))
+    override fun <T : IKVValue> query(hash: IKVEntryReference<T>): Maybe<T> {
+        return maybeOf(hash.getValue(store))
     }
 
     override fun executeQuery() {
         // all requests are processed immediately
-    }
-
-    class Value<T>(private val value: T) : IBulkQuery.Value<T> {
-        override fun executeQuery(): T {
-            return value
-        }
-
-        override fun <R> flatMap(handler: (T) -> IBulkQuery.Value<R>): IBulkQuery.Value<R> {
-            return handler(value)
-        }
-
-        override fun <R> map(handler: (T) -> R): IBulkQuery.Value<R> {
-            return Value(handler(value))
-        }
-
-        override fun onReceive(handler: (T) -> Unit) {
-            handler(value)
-        }
     }
 }

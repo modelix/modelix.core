@@ -54,7 +54,6 @@ import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
 import org.modelix.model.LinearHistory
 import org.modelix.model.api.PBranch
-import org.modelix.model.client.IModelClient
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
@@ -68,11 +67,15 @@ import org.modelix.model.persistent.CPVersion.Companion.DESERIALIZER
 import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.model.server.handlers.BranchNotFoundException
 import org.modelix.model.server.handlers.IRepositoriesManager
+import org.modelix.model.server.handlers.getLegacyObjectStore
+import org.modelix.model.server.store.StoreManager
 import org.modelix.model.server.templates.PageWithMenuBar
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-class HistoryHandler(val client: IModelClient, private val repositoriesManager: IRepositoriesManager) {
+class HistoryHandler(private val repositoriesManager: IRepositoriesManager) {
+
+    private val stores: StoreManager get() = repositoriesManager.getStoreManager()
 
     fun init(application: Application) {
         application.routing {
@@ -130,13 +133,13 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
 
     private suspend fun revert(repositoryAndBranch: BranchReference, from: String?, to: String?, author: String?) {
         val version = repositoriesManager.getVersion(repositoryAndBranch) ?: throw BranchNotFoundException(repositoryAndBranch)
-        val branch = OTBranch(PBranch(version.getTree(), client.idGenerator), client.idGenerator, client.storeCache)
+        val branch = OTBranch(PBranch(version.getTree(), stores.idGenerator), stores.idGenerator, repositoriesManager.getLegacyObjectStore(repositoryAndBranch.repositoryId))
         branch.runWriteT { t ->
             t.applyOperation(RevertToOp(KVEntryReference(from!!, DESERIALIZER), KVEntryReference(to!!, DESERIALIZER)))
         }
         val (ops, tree) = branch.getPendingChanges()
         val newVersion = createRegularVersion(
-            client.idGenerator.generate(),
+            stores.idGenerator.generate(),
             LocalDateTime.now().toString(),
             author ?: "<server>",
             (tree as CLTree),
@@ -199,7 +202,7 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
         } else {
             CLVersion(
                 headHash,
-                client.storeCache,
+                repositoriesManager.getLegacyObjectStore(repositoryAndBranch.repositoryId),
             )
         }
         var rowIndex = 0

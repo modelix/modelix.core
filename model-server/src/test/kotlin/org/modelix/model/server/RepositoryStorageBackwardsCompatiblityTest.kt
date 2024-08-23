@@ -18,7 +18,6 @@ package org.modelix.model.server
 
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
-import org.modelix.model.InMemoryModels
 import org.modelix.model.client.RestWebModelClient
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
@@ -29,9 +28,6 @@ import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
-import org.modelix.model.server.store.LocalModelClient
-import org.modelix.model.server.store.forContextRepository
-import org.modelix.model.server.store.forGlobalRepository
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
@@ -41,8 +37,8 @@ class RepositoryStorageBackwardsCompatiblityTest {
         application {
             installDefaultServerPlugins(unitTestMode = true)
             val store = InMemoryStoreClient()
-            val repositoriesManager = RepositoriesManager(LocalModelClient(store.forContextRepository()))
-            KeyValueLikeModelServer(repositoriesManager, store.forGlobalRepository(), InMemoryModels()).init(this)
+            val repositoriesManager = RepositoriesManager(store)
+            KeyValueLikeModelServer(repositoriesManager).init(this)
             ModelReplicationServer(repositoriesManager).init(this)
             IdsApiImpl(repositoriesManager).init(this)
         }

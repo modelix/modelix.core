@@ -9,6 +9,7 @@ kotlin {
             dependencies {
                 api(project(":kotlin-utils"))
                 api(project(":model-api"))
+                implementation(libs.kotlin.coroutines.core)
                 implementation(libs.kotlin.logging)
                 implementation(libs.kotlin.datetime)
             }

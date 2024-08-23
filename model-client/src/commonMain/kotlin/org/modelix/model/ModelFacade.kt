@@ -19,11 +19,13 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.CPVersion
 import org.modelix.model.persistent.MapBaseStore
+import kotlin.jvm.JvmOverloads
 
 object ModelFacade {
 
-    fun newLocalTree(): ITree {
-        return CLTree(ObjectStoreCache(MapBaseStore()))
+    @JvmOverloads
+    fun newLocalTree(useRoleIds: Boolean = false): ITree {
+        return CLTree(ObjectStoreCache(MapBaseStore()), useRoleIds = useRoleIds)
     }
 
     fun getRootNode(branch: IBranch): INode {

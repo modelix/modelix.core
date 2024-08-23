@@ -13,15 +13,17 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.count
+import com.badoo.reaktive.observable.toList
+import com.badoo.reaktive.single.Single
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
+import org.modelix.streams.count
 
 class CountingStep() : AggregationStep<Any?, Int>() {
-    override suspend fun aggregate(input: StepFlow<Any?>): IStepOutput<Int> {
-        return input.count().asStepOutput(this)
+    override fun aggregate(input: StepFlow<Any?>): Single<IStepOutput<Int>> {
+        input.toList()
+        return input.count().asStepFlow(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = CountDescriptor()

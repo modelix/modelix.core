@@ -13,7 +13,9 @@ import org.modelix.model.api.IReadTransaction
 import org.modelix.model.api.ITransaction
 import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitor
+import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.IWriteTransaction
+import org.modelix.model.api.async.IAsyncMutableTree
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.lazy.NodeNotFoundException
 
@@ -40,7 +42,7 @@ class IncrementalBranch(val branch: IBranch) : IBranch, IBranchWrapper {
 
         newTree.visitChanges(
             oldTree,
-            object : ITreeChangeVisitor {
+            object : ITreeChangeVisitorEx {
                 override fun containmentChanged(nodeId: Long) {
                     modified(ContainmentDependency(this@IncrementalBranch, nodeId))
                 }
@@ -59,6 +61,14 @@ class IncrementalBranch(val branch: IBranch) : IBranch, IBranchWrapper {
 
                 override fun propertyChanged(nodeId: Long, role: String) {
                     modified(PropertyDependency(this@IncrementalBranch, nodeId, role))
+                }
+
+                override fun nodeAdded(nodeId: Long) {
+                    modified(UnclassifiedNodeDependency(this@IncrementalBranch, nodeId))
+                }
+
+                override fun nodeRemoved(nodeId: Long) {
+                    modified(UnclassifiedNodeDependency(this@IncrementalBranch, nodeId))
                 }
             },
         )
@@ -347,6 +357,11 @@ class IncrementalBranch(val branch: IBranch) : IBranch, IBranchWrapper {
 
     inner class IncrementalTree(val tree: ITree) : ITree {
 
+        override fun asAsyncTree(): IAsyncMutableTree {
+            throw UnsupportedOperationException("Dependency recording not supported yet for IAsyncTree")
+            // return tree.asAsyncTree()
+        }
+
         override fun usesRoleIds(): Boolean {
             return tree.usesRoleIds()
         }
@@ -507,7 +522,7 @@ data class BranchDependency(val branch: IBranch) : IStateVariableReference<IBran
 data class UnclassifiedNodeDependency(val branch: IBranch, val nodeId: Long) : DependencyBase() {
     override fun getGroup(): IStateVariableGroup? {
         return try {
-            branch.computeReadT { it.getParent(nodeId) }
+            branch.computeReadT { if (it.containsNode(nodeId)) it.getParent(nodeId) else 0L }
                 .let { parent -> if (parent == 0L) null else UnclassifiedNodeDependency(branch, parent) }
         } catch (ex: NodeNotFoundException) {
             BranchDependency(branch)

@@ -25,6 +25,14 @@ import kotlin.time.Duration.Companion.seconds
 
 interface IStoreClient : IGenericStoreClient<String>
 
+suspend fun <T> StoreManager.runTransactionSuspendable(body: () -> T): T {
+    return genericStore.runTransactionSuspendable(body)
+}
+
+suspend fun <T> IsolatingStore.runTransactionSuspendable(body: () -> T): T {
+    return withContext(Dispatchers.IO) { runTransaction(body) }
+}
+
 suspend fun <T> IStoreClient.runTransactionSuspendable(body: () -> T): T {
     return withContext(Dispatchers.IO) { runTransaction(body) }
 }

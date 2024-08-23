@@ -15,6 +15,12 @@
 
 package org.modelix.model.lazy
 
+import com.badoo.reaktive.maybe.Maybe
+import com.badoo.reaktive.maybe.map
+import com.badoo.reaktive.observable.flatMapSingle
+import com.badoo.reaktive.single.map
+import com.badoo.reaktive.single.notNull
+import com.badoo.reaktive.single.singleOf
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -24,31 +30,43 @@ import org.modelix.model.IVersion
 import org.modelix.model.LinearHistory
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INodeReference
+import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.TreePointer
+import org.modelix.model.api.async.getDescendants
+import org.modelix.model.async.AsyncAsSynchronousTree
+import org.modelix.model.async.AsyncStoreAsLegacyDeserializingStore
+import org.modelix.model.async.AsyncTree
+import org.modelix.model.async.BulkQueryAsAsyncStore
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.SetReferenceOp
-import org.modelix.model.persistent.CPHamtNode
 import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPOperationsList
 import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.CPVersion
+import org.modelix.model.persistent.EntryAddedEvent
+import org.modelix.model.persistent.EntryChangedEvent
+import org.modelix.model.persistent.EntryRemovedEvent
+import org.modelix.streams.iterateSynchronous
 import kotlin.jvm.JvmName
 
 class CLVersion : IVersion {
+    val asyncStore: IAsyncObjectStore
     var store: IDeserializingKeyValueStore
     var data: CPVersion? = null
         private set
-    val treeHash: KVEntryReference<CPTree>?
+    val treeHash: KVEntryReference<CPTree>
 
     private constructor(
         id: Long,
         time: String?,
         author: String?,
-        tree: CLTree,
+        treeData: CPTree,
+        store: IAsyncObjectStore,
         previousVersion: CLVersion?,
         originalVersion: CLVersion?,
         baseVersion: CLVersion?,
@@ -56,8 +74,9 @@ class CLVersion : IVersion {
         mergedVersion2: CLVersion?,
         operations: Array<IOperation>,
     ) {
-        this.store = tree.store
-        this.treeHash = KVEntryReference(tree.data)
+        this.asyncStore = store
+        this.store = store.getLegacyObjectStore()
+        this.treeHash = KVEntryReference(treeData)
         val localizedOps = localizeOps(operations.asList()).toTypedArray()
         if (localizedOps.size <= INLINED_OPS_LIMIT) {
             data = CPVersion(
@@ -99,13 +118,15 @@ class CLVersion : IVersion {
             ?: throw IllegalArgumentException("version '$hash' not found"),
         store,
     )
-    constructor(data: CPVersion?, store: IDeserializingKeyValueStore) {
+    constructor(data: CPVersion?, store: IDeserializingKeyValueStore) : this(data, store.getAsyncStore())
+    constructor(data: CPVersion?, store: IAsyncObjectStore) {
         if (data == null) {
             throw NullPointerException("data is null")
         }
         this.data = data
         this.treeHash = data.treeHash
-        this.store = store
+        this.asyncStore = store
+        this.store = asyncStore.getLegacyObjectStore()
     }
 
     val author: String?
@@ -196,68 +217,82 @@ class CLVersion : IVersion {
         val INLINED_OPS_LIMIT = 10
         fun createAutoMerge(
             id: Long,
-            tree: CLTree,
+            tree: ITree,
             baseVersion: CLVersion,
             mergedVersion1: CLVersion,
             mergedVersion2: CLVersion,
             operations: Array<IOperation>,
             store: IDeserializingKeyValueStore,
-        ) = CLVersion(
-            id = id,
-            time = null,
-            author = null,
-            tree = tree,
-            previousVersion = null,
-            originalVersion = null,
-            baseVersion = baseVersion,
-            mergedVersion1 = mergedVersion1,
-            mergedVersion2 = mergedVersion2,
-            operations = operations,
-        )
+        ): CLVersion {
+            val dataAndStore = tree.extractDataAndStore()
+            return CLVersion(
+                id = id,
+                time = null,
+                author = null,
+                treeData = dataAndStore.first,
+                store = dataAndStore.second,
+                previousVersion = null,
+                originalVersion = null,
+                baseVersion = baseVersion,
+                mergedVersion1 = mergedVersion1,
+                mergedVersion2 = mergedVersion2,
+                operations = operations,
+            )
+        }
 
         fun createRegularVersion(
             id: Long,
             time: String?,
             author: String?,
-            tree: CLTree,
+            tree: ITree,
             baseVersion: CLVersion?,
             operations: Array<IOperation>,
-        ): CLVersion = CLVersion(
-            id = id,
-            time = time,
-            author = author,
-            tree = tree,
-            previousVersion = null,
-            originalVersion = null,
-            baseVersion = baseVersion,
-            mergedVersion1 = null,
-            mergedVersion2 = null,
-            operations = OperationsCompressor(tree).compressOperations(operations),
-        )
+        ): CLVersion {
+            val dataAndStore = tree.extractDataAndStore()
+            return CLVersion(
+                id = id,
+                time = time,
+                author = author,
+                treeData = dataAndStore.first,
+                store = dataAndStore.second,
+                previousVersion = null,
+                originalVersion = null,
+                baseVersion = baseVersion,
+                mergedVersion1 = null,
+                mergedVersion2 = null,
+                operations = OperationsCompressor(CLTree(dataAndStore.first, dataAndStore.second)).compressOperations(operations),
+            )
+        }
 
         fun createRegularVersion(
             id: Long,
             time: Instant = Clock.System.now(),
             author: String?,
-            tree: CLTree,
+            tree: ITree,
             baseVersion: CLVersion?,
             operations: Array<IOperation>,
-        ): CLVersion = createRegularVersion(
-            id = id,
-            time = time.epochSeconds.toString(),
-            author = author,
-            tree = tree,
-            baseVersion = baseVersion,
-            operations = operations,
-        )
+        ): CLVersion {
+            return createRegularVersion(
+                id = id,
+                time = time.epochSeconds.toString(),
+                author = author,
+                tree = tree,
+                baseVersion = baseVersion,
+                operations = operations,
+            )
+        }
 
         fun loadFromHash(hash: String, store: IDeserializingKeyValueStore): CLVersion {
             return tryLoadFromHash(hash, store) ?: throw RuntimeException("Version with hash $hash not found")
         }
 
         fun tryLoadFromHash(hash: String, store: IDeserializingKeyValueStore): CLVersion? {
-            val data = store[hash, { CPVersion.deserialize(it) }] ?: return null
+            val data = store.get(hash, { CPVersion.deserialize(it) }) ?: return null
             return CLVersion(data, store)
+        }
+
+        fun tryLoadFromHash(hash: String, store: IAsyncObjectStore): Maybe<CLVersion> {
+            return KVEntryReference(hash, CPVersion.DESERIALIZER).getValue(store).notNull().map { CLVersion(it, AsyncStoreAsLegacyDeserializingStore(store)) }
         }
     }
 
@@ -331,44 +366,27 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
 //        }
 
         val history = LinearHistory(baseVersionHash).load(version)
-        val bulkQuery = store.newBulkQuery()
+        val asyncStore = store.getAsyncStore()
         var v1 = baseVersion
         for (v2 in history) {
             v2.operations // include them in the result
 
             if (v1 == null) {
-                v2.getTree().getDescendants(v2.getTree().root!!.id, true)
+                v2.getTree().asAsyncTree().getDescendants(ITree.ROOT_ID, true).iterateSynchronous { }
                 continue
             }
 
             val oldTree = v1.getTree()
-            v2.getTree().nodesMap!!.visitChanges(
-                oldTree.nodesMap!!,
-                object : CPHamtNode.IChangeVisitor {
-                    override fun visitChangesOnly(): Boolean = false
-                    override fun entryAdded(key: Long, value: KVEntryReference<CPNode>) {
-                        changedNodeIds += key
-                        if (value != null) bulkQuery.query(value)
-                    }
-
-                    override fun entryRemoved(key: Long, value: KVEntryReference<CPNode>) {
-                        changedNodeIds += key
-                    }
-
-                    override fun entryChanged(
-                        key: Long,
-                        oldValue: KVEntryReference<CPNode>,
-                        newValue: KVEntryReference<CPNode>,
-                    ) {
-                        changedNodeIds += key
-                        if (newValue != null) bulkQuery.query(newValue)
-                    }
-                },
-                bulkQuery,
-            )
+            v2.getTree().nodesMap!!.getChanges(oldTree.nodesMap, store.getAsyncStore(), false).flatMapSingle { event ->
+                // querying the value is necessary to record a read access on it
+                when (event) {
+                    is EntryAddedEvent -> event.value.getValue(asyncStore).map { event.key }
+                    is EntryChangedEvent -> event.newValue.getValue(asyncStore).map { event.key }
+                    is EntryRemovedEvent -> singleOf(event.key)
+                }
+            }.iterateSynchronous { changedNodeIds += it }
             v1 = v2
         }
-        bulkQuery.executeQuery()
     }
     val oldEntries: Map<String, String?> = trackAccessedEntries(keyValueStore) { store ->
         if (baseVersionHash == null) return@trackAccessedEntries
@@ -383,9 +401,9 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
         val oldTree = baseVersion.getTree()
         val bulkQuery = store.newBulkQuery()
 
-        val nodesMap = oldTree.nodesMap!!
+        val nodesMap = oldTree.nodesMap
         changedNodeIds.forEach { changedNodeId ->
-            nodesMap.get(changedNodeId, 0, bulkQuery).onReceive { nodeRef: KVEntryReference<CPNode>? ->
+            nodesMap.get(changedNodeId, 0, BulkQueryAsAsyncStore(store, bulkQuery)).iterateSynchronous { nodeRef: KVEntryReference<CPNode>? ->
                 if (nodeRef != null) bulkQuery.query(nodeRef)
             }
         }
@@ -409,8 +427,14 @@ fun CLVersion.runWrite(idGenerator: IIdGenerator, author: String?, body: (IWrite
     return CLVersion.createRegularVersion(
         id = idGenerator.generate(),
         author = author,
-        tree = newTree as CLTree,
+        tree = newTree,
         baseVersion = this,
         operations = ops.map { it.getOriginalOp() }.toTypedArray(),
     )
+}
+
+fun ITree.extractDataAndStore() = when (this) {
+    is CLTree -> this.data to this.asyncStore
+    is AsyncAsSynchronousTree -> (this.asyncTree as AsyncTree).let { it.treeData to it.store }
+    else -> throw IllegalArgumentException("Unknown tree type: $this")
 }

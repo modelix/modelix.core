@@ -22,30 +22,16 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.response.respondText
 import io.ktor.util.pipeline.PipelineContext
-import org.modelix.model.InMemoryModels
-import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.handlers.KeyValueLikeModelServer.Companion.PROTECTED_PREFIX
-import org.modelix.model.server.store.IStoreClient
+import org.modelix.model.server.store.StoreManager
 
 class HealthApiImpl(
     private val repositoriesManager: RepositoriesManager,
-    private val storeClient: IStoreClient,
-    private val inMemoryModels: InMemoryModels,
 ) : HealthApi() {
-    override suspend fun PipelineContext<Unit, ApplicationCall>.getHealth() {
-        // eagerly load model into memory to speed up ModelQL queries
-        val branchRef = System.getenv("MODELIX_SERVER_MODELQL_WARMUP_REPOSITORY")?.let { RepositoryId(it) }
-            ?.getBranchReference(System.getenv("MODELIX_SERVER_MODELQL_WARMUP_BRANCH"))
-        if (branchRef != null) {
-            val version = repositoriesManager.getVersion(branchRef)
-            if (inMemoryModels.getModel(version!!.getTree()).isActive) {
-                throw HttpException(
-                    HttpStatusCode.ServiceUnavailable,
-                    details = "Waiting for version $version to be loaded into memory",
-                )
-            }
-        }
 
+    private val stores: StoreManager get() = repositoriesManager.stores
+
+    override suspend fun PipelineContext<Unit, ApplicationCall>.getHealth() {
         if (isHealthy()) {
             call.respondText(text = "healthy", contentType = ContentType.Text.Plain, status = HttpStatusCode.OK)
         } else {
@@ -54,9 +40,10 @@ class HealthApiImpl(
     }
 
     private fun isHealthy(): Boolean {
-        val value = toLong(storeClient[HEALTH_KEY]) + 1
-        storeClient.put(HEALTH_KEY, java.lang.Long.toString(value))
-        return toLong(storeClient[HEALTH_KEY]) >= value
+        val store = stores.getGlobalStoreClient()
+        val value = toLong(store[HEALTH_KEY]) + 1
+        store.put(HEALTH_KEY, java.lang.Long.toString(value))
+        return toLong(store[HEALTH_KEY]) >= value
     }
 
     private fun toLong(value: String?): Long {

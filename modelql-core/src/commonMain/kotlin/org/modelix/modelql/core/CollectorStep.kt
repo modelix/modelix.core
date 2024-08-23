@@ -13,7 +13,9 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.toList
+import com.badoo.reaktive.observable.toList
+import com.badoo.reaktive.single.Single
+import com.badoo.reaktive.single.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -93,10 +95,11 @@ class MapCollectorStepOutputSerializer<K, V>(inputElementSerializer: KSerializer
 class ListCollectorStep<E> : CollectorStep<E, List<E>>() {
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
-    override suspend fun aggregate(input: StepFlow<E>): IStepOutput<List<E>> {
-        val inputList = input.toList()
-        val outputList = inputList.map { it.value }
-        return CollectorStepOutput(inputList, inputList, outputList)
+    override fun aggregate(input: StepFlow<E>): Single<IStepOutput<List<E>>> {
+        return input.toList().map { inputList ->
+            val outputList = inputList.map { it.value }
+            CollectorStepOutput(inputList, inputList, outputList)
+        }
     }
 
     @Serializable
@@ -120,11 +123,13 @@ class SetCollectorStep<E> : CollectorStep<E, Set<E>>() {
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
-    override suspend fun aggregate(input: StepFlow<E>): IStepOutput<Set<E>> {
-        val inputList = ArrayList<IStepOutput<E>>()
-        val outputSet = HashSet<E>()
-        input.collect { if (outputSet.add(it.value)) inputList.add(it) }
-        return CollectorStepOutput(inputList, inputList, outputSet)
+    override fun aggregate(input: StepFlow<E>): Single<IStepOutput<Set<E>>> {
+        return input.toList().map { inputAsList ->
+            val inputList = ArrayList<IStepOutput<E>>()
+            val outputSet = HashSet<E>()
+            inputAsList.forEach { if (outputSet.add(it.value)) inputList.add(it) }
+            CollectorStepOutput(inputList, inputList, outputSet)
+        }
     }
 
     @Serializable
@@ -148,18 +153,20 @@ class MapCollectorStep<K, V> : CollectorStep<IZip2Output<Any?, K, V>, Map<K, V>>
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
-    override suspend fun aggregate(input: StepFlow<IZip2Output<Any?, K, V>>): IStepOutput<Map<K, V>> {
-        val inputList = ArrayList<IStepOutput<IZip2Output<Any?, K, V>>>()
-        val internalMap = HashMap<K, IStepOutput<V>>()
-        input.collect {
-            val zipStepOutput = it as ZipStepOutput<IZip2Output<Any?, K, V>, Any?>
-            if (!internalMap.containsKey(it.value.first)) {
-                inputList.add(it)
-                internalMap.put(zipStepOutput.values[0].value as K, zipStepOutput.values[1] as IStepOutput<V>)
+    override fun aggregate(input: StepFlow<IZip2Output<Any?, K, V>>): Single<IStepOutput<Map<K, V>>> {
+        return input.toList().map { inputAsList ->
+            val inputList = ArrayList<IStepOutput<IZip2Output<Any?, K, V>>>()
+            val internalMap = HashMap<K, IStepOutput<V>>()
+            inputAsList.forEach {
+                val zipStepOutput = it as ZipStepOutput<IZip2Output<Any?, K, V>, Any?>
+                if (!internalMap.containsKey(it.value.first)) {
+                    inputList.add(it)
+                    internalMap.put(zipStepOutput.values[0].value as K, zipStepOutput.values[1] as IStepOutput<V>)
+                }
             }
+            val outputMap: Map<K, V> = internalMap.mapValues { it.value.value }
+            CollectorStepOutput(inputList, internalMap, outputMap)
         }
-        val outputMap: Map<K, V> = internalMap.mapValues { it.value.value }
-        return CollectorStepOutput(inputList, internalMap, outputMap)
     }
 
     @Serializable

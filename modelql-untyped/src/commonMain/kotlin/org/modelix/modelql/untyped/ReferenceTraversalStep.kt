@@ -13,13 +13,14 @@
  */
 package org.modelix.modelql.untyped
 
-import kotlinx.coroutines.flow.flatMapConcat
+import com.badoo.reaktive.maybe.map
+import com.badoo.reaktive.observable.flatMapMaybe
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
-import org.modelix.model.api.resolveReferenceLinkOrFallback
+import org.modelix.model.api.IReferenceLinkReference
+import org.modelix.model.api.async.asAsyncNode
 import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
@@ -36,10 +37,11 @@ import org.modelix.modelql.core.map
 import org.modelix.modelql.core.orNull
 import org.modelix.modelql.core.stepOutputSerializer
 
-class ReferenceTraversalStep(val role: String) : MonoTransformingStep<INode, INode>(), IMonoStep<INode> {
+class ReferenceTraversalStep(val link: IReferenceLinkReference) : MonoTransformingStep<INode, INode>(), IMonoStep<INode> {
     override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
-        return input.flatMapConcat { it.value.getReferenceTargetAsFlow(it.value.resolveReferenceLinkOrFallback(role)) }
-            .asStepFlow(this)
+        return input.flatMapMaybe {
+            it.value.asAsyncNode().getReferenceTarget(link).map { it.asRegularNode() }
+        }.asStepFlow(this)
     }
 
     override fun canBeEmpty(): Boolean = true
@@ -50,22 +52,33 @@ class ReferenceTraversalStep(val role: String) : MonoTransformingStep<INode, INo
         return serializationContext.serializer<INode>().stepOutputSerializer(this)
     }
 
-    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor(role)
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor(link.getIdOrName(), link)
 
     @Serializable
     @SerialName("untyped.referenceTarget")
-    class Descriptor(val role: String) : StepDescriptor() {
+    class Descriptor(val role: String, val link: IReferenceLinkReference? = null) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
-            return ReferenceTraversalStep(role)
+            return ReferenceTraversalStep(link ?: IReferenceLinkReference.fromUnclassifiedString(role))
         }
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.reference("$role")"""
+        return """${getProducers().single()}.reference("$link")"""
     }
 }
+fun IMonoStep<INode>.reference(role: IReferenceLinkReference) = ReferenceTraversalStep(role).connectAndDowncast(this)
+fun IFluxStep<INode>.reference(role: IReferenceLinkReference) = ReferenceTraversalStep(role).connectAndDowncast(this)
+fun IMonoStep<INode>.referenceOrNull(role: IReferenceLinkReference): IMonoStep<INode?> = reference(role).orNull()
+fun IFluxStep<INode>.referenceOrNull(role: IReferenceLinkReference): IFluxStep<INode?> = map { it.referenceOrNull(role) }
 
-fun IMonoStep<INode>.reference(role: String) = ReferenceTraversalStep(role).connectAndDowncast(this)
-fun IFluxStep<INode>.reference(role: String) = ReferenceTraversalStep(role).connectAndDowncast(this)
-fun IMonoStep<INode>.referenceOrNull(role: String): IMonoStep<INode?> = reference(role).orNull()
-fun IFluxStep<INode>.referenceOrNull(role: String): IFluxStep<INode?> = map { it.referenceOrNull(role) }
+@Deprecated("provide an IReferenceLinkReference")
+fun IMonoStep<INode>.reference(role: String) = reference(IReferenceLinkReference.fromUnclassifiedString(role))
+
+@Deprecated("provide an IReferenceLinkReference")
+fun IFluxStep<INode>.reference(role: String) = reference(IReferenceLinkReference.fromUnclassifiedString(role))
+
+@Deprecated("provide an IReferenceLinkReference")
+fun IMonoStep<INode>.referenceOrNull(role: String): IMonoStep<INode?> = referenceOrNull(IReferenceLinkReference.fromUnclassifiedString(role))
+
+@Deprecated("provide an IReferenceLinkReference")
+fun IFluxStep<INode>.referenceOrNull(role: String): IFluxStep<INode?> = referenceOrNull(IReferenceLinkReference.fromUnclassifiedString(role))

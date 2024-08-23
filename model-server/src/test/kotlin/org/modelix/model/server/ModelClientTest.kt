@@ -28,8 +28,6 @@ import org.modelix.model.client.RestWebModelClient
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
-import org.modelix.model.server.store.LocalModelClient
-import org.modelix.model.server.store.forGlobalRepository
 import java.util.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -44,7 +42,7 @@ class ModelClientTest {
             installAuthentication(unitTestMode = true)
             install(Resources)
             install(IgnoreTrailingSlash)
-            KeyValueLikeModelServer(RepositoriesManager(LocalModelClient(InMemoryStoreClient().forGlobalRepository()))).init(this)
+            KeyValueLikeModelServer(RepositoriesManager(InMemoryStoreClient())).init(this)
         }
         block()
     }

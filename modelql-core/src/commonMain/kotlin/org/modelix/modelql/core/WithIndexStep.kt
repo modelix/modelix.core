@@ -13,12 +13,14 @@
  */
 package org.modelix.modelql.core
 
+import com.badoo.reaktive.observable.map
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.withIndex
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.serializer
+import org.modelix.streams.withIndex
 
 class WithIndexStep<E> : MonoTransformingStep<E, IZip2Output<Any?, E, Int>>() {
     override fun requiresSingularQueryInput(): Boolean {

@@ -41,8 +41,8 @@ import org.modelix.model.server.api.v2.ObjectHash
 import org.modelix.model.server.api.v2.SerializedObject
 import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.ModelReplicationServer
+import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
-import org.modelix.model.server.store.forContextRepository
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -57,9 +57,10 @@ class LazyLoadingTest {
         application {
             installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
-            val store = InMemoryStoreClient().forContextRepository()
-            ModelReplicationServer(store).init(this)
-            IdsApiImpl(store).init(this)
+            val store = InMemoryStoreClient()
+            val repoManager = RepositoriesManager(store)
+            ModelReplicationServer(repoManager).init(this)
+            IdsApiImpl(repoManager).init(this)
         }
         block()
     }
@@ -79,36 +80,36 @@ class LazyLoadingTest {
         return Pair(requestCount, requestedObjectsCount)
     }
 
-    @Test fun compare_batch_size_10() = compare_batch_size(10, 22, 201, 187, 137, 1996, 1863)
-    @Test fun compare_batch_size_25() = compare_batch_size(25, 22, 103, 82, 285, 2575, 2050)
-    @Test fun compare_batch_size_50() = compare_batch_size(50, 22, 87, 72, 510, 4350, 3600)
-    @Test fun compare_batch_size_100() = compare_batch_size(100, 22, 60, 49, 905, 6000, 4900)
-    @Test fun compare_batch_size_200() = compare_batch_size(200, 22, 142, 160, 1605, 28400, 32000)
-    @Test fun compare_batch_size_400() = compare_batch_size(400, 22, 743, 138, 2627, 216698, 18369)
-    @Test fun compare_batch_size_800() = compare_batch_size(800, 22, 717, 185, 2700, 205909, 23806)
-    @Test fun compare_batch_size_1600() = compare_batch_size(1600, 22, 717, 185, 2700, 205909, 23806)
+    @Test fun compare_batch_size_10() = compare_batch_size(10, 22, 199, 193, 115, 1990, 1866)
+    @Test fun compare_batch_size_25() = compare_batch_size(25, 22, 114, 121, 186, 2344, 1924)
+    @Test fun compare_batch_size_50() = compare_batch_size(50, 22, 145, 119, 212, 3564, 1900)
+    @Test fun compare_batch_size_100() = compare_batch_size(100, 22, 136, 121, 212, 3326, 1905)
+    @Test fun compare_batch_size_200() = compare_batch_size(200, 22, 136, 121, 212, 3326, 1905)
+    @Test fun compare_batch_size_400() = compare_batch_size(400, 22, 136, 121, 212, 3326, 1905)
+    @Test fun compare_batch_size_800() = compare_batch_size(800, 22, 136, 121, 212, 3326, 1905)
+    @Test fun compare_batch_size_1600() = compare_batch_size(1600, 22, 136, 121, 212, 3326, 1905)
     fun compare_batch_size(batchSize: Int, vararg expected: Int) = runLazyLoadingTest(DepthFirstSearchPattern, 1_000, 1_000, batchSize, batchSize, *expected)
 
-    @Test fun compare_cache_size_100() = compare_cache_size(100, 22, 861, 891, 510, 43050, 44550)
-    @Test fun compare_cache_size_200() = compare_cache_size(200, 22, 539, 490, 510, 26950, 24500)
-    @Test fun compare_cache_size_400() = compare_cache_size(400, 22, 217, 139, 510, 10850, 6950)
-    @Test fun compare_cache_size_800() = compare_cache_size(800, 22, 57, 73, 510, 2850, 3650)
-    @Test fun compare_cache_size_1600() = compare_cache_size(1600, 22, 44, 41, 510, 2200, 2050)
-    @Test fun compare_cache_size_3200() = compare_cache_size(3200, 22, 34, 0, 510, 1561, 0)
+    @Test fun compare_cache_size_100() = compare_cache_size(100, 22, 966, 1044, 228, 48300, 52200)
+    @Test fun compare_cache_size_200() = compare_cache_size(200, 22, 499, 489, 212, 13708, 11337)
+    @Test fun compare_cache_size_400() = compare_cache_size(400, 22, 283, 247, 212, 5992, 4686)
+    @Test fun compare_cache_size_800() = compare_cache_size(800, 22, 163, 111, 212, 3950, 2316)
+    @Test fun compare_cache_size_1600() = compare_cache_size(1600, 22, 80, 105, 212, 2212, 1308)
+    @Test fun compare_cache_size_3200() = compare_cache_size(3200, 22, 48, 0, 212, 1859, 0)
     private fun compare_cache_size(cacheSize: Int, vararg expected: Int) = runLazyLoadingTest(DepthFirstSearchPattern, 1_000, cacheSize, 50, 50, *expected)
 
     @Test fun compare_prefetch_size_0() = compare_prefetch_size(0, 22, 2055, 2073, 22, 2055, 2073)
-    @Test fun compare_prefetch_size_2() = compare_prefetch_size(2, 22, 1043, 1046, 38, 2086, 2092)
-    @Test fun compare_prefetch_size_4() = compare_prefetch_size(3, 22, 693, 708, 53, 2079, 2124)
-    @Test fun compare_prefetch_size_10() = compare_prefetch_size(10, 22, 288, 333, 137, 2880, 3330)
-    @Test fun compare_prefetch_size_25() = compare_prefetch_size(25, 22, 339, 296, 285, 8475, 7400)
-    @Test fun compare_prefetch_size_50() = compare_prefetch_size(50, 22, 539, 490, 510, 26950, 24500)
+    @Test fun compare_prefetch_size_2() = compare_prefetch_size(2, 22, 1028, 1046, 38, 2056, 2092)
+    @Test fun compare_prefetch_size_4() = compare_prefetch_size(3, 22, 707, 717, 53, 2121, 2151)
+    @Test fun compare_prefetch_size_10() = compare_prefetch_size(10, 22, 379, 406, 115, 3773, 4013)
+    @Test fun compare_prefetch_size_25() = compare_prefetch_size(25, 22, 491, 495, 186, 8533, 7900)
+    @Test fun compare_prefetch_size_50() = compare_prefetch_size(50, 22, 499, 489, 212, 13708, 11337)
     private fun compare_prefetch_size(prefetchSize: Int, vararg expected: Int) = runLazyLoadingTest(DepthFirstSearchPattern, 1_000, 200, 50, prefetchSize, *expected)
 
-    @Test fun compare_access_pattern_dfs() = compare_access_pattern(DepthFirstSearchPattern, 22, 123, 133, 510, 6150, 6650)
-    @Test fun compare_access_pattern_pdfs() = compare_access_pattern(ParallelDepthFirstSearchPattern, 22, 325, 174, 510, 16250, 8700)
-    @Test fun compare_access_pattern_bfs() = compare_access_pattern(BreathFirstSearchPattern, 22, 320, 278, 510, 16000, 13900)
-    @Test fun compare_access_pattern_random() = compare_access_pattern(RandomPattern(1_000, Random(987)), 22, 194, 154, 510, 5388, 3878)
+    @Test fun compare_access_pattern_dfs() = compare_access_pattern(DepthFirstSearchPattern, 22, 203, 147, 212, 5001, 3529)
+    @Test fun compare_access_pattern_pdfs() = compare_access_pattern(ParallelDepthFirstSearchPattern, 22, 392, 319, 212, 7166, 4089)
+    @Test fun compare_access_pattern_bfs() = compare_access_pattern(BreathFirstSearchPattern, 22, 1454, 1482, 212, 7601, 6445)
+    @Test fun compare_access_pattern_random() = compare_access_pattern(RandomPattern(1_000, Random(987)), 22, 199, 128, 212, 9948, 6400)
     private fun compare_access_pattern(pattern: AccessPattern, vararg expected: Int) = runLazyLoadingTest(pattern, 1_000, 500, 50, 50, *expected)
 
     private fun runLazyLoadingTest(accessPattern: AccessPattern, numberOfNodes: Int, cacheSize: Int, batchSize: Int, prefetchSize: Int, vararg expectedRequests: Int) {
@@ -185,7 +186,7 @@ class LazyLoadingTest {
             id = 1000L,
             time = null,
             author = null,
-            tree = branch.computeReadT { it.tree } as CLTree,
+            tree = branch.computeReadT { it.tree },
             baseVersion = null,
             operations = emptyArray(),
         )

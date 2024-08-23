@@ -22,11 +22,14 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flowOf
+import org.modelix.model.api.async.IAsyncMutableTree
 
 /**
  * Consists of [INode]s.
  */
 interface ITree {
+    fun asAsyncTree(): IAsyncMutableTree
+
     /**
      * Checks whether this tree uses uids or names for roles.
      *
@@ -287,4 +290,5 @@ interface ITree {
  * @return uid of the role, if the tree uses role ids, or
  *          the role name otherwise
  */
-fun IRole.key(tree: ITree): String = if (tree.usesRoleIds()) getUID() else getSimpleName()
+fun IRole.key(tree: ITree): String = toReference().key(tree)
+fun IRoleReference.key(tree: ITree): String = if (tree.usesRoleIds()) getIdOrName() else getNameOrId()

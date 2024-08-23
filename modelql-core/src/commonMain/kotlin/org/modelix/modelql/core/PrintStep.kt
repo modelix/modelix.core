@@ -13,7 +13,7 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.map
+import com.badoo.reaktive.observable.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -25,7 +25,7 @@ class PrintStep<E>(val prefix: String) : MonoTransformingStep<E, E>() {
 
     override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E> {
         return input.map {
-            println(prefix + input)
+            println(prefix + it.value)
             it
         }
     }

@@ -25,22 +25,13 @@ import io.ktor.server.routing.routing
 import io.ktor.util.pipeline.PipelineContext
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.requiresLogin
-import org.modelix.model.server.store.IStoreClient
-import org.modelix.model.server.store.LocalModelClient
 
 /**
  * Implementation of the REST API that is responsible for handling client and server IDs.
  */
 class IdsApiImpl(
     private val repositoriesManager: IRepositoriesManager,
-    private val modelClient: LocalModelClient,
 ) : IdsApi() {
-
-    constructor(modelClient: LocalModelClient) : this(RepositoriesManager(modelClient), modelClient)
-    constructor(storeClient: IStoreClient) : this(LocalModelClient(storeClient))
-    constructor(repositoriesManager: RepositoriesManager) : this(repositoriesManager, repositoriesManager.client)
-
-    private val storeClient: IStoreClient get() = modelClient.store
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.getServerId() {
         // Currently, the server ID is initialized in KeyValueLikeModelServer eagerly on startup.
@@ -58,7 +49,7 @@ class IdsApiImpl(
     }
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.generateClientId() {
-        call.respondText(storeClient.generateId("clientId").toString())
+        call.respondText(repositoriesManager.getStoreManager().getGlobalStoreClient().generateId("clientId").toString())
     }
 
     fun init(application: Application) {

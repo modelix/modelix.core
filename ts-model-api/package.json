@@ -26,8 +26,6 @@
   "scripts": {
     "build": "tsc -p tsconfig.prod.json",
     "clean": "shx rm -rf dist/ .*cache *.log",
-    "lint": "eslint src",
-    "lint:fix": "npm run lint -- --fix",
     "test": "shx echo 'Write your own tests'",
     "ts": "tsc",
     "watch": "tsc --watch",
@@ -35,15 +33,11 @@
   },
   "devDependencies": {
     "@types/node": "^22.5.5",
-    "@typescript-eslint/eslint-plugin": "^8.6.0",
-    "@typescript-eslint/parser": "^8.6.0",
     "dukat": "^0.5.8-rc.4",
-    "eslint": "^9.10.0",
     "husky": "^9.1.6",
     "shx": "^0.3.2",
     "typescript": "^5.6.2"
   },
-  "eslint-comment": "// IMPORTANT: keep ESLint version and versions of plugins in sync with the versions in .pre-commit-config.yaml",
   "engines": {
     "node": ">= 10.18.1",
     "npm": ">= 6.13.4"

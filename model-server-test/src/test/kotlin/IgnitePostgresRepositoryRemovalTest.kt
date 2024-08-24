@@ -13,33 +13,51 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.ObjectInRepository
+import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.utility.DockerImageName
 import java.sql.Connection
 import java.sql.DriverManager
+import java.util.Properties
 import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class IgnitePostgresRepositoryRemovalTest {
-    private val store = IgniteStoreClient()
+    private lateinit var postgres: PostgreSQLContainer<*>
+    private lateinit var store: IgniteStoreClient
+    private lateinit var dbConnection: Connection
 
     private val toDelete = RepositoryId("repository-removal-toDelete")
     private val existing = RepositoryId("repository-removal-existing")
 
+    @BeforeTest
+    fun beforeTest() {
+        postgres = PostgreSQLContainer(DockerImageName.parse("postgres:16.2-alpine"))
+            .withDatabaseName("modelix")
+            .withUsername("modelix")
+            .withPassword("modelix")
+            .withExposedPorts(5432)
+        postgres.start()
+
+        val jdbcProperties = Properties()
+        jdbcProperties.setProperty("jdbc.url", "jdbc:postgresql://${postgres.host}:${postgres.firstMappedPort}/")
+
+        store = IgniteStoreClient(jdbcProperties)
+
+        dbConnection = DriverManager.getConnection(System.getProperty("jdbc.url"), "modelix", "modelix")
+    }
+
     @AfterTest
-    fun cleanup() {
-        dbConnection.prepareStatement("DELETE FROM modelix.model WHERE repository IN ( ? , ? )").use {
-            it.setString(1, toDelete.id)
-            it.setString(2, existing.id)
-        }
-        store.putAll(store.getAll().keys.associateWith { null })
-        store.close()
+    fun afterTest() {
+        store.dispose()
+        postgres.stop()
     }
 
     @Test
@@ -116,16 +134,6 @@ class IgnitePostgresRepositoryRemovalTest {
     fun `removing a non-existing repository does not throw`() {
         assertDoesNotThrow {
             store.removeRepositoryObjects(RepositoryId("invalid"))
-        }
-    }
-
-    companion object {
-        val dbConnection: Connection = DriverManager.getConnection(System.getProperty("jdbc.url"), "modelix", "modelix")
-
-        @JvmStatic
-        @AfterAll
-        fun closeDbConnection() {
-            dbConnection.close()
         }
     }
 }

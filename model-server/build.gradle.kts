@@ -82,6 +82,8 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(kotlin("test"))
     testImplementation(project(":modelql-untyped"))
+    testImplementation(libs.testcontainers)
+    testImplementation(libs.testcontainers.postgresql)
 }
 
 tasks.named<ShadowJar>("shadowJar") {

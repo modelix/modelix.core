@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.modelix.model.server.store
+
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.server.store.IgniteStoreClient
-import org.modelix.model.server.store.ObjectInRepository
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import java.sql.Connection

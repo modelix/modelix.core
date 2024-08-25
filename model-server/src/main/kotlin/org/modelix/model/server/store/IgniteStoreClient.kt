@@ -26,9 +26,6 @@ import org.modelix.model.IGenericKeyListener
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.SqlUtils
-import java.io.File
-import java.io.FileReader
-import java.io.IOException
 import java.sql.SQLException
 import java.util.*
 import javax.cache.Cache
@@ -40,7 +37,9 @@ private val LOG = KotlinLogging.logger { }
  * Store client implementation with an ignite cache.
  * If [inmemory] is true, the data is not persisted in a database.
  */
-class IgniteStoreClient(jdbcConfFile: File? = null, private val inmemory: Boolean = false) : IsolatingStore, AutoCloseable {
+class IgniteStoreClient(jdbcProperties: Properties? = null, private val inmemory: Boolean = false) :
+    IsolatingStore,
+    AutoCloseable {
 
     companion object {
         private const val ENTRY_CHANGED_TOPIC = "entryChanged"
@@ -68,28 +67,14 @@ class IgniteStoreClient(jdbcConfFile: File? = null, private val inmemory: Boolea
      * from ignite.xml is used
      */
     init {
-        if (jdbcConfFile != null) {
+        if (jdbcProperties != null) {
             // Given that systemPropertiesMode is set to 2 (SYSTEM_PROPERTIES_MODE_OVERRIDE) in
             // ignite.xml, we can override the properties through system properties
-            try {
-                val properties = Properties()
-                properties.load(FileReader(jdbcConfFile))
-                for (pn in properties.stringPropertyNames()) {
-                    if (pn.startsWith("jdbc.")) {
-                        System.setProperty(pn, properties.getProperty(pn))
-                    } else {
-                        throw RuntimeException(
-                            "Properties not related to jdbc are not permitted. Check file " +
-                                jdbcConfFile.absolutePath,
-                        )
-                    }
+            for (propertyName in jdbcProperties.stringPropertyNames()) {
+                require(propertyName.startsWith("jdbc.")) {
+                    "Property `$propertyName` is invalid. Only properties starting with `jdbc.` are permitted."
                 }
-            } catch (e: IOException) {
-                throw RuntimeException(
-                    "We are unable to load the JDBC configuration from " +
-                        jdbcConfFile.absolutePath,
-                    e,
-                )
+                System.setProperty(propertyName, jdbcProperties.getProperty(propertyName))
             }
         }
         if (!inmemory) updateDatabaseSchema()

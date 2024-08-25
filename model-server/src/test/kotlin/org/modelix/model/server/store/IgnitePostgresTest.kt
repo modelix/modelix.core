@@ -13,10 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.modelix.model.server.store
+
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.persistent.HashUtil
-import org.modelix.model.server.store.IgniteStoreClient
-import org.modelix.model.server.store.ObjectInRepository
+import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.utility.DockerImageName
+import org.testcontainers.utility.MountableFile
+import java.util.Properties
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -24,16 +29,32 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class IgnitePostgresTest {
-    lateinit var store: IgniteStoreClient
+    private lateinit var postgres: PostgreSQLContainer<*>
+    private lateinit var store: IgniteStoreClient
 
     @BeforeTest
     fun beforeTest() {
-        store = IgniteStoreClient()
+        postgres = PostgreSQLContainer(DockerImageName.parse("postgres:16.2-alpine"))
+            .withDatabaseName("modelix")
+            .withUsername("modelix")
+            .withPassword("modelix")
+            .withCopyFileToContainer(
+                MountableFile.forClasspathResource("/legacy-database.sql"),
+                "/docker-entrypoint-initdb.d/initdb.sql",
+            )
+            .withExposedPorts(5432)
+        postgres.start()
+
+        val jdbcProperties = Properties()
+        jdbcProperties.setProperty("jdbc.url", "jdbc:postgresql://${postgres.host}:${postgres.firstMappedPort}/")
+
+        store = IgniteStoreClient(jdbcProperties)
     }
 
     @AfterTest
     fun afterTest() {
         store.dispose()
+        postgres.stop()
     }
 
     @Test

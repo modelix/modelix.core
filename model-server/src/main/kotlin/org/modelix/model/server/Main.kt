@@ -75,9 +75,11 @@ import org.modelix.model.server.store.writeDump
 import org.slf4j.LoggerFactory
 import org.springframework.util.ResourceUtils
 import java.io.File
+import java.io.FileReader
 import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.time.Duration
+import java.util.Properties
 import javax.sql.DataSource
 
 object Main {
@@ -143,9 +145,11 @@ object Main {
                         )
                 }
             } else if (cmdLineArgs.localPersistence) {
-                storeClient = IgniteStoreClient(cmdLineArgs.jdbcConfFile, inmemory = true)
+                val jdbcProperties = cmdLineArgs.jdbcConfFile?.let(::readJdbcProperties)
+                storeClient = IgniteStoreClient(jdbcProperties, inmemory = true)
             } else {
-                storeClient = IgniteStoreClient(cmdLineArgs.jdbcConfFile)
+                val jdbcProperties = cmdLineArgs.jdbcConfFile?.let(::readJdbcProperties)
+                storeClient = IgniteStoreClient(jdbcProperties)
                 if (cmdLineArgs.schemaInit) {
                     val dataSource: DataSource = Ignition.loadSpringBean<DataSource>(
                         Main::class.java.getResource("ignite.xml"),
@@ -249,6 +253,16 @@ object Main {
         } catch (ex: Exception) {
             LOG.error("", ex)
         }
+    }
+
+    private fun readJdbcProperties(jdbcConfFile: File): Properties {
+        val properties = Properties()
+        try {
+            properties.load(FileReader(jdbcConfFile))
+        } catch (e: IOException) {
+            throw IllegalStateException("Could not load the JDBC configuration from ${jdbcConfFile.absolutePath}.", e)
+        }
+        return properties
     }
 
     /**

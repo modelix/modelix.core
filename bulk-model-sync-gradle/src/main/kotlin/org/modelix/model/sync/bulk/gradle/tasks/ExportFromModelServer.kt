@@ -59,6 +59,12 @@ abstract class ExportFromModelServer : DefaultTask() {
     abstract val includedModulePrefixes: SetProperty<String>
 
     @get:Input
+    abstract val excludedModules: SetProperty<String>
+
+    @get:Input
+    abstract val excludedModulePrefixes: SetProperty<String>
+
+    @get:Input
     abstract val requestTimeoutSeconds: Property<Int>
 
     @TaskAction
@@ -101,7 +107,13 @@ abstract class ExportFromModelServer : DefaultTask() {
         return root.allChildren.filter {
             val isModule = it.concept?.getUID() == BuiltinLanguages.MPSRepositoryConcepts.Module.getUID()
             val moduleName = it.getPropertyValue(nameRole) ?: return@filter false
-            val isIncluded = isModuleIncluded(moduleName, includedModules.get(), includedModulePrefixes.get())
+            val isIncluded = isModuleIncluded(
+                moduleName,
+                includedModules.get(),
+                includedModulePrefixes.get(),
+                excludedModules.get(),
+                excludedModulePrefixes.get(),
+            )
 
             isModule && isIncluded
         }

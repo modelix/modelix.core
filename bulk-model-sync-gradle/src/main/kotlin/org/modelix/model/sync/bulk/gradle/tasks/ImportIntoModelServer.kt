@@ -62,6 +62,12 @@ abstract class ImportIntoModelServer : DefaultTask() {
     abstract val includedModulePrefixes: SetProperty<String>
 
     @get:Input
+    abstract val excludedModules: SetProperty<String>
+
+    @get:Input
+    abstract val excludedModulePrefixes: SetProperty<String>
+
+    @get:Input
     abstract val continueOnError: Property<Boolean>
 
     @get:Input
@@ -77,7 +83,13 @@ abstract class ImportIntoModelServer : DefaultTask() {
 
         val branchRef = ModelFacade.createBranchReference(repoId, branchName.get())
         val files = inputDir.listFiles()?.filter {
-            it.extension == "json" && isModuleIncluded(it.nameWithoutExtension, includedModules.get(), includedModulePrefixes.get())
+            it.extension == "json" && isModuleIncluded(
+                it.nameWithoutExtension,
+                includedModules.get(),
+                includedModulePrefixes.get(),
+                excludedModules.get(),
+                excludedModulePrefixes.get(),
+            )
         }
         if (files.isNullOrEmpty()) error("no json files found for included modules")
 

@@ -71,6 +71,14 @@ This means that only a minimal amount of write operations is used to update the 
 |String
 |Includes all modules, whose fully qualified name starts with the given prefix, in the synchronisation process.
 
+|`excludeModule`
+|String
+|Excludes the module specified by the fully qualified name from the included modules.
+
+|`excludeModuleByPrefix`
+|String
+|Excludes all modules, whose fully qualified name starts with the given prefix, from the included modules.
+
 |`enableContinueOnError`
 |Boolean
 |If the sync encounters an error, simply log it and continue instead of terminating. This most likely results in an incomplete sync result. Defaults to `false`.

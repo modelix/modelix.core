@@ -13,6 +13,7 @@ dependencies {
     implementation(libs.ktor.client.cio)
     testImplementation(libs.kotest.assertions.coreJvm)
     testImplementation(kotlin("test"))
+    testImplementation(gradleTestKit())
 }
 
 gradlePlugin {
@@ -36,5 +37,6 @@ tasks.named("processResources") {
 }
 
 tasks.test {
+    setEnvironment("MODELIX_CORE_PATH" to rootDir.absolutePath)
     useJUnitPlatform()
 }

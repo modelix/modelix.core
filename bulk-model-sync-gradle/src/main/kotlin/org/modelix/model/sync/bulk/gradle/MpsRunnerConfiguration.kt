@@ -37,6 +37,12 @@ internal fun buildMpsRunConfigurationForLocalSources(
                     ",",
                 )
             }",
+            "-Dmodelix.mps.model.sync.bulk.output.modules.excluded=${syncDirection.excludedModules.joinToString(",")}",
+            "-Dmodelix.mps.model.sync.bulk.output.modules.prefixes.excluded=${
+                syncDirection.excludedModulePrefixes.joinToString(
+                    ",",
+                )
+            }",
             "-Dmodelix.mps.model.sync.bulk.repo.path=${localSource.repositoryDir?.absolutePath}",
             "-Xmx${localSource.mpsHeapSize}",
             localSource.mpsDebugPort?.let { "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=$it" },
@@ -68,10 +74,19 @@ internal fun buildMpsRunConfigurationForLocalTarget(
         plugins = createPluginConfig(localTarget.mpsPlugins),
         jvmArgs = buildList {
             add("-Dmodelix.mps.model.sync.bulk.input.path=${jsonDir.absolutePath}")
-            val includeModuleValue = syncDirection.includedModules.joinToString(",")
-            add("-Dmodelix.mps.model.sync.bulk.input.modules=$includeModuleValue")
-            val includeModulePrefixesValue = syncDirection.includedModulePrefixes.joinToString(",")
-            add("-Dmodelix.mps.model.sync.bulk.input.modules.prefixes=$includeModulePrefixesValue")
+
+            val includedModulesValue = syncDirection.includedModules.joinToString(",")
+            add("-Dmodelix.mps.model.sync.bulk.input.modules=$includedModulesValue")
+
+            val includedModulePrefixesValue = syncDirection.includedModulePrefixes.joinToString(",")
+            add("-Dmodelix.mps.model.sync.bulk.input.modules.prefixes=$includedModulePrefixesValue")
+
+            val excludedModulesValue = syncDirection.excludedModules.joinToString(",")
+            add("-Dmodelix.mps.model.sync.bulk.input.modules.excluded=$excludedModulesValue")
+
+            val excludedModulePrefixesValue = syncDirection.excludedModulePrefixes.joinToString(",")
+            add("-Dmodelix.mps.model.sync.bulk.input.modules.prefixes.excluded=$excludedModulePrefixesValue")
+
             add("-Dmodelix.mps.model.sync.bulk.repo.path=${repositoryDir.absolutePath}")
             add("-Dmodelix.mps.model.sync.bulk.input.continueOnError=${syncDirection.continueOnError}")
             add("-Xmx${localTarget.mpsHeapSize}")

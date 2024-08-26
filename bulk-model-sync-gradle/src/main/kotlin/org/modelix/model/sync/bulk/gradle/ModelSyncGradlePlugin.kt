@@ -131,6 +131,8 @@ class ModelSyncGradlePlugin : Plugin<Project> {
             it.outputDir.set(jsonDir)
             it.includedModules.set(syncDirection.includedModules)
             it.includedModulePrefixes.set(syncDirection.includedModulePrefixes)
+            it.excludedModules.set(syncDirection.excludedModules)
+            it.excludedModulePrefixes.set(syncDirection.excludedModulePrefixes)
             it.requestTimeoutSeconds.set(serverSource.requestTimeoutSeconds)
         }
         return exportFromModelServer
@@ -167,6 +169,8 @@ class ModelSyncGradlePlugin : Plugin<Project> {
             it.branchName.set(serverTarget.branchName)
             it.includedModules.set(syncDirection.includedModules)
             it.includedModulePrefixes.set(syncDirection.includedModulePrefixes)
+            it.excludedModules.set(syncDirection.excludedModules)
+            it.excludedModulePrefixes.set(syncDirection.excludedModulePrefixes)
             it.continueOnError.set(syncDirection.continueOnError)
             it.requestTimeoutSeconds.set(serverTarget.requestTimeoutSeconds)
             it.metaProperties.set(serverTarget.metaProperties)

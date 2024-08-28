@@ -23,6 +23,7 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.IReplaceableNode
 import org.modelix.model.api.IRole
+import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.isChildRoleOrdered
 import org.modelix.model.api.remove
 import org.modelix.model.data.NodeData
@@ -121,8 +122,6 @@ class ModelSynchronizer(
 
             val allExpectedNodesDoNotExist by lazy {
                 sourceNodes.all { sourceNode ->
-                    val originalId = sourceNode.originalId()
-                    checkNotNull(originalId) { "Specified node '$sourceNode' has no ID." }
                     nodeAssociation.resolveTarget(sourceNode) == null
                 }
             }
@@ -132,8 +131,6 @@ class ModelSynchronizer(
                 targetParent.addNewChildren(role, -1, sourceNodes.map { it.getConceptReference() })
                     .zip(sourceNodes)
                     .forEach { (newChild, sourceChild) ->
-                        val expectedId = sourceChild.originalId()
-                        checkNotNull(expectedId) { "Specified node '$sourceChild' has no ID." }
                         nodeAssociation.associate(sourceChild, newChild)
                         synchronizeNode(sourceChild, newChild)
                     }
@@ -153,7 +150,7 @@ class ModelSynchronizer(
 
             sourceNodes.forEachIndexed { indexInImport, expected ->
                 val existingChildren = targetParent.getChildren(role).toList()
-                val expectedId = checkNotNull(expected.originalId()) { "Specified node '$expected' has no id" }
+                val expectedId = checkNotNull(expected.originalIdOrFallback()) { "Specified node '$expected' has no id" }
                 // newIndex is the index on which to import the expected child.
                 // It might be -1 if the child does not exist and should be added at the end.
                 val newIndex = if (isOrdered) {
@@ -165,7 +162,7 @@ class ModelSynchronizer(
                     // Reusable indexing would be possible if we switch from
                     // a depth-first import to a breadth-first import.)
                     existingChildren
-                        .indexOfFirst { existingChild -> existingChild.originalId() == expected.originalId() }
+                        .indexOfFirst { existingChild -> existingChild.originalId() == expectedId }
                 }
                 // existingChildren.getOrNull handles `-1` as needed by returning `null`.
                 val nodeAtIndex = existingChildren.getOrNull(newIndex)
@@ -287,4 +284,12 @@ class ModelSynchronizer(
          */
         fun needsSynchronization(node: INode): Boolean
     }
+}
+
+private fun INode.originalIdOrFallback(): String? {
+    val originalRef = getOriginalReference()
+    if (originalRef != null) return originalRef
+
+    if (this is PNodeAdapter) return reference.serialize()
+    return null
 }

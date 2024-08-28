@@ -16,11 +16,13 @@
 
 package org.modelix.model.sync.bulk
 
+import org.modelix.model.ModelFacade
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.PNodeAdapter
+import org.modelix.model.api.addNewChild
 import org.modelix.model.api.getDescendants
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
@@ -28,18 +30,80 @@ import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData.Companion.ID_PROPERTY_KEY
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.operations.AddNewChildOp
+import org.modelix.model.operations.AddNewChildrenOp
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.test.RandomModelChangeGenerator
+import kotlin.js.JsName
 import kotlin.random.Random
+import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class ModelSynchronizerTest : AbstractModelSyncTest() {
+open class ModelSynchronizerTest : AbstractModelSyncTest() {
+
+    @Test
+    @JsName("can_handle_added_child_without_original_id_without_existing_sibling")
+    fun `can handle added child without original id (without existing sibling)`() {
+        val sourceBranch = createLocalBranch().apply {
+            runWrite {
+                getRootNode().apply {
+                    setPropertyValue(ID_PROPERTY_KEY, "root")
+                    addNewChild("test")
+                }
+            }
+        }.toOTBranch()
+
+        val targetBranch = createLocalBranch().apply {
+            runWrite {
+                getRootNode().setPropertyValue(ID_PROPERTY_KEY, "root")
+            }
+        }.toOTBranch()
+
+        runTest(sourceBranch, targetBranch) {
+            assertEquals(1, targetBranch.getRootNode().allChildren.count())
+            assertEquals(1, targetBranch.getNumOfUsedOperationsByType()[AddNewChildrenOp::class])
+        }
+    }
+
+    @Test
+    @JsName("can_handle_added_child_without_original_id_with_existing_sibling")
+    fun `can handle added child without original id (with existing sibling)`() {
+        val sourceBranch = createLocalBranch().apply {
+            runWrite {
+                getRootNode().apply {
+                    setPropertyValue(ID_PROPERTY_KEY, "root")
+                    addNewChild("test").setPropertyValue(ID_PROPERTY_KEY, "sibling")
+                    addNewChild("test")
+                }
+            }
+        }.toOTBranch()
+
+        val targetBranch = createLocalBranch().apply {
+            runWrite {
+                getRootNode().apply {
+                    setPropertyValue(ID_PROPERTY_KEY, "root")
+                    addNewChild("test").setPropertyValue(ID_PROPERTY_KEY, "sibling")
+                }
+            }
+        }.toOTBranch()
+
+        runTest(sourceBranch, targetBranch) {
+            assertEquals(2, targetBranch.getRootNode().allChildren.count())
+            assertEquals(1, targetBranch.getNumOfUsedOperationsByType()[AddNewChildOp::class])
+        }
+    }
+
+    private fun createLocalBranch() = ModelFacade.toLocalBranch(ModelFacade.newLocalTree())
 
     override fun runTest(initialData: ModelData, expectedData: ModelData, assertions: OTBranch.() -> Unit) {
         val sourceBranch = createOTBranchFromModel(expectedData)
         val targetBranch = createOTBranchFromModel(initialData)
+        runTest(sourceBranch, targetBranch, assertions)
+    }
 
+    private fun runTest(sourceBranch: OTBranch, targetBranch: OTBranch, assertions: OTBranch.() -> Unit) {
         sourceBranch.runRead {
             val sourceRoot = sourceBranch.getRootNode()
 
@@ -137,4 +201,8 @@ class ModelSynchronizerTest : AbstractModelSyncTest() {
             }
         }
     }
+}
+
+private fun IBranch.toOTBranch(): OTBranch {
+    return OTBranch(this, IdGenerator.getInstance(1), ObjectStoreCache(MapBasedStore()))
 }

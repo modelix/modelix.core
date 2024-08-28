@@ -27,12 +27,11 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.MapBasedStore
-import org.modelix.model.sync.bulk.ModelSynchronizerTest.BasicAssociation
 import org.modelix.model.test.RandomModelChangeGenerator
 import kotlin.random.Random
 import kotlin.test.assertTrue
 
-class ModelSynchronizerWithInvalidationTreeTest : AbstractModelSyncTest() {
+class ModelSynchronizerWithInvalidationTreeTest : ModelSynchronizerTest() {
 
     override fun runTest(initialData: ModelData, expectedData: ModelData, assertions: OTBranch.() -> Unit) {
         val sourceBranch = createOTBranchFromModel(expectedData)

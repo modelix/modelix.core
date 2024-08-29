@@ -45,6 +45,10 @@
 .selectedNameField {
     background-color: #c9c9c9;
 }
+.expandedToNameField {
+    border: 2px solid #32cd32;
+    background-color: #90ee90
+}
 #treeWrapper {
     align-self: flex-start;
 }

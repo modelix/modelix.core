@@ -16,12 +16,15 @@
 
 package org.modelix.model.server.handlers.ui
 
+import io.kotest.assertions.ktor.client.shouldHaveStatus
+import io.kotest.matchers.string.shouldContain
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.testing.ApplicationTestBuilder
@@ -137,5 +140,30 @@ class ContentExplorerTest {
         assertTrue { root.`is`(Evaluator.Tag("ul")) }
         assertTrue { root.`is`(Evaluator.Class("treeRoot")) }
         assertTrue { root.childrenSize() > 0 }
+    }
+
+    @Test
+    fun `expanding to non-existing node leads to not found response`() = runTest {
+        val client = createHttpClient()
+        val nodeId = "654321"
+
+        val delta: VersionDelta = client.post("/v2/repositories/node-expand-to/init").body()
+        val versionHash = delta.versionHash
+        val response = client.get("/content/repositories/node-expand-to/versions/$versionHash/?expandTo=$nodeId")
+
+        response shouldHaveStatus HttpStatusCode.NotFound
+        response.bodyAsText() shouldContain nodeId
+    }
+
+    @Test
+    fun `illegal expandTo value leads to bad request response`() = runTest {
+        val client = createHttpClient()
+        val nodeId = "illegalId"
+
+        val delta: VersionDelta = client.post("/v2/repositories/node-expand-to/init").body()
+        val versionHash = delta.versionHash
+        val response = client.get("/content/repositories/node-expand-to/versions/$versionHash/?expandTo=$nodeId")
+
+        response shouldHaveStatus HttpStatusCode.BadRequest
     }
 }

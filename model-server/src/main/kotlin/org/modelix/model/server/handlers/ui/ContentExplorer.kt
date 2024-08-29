@@ -30,23 +30,29 @@ import io.ktor.server.routing.routing
 import kotlinx.html.BODY
 import kotlinx.html.FlowContent
 import kotlinx.html.UL
+import kotlinx.html.a
 import kotlinx.html.b
 import kotlinx.html.body
 import kotlinx.html.br
 import kotlinx.html.button
+import kotlinx.html.classes
 import kotlinx.html.div
+import kotlinx.html.getForm
 import kotlinx.html.h1
 import kotlinx.html.h3
 import kotlinx.html.id
+import kotlinx.html.label
 import kotlinx.html.li
 import kotlinx.html.link
 import kotlinx.html.script
 import kotlinx.html.small
 import kotlinx.html.stream.appendHTML
 import kotlinx.html.style
+import kotlinx.html.submitInput
 import kotlinx.html.table
 import kotlinx.html.tbody
 import kotlinx.html.td
+import kotlinx.html.textInput
 import kotlinx.html.th
 import kotlinx.html.thead
 import kotlinx.html.title
@@ -61,10 +67,12 @@ import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.TreePointer
 import org.modelix.model.client.IModelClient
 import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.model.server.handlers.IRepositoriesManager
+import org.modelix.model.server.handlers.NodeNotFoundException
 import org.modelix.model.server.templates.PageWithMenuBar
 import kotlin.collections.set
 
@@ -109,17 +117,36 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                     return@get
                 }
 
+                // IMPORTANT Do not let `expandTo` be an arbitrary string to avoid code injection.
+                // The value of `expandTo` is expanded into JavaScript.
+                val expandTo = call.request.queryParameters["expandTo"]?.let {
+                    it.toLongOrNull() ?: return@get call.respondText("Invalid expandTo value. Provide a node id.", status = HttpStatusCode.BadRequest)
+                }
+
                 repoManager.runWithRepository(repositoryId) {
                     val tree = CLVersion.loadFromHash(versionHash, client.storeCache).getTree()
                     val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
+
+                    val expandedNodes = expandTo?.let { nodeId -> getAncestorsAndSelf(nodeId, tree) }.orEmpty()
 
                     call.respondHtmlTemplate(PageWithMenuBar("repos/", "../../../../..")) {
                         headContent {
                             title("Content Explorer")
                             link("../../../../../public/content-explorer.css", rel = "stylesheet")
                             script("text/javascript", src = "../../../../../public/content-explorer.js") {}
+                            if (expandTo != null) {
+                                script("text/javascript") {
+                                    unsafe {
+                                        +"""
+                                        document.addEventListener("DOMContentLoaded", function(event) {
+                                            scrollToElement('$expandTo');
+                                        });
+                                        """.trimIndent()
+                                    }
+                                }
+                            }
                         }
-                        bodyContent { contentPageBody(rootNode, versionHash, emptySet()) }
+                        bodyContent { contentPageBody(rootNode, versionHash, expandedNodes, expandTo) }
                     }
                 }
             }
@@ -188,6 +215,17 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
         }
     }
 
+    private fun getAncestorsAndSelf(expandTo: Long, tree: CLTree): Set<String> {
+        val seq = generateSequence(expandTo) { id ->
+            try {
+                tree.resolveElement(id)?.parentId
+            } catch (e: org.modelix.model.lazy.NodeNotFoundException) {
+                throw NodeNotFoundException(id, e)
+            }
+        }
+        return seq.map { it.toString() }.toSet()
+    }
+
     // The method traverses the expanded tree based on the alreadyExpandedNodeIds and
     // collects the expandable (not empty) nodes which are not expanded yet
     private fun collectExpandableChildNodes(under: PNodeAdapter, alreadyExpandedNodeIds: Set<String>): Set<String> {
@@ -206,7 +244,12 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
         return emptySet()
     }
 
-    private fun FlowContent.contentPageBody(rootNode: PNodeAdapter, versionHash: String, expandedNodeIds: Set<String>) {
+    private fun FlowContent.contentPageBody(
+        rootNode: PNodeAdapter,
+        versionHash: String,
+        expandedNodeIds: Set<String>,
+        expandTo: Long?,
+    ) {
         h1 { +"Model Server Content" }
         small {
             style = "color: #888; text-align: center; margin-bottom: 15px;"
@@ -223,10 +266,24 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                 +"Collapse all"
             }
         }
+        getForm(action = ".") {
+            label {
+                htmlFor = "expandTo"
+                +"Expand to Node: "
+            }
+            textInput {
+                name = "expandTo"
+                placeholder = "nodeId"
+                required = true
+            }
+            submitInput(classes = "btn") {
+                value = "Go"
+            }
+        }
         div {
             id = "treeWrapper"
             ul("treeRoot") {
-                nodeItem(rootNode, expandedNodeIds)
+                nodeItem(rootNode, expandedNodeIds, expandTo)
             }
         }
         div {
@@ -234,13 +291,17 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
         }
     }
 
-    private fun UL.nodeItem(node: PNodeAdapter, expandedNodeIds: Set<String>) {
+    private fun UL.nodeItem(node: PNodeAdapter, expandedNodeIds: Set<String>, expandTo: Long? = null) {
         li("nodeItem") {
+            id = node.nodeId.toString()
             val expanded = expandedNodeIds.contains(node.nodeId.toString())
             if (node.allChildren.toList().isNotEmpty()) {
                 div(if (expanded) "expander expander-expanded" else "expander") { unsafe { +"&#x25B6;" } }
             }
             div("nameField") {
+                if (expandTo == node.nodeId) {
+                    classes += "expandedToNameField"
+                }
                 attributes["data-nodeid"] = node.nodeId.toString()
                 b {
                     val namePropertyUID = BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getUID()
@@ -268,7 +329,7 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                 if (expanded) {
                     ul("nodeTree") {
                         for (child in node.allChildren) {
-                            nodeItem(child as PNodeAdapter, expandedNodeIds)
+                            nodeItem(child as PNodeAdapter, expandedNodeIds, expandTo)
                         }
                     }
                 }
@@ -322,7 +383,14 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                             tr {
                                 td { +referenceRole }
                                 td {
-                                    +"${(node.getReferenceTarget(referenceRole) as? PNodeAdapter)?.nodeId}"
+                                    val nodeId = (node.getReferenceTarget(referenceRole) as? PNodeAdapter)?.nodeId
+                                    if (nodeId != null) {
+                                        a("?expandTo=$nodeId") {
+                                            +"$nodeId"
+                                        }
+                                    } else {
+                                        +"null"
+                                    }
                                 }
                                 td {
                                     +"${node.getReferenceTargetRef(referenceRole)?.serialize()}"

@@ -15,11 +15,21 @@
 
 package org.modelix.model.persistent
 
+import com.badoo.reaktive.maybe.Maybe
+import com.badoo.reaktive.maybe.map
+import com.badoo.reaktive.maybe.maybeOfEmpty
+import com.badoo.reaktive.observable.Observable
+import com.badoo.reaktive.observable.observableOfEmpty
+import com.badoo.reaktive.single.Single
+import com.badoo.reaktive.single.flatMapMaybe
+import com.badoo.reaktive.single.flatMapObservable
+import com.badoo.reaktive.single.flatten
+import com.badoo.reaktive.single.map
+import com.badoo.reaktive.single.toSingle
+import com.badoo.reaktive.single.zipWith
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.bitCount
-import org.modelix.model.lazy.IBulkQuery
-import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.KVEntryReference
-import org.modelix.model.lazy.NonBulkQuery
 import org.modelix.model.persistent.SerializationUtil.longToHex
 
 class CPHamtSingle(
@@ -44,29 +54,23 @@ class CPHamtSingle(
         require(numLevels <= CPHamtNode.MAX_LEVELS) { "Only ${CPHamtNode.MAX_LEVELS} levels expected, but was $numLevels" }
     }
 
-    override fun calculateSize(bulkQuery: IBulkQuery): IBulkQuery.Value<Long> {
-        return getChild(bulkQuery).flatMap { it.calculateSize(bulkQuery) }
-    }
-
     private fun maskBits(key: Long, shift: Int): Long = (key ushr (CPHamtNode.MAX_BITS - CPHamtNode.BITS_PER_LEVEL * numLevels - shift)) and mask
 
-    override fun get(key: Long, shift: Int, bulkQuery: IBulkQuery): IBulkQuery.Value<KVEntryReference<CPNode>?> {
+    override fun get(key: Long, shift: Int, store: IAsyncObjectStore): Maybe<KVEntryReference<CPNode>> {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         if (maskBits(key, shift) == bits) {
-            return bulkQuery.query(child)
-                .flatMap {
-                    val childData = it ?: throw RuntimeException("Entry not found in store: " + child.getHash())
-                    childData.get(key, shift + numLevels * CPHamtNode.BITS_PER_LEVEL, bulkQuery)
-                }
+            return child.getValue(store).flatMapMaybe {
+                it.get(key, shift + numLevels * CPHamtNode.BITS_PER_LEVEL, store)
+            }
         } else {
-            return bulkQuery.constant(null)
+            return maybeOfEmpty()
         }
     }
 
-    override fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
+    override fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         if (maskBits(key, shift) == bits) {
-            return withNewChild(getChild(NonBulkQuery(store)).executeQuery().put(key, value, shift + CPHamtNode.BITS_PER_LEVEL * numLevels, store))
+            return getChild(store).flatMapMaybe { it.put(key, value, shift + CPHamtNode.BITS_PER_LEVEL * numLevels, store) }.map { withNewChild(it) }
         } else {
             if (numLevels > 1) {
                 return splitOneLevel().put(key, value, shift, store)
@@ -88,69 +92,65 @@ class CPHamtSingle(
         return CPHamtSingle(1, bits ushr (CPHamtNode.BITS_PER_LEVEL * (numLevels - 1)), KVEntryReference(nextLevel))
     }
 
-    fun withNewChild(newChild: CPHamtNode?): CPHamtSingle? {
-        if (newChild is CPHamtSingle) {
-            return CPHamtSingle(
+    fun withNewChild(newChild: CPHamtNode): CPHamtSingle {
+        return if (newChild is CPHamtSingle) {
+            CPHamtSingle(
                 numLevels + newChild.numLevels,
                 (bits shl (newChild.numLevels * CPHamtNode.BITS_PER_LEVEL)) or newChild.bits,
                 newChild.child,
             )
-        }
-        return if (newChild == null) {
-            null
         } else {
             CPHamtSingle(numLevels, bits, KVEntryReference(newChild))
         }
     }
 
-    override fun remove(key: Long, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
+    override fun remove(key: Long, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         return put(key, null, shift, store)
     }
 
-    fun getChild(bulkQuery: IBulkQuery): IBulkQuery.Value<CPHamtNode> {
-        return bulkQuery.query(child).map { childData -> checkNotNull(childData) { "Entry not found: $child" } }
+    fun getChild(store: IAsyncObjectStore): Single<CPHamtNode> {
+        return child.getValue(store)
     }
 
-    override fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IBulkQuery.Value<Unit> {
-        return getChild(bulkQuery).flatMap { it.visitEntries(bulkQuery, visitor) }
+    override fun getEntries(store: IAsyncObjectStore): Observable<Pair<Long, KVEntryReference<CPNode>>> {
+        return getChild(store).flatMapObservable { it.getEntries(store) }
     }
 
-    override fun visitChanges(oldNode: CPHamtNode?, shift: Int, visitor: CPHamtNode.IChangeVisitor, bulkQuery: IBulkQuery) {
-        if (oldNode === this || hash == oldNode?.hash) {
-            return
-        }
-        if (oldNode is CPHamtSingle && oldNode.numLevels == numLevels) {
-            getChild(bulkQuery).map { child ->
-                oldNode.getChild(bulkQuery).map { oldNode ->
-                    child.visitChanges(oldNode, shift + numLevels * CPHamtNode.BITS_PER_LEVEL, visitor, bulkQuery)
-                }
-            }
+    override fun getChanges(oldNode: CPHamtNode?, shift: Int, store: IAsyncObjectStore, changesOnly: Boolean): Observable<MapChangeEvent> {
+        return if (oldNode === this || hash == oldNode?.hash) {
+            observableOfEmpty()
+        } else if (oldNode is CPHamtSingle && oldNode.numLevels == numLevels) {
+            getChild(store).zipWith(oldNode.getChild(store)) { child, oldNode ->
+                child.getChanges(oldNode, shift + numLevels * CPHamtNode.BITS_PER_LEVEL, store, changesOnly)
+            }.flatten()
         } else if (numLevels == 1) {
-            CPHamtInternal.replace(this).visitChanges(oldNode, shift, visitor, bulkQuery)
+            CPHamtInternal.replace(this).getChanges(oldNode, shift, store, changesOnly)
         } else {
-            splitOneLevel().visitChanges(oldNode, shift, visitor, bulkQuery)
+            splitOneLevel().getChanges(oldNode, shift, store, changesOnly)
         }
     }
 
     companion object {
         fun maskForLevels(numLevels: Int) = -1L ushr (CPHamtNode.MAX_BITS - CPHamtNode.BITS_PER_LEVEL * numLevels)
 
-        fun replace(node: CPHamtInternal, store: IDeserializingKeyValueStore): CPHamtSingle {
+        fun replace(node: CPHamtInternal, store: IAsyncObjectStore): Single<CPHamtSingle> {
             if (node.children.size != 1) throw RuntimeException("Can only replace nodes with a single child")
-            val child = node.children[0].getValue(store)
-            if (child is CPHamtSingle) {
-                return CPHamtSingle(
-                    child.numLevels + 1,
-                    (indexFromBitmap(node.bitmap).toLong() shl (child.numLevels * CPHamtNode.BITS_PER_LEVEL)) or child.bits,
-                    child.child,
-                )
+            return node.children[0].getValue(store).map { child ->
+                if (child is CPHamtSingle) {
+                    CPHamtSingle(
+                        child.numLevels + 1,
+                        (indexFromBitmap(node.bitmap).toLong() shl (child.numLevels * CPHamtNode.BITS_PER_LEVEL)) or child.bits,
+                        child.child,
+                    )
+                } else {
+                    CPHamtSingle(1, indexFromBitmap(node.bitmap).toLong(), node.children[0])
+                }
             }
-            return CPHamtSingle(1, indexFromBitmap(node.bitmap).toLong(), node.children[0])
         }
 
-        fun replaceIfSingleChild(node: CPHamtInternal, store: IDeserializingKeyValueStore): CPHamtNode {
-            return if (node.children.size == 1) replace(node, store) else node
+        fun replaceIfSingleChild(node: CPHamtInternal, store: IAsyncObjectStore): Single<CPHamtNode> {
+            return if (node.children.size == 1) replace(node, store) else node.toSingle()
         }
 
         private fun indexFromBitmap(bitmap: Int): Int = bitCount(bitmap - 1)

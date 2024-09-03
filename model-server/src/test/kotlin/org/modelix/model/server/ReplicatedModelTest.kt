@@ -39,8 +39,8 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.ModelReplicationServer
+import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
-import org.modelix.model.server.store.forContextRepository
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -135,9 +135,9 @@ class ReplicatedModelTest {
         application {
             installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
-            val storeClient = InMemoryStoreClient().forContextRepository()
-            ModelReplicationServer(storeClient).init(this)
-            IdsApiImpl(storeClient).init(this)
+            val repoManager = RepositoriesManager(InMemoryStoreClient())
+            ModelReplicationServer(repoManager).init(this)
+            IdsApiImpl(repoManager).init(this)
         }
         block()
     }

@@ -13,7 +13,7 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.drop
+import com.badoo.reaktive.observable.skip
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -25,7 +25,7 @@ class DropStep<E>(val count: Int) : TransformingStep<E, E>(), IMonoStep<E>, IFlu
     override fun canBeMultiple(): Boolean = getProducer().canBeMultiple()
 
     override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E> {
-        return input.drop(count)
+        return input.skip(count.toLong())
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>> {

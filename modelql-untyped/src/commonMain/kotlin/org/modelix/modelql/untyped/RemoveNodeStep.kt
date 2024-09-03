@@ -13,12 +13,11 @@
  */
 package org.modelix.modelql.untyped
 
-import kotlinx.coroutines.flow.count
-import kotlinx.coroutines.flow.map
+import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.single.Single
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
 import org.modelix.model.api.remove
 import org.modelix.modelql.core.AggregationStep
@@ -31,9 +30,10 @@ import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
-import org.modelix.modelql.core.asStepOutput
+import org.modelix.modelql.core.asStepFlow
 import org.modelix.modelql.core.connect
 import org.modelix.modelql.core.stepOutputSerializer
+import org.modelix.streams.count
 
 class RemoveNodeStep() : AggregationStep<INode, Int>() {
 
@@ -41,8 +41,8 @@ class RemoveNodeStep() : AggregationStep<INode, Int>() {
         return serializationContext.serializer<Int>().stepOutputSerializer(this)
     }
 
-    override suspend fun aggregate(input: StepFlow<INode>): IStepOutput<Int> {
-        return input.map { it.value.remove() }.count().asStepOutput(this)
+    override fun aggregate(input: StepFlow<INode>): Single<IStepOutput<Int>> {
+        return input.map { it.value.remove() }.count().asStepFlow(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {

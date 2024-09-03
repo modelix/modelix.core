@@ -13,6 +13,9 @@
  */
 package org.modelix.model.lazy
 
+import com.badoo.reaktive.single.Single
+import com.badoo.reaktive.single.singleOf
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.persistent.IKVValue
 
 class NonWrittenEntry<E : IKVValue> : IKVEntryReference<E> {
@@ -26,11 +29,13 @@ class NonWrittenEntry<E : IKVValue> : IKVEntryReference<E> {
 
     constructor(deserialized: E) : this(deserialized.hash, deserialized)
 
-    fun isWritten() = deserialized.isWritten
+    override fun isWritten() = deserialized.isWritten
 
     override fun getHash(): String = hash
 
     override fun getValue(store: IDeserializingKeyValueStore): E = getDeserialized()
+    override fun getValue(store: IAsyncObjectStore): Single<E> = singleOf(getDeserialized())
+    override fun getUnwrittenValue(): E = getDeserialized()
 
     fun getSerialized(): String = getDeserialized().serialize()
 

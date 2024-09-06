@@ -19,6 +19,7 @@ val bundleSpecs = tasks.register<NpxTask>("bundleSpecs") {
 
     dependsOn(tasks.getByName("npmInstall"))
 
+    inputs.file("package-lock.json")
     inputs.dir(specDir)
 
     outputs.cacheIf { true }
@@ -33,8 +34,10 @@ val joinSpecs = tasks.register<NpxTask>("joinSpecs") {
     description = "combines all OpenAPI specifications into a single one"
 
     dependsOn(tasks.getByName("npmInstall"))
+
     dependsOn(bundleSpecs)
 
+    inputs.file("package-lock.json")
     inputs.dir(bundleDir)
 
     outputs.cacheIf { true }

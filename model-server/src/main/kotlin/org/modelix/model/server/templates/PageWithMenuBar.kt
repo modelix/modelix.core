@@ -38,6 +38,7 @@ class PageWithMenuBar(val activePage: String, val baseUrl: String) : Template<HT
                 }
                 val menuItems = mapOf(
                     "repos/" to "Repositories",
+                    "diff" to "Diff View",
                     "headers" to "HTTP Headers",
                     "user" to "JWT token",
                     "permissions" to "Permissions",

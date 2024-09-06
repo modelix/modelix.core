@@ -250,7 +250,7 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
                     th { +"Time" }
                     th { +"Operations" }
                     th {
-                        colSpan = "2"
+                        colSpan = "3"
                         +"Actions"
                     }
                 }
@@ -313,6 +313,17 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
                     }
                 }
             }
+
+            td {
+                style = "white-space: nowrap;"
+                val previousVersion = version.baseVersion
+                if (previousVersion != null) {
+                    a("/../../../diff/view?repository=$repositoryId&oldVersionHash=${previousVersion.getContentHash()}&newVersionHash=${version.getContentHash()}") {
+                        +"Compare with Previous"
+                    }
+                }
+            }
+
             td {
                 style = "white-space: nowrap;"
                 a("/../../../content/repositories/$repositoryId/versions/${version.getContentHash()}/") {

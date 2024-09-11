@@ -19,7 +19,7 @@ val bundleSpecs = tasks.register<NpxTask>("bundleSpecs") {
 
     dependsOn(tasks.getByName("npmInstall"))
 
-    inputs.file("package-lock.json")
+    inputs.files("package-lock.json", "redocly.yaml")
     inputs.dir(specDir)
 
     outputs.cacheIf { true }
@@ -36,7 +36,7 @@ val joinSpecs = tasks.register<NpxTask>("joinSpecs") {
     dependsOn(tasks.getByName("npmInstall"))
     dependsOn(bundleSpecs)
 
-    inputs.file("package-lock.json")
+    inputs.files("package-lock.json", "redocly.yaml")
     inputs.dir(bundleDir)
 
     outputs.cacheIf { true }

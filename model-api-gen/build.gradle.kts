@@ -7,7 +7,6 @@ val kotlinxSerializationVersion: String by rootProject
 val kotlinCollectionsImmutableVersion: String by rootProject
 
 dependencies {
-    implementation(libs.kotlin.collections.immutable)
     implementation(kotlin("stdlib-jdk8"))
     implementation(libs.kotlin.serialization.json)
     implementation(libs.kotlin.serialization.yaml)

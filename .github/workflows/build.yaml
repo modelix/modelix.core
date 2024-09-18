@@ -51,7 +51,7 @@ jobs:
             */build/test-results
             */build/reports
       - name: Report test coverage
-        uses: madrapps/jacoco-report@v1.7.0
+        uses: madrapps/jacoco-report@v1.7.1
         with:
           paths: ${{ github.workspace }}/build/reports/kover/report.xml
           token: ${{ secrets.GITHUB_TOKEN }}

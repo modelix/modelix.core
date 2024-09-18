@@ -61,6 +61,7 @@ import org.modelix.model.server.handlers.Paths.registerJsonTypes
 import org.modelix.model.server.handlers.Problem
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.handlers.ui.ContentExplorer
+import org.modelix.model.server.handlers.ui.DiffView
 import org.modelix.model.server.handlers.ui.HistoryHandler
 import org.modelix.model.server.handlers.ui.IndexPage
 import org.modelix.model.server.handlers.ui.RepositoryOverview
@@ -176,6 +177,7 @@ object Main {
             }
             val repositoryOverview = RepositoryOverview(repositoriesManager)
             val historyHandler = HistoryHandler(localModelClient, repositoriesManager)
+            val diffView = DiffView(repositoriesManager)
             val contentExplorer = ContentExplorer(localModelClient, repositoriesManager)
             val modelReplicationServer = ModelReplicationServer(repositoriesManager, localModelClient, inMemoryModels)
             val metricsApi = MetricsApiImpl()
@@ -217,6 +219,7 @@ object Main {
                 modelServer.init(this)
                 IndexPage().init(this)
                 historyHandler.init(this)
+                diffView.init(this)
                 repositoryOverview.init(this)
                 contentExplorer.init(this)
                 modelReplicationServer.init(this)

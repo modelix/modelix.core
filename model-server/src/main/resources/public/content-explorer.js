@@ -11,6 +11,10 @@ function getExpandedNodeIds() {
         element => element.nextElementSibling?.getAttribute('data-nodeid'));
 }
 
+function scrollToElement(id) {
+    document.getElementById(id).scrollIntoView();
+}
+
 function sendExpandNodeRequest(expandAll) {
     const xhr = new XMLHttpRequest();
     xhr.onreadystatechange = () => {
@@ -40,6 +44,7 @@ function addContentExplorerClickListeners() {
                 selected[j].classList.remove('selectedNameField');
             }
             if (!isSelected) {
+                this.classList.remove('expandedToNameField');
                 this.classList.add('selectedNameField');
             }
         });

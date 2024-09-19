@@ -1,6 +1,6 @@
 import { org } from "@modelix/model-client";
-import { ReactiveINodeJS } from "./ReactiveINodeJS";
-import { Cache } from "./Cache";
+import type { ReactiveINodeJS } from "./ReactiveINodeJS";
+import type { Cache } from "./Cache";
 
 const { PropertyChanged, ReferenceChanged, ChildrenChanged } =
   org.modelix.model.client2;

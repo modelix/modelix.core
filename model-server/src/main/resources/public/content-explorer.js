@@ -11,6 +11,7 @@ function getExpandedNodeIds() {
         element => element.nextElementSibling?.getAttribute('data-nodeid'));
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Used by HTML generated in Kotlin
 function scrollToElement(id) {
     document.getElementById(id).scrollIntoView();
 }

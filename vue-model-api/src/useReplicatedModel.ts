@@ -1,8 +1,10 @@
-import { org } from "@modelix/model-client";
-import { INodeJS } from "@modelix/ts-model-api";
+import type { org } from "@modelix/model-client";
+import type { INodeJS } from "@modelix/ts-model-api";
 import { useLastPromiseEffect } from "./internal/useLastPromiseEffect";
-import { MaybeRefOrGetter, Ref, shallowRef, toValue } from "vue";
-import { ReactiveINodeJS, toReactiveINodeJS } from "./internal/ReactiveINodeJS";
+import type { MaybeRefOrGetter, Ref } from "vue";
+import { shallowRef, toValue } from "vue";
+import type { ReactiveINodeJS } from "./internal/ReactiveINodeJS";
+import { toReactiveINodeJS } from "./internal/ReactiveINodeJS";
 import { Cache } from "./internal/Cache";
 import { handleChange } from "./internal/handleChange";
 

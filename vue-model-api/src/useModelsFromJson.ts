@@ -1,5 +1,6 @@
-import { INodeJS } from "@modelix/ts-model-api";
-import { ReactiveINodeJS, toReactiveINodeJS } from "./internal/ReactiveINodeJS";
+import type { INodeJS } from "@modelix/ts-model-api";
+import type { ReactiveINodeJS } from "./internal/ReactiveINodeJS";
+import { toReactiveINodeJS } from "./internal/ReactiveINodeJS";
 import { Cache } from "./internal/Cache";
 import { handleChange } from "./internal/handleChange";
 import { org } from "@modelix/model-client";

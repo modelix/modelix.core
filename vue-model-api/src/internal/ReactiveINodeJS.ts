@@ -1,6 +1,6 @@
-import { IConceptJS, INodeJS } from "@modelix/ts-model-api";
+import type { IConceptJS, INodeJS } from "@modelix/ts-model-api";
 import { customRef, markRaw } from "vue";
-import { Cache } from "./Cache";
+import type { Cache } from "./Cache";
 
 export function toReactiveINodeJS(
   node: INodeJS,

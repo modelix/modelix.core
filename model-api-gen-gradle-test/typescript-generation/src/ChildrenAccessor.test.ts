@@ -4,8 +4,9 @@
  * of the generated languages, we will conduct the test here for now.
  */
 
+import type {
+  BaseCommentAttribute} from "../build/typescript_src/L_jetbrains_mps_lang_core";
 import {
-  BaseCommentAttribute,
   C_BaseCommentAttribute,
   C_BaseConcept,
   C_TypeAnnotated,

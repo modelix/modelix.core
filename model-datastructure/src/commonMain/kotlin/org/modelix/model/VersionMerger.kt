@@ -71,7 +71,8 @@ class VersionMerger(private val storeCache: IDeserializingKeyValueStore, private
             return if (leftVersion.id < rightVersion.id) leftVersion else rightVersion
         }
 
-        val versionsToApply = filterUndo(LinearHistory(commonBase?.hash).load(leftVersion, rightVersion))
+        val linearHistory = calculateLinearHistory(commonBase?.hash, leftVersion, rightVersion)
+        val versionsToApply = filterUndo(linearHistory)
 
         val operationsToApply = versionsToApply.flatMap { captureIntend(it) }
         var mergedVersion: CLVersion? = null

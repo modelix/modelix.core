@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-import org.modelix.model.LinearHistory
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
+import org.modelix.model.calculateLinearHistory
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
@@ -90,11 +90,11 @@ class UndoTest {
 
         val version_0_1_1u = merger.mergeChange(version_0_1, version_1_1u)
         val version_2_1_1u = merger.mergeChange(version_2_1, version_1_1u)
-        printHistory(version_1_1u, store)
+        printHistory(version_1_1u)
         println("---")
-        printHistory(versions[2], store)
+        printHistory(versions[2])
         println("---")
-        printHistory(version_2_1_1u, store)
+        printHistory(version_2_1_1u)
         version_0_1_1u.tree.visitChanges(versions[0].tree, FailingVisitor())
         version_2_1_1u.tree.visitChanges(versions[2].tree, FailingVisitor())
     }
@@ -136,11 +136,11 @@ class UndoTest {
         version_0_1_1u_1r.tree.visitChanges(version_0_1.tree, FailingVisitor())
         version_2_1_1u_1r.tree.visitChanges(version_2_1.tree, FailingVisitor())
 
-        printHistory(version_0_1_1u_1r, store)
+        printHistory(version_0_1_1u_1r)
     }
 
-    fun printHistory(version: CLVersion, store: IDeserializingKeyValueStore) {
-        LinearHistory(null).load(version).forEach {
+    fun printHistory(version: CLVersion) {
+        calculateLinearHistory(null, version).forEach {
             println("Version ${it.id.toString(16)} ${it.hash} ${it.author}")
             for (op in it.operations) {
                 println("    $op")

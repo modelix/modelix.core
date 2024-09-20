@@ -21,13 +21,13 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.IVersion
-import org.modelix.model.LinearHistory
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.TreePointer
+import org.modelix.model.calculateLinearHistory
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.SetReferenceOp
@@ -330,7 +330,7 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
 //            VersionMerger(store, IdGenerator.newInstance(0)).mergeChange(version, baseVersion)
 //        }
 
-        val history = LinearHistory(baseVersionHash).load(version)
+        val history = calculateLinearHistory(baseVersionHash, version)
         val bulkQuery = store.newBulkQuery()
         var v1 = baseVersion
         for (v2 in history) {

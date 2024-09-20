@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import org.modelix.model.LinearHistory
 import org.modelix.model.VersionMerger
+import org.modelix.model.calculateLinearHistory
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.ObjectStoreCache
@@ -69,7 +69,7 @@ class LinearHistoryTest {
         val v20 = version(20, v10)
         val v21 = version(21, v10)
 
-        val actual = LinearHistory(null).load(v20, v21).map { it.id }
+        val actual = LinearHistory.load(null, v20, v21).map { it.id }
         val expected = listOf(1L, 10L, 20, 21)
         assertEquals(expected, actual)
     }
@@ -99,7 +99,7 @@ class LinearHistoryTest {
 
     private fun history(v1: CLVersion, v2: CLVersion): List<CLVersion> {
         val base = VersionMerger.commonBaseVersion(v1, v2)
-        val history = LinearHistory(base?.getContentHash()).load(v1, v2)
+        val history = calculateLinearHistory(base?.getContentHash(), v1, v2)
         assertHistoryIsCorrect(history)
         return history
     }

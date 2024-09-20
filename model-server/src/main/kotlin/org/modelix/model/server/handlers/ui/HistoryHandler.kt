@@ -52,8 +52,8 @@ import kotlinx.html.ul
 import kotlinx.html.unsafe
 import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
-import org.modelix.model.LinearHistory
 import org.modelix.model.api.PBranch
+import org.modelix.model.calculateLinearHistory
 import org.modelix.model.client.IModelClient
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
@@ -261,7 +261,8 @@ class HistoryHandler(val client: IModelClient, private val repositoriesManager: 
                     if (rowIndex >= skip) {
                         createTableRow(repositoryAndBranch.repositoryId, version, latestVersion)
                         if (version.isMerge()) {
-                            for (v in LinearHistory(version.baseVersion!!.getContentHash()).load(version.getMergedVersion1()!!, version.getMergedVersion2()!!)) {
+                            val linearHistory = calculateLinearHistory(version.baseVersion!!.getContentHash(), version.getMergedVersion1()!!, version.getMergedVersion2()!!)
+                            for (v in linearHistory) {
                                 createTableRow(repositoryAndBranch.repositoryId, v, latestVersion)
                                 rowIndex++
                                 if (rowIndex >= skip + limit) {

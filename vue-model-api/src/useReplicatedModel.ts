@@ -21,8 +21,6 @@ type ChangeJS = org.modelix.model.client2.ChangeJS;
  *
  * Calling the returned dispose function stops syncing the root node to the underlying branch on the server.
  *
- * @experimental This feature is expected to be finalized with https://issues.modelix.org/issue/MODELIX-500.
- *
  * @param client - Reactive reference of a client to a model server.
  * @param repositoryId - Reactive reference of a repositoryId on the model server.
  * @param branchId - Reactive reference of a branchId in the repository of the model server.

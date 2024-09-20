@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
-@file:OptIn(UnstableModelixFeature::class)
-
 package org.modelix.model.client2
 
 import INodeJS
 import INodeReferenceJS
-import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.INodeReferenceSerializer

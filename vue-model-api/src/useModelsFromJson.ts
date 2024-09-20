@@ -13,8 +13,6 @@ type ChangeJS = org.modelix.model.client2.ChangeJS;
  *
  * The returned root node uses Vues reactivity and can be used in Vue like an reactive object.
  *
- * @experimental This feature is expected to be finalized with https://issues.modelix.org/issue/MODELIX-500.
- *
  * @param modelDataJsonStrings - Array of string, each representing a root node.
  * @returns A new root node the combines all children from the loaded root nodes.
  */

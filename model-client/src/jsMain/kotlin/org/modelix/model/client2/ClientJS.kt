@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-@file:OptIn(UnstableModelixFeature::class, DelicateCoroutinesApi::class)
+@file:OptIn(DelicateCoroutinesApi::class)
 
 package org.modelix.model.client2
 
@@ -24,7 +24,6 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.promise
-import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.INode
 import org.modelix.model.api.JSNodeConverter
@@ -36,10 +35,6 @@ import kotlin.js.Promise
 /**
  * Same as [loadModelsFromJsonAsBranch] but directly returns the [BranchJS.rootNode] of the created branch.
  */
-@UnstableModelixFeature(
-    reason = "The overarching task https://issues.modelix.org/issue/MODELIX-500 is in development.",
-    intendedFinalization = "The client is intended to be finalized when the overarching task is finished.",
-)
 @JsExport
 fun loadModelsFromJson(json: Array<String>): INodeJS {
     val branch = loadModelsFromJsonAsBranch(json)
@@ -51,10 +46,6 @@ fun loadModelsFromJson(json: Array<String>): INodeJS {
  *
  * Each JSON string will be added as child of the [BranchJS.rootNode] the created [BranchJS].
  */
-@UnstableModelixFeature(
-    reason = "The overarching task https://issues.modelix.org/issue/MODELIX-500 is in development.",
-    intendedFinalization = "The client is intended to be finalized when the overarching task is finished.",
-)
 @JsExport
 fun loadModelsFromJsonAsBranch(json: Array<String>): BranchJS {
     val branch = ModelFacade.toLocalBranch(ModelFacade.newLocalTree())
@@ -68,10 +59,6 @@ fun loadModelsFromJsonAsBranch(json: Array<String>): BranchJS {
  * @param url URL to the V2 endpoint of the model server.
  * e.g., http://localhost:28102/v2
  */
-@UnstableModelixFeature(
-    reason = "The overarching task https://issues.modelix.org/issue/MODELIX-500 is in development.",
-    intendedFinalization = "The client is intended to be finalized when the overarching task is finished.",
-)
 @JsExport
 fun connectClient(url: String, bearerTokenProvider: (() -> Promise<String?>)? = null): Promise<ClientJS> {
     return GlobalScope.promise {
@@ -94,10 +81,6 @@ fun connectClient(url: String, bearerTokenProvider: (() -> Promise<String?>)? = 
  * The full version data of an [ModelClientV2] is not exposed because most parts model API are not exposed to JS yet.
  * See https://issues.modelix.org/issue/MODELIX-962
  */
-@UnstableModelixFeature(
-    reason = "The overarching task https://issues.modelix.org/issue/MODELIX-500 is in development.",
-    intendedFinalization = "The client is intended to be finalized when the overarching task is finished.",
-)
 @JsExport
 interface ClientJS {
 
@@ -203,10 +186,6 @@ typealias ChangeHandler = (ChangeJS) -> Unit
  * The full version data of an [ModelClientV2] is not exposed because most parts model API are not exposed to JS yet.
  * See https://issues.modelix.org/issue/MODELIX-962
  */
-@UnstableModelixFeature(
-    reason = "The overarching task https://issues.modelix.org/issue/MODELIX-500 is in development.",
-    intendedFinalization = "The client is intended to be finalized when the overarching task is finished.",
-)
 @JsExport
 interface BranchJS {
     /**

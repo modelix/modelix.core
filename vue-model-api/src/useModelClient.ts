@@ -11,8 +11,6 @@ type ClientJS = org.modelix.model.client2.ClientJS;
  *
  * The URL is reactive and if it changes, the client is automatically disposed and a new client for the updated URL is created.
  *
- * @experimental This feature is expected to be finalized with https://issues.modelix.org/issue/MODELIX-500.
- *
  * @param url - Reactive reference of an URL to a model server.
  * @param getClient - Function how to create a cliente given an URL.
  *

@@ -17,16 +17,11 @@
 package org.modelix.model.client2
 
 import INodeJS
-import org.modelix.kotlin.utils.UnstableModelixFeature
 
 /**
  * Represents a change in branch that can be handled by a [ChangeHandler].
  * See [BranchJS.addListener]
  */
-@UnstableModelixFeature(
-    reason = "The overarching task https://issues.modelix.org/issue/MODELIX-500 is in development.",
-    intendedFinalization = "The client is intended to be finalized when the overarching task is finished.",
-)
 @JsExport
 sealed interface ChangeJS {
     /**
@@ -38,10 +33,6 @@ sealed interface ChangeJS {
 /**
  * Represents a changed property value.
  */
-@UnstableModelixFeature(
-    reason = "The overarching task https://issues.modelix.org/issue/MODELIX-500 is in development.",
-    intendedFinalization = "The client is intended to be finalized when the overarching task is finished.",
-)
 @JsExport
 data class PropertyChanged(
     override val node: INodeJS,
@@ -54,10 +45,6 @@ data class PropertyChanged(
 /**
  * Represents moved, added or removed children.
  */
-@UnstableModelixFeature(
-    reason = "The overarching task https://issues.modelix.org/issue/MODELIX-500 is in development.",
-    intendedFinalization = "The client is intended to be finalized when the overarching task is finished.",
-)
 @JsExport
 data class ChildrenChanged(
     override val node: INodeJS,
@@ -70,10 +57,6 @@ data class ChildrenChanged(
 /**
  * Represents a changed reference target.
  */
-@UnstableModelixFeature(
-    reason = "The overarching task https://issues.modelix.org/issue/MODELIX-500 is in development.",
-    intendedFinalization = "The client is intended to be finalized when the overarching task is finished.",
-)
 @JsExport
 data class ReferenceChanged(
     override val node: INodeJS,
@@ -86,19 +69,11 @@ data class ReferenceChanged(
 /**
  * Represents the change of the parent of [node] changed.
  */
-@UnstableModelixFeature(
-    reason = "The overarching task https://issues.modelix.org/issue/MODELIX-500 is in development.",
-    intendedFinalization = "The client is intended to be finalized when the overarching task is finished.",
-)
 @JsExport
 data class ContainmentChanged(override val node: INodeJS) : ChangeJS
 
 /**
  * Represents the change of the concept of a [node].
  */
-@UnstableModelixFeature(
-    reason = "The overarching task https://issues.modelix.org/issue/MODELIX-500 is in development.",
-    intendedFinalization = "The client is intended to be finalized when the overarching task is finished.",
-)
 @JsExport
 data class ConceptChanged(override val node: INodeJS) : ChangeJS

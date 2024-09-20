@@ -133,27 +133,14 @@ val patchTypesScriptInProductionLibrary = tasks.register("patchTypesScriptInProd
             into(preparedProductionLibraryOutputDirectory)
         }
 
-        // Add correct TypeScript imports and mark exports as experimental.
+        // Add correct TypeScript imports.
         val typescriptDeclaration =
             preparedProductionLibraryOutputDirectory.get().file("modelix.core-model-client.d.ts").asFile
-        val originalTypescriptDeclarationContent = typescriptDeclaration.readLines()
-        val experimentalDeclaration = """
-
-        /**
-         * @experimental This feature is expected to be finalized with https://issues.modelix.org/issue/MODELIX-500.
-         */
-        """.trimIndent()
+        val originalTypescriptDeclarationContent = typescriptDeclaration.readText()
         typescriptDeclaration.writer().use {
             it.appendLine("""import { INodeJS } from "@modelix/ts-model-api";""")
                 .appendLine()
-            for (line in originalTypescriptDeclarationContent) {
-                // Only mark the parts of the client (`org.modelix.model.client2`) experimental.
-                // Reported declarations from `org.modelix.model.api` should not be annotated as experimental.
-                if (line.startsWith("export declare namespace org.modelix.model.client2")) {
-                    it.appendLine(experimentalDeclaration)
-                }
-                it.appendLine(line)
-            }
+                .append(originalTypescriptDeclarationContent)
         }
     }
 }

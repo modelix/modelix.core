@@ -17,12 +17,10 @@
 package org.modelix.model.client2
 
 import GeneratedConcept
-import org.modelix.kotlin.utils.UnstableModelixFeature
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-@OptIn(UnstableModelixFeature::class)
 class BranchJSTest {
 
     private val emptyRoot = """

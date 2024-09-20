@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-@file:OptIn(UnstableModelixFeature::class, DelicateCoroutinesApi::class)
+@file:OptIn(DelicateCoroutinesApi::class)
 
 package org.modelix.model.client2
 
@@ -22,7 +22,6 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.promise
 import kotlinx.datetime.toJSDate
-import org.modelix.kotlin.utils.UnstableModelixFeature
 import org.modelix.model.withAutoTransactions
 import kotlin.js.Promise
 

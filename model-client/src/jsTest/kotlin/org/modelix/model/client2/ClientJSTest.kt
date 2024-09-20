@@ -17,11 +17,9 @@
 package org.modelix.model.client2
 
 import GeneratedConcept
-import org.modelix.kotlin.utils.UnstableModelixFeature
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(UnstableModelixFeature::class)
 class ClientJSTest {
 
     private val emptyRoot = """

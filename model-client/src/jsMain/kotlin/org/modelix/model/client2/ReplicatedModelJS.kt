@@ -14,20 +14,13 @@
  * limitations under the License.
  */
 
-@file:OptIn(UnstableModelixFeature::class, UnstableModelixFeature::class)
-
 package org.modelix.model.client2
 
-import org.modelix.kotlin.utils.UnstableModelixFeature
 import kotlin.js.Promise
 
 /**
  * Represents a branch two-way live replicated to the model server.
  */
-@UnstableModelixFeature(
-    reason = "The overarching task https://issues.modelix.org/issue/MODELIX-500 is in development.",
-    intendedFinalization = "The client is intended to be finalized when the overarching task is finished.",
-)
 @JsExport
 interface ReplicatedModelJS {
     /**

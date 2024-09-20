@@ -1,7 +1,7 @@
 = How-To test `model-api` client code without a model-server
 :navtitle: Test `model-api` client code without a model-server
 
-If you want to test code that processes `model-api` instances, you can do this in-process without a running (light-) model-server.
+If you want to test code that processes `model-api` instances, you can do this in-process without a running model-server.
 Use the following pattern to set up your test fixture containing `model-api` instances:
 
 [source,kotlin]

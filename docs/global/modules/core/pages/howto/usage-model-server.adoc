@@ -3,8 +3,6 @@
 
 NOTE: If you are interested in a more practical usage of what is presented here, check out the https://github.com/modelix/modelix.samples[samples project^]
 
-NOTE: To run a light version of the `model-sever`, check out  xref:core:howto/mps-model-server-plugin.adoc[]
-
 == Backends: In Memory vs. Database
 
 The `model-server` will by default require a database backend.

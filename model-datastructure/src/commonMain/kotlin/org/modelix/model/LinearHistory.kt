@@ -128,6 +128,9 @@ class LinearHistory(private val baseVersionHash: String?) {
     }
 
     private fun CLVersion.getParents(): List<CLVersion> {
+        if (this.getContentHash() == baseVersionHash) {
+            return emptyList()
+        }
         val ancestors = if (isMerge()) {
             listOf(getMergedVersion1()!!, getMergedVersion2()!!)
         } else {

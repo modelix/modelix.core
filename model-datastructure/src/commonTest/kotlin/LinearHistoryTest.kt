@@ -29,6 +29,23 @@ class LinearHistoryTest {
     private val initialTree = CLTree.builder(ObjectStoreCache(MapBasedStore())).repositoryId("LinearHistoryTest").build()
 
     @Test
+    fun linearHistoryBetweenSameVersion() {
+        val v1 = version(1, null)
+        val v2 = version(2, v1)
+
+        assertHistory(v2, v2, listOf(v2))
+    }
+
+    @Test
+    fun linearHistoryBetweenAVersionAndItsBaseVersion() {
+        val v1 = version(1, null)
+        val v2 = version(2, v1)
+        val v3 = version(3, v2)
+
+        assertHistory(v2, v3, listOf(v2, v3))
+    }
+
+    @Test
     fun noCommonHistory() {
         val v20 = version(20, null)
         val v21 = version(21, null)

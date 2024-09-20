@@ -13,7 +13,6 @@ dependencies {
 
     testImplementation("org.modelix:model-api")
     testImplementation("org.modelix", "model-client", "", "jvmRuntimeElements")
-    testImplementation("org.modelix:model-server-lib")
     testImplementation("org.modelix:modelql-client")
 
     testImplementation(libs.ktor.server.core)

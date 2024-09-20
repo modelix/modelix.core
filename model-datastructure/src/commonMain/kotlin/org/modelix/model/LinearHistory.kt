@@ -42,7 +42,7 @@ class LinearHistory(private val baseVersionHash: String?) {
      *      Example: 1 <- 2 <- 3 and 1 <- x, then [1, 2, 4, 3] is not allowed,
      *      because 3 is the only child of 2.
      *      Valid orders would be (1, x, 3, 4) and (1, x, 2, 3)
-     *    This is relevant for UnduOp and RedoOp.
+     *    This is relevant for UndoOp and RedoOp.
      *    See UndoTest.
      */
     fun load(vararg fromVersions: CLVersion): List<CLVersion> {
@@ -65,7 +65,7 @@ class LinearHistory(private val baseVersionHash: String?) {
         // Ordering the subtree root first, ensures the order is also "monotonic".
         // Then ordering the inside subtree ensures "close versions are kept together" without breaking "monotonicity".
         // Ordering inside a subtree ensures "monotonicity", because a subtree has no merges.
-        // Only a subtrees root can be a merge.
+        // Only a subtree root can be a merge.
 
         // Sorting the subtree roots by distance from base ensures topological order.
         val comparator = compareBy(byVersionDistanceFromGlobalRoot::getValue)
@@ -101,8 +101,8 @@ class LinearHistory(private val baseVersionHash: String?) {
             stack.addLast(fromVersion)
             while (stack.isNotEmpty()) {
                 val version = stack.last()
-                val parents = version.getParents()
-                // Version is the base version or the first version and therfore a root.
+                val parents = getParentsWithoutVersionsBeyondBaseVersion(version)
+                // Version is the base version or the first version and therefore a root.
                 if (parents.isEmpty()) {
                     stack.removeLast()
                     globalRoot.add(version)
@@ -127,15 +127,22 @@ class LinearHistory(private val baseVersionHash: String?) {
         return byVersionDistanceFromGlobalRoot
     }
 
-    private fun CLVersion.getParents(): List<CLVersion> {
-        if (this.getContentHash() == baseVersionHash) {
+    /**
+     * Get the parents of a version without the parents that are beyond the base versions.
+     * The parent versions beyond the base version are not interesting should not be included in the linear history.
+     */
+    private fun getParentsWithoutVersionsBeyondBaseVersion(version: CLVersion): List<CLVersion> {
+        if (version.getContentHash() == baseVersionHash) {
             return emptyList()
         }
-        val ancestors = if (isMerge()) {
-            listOf(getMergedVersion1()!!, getMergedVersion2()!!)
+        val allParents = if (version.isMerge()) {
+            listOf(
+                checkNotNull(version.getMergedVersion1()) { "Merged version 1 should exist if version is merge." },
+                checkNotNull(version.getMergedVersion2()) { "Merged version 2 should exist if version is merge." },
+            )
         } else {
-            listOfNotNull(baseVersion)
+            listOfNotNull(version.baseVersion)
         }
-        return ancestors.filter { it.getContentHash() != baseVersionHash }
+        return allParents.filter { it.getContentHash() != baseVersionHash }
     }
 }

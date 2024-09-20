@@ -33,8 +33,8 @@ tasks {
     if (mpsPluginDir != null && mpsPluginDir.isDirectory) {
         create<Sync>("installMpsPlugin") {
             dependsOn(prepareSandbox)
-            from(project.layout.buildDirectory.dir("idea-sandbox/plugins/mps-model-server-plugin"))
-            into(mpsPluginDir.resolve("mps-model-server-plugin"))
+            from(project.layout.buildDirectory.dir("idea-sandbox/plugins/mps-model-adapters-plugin"))
+            into(mpsPluginDir.resolve("mps-model-adapters-plugin"))
         }
     }
 }

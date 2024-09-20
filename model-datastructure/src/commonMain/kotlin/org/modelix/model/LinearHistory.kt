@@ -24,9 +24,9 @@ class LinearHistory(private val baseVersionHash: String?) {
     private val byVersionDistanceFromGlobalRoot = mutableMapOf<CLVersion, Int>()
 
     /**
-     * Returns all versions between the [fromVersions] and a common version.
+     * Returns all versions between the [fromVersions] (inclusive) and a common version (inclusive).
      * The common version may be identified by [baseVersionHash].
-     * If no [baseVersionHash] is given, the common version wile be the first version
+     * If no [baseVersionHash] is given, the common version will be the first version
      * aka the version without a [CLVersion.baseVersion].
      *
      * The order also ensures three properties:
@@ -35,14 +35,14 @@ class LinearHistory(private val baseVersionHash: String?) {
      *    This means adding a version to the set of all versions will never change
      *    the order of versions that were previously in the history.
      *    For example, given versions 1, 2 and 3:
-     *      If 1 and 2 are ordered as (1, 2), ordering 1, 2 and 3 will never produce (2, 3, 1).
-     *      3 can come anywhere (respecting the topological ordering), but 2 has to come after 1.
+     *      If 1 and 2 are ordered as (1, 2), ordering 1, 2 and x will never produce (2, x, 1).
+     *      x can come anywhere (respecting the topological ordering), but 2 has to come after 1.
      * 3. "Close versions are kept together"
-     *    Formally: A version that has only one child (ignoring) should always come before the child.
-     *      Example: 1 <- 2 <- 3 and 1 <- x, then [1, 2, 4, 3] is not allowed,
+     *    Formally: A version that has only one child should always come before the child.
+     *      Example: 1 <- 2 <- 3 and 1 <- x, then [1, 2, x, 3] is not allowed,
      *      because 3 is the only child of 2.
-     *      Valid orders would be (1, x, 3, 4) and (1, x, 2, 3)
-     *    This is relevant for UnduOp and RedoOp.
+     *      Valid orders would be (1, 2, 3, x) and (1, x, 2, 3)
+     *    This is relevant for UndoOp and RedoOp.
      *    See UndoTest.
      */
     fun load(vararg fromVersions: CLVersion): List<CLVersion> {
@@ -128,6 +128,9 @@ class LinearHistory(private val baseVersionHash: String?) {
     }
 
     private fun CLVersion.getParents(): List<CLVersion> {
+        if (this.getContentHash() == baseVersionHash) {
+            return emptyList()
+        }
         val ancestors = if (isMerge()) {
             listOf(getMergedVersion1()!!, getMergedVersion2()!!)
         } else {

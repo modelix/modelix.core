@@ -1,4 +1,5 @@
-import { MaybeRefOrGetter, Ref, shallowRef, toValue } from "vue";
+import type { MaybeRefOrGetter, Ref } from "vue";
+import { shallowRef, toValue } from "vue";
 import { useLastPromiseEffect } from "./internal/useLastPromiseEffect";
 import { org } from "@modelix/model-client";
 

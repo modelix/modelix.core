@@ -41,13 +41,6 @@ tasks.named("npm_run_test") {
     outputs.cacheIf { true }
 }
 
-tasks.named("npm_run_lint") {
-    inputs.dir("src")
-    inputs.file("tsconfig.json")
-    inputs.file(".eslintrc.js")
-    outputs.cacheIf { true }
-}
-
 val packageJsonForProd = layout.buildDirectory.file("package-for-publishing.json").get().asFile
 val createPackageJsonForPublishing = tasks.register("createPackageJsonForPublishing") {
     dependsOn(updateModelClient)
@@ -101,7 +94,6 @@ tasks.assemble {
 
 tasks.check {
     dependsOn("npm_run_prettier")
-    dependsOn("npm_run_lint")
     dependsOn("npm_run_test")
 }
 

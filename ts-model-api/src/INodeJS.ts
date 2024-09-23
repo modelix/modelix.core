@@ -27,5 +27,5 @@ export interface INodeJS {
   setPropertyValue(role: string, value: string | undefined): void
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars -- Keep for backward compatibility
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Keep for backward compatibility
 type INodeReferenceJS = any

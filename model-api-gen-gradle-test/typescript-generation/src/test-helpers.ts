@@ -1,5 +1,6 @@
 import { org } from "@modelix/model-client";
-import { ITypedNode, LanguageRegistry } from "@modelix/ts-model-api";
+import type { ITypedNode} from "@modelix/ts-model-api";
+import { LanguageRegistry } from "@modelix/ts-model-api";
 import { registerLanguages } from "../build/typescript_src";
 
 const DEFAULT_NODE_DATA = {

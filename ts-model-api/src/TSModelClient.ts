@@ -179,11 +179,11 @@ interface VersionData {
 
 interface NodeData {
   nodeId: NodeId,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars -- Keep for backward compatibility
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Keep for backward compatibility
   references: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars -- Keep for backward compatibility
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Keep for backward compatibility
   properties: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars -- Keep for backward compatibility
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Keep for backward compatibility
   children: any
 }
 
@@ -193,11 +193,11 @@ interface NodeUpdateData {
   role: string | undefined,
   index: number | undefined,
   concept: string | undefined,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars -- Keep for backward compatibility
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Keep for backward compatibility
   references: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars -- Keep for backward compatibility
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Keep for backward compatibility
   properties: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars -- Keep for backward compatibility
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Keep for backward compatibility
   children: any
 }
 

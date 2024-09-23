@@ -1,18 +1,18 @@
 import { useModelsFromJson } from "@modelix/vue-model-api";
 import { computed } from "vue";
 import { registerLanguages } from "typescript-generation";
+import type { BaseConcept } from "typescript-generation/dist/L_jetbrains_mps_lang_core";
 import {
-  BaseConcept,
   C_Attribute,
   C_INamedConcept,
   isOfConcept_INamedConcept,
 } from "typescript-generation/dist/L_jetbrains_mps_lang_core";
-import {
+import type {
   StaticFieldReference,
   Classifier,
 } from "typescript-generation/dist/L_jetbrains_mps_baseLanguage";
 
-import { ITypedNode, LanguageRegistry } from "@modelix/ts-model-api";
+import { LanguageRegistry } from "@modelix/ts-model-api";
 
 registerLanguages();
 

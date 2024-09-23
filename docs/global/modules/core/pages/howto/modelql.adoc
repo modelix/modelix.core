@@ -3,29 +3,36 @@
 == Independent ModelQLClient
 
 ModelQL defines its own HTTP endpoint and provides server/client implementations for it.
-The `model-server` and the `mps-model-server-plugin` already implement this endpoint.
-The client can be created like this:
+A xref:reference/component-model-server.adoc[model server] already implements this endpoint.
+
+It is recommended
+to use the ModelQL client integrated in to the xref:howto/usage-model-client-v2.adoc[model client V2]
+when working with the model server:
 
 [source,kotlin]
 --
-val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
+val client = ModelClientV2.builder()
+                          .url("http://localhost:28101/v2")
+                          .build()
+
 val result: List<String?> = client.query { root ->
     root.children("modules").property("name").toList()
 }
 --
 
-== Integration with LightModelClient
-
-When creating a `LightModelClient` you can optionally provide a `ModelQLClient` instance,
-which allows invoking `.query { ... }` (see below) on a node returned by the `LightModelClient`.
+[NOTE]
+--
+An independent ModelQL client can be created like this:
 
 [source,kotlin]
---
-val modelqlClient = ModelQLClient.builder().build()
-val client = LightModelClient.builder().modelQLClient(modelqlClient).build()
-val result: List<String?> = client.getRootNode()!!.query {
-    it.children("modules").property("name").toList()
+----
+val client = ModelQLClient.builder().url("http://localhost/query").httpClient(httpClient).build()
+val result: List<String?> = client.query { root ->
+    root.children("modules").property("name").toList()
 }
+----
+
+This is only useful when some custom implementation of a ModelQL server needs to be used.
 --
 
 == Type-safe ModelQL API

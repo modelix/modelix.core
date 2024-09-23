@@ -5,7 +5,6 @@
 /bulk-model-sync-lib/ @mhuster23
 /bulk-model-sync-mps/ @mhuster23
 /bulk-model-sync-solution/ @mhuster23
-/light-model-client/ @slisson
 /metamodel-export/ @slisson
 /model-api/ @slisson
 /model-api-gen/ @slisson
@@ -16,7 +15,6 @@
 /model-datastructure/ @slisson
 /model-server/ @slisson
 /model-server-api/ @slisson
-/model-server-lib/ @slisson
 /model-sync-lib/ @slisson
 /modelql-client/ @slisson
 /modelql-core/ @slisson
@@ -26,6 +24,5 @@
 /modelql-untyped/ @slisson
 /mps-model-adapters/ @slisson
 /mps-model-server/ @slisson
-/mps-model-server-plugin/ @slisson
 /ts-model-api/ @slisson
 /vue-model-api/ @odzhychko

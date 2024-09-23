@@ -42,5 +42,4 @@ jobs:
           :metamodel-export:build
           :mps-model-adapters:build
           :mps-model-adapters-plugin:build
-          :mps-model-server-plugin:build
           -Pmps.version.major=${{ matrix.version }}

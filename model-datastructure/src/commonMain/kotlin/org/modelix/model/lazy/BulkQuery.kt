@@ -22,6 +22,7 @@ import org.modelix.model.persistent.IKVValue
  */
 class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQueryConfiguration) : IBulkQuery {
     private val queue: MutableMap<String, QueueElement<out IKVValue>> = LinkedHashMap()
+    private val pendingHandlerExecutions: ArrayDeque<() -> Unit> = ArrayDeque()
     private var processing = false
     private val batchSize: Int = config.requestBatchSize
     private val prefetchSize: Int = config.prefetchBatchSize ?: (this.batchSize / 2)
@@ -86,27 +87,36 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
         }
         processing = true
         try {
-            while (queue.isNotEmpty()) {
-                // The callback of a request usually enqueues new requests until it reaches the leafs of the
-                // data structure. By executing the latest (instead of the oldest) request we basically do a depth
-                // first traversal which keeps the maximum size of the queue smaller.
-                val regularRequests: List<Pair<KVEntryReference<*>, Value<*>>> = queue.entries.tailSequence(batchSize)
-                    .map { it.value.hash to it.value.value }
-                    .toList()
-                if (queue.size < prefetchSize) {
-                    prefetchQueue.fillRequestsQueue(prefetchSize - regularRequests.size)
+            while (pendingHandlerExecutions.isNotEmpty() || queue.isNotEmpty()) {
+                while (pendingHandlerExecutions.isNotEmpty()) {
+                    val handlerExecution = pendingHandlerExecutions.removeFirst()
+                    handlerExecution()
                 }
-                val prefetchRequests: List<Pair<KVEntryReference<*>, Value<*>>> = prefetchQueue.getRequests(prefetchSize - regularRequests.size)
-                regularRequests.forEach { queue.remove(it.first.getHash()) }
 
-                val allRequests: List<Pair<KVEntryReference<*>, Value<*>>> = regularRequests + prefetchRequests
+                while (queue.isNotEmpty()) {
+                    // The callback of a request usually enqueues new requests until it reaches the leafs of the
+                    // data structure. By executing the latest (instead of the oldest) request we basically do a depth
+                    // first traversal which keeps the maximum size of the queue smaller.
+                    val regularRequests: List<Pair<KVEntryReference<*>, Value<*>>> =
+                        queue.entries.tailSequence(batchSize)
+                            .map { it.value.hash to it.value.value }
+                            .toList()
+                    if (queue.size < prefetchSize) {
+                        prefetchQueue.fillRequestsQueue(prefetchSize - regularRequests.size)
+                    }
+                    val prefetchRequests: List<Pair<KVEntryReference<*>, Value<*>>> =
+                        prefetchQueue.getRequests(prefetchSize - regularRequests.size)
+                    regularRequests.forEach { queue.remove(it.first.getHash()) }
 
-                val entries: Map<String, IKVValue?> = executeBulkQuery(
-                    regularRequests.asSequence().map { obj -> obj.first }.toSet().toList(),
-                    prefetchRequests.asSequence().map { obj -> obj.first }.toSet().toList(),
-                )
-                for (request in allRequests) {
-                    (request.second as Value<IKVValue?>).success(entries[request.first.getHash()])
+                    val allRequests: List<Pair<KVEntryReference<*>, Value<*>>> = regularRequests + prefetchRequests
+
+                    val entries: Map<String, IKVValue?> = executeBulkQuery(
+                        regularRequests.asSequence().map { obj -> obj.first }.toSet().toList(),
+                        prefetchRequests.asSequence().map { obj -> obj.first }.toSet().toList(),
+                    )
+                    for (request in allRequests) {
+                        (request.second as Value<IKVValue?>).success(entries[request.first.getHash()])
+                    }
                 }
             }
         } finally {
@@ -167,7 +177,10 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
 
         override fun onReceive(handler: (T) -> Unit) {
             if (done) {
-                handler(value as T)
+                // Do not execute the handler immediately, because the handler could call `onReceive` recursively.
+                // This can result in stack overflows when many values are `done` immediately,
+                // because they are loaded from a cache.
+                pendingHandlerExecutions.add { handler(value as T) }
             } else {
                 if (handlers == null) handlers = ArrayList(1)
                 handlers!!.add(handler)

@@ -75,6 +75,9 @@ kotlin {
                 implementation(npm("uuid", "^8.3.0"))
                 implementation(npm("js-sha256", "^0.9.0"))
                 implementation(npm("js-base64", "^3.4.5"))
+
+                // Version fixed because of CVE-2024-37890
+                implementation(npm("ws", "^8.17.1"))
             }
         }
     }

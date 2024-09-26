@@ -133,7 +133,7 @@ class InMemoryModel private constructor(
         fun load(branchId: String, slowMapRef: KVEntryReference<CPHamtNode>, store: IKeyValueStore, useRoleIds: Boolean): InMemoryModel {
             val fastMap: TLongObjectMap<CPNode> = TLongObjectHashMap()
             val bulkQuery = NonCachingObjectStore(store).newBulkQuery()
-            LOG.info { "Start loading model into memory" }
+            LOG.info { "Start loading model for branch $branchId into memory" }
             val duration = measureTimeMillis {
                 bulkQuery.query(slowMapRef).onReceive { slowMap ->
                     slowMap!!.visitEntries(bulkQuery) { nodeId, nodeDataRef ->
@@ -146,7 +146,7 @@ class InMemoryModel private constructor(
                 }
                 bulkQuery.executeQuery()
             }.milliseconds
-            LOG.info { "Done loading model into memory after ${duration.toDouble(DurationUnit.SECONDS)} s" }
+            LOG.info { "Done loading model for branch $branchId into memory after ${duration.toDouble(DurationUnit.SECONDS)} s" }
             return InMemoryModel(branchId, slowMapRef, fastMap, useRoleIds)
         }
     }

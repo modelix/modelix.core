@@ -28,11 +28,16 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.http.content.staticResources
 import io.ktor.server.netty.Netty
 import io.ktor.server.netty.NettyApplicationEngine
+import io.ktor.server.plugins.callloging.CallLogging
+import io.ktor.server.plugins.callloging.processingTimeMillis
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.plugins.forwardedheaders.ForwardedHeaders
+import io.ktor.server.plugins.origin
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.plugins.swagger.swaggerUI
+import io.ktor.server.request.httpMethod
+import io.ktor.server.request.path
 import io.ktor.server.resources.Resources
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.IgnoreTrailingSlash
@@ -192,6 +197,19 @@ object Main {
                     permissionSchema = ModelServerPermissionSchema.SCHEMA
                 }
                 install(ForwardedHeaders)
+                install(CallLogging) {
+                    format { call ->
+                        // Resemble the default format but include remote host and user agent for easier tracing on who issued a certain request.
+                        // INFO  ktor.application - 200 OK: GET - /public/modelix-base.css in 60ms
+                        val status = call.response.status()
+                        val httpMethod = call.request.httpMethod.value
+                        val userAgent = call.request.headers["User-Agent"]
+                        val processingTimeMillis = call.processingTimeMillis()
+                        val path = call.request.path()
+                        val remoteHost = call.request.origin.remoteHost
+                        "$status: $httpMethod - $path in ${processingTimeMillis}ms [Remote host: '$remoteHost', User agent: '$userAgent']"
+                    }
+                }
                 install(Resources)
                 // https://opensource.zalando.com/restful-api-guidelines/#136
                 install(IgnoreTrailingSlash)

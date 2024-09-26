@@ -50,6 +50,7 @@ dependencies {
     implementation(libs.ktor.server.websockets)
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.server.resources)
+    implementation(libs.ktor.server.call.logging)
     implementation(libs.ktor.serialization.json)
     implementation(libs.ktor.server.swagger)
     implementation(libs.ktor.server.metrics.micrometer)

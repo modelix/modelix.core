@@ -58,7 +58,7 @@ class CachingAsyncStore(val store: IAsyncObjectStore, cacheSize: Int = 100_000) 
     }
 
     override fun <T : Any> getIfCached(key: ObjectHash<T>): T? {
-        return runSynchronized(cache) { cache.get(key) as T? }
+        return runSynchronized(cache) { cache.get(key) as T? } ?: store.getIfCached(key)
     }
 
     override fun getAllAsStream(keys: Observable<ObjectHash<*>>): Observable<Pair<ObjectHash<*>, Any?>> {

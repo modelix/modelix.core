@@ -44,7 +44,7 @@ class StoreClientAsAsyncStore(val store: IStoreClient) : IAsyncObjectStore {
     }
 
     override fun <T : Any> getIfCached(key: ObjectHash<T>): T? {
-        return null
+        return store.getIfCached(key.hash)?.let { key.deserializer(it) }
     }
 
     override fun <T : Any> get(key: ObjectHash<T>): Maybe<T> {

@@ -19,6 +19,7 @@ package org.modelix.authorization
 import com.auth0.jwk.JwkProvider
 import com.auth0.jwk.JwkProviderBuilder
 import com.auth0.jwt.JWT
+import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.DecodedJWT
 import io.ktor.server.application.Application
@@ -134,22 +135,23 @@ class ModelixAuthorizationConfig : IModelixAuthorizationConfig {
         hmac384KeyFromEnv?.let { return@lazy Algorithm.HMAC384(it) }
         hmac256KeyFromEnv?.let { return@lazy Algorithm.HMAC256(it) }
 
-        val jwk = cachedJwkProvider?.get(jwkKeyId)
-        if (jwk != null) {
-            val publicKey = jwk.publicKey as? RSAPublicKey ?: error("Invalid key type: ${jwk.publicKey}")
-            return@lazy when (jwk.algorithm) {
-                "RS256" -> Algorithm.RSA256(publicKey, null)
-                "RSA384" -> Algorithm.RSA384(publicKey, null)
-                "RS512" -> Algorithm.RSA512(publicKey, null)
-                else -> error("Unsupported algorithm: ${jwk.algorithm}")
-            }
+        val localJwkProvider = cachedJwkProvider
+        val localJwkKeyId = jwkKeyId
+        if (localJwkProvider == null || localJwkKeyId == null) {
+            return@lazy null
         }
-
-        null
+        return@lazy getAlgorithmFromJwkProviderAndKeyId(localJwkProvider, localJwkKeyId)
     }
 
-    fun getJwtSignatureAlgorithm(): Algorithm {
-        return checkNotNull(algorithm) { "No signature algorithm configured" }
+    private fun getAlgorithmFromJwkProviderAndKeyId(jwkProvider: JwkProvider, jwkKeyId: String): Algorithm {
+        val jwk = jwkProvider.get(jwkKeyId)
+        val publicKey = jwk.publicKey as? RSAPublicKey ?: error("Invalid key type: ${jwk.publicKey}")
+        return when (jwk.algorithm) {
+            "RS256" -> Algorithm.RSA256(publicKey, null)
+            "RSA384" -> Algorithm.RSA384(publicKey, null)
+            "RS512" -> Algorithm.RSA512(publicKey, null)
+            else -> error("Unsupported algorithm: ${jwk.algorithm}")
+        }
     }
 
     fun getJwtSignatureAlgorithmOrNull(): Algorithm? {
@@ -161,10 +163,17 @@ class ModelixAuthorizationConfig : IModelixAuthorizationConfig {
     }
 
     fun verifyTokenSignature(token: DecodedJWT) {
-        val algorithm = getJwtSignatureAlgorithm()
-        val verifier = JWT.require(algorithm)
-            .acceptLeeway(0L)
-            .build()
+        val algorithm = getJwtSignatureAlgorithmOrNull()
+        val jwkProvider = getJwkProvider()
+
+        val verifier = if (algorithm != null) {
+            getVerifierForSpecificAlgorithm(algorithm)
+        } else if (jwkProvider != null) {
+            val algorithmForKeyFromToken = getAlgorithmFromJwkProviderAndKeyId(jwkProvider, token.keyId)
+            getVerifierForSpecificAlgorithm(algorithmForKeyFromToken)
+        } else {
+            error("Either an JWT algorithm or a JWK URI must be configured.")
+        }
         verifier.verify(token)
     }
 
@@ -178,8 +187,19 @@ class ModelixAuthorizationConfig : IModelixAuthorizationConfig {
         }
     }
 
-    fun shouldGenerateFakeTokens() = generateFakeTokens ?: (algorithm == null)
-    fun permissionCheckingEnabled() = permissionChecksEnabled ?: (algorithm != null)
+    // TODO MODELIX-1019 Instead of creating a fake token, we should refactor our code to work without a username
+    // when no authentication and authorization is configured.
+    /**
+     * Whether a fake token should be generated based on the configuration values provided.
+     *
+     * The fake token is generated so that we always have a username that can be used in the server logic.
+     */
+    fun shouldGenerateFakeTokens() = generateFakeTokens ?: (algorithm == null && cachedJwkProvider == null)
+
+    /**
+     * Whether permission checking should be enabled based on the configuration values provided.
+     */
+    fun permissionCheckingEnabled() = permissionChecksEnabled ?: (algorithm != null || cachedJwkProvider != null)
 
     override fun configureForUnitTests() {
         generateFakeTokens = true
@@ -198,3 +218,8 @@ private fun getBooleanFromEnv(name: String): Boolean? {
         throw IllegalArgumentException("Failed to read boolean value $name", ex)
     }
 }
+
+internal fun getVerifierForSpecificAlgorithm(algorithm: Algorithm): JWTVerifier =
+    JWT.require(algorithm)
+        .acceptLeeway(0L)
+        .build()

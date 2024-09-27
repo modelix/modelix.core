@@ -16,12 +16,10 @@ package org.modelix.modelql.core
 import com.badoo.reaktive.observable.Observable
 import com.badoo.reaktive.observable.asObservable
 import com.badoo.reaktive.observable.flatMap
-import com.badoo.reaktive.observable.flatMapSingle
 import com.badoo.reaktive.observable.map
 import com.badoo.reaktive.observable.toList
 import com.badoo.reaktive.observable.zip
 import com.badoo.reaktive.single.asObservable
-import com.badoo.reaktive.single.flatMapObservable
 import com.badoo.reaktive.single.map
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -36,7 +34,6 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeCollection
 import org.modelix.streams.assertNotEmpty
-import org.modelix.streams.exactlyOne
 
 open class ZipStep<CommonIn, Out : ZipNOutputC<CommonIn>>() : ProducingStep<Out>(), IConsumingStep<CommonIn>, IMonoStep<Out>, IFluxStep<Out> {
     private val producers = ArrayList<IProducingStep<CommonIn>>()
@@ -100,24 +97,6 @@ open class ZipStep<CommonIn, Out : ZipNOutputC<CommonIn>>() : ProducingStep<Out>
                 possiblyEmptyFlow
             } else {
                 possiblyEmptyFlow.assertNotEmpty { producers.toString() }
-            }
-        }
-
-        // optimization if all inputs are mono steps
-        if (producers.all { it.isSingle() }) {
-            return inputFlows.asObservable().flatMapSingle { it.exactlyOne() }.toList().map { ZipStepOutput<Out, CommonIn>(it) }.asObservable()
-        }
-
-        // optimization for a pair of flux and mono inputs
-        if (producers.size == 2) {
-            if (producers[0].isSingle()) {
-                return inputFlows[0].exactlyOne().flatMapObservable { value0 ->
-                    inputFlows[1].map { value1 -> ZipStepOutput(listOf(value0, value1)) }
-                }
-            } else if (producers[1].isSingle()) {
-                return inputFlows[1].exactlyOne().flatMapObservable { value1 ->
-                    inputFlows[0].map { value0 -> ZipStepOutput(listOf(value0, value1)) }
-                }
             }
         }
 

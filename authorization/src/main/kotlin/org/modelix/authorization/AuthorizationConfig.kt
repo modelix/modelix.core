@@ -221,5 +221,4 @@ private fun getBooleanFromEnv(name: String): Boolean? {
 
 internal fun getVerifierForSpecificAlgorithm(algorithm: Algorithm): JWTVerifier =
     JWT.require(algorithm)
-        .acceptLeeway(0L)
         .build()

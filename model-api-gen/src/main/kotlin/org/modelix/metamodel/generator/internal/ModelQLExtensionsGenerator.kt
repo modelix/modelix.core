@@ -19,6 +19,7 @@ package org.modelix.metamodel.generator.internal
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.MemberName
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -51,6 +52,7 @@ internal class ModelQLExtensionsGenerator(
 
     companion object {
         private const val PACKAGE_PREFIX = "org.modelix.modelql.gen."
+        private val AS_MONO_EXTENSION_FUNCTION = MemberName("org.modelix.modelql.core", "asMono", isExtension = true)
     }
 
     override fun generateFileSpec(): FileSpec {
@@ -61,7 +63,8 @@ internal class ModelQLExtensionsGenerator(
                     is ProcessedProperty -> {
                         addPropertyGetterForStepType(feature, IMonoStep::class.asTypeName())
                         addPropertyGetterForStepType(feature, IFluxStep::class.asTypeName())
-                        addPropertySetter(feature)
+                        val setterSpecWithMonoWrappedValue = addPropertySetterWithMonoWrappedValue(feature)
+                        addPropertySetterWithRawValue(setterSpecWithMonoWrappedValue, feature)
                     }
 
                     is ProcessedChildLink -> {
@@ -274,13 +277,13 @@ internal class ModelQLExtensionsGenerator(
         addProperty(propertySpec)
     }
 
-    private fun FileSpec.Builder.addPropertySetter(property: ProcessedProperty) {
+    private fun FileSpec.Builder.addPropertySetterWithMonoWrappedValue(property: ProcessedProperty): FunSpec {
         val inputStepType = getSetterReceiverType()
 
         val parameterType = IMonoStep::class.asTypeName()
             .parameterizedBy(property.asKotlinType(alwaysUseNonNullableProperties))
 
-        val setterSpec = FunSpec.builder(property.setterName()).runBuild {
+        val setterSpecWithMonoWrappedValue = FunSpec.builder(property.setterName()).runBuild {
             returns(inputStepType)
             receiver(inputStepType)
             addParameter("value", parameterType)
@@ -292,7 +295,38 @@ internal class ModelQLExtensionsGenerator(
             )
         }
 
-        addFunction(setterSpec)
+        addFunction(setterSpecWithMonoWrappedValue)
+        return setterSpecWithMonoWrappedValue
+    }
+
+    private fun FileSpec.Builder.addPropertySetterWithRawValue(
+        setterSpecWithMonoWrappedValue: FunSpec,
+        property: ProcessedProperty,
+    ) {
+        val inputStepType = getSetterReceiverType()
+        val parameterType = property.asKotlinType(alwaysUseNonNullableProperties)
+
+        val setterSpecWithRawValue = when (property.type) {
+            is PrimitivePropertyType -> {
+                FunSpec.builder(property.setterName()).runBuild {
+                    returns(inputStepType)
+                    receiver(inputStepType)
+                    addParameter("value", parameterType)
+                    AS_MONO_EXTENSION_FUNCTION
+                    addStatement(
+                        "return this.%N(value.%M())",
+                        setterSpecWithMonoWrappedValue,
+                        AS_MONO_EXTENSION_FUNCTION,
+                    )
+                }
+            }
+            is EnumPropertyType -> {
+                //
+                return
+            }
+        }
+
+        addFunction(setterSpecWithRawValue)
     }
 
     private fun getSetterReceiverType() =

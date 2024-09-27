@@ -262,6 +262,25 @@ class TypedModelQLTest {
     }
 
     @Test
+    fun `set property with automatic wrapping to mono`() = runTest { client ->
+        val expected = "myRenamedMethod"
+        client.query { root ->
+            root.children("classes").ofConcept(C_ClassConcept)
+                .member
+                .ofConcept(C_StaticMethodDeclaration)
+                .first()
+                .setName(expected.asMono())
+        }
+        val actual = client.query { root ->
+            root.children("classes").ofConcept(C_ClassConcept)
+                .member
+                .ofConcept(C_StaticMethodDeclaration)
+                .first()
+        }
+        assertEquals(expected, actual.name)
+    }
+
+    @Test
     fun `set reference`() = runTest { client ->
         val oldValue = client.query { root ->
             root.children("classes").ofConcept(C_ClassConcept)

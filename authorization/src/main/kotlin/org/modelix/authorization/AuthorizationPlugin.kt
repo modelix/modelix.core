@@ -81,13 +81,15 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                 // "Authorization: Bearer ..." header is provided in the header by OAuth proxy
                 jwt(MODELIX_JWT_AUTH) {
                     val jwkProvider = config.getJwkProvider()
-                    if (jwkProvider != null) {
-                        verifier(jwkProvider) {}
+                    val jwtAlgorithm = config.getJwtSignatureAlgorithmOrNull()
+                    // If JWK URI and JWT algorithm is configured only use the configured algorithm.
+                    // This is the case if MODELIX_JWK_URI and MODELIX_JWK_KEY_ID are configured.
+                    if (jwtAlgorithm != null) {
+                        verifier(getVerifierForSpecificAlgorithm(jwtAlgorithm))
+                    } else if (jwkProvider != null) {
+                        verifier(jwkProvider)
                     } else {
-                        verifier(
-                            JWT.require(config.getJwtSignatureAlgorithm())
-                                .build(),
-                        )
+                        error("Either an JWT algorithm or a JWK URI must be configured.")
                     }
                     challenge { _, _ ->
                         call.respond(status = HttpStatusCode.Unauthorized, "No or invalid JWT token provided")

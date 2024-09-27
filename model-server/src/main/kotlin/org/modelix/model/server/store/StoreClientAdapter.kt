@@ -42,6 +42,14 @@ abstract class StoreClientAdapter(val client: IsolatingStore) : IStoreClient {
         return keys.map { map[it] }
     }
 
+    override fun getIfCached(key: String): String? {
+        val fromRepository = client.getIfCached(key.withRepoScope())
+        if (fromRepository != null) return fromRepository
+        // Existing databases may have objects stored without information about the repository.
+        // Try to load these legacy entries.
+        return client.getIfCached(ObjectInRepository.global(key))
+    }
+
     override fun getAll(keys: Set<String>): Map<String, String?> {
         val fromRepository = client.getAll(keys.map { it.withRepoScope() }.toSet()).mapKeys { it.key.key }
         if (getRepositoryId() == null) return fromRepository

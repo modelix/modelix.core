@@ -64,11 +64,11 @@ To enable it you can specify the following environment variables.
 |Variable |Description
 
 |MODELIX_PERMISSION_CHECKS_ENABLED
-|By default, permission checking is enabled when an algorithm for the JWT signature is configured.
+|By default, permission checking is enabled when an algorithm for the JWT signature or a `MODELIX_JWK_URI` is configured.
  This variable can be set explicitly to `true` or `false` to avoid security issues by a misconfigured algorithm.
 
 |MODELIX_GENERATE_FAKE_JWT
-|By default, if no signature algorithm is configured,
+|By default, if no signature algorithm and no `MODELIX_JWK_URI` is configured,
  a token is generated for all requests with the identity `unit-tests@example.com` and no permissions.
  This option can be set to `true` or `false` to enable/disable this behaviour explicitly.
 
@@ -90,7 +90,10 @@ To enable it you can specify the following environment variables.
 |MODELIX_JWK_URI
 |If keys are created and signed by some OpenID connect server the public keys are provided via HTTP.
  Here you can specify the URI of the key set.
- Only RSA (256, 284 and 512) keys are currently supported.
+ Only RSA (256, 384 and 512) keys are currently supported.
+
+|MODELIX_JWK_KEY_ID
+|Optional key ID that can be used together with `MODELIX_JWK_URI`. If specified, it ensures that only tokens that use the specified key are valid. If not specified, a token can use any RSA (256, 384 and 512) key provided by `MODELIX_JWK_URI`.
 
 |KEYCLOAK_BASE_URL
  KEYCLOAK_REALM

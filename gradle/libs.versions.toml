@@ -14,7 +14,7 @@ gitVersion = { id = "com.palantir.git-version", version = "3.1.0" }
 spotless = { id = "com.diffplug.spotless", version = "6.25.0" }
 modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version.ref = "modelixBuildtools" }
 dokka = {id = "org.jetbrains.dokka", version.ref = "dokka"}
-node = {id = "com.github.node-gradle.node", version = "7.0.2"}
+node = {id = "com.github.node-gradle.node", version = "7.1.0"}
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 npm-publish = { id = "dev.petuska.npm.publish", version = "3.4.3" }
 test-logger = { id = "com.adarshr.test-logger", version = "4.0.0" }

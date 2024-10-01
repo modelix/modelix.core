@@ -56,6 +56,7 @@ object ModelServerPermissionSchema {
         }
 
         resource(LEGACY_USER_DEFINED_ENTRIES) {
+            includedIn(MODEL_SERVER, ADMIN)
             permission(READ)
             permission(WRITE)
         }

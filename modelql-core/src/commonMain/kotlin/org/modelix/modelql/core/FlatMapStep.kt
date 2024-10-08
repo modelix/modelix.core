@@ -40,14 +40,20 @@ class FlatMapStep<In, Out>(val query: FluxUnboundQuery<In, Out>) : TransformingS
 
     @Serializable
     @SerialName("flatMap")
-    class Descriptor(val queryId: QueryId) : CoreStepDescriptor() {
+    data class Descriptor(val queryId: QueryId) : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return FlatMapStep<Any?, Any?>(context.getOrCreateQuery(queryId) as FluxUnboundQuery<Any?, Any?>)
+        }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(idReassignments.reassign(queryId))
+
+        override fun prepareNormalization(idReassignments: IdReassignments) {
+            idReassignments.visitQuery(queryId)
         }
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.flatMap { $query }"""
+        return "${getProducers().single()}.flatMap {\n${query.toString().prependIndent("  ")}\n}"
     }
 }
 

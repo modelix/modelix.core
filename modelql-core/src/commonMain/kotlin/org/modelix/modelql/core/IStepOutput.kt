@@ -42,6 +42,19 @@ class SimpleStepOutput<out E>(override val value: E, val owner: IProducingStep<E
     override fun toString(): String {
         return "SimpleStepOutput[$value]"
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as SimpleStepOutput<*>
+
+        return value == other.value
+    }
+
+    override fun hashCode(): Int {
+        return value?.hashCode() ?: 0
+    }
 }
 
 class SimpleStepOutputSerializer<E>(val valueSerializer: KSerializer<E>, val owner: IProducingStep<E>?) : KSerializer<SimpleStepOutput<E>> {

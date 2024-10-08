@@ -14,6 +14,7 @@
 
 package org.modelix.model.server.handlers
 
+import com.google.common.cache.CacheBuilder
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
@@ -43,9 +44,12 @@ import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.hasPermission
 import org.modelix.authorization.requiresLogin
+import org.modelix.model.api.IBranch
 import org.modelix.model.api.PBranch
+import org.modelix.model.api.TreeAsBranch
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.getRootNode
+import org.modelix.model.api.runSynchronized
 import org.modelix.model.area.getArea
 import org.modelix.model.client2.checkObjectHashes
 import org.modelix.model.client2.getAllObjects
@@ -59,7 +63,15 @@ import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.api.v2.VersionDeltaStream
 import org.modelix.model.server.api.v2.VersionDeltaStreamV2
 import org.modelix.model.server.store.StoreManager
+import org.modelix.modelql.core.IMemoizationPersistence
+import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.MonoUnboundQuery
+import org.modelix.modelql.core.QueryEvaluationContext
+import org.modelix.modelql.core.QueryGraphDescriptor
+import org.modelix.modelql.core.upcast
 import org.modelix.modelql.server.ModelQLServer
+import org.modelix.streams.exactlyOne
+import org.modelix.streams.getSynchronous
 import org.slf4j.LoggerFactory
 
 /**
@@ -76,6 +88,7 @@ class ModelReplicationServer(
     }
 
     private val stores: StoreManager get() = repositoriesManager.getStoreManager()
+    private val indexPersistence: IMemoizationPersistence = InMemoryMemoizationPersistence()
 
     fun init(application: Application) {
         application.routing {
@@ -257,36 +270,45 @@ class ModelReplicationServer(
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.postRepositoryBranchQuery(
         repository: String,
-        branch: String,
+        branchName: String,
     ) {
-        val branchRef = repositoryId(repository).getBranchReference(branch)
+        val branchRef = repositoryId(repository).getBranchReference(branchName)
         checkPermission(ModelServerPermissionSchema.branch(branchRef).query)
         val version = repositoriesManager.getVersion(branchRef) ?: throw BranchNotFoundException(branchRef)
         LOG.trace("Running query on {} @ {}", branchRef, version)
         val initialTree = version.getTree()
-        val otBranch = OTBranch(
-            PBranch(initialTree, stores.idGenerator),
-            stores.idGenerator,
-            repositoriesManager.getLegacyObjectStore(RepositoryId(repository)),
-        )
 
-        ModelQLServer.handleCall(call, { writeAccess ->
-            otBranch.getRootNode() to otBranch.getArea()
-        }, {
-            // writing the new version has to happen before call.respond is invoked, otherwise subsequent queries
-            // from the same client may still be executed on the old version.
-            val (ops, newTree) = otBranch.getPendingChanges()
-            if (newTree != initialTree) {
-                val newVersion = CLVersion.createRegularVersion(
-                    id = stores.idGenerator.generate(),
-                    author = getUserName(),
-                    tree = newTree,
-                    baseVersion = version,
-                    operations = ops.map { it.getOriginalOp() }.toTypedArray(),
-                )
-                repositoriesManager.mergeChanges(branchRef, newVersion.getContentHash())
-            }
-        })
+        IMemoizationPersistence.CONTEXT_INSTANCE.runInCoroutine(indexPersistence) {
+            lateinit var branch: IBranch
+            ModelQLServer.handleCall(call, { writeAccess ->
+                branch = if (writeAccess) {
+                    OTBranch(
+                        PBranch(initialTree, stores.idGenerator),
+                        stores.idGenerator,
+                        repositoriesManager.getLegacyObjectStore(RepositoryId(repository)),
+                    )
+                } else {
+                    TreeAsBranch(initialTree)
+                }
+                branch.getRootNode() to branch.getArea()
+            }, {
+                // writing the new version has to happen before call.respond is invoked, otherwise subsequent queries
+                // from the same client may still be executed on the old version.
+                (branch as? OTBranch)?.let { otBranch ->
+                    val (ops, newTree) = otBranch.getPendingChanges()
+                    if (newTree != initialTree) {
+                        val newVersion = CLVersion.createRegularVersion(
+                            id = stores.idGenerator.generate(),
+                            author = getUserName(),
+                            tree = newTree,
+                            baseVersion = version,
+                            operations = ops.map { it.getOriginalOp() }.toTypedArray(),
+                        )
+                        repositoriesManager.mergeChanges(branchRef, newVersion.getContentHash())
+                    }
+                }
+            })
+        }
     }
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.postRepositoryVersionHashQuery(
@@ -444,4 +466,36 @@ private fun PipelineContext<Unit, ApplicationCall>.parameter(name: String): Stri
 
 private fun ApplicationCall.parameter(name: String): String {
     return requireNotNull(parameters[name]) { "Unknown parameter '$name'" }
+}
+
+class InMemoryMemoizationPersistence : IMemoizationPersistence {
+
+    private val cache = CacheBuilder.newBuilder().softValues().build<IndexCacheKey, IStepOutput<*>>()
+
+    /**
+     * Used for deduplication of instances to safe memory.
+     */
+    private val descriptorInstances = CacheBuilder.newBuilder().maximumSize(100).build<QueryGraphDescriptor, QueryGraphDescriptor>()
+
+    override fun <In, Out> getMemoizer(query: MonoUnboundQuery<In, Out>): IMemoizationPersistence.Memoizer<In, Out> {
+        return MemoizerImpl(query, query.createDescriptor().normalize().deduplicate())
+    }
+
+    private inner class MemoizerImpl<In, Out>(val query: MonoUnboundQuery<In, Out>, val normalizedQueryDescriptor: QueryGraphDescriptor) : IMemoizationPersistence.Memoizer<In, Out> {
+        override fun memoize(input: IStepOutput<In>): IStepOutput<Out> {
+            runSynchronized(cache) {
+                return cache.get(IndexCacheKey(normalizedQueryDescriptor, input)) {
+                    query.asFlow(QueryEvaluationContext.EMPTY, input).exactlyOne().getSynchronous()
+                }.upcast()
+            }
+        }
+    }
+
+    private fun QueryGraphDescriptor.deduplicate() = descriptorInstances.get(this) { this }
+
+    private data class IndexCacheKey(val query: QueryGraphDescriptor, val input: Any?)
+
+    private class IndexData<K, V>(val map: Map<K, List<IStepOutput<V>>>)
+
+    private fun <K, V> IndexData<*, *>.upcast() = this as IndexData<K, V>
 }

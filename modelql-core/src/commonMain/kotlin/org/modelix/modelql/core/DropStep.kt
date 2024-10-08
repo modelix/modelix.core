@@ -33,17 +33,19 @@ class DropStep<E>(val count: Int) : TransformingStep<E, E>(), IMonoStep<E>, IFlu
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.drop($count)"""
+        return "${getProducers().single()}\n.drop($count)"
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor(count)
 
     @Serializable
     @SerialName("drop")
-    class Descriptor(val count: Int) : CoreStepDescriptor() {
+    data class Descriptor(val count: Int) : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return DropStep<Any?>(count)
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(count)
     }
 }
 

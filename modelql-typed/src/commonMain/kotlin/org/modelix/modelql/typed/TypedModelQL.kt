@@ -211,7 +211,7 @@ class TypedNodeStep<Typed : ITypedNode>(val nodeClass: KClass<out Typed>) : Mono
     }
 
     override fun toString(): String {
-        return "${getProducers().single()}.typed()"
+        return "${getProducers().single()}\n.typed()"
     }
 }
 
@@ -253,7 +253,7 @@ class UntypedNodeStep : MonoTransformingStep<ITypedNode, INode>() {
     }
 
     override fun toString(): String {
-        return "${getProducers().single()}.untyped()"
+        return "${getProducers().single()}\n.untyped()"
     }
 }
 

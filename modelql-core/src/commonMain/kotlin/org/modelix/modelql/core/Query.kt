@@ -138,7 +138,7 @@ interface IMonoUnboundQuery<in In, out Out> : IUnboundQuery<In, Out, Out> {
     fun <T> flatMap(body: (IMonoStep<Out>) -> IFluxStep<T>): IFluxUnboundQuery<In, T> = map(buildFluxQuery { body(it) })
 }
 
-suspend fun <In, Out> IMonoUnboundQuery<In, Out>.evaluate(evaluationContext: QueryEvaluationContext, input: In): Optional<Out> {
+fun <In, Out> IMonoUnboundQuery<In, Out>.evaluate(evaluationContext: QueryEvaluationContext, input: In): Optional<Out> {
     return SimpleQueryExecutor(singleOf(input))
         .createFlow(this@evaluate)
         .map { Optional.of(it.value) }
@@ -321,7 +321,7 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
 
     override fun toString(): String {
         try {
-            return "${reference.queryId}#" + (getUnconsumedSteps() + outputStep).joinToString("; ")
+            return (getUnconsumedSteps().minus(inputStep) + outputStep).joinToString("\n---\n") { it.toString() }
         } catch (ex: Throwable) {
             return "Query#${reference.queryId}"
         }
@@ -410,18 +410,23 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
                 subclass(org.modelix.modelql.core.FirstElementStep.FirstElementDescriptor::class)
                 subclass(org.modelix.modelql.core.FirstOrNullStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.FlatMapStep.Descriptor::class)
+                subclass(org.modelix.modelql.core.FoldingStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.IdentityStep.IdentityStepDescriptor::class)
                 subclass(org.modelix.modelql.core.IfEmptyStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.InPredicate.Descriptor::class)
+                subclass(org.modelix.modelql.core.IntSumAggregationStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.IntSumStep.IntSumDescriptor::class)
                 subclass(org.modelix.modelql.core.IsEmptyStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.IsNullPredicateStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.JoinStep.Descriptor::class)
+                subclass(org.modelix.modelql.core.ListAsFluxStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.ListCollectorStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.MapAccessStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.MapCollectorStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.MapIfNotNullStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.MappingStep.Descriptor::class)
+                subclass(org.modelix.modelql.core.MemoizingStep.Descriptor::class)
+                subclass(org.modelix.modelql.core.MultimapCollectorStep.Descriptor::class)
                 subclass(org.modelix.modelql.core.NotOperatorStep.NotDescriptor::class)
                 subclass(org.modelix.modelql.core.NullIfEmpty.OrNullDescriptor::class)
                 subclass(org.modelix.modelql.core.OrOperatorStep.Descriptor::class)
@@ -502,6 +507,8 @@ class QueryInput<E> : ProducingStep<E>(), IMonoStep<E> {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return QueryInput<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 }
 

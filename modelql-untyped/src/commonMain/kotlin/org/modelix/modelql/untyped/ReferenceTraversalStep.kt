@@ -26,6 +26,7 @@ import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IdReassignments
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
@@ -56,14 +57,16 @@ class ReferenceTraversalStep(val link: IReferenceLinkReference) : MonoTransformi
 
     @Serializable
     @SerialName("untyped.referenceTarget")
-    class Descriptor(val role: String, val link: IReferenceLinkReference? = null) : StepDescriptor() {
+    data class Descriptor(val role: String, val link: IReferenceLinkReference? = null) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return ReferenceTraversalStep(link ?: IReferenceLinkReference.fromUnclassifiedString(role))
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(role, link)
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.reference("$link")"""
+        return "${getProducers().single()}\n.reference(\"$link\")"
     }
 }
 fun IMonoStep<INode>.reference(role: IReferenceLinkReference) = ReferenceTraversalStep(role).connectAndDowncast(this)

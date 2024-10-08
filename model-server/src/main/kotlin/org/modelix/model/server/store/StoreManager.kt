@@ -49,7 +49,12 @@ class StoreManager(val genericStore: IsolatingStore) {
         val existing = repositorySpecificStores[repository]?.get()
         if (existing != null) return existing
 
-        val newStore = BulkAsyncStore(CachingAsyncStore(StoreClientAsAsyncStore(getStoreClient(repository))))
+        val newStore = BulkAsyncStore(
+            CachingAsyncStore(
+                StoreClientAsAsyncStore(getStoreClient(repository)),
+                cacheSize = System.getenv("MODELIX_OBJECT_CACHE_SIZE")?.toIntOrNull() ?: 500_000,
+            ),
+        )
         repositorySpecificStores[repository] = SoftReference(newStore)
         return newStore
     }

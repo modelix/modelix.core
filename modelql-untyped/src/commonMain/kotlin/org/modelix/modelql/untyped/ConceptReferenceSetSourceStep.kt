@@ -21,6 +21,7 @@ import kotlinx.serialization.Serializable
 import org.modelix.model.api.ConceptReference
 import org.modelix.modelql.core.ConstantSourceStep
 import org.modelix.modelql.core.IStep
+import org.modelix.modelql.core.IdReassignments
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.StepDescriptor
@@ -31,10 +32,12 @@ class ConceptReferenceSetSourceStep(val referenceSet: Set<ConceptReference>) : C
 
     @Serializable
     @SerialName("conceptReferenceSetMonoSource")
-    class Descriptor(val referenceSet: Set<ConceptReference>) : StepDescriptor() {
+    data class Descriptor(val referenceSet: Set<ConceptReference>) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return ConceptReferenceSetSourceStep(referenceSet)
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(referenceSet)
     }
 
     override fun canEvaluateStatically(): Boolean = true

@@ -39,6 +39,8 @@ class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return JoinStep<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun addProducer(producer: IProducingStep<E>) {
@@ -56,7 +58,7 @@ class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
     }
 
     override fun toString(): String {
-        return getProducers().joinToString(" + ")
+        return "join(\n${getProducers().joinToString("\n,\n") { it.toString().prependIndent("  ") }}\n)"
     }
 }
 

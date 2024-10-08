@@ -35,7 +35,7 @@ open class IdentityStep<E> : TransformingStep<E, E>(), IFluxOrMonoStep<E> {
     }
 
     override fun toString(): String {
-        return "${getProducer()}.identity()"
+        return "${getProducer()}"
     }
 
     @Serializable
@@ -44,6 +44,8 @@ open class IdentityStep<E> : TransformingStep<E, E>(), IFluxOrMonoStep<E> {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return IdentityStep<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = IdentityStepDescriptor()
     }
 }
 

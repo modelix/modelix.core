@@ -37,10 +37,12 @@ class StringToBooleanStep : SimpleMonoTransformingStep<String?, Boolean>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return StringToBooleanStep()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun toString(): String {
-        return "${getProducers().single()}.toBoolean()"
+        return "${getProducers().single()}\n.toBoolean()"
     }
 }
 

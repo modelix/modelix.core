@@ -32,6 +32,8 @@ class AndOperatorStep() : SimpleMonoTransformingStep<IZipOutput<Boolean>, Boolea
         override fun createStep(context: QueryDeserializationContext): IStep {
             return AndOperatorStep()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Boolean>> {
@@ -39,7 +41,7 @@ class AndOperatorStep() : SimpleMonoTransformingStep<IZipOutput<Boolean>, Boolea
     }
 
     override fun toString(): String {
-        return "and(" + getProducers().joinToString(", ") + ")"
+        return "and(\n" + getProducers().joinToString(",") { it.toString().prependIndent("  ") } + "\n)"
     }
 }
 

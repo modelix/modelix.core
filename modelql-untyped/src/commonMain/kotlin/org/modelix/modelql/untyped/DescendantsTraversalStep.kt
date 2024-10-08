@@ -26,6 +26,7 @@ import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IdReassignments
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.SerializationContext
@@ -52,6 +53,8 @@ class DescendantsTraversalStep(val includeSelf: Boolean) : FluxTransformingStep<
         override fun createStep(context: QueryDeserializationContext): IStep {
             return DescendantsTraversalStep(true)
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = WithSelfDescriptor()
     }
 
     @Serializable
@@ -60,10 +63,12 @@ class DescendantsTraversalStep(val includeSelf: Boolean) : FluxTransformingStep<
         override fun createStep(context: QueryDeserializationContext): IStep {
             return DescendantsTraversalStep(false)
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = WithoutSelfDescriptor()
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.${if (includeSelf) "descendantsAndSelf" else "descendants"}()"""
+        return "${getProducers().single()}\n.${if (includeSelf) "descendantsAndSelf" else "descendants"}()"
     }
 }
 

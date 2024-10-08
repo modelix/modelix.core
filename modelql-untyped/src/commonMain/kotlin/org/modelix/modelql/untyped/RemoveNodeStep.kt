@@ -21,10 +21,12 @@ import kotlinx.serialization.Serializable
 import org.modelix.model.api.INode
 import org.modelix.model.api.remove
 import org.modelix.modelql.core.AggregationStep
+import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IdReassignments
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.SerializationContext
@@ -41,7 +43,7 @@ class RemoveNodeStep() : AggregationStep<INode, Int>() {
         return serializationContext.serializer<Int>().stepOutputSerializer(this)
     }
 
-    override fun aggregate(input: StepFlow<INode>): Single<IStepOutput<Int>> {
+    override fun aggregate(input: StepFlow<INode>, context: IFlowInstantiationContext): Single<IStepOutput<Int>> {
         return input.map { it.value.remove() }.count().asStepFlow(this)
     }
 
@@ -54,7 +56,7 @@ class RemoveNodeStep() : AggregationStep<INode, Int>() {
     }
 
     override fun toString(): String {
-        return "${getProducer()}.remove()"
+        return "${getProducer()}\n.remove()"
     }
 
     @Serializable
@@ -63,6 +65,8 @@ class RemoveNodeStep() : AggregationStep<INode, Int>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return RemoveNodeStep()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 }
 

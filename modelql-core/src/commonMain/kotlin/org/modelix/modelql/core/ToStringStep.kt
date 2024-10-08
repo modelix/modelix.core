@@ -39,10 +39,12 @@ class ToStringStep : SimpleMonoTransformingStep<Any?, String?>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return ToStringStep()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun toString(): String {
-        return "${getProducers().single()}.asString()"
+        return "${getProducers().single()}\n.asString()"
     }
 }
 

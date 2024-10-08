@@ -74,13 +74,15 @@ open class ConstantSourceStep<E>(val element: E, val type: KType) : ProducingSte
 
     @Serializable(with = Descriptor.Serializer::class)
     @SerialName("monoSource")
-    class Descriptor(val element: Any?, val elementType: String) : CoreStepDescriptor() {
+    data class Descriptor(val element: Any?, val elementType: String) : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return ConstantSourceStep<Any?>(
                 element,
                 string2type[elementType] ?: throw IllegalArgumentException("Unsupported type: $elementType"),
             )
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(element, elementType)
 
         class Serializer : KSerializer<Descriptor> {
             override fun deserialize(decoder: Decoder): Descriptor {

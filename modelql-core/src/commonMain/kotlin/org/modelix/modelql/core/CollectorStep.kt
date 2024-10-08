@@ -32,7 +32,7 @@ abstract class CollectorStep<E, CollectionT>() : AggregationStep<E, CollectionT>
     protected abstract fun getOutputSerializer(elementSerializer: KSerializer<IStepOutput<E>>): KSerializer<out IStepOutput<CollectionT>>
 }
 
-class CollectorStepOutput<E, InternalCollectionT, CollectionT>(
+data class CollectorStepOutput<E, InternalCollectionT, CollectionT>(
     val input: List<IStepOutput<E>>,
     val internalCollection: InternalCollectionT,
     val output: CollectionT,
@@ -78,8 +78,14 @@ class SetCollectorStepOutputSerializer<E>(inputElementSerializer: KSerializer<IS
         return internalCollection.map { it.value }.toSet()
     }
 }
+
+interface IMapCollectorStepOutputSerializer<K, V> {
+    fun valueSerializer(): KSerializer<IStepOutput<V>>
+}
+
 class MapCollectorStepOutputSerializer<K, V>(inputElementSerializer: KSerializer<IStepOutput<IZip2Output<Any?, K, V>>>) :
-    CollectorStepOutputSerializer<IZip2Output<Any?, K, V>, Map<K, IStepOutput<V>>, Map<K, V>>(inputElementSerializer) {
+    CollectorStepOutputSerializer<IZip2Output<Any?, K, V>, Map<K, IStepOutput<V>>, Map<K, V>>(inputElementSerializer),
+    IMapCollectorStepOutputSerializer<K, V> {
     override fun inputToInternal(input: List<IStepOutput<IZip2Output<Any?, K, V>>>): Map<K, IStepOutput<V>> {
         return input.associate {
             val zipStepOutput = it as ZipStepOutput<IZip2Output<Any?, K, V>, Any?>
@@ -90,12 +96,59 @@ class MapCollectorStepOutputSerializer<K, V>(inputElementSerializer: KSerializer
     override fun internalToOutput(internalCollection: Map<K, IStepOutput<V>>): Map<K, V> {
         return internalCollection.mapValues { it.value.value }
     }
+
+    fun keySerializer(): KSerializer<IStepOutput<K>> {
+        val zipSerializer = inputElementSerializer as ZipOutputSerializer<*, *>
+        return zipSerializer.elementSerializers[0] as KSerializer<IStepOutput<K>>
+    }
+
+    override fun valueSerializer(): KSerializer<IStepOutput<V>> {
+        val zipSerializer = inputElementSerializer as ZipOutputSerializer<*, *>
+        return zipSerializer.elementSerializers[1] as KSerializer<IStepOutput<V>>
+    }
+
+    companion object {
+        fun <K, V> cast(serializer: KSerializer<out IStepOutput<Map<K, V>>>) = serializer as IMapCollectorStepOutputSerializer<K, V>
+    }
+}
+
+class MultimapCollectorStepOutputSerializer<K, V>(inputElementSerializer: KSerializer<IStepOutput<IZip2Output<Any?, K, V>>>) :
+    CollectorStepOutputSerializer<IZip2Output<Any?, K, V>, Map<K, IStepOutput<List<V>>>, Map<K, List<V>>>(inputElementSerializer),
+    IMapCollectorStepOutputSerializer<K, List<V>> {
+    override fun inputToInternal(input: List<IStepOutput<IZip2Output<Any?, K, V>>>): Map<K, IStepOutput<List<V>>> {
+        return input.groupBy {
+            val zipStepOutput = it.upcast()
+            (zipStepOutput.values[0] as IStepOutput<K>).value
+        }.mapValues {
+            val inputList: List<IStepOutput<V>> = it.value.map { it.upcast().values[1] as IStepOutput<V> }
+            val outputList: List<V> = inputList.map { it.value }
+            CollectorStepOutput(inputList, inputList, outputList)
+        }
+    }
+
+    override fun internalToOutput(internalCollection: Map<K, IStepOutput<List<V>>>): Map<K, List<V>> {
+        return internalCollection.mapValues { it.value.value }
+    }
+
+    fun keySerializer(): KSerializer<IStepOutput<K>> {
+        val zipSerializer = inputElementSerializer as ZipOutputSerializer<*, *>
+        return zipSerializer.elementSerializers[0] as KSerializer<IStepOutput<K>>
+    }
+
+    override fun valueSerializer(): KSerializer<IStepOutput<List<V>>> {
+        val zipSerializer = inputElementSerializer as ZipOutputSerializer<*, *>
+        return ListCollectorStepOutputSerializer(zipSerializer.elementSerializers[1] as KSerializer<IStepOutput<V>>) as KSerializer<IStepOutput<List<V>>>
+    }
+
+    companion object {
+        fun <K, V> cast(serializer: KSerializer<out IStepOutput<Map<K, V>>>) = serializer as MapCollectorStepOutputSerializer<K, V>
+    }
 }
 
 class ListCollectorStep<E> : CollectorStep<E, List<E>>() {
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
-    override fun aggregate(input: StepFlow<E>): Single<IStepOutput<List<E>>> {
+    override fun aggregate(input: StepFlow<E>, context: IFlowInstantiationContext): Single<IStepOutput<List<E>>> {
         return input.toList().map { inputList ->
             val outputList = inputList.map { it.value }
             CollectorStepOutput(inputList, inputList, outputList)
@@ -108,6 +161,8 @@ class ListCollectorStep<E> : CollectorStep<E, List<E>>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return ListCollectorStep<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun getOutputSerializer(elementSerializer: KSerializer<IStepOutput<E>>): KSerializer<out IStepOutput<List<E>>> {
@@ -115,7 +170,7 @@ class ListCollectorStep<E> : CollectorStep<E, List<E>>() {
     }
 
     override fun toString(): String {
-        return "${getProducers().single()}.toList()"
+        return "${getProducers().single()}\n.toList()"
     }
 }
 
@@ -123,7 +178,7 @@ class SetCollectorStep<E> : CollectorStep<E, Set<E>>() {
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
-    override fun aggregate(input: StepFlow<E>): Single<IStepOutput<Set<E>>> {
+    override fun aggregate(input: StepFlow<E>, context: IFlowInstantiationContext): Single<IStepOutput<Set<E>>> {
         return input.toList().map { inputAsList ->
             val inputList = ArrayList<IStepOutput<E>>()
             val outputSet = HashSet<E>()
@@ -138,6 +193,8 @@ class SetCollectorStep<E> : CollectorStep<E, Set<E>>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return SetCollectorStep<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun getOutputSerializer(elementSerializer: KSerializer<IStepOutput<E>>): KSerializer<out IStepOutput<Set<E>>> {
@@ -145,7 +202,7 @@ class SetCollectorStep<E> : CollectorStep<E, Set<E>>() {
     }
 
     override fun toString(): String {
-        return "${getProducers().single()}.toSet()"
+        return "${getProducers().single()}\n.toSet()"
     }
 }
 
@@ -153,7 +210,7 @@ class MapCollectorStep<K, V> : CollectorStep<IZip2Output<Any?, K, V>, Map<K, V>>
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
-    override fun aggregate(input: StepFlow<IZip2Output<Any?, K, V>>): Single<IStepOutput<Map<K, V>>> {
+    override fun aggregate(input: StepFlow<IZip2Output<Any?, K, V>>, context: IFlowInstantiationContext): Single<IStepOutput<Map<K, V>>> {
         return input.toList().map { inputAsList ->
             val inputList = ArrayList<IStepOutput<IZip2Output<Any?, K, V>>>()
             val internalMap = HashMap<K, IStepOutput<V>>()
@@ -175,6 +232,8 @@ class MapCollectorStep<K, V> : CollectorStep<IZip2Output<Any?, K, V>, Map<K, V>>
         override fun createStep(context: QueryDeserializationContext): IStep {
             return MapCollectorStep<Any?, Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun getOutputSerializer(elementSerializer: KSerializer<IStepOutput<IZip2Output<Any?, K, V>>>): KSerializer<out IStepOutput<Map<K, V>>> {
@@ -182,7 +241,55 @@ class MapCollectorStep<K, V> : CollectorStep<IZip2Output<Any?, K, V>, Map<K, V>>
     }
 
     override fun toString(): String {
-        return "${getProducers().single()}.toMap()"
+        return "${getProducers().single()}\n.toMap()"
+    }
+
+    companion object {
+        fun <K, V> castOutput(stepOutput: IStepOutput<Map<K, V>>) = stepOutput as CollectorStepOutput<IZip2Output<Any?, K, V>, HashMap<K, IStepOutput<V>>, Map<K, V>>
+    }
+}
+
+class MultimapCollectorStep<K, V> : CollectorStep<IZip2Output<Any?, K, V>, Map<K, List<V>>>() {
+
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
+
+    override fun aggregate(input: StepFlow<IZip2Output<Any?, K, V>>, context: IFlowInstantiationContext): Single<IStepOutput<Map<K, List<V>>>> {
+        return input.toList().map { inputAsList ->
+            val inputList = ArrayList<IStepOutput<IZip2Output<Any?, K, V>>>()
+            val internalMap = HashMap<K, MutableList<IStepOutput<V>>>()
+            inputAsList.forEach {
+                val zipStepOutput = it.upcast()
+                inputList.add(it)
+                internalMap.getOrPut(it.value.first) { ArrayList() }.add(zipStepOutput.values[1] as IStepOutput<V>)
+            }
+            val internalMap2: Map<K, IStepOutput<List<V>>> = internalMap.mapValues {
+                CollectorStepOutput<V, List<IStepOutput<V>>, List<V>>(it.value, it.value, it.value.map { it.value })
+            }
+            val outputMap: Map<K, List<V>> = internalMap.mapValues { it.value.map { it.value } }
+            CollectorStepOutput(inputList, internalMap2, outputMap)
+        }
+    }
+
+    @Serializable
+    @SerialName("toMultimap")
+    class Descriptor : CoreStepDescriptor() {
+        override fun createStep(context: QueryDeserializationContext): IStep {
+            return MultimapCollectorStep<Any?, Any?>()
+        }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
+    }
+
+    override fun getOutputSerializer(elementSerializer: KSerializer<IStepOutput<IZip2Output<Any?, K, V>>>): KSerializer<out IStepOutput<Map<K, List<V>>>> {
+        return MultimapCollectorStepOutputSerializer<K, V>(elementSerializer)
+    }
+
+    override fun toString(): String {
+        return "${getProducers().single()}\n.toMultimap()"
+    }
+
+    companion object {
+        fun <K, V> castOutput(stepOutput: IStepOutput<Map<K, List<V>>>) = stepOutput as CollectorStepOutput<IZip2Output<Any?, K, V>, Map<K, IStepOutput<List<IStepOutput<V>>>>, Map<K, List<V>>>
     }
 }
 
@@ -205,3 +312,8 @@ fun <In, K, V> IFluxStep<In>.associate(keySelector: (IMonoStep<In>) -> IMonoStep
  */
 fun <T> IMonoStep<T>.toSingletonList(): IMonoStep<List<T>> = ListCollectorStep<T>().also { connect(it) }
 fun <T> IMonoStep<T>.toSingletonSet(): IMonoStep<Set<T>> = SetCollectorStep<T>().also { connect(it) }
+
+fun <K, V> IFluxStep<IZip2Output<*, K, V>>.toMultimap(): IMonoStep<Map<K, List<V>>> = MultimapCollectorStep<K, V>().also { connect(it) }
+fun <K, V> IFluxStep<V>.groupBy(keySelector: (IMonoStep<V>) -> IMonoStep<K>): IMonoStep<Map<K, List<V>>> {
+    return map<V, IZip2Output<*, K, V>> { it.map { keySelector(it) }.allowEmpty().zip(it) }.toMultimap()
+}

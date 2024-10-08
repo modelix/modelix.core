@@ -37,10 +37,12 @@ class CollectionSizeStep : SimpleMonoTransformingStep<Collection<*>, Int>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return CollectionSizeStep()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun toString(): String {
-        return "${getProducers().single()}.size()"
+        return "${getProducers().single()}\n.size()"
     }
 }
 

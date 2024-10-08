@@ -35,10 +35,12 @@ class NotOperatorStep() : SimpleMonoTransformingStep<Boolean, Boolean>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return NotOperatorStep()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = NotDescriptor()
     }
 
     override fun toString(): String {
-        return "!${getProducers().single()}"
+        return "${getProducers().single()}\n.not()"
     }
 }
 

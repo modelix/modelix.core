@@ -28,7 +28,7 @@ class FirstElementStep<E>() : MonoTransformingStep<E, E>() {
     override fun requiresSingularQueryInput(): Boolean = true
 
     override fun toString(): String {
-        return getProducer().toString() + ".first()"
+        return "${getProducer()}\n.first()"
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>> {
@@ -43,6 +43,8 @@ class FirstElementStep<E>() : MonoTransformingStep<E, E>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return FirstElementStep<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = FirstElementDescriptor()
     }
 }
 

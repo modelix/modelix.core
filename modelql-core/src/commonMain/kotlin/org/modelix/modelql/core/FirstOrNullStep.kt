@@ -17,19 +17,18 @@ import com.badoo.reaktive.maybe.defaultIfEmpty
 import com.badoo.reaktive.maybe.map
 import com.badoo.reaktive.observable.firstOrComplete
 import com.badoo.reaktive.single.Single
-import com.badoo.reaktive.single.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
-    override fun aggregate(input: StepFlow<E>): Single<IStepOutput<E?>> {
+    override fun aggregate(input: StepFlow<E>, context: IFlowInstantiationContext): Single<IStepOutput<E?>> {
         return input.firstOrComplete().map { MultiplexedOutput(0, it) }
             .defaultIfEmpty(MultiplexedOutput(1, null.asStepOutput(this)))
     }
 
     override fun toString(): String {
-        return "${getProducer()}.firstOrNull()"
+        return "${getProducer()}\n.firstOrNull()"
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E?>> {
@@ -50,6 +49,8 @@ class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return FirstOrNullStep<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 }
 

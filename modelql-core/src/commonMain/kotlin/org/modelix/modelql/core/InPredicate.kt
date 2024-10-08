@@ -35,10 +35,12 @@ class InPredicate<E>() : TransformingStepWithParameter<E, Set<E>, Any?, Boolean>
         override fun createStep(context: QueryDeserializationContext): IStep {
             return InPredicate<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun toString(): String {
-        return """${getInputProducer()}.inSet(${getParameterProducer()})"""
+        return "${getInputProducer()}\n.inSet(${getParameterProducer()})"
     }
 }
 

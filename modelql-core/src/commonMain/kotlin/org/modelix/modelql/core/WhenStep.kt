@@ -31,7 +31,9 @@ class WhenStep<In, Out>(
 ) : MonoTransformingStep<In, Out>() {
 
     override fun toString(): String {
-        return "when()" + cases.joinToString("") { ".if(${it.first}).then(${it.second})" } + ".else($elseCase)"
+        return "when()" + cases.joinToString("") {
+            ".if(\n${it.first.toString().prependIndent("  ")}\n).then(\n${it.second.toString().prependIndent("  ")}\n)"
+        } + ".else(\n${elseCase.toString().prependIndent("  ")}\n)"
     }
 
     override fun canBeEmpty(): Boolean {
@@ -53,12 +55,27 @@ class WhenStep<In, Out>(
 
     @Serializable
     @SerialName("when")
-    class Descriptor(val cases: List<Pair<QueryId, QueryId>>, val elseCase: QueryId? = null) : StepDescriptor() {
+    data class Descriptor(val cases: List<Pair<QueryId, QueryId>>, val elseCase: QueryId? = null) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return WhenStep<Any?, Any?>(
                 cases.map { context.getOrCreateQuery(it.first) as MonoUnboundQuery<Any?, Boolean?> to context.getOrCreateQuery(it.second) as MonoUnboundQuery<Any?, Any?> },
                 elseCase?.let { context.getOrCreateQuery(it) as MonoUnboundQuery<Any?, Any?> },
             )
+        }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor {
+            return Descriptor(
+                cases.map { idReassignments.reassign(it.first) to idReassignments.reassign(it.second) },
+                elseCase?.let { idReassignments.reassign(it) },
+            )
+        }
+
+        override fun prepareNormalization(idReassignments: IdReassignments) {
+            for (case in cases) {
+                idReassignments.visitQuery(case.first)
+                idReassignments.visitQuery(case.second)
+            }
+            elseCase?.let { idReassignments.visitQuery(it) }
         }
     }
 

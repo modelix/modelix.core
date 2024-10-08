@@ -34,7 +34,7 @@ open class LocalMappingStep<In, Out>(val transformation: (In) -> Out) : MonoTran
     }
 
     override fun toString(): String {
-        return "${getProducer()}.mapLocal()"
+        return "${getProducer()}\n.mapLocal()"
     }
 }
 
@@ -103,7 +103,7 @@ class ExecuteLocalStep<In, Out>(transformation: (In) -> Out) : LocalMappingStep<
     }
 
     override fun toString(): String {
-        return "${getProducer()}.executeLocal()"
+        return "${getProducer()}\n.executeLocal()"
     }
 }
 

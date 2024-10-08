@@ -20,7 +20,7 @@ import kotlinx.serialization.Serializable
 import org.modelix.streams.isEmpty
 
 class IsEmptyStep() : AggregationStep<Any?, Boolean>() {
-    override fun aggregate(input: StepFlow<Any?>): Single<IStepOutput<Boolean>> {
+    override fun aggregate(input: StepFlow<Any?>, context: IFlowInstantiationContext): Single<IStepOutput<Boolean>> {
         return input.isEmpty().asStepFlow(this)
     }
 
@@ -32,6 +32,8 @@ class IsEmptyStep() : AggregationStep<Any?, Boolean>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return IsEmptyStep()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Boolean>> {
@@ -39,7 +41,7 @@ class IsEmptyStep() : AggregationStep<Any?, Boolean>() {
     }
 
     override fun toString(): String {
-        return "${getProducers().single()}.isEmpty()"
+        return "${getProducers().single()}\n.isEmpty()"
     }
 }
 

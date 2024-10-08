@@ -34,6 +34,7 @@ import org.modelix.modelql.core.VersionAndData
 import org.modelix.modelql.core.upcast
 import org.modelix.modelql.untyped.UntypedModelQL
 import org.modelix.modelql.untyped.createQueryExecutor
+import kotlin.system.measureTimeMillis
 
 class ModelQLServer private constructor(val rootNodeProvider: () -> INode?, val area: IArea? = null) {
     fun installHandler(route: Route) {
@@ -86,12 +87,17 @@ class ModelQLServer private constructor(val rootNodeProvider: () -> INode?, val 
                 val json = UntypedModelQL.json
                 val queryDescriptor = VersionAndData.deserialize(serializedQuery, QueryGraphDescriptor.serializer(), json).data
                 val query = queryDescriptor.createRootQuery() as IMonoUnboundQuery<INode, Any?>
-                LOG.debug { "query: $query" }
+                LOG.debug { "query: ${query.toString().lineSequence().map { it.trim() }.joinToString("")}" }
                 val (rootNode, area) = input(query.requiresWriteAccess())
                 val transactionBody: () -> IStepOutput<Any?> = {
                     runBlocking {
                         area.runWithAdditionalScopeInCoroutine {
-                            query.bind(rootNode.createQueryExecutor()).execute()
+                            val result: IStepOutput<Any?>
+                            val time = measureTimeMillis {
+                                result = query.bind(rootNode.createQueryExecutor()).execute()
+                            }
+                            if (time > 100) LOG.info { "Query execution took $time ms: $query" }
+                            result
                         }
                     }
                 }

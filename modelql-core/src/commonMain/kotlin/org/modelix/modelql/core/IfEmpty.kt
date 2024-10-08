@@ -47,14 +47,20 @@ class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : 
 
     @Serializable
     @SerialName("ifEmpty")
-    class Descriptor(val alternative: QueryId) : CoreStepDescriptor() {
+    data class Descriptor(val alternative: QueryId) : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return IfEmptyStep<Any?, Any?>(context.getOrCreateQuery(alternative) as UnboundQuery<Unit, *, Any?>)
+        }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(idReassignments.reassign(alternative))
+
+        override fun prepareNormalization(idReassignments: IdReassignments) {
+            idReassignments.visitQuery(alternative)
         }
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.ifEmpty { $alternative }"""
+        return "${getProducers().single()}\n.ifEmpty { $alternative }"
     }
 }
 

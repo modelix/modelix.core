@@ -22,6 +22,7 @@ import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IdReassignments
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryEvaluationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
@@ -47,10 +48,12 @@ class NodeReferenceAsStringTraversalStep() : SimpleMonoTransformingStep<INodeRef
         override fun createStep(context: QueryDeserializationContext): IStep {
             return NodeReferenceAsStringTraversalStep()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.serialize()"""
+        return "${getProducers().single()}\n.serialize()"
     }
 }
 

@@ -174,12 +174,14 @@ class ObjectStoreCache @JvmOverloads constructor(
 class LRUCache<K : Any, V>(val maxSize: Int) {
     private val map: MutableMap<K, V> = LinkedHashMap()
 
+    @Synchronized
     operator fun set(key: K, value: V) {
         map.remove(key)
         map[key] = value
         while (map.size > maxSize) map.remove(map.iterator().next().key)
     }
 
+    @Synchronized
     operator fun get(key: K, updatePosition: Boolean = true): V? {
         return map[key]?.also { value ->
             if (updatePosition) {
@@ -189,10 +191,12 @@ class LRUCache<K : Any, V>(val maxSize: Int) {
         }
     }
 
+    @Synchronized
     fun remove(key: K) {
         map.remove(key)
     }
 
+    @Synchronized
     fun clear() {
         map.clear()
     }

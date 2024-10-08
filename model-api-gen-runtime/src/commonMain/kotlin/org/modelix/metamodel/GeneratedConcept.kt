@@ -208,6 +208,8 @@ class GeneratedProperty<ValueT>(
     override fun getSimpleName(): String = simpleName
 
     override fun toReference(): IPropertyReference = IPropertyReference.fromIdAndName(uid, simpleName)
+
+    override fun toString(): String = "${getUID()}(${getConcept().getShortName()}.$simpleName)"
 }
 fun IProperty.typed() = this as? ITypedProperty<*>
 
@@ -240,6 +242,8 @@ abstract class GeneratedChildLink<ChildNodeT : ITypedNode, ChildConceptT : IConc
     override fun getSimpleName(): String = simpleName
 
     override fun toReference(): IChildLinkReference = IChildLinkReference.fromIdAndName(uid, simpleName)
+
+    override fun toString(): String = "${getUID()}(${getConcept().getShortName()}.$simpleName)"
 }
 fun IChildLink.typed(): ITypedChildLink<ITypedNode> {
     return this as? ITypedChildLink<ITypedNode>
@@ -295,5 +299,7 @@ class GeneratedReferenceLink<TargetNodeT : ITypedNode, TargetConceptT : IConcept
     override fun getSimpleName(): String = simpleName
 
     override fun toReference(): IReferenceLinkReference = IReferenceLinkReference.fromIdAndName(uid, simpleName)
+
+    override fun toString(): String = "${getUID()}(${getConcept().getShortName()}.$simpleName)"
 }
 fun IReferenceLink.typed() = this as? ITypedReferenceLink<ITypedNode> ?: UnknownTypedReferenceLink(this)

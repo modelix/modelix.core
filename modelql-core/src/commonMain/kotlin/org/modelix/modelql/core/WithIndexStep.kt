@@ -50,10 +50,12 @@ class WithIndexStep<E> : MonoTransformingStep<E, IZip2Output<Any?, E, Int>>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return WithIndexStep<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun toString(): String {
-        return "${getProducers().single()}.withIndex()"
+        return "${getProducers().single()}\n.withIndex()"
     }
 }
 

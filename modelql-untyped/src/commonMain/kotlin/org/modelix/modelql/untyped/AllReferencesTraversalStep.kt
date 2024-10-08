@@ -27,6 +27,7 @@ import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IdReassignments
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.SerializationContext
@@ -53,10 +54,12 @@ class AllReferencesTraversalStep() : FluxTransformingStep<INode, INode>(), IMono
         override fun createStep(context: QueryDeserializationContext): IStep {
             return AllReferencesTraversalStep()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.allReferences()"""
+        return "${getProducers().single()}\n.allReferences()"
     }
 }
 

@@ -31,6 +31,8 @@ class OrOperatorStep() : SimpleMonoTransformingStep<IZipOutput<Boolean>, Boolean
         override fun createStep(context: QueryDeserializationContext): IStep {
             return OrOperatorStep()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Boolean>> {
@@ -38,7 +40,7 @@ class OrOperatorStep() : SimpleMonoTransformingStep<IZipOutput<Boolean>, Boolean
     }
 
     override fun toString(): String {
-        return "or(" + (getProducer() as ZipStep<*, *>).getProducers().joinToString(", ") + ")"
+        return "or(\n" + (getProducer() as ZipStep<*, *>).getProducers().joinToString(",") { it.toString().prependIndent("  ") } + "\n)"
     }
 }
 

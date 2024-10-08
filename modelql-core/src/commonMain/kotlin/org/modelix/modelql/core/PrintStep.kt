@@ -34,14 +34,16 @@ class PrintStep<E>(val prefix: String) : MonoTransformingStep<E, E>() {
 
     @Serializable
     @SerialName("print")
-    class Descriptor(val prefix: String = "") : CoreStepDescriptor() {
+    data class Descriptor(val prefix: String = "") : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return PrintStep<Any?>(prefix)
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(prefix)
     }
 
     override fun toString(): String {
-        return "${getProducers().single()}.print(\"$prefix\")"
+        return "${getProducers().single()}\n.print(\"$prefix\")"
     }
 }
 

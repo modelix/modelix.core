@@ -23,6 +23,7 @@ import org.modelix.model.api.INode
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IdReassignments
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryEvaluationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
@@ -31,6 +32,7 @@ import org.modelix.modelql.core.SimpleMonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.connect
 import org.modelix.modelql.core.stepOutputSerializer
+import org.modelix.modelql.untyped.AllReferencesTraversalStep.Descriptor
 
 class AddNewChildNodeStep(val link: IChildLinkReference, val index: Int, val concept: ConceptReference?) :
     SimpleMonoTransformingStep<INode, INode>() {
@@ -52,15 +54,17 @@ class AddNewChildNodeStep(val link: IChildLinkReference, val index: Int, val con
     }
 
     override fun toString(): String {
-        return "${getProducer()}.addNewChild($link, $index, $concept)"
+        return "${getProducer()}\n.addNewChild($link, $index, $concept)"
     }
 
     @Serializable
     @SerialName("untyped.addNewChild")
-    class Descriptor(val role: String?, val link: IChildLinkReference? = null, val index: Int, val concept: ConceptReference?) : StepDescriptor() {
+    data class Descriptor(val role: String?, val link: IChildLinkReference? = null, val index: Int, val concept: ConceptReference?) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return AddNewChildNodeStep(link ?: IChildLinkReference.fromUnclassifiedString(role), index, concept)
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(role, link, index, concept)
     }
 }
 

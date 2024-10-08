@@ -49,16 +49,22 @@ class MapIfNotNullStep<In : Any, Out>(val query: MonoUnboundQuery<In, Out>) : Mo
     }
 
     override fun toString(): String {
-        return "${getProducer()}.mapIfNotNull { $query }"
+        return "${getProducer()}\n.mapIfNotNull {\n${query.toString().prependIndent("  ")}\n}"
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor(context.load(query))
 
     @Serializable
     @SerialName("mapIfNotNull")
-    class Descriptor(val queryId: QueryId) : CoreStepDescriptor() {
+    data class Descriptor(val queryId: QueryId) : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return MapIfNotNullStep<Any, Any?>(context.getOrCreateQuery(queryId) as MonoUnboundQuery<Any, Any?>)
+        }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(idReassignments.reassign(queryId))
+
+        override fun prepareNormalization(idReassignments: IdReassignments) {
+            idReassignments.visitQuery(queryId)
         }
     }
 }

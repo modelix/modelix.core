@@ -35,10 +35,12 @@ class ZipElementAccessStep<Out>(val index: Int) : MonoTransformingStep<IZipOutpu
 
     @Serializable
     @SerialName("zip.output.access")
-    class Descriptor(val index: Int) : CoreStepDescriptor() {
+    data class Descriptor(val index: Int) : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return ZipElementAccessStep<Any?>(index)
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(index)
     }
 
     override fun toString(): String {

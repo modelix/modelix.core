@@ -27,6 +27,7 @@ import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IdReassignments
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.SerializationContext
@@ -49,14 +50,16 @@ class ChildrenTraversalStep(val link: IChildLinkReference) : FluxTransformingSte
 
     @Serializable
     @SerialName("untyped.children")
-    class ChildrenStepDescriptor(val role: String?, val link: IChildLinkReference? = null) : StepDescriptor() {
+    data class ChildrenStepDescriptor(val role: String?, val link: IChildLinkReference? = null) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return ChildrenTraversalStep(link ?: IChildLinkReference.fromUnclassifiedString(role))
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = ChildrenStepDescriptor(role, link)
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.children("$link")"""
+        return "${getProducers().single()}\n.children(\"$link\")"
     }
 }
 

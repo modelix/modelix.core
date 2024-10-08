@@ -22,6 +22,7 @@ import org.modelix.model.api.INode
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IdReassignments
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.SerializationContext
@@ -55,15 +56,17 @@ class MoveNodeStep(val link: IChildLinkReference, val index: Int) :
     }
 
     override fun toString(): String {
-        return "${getProducer()}.moveChild($link, $index, ${getParameterProducer()})"
+        return "${getProducer()}\n.moveChild($link, $index, ${getParameterProducer()})"
     }
 
     @Serializable
     @SerialName("untyped.moveChild")
-    class Descriptor(val role: String?, val link: IChildLinkReference? = null, val index: Int) : StepDescriptor() {
+    data class Descriptor(val role: String?, val link: IChildLinkReference? = null, val index: Int) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return MoveNodeStep(link ?: IChildLinkReference.fromUnclassifiedString(role), index)
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(role, link, index)
     }
 }
 

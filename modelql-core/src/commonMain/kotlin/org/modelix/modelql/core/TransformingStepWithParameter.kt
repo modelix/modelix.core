@@ -13,11 +13,28 @@
  */
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.observable.Observable
+import com.badoo.reaktive.observable.flatMap
+import com.badoo.reaktive.observable.observableOf
 import com.badoo.reaktive.single.asObservable
 import org.modelix.streams.firstOrNull
 
-abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonIn, CommonIn, Out> : MonoTransformingStep<CommonIn, Out>() {
+abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonIn, CommonIn, Out> : TransformingStepWithParameterBase<In, ParameterT, CommonIn, Out>() {
+    override fun canBeEmpty(): Boolean = getProducer().canBeEmpty()
+    override fun canBeMultiple(): Boolean = getProducer().canBeMultiple()
+
+    fun connectAndDowncast(producer: IMonoStep<In>): IMonoStep<Out> = also { producer.connect(it) }
+    fun connectAndDowncast(producer: IFluxStep<In>): IFluxStep<Out> = also { producer.connect(it) }
+
+    override fun transformElementToMultiple(input: IStepOutput<In>, parameter: IStepOutput<ParameterT>?): Observable<IStepOutput<Out>> = observableOf(transformElement(input, parameter))
+    protected abstract fun transformElement(input: IStepOutput<In>, parameter: IStepOutput<ParameterT>?): IStepOutput<Out>
+}
+
+abstract class FluxTransformingStepWithParameter<In : CommonIn, ParameterT : CommonIn, CommonIn, Out> : TransformingStepWithParameterBase<In, ParameterT, CommonIn, Out>() {
+    fun connectAndDowncast(producer: IProducingStep<In>): IFluxStep<Out> = also { producer.connect(it) }
+}
+
+abstract class TransformingStepWithParameterBase<In : CommonIn, ParameterT : CommonIn, CommonIn, Out> : TransformingStep<CommonIn, Out>(), IMonoStep<Out>, IFluxStep<Out> {
     private var hasStaticParameter: Boolean = false
     private var staticParameterValue: IStepOutput<ParameterT>? = null
 
@@ -27,7 +44,7 @@ abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonI
     fun getParameterProducer(): IProducingStep<ParameterT> = targetProducer!!
 
     override fun validate() {
-        super<MonoTransformingStep>.validate()
+        super<TransformingStep>.validate()
         require(!getParameterProducer().canBeMultiple()) { "only mono parameters are supported: ${getParameterProducer()}" }
         hasStaticParameter = getParameterProducer().canEvaluateStatically()
         if (hasStaticParameter) {
@@ -37,17 +54,17 @@ abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonI
 
     override fun createFlow(input: StepFlow<CommonIn>, context: IFlowInstantiationContext): StepFlow<Out> {
         if (hasStaticParameter) {
-            return input.map { transformElement(it.upcast<In>(), staticParameterValue as IStepOutput<ParameterT>) }
+            return input.flatMap { transformElementToMultiple(it.upcast<In>(), staticParameterValue as IStepOutput<ParameterT>) }
         } else {
             val parameterFlow = context.getOrCreateFlow<ParameterT>(getParameterProducer())
             val parameterValue = parameterFlow.firstOrNull()
-            return listOf(input, parameterValue.asObservable()).zipRepeating().map {
-                transformElement(it[0]!!.upcast(), it[1]?.upcast())
+            return listOf(input, parameterValue.asObservable()).zipRepeating().flatMap {
+                transformElementToMultiple(it[0]!!.upcast(), it[1]?.upcast())
             }
         }
     }
 
-    protected abstract fun transformElement(input: IStepOutput<In>, parameter: IStepOutput<ParameterT>?): IStepOutput<Out>
+    protected abstract fun transformElementToMultiple(input: IStepOutput<In>, parameter: IStepOutput<ParameterT>?): Observable<IStepOutput<Out>>
 
     override fun getProducers(): List<IProducingStep<CommonIn>> {
         return super.getProducers() + listOfNotNull<IProducingStep<CommonIn>>(targetProducer)

@@ -21,12 +21,12 @@ import org.modelix.streams.exactlyOne
 
 class SingleStep<E>() : AggregationStep<E, E>() {
 
-    override fun aggregate(input: StepFlow<E>): Single<IStepOutput<E>> {
+    override fun aggregate(input: StepFlow<E>, context: IFlowInstantiationContext): Single<IStepOutput<E>> {
         return input.exactlyOne()
     }
 
     override fun toString(): String {
-        return "${getProducer()}.single()"
+        return "${getProducer()}\n.single()"
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>> {
@@ -41,6 +41,8 @@ class SingleStep<E>() : AggregationStep<E, E>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return SingleStep<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 }
 

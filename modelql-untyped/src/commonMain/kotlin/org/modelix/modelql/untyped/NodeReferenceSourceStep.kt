@@ -23,6 +23,7 @@ import org.modelix.modelql.core.ConstantSourceStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IdReassignments
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.SerializationContext
@@ -40,10 +41,12 @@ class NodeReferenceSourceStep(element: INodeReference?) : ConstantSourceStep<INo
 
     @Serializable
     @SerialName("nodeReferenceMonoSource")
-    class Descriptor(val element: INodeReference?) : StepDescriptor() {
+    data class Descriptor(val element: INodeReference?) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return NodeReferenceSourceStep(element)
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(element)
     }
 
     override fun toString(): String {

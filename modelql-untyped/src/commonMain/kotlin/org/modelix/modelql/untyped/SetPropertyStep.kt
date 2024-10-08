@@ -22,6 +22,7 @@ import org.modelix.model.api.IPropertyReference
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IdReassignments
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.SerializationContext
@@ -50,15 +51,17 @@ class SetPropertyStep(val property: IPropertyReference) :
     }
 
     override fun toString(): String {
-        return "${getProducer()}.setProperty($property, ${getParameterProducer()})"
+        return "${getProducer()}\n.setProperty($property, ${getParameterProducer()})"
     }
 
     @Serializable
     @SerialName("untyped.setProperty")
-    class Descriptor(val role: String, val property: IPropertyReference? = null) : StepDescriptor() {
+    data class Descriptor(val role: String, val property: IPropertyReference? = null) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return SetPropertyStep(property ?: IPropertyReference.fromUnclassifiedString(role))
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(role, property)
     }
 }
 

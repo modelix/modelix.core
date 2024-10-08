@@ -58,7 +58,7 @@ open class ZipStep<CommonIn, Out : ZipNOutputC<CommonIn>>() : ProducingStep<Out>
     }
 
     override fun toString(): String {
-        return "zip(${getProducers().joinToString(", ") { it.toString() }})"
+        return "zip(\n${getProducers().joinToString("\n,\n") { it.toString().prependIndent("  ") }}\n)"
     }
 
     override fun addProducer(producer: IProducingStep<CommonIn>) {
@@ -79,6 +79,8 @@ open class ZipStep<CommonIn, Out : ZipNOutputC<CommonIn>>() : ProducingStep<Out>
         override fun createStep(context: QueryDeserializationContext): IStep {
             return ZipStep<Any?, ZipNOutput>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Out>> {
@@ -106,7 +108,7 @@ open class ZipStep<CommonIn, Out : ZipNOutputC<CommonIn>>() : ProducingStep<Out>
 
 class AllowEmptyStep<E>() : IdentityStep<E>() {
     override fun toString(): String {
-        return "${getProducer()}.allowEmpty()"
+        return "${getProducer()}\n.allowEmpty()"
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {
@@ -119,8 +121,11 @@ class AllowEmptyStep<E>() : IdentityStep<E>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return AllowEmptyStep<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 }
+fun <T> IProducingStep<T>.allowEmpty(): IProducingStep<T> = AllowEmptyStep<T>().also { connect(it) }
 fun <T> IFluxStep<T>.allowEmpty(): IFluxStep<T> = AllowEmptyStep<T>().also { connect(it) }
 fun <T> IMonoStep<T>.allowEmpty(): IMonoStep<T> = AllowEmptyStep<T>().also { connect(it) }
 
@@ -134,7 +139,7 @@ class AssertNotEmptyStep<E>() : IdentityStep<E>() {
     }
 
     override fun toString(): String {
-        return "${getProducer()}.assertNotEmpty()"
+        return "${getProducer()}\n.assertNotEmpty()"
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {
@@ -147,6 +152,8 @@ class AssertNotEmptyStep<E>() : IdentityStep<E>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return AssertNotEmptyStep<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 }
 
@@ -261,10 +268,12 @@ internal class ZipNOutputDesc(val elementDesc: Array<SerialDescriptor>) : Serial
     override fun isElementOptional(index: Int): Boolean = false
 }
 
-class ZipStepOutput<E : IZipOutput<Common>, Common>(val values: List<IStepOutput<Common>>) : IStepOutput<E> {
+data class ZipStepOutput<E : IZipOutput<Common>, Common>(val values: List<IStepOutput<Common>>) : IStepOutput<E> {
     override val value: E
         get() = ZipNOutput(values.map { it.value }) as E
 }
+
+fun <Common, E1, E2> IStepOutput<IZip2Output<Common, E1, E2>>.upcast() = this as ZipStepOutput<IZip2Output<Common, E1, E2>, Common>
 
 interface IZipOutput<out Common> { val values: List<Common> }
 interface IZip1Output<out Common, out E1> : IZipOutput<Common> { val first: E1 }

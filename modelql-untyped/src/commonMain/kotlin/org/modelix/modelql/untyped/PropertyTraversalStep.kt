@@ -25,6 +25,7 @@ import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IdReassignments
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
@@ -54,14 +55,16 @@ class PropertyTraversalStep(val property: IPropertyReference) : MonoTransforming
 
     @Serializable
     @SerialName("untyped.property")
-    class PropertyStepDescriptor(val role: String, val property: IPropertyReference? = null) : StepDescriptor() {
+    data class PropertyStepDescriptor(val role: String, val property: IPropertyReference? = null) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return PropertyTraversalStep(property ?: IPropertyReference.fromUnclassifiedString(role))
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = PropertyStepDescriptor(role, property)
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.property("$property")"""
+        return "${getProducers().single()}\n.property(\"$property\")"
     }
 }
 

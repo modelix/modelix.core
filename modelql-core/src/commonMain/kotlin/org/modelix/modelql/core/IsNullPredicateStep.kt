@@ -36,10 +36,12 @@ class IsNullPredicateStep<In>() : SimpleMonoTransformingStep<In, Boolean>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return IsNullPredicateStep<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.isNull()"""
+        return "${getProducers().single()}\n.isNull()"
     }
 }
 

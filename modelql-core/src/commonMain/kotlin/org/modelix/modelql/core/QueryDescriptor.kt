@@ -105,6 +105,51 @@ data class QueryGraphDescriptor(
     fun createRootQuery(): UnboundQuery<*, *, *> {
         return QueryDeserializationContext(this).createQueries().first()
     }
+
+    fun normalize(): QueryGraphDescriptor {
+        val idReassignments = IdReassignments(this)
+        queries.forEach { idReassignments.visitQuery(it.queryId) }
+        return copy(
+            queries = queries.map { it.normalize(idReassignments) }.sortedBy { it.queryId },
+            steps = steps.entries.map { idReassignments.reassign(it.key) to it.value.normalize(idReassignments) }
+                .sortedWith(compareBy({ it.first }))
+                .toMap(),
+            connections = connections.map { it.normalize(idReassignments) }
+                .sortedWith(compareBy({ it.producer.step }, { it.producer.port }, { it.consumer.step }, { it.consumer.port })),
+        )
+    }
+}
+
+class IdReassignments(val graph: QueryGraphDescriptor) {
+    private val stepIds = LinkedHashMap<Int, Int>()
+    private val queryIds = LinkedHashMap<Long, Long>()
+
+    fun reassign(originalId: Int): Int {
+        return stepIds.getOrPut(originalId) { stepIds.size }
+    }
+
+    fun reassign(originalId: Long): Long {
+        return queryIds.getOrPut(originalId) { queryIds.size.toLong() }
+    }
+
+    fun visitQuery(id: QueryId) {
+        if (queryIds.containsKey(id)) return
+        reassign(id)
+        graph.queries.filter { it.queryId == id }.forEach {
+            visitStep(it.output)
+        }
+    }
+
+    fun visitStep(id: Int) {
+        if (stepIds.containsKey(id)) return
+        reassign(id)
+        graph.steps[id]?.let {
+            it.prepareNormalization(this)
+            graph.connections.filter { it.consumer.step == id }.forEach {
+                visitStep(it.producer.step)
+            }
+        }
+    }
 }
 
 @Serializable
@@ -114,7 +159,16 @@ data class QueryDescriptor(
     val sharedSteps: List<Int> = emptyList(),
     val isFluxOutput: Boolean = false,
     val queryId: Long,
-)
+) {
+    fun normalize(idReassignments: IdReassignments): QueryDescriptor {
+        return copy(
+            input = idReassignments.reassign(input),
+            output = idReassignments.reassign(output),
+            sharedSteps = sharedSteps.map { idReassignments.reassign(it) },
+            queryId = idReassignments.reassign(queryId),
+        )
+    }
+}
 
 @Serializable
 abstract class StepDescriptor {
@@ -122,16 +176,50 @@ abstract class StepDescriptor {
     var id: Int? = null
     var owner: QueryId? = null
     abstract fun createStep(context: QueryDeserializationContext): IStep
+
+    fun normalize(idReassignments: IdReassignments): StepDescriptor {
+        return doNormalize(idReassignments).also { normalizedStep ->
+            normalizedStep.id = id?.let { idReassignments.reassign(it) }
+            normalizedStep.owner = owner?.let { idReassignments.reassign(it) }
+        }
+    }
+
+    abstract fun doNormalize(idReassignments: IdReassignments): StepDescriptor
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return this::class.hashCode()
+    }
+
+    open fun prepareNormalization(idReassignments: IdReassignments) {}
 }
 
 @Serializable
 sealed class CoreStepDescriptor : StepDescriptor()
 
 @Serializable
-data class PortConnection(val producer: PortReference, val consumer: PortReference)
+data class PortConnection(val producer: PortReference, val consumer: PortReference) {
+    fun normalize(idReassignments: IdReassignments): PortConnection {
+        return copy(
+            producer = producer.normalize(idReassignments),
+            consumer = consumer.normalize(idReassignments),
+        )
+    }
+}
 
 @Serializable
-data class PortReference(val step: Int, val port: Int = 0)
+data class PortReference(val step: Int, val port: Int = 0) {
+    fun normalize(idReassignments: IdReassignments): PortReference {
+        return copy(
+            step = idReassignments.reassign(step),
+        )
+    }
+}
 
 sealed interface IQueryReference<out Q : IUnboundQuery<*, *, *>> {
     val query: Q

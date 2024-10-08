@@ -25,6 +25,7 @@ import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IdReassignments
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
@@ -33,6 +34,7 @@ import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
 import org.modelix.modelql.core.asStepFlow
 import org.modelix.modelql.core.stepOutputSerializer
+import org.modelix.modelql.untyped.AllReferencesTraversalStep.Descriptor
 
 class ResolveNodeStep() : MonoTransformingStep<INodeReference, INode>() {
     override fun createFlow(input: StepFlow<INodeReference>, context: IFlowInstantiationContext): StepFlow<INode> {
@@ -53,10 +55,12 @@ class ResolveNodeStep() : MonoTransformingStep<INodeReference, INode>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return ResolveNodeStep()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun toString(): String {
-        return getProducers().single().toString() + ".resolve()"
+        return "${getProducers().single()}\n.resolve()"
     }
 }
 

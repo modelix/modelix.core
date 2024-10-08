@@ -45,10 +45,12 @@ class NullIfEmpty<E>() : MonoTransformingStep<E, E?>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return NullIfEmpty<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = OrNullDescriptor()
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.orNull()"""
+        return "${getProducers().single()}\n.orNull()"
     }
 
     override fun canBeEmpty(): Boolean {

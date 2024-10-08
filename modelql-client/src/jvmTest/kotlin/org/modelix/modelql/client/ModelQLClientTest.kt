@@ -34,9 +34,12 @@ import org.modelix.modelql.core.filter
 import org.modelix.modelql.core.first
 import org.modelix.modelql.core.firstOrNull
 import org.modelix.modelql.core.flatMap
+import org.modelix.modelql.core.fold
 import org.modelix.modelql.core.map
+import org.modelix.modelql.core.memoize
 import org.modelix.modelql.core.notEqualTo
 import org.modelix.modelql.core.plus
+import org.modelix.modelql.core.sum
 import org.modelix.modelql.core.toList
 import org.modelix.modelql.core.toSet
 import org.modelix.modelql.core.zip
@@ -259,5 +262,21 @@ class ModelQLClientTest {
         val refSet = setOf(ConceptReference("abc"), ConceptReference("def"))
         val result = client.query { refSet.asMono() }
         assertEquals(refSet, result)
+    }
+
+    @Test
+    fun testRecursiveMemoization() = runTest { httpClient ->
+        val client = ModelQLClient("http://localhost/query", httpClient)
+        val result = client.query {
+            it.memoize { n ->
+                n.count()
+                    .sum(
+                        n.allChildren().fold(0) { acc, it ->
+                            acc.sum(it.mapRecursive())
+                        },
+                    )
+            }
+        }
+        assertEquals(3, result)
     }
 }

@@ -204,7 +204,7 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
     override fun requiresSingularQueryInput(): Boolean = true
 
     override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
-        val aggregated = aggregate(input)
+        val aggregated = aggregate(input, context)
         return (if (outputIsConsumedMultipleTimes()) aggregated.cached() else aggregated).asObservable()
     }
 
@@ -212,5 +212,5 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
         return false
     }
 
-    protected abstract fun aggregate(input: StepFlow<In>): Single<IStepOutput<Out>>
+    protected abstract fun aggregate(input: StepFlow<In>, context: IFlowInstantiationContext): Single<IStepOutput<Out>>
 }

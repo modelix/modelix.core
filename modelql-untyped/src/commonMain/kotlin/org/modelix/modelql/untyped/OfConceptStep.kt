@@ -25,12 +25,14 @@ import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IdReassignments
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepFlow
+import org.modelix.modelql.untyped.AllReferencesTraversalStep.Descriptor
 
 class OfConceptStep(val conceptUIDs: Set<String>) : MonoTransformingStep<INode?, INode>() {
     override fun createFlow(input: StepFlow<INode?>, context: IFlowInstantiationContext): StepFlow<INode> {
@@ -52,10 +54,12 @@ class OfConceptStep(val conceptUIDs: Set<String>) : MonoTransformingStep<INode?,
         override fun createStep(context: QueryDeserializationContext): IStep {
             return OfConceptStep(conceptUIDs)
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(conceptUIDs)
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.ofConcept($conceptUIDs)"""
+        return "${getProducers().single()}\n.ofConcept($conceptUIDs)"
     }
 }
 

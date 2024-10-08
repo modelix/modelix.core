@@ -133,6 +133,19 @@ class CLTree(val data: CPTree, val asyncStore: IAsyncObjectStore) : ITree by Asy
         return "CLTree[${data.hash}]"
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as CLTree
+
+        return hash == other.hash
+    }
+
+    override fun hashCode(): Int {
+        return hash.hashCode()
+    }
+
     companion object {
         fun builder(store: IDeserializingKeyValueStore) = Builder(store.getAsyncStore())
         fun builder(store: IAsyncObjectStore) = Builder(store)

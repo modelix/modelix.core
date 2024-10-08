@@ -25,6 +25,7 @@ import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IdReassignments
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
@@ -58,10 +59,12 @@ class ParentTraversalStep() : MonoTransformingStep<INode, INode>(), IMonoStep<IN
         override fun createStep(context: QueryDeserializationContext): IStep {
             return ParentTraversalStep()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.parent()"""
+        return "${getProducers().single()}\n.parent()"
     }
 }
 

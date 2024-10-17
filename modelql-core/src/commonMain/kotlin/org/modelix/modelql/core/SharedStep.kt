@@ -40,9 +40,11 @@ class SharedStep<E>() : MonoTransformingStep<E, E>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return SharedStep<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun toString(): String {
-        return "${getProducer()}.shared()"
+        return "${getProducer()}\n.shared()"
     }
 }

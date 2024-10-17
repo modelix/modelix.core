@@ -20,7 +20,6 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.coroutineScope
 import org.modelix.authorization.installAuthentication
-import org.modelix.model.InMemoryModels
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
@@ -33,8 +32,6 @@ import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
-import org.modelix.model.server.store.LocalModelClient
-import org.modelix.model.server.store.forGlobalRepository
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -42,14 +39,13 @@ import kotlin.test.assertTrue
 class PullPerformanceTest {
     private fun runTest(block: suspend ApplicationTestBuilder.(storeClientWithStatistics: StoreClientWithStatistics) -> Unit) = testApplication {
         val storeClientWithStatistics = StoreClientWithStatistics(InMemoryStoreClient())
-        val repositoriesManager = RepositoriesManager(LocalModelClient(storeClientWithStatistics))
-        val inMemoryModels = InMemoryModels()
+        val repositoriesManager = RepositoriesManager(storeClientWithStatistics)
         application {
             installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
-            ModelReplicationServer(repositoriesManager, LocalModelClient(storeClientWithStatistics), inMemoryModels).init(this)
-            KeyValueLikeModelServer(repositoriesManager, storeClientWithStatistics.forGlobalRepository(), inMemoryModels).init(this)
-            IdsApiImpl(repositoriesManager, LocalModelClient(storeClientWithStatistics)).init(this)
+            ModelReplicationServer(repositoriesManager).init(this)
+            KeyValueLikeModelServer(repositoriesManager).init(this)
+            IdsApiImpl(repositoriesManager).init(this)
         }
 
         coroutineScope {

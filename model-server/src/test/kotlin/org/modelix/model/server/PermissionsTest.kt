@@ -33,7 +33,6 @@ import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
-import org.modelix.model.server.store.LocalModelClient
 import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -52,8 +51,7 @@ class PermissionsTest {
             }
             installDefaultServerPlugins()
             val storeClient = InMemoryStoreClient()
-            val modelClient = LocalModelClient(storeClient)
-            val repositoriesManager = RepositoriesManager(modelClient)
+            val repositoriesManager = RepositoriesManager(storeClient)
             ModelReplicationServer(repositoriesManager).init(this)
             IdsApiImpl(repositoriesManager).init(this)
         }

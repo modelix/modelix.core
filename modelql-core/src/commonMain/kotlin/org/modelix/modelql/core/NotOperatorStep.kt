@@ -16,7 +16,6 @@ package org.modelix.modelql.core
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
 
 class NotOperatorStep() : SimpleMonoTransformingStep<Boolean, Boolean>() {
 
@@ -36,10 +35,12 @@ class NotOperatorStep() : SimpleMonoTransformingStep<Boolean, Boolean>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return NotOperatorStep()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = NotDescriptor()
     }
 
     override fun toString(): String {
-        return "!${getProducers().single()}"
+        return "${getProducers().single()}\n.not()"
     }
 }
 

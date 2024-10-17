@@ -24,7 +24,7 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeStructure
 
-class MultiplexedOutput<out E>(val muxIndex: Int, val output: IStepOutput<E>) : IStepOutput<E> {
+data class MultiplexedOutput<out E>(val muxIndex: Int, val output: IStepOutput<E>) : IStepOutput<E> {
     override val value: E
         get() = output.value
 }

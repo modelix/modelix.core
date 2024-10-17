@@ -15,10 +15,24 @@
 
 package org.modelix.model.persistent
 
-import org.modelix.model.lazy.IBulkQuery
-import org.modelix.model.lazy.IDeserializingKeyValueStore
+import com.badoo.reaktive.maybe.Maybe
+import com.badoo.reaktive.maybe.asObservable
+import com.badoo.reaktive.maybe.asSingle
+import com.badoo.reaktive.maybe.maybeOf
+import com.badoo.reaktive.maybe.maybeOfEmpty
+import com.badoo.reaktive.maybe.toMaybe
+import com.badoo.reaktive.maybe.toMaybeNotNull
+import com.badoo.reaktive.observable.Observable
+import com.badoo.reaktive.observable.concatWith
+import com.badoo.reaktive.observable.flatMapMaybe
+import com.badoo.reaktive.observable.observableDefer
+import com.badoo.reaktive.observable.observableOf
+import com.badoo.reaktive.observable.observableOfEmpty
+import com.badoo.reaktive.single.flatMapMaybe
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.persistent.SerializationUtil.longToHex
+import org.modelix.streams.orNull
 
 class CPHamtLeaf(
     val key: Long,
@@ -30,74 +44,73 @@ class CPHamtLeaf(
         return """L/${longToHex(key)}/${value.getHash()}"""
     }
 
-    override fun calculateSize(bulkQuery: IBulkQuery): IBulkQuery.Value<Long> {
-        return bulkQuery.constant(1L)
-    }
-
-    override fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
+    override fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
         require(shift <= CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL) { "$shift > ${CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL}" }
         return if (key == this.key) {
             if (value?.getHash() == this.value?.getHash()) {
-                this
+                this.toMaybe()
             } else {
-                create(key, value)
+                create(key, value).toMaybeNotNull()
             }
         } else {
-            var result: CPHamtNode? = createEmptyNode()
-            result = result!!.put(this.key, this.value, shift, store)
-            if (result == null) {
-                result = createEmptyNode()
-            }
-            result = result.put(key, value, shift, store)
-            result
+            createEmptyNode()
+                .put(this.key, this.value, shift, store)
+                .asSingle { createEmptyNode() }
+                .flatMapMaybe { it.put(key, value, shift, store) }
         }
     }
 
-    override fun remove(key: Long, shift: Int, store: IDeserializingKeyValueStore): CPHamtNode? {
+    override fun remove(key: Long, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
         require(shift <= CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL) { "$shift > ${CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL}" }
         return if (key == this.key) {
-            null
+            maybeOfEmpty()
         } else {
-            this
+            this.toMaybe()
         }
     }
 
-    override fun get(key: Long, shift: Int, bulkQuery: IBulkQuery): IBulkQuery.Value<KVEntryReference<CPNode>?> {
+    override fun get(key: Long, shift: Int, store: IAsyncObjectStore): Maybe<KVEntryReference<CPNode>> {
         require(shift <= CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL) { "$shift > ${CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL}" }
-        return bulkQuery.constant(if (key == this.key) value else null)
+        return if (key == this.key) maybeOf(value) else maybeOfEmpty()
     }
 
-    override fun visitEntries(bulkQuery: IBulkQuery, visitor: (Long, KVEntryReference<CPNode>) -> Unit): IBulkQuery.Value<Unit> {
-        return bulkQuery.constant(visitor(key, value))
+    override fun getEntries(store: IAsyncObjectStore): Observable<Pair<Long, KVEntryReference<CPNode>>> {
+        return observableOf(key to value)
     }
 
-    override fun visitChanges(oldNode: CPHamtNode?, shift: Int, visitor: CPHamtNode.IChangeVisitor, bulkQuery: IBulkQuery) {
-        if (oldNode === this || hash == oldNode?.hash) {
-            return
-        }
-        if (visitor.visitChangesOnly()) {
+    override fun getChanges(oldNode: CPHamtNode?, shift: Int, store: IAsyncObjectStore, changesOnly: Boolean): Observable<MapChangeEvent> {
+        return if (oldNode === this || hash == oldNode?.hash) {
+            observableOfEmpty()
+        } else if (changesOnly) {
             if (oldNode != null) {
-                oldNode.get(key, shift, bulkQuery).map { oldValue ->
-                    if (oldValue != null && value != oldValue) visitor.entryChanged(key, oldValue, value)
-                }
+                oldNode.get(key, shift, store).orNull().flatMapMaybe { oldValue ->
+                    if (oldValue != null && value != oldValue) maybeOf(EntryChangedEvent(key, oldValue, value)) else maybeOfEmpty()
+                }.asObservable()
+            } else {
+                observableOfEmpty()
             }
         } else {
             var oldValue: KVEntryReference<CPNode>? = null
-            val bp = { k: Long, v: KVEntryReference<CPNode> ->
+
+            oldNode!!.getEntries(store).flatMapMaybe { (k: Long, v: KVEntryReference<CPNode>) ->
                 if (k == key) {
                     oldValue = v
+                    maybeOfEmpty<EntryRemovedEvent>()
                 } else {
-                    visitor.entryRemoved(k, v)
+                    maybeOf(EntryRemovedEvent(k, v))
                 }
-            }
-            oldNode!!.visitEntries(bulkQuery, bp).onReceive {
-                val oldValue = oldValue
-                if (oldValue == null) {
-                    visitor.entryAdded(key, value)
-                } else if (oldValue.getHash() !== value.getHash()) {
-                    visitor.entryChanged(key, oldValue, value)
-                }
-            }
+            }.concatWith(
+                observableDefer {
+                    val oldValue = oldValue
+                    if (oldValue == null) {
+                        observableOf(EntryAddedEvent(key, value))
+                    } else if (oldValue != value) {
+                        observableOf(EntryChangedEvent(key, oldValue, value))
+                    } else {
+                        observableOfEmpty()
+                    }
+                },
+            )
         }
     }
 

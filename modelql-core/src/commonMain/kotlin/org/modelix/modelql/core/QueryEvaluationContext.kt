@@ -13,15 +13,17 @@
  */
 package org.modelix.modelql.core
 
+import com.badoo.reaktive.single.Single
+
 data class QueryEvaluationContext private constructor(private val values: Map<IProducingStep<*>, Any?>) {
 
-    fun <T> getValue(producer: IProducingStep<T>): List<IStepOutput<T>> {
-        return values.getValue(producer) as List<IStepOutput<T>>
+    fun <T> getValue(producer: IProducingStep<T>): Single<List<IStepOutput<T>>> {
+        return values.getValue(producer) as Single<List<IStepOutput<T>>>
     }
 
     fun hasValue(producer: IProducingStep<*>): Boolean = values.containsKey(producer)
 
-    operator fun <T> plus(entry: Pair<IProducingStep<T>, List<IStepOutput<T>>>): QueryEvaluationContext {
+    operator fun <T> plus(entry: Pair<IProducingStep<T>, Single<List<IStepOutput<T>>>>): QueryEvaluationContext {
         return QueryEvaluationContext(values + entry)
     }
 
@@ -35,7 +37,7 @@ data class QueryEvaluationContext private constructor(private val values: Map<IP
         return QueryEvaluationContext(combinedValues)
     }
 
-    fun <T> plus(producer: IProducingStep<T>, value: List<IStepOutput<T>>): QueryEvaluationContext {
+    fun <T> plus(producer: IProducingStep<T>, value: Single<List<IStepOutput<T>>>): QueryEvaluationContext {
         return plus(producer to value)
     }
 

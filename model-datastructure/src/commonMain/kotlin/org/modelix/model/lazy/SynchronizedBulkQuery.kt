@@ -16,16 +16,12 @@
 
 package org.modelix.model.lazy
 
-import org.modelix.model.api.runSynchronized
+import com.badoo.reaktive.maybe.Maybe
 import org.modelix.model.persistent.IKVValue
 import kotlin.jvm.Synchronized
 
+@Deprecated("use IAsyncStore")
 class SynchronizedBulkQuery(val nonThreadSafeQuery: IBulkQuery) : IBulkQuery {
-    @Synchronized
-    override fun <T> constant(value: T): IBulkQuery.Value<T> {
-        return nonThreadSafeQuery.constant(value)
-    }
-
     @Synchronized
     override fun offerPrefetch(key: IPrefetchGoal) {
         return nonThreadSafeQuery.offerPrefetch(key)
@@ -37,39 +33,8 @@ class SynchronizedBulkQuery(val nonThreadSafeQuery: IBulkQuery) : IBulkQuery {
     }
 
     @Synchronized
-    override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IBulkQuery.Value<O>): IBulkQuery.Value<List<O>> {
-        return nonThreadSafeQuery.flatMap(input, f)
-    }
-
-    @Synchronized
-    override fun <T : IKVValue> query(hash: KVEntryReference<T>): IBulkQuery.Value<T?> {
+    override fun <T : IKVValue> query(hash: IKVEntryReference<T>): Maybe<T> {
         return nonThreadSafeQuery.query(hash)
-    }
-
-    inner class Value<E>(val nonThreadSafeValue: IBulkQuery.Value<E>) : IBulkQuery.Value<E> {
-        override fun executeQuery(): E {
-            runSynchronized(this@SynchronizedBulkQuery) {
-                return nonThreadSafeValue.executeQuery()
-            }
-        }
-
-        override fun <R> flatMap(handler: (E) -> IBulkQuery.Value<R>): IBulkQuery.Value<R> {
-            runSynchronized(this@SynchronizedBulkQuery) {
-                return nonThreadSafeValue.flatMap(handler)
-            }
-        }
-
-        override fun <R> map(handler: (E) -> R): IBulkQuery.Value<R> {
-            runSynchronized(this@SynchronizedBulkQuery) {
-                return nonThreadSafeValue.map(handler)
-            }
-        }
-
-        override fun onReceive(handler: (E) -> Unit) {
-            runSynchronized(this@SynchronizedBulkQuery) {
-                return nonThreadSafeValue.onReceive(handler)
-            }
-        }
     }
 }
 

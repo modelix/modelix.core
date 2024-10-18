@@ -16,7 +16,6 @@ package org.modelix.modelql.core
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
 
 class InPredicate<E>() : TransformingStepWithParameter<E, Set<E>, Any?, Boolean>() {
 
@@ -36,10 +35,12 @@ class InPredicate<E>() : TransformingStepWithParameter<E, Set<E>, Any?, Boolean>
         override fun createStep(context: QueryDeserializationContext): IStep {
             return InPredicate<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun toString(): String {
-        return """${getInputProducer()}.inSet(${getParameterProducer()})"""
+        return "${getInputProducer()}\n.inSet(${getParameterProducer()})"
     }
 }
 

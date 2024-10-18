@@ -44,10 +44,9 @@ import org.modelix.model.server.createModelClient
 import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
+import org.modelix.model.server.handlers.getLegacyObjectStore
 import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.store.InMemoryStoreClient
-import org.modelix.model.server.store.LocalModelClient
-import org.modelix.model.server.store.forContextRepository
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -56,15 +55,14 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientCon
 
 class ContentExplorerTest {
 
-    private val modelClient = LocalModelClient(InMemoryStoreClient().forContextRepository())
-    private val repoManager = RepositoriesManager(modelClient)
+    private val repoManager = RepositoriesManager(InMemoryStoreClient())
 
     private fun runTest(body: suspend (ApplicationTestBuilder.() -> Unit)) = testApplication {
         application {
             installDefaultServerPlugins(unitTestMode = true)
             ModelReplicationServer(repoManager).init(this)
-            ContentExplorer(modelClient, repoManager).init(this)
-            IdsApiImpl(repoManager, modelClient).init(this)
+            ContentExplorer(repoManager).init(this)
+            IdsApiImpl(repoManager).init(this)
         }
         body()
     }
@@ -80,8 +78,8 @@ class ContentExplorerTest {
         val delta: VersionDelta = client.post("/v2/repositories/node-inspector/init").body()
 
         val versionHash = delta.versionHash
-        val version = CLVersion.loadFromHash(versionHash, modelClient.storeCache)
-        val nodeId = checkNotNull(version.getTree().root?.id)
+        val version = CLVersion.loadFromHash(versionHash, repoManager.getLegacyObjectStore(RepositoryId("node-inspector")))
+        val nodeId = ITree.ROOT_ID
 
         val response = client.get("/content/repositories/node-inspector/versions/$versionHash/$nodeId/")
         assertTrue(response.successful)
@@ -122,8 +120,8 @@ class ContentExplorerTest {
         val delta: VersionDelta = client.post("/v2/repositories/node-expansion/init").body()
 
         val versionHash = delta.versionHash
-        val version = CLVersion.loadFromHash(versionHash, modelClient.storeCache)
-        val nodeId = checkNotNull(version.getTree().root?.id)
+        val version = CLVersion.loadFromHash(versionHash, repoManager.getLegacyObjectStore(RepositoryId("node-expansion")))
+        val nodeId = ITree.ROOT_ID
 
         val expandedNodes = ContentExplorerExpandedNodes(setOf(nodeId.toString()), false)
 

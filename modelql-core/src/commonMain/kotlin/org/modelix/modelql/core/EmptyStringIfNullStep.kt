@@ -13,11 +13,10 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.map
+import com.badoo.reaktive.observable.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
 
 class EmptyStringIfNullStep : MonoTransformingStep<String?, String>() {
 
@@ -52,10 +51,12 @@ class EmptyStringIfNullStep : MonoTransformingStep<String?, String>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return EmptyStringIfNullStep()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun toString(): String {
-        return "${getProducers().single()}.emptyStringIfNull()"
+        return "${getProducers().single()}\n.emptyStringIfNull()"
     }
 }
 

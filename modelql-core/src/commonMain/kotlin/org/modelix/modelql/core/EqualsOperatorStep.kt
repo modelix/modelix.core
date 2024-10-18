@@ -16,7 +16,6 @@ package org.modelix.modelql.core
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
 
 class EqualsOperatorStep<E>() : TransformingStepWithParameter<E, E, E, Boolean>() {
 
@@ -29,7 +28,7 @@ class EqualsOperatorStep<E>() : TransformingStepWithParameter<E, E, E, Boolean>(
     }
 
     override fun toString(): String {
-        return "${getInputProducer()}.equalTo(${getParameterProducer()})"
+        return "${getInputProducer()}\n.equalTo(${getParameterProducer()})"
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
@@ -40,6 +39,8 @@ class EqualsOperatorStep<E>() : TransformingStepWithParameter<E, E, E, Boolean>(
         override fun createStep(context: QueryDeserializationContext): IStep {
             return EqualsOperatorStep<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 }
 

@@ -13,7 +13,7 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.take
+import com.badoo.reaktive.observable.take
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -33,17 +33,19 @@ class TakeStep<E>(val count: Int) : TransformingStep<E, E>(), IMonoStep<E>, IFlu
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.take($count)"""
+        return "${getProducers().single()}\n.take($count)"
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor(count)
 
     @Serializable
     @SerialName("take")
-    class Descriptor(val count: Int) : CoreStepDescriptor() {
+    data class Descriptor(val count: Int) : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return TakeStep<Any?>(count)
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(count)
     }
 }
 

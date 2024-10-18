@@ -13,12 +13,15 @@
  */
 package org.modelix.modelql.untyped
 
+import com.badoo.reaktive.single.map
+import com.badoo.reaktive.single.toSingle
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 import org.modelix.model.api.INode
 import org.modelix.model.api.RoleAccessContext
+import org.modelix.model.api.async.asAsyncNode
 import org.modelix.modelql.core.IFluxQuery
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoQuery
@@ -69,7 +72,7 @@ interface ISupportsModelQL : INode {
 fun INode.createQueryExecutor(): IQueryExecutor<INode> {
     return when (this) {
         is ISupportsModelQL -> this.createQueryExecutor()
-        else -> SimpleQueryExecutor(this)
+        else -> SimpleQueryExecutor(this.asAsyncNode().toSingle().map { it.asRegularNode() })
     }
 }
 

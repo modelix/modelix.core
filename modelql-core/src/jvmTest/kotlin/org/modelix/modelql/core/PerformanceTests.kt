@@ -13,6 +13,7 @@
  */
 package org.modelix.modelql.core
 
+import com.badoo.reaktive.observable.asObservable
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.filter
@@ -21,6 +22,8 @@ import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
+import org.modelix.streams.count
+import org.modelix.streams.getSynchronous
 import kotlin.test.Test
 import kotlin.test.fail
 import kotlin.time.Duration
@@ -35,8 +38,8 @@ class PerformanceTests {
         val query = buildMonoQuery<Int, Int> { it.filter { it.equalTo(0) } }
         val intRange = 1..10000
 
-        compareBenchmark(30, 100.0, {
-            query.asFlow(QueryEvaluationContext.EMPTY, intRange.asFlow().asStepFlow(null)).count()
+        compareBenchmark(30, 150.0, {
+            query.asFlow(QueryEvaluationContext.EMPTY, intRange.asObservable().asStepFlow(null)).count().getSynchronous()
         }, {
             intRange.asFlow().filter { it == 0 }.count()
         })

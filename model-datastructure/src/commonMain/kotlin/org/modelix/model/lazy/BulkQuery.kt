@@ -15,60 +15,72 @@
 
 package org.modelix.model.lazy
 
+import com.badoo.reaktive.maybe.Maybe
+import com.badoo.reaktive.maybe.maybeOfEmpty
+import com.badoo.reaktive.maybe.toMaybe
+import com.badoo.reaktive.observable.Observable
+import com.badoo.reaktive.observable.subscribe
+import com.badoo.reaktive.single.notNull
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import org.modelix.kotlin.utils.AtomicBoolean
 import org.modelix.model.persistent.IKVValue
+import org.modelix.streams.CompletableObservable
 
 /**
  * Not thread safe
  */
+@Deprecated("use IAsyncStore")
 class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQueryConfiguration) : IBulkQuery {
     private val queue: MutableMap<String, QueueElement<out IKVValue>> = LinkedHashMap()
-    private var processing = false
+    private var processing = AtomicBoolean(false)
     private val batchSize: Int = config.requestBatchSize
     private val prefetchSize: Int = config.prefetchBatchSize ?: (this.batchSize / 2)
     private val prefetchQueueSizeLimit: Int = (this.prefetchSize * 10).coerceAtLeast(this.batchSize * 2)
     private val prefetchQueue: PrefetchQueue = PrefetchQueue(this, prefetchQueueSizeLimit).also {
         it.requestFilter = { !queue.contains(it.getHash()) }
     }
+    private val processingMutex = Mutex()
 
     init {
         require(this.prefetchSize <= this.batchSize) { "prefetch size ${this.prefetchSize} is greater than the batch size ${this.batchSize}" }
     }
 
-    private fun <T : IKVValue> getValueInstance(ref: KVEntryReference<T>): Value<T>? {
-        return queue[ref.getHash()]?.let { it.value as Value<T>? }
-            ?: (prefetchQueue.getValueInstance(ref) as Value<T>?)
+    private fun <T : IKVValue> getValueInstance(ref: IKVEntryReference<T>): CompletableObservable<T?>? {
+        return queue[ref.getHash()]?.let { it.value as CompletableObservable<T?>? }
+            ?: (prefetchQueue.getValueInstance(ref) as CompletableObservable<T?>?)
     }
 
-    protected fun executeBulkQuery(regular: List<IKVEntryReference<IKVValue>>, prefetch: List<IKVEntryReference<IKVValue>>): Map<String, IKVValue?> {
+    private fun executeBulkQuery(regular: List<IKVEntryReference<IKVValue>>, prefetch: List<IKVEntryReference<IKVValue>>): Map<String, IKVValue?> {
         return store.getAll(regular, prefetch)
     }
 
-    override fun <T : IKVValue> query(hash: KVEntryReference<T>): IBulkQuery.Value<T?> {
-        if (!hash.isWritten()) return constant(hash.getValue(store))
+    override fun <T : IKVValue> query(hash: IKVEntryReference<T>): Maybe<T> {
+        if (!hash.isWritten()) return hash.getValue(store).toMaybe()
 
         val cachedValue = store.getIfCached(hash.getHash(), hash.getDeserializer(), prefetchQueue.isLoadingGoal())
         if (cachedValue != null) {
-            return constant(cachedValue)
+            return cachedValue.toMaybe()
         }
 
         val existingValue = getValueInstance(hash)
-        if (existingValue != null && existingValue.isDone()) return existingValue
+        if (existingValue != null && existingValue.isDone()) return existingValue.single.notNull()
 
         if (prefetchQueue.isLoadingGoal()) {
-            prefetchQueue.addRequest(hash, getValueInstance(hash) as Value<T?>? ?: Value())
-            return DummyValue() // transitive objects are loaded when the prefetch queue is processed the next time
+            prefetchQueue.addRequest(hash, getValueInstance(hash) ?: CompletableObservable(::executeQuery))
+            return maybeOfEmpty() // transitive objects are loaded when the prefetch queue is processed the next time
         } else {
-            if (queue.size >= batchSize && !processing) executeQuery()
+            if (queue.size >= batchSize && !processing.get()) executeQuery()
 
             val existingQueueElement = queue[hash.getHash()] as QueueElement<T>?
             val result = if (existingQueueElement != null) {
                 existingQueueElement.value
             } else {
-                val result: Value<T?> = getValueInstance(hash) as Value<T?>? ?: Value()
+                val result: CompletableObservable<T?> = getValueInstance(hash) ?: CompletableObservable(::executeQuery)
                 queue.put(hash.getHash(), QueueElement<T>(hash, result))
                 result
             }
-            return result
+            return result.single.notNull()
         }
     }
 
@@ -76,139 +88,50 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
         prefetchQueue.addGoal(goal)
     }
 
-    override fun <T> constant(value: T): IBulkQuery.Value<T> {
-        return Value(value)
+    private suspend fun executeQuerySuspending() {
+        processingMutex.withLock {
+            executeQuery()
+        }
     }
 
     override fun executeQuery() {
-        if (processing) {
-            throw RuntimeException("Already processing")
-        }
-        processing = true
-        try {
-            while (queue.isNotEmpty()) {
-                // The callback of a request usually enqueues new requests until it reaches the leafs of the
-                // data structure. By executing the latest (instead of the oldest) request we basically do a depth
-                // first traversal which keeps the maximum size of the queue smaller.
-                val regularRequests: List<Pair<KVEntryReference<*>, Value<*>>> = queue.entries.tailSequence(batchSize)
-                    .map { it.value.hash to it.value.value }
-                    .toList()
-                if (queue.size < prefetchSize) {
-                    prefetchQueue.fillRequestsQueue(prefetchSize - regularRequests.size)
-                }
-                val prefetchRequests: List<Pair<KVEntryReference<*>, Value<*>>> = prefetchQueue.getRequests(prefetchSize - regularRequests.size)
-                regularRequests.forEach { queue.remove(it.first.getHash()) }
+        if (processing.compareAndSet(false, true)) {
+            try {
+                while (queue.isNotEmpty()) {
+                    // The callback of a request usually enqueues new requests until it reaches the leafs of the
+                    // data structure. By executing the latest (instead of the oldest) request we basically do a depth
+                    // first traversal which keeps the maximum size of the queue smaller.
+                    val regularRequests: List<Pair<IKVEntryReference<*>, CompletableObservable<*>>> = queue.entries.tailSequence(batchSize)
+                        .map { it.value.hash to it.value.value }
+                        .toList()
+                    if (queue.size < prefetchSize) {
+                        prefetchQueue.fillRequestsQueue(prefetchSize - regularRequests.size)
+                    }
+                    val prefetchRequests: List<Pair<IKVEntryReference<*>, CompletableObservable<*>>> = prefetchQueue.getRequests(prefetchSize - regularRequests.size)
+                    regularRequests.forEach { queue.remove(it.first.getHash()) }
 
-                val allRequests: List<Pair<KVEntryReference<*>, Value<*>>> = regularRequests + prefetchRequests
+                    val allRequests: List<Pair<IKVEntryReference<*>, CompletableObservable<*>>> = regularRequests + prefetchRequests
 
-                val entries: Map<String, IKVValue?> = executeBulkQuery(
-                    regularRequests.asSequence().map { obj -> obj.first }.toSet().toList(),
-                    prefetchRequests.asSequence().map { obj -> obj.first }.toSet().toList(),
-                )
-                for (request in allRequests) {
-                    (request.second as Value<IKVValue?>).success(entries[request.first.getHash()])
+                    val entries: Map<String, IKVValue?> = executeBulkQuery(
+                        regularRequests.asSequence().map { obj -> obj.first }.toSet().toList(),
+                        prefetchRequests.asSequence().map { obj -> obj.first }.toSet().toList(),
+                    )
+                    for (request in allRequests) {
+                        (request.second as CompletableObservable<IKVValue?>).complete(entries[request.first.getHash()])
+                    }
                 }
+            } finally {
+                processing.set(false)
             }
-        } finally {
-            processing = false
+        } else {
+            // throw RuntimeException("Already processing")
         }
-    }
-
-    override fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IBulkQuery.Value<O>): IBulkQuery.Value<List<O>> {
-        val inputList = input.toList()
-        if (inputList.isEmpty()) {
-            return constant(emptyList())
-        }
-        val output = arrayOfNulls<Any>(inputList.size)
-        val done = BooleanArray(inputList.size)
-        var remaining = inputList.size
-        val result = Value<List<O>>()
-        for (i in inputList.indices) {
-            f(inputList[i]).onReceive { value ->
-                if (done[i]) {
-                    return@onReceive
-                }
-                output[i] = value
-                done[i] = true
-                remaining--
-                if (remaining == 0) {
-                    result.success(output.map { e: Any? -> e as O })
-                }
-            }
-        }
-        return result
     }
 
     private class QueueElement<E : IKVValue>(
-        val hash: KVEntryReference<E>,
-        val value: Value<E?>,
+        val hash: IKVEntryReference<E>,
+        val value: CompletableObservable<E?>,
     )
-
-    inner class Value<T> : IBulkQuery.Value<T> {
-        private var handlers: MutableList<(T) -> Unit>? = null
-        private var value: T? = null
-        private var done = false
-
-        constructor() {}
-        constructor(value: T) {
-            this.value = value
-            done = true
-        }
-
-        fun isDone() = done
-
-        fun success(value: T) {
-            check(!done) { "Value is already set" }
-            this.value = value
-            done = true
-            handlers?.forEach { it(value) }
-            handlers = null
-        }
-
-        override fun onReceive(handler: (T) -> Unit) {
-            if (done) {
-                handler(value as T)
-            } else {
-                if (handlers == null) handlers = ArrayList(1)
-                handlers!!.add(handler)
-                check(handlers.let { it == null || it.size < 1_000 }) {
-                    "Too many handlers"
-                }
-            }
-        }
-
-        override fun executeQuery(): T {
-            this@BulkQuery.executeQuery()
-            if (!done) {
-                throw RuntimeException("No value received")
-            }
-            return value!!
-        }
-
-        override fun <R> map(transformation: (T) -> R): IBulkQuery.Value<R> {
-            val result = Value<R>()
-            onReceive { v -> result.success(transformation(v)) }
-            return result
-        }
-
-        override fun <R> flatMap(transformation: (T) -> IBulkQuery.Value<R>): IBulkQuery.Value<R> {
-            val result = Value<R>()
-            onReceive { v -> transformation(v).onReceive { value -> result.success(value) } }
-            return result
-        }
-    }
-
-    class DummyValue<E> : IBulkQuery.Value<E> {
-        override fun executeQuery(): E {
-            throw UnsupportedOperationException()
-        }
-
-        override fun <R> flatMap(handler: (E) -> IBulkQuery.Value<R>): IBulkQuery.Value<R> = DummyValue()
-
-        override fun <R> map(handler: (E) -> R): IBulkQuery.Value<R> = DummyValue()
-
-        override fun onReceive(handler: (E) -> Unit) {}
-    }
 }
 
 private fun <T> Sequence<T>.tailSequence(size: Int, tailSize: Int): Sequence<T> {
@@ -221,17 +144,19 @@ private fun <T> Collection<T>.tailSequence(tailSize: Int): Sequence<T> {
     return asSequence().tailSequence(size, tailSize)
 }
 
+@Deprecated("Prefetching will be replaced by usages of IAsyncNode")
 interface IPrefetchGoal {
-    fun loadRequest(bulkQuery: IBulkQuery)
+    fun loadRequest(bulkQuery: IBulkQuery): Observable<Any?>
 }
 
+@Deprecated("Prefetching will be replaced by usages of IAsyncNode")
 private class PrefetchQueue(val bulkQuery: IBulkQuery, val queueSizeLimit: Int) {
     private val goals: MutableMap<IPrefetchGoal, QueuedGoal> = LinkedHashMap()
     private var previousRequests: MutableMap<String, PrefetchRequest<*>> = LinkedHashMap()
     private var nextRequests: MutableMap<String, PrefetchRequest<*>> = LinkedHashMap()
     private var currentGoal: QueuedGoal? = null
     private var anyEntryRequested = false
-    var requestFilter: (KVEntryReference<*>) -> Boolean = { true }
+    var requestFilter: (IKVEntryReference<*>) -> Boolean = { true }
 
     fun isLoadingGoal() = currentGoal != null
 
@@ -247,7 +172,7 @@ private class PrefetchQueue(val bulkQuery: IBulkQuery, val queueSizeLimit: Int) 
         }
     }
 
-    fun getRequests(limit: Int): List<Pair<KVEntryReference<*>, BulkQuery.Value<*>>> {
+    fun getRequests(limit: Int): List<Pair<IKVEntryReference<*>, CompletableObservable<*>>> {
         return nextRequests.entries.tailSequence(limit)
             .map { it.value.hash to it.value.result }
             .toList()
@@ -261,11 +186,11 @@ private class PrefetchQueue(val bulkQuery: IBulkQuery, val queueSizeLimit: Int) 
         trimQueue()
     }
 
-    fun <T : IKVValue> addRequest(hash: KVEntryReference<T>, result: BulkQuery.Value<T?>) {
+    fun <T : IKVValue> addRequest(hash: IKVEntryReference<T>, result: CompletableObservable<T?>) {
         addRequest(hash, checkNotNull(currentGoal) { "Not loading any goal" }, result)
     }
 
-    private fun <T : IKVValue> addRequest(hash: KVEntryReference<T>, goal: QueuedGoal, result: BulkQuery.Value<T?>) {
+    private fun <T : IKVValue> addRequest(hash: IKVEntryReference<T>, goal: QueuedGoal, result: CompletableObservable<T?>) {
         anyEntryRequested = true
 
         val request = (previousRequests[hash.getHash()] ?: nextRequests[hash.getHash()])?.also {
@@ -279,7 +204,7 @@ private class PrefetchQueue(val bulkQuery: IBulkQuery, val queueSizeLimit: Int) 
         trimQueue()
     }
 
-    fun <T : IKVValue> getValueInstance(hash: KVEntryReference<T>): BulkQuery.Value<T?>? {
+    fun <T : IKVValue> getValueInstance(hash: IKVEntryReference<T>): CompletableObservable<T?>? {
         return ((nextRequests[hash.getHash()] ?: previousRequests[hash.getHash()]) as PrefetchRequest<T>?)?.result
     }
 
@@ -296,7 +221,7 @@ private class PrefetchQueue(val bulkQuery: IBulkQuery, val queueSizeLimit: Int) 
         try {
             currentGoal = goal
             anyEntryRequested = false
-            goal.goal.loadRequest(bulkQuery)
+            goal.goal.loadRequest(bulkQuery).subscribe(onSubscribe = {}, onNext = {}, onError = {}, onComplete = {})
             if (!anyEntryRequested) {
                 goals.remove(goal.goal)
             }
@@ -308,5 +233,5 @@ private class PrefetchQueue(val bulkQuery: IBulkQuery, val queueSizeLimit: Int) 
 
     private inner class QueuedGoal(val goal: IPrefetchGoal, var prefetchLevel: Int)
 
-    private inner class PrefetchRequest<E : IKVValue>(val hash: KVEntryReference<E>, val result: BulkQuery.Value<E?>, var prefetchLevel: Int)
+    private inner class PrefetchRequest<E : IKVValue>(val hash: IKVEntryReference<E>, val result: CompletableObservable<E?>, var prefetchLevel: Int)
 }

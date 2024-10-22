@@ -16,7 +16,6 @@ package org.modelix.modelql.core
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
 
 class IntSumStep(val operand: Int) : SimpleMonoTransformingStep<Int, Int>() {
 
@@ -28,10 +27,12 @@ class IntSumStep(val operand: Int) : SimpleMonoTransformingStep<Int, Int>() {
 
     @Serializable
     @SerialName("intSum")
-    class IntSumDescriptor(val operand: Int) : CoreStepDescriptor() {
+    data class IntSumDescriptor(val operand: Int) : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return IntSumStep(operand)
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = IntSumDescriptor(operand)
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Int>> {
@@ -39,7 +40,7 @@ class IntSumStep(val operand: Int) : SimpleMonoTransformingStep<Int, Int>() {
     }
 
     override fun toString(): String {
-        return "${getProducer()} + $operand"
+        return "${getProducer()}\n+ $operand"
     }
 }
 

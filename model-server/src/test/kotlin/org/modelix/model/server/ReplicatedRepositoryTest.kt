@@ -25,7 +25,6 @@ import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.RepetitionInfo
 import org.modelix.authorization.installAuthentication
-import org.modelix.model.InMemoryModels
 import org.modelix.model.ModelFacade
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.IBranch
@@ -51,9 +50,6 @@ import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
-import org.modelix.model.server.store.LocalModelClient
-import org.modelix.model.server.store.forContextRepository
-import org.modelix.model.server.store.forGlobalRepository
 import org.modelix.model.test.RandomModelChangeGenerator
 import java.util.Collections
 import java.util.SortedSet
@@ -73,12 +69,10 @@ class ReplicatedRepositoryTest {
             installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
             val storeClient = InMemoryStoreClient()
-            val modelClient = LocalModelClient(storeClient.forContextRepository())
-            val repositoriesManager = RepositoriesManager(modelClient)
-            val inMemoryModels = InMemoryModels()
-            ModelReplicationServer(repositoriesManager, modelClient, inMemoryModels).init(this)
-            KeyValueLikeModelServer(repositoriesManager, storeClient.forGlobalRepository(), inMemoryModels).init(this)
-            IdsApiImpl(repositoriesManager, modelClient).init(this)
+            val repositoriesManager = RepositoriesManager(storeClient)
+            ModelReplicationServer(repositoriesManager).init(this)
+            KeyValueLikeModelServer(repositoriesManager).init(this)
+            IdsApiImpl(repositoriesManager).init(this)
         }
 
         coroutineScope {

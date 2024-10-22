@@ -37,10 +37,12 @@ class StringToIntStep : SimpleMonoTransformingStep<String?, Int>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return StringToIntStep()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun toString(): String {
-        return "${getProducers().single()}.toInt()"
+        return "${getProducers().single()}\n.toInt()"
     }
 }
 

@@ -45,6 +45,10 @@ class InMemoryStoreClient : IsolatingStore {
         return if (transactionValues?.contains(key) == true) transactionValues!![key] else values[key]
     }
 
+    override fun getIfCached(key: ObjectInRepository): String? {
+        return get(key)
+    }
+
     @Synchronized
     override fun getAll(keys: List<ObjectInRepository>): List<String?> {
         return keys.map { get(it) }

@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitor
 import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.PBranch
+import org.modelix.model.api.PNodeAdapter
+import org.modelix.model.api.TreePointer
+import org.modelix.model.api.getDescendants
+import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.ObjectStoreCache
@@ -25,6 +28,7 @@ import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.RoleInNode
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.persistent.SerializationUtil
+import org.modelix.streams.getSynchronous
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -91,8 +95,8 @@ class TreeDiffTest {
 
     private fun logicalDiff(oldTree: CLTree, newTree: CLTree): DiffData {
         val diffData: DiffData = DiffData()
-        val newNodes = newTree.getDescendants(ITree.ROOT_ID, true).map { it.getData() }.associateBy { it.id }
-        val oldNodes = oldTree.getDescendants(ITree.ROOT_ID, true).map { it.getData() }.associateBy { it.id }
+        val newNodes = TreePointer(newTree).getRootNode().getDescendants(true).map { newTree.resolveElement((it as PNodeAdapter).nodeId).getSynchronous()!! }.associateBy { it.id }
+        val oldNodes = TreePointer(oldTree).getRootNode().getDescendants(true).map { oldTree.resolveElement((it as PNodeAdapter).nodeId).getSynchronous()!! }.associateBy { it.id }
 
         for (newNode in newNodes.values) {
             val oldNode = oldNodes[newNode.id]

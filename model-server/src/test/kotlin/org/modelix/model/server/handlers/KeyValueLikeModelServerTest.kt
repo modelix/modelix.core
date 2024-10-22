@@ -26,7 +26,6 @@ import io.ktor.server.testing.testApplication
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import org.modelix.authorization.installAuthentication
-import org.modelix.model.InMemoryModels
 import org.modelix.model.client.RestWebModelClient
 import org.modelix.model.client2.runWrite
 import org.modelix.model.lazy.CLVersion
@@ -34,9 +33,7 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.createModelClient
 import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.store.InMemoryStoreClient
-import org.modelix.model.server.store.LocalModelClient
-import org.modelix.model.server.store.forContextRepository
-import org.modelix.model.server.store.forGlobalRepository
+import org.modelix.streams.getSynchronous
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -45,17 +42,15 @@ import kotlin.test.assertTrue
 class KeyValueLikeModelServerTest {
 
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
-        val inMemoryModels = InMemoryModels()
         val store = InMemoryStoreClient()
-        val localModelClient = LocalModelClient(store.forContextRepository())
-        val repositoriesManager = RepositoriesManager(localModelClient)
+        val repositoriesManager = RepositoriesManager(store)
 
         application {
             installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
-            KeyValueLikeModelServer(repositoriesManager, store.forGlobalRepository(), InMemoryModels()).init(this)
-            ModelReplicationServer(repositoriesManager, localModelClient, inMemoryModels).init(this)
-            IdsApiImpl(repositoriesManager, localModelClient).init(this)
+            KeyValueLikeModelServer(repositoriesManager).init(this)
+            ModelReplicationServer(repositoriesManager).init(this)
+            IdsApiImpl(repositoriesManager).init(this)
         }
 
         block()
@@ -128,7 +123,7 @@ class KeyValueLikeModelServerTest {
 
         val bulkQuery = clientV1.storeCache.newBulkQuery()
         val bulkQueryValue = bulkQuery.query(treeHash)
-        val bulkQueryResult = bulkQueryValue.executeQuery()
+        val bulkQueryResult = bulkQueryValue.getSynchronous()
 
         assertNotNull(bulkQueryResult)
     }

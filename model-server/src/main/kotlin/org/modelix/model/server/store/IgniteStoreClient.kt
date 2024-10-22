@@ -18,6 +18,7 @@ import mu.KotlinLogging
 import org.apache.ignite.Ignite
 import org.apache.ignite.IgniteCache
 import org.apache.ignite.Ignition
+import org.apache.ignite.cache.CachePeekMode
 import org.apache.ignite.cache.query.ScanQuery
 import org.apache.ignite.lang.IgniteBiPredicate
 import org.apache.ignite.lang.IgniteClosure
@@ -91,6 +92,10 @@ class IgniteStoreClient(jdbcProperties: Properties? = null, private val inmemory
 
     private fun updateDatabaseSchema() {
         SqlUtils(dataSource.connection).ensureSchemaInitialization()
+    }
+
+    override fun getIfCached(key: ObjectInRepository): String? {
+        return cache.localPeek(key, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP)
     }
 
     override fun getAll(keys: Set<ObjectInRepository>): Map<ObjectInRepository, String?> {

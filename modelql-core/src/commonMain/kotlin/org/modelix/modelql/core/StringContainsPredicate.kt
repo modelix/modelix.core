@@ -32,14 +32,16 @@ class StringContainsPredicate(val substring: String) : SimpleMonoTransformingSte
 
     @Serializable
     @SerialName("stringContains")
-    class StringContainsDescriptor(val substring: String) : CoreStepDescriptor() {
+    data class StringContainsDescriptor(val substring: String) : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return StringContainsPredicate(substring)
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = StringContainsDescriptor(substring)
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.contains("$substring")"""
+        return "${getProducers().single()}\n.contains(\"$substring\")"
     }
 }
 

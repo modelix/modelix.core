@@ -56,13 +56,21 @@ object ModelServerPermissionSchema {
         }
 
         resource(LEGACY_USER_DEFINED_ENTRIES) {
-            permission(READ)
-            permission(WRITE)
+            permission(READ) {
+                includedIn(MODEL_SERVER, ADMIN)
+            }
+            permission(WRITE) {
+                includedIn(MODEL_SERVER, ADMIN)
+            }
         }
 
         resource(LEGACY_GLOBAL_OBJECTS) {
-            permission(READ)
-            permission(ADD)
+            permission(READ) {
+                includedIn(MODEL_SERVER, ADMIN)
+            }
+            permission(ADD) {
+                includedIn(MODEL_SERVER, ADMIN)
+            }
         }
 
         resource(REPOSITORY) {

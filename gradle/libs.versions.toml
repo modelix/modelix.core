@@ -85,7 +85,7 @@ ktor-client-auth = { group = "io.ktor", name = "ktor-client-auth", version.ref =
 ktor-serialization = { group = "io.ktor", name = "ktor-serialization", version.ref = "ktor" }
 ktor-serialization-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
-keycloak-authz-client = { group = "org.keycloak", name = "keycloak-authz-client", version = "26.0.1" }
+keycloak-authz-client = { group = "org.keycloak", name = "keycloak-authz-client", version = "26.0.2" }
 
 kotest-assertions-core = { group = "io.kotest", name = "kotest-assertions-core", version.ref = "kotest" }
 kotest-assertions-coreJvm = { group = "io.kotest", name = "kotest-assertions-core-jvm", version.ref = "kotest" }

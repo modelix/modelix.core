@@ -18,6 +18,9 @@ package org.modelix.authorization
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
+import com.auth0.jwt.exceptions.JWTVerificationException
+import com.auth0.jwt.interfaces.DecodedJWT
+import com.auth0.jwt.interfaces.JWTVerifier
 import com.google.common.cache.CacheBuilder
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
@@ -80,29 +83,18 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
             } else {
                 // "Authorization: Bearer ..." header is provided in the header by OAuth proxy
                 jwt(MODELIX_JWT_AUTH) {
-                    val jwkProvider = config.getJwkProvider()
-                    if (jwkProvider != null) {
-                        verifier(jwkProvider) {}
-                    } else {
-                        verifier(
-                            JWT.require(config.getJwtSignatureAlgorithm())
-                                .build(),
-                        )
-                    }
+                    verifier(config.getVerifier())
                     challenge { _, _ ->
                         call.respond(status = HttpStatusCode.Unauthorized, "No or invalid JWT token provided")
                         // login and token generation is done by OAuth proxy. Only validation is required here.
                     }
                     validate {
                         try {
-                            val token = jwtFromHeaders()
-                            if (token != null) {
-                                return@validate config.nullIfInvalid(token)?.let { AccessTokenPrincipal(it) }
-                            }
+                            jwtFromHeaders()?.let(::AccessTokenPrincipal)
                         } catch (e: Exception) {
                             LOG.warn(e) { "Failed to read JWT token" }
+                            null
                         }
-                        null
                     }
                 }
             }
@@ -199,5 +191,23 @@ class ModelixAuthorizationPluginInstance(val config: ModelixAuthorizationConfig)
                 // TODO load permissions for the user from some external source
             }
         }
+    }
+}
+
+/**
+ * Returns an [JWTVerifier] that wraps our common authorization logic,
+ * so that it can be configured in the verification with Ktor's JWT authorization.
+ */
+internal fun ModelixAuthorizationConfig.getVerifier() = object : JWTVerifier {
+    override fun verify(token: String?): DecodedJWT {
+        val jwt = JWT.decode(token)
+        return verify(jwt)
+    }
+
+    override fun verify(jwt: DecodedJWT?): DecodedJWT {
+        if (jwt == null) {
+            throw JWTVerificationException("No JWT provided.")
+        }
+        return this@getVerifier.nullIfInvalid(jwt) ?: throw JWTVerificationException("JWT invalid.")
     }
 }

@@ -9,4 +9,19 @@
     <root level="DEBUG">
         <appender-ref ref="console" />
     </root>
+
+    <!--
+    Reduce log output crated by testcontainers.
+    See https://java.testcontainers.org/supported_docker_environment/logging_config/
+    -->
+    <logger name="org.testcontainers" level="INFO"/>
+    <logger name="tc" level="INFO"/>
+    <logger name="com.github.dockerjava" level="WARN"/>
+    <logger name="com.github.dockerjava.zerodep.shaded.org.apache.hc.client5.http.wire" level="OFF"/>
+
+    <!--
+    Reduce log output by Keycloak and the HTTP client used by it.
+    -->
+    <logger name="org.keycloak" level="INFO"/>
+    <logger name="org.apache.http" level="INFO"/>
 </configuration>

@@ -85,6 +85,8 @@ dependencies {
     testImplementation(project(":modelql-untyped"))
     testImplementation(libs.testcontainers)
     testImplementation(libs.testcontainers.postgresql)
+    testImplementation(libs.keycloak.authz.client)
+    testImplementation(libs.keycloak.admin.client)
 }
 
 tasks.named<ShadowJar>("shadowJar") {

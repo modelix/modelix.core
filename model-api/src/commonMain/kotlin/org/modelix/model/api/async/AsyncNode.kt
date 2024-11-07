@@ -32,6 +32,7 @@ import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
+import org.modelix.model.api.INodeResolutionScope
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.resolve
@@ -81,7 +82,11 @@ class AsyncNode(
     }
 
     override fun getReferenceTarget(role: IReferenceLinkReference): Maybe<IAsyncNode> {
-        return getReferenceTargetRef(role).mapNotNull { it.resolveInCurrentContext()?.asAsyncNode() }
+        return getReferenceTargetRef(role).mapNotNull {
+            INodeResolutionScope.runWithAdditionalScope(regularNode.getArea()) {
+                it.resolveInCurrentContext()?.asAsyncNode()
+            }
+        }
     }
 
     override fun getReferenceTargetRef(role: IReferenceLinkReference): Maybe<INodeReference> {

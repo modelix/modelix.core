@@ -67,17 +67,17 @@ fun <T> Observable<T>.withIndex(): Observable<IndexedValue<T>> {
     return map { IndexedValue(index++, it) }
 }
 fun <T> Observable<T>.assertNotEmpty(message: () -> String): Observable<T> {
-    return this.switchIfEmpty { throw RuntimeException("Empty stream: " + message()) }
+    return this.switchIfEmpty { throw IllegalArgumentException("At least one element was expected. " + message()) }
 }
 fun <T> Maybe<T>.assertEmpty(message: (T) -> String): Completable {
-    return map { throw RuntimeException(message(it)) }.asCompletable()
+    return map { throw IllegalArgumentException(message(it)) }.asCompletable()
 }
 fun <T> Observable<T>.assertEmpty(message: (T) -> String): Completable {
-    return map { throw RuntimeException(message(it)) }.asCompletable()
+    return map { throw IllegalArgumentException(message(it)) }.asCompletable()
 }
 fun <T> Single<T>.cached(): Single<T> {
     return this.asObservable().replay(1).autoConnect()
-        .firstOrError { RuntimeException("Single was empty. Should not happen.") }
+        .firstOrError { IllegalStateException("Single was empty. Should not happen.") }
 }
 
 fun <T> Maybe<T>.orNull(): Single<T?> = defaultIfEmpty(null)

@@ -29,6 +29,7 @@ import kotlinx.serialization.modules.subclass
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
@@ -365,6 +366,15 @@ class ModelQLTest {
             db.findAll({ it.products }, { it.category }, "smartphones".asMono()).map { it.title }.toList()
         }
         assertEquals(listOf("iPhone 9", "iPhone X", "Samsung Universe 9", "OPPOF19", "Huawei P30"), result)
+    }
+
+    @Test
+    fun assertNotEmpty_throws_IllegalArgumentException() = runTestWithTimeout {
+        assertFailsWith(IllegalArgumentException::class) {
+            remoteProductDatabaseQuery<List<String>> { db ->
+                db.products.filter { false.asMono() }.assertNotEmpty().map { it.title }.toList()
+            }
+        }
     }
 
     data class MyNonSerializableClass(val id: Int, val title: String, val images: List<MyImage>)

@@ -14,12 +14,15 @@
 package org.modelix.modelql.client
 
 import io.ktor.client.HttpClient
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.withTimeout
+import org.junit.jupiter.api.assertThrows
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
+import org.modelix.model.api.NodeReference
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
@@ -53,6 +56,7 @@ import org.modelix.modelql.untyped.descendants
 import org.modelix.modelql.untyped.nodeReference
 import org.modelix.modelql.untyped.property
 import org.modelix.modelql.untyped.remove
+import org.modelix.modelql.untyped.resolve
 import org.modelix.modelql.untyped.setProperty
 import org.modelix.modelql.untyped.setReference
 import kotlin.test.Test
@@ -278,5 +282,16 @@ class ModelQLClientTest {
             }
         }
         assertEquals(3, result)
+    }
+
+    @Test
+    fun `resolving a non-existing node reference returns 404`() = runTest { httpClient ->
+        val client = ModelQLClient("http://localhost/query", httpClient)
+        val ex = assertThrows<ModelQueryRequestException> {
+            client.query<INode> {
+                NodeReference("doesnotexist").asMono().resolve()
+            }
+        }
+        assertEquals(HttpStatusCode.NotFound, ex.httpResponse.status)
     }
 }

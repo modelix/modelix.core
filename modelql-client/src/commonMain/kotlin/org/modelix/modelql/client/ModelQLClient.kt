@@ -16,6 +16,7 @@ package org.modelix.modelql.client
 import io.ktor.client.HttpClient
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import kotlinx.serialization.encodeToString
@@ -82,7 +83,7 @@ class ModelQLClient(val url: String, val client: HttpClient, includedSerializers
                 LOG.debug { "result: $text" }
                 return text
             }
-            else -> throw RuntimeException("Query failed : $query \nclient version: $MODELIX_VERSION\n${response.status}\n${response.bodyAsText()}")
+            else -> throw ModelQueryRequestException(query, response, response.bodyAsText())
         }
     }
 
@@ -93,3 +94,9 @@ class ModelQLClient(val url: String, val client: HttpClient, includedSerializers
 }
 
 expect fun <ResultT> ModelQLClient.blockingQuery(body: (IMonoStep<INode>) -> IMonoStep<ResultT>): ResultT
+
+class ModelQueryRequestException(
+    val query: UnboundQuery<INode, *, *>,
+    val httpResponse: HttpResponse,
+    val responseBody: String,
+) : RuntimeException("Query failed : $query \nclient version: $MODELIX_VERSION\n${httpResponse.status}\n$responseBody")

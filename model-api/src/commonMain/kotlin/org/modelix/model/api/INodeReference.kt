@@ -73,3 +73,5 @@ class NodeReferenceKSerializer : KSerializer<INodeReference> {
         encoder.encodeString(value.serialize())
     }
 }
+
+class UnresolvableNodeReferenceException(val reference: INodeReference) : IllegalArgumentException("Node not found: $reference")

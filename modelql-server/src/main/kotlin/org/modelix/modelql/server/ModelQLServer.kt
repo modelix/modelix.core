@@ -24,6 +24,7 @@ import io.ktor.server.routing.post
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.KSerializer
 import org.modelix.model.api.INode
+import org.modelix.model.api.UnresolvableNodeReferenceException
 import org.modelix.model.area.IArea
 import org.modelix.modelql.core.IMonoUnboundQuery
 import org.modelix.modelql.core.IStepOutput
@@ -113,6 +114,12 @@ class ModelQLServer private constructor(val rootNodeProvider: () -> INode?, val 
                 val serializedResult = json.encodeToString(VersionAndData.serializer(serializer), versionAndResult)
                 afterQueryExecution()
                 call.respondText(text = serializedResult, contentType = ContentType.Application.Json)
+            } catch (ex: UnresolvableNodeReferenceException) {
+                afterQueryExecution()
+                call.respondText(
+                    text = "server version: $MODELIX_VERSION\n" + ex.stackTraceToString(),
+                    status = HttpStatusCode.NotFound,
+                )
             } catch (ex: Throwable) {
                 afterQueryExecution()
                 call.respondText(

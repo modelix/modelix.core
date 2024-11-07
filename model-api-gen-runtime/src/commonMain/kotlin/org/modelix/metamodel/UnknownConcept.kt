@@ -10,9 +10,6 @@ import org.modelix.model.api.meta.EmptyConcept
 import org.modelix.model.api.meta.NullConcept
 import kotlin.reflect.KClass
 
-@Deprecated("use org.modelix.model.api.meta.NullConcept", ReplaceWith("org.modelix.model.api.meta.NullConcept"))
-val NullConcept = org.modelix.model.api.meta.NullConcept
-
 data class UnknownConcept(private val ref: IConceptReference) : EmptyConcept() {
     override fun getReference(): IConceptReference {
         return ref

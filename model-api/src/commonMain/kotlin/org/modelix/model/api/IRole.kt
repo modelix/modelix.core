@@ -8,27 +8,27 @@ import org.modelix.kotlin.utils.ContextValue
  * It can either be an [IProperty] or an [ILink].
  */
 @Deprecated("Use IRoleReference or IRoleDefinition")
-interface IRole {
+interface IRole : IRoleDefinition {
     /**
      * Returns the concept this role belongs to.
      *
      * @return concept
      */
-    fun getConcept(): IConcept
+    override fun getConcept(): IConcept
 
     /**
      * Returns the uid of this role.
      *
      * @return uid
      */
-    fun getUID(): String
+    override fun getUID(): String
 
     /**
      * Returns the unqualified name of this role.
      *
      * @return simple name
      */
-    fun getSimpleName(): String
+    override fun getSimpleName(): String
 
     @Deprecated("Use getSimpleName() when showing it to the user or when accessing the model use the INode functions that accept an IRole or use IRole.key(...)")
     val name: String get() = RoleAccessContext.getKey(this)
@@ -38,8 +38,16 @@ interface IRole {
      *
      * @return true if this role's value is optional, false otherwise
      */
-    val isOptional: Boolean
+    override val isOptional: Boolean
 
+    override fun toReference(): IRoleReference
+}
+
+sealed interface IRoleDefinition {
+    fun getConcept(): IConcept
+    fun getUID(): String
+    fun getSimpleName(): String
+    val isOptional: Boolean
     fun toReference(): IRoleReference
 }
 

@@ -21,13 +21,17 @@ import kotlinx.serialization.Serializable
  * Representation of a property within an [IConcept].
  */
 @Deprecated("Use IPropertyReference or IPropertyDefinition")
-interface IProperty : IRole {
+interface IProperty : IRole, IPropertyDefinition {
 
     override fun toReference(): IPropertyReference = IPropertyReference.fromIdAndName(getUID(), getSimpleName())
 
     companion object {
         fun fromName(name: String): IProperty = PropertyFromName(name)
     }
+}
+
+sealed interface IPropertyDefinition : IRoleDefinition {
+    override fun toReference(): IPropertyReference
 }
 
 @Serializable

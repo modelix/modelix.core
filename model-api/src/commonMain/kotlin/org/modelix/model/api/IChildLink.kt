@@ -21,11 +21,11 @@ import kotlinx.serialization.Serializable
  * Representation of a parent-child relationship between [IConcept]s.
  */
 @Deprecated("Use IChildLinkReference or IChildLinkDefinition")
-interface IChildLink : ILink {
+interface IChildLink : ILink, IChildLinkDefinition {
     /**
      * Specifies if the parent-child relation ship is 1:n.
      */
-    val isMultiple: Boolean
+    override val isMultiple: Boolean
 
     @Deprecated("use .targetConcept")
     val childConcept: IConcept
@@ -42,16 +42,22 @@ interface IChildLink : ILink {
      * If a child role is not ordered, implementations of [[INode.moveChild]] are allowed to fail
      * when instructed to move a node in between existing nodes.
      */
-    val isOrdered
+    override val isOrdered
         get() = true
 
     override fun toReference(): IChildLinkReference = IChildLinkReference.fromIdAndName(getUID(), getSimpleName())
 }
 
+sealed interface IChildLinkDefinition : ILinkDefinition {
+    val isMultiple: Boolean
+    val isOrdered: Boolean
+    override fun toReference(): IChildLinkReference
+}
+
 fun IChildLink?.toReference(): IChildLinkReference = this?.toReference() ?: NullChildLinkReference
 
 @Serializable
-sealed interface IChildLinkReference : IRoleReference {
+sealed interface IChildLinkReference : ILinkReference {
 
     override fun toLegacy(): IChildLink
 

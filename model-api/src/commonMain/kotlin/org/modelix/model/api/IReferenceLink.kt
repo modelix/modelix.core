@@ -21,7 +21,7 @@ import kotlinx.serialization.Serializable
  * Representation of a non-containment reference link between [IConcept]s.
  */
 @Deprecated("Use IReferenceLinkReference or IReferenceLinkDefinition")
-interface IReferenceLink : ILink {
+interface IReferenceLink : ILink, IReferenceLinkDefinition {
 
     override fun toReference(): IReferenceLinkReference = IReferenceLinkReference.fromIdAndName(getUID(), getSimpleName())
 
@@ -30,8 +30,12 @@ interface IReferenceLink : ILink {
     }
 }
 
+sealed interface IReferenceLinkDefinition : ILinkDefinition {
+    override fun toReference(): IReferenceLinkReference
+}
+
 @Serializable
-sealed interface IReferenceLinkReference : IRoleReference {
+sealed interface IReferenceLinkReference : ILinkReference {
 
     override fun toLegacy(): IReferenceLink
 

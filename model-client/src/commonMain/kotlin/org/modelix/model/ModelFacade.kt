@@ -55,6 +55,20 @@ object ModelFacade {
         return loadCurrentVersion(client, branch)?.getTree()
     }
 
+    /**
+     * The default thread-safe implementation of IBranch that enforces transactions.
+     */
+    fun newBranch(tree: ITree): IBranch = PBranch(tree, IdGenerator.getInstance(1))
+
+    /**
+     * A performance optimized branch that isn't thread-safe and doesn't enforce transactions.
+     * Should only be used for short living instances that are guaranteed to be used by a single thread.
+     * Not suitable for unit tests, because of the lack of enforcing transactions.
+     * Unless performance isn't critical .newBranch should be used instead.
+     */
+    fun newUnsafeBranch(tree: ITree): IBranch = TreePointer(tree, IdGenerator.getInstance(1))
+
+    @Deprecated("Use .toUnsafeBranch or .newBranch")
     fun toLocalBranch(tree: ITree): IBranch = TreePointer(tree, IdGenerator.getInstance(1))
 
     fun toNode(tree: ITree): INode {

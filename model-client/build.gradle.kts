@@ -5,8 +5,6 @@ plugins {
     `modelix-kotlin-multiplatform`
     alias(libs.plugins.spotless)
     alias(libs.plugins.npm.publish)
-    `java-library`
-    jacoco
 }
 
 val kotlinCoroutinesVersion: String by rootProject
@@ -80,17 +78,6 @@ kotlin {
                 implementation(npm("ws", "^8.17.1"))
             }
         }
-    }
-}
-
-tasks.jacocoTestReport {
-    classDirectories.setFrom(project.layout.buildDirectory.dir("classes/kotlin/jvm/"))
-    sourceDirectories.setFrom(files("src/commonMain/kotlin", "src/jvmMain/kotlin"))
-    executionData.setFrom(project.layout.buildDirectory.file("jacoco/jvmTest.exec"))
-
-    reports {
-        xml.required.set(true)
-        html.required.set(true)
     }
 }
 

@@ -8,5 +8,8 @@
     // Use the same commit type as with Dependabot.
     ":semanticCommitTypeAll(build)"
   ],
-  enabledManagers: ["pre-commit"],
+  enabledManagers: [
+    "pre-commit",
+    "gradle-wrapper",
+  ],
 }

@@ -185,6 +185,8 @@ export class ReactiveINodeJS implements INodeJS {
   private getOrCreateTrackAndTriggerForAllChildren(): TrackAndTrigger {
     if (this.trackAndTriggerForAllChildren === undefined) {
       customRef((track, trigger) => {
+        this.createReferenceToPreventThisFromBeingGarbageCollected(track);
+        this.createReferenceToPreventThisFromBeingGarbageCollected(trigger);
         this.trackAndTriggerForAllChildren = {
           track,
           trigger,
@@ -210,6 +212,8 @@ export class ReactiveINodeJS implements INodeJS {
     }
     let created;
     customRef((track, trigger) => {
+      this.createReferenceToPreventThisFromBeingGarbageCollected(track);
+      this.createReferenceToPreventThisFromBeingGarbageCollected(trigger);
       created = {
         track,
         trigger,
@@ -237,5 +241,25 @@ export class ReactiveINodeJS implements INodeJS {
 
   triggerChangeInAllChildren() {
     this.trackAndTriggerForAllChildren?.trigger();
+  }
+
+  createReferenceToPreventThisFromBeingGarbageCollected(
+    trackOrTriggerFunction: () => void,
+  ) {
+    // The Vue-objects must reference this wrapper,
+    // so that the wrapper is not garbage collected when one of the Vue-objects it manages is still in use.
+    //
+    // The wrapper may be removed from the cache (see `toReactiveINodeJS` and `Cache.ts`) after being garbage collected.
+    // If it has been removed from the cache and a change (see `ChangeJS`) is triggered
+    // then the change will not be handled
+    // because the wrapper will not be in the cache used in `handleChange`.
+    //
+    // The wrapper should only be garbage collected and be removed from the cache
+    // if it and any of the Vue-objects it manages are not used anywhere.
+    (
+      trackOrTriggerFunction as {
+        _referenceToManagingReactiveINodeJS?: ReactiveINodeJS;
+      }
+    )["_referenceToManagingReactiveINodeJS"] = this;
   }
 }

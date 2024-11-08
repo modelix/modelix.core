@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinTest
+
 // Tests for a model client that cannot run in isolation.
 // One such case is starting a server and using the model client from JS at the same time.
 // This integration tests start a mock server with Docker Compose.
@@ -45,6 +47,11 @@ kotlin {
     }
 }
 
-dockerCompose.isRequiredBy(tasks.named("jsBrowserTest"))
-dockerCompose.isRequiredBy(tasks.named("jsNodeTest"))
-dockerCompose.isRequiredBy(tasks.named("jvmTest"))
+// The tasks "jsNodeTest" and "jsBrowserTest" are of this type.
+tasks.withType(KotlinTest::class).all {
+    dockerCompose.isRequiredBy(this)
+}
+// The task "jvmTest" is of this type.
+tasks.withType(Test::class).all {
+    dockerCompose.isRequiredBy(this)
+}

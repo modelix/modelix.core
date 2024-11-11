@@ -96,3 +96,8 @@ fun <In, K, Out : Any> IMonoStep<In>.find(elements: (IMonoStep<In>) -> IFluxStep
 fun <In, K, Out : Any> IMonoStep<In>.findAll(elements: (IMonoStep<In>) -> IFluxStep<Out>, keySelector: (IMonoStep<Out>) -> IProducingStep<K>, key: IMonoStep<K>): IFluxStep<Out> {
     return memoize { elements(it).flatMap { keySelector(it).allowEmpty().zip(it) }.toMultimap() }.get(key).filterNotNull().toFlux()
 }
+
+fun <In, K, Out : Any> IMonoStep<In>.findAll(elements: (IMonoStep<In>) -> IFluxStep<Out>, keySelector: (IMonoStep<Out>) -> IProducingStep<K>, keys: IFluxStep<K>): IFluxStep<Out> {
+    val map: IMonoStep<Map<K, List<Out>>> = memoize { elements(it).flatMap { keySelector(it).allowEmpty().zip(it) }.toMultimap() }
+    return map.zip(keys.allowEmpty()).flatMap { it.first.get(it.second).filterNotNull().toFlux() }
+}

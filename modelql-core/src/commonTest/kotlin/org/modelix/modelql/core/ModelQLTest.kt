@@ -369,6 +369,28 @@ class ModelQLTest {
     }
 
     @Test
+    fun testFindAllMultipleKeys() = runTestWithTimeout {
+        val result: List<String> = remoteProductDatabaseQuery { db ->
+            db.findAll({ it.products }, { it.category }, fluxOf("smartphones", "laptops")).map { it.title }.toList()
+        }
+        assertEquals(
+            listOf(
+                "iPhone 9",
+                "iPhone X",
+                "Samsung Universe 9",
+                "OPPOF19",
+                "Huawei P30",
+                "MacBook Pro",
+                "Samsung Galaxy Book",
+                "Microsoft Surface Laptop 4",
+                "Infinix INBOOK",
+                "HP Pavilion 15-DK1056WM",
+            ),
+            result,
+        )
+    }
+
+    @Test
     fun assertNotEmpty_throws_IllegalArgumentException() = runTestWithTimeout {
         assertFailsWith(IllegalArgumentException::class) {
             remoteProductDatabaseQuery<List<String>> { db ->

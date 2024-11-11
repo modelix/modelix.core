@@ -166,3 +166,15 @@ fun String?.asMono() = createConstantSourceStep(this)
 fun Set<String?>.asMono() = createConstantSourceStep(this)
 
 inline fun <reified T> nullMono(): IMonoStep<T?> = ConstantSourceStep<T?>(null, typeOf<T?>())
+
+fun fluxOf(vararg elements: String): IFluxStep<String> = when (elements.size) {
+    0 -> nullMono<String>().filterNotNull().asFlux()
+    1 -> elements.first().asMono().asFlux()
+    else -> {
+        var result = elements[0].asMono().plus(elements[1].asMono())
+        for (e in elements.drop(2)) {
+            result = result.plus(e.asMono())
+        }
+        result
+    }
+}

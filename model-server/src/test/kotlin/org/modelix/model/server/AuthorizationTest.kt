@@ -36,7 +36,7 @@ import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
-import org.modelix.model.server.store.LocalModelClient
+import org.modelix.model.server.store.StoreManager
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.images.builder.Transferable
 import java.net.URI
@@ -223,8 +223,8 @@ class AuthorizationTest {
             install(ModelixAuthorization, modelixAuthorizationConfig)
             installDefaultServerPlugins()
             val storeClient = InMemoryStoreClient()
-            val modelClient = LocalModelClient(storeClient)
-            val repositoriesManager = RepositoriesManager(modelClient)
+            val storeManager = StoreManager(storeClient)
+            val repositoriesManager = RepositoriesManager(storeManager)
             ModelReplicationServer(repositoriesManager).init(this)
             IdsApiImpl(repositoriesManager).init(this)
         }

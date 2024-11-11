@@ -22,6 +22,7 @@ import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IdReassignments
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryEvaluationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
@@ -30,6 +31,7 @@ import org.modelix.modelql.core.SimpleMonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.mapIfNotNull
 import org.modelix.modelql.core.stepOutputSerializer
+import org.modelix.modelql.untyped.AllReferencesTraversalStep.Descriptor
 import kotlin.jvm.JvmName
 
 class ConceptReferenceUIDTraversalStep() : SimpleMonoTransformingStep<ConceptReference, String>() {
@@ -49,10 +51,12 @@ class ConceptReferenceUIDTraversalStep() : SimpleMonoTransformingStep<ConceptRef
         override fun createStep(context: QueryDeserializationContext): IStep {
             return ConceptReferenceUIDTraversalStep()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.getUID()"""
+        return "${getProducers().single()}\n.getUID()"
     }
 }
 

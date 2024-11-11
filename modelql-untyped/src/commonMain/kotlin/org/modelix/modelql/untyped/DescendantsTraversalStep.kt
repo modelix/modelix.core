@@ -13,30 +13,32 @@
  */
 package org.modelix.modelql.untyped
 
-import kotlinx.coroutines.flow.flatMapConcat
+import com.badoo.reaktive.observable.flatMap
+import com.badoo.reaktive.observable.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
+import org.modelix.model.api.async.asAsyncNode
 import org.modelix.modelql.core.FluxTransformingStep
-import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IStreamInstantiationContext
+import org.modelix.modelql.core.IdReassignments
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.StepDescriptor
-import org.modelix.modelql.core.StepFlow
-import org.modelix.modelql.core.asStepFlow
+import org.modelix.modelql.core.StepStream
+import org.modelix.modelql.core.asStepStream
 import org.modelix.modelql.core.connect
 import org.modelix.modelql.core.stepOutputSerializer
 
 class DescendantsTraversalStep(val includeSelf: Boolean) : FluxTransformingStep<INode, INode>(), IFluxStep<INode> {
-    override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
-        return input.flatMapConcat { it.value.getDescendantsAsFlow(includeSelf) }.asStepFlow(this)
+    override fun createStream(input: StepStream<INode>, context: IStreamInstantiationContext): StepStream<INode> {
+        return input.flatMap { it.value.asAsyncNode().getDescendants(includeSelf) }.map { it.asRegularNode() }.asStepStream(this)
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<INode>> {
@@ -51,6 +53,8 @@ class DescendantsTraversalStep(val includeSelf: Boolean) : FluxTransformingStep<
         override fun createStep(context: QueryDeserializationContext): IStep {
             return DescendantsTraversalStep(true)
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = WithSelfDescriptor()
     }
 
     @Serializable
@@ -59,10 +63,12 @@ class DescendantsTraversalStep(val includeSelf: Boolean) : FluxTransformingStep<
         override fun createStep(context: QueryDeserializationContext): IStep {
             return DescendantsTraversalStep(false)
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = WithoutSelfDescriptor()
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.${if (includeSelf) "descendantsAndSelf" else "descendants"}()"""
+        return "${getProducers().single()}\n.${if (includeSelf) "descendantsAndSelf" else "descendants"}()"
     }
 }
 

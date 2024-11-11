@@ -13,18 +13,15 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEmpty
-import kotlinx.coroutines.flow.single
-import kotlinx.coroutines.flow.take
+import com.badoo.reaktive.single.Single
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
+import org.modelix.streams.isEmpty
 
 class IsEmptyStep() : AggregationStep<Any?, Boolean>() {
-    override suspend fun aggregate(input: StepFlow<Any?>): IStepOutput<Boolean> {
-        return input.take(1).map { false }.onEmpty { emit(true) }.single().asStepOutput(this)
+    override fun aggregate(input: StepStream<Any?>, context: IStreamInstantiationContext): Single<IStepOutput<Boolean>> {
+        return input.isEmpty().asStepStream(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
@@ -35,6 +32,8 @@ class IsEmptyStep() : AggregationStep<Any?, Boolean>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return IsEmptyStep()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Boolean>> {
@@ -42,7 +41,7 @@ class IsEmptyStep() : AggregationStep<Any?, Boolean>() {
     }
 
     override fun toString(): String {
-        return "${getProducers().single()}.isEmpty()"
+        return "${getProducers().single()}\n.isEmpty()"
     }
 }
 

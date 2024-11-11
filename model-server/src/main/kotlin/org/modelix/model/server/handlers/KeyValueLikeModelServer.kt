@@ -42,14 +42,11 @@ import org.modelix.authorization.asResource
 import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.requiresLogin
-import org.modelix.model.InMemoryModels
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.ModelServerPermissionSchema
-import org.modelix.model.server.store.ContextScopedStoreClient
-import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.ObjectInRepository
-import org.modelix.model.server.store.getGenericStore
+import org.modelix.model.server.store.StoreManager
 import org.modelix.model.server.store.pollEntry
 import org.modelix.model.server.store.runTransactionSuspendable
 import org.modelix.model.server.templates.PageWithMenuBar
@@ -66,21 +63,14 @@ typealias CallContext = PipelineContext<Unit, ApplicationCall>
 
 class KeyValueLikeModelServer(
     private val repositoriesManager: IRepositoriesManager,
-    private val storeClient: IStoreClient,
-    private val inMemoryModels: InMemoryModels,
 ) {
-
-    constructor(repositoriesManager: RepositoriesManager) :
-        this(repositoriesManager, repositoriesManager.client.store, InMemoryModels())
-
-    init {
-        require(storeClient !is ContextScopedStoreClient)
-    }
 
     companion object {
         private val HASH_PATTERN: Pattern = Pattern.compile("[a-zA-Z0-9\\-_]{5}\\*[a-zA-Z0-9\\-_]{38}")
         const val PROTECTED_PREFIX = "$$$"
     }
+
+    private val stores: StoreManager get() = repositoriesManager.getStoreManager()
 
     fun init(application: Application) {
         // Functionally, it does not matter if the server ID
@@ -119,14 +109,14 @@ class KeyValueLikeModelServer(
                 get<Paths.getKeyGet> {
                     val key = call.parameters["key"]!!
                     checkKeyPermission(key, EPermissionType.READ)
-                    val value = storeClient[key]
+                    val value = stores.getGlobalKeyValueStore()[key]
                     respondValue(key, value)
                 }
                 get<Paths.pollKeyGet> {
                     val key: String = call.parameters["key"]!!
                     val lastKnownValue = call.request.queryParameters["lastKnownValue"]
                     checkKeyPermission(key, EPermissionType.READ)
-                    val newValue = pollEntry(storeClient.getGenericStore(), ObjectInRepository.global(key), lastKnownValue)
+                    val newValue = pollEntry(stores.genericStore, ObjectInRepository.global(key), lastKnownValue)
                     respondValue(key, newValue)
                 }
 
@@ -136,7 +126,7 @@ class KeyValueLikeModelServer(
                 post<Paths.counterKeyPost> {
                     val key = call.parameters["key"]!!
                     checkKeyPermission(key, EPermissionType.WRITE)
-                    val value = storeClient.generateId(key)
+                    val value = stores.getGlobalStoreClient().generateId(key)
                     call.respondText(text = value.toString())
                 }
 
@@ -188,7 +178,7 @@ class KeyValueLikeModelServer(
                         checkKeyPermission(key, EPermissionType.READ)
                         keys.add(key)
                     }
-                    val values = storeClient.getAll(keys)
+                    val values = stores.getGlobalStoreClient().getAll(keys)
                     for (i in keys.indices) {
                         val respEntry = JSONObject()
                         respEntry.put("key", keys[i])
@@ -240,7 +230,7 @@ class KeyValueLikeModelServer(
             if (callContext != null) {
                 keys.forEach { callContext.checkKeyPermission(it, EPermissionType.READ) }
             }
-            val values = storeClient.getAll(keys)
+            val values = stores.getGlobalStoreClient().getAll(keys)
             for (i in keys.indices) {
                 val key = keys[i]
                 val value = values[i]
@@ -284,7 +274,7 @@ class KeyValueLikeModelServer(
                 }
             }
         }
-        val referencedEntries = storeClient.getGenericStore().getAll(referencedKeys.map { ObjectInRepository.global(it) }.toSet()).mapKeys { it.key.key }
+        val referencedEntries = stores.genericStore.getAll(referencedKeys.map { ObjectInRepository.global(it) }.toSet()).mapKeys { it.key.key }
         for (key in referencedKeys) {
             if (referencedEntries[key] == null) {
                 throw NotFoundException("Referenced key $key not found")
@@ -327,9 +317,9 @@ class KeyValueLikeModelServer(
             // We could try to move the objects later, but since this API is deprecated, it's not worth the effort.
         }
 
-        storeClient.runTransactionSuspendable {
-            storeClient.getGenericStore().putAll(hashedObjects.mapKeys { ObjectInRepository.global(it.key) })
-            storeClient.getGenericStore().putAll(userDefinedEntries.mapKeys { ObjectInRepository.global(it.key) })
+        stores.getGlobalStoreClient().runTransactionSuspendable {
+            stores.genericStore.putAll(hashedObjects.mapKeys { ObjectInRepository.global(it.key) })
+            stores.genericStore.putAll(userDefinedEntries.mapKeys { ObjectInRepository.global(it.key) })
             for ((branch, value) in branchChanges) {
                 if (value == null) {
                     checkPermission(ModelServerPermissionSchema.branch(branch).delete)

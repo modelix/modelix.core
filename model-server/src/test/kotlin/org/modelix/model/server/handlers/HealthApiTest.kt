@@ -28,20 +28,14 @@ import io.mockk.spyk
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Test
 import org.modelix.authorization.installAuthentication
-import org.modelix.model.InMemoryModels
 import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.store.InMemoryStoreClient
-import org.modelix.model.server.store.LocalModelClient
-import org.modelix.model.server.store.forGlobalRepository
 import kotlin.test.AfterTest
 import kotlin.test.assertEquals
 
 class HealthApiTest {
-    private val inMemoryModels = InMemoryModels()
-    private val store = InMemoryStoreClient().forGlobalRepository()
-    private val localModelClient = LocalModelClient(store)
-    private val repositoriesManager = RepositoriesManager(localModelClient)
-    private val healthApi = HealthApiImpl(repositoriesManager, localModelClient.store, inMemoryModels)
+    private val store = InMemoryStoreClient()
+    private val healthApi = HealthApiImpl(RepositoriesManager(store))
     private val healthApiSpy = spyk(healthApi, recordPrivateCalls = true)
 
     private fun runApiTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {

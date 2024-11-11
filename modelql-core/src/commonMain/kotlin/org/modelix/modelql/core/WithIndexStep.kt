@@ -13,12 +13,12 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.withIndex
+import com.badoo.reaktive.observable.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.serializer
+import org.modelix.streams.withIndex
 
 class WithIndexStep<E> : MonoTransformingStep<E, IZip2Output<Any?, E, Int>>() {
     override fun requiresSingularQueryInput(): Boolean {
@@ -34,7 +34,7 @@ class WithIndexStep<E> : MonoTransformingStep<E, IZip2Output<Any?, E, Int>>() {
         )
     }
 
-    override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<IZip2Output<Any?, E, Int>> {
+    override fun createStream(input: StepStream<E>, context: IStreamInstantiationContext): StepStream<IZip2Output<Any?, E, Int>> {
         return input.withIndex().map { ZipStepOutput(listOf(it.value, it.index.asStepOutput(this))) }
     }
 
@@ -48,10 +48,12 @@ class WithIndexStep<E> : MonoTransformingStep<E, IZip2Output<Any?, E, Int>>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return WithIndexStep<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun toString(): String {
-        return "${getProducers().single()}.withIndex()"
+        return "${getProducers().single()}\n.withIndex()"
     }
 }
 

@@ -254,7 +254,7 @@ actual open class ReplicatedRepository actual constructor(
             initialVersion = createVersion(initialTree.value, arrayOf(), null)
             client.asyncStore.put(branchReference.getKey(), initialVersion.getContentHash())
         } else {
-            initialTree.setValue(CLTree(initialVersion.treeHash?.getValue(store), store))
+            initialTree.setValue(CLTree(initialVersion.treeHash.getValue(store), store))
         }
 
         // prefetch to avoid HTTP request in command listener

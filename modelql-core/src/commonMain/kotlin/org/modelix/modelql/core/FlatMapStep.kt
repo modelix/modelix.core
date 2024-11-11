@@ -13,7 +13,7 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.flatMapConcat
+import com.badoo.reaktive.observable.flatMap
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -28,8 +28,8 @@ class FlatMapStep<In, Out>(val query: FluxUnboundQuery<In, Out>) : TransformingS
         return query.requiresWriteAccess()
     }
 
-    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
-        return input.flatMapConcat { query.asFlow(context.evaluationContext, it) }
+    override fun createStream(input: StepStream<In>, context: IStreamInstantiationContext): StepStream<Out> {
+        return input.flatMap { query.asStream(context.evaluationContext, it) }
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Out>> {
@@ -40,14 +40,20 @@ class FlatMapStep<In, Out>(val query: FluxUnboundQuery<In, Out>) : TransformingS
 
     @Serializable
     @SerialName("flatMap")
-    class Descriptor(val queryId: QueryId) : CoreStepDescriptor() {
+    data class Descriptor(val queryId: QueryId) : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return FlatMapStep<Any?, Any?>(context.getOrCreateQuery(queryId) as FluxUnboundQuery<Any?, Any?>)
+        }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(idReassignments.reassign(queryId))
+
+        override fun prepareNormalization(idReassignments: IdReassignments) {
+            idReassignments.visitQuery(queryId)
         }
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.flatMap { $query }"""
+        return "${getProducers().single()}.flatMap {\n${query.toString().prependIndent("  ")}\n}"
     }
 }
 

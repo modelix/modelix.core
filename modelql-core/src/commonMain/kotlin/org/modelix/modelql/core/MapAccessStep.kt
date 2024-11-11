@@ -23,7 +23,7 @@ class MapAccessStep<K, V>() : TransformingStepWithParameter<Map<K, V>, K, Any?, 
     override fun transformElement(input: IStepOutput<Map<K, V>>, parameter: IStepOutput<K>?): IStepOutput<V?> {
         if (parameter == null) return MultiplexedOutput(1, (null as V?).asStepOutput(this))
         if (input is CollectorStepOutput<*, *, *>) {
-            val collectorStepOutput = input as CollectorStepOutput<IZip2Output<Any?, K, V>, HashMap<K, IStepOutput<V>>, Map<K, V>>
+            val collectorStepOutput = input as CollectorStepOutput<IZip2Output<Any?, K, V>, Map<K, IStepOutput<V>>, Map<K, V>>
             collectorStepOutput.internalCollection[parameter.value]?.let { return MultiplexedOutput<V?>(0, it) }
         } else {
             input.value[parameter.value]?.let { return MultiplexedOutput<V?>(2, it.asStepOutput(this)) }
@@ -32,9 +32,8 @@ class MapAccessStep<K, V>() : TransformingStepWithParameter<Map<K, V>, K, Any?, 
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<V?>> {
-        val mapSerializer = getInputProducer().getOutputSerializer(serializationContext) as MapCollectorStepOutputSerializer<K, V>
-        val zipSerializer = mapSerializer.inputElementSerializer as ZipOutputSerializer<*, *>
-        val valueSerializer = zipSerializer.elementSerializers[1] as KSerializer<IStepOutput<V>>
+        val mapSerializer = MapCollectorStepOutputSerializer.cast(getInputProducer().getOutputSerializer(serializationContext))
+        val valueSerializer = mapSerializer.valueSerializer()
         return MultiplexedOutputSerializer<V?>(
             this,
             listOf<KSerializer<IStepOutput<V?>>>(
@@ -46,7 +45,7 @@ class MapAccessStep<K, V>() : TransformingStepWithParameter<Map<K, V>, K, Any?, 
     }
 
     override fun toString(): String {
-        return "${getInputProducer()}.get(${getParameterProducer()})"
+        return "${getInputProducer()}\n.get(${getParameterProducer()})"
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
@@ -57,6 +56,8 @@ class MapAccessStep<K, V>() : TransformingStepWithParameter<Map<K, V>, K, Any?, 
         override fun createStep(context: QueryDeserializationContext): IStep {
             return MapAccessStep<Any?, Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 }
 

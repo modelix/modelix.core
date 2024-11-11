@@ -26,7 +26,7 @@ class CPVersion(
     id: Long,
     time: String?,
     author: String?,
-    treeHash: KVEntryReference<CPTree>?,
+    treeHash: KVEntryReference<CPTree>,
     previousVersion: KVEntryReference<CPVersion>?, // deprecated, use baseVersion instead
     originalVersion: KVEntryReference<CPVersion>?, // deprecated, there is no rewriting of versions anymore. Use mergedVersion1/2 instead
     baseVersion: KVEntryReference<CPVersion>?, // the version, the operations are applied to, to create this version
@@ -44,7 +44,7 @@ class CPVersion(
     val time: String?
     val author: String?
 
-    val treeHash: KVEntryReference<CPTree>?
+    val treeHash: KVEntryReference<CPTree>
     val previousVersion: KVEntryReference<CPVersion>?
 
     /**
@@ -70,7 +70,7 @@ class CPVersion(
         return longToHex(id) +
             s + escape(time) +
             s + escape(author) +
-            s + nullAsEmptyString(treeHash?.getHash()) +
+            s + nullAsEmptyString(treeHash.getHash()) +
             s + nullAsEmptyString(baseVersion?.getHash()) +
             s + nullAsEmptyString(mergedVersion1?.getHash()) +
             s + nullAsEmptyString(mergedVersion2?.getHash()) +
@@ -115,7 +115,7 @@ class CPVersion(
                         longFromHex(parts[0]),
                         unescape(parts[1]),
                         unescape(parts[2]),
-                        treeHash = emptyStringAsNull(parts[3])?.let { KVEntryReference(it, CPTree.DESERIALIZER) },
+                        treeHash = KVEntryReference(checkNotNull(emptyStringAsNull(parts[3])) { "Tree hash empty in $input" }, CPTree.DESERIALIZER),
                         previousVersion = null,
                         originalVersion = null,
                         baseVersion = emptyStringAsNull(parts[4])?.let { KVEntryReference(it, DESERIALIZER) },
@@ -143,7 +143,7 @@ class CPVersion(
                         id = longFromHex(parts[0]),
                         time = unescape(parts[1]),
                         author = unescape(parts[2]),
-                        treeHash = emptyStringAsNull(parts[3])?.let { KVEntryReference(it, CPTree.DESERIALIZER) },
+                        treeHash = KVEntryReference(checkNotNull(emptyStringAsNull(parts[3])) { "Tree hash empty in $input" }, CPTree.DESERIALIZER),
                         previousVersion = emptyStringAsNull(parts[4])?.let { KVEntryReference(it, DESERIALIZER) },
                         originalVersion = if (parts.size > 7) emptyStringAsNull(parts[7])?.let { KVEntryReference(it, DESERIALIZER) } else null,
                         baseVersion = null,
@@ -163,9 +163,7 @@ class CPVersion(
     }
 
     init {
-        if (treeHash == null) {
-            logger.warn(RuntimeException()) { "No tree hash provided" }
-        }
+        requireNotNull(treeHash) { "No tree hash provided" }
         if ((operations == null) == (operationsHash == null)) {
             throw RuntimeException("Only one of 'operations' and 'operationsHash' can be provided")
         }

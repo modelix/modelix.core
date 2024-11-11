@@ -195,3 +195,38 @@ val html = query {
 
 `buildHtmlQuery` and the `requestFragment` operation are similar to the `buildLocalMapping` operation,
 but inside the `onSuccess` block you use the Kotlin HTML DSL.
+
+== Indices/Caching
+
+To search for a node efficiently, `.find` can be used. Internally, it creates a map of all the elements and reuses that
+in following queries.
+
+[source,kotlin]
+--
+val nodeId: String
+root.find(
+    // Provides all nodes to index
+    { it.descendants() },
+    // selects the index key for each node
+    { it.nodeReferenceAsString() },
+    // The key to search for in the current request
+    nodeId.asMono()
+)
+--
+
+It's also possible to search for multiple nodes:
+
+[source,kotlin]
+--
+val name: String
+root.findAll({ it.descendants().ofConcept(C_INamedConcept) }, { it.name }, name.asMono())
+--
+
+Internally, they both use the `memoize` operation. `memoize` stores the result of the query and reuses it without
+re-executing the query.
+
+The `find` example is equivalent to this:
+[source,kotlin]
+--
+root.memoize { it.descendants().associateBy { it.nodeReferenceAsString() } }.get(nodeId.asMono()).filterNotNull()
+--

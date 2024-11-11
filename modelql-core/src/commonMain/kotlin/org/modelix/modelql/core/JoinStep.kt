@@ -13,9 +13,9 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.flattenConcat
-import kotlinx.coroutines.flow.map
+import com.badoo.reaktive.observable.asObservable
+import com.badoo.reaktive.observable.flatten
+import com.badoo.reaktive.observable.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -39,6 +39,8 @@ class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return JoinStep<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun addProducer(producer: IProducingStep<E>) {
@@ -47,9 +49,8 @@ class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
         producer.addConsumer(this)
     }
 
-    override fun createFlow(context: IFlowInstantiationContext): StepFlow<E> {
-        return producers.mapIndexed { prodIndex, it -> context.getOrCreateFlow(it).map { MultiplexedOutput(prodIndex, it) } }
-            .asFlow().flattenConcat()
+    override fun createStream(context: IStreamInstantiationContext): StepStream<E> {
+        return producers.mapIndexed { prodIndex, it -> context.getOrCreateStream(it).map { MultiplexedOutput(prodIndex, it) } }.asObservable().flatten()
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>> {
@@ -57,7 +58,7 @@ class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
     }
 
     override fun toString(): String {
-        return getProducers().joinToString(" + ")
+        return "join(\n${getProducers().joinToString("\n,\n") { it.toString().prependIndent("  ") }}\n)"
     }
 }
 

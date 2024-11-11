@@ -65,7 +65,6 @@ import org.modelix.model.api.INodeResolutionScope
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.TreePointer
-import org.modelix.model.client.IModelClient
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
@@ -73,10 +72,14 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.model.server.handlers.IRepositoriesManager
 import org.modelix.model.server.handlers.NodeNotFoundException
+import org.modelix.model.server.handlers.getLegacyObjectStore
+import org.modelix.model.server.store.StoreManager
 import org.modelix.model.server.templates.PageWithMenuBar
 import kotlin.collections.set
 
-class ContentExplorer(private val client: IModelClient, private val repoManager: IRepositoriesManager) {
+class ContentExplorer(private val repoManager: IRepositoriesManager) {
+
+    private val stores: StoreManager get() = repoManager.getStoreManager()
 
     fun init(application: Application) {
         application.routing {
@@ -123,31 +126,29 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
                     it.toLongOrNull() ?: return@get call.respondText("Invalid expandTo value. Provide a node id.", status = HttpStatusCode.BadRequest)
                 }
 
-                repoManager.runWithRepository(repositoryId) {
-                    val tree = CLVersion.loadFromHash(versionHash, client.storeCache).getTree()
-                    val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
+                val tree = CLVersion.loadFromHash(versionHash, repoManager.getLegacyObjectStore(repositoryId)).getTree()
+                val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
 
-                    val expandedNodes = expandTo?.let { nodeId -> getAncestorsAndSelf(nodeId, tree) }.orEmpty()
+                val expandedNodes = expandTo?.let { nodeId -> getAncestorsAndSelf(nodeId, tree) }.orEmpty()
 
-                    call.respondHtmlTemplate(PageWithMenuBar("repos/", "../../../../..")) {
-                        headContent {
-                            title("Content Explorer")
-                            link("../../../../../public/content-explorer.css", rel = "stylesheet")
-                            script("text/javascript", src = "../../../../../public/content-explorer.js") {}
-                            if (expandTo != null) {
-                                script("text/javascript") {
-                                    unsafe {
-                                        +"""
+                call.respondHtmlTemplate(PageWithMenuBar("repos/", "../../../../..")) {
+                    headContent {
+                        title("Content Explorer")
+                        link("../../../../../public/content-explorer.css", rel = "stylesheet")
+                        script("text/javascript", src = "../../../../../public/content-explorer.js") {}
+                        if (expandTo != null) {
+                            script("text/javascript") {
+                                unsafe {
+                                    +"""
                                         document.addEventListener("DOMContentLoaded", function(event) {
                                             scrollToElement('$expandTo');
                                         });
-                                        """.trimIndent()
-                                    }
+                                    """.trimIndent()
                                 }
                             }
                         }
-                        bodyContent { contentPageBody(rootNode, versionHash, expandedNodes, expandTo) }
                     }
+                    bodyContent { contentPageBody(rootNode, versionHash, expandedNodes, expandTo) }
                 }
             }
             post("/content/repositories/{repository}/versions/{versionHash}") {
@@ -164,25 +165,23 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
 
                 call.checkPermission(ModelServerPermissionSchema.repository(repositoryId).objects.read)
 
-                repoManager.runWithRepository(repositoryId) {
-                    val expandedNodes = call.receive<ContentExplorerExpandedNodes>()
+                val expandedNodes = call.receive<ContentExplorerExpandedNodes>()
 
-                    val tree = CLVersion.loadFromHash(versionHash, client.storeCache).getTree()
-                    val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
+                val tree = CLVersion.loadFromHash(versionHash, stores.getLegacyObjectStore(repositoryId)).getTree()
+                val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
 
-                    var expandedNodeIds = expandedNodes.expandedNodeIds
-                    if (expandedNodes.expandAll) {
-                        expandedNodeIds = expandedNodeIds + collectExpandableChildNodes(rootNode, expandedNodes.expandedNodeIds.toSet())
-                    }
-
-                    call.respondText(
-                        buildString {
-                            appendHTML().ul("treeRoot") {
-                                nodeItem(rootNode, expandedNodeIds.toSet())
-                            }
-                        },
-                    )
+                var expandedNodeIds = expandedNodes.expandedNodeIds
+                if (expandedNodes.expandAll) {
+                    expandedNodeIds = expandedNodeIds + collectExpandableChildNodes(rootNode, expandedNodes.expandedNodeIds.toSet())
                 }
+
+                call.respondText(
+                    buildString {
+                        appendHTML().ul("treeRoot") {
+                            nodeItem(rootNode, expandedNodeIds.toSet())
+                        }
+                    },
+                )
             }
             get("/content/repositories/{repository}/versions/{versionHash}/{nodeId}") {
                 val id = call.parameters["nodeId"]?.toLongOrNull()
@@ -196,20 +195,18 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
 
                 call.checkPermission(ModelServerPermissionSchema.repository(repositoryId).objects.read)
 
-                repoManager.runWithRepository(RepositoryId(repositoryId)) {
-                    val version = try {
-                        CLVersion.loadFromHash(versionHash, client.storeCache)
-                    } catch (ex: RuntimeException) {
-                        return@runWithRepository call.respondText("version not found", status = HttpStatusCode.NotFound)
-                    }
+                val version = try {
+                    CLVersion.loadFromHash(versionHash, stores.getLegacyObjectStore(RepositoryId(repositoryId)))
+                } catch (ex: RuntimeException) {
+                    return@get call.respondText("version not found", status = HttpStatusCode.NotFound)
+                }
 
-                    val node = PNodeAdapter(id, TreePointer(version.getTree())).takeIf { it.isValid }
+                val node = PNodeAdapter(id, TreePointer(version.getTree())).takeIf { it.isValid }
 
-                    if (node != null) {
-                        call.respondHtml { body { nodeInspector(node) } }
-                    } else {
-                        call.respondText("node id not found", status = HttpStatusCode.NotFound)
-                    }
+                if (node != null) {
+                    call.respondHtml { body { nodeInspector(node) } }
+                } else {
+                    call.respondText("node id not found", status = HttpStatusCode.NotFound)
                 }
             }
         }
@@ -218,7 +215,7 @@ class ContentExplorer(private val client: IModelClient, private val repoManager:
     private fun getAncestorsAndSelf(expandTo: Long, tree: CLTree): Set<String> {
         val seq = generateSequence(expandTo) { id ->
             try {
-                tree.resolveElement(id)?.parentId
+                tree.getParent(id)
             } catch (e: org.modelix.model.lazy.NodeNotFoundException) {
                 throw NodeNotFoundException(id, e)
             }

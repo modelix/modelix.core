@@ -13,7 +13,7 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.map
+import com.badoo.reaktive.observable.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
@@ -25,7 +25,7 @@ open class LocalMappingStep<In, Out>(val transformation: (In) -> Out) : MonoTran
         return LocalMappingSerializer(this, getProducer().getOutputSerializer(serializationContext)).stepOutputSerializer(this)
     }
 
-    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
+    override fun createStream(input: StepStream<In>, context: IStreamInstantiationContext): StepStream<Out> {
         return input.map { transformation(it.value).asStepOutput(this) }
     }
 
@@ -34,7 +34,7 @@ open class LocalMappingStep<In, Out>(val transformation: (In) -> Out) : MonoTran
     }
 
     override fun toString(): String {
-        return "${getProducer()}.mapLocal()"
+        return "${getProducer()}\n.mapLocal()"
     }
 }
 
@@ -103,7 +103,7 @@ class ExecuteLocalStep<In, Out>(transformation: (In) -> Out) : LocalMappingStep<
     }
 
     override fun toString(): String {
-        return "${getProducer()}.executeLocal()"
+        return "${getProducer()}\n.executeLocal()"
     }
 }
 

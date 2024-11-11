@@ -16,6 +16,7 @@ package org.modelix.model.mpsadapters
 import jetbrains.mps.smodel.adapter.structure.link.SContainmentLinkAdapter
 import org.jetbrains.mps.openapi.language.SContainmentLink
 import org.modelix.model.api.IChildLink
+import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
 
 data class MPSChildLink(val link: SContainmentLinkAdapter) : IChildLink {
@@ -43,4 +44,6 @@ data class MPSChildLink(val link: SContainmentLinkAdapter) : IChildLink {
 
     override val isOptional: Boolean
         get() = link.isOptional
+
+    override fun toReference(): IChildLinkReference = IChildLinkReference.fromIdAndName(getUID(), getSimpleName())
 }

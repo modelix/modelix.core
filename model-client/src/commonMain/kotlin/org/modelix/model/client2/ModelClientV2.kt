@@ -103,7 +103,7 @@ class ModelClientV2(
 
     private fun getStore(repository: RepositoryId?) = runSynchronized(storeForRepository) { storeForRepository.getOrPut(repository) { ObjectStoreCache(MapBasedStore()) } }
     private fun getRepository(store: IDeserializingKeyValueStore): RepositoryId? {
-        return storeForRepository.asSequence().first { it.value == store }.key
+        return storeForRepository.asSequence().first { it.value.keyValueStore == store.keyValueStore }.key
     }
 
     private suspend fun updateClientId() {
@@ -155,10 +155,10 @@ class ModelClientV2(
     }
 
     override suspend fun initRepositoryWithLegacyStorage(repository: RepositoryId): IVersion {
-        return initRepository(repository, useRoleIds = false, legacyGlobalStorage = true)
+        return initRepository(repository, useRoleIds = true, legacyGlobalStorage = true)
     }
 
-    suspend fun initRepository(repository: RepositoryId, useRoleIds: Boolean = false, legacyGlobalStorage: Boolean = false): IVersion {
+    suspend fun initRepository(repository: RepositoryId, useRoleIds: Boolean = true, legacyGlobalStorage: Boolean = false): IVersion {
         return httpClient.preparePost {
             url {
                 parameter("useRoleIds", useRoleIds)
@@ -452,7 +452,7 @@ class ModelClientV2(
         } else if (delta.versionHash == baseVersion.getContentHash()) {
             baseVersion
         } else {
-            require(baseVersion.store == store) { "baseVersion was not created by this client" }
+            require(baseVersion.store.keyValueStore == store.keyValueStore) { "baseVersion was not created by this client" }
             CLVersion(delta.versionHash, store)
         }
     }

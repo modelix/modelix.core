@@ -15,9 +15,12 @@
 
 package org.modelix.model.operations
 
+import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.observable.toList
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
+import org.modelix.model.api.async.getDescendants
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.KVEntryReference
@@ -25,6 +28,7 @@ import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.IKVValue
 import org.modelix.model.persistent.SerializationUtil
+import org.modelix.streams.getSynchronous
 
 class AddNewChildSubtreeOp(val resultTreeHash: KVEntryReference<CPTree>, val position: PositionInRole, val childId: Long, val concept: IConceptReference?) : AbstractOperation() {
 
@@ -78,7 +82,11 @@ class AddNewChildSubtreeOp(val resultTreeHash: KVEntryReference<CPTree>, val pos
 
         override fun invert(): List<IOperation> {
             val resultTree = getResultTree(store)
-            return resultTree.getDescendants(childId, true).map { DeleteNodeOp(it.id) }.asReversed()
+            return resultTree.asAsyncTree()
+                .getDescendants(childId, true).map { DeleteNodeOp(it) }
+                .toList()
+                .getSynchronous()
+                .asReversed()
         }
     }
 

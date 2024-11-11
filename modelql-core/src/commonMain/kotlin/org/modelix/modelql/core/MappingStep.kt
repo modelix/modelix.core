@@ -13,6 +13,8 @@
  */
 package org.modelix.modelql.core
 
+import com.badoo.reaktive.observable.flatMap
+import com.badoo.reaktive.observable.observableOf
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -36,8 +38,8 @@ class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : MonoTransform
         return query.requiresWriteAccess()
     }
 
-    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
-        return query.asFlow(context.evaluationContext, input)
+    override fun createStream(input: StepStream<In>, context: IStreamInstantiationContext): StepStream<Out> {
+        return input.flatMap { query.asStream(context.evaluationContext, observableOf(it)) }
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Out>> {
@@ -45,16 +47,22 @@ class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : MonoTransform
     }
 
     override fun toString(): String {
-        return "${getProducer()}.map { $query }"
+        return "${getProducer()}\n.map {\n${query.toString().prependIndent("  ")}\n}"
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor(context.load(query))
 
     @Serializable
     @SerialName("map")
-    class Descriptor(val queryId: QueryId) : CoreStepDescriptor() {
+    data class Descriptor(val queryId: QueryId) : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return MappingStep<Any?, Any?>(context.getOrCreateQuery(queryId) as MonoUnboundQuery<Any?, Any?>)
+        }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(idReassignments.reassign(queryId))
+
+        override fun prepareNormalization(idReassignments: IdReassignments) {
+            idReassignments.visitQuery(queryId)
         }
     }
 }

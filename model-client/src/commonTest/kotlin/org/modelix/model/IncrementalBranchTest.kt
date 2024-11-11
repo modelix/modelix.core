@@ -92,7 +92,7 @@ class IncrementalBranchTest {
 
     @Test
     fun addNewChild_modifies_containsNode() {
-        val childId = 12345L
+        val childId = 12345L // 0x3039
         val branch = PBranch(ModelFacade.newLocalTree(), IdGenerator.getInstance(17865))
         val incrementalBranch = IncrementalBranch(branch)
         val engine = IncrementalEngine()

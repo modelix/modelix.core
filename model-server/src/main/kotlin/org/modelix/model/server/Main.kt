@@ -54,7 +54,6 @@ import org.apache.ignite.Ignition
 import org.modelix.authorization.ModelixAuthorization
 import org.modelix.authorization.NoPermissionException
 import org.modelix.authorization.NotLoggedInException
-import org.modelix.model.InMemoryModels
 import org.modelix.model.server.handlers.AboutApiImpl
 import org.modelix.model.server.handlers.HealthApiImpl
 import org.modelix.model.server.handlers.HttpException
@@ -73,8 +72,6 @@ import org.modelix.model.server.handlers.ui.RepositoryOverview
 import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.IsolatingStore
-import org.modelix.model.server.store.LocalModelClient
-import org.modelix.model.server.store.forContextRepository
 import org.modelix.model.server.store.forGlobalRepository
 import org.modelix.model.server.store.loadDump
 import org.modelix.model.server.store.writeDump
@@ -170,10 +167,8 @@ object Main {
                 globalStoreClient.put(cmdLineArgs.setValues[i], cmdLineArgs.setValues[i + 1])
                 i += 2
             }
-            val localModelClient = LocalModelClient(storeClient.forContextRepository())
-            val inMemoryModels = InMemoryModels()
-            val repositoriesManager = RepositoriesManager(localModelClient)
-            val modelServer = KeyValueLikeModelServer(repositoriesManager, globalStoreClient, inMemoryModels)
+            val repositoriesManager = RepositoriesManager(storeClient)
+            val modelServer = KeyValueLikeModelServer(repositoriesManager)
             val sharedSecretFile = cmdLineArgs.secretFile
             if (sharedSecretFile.exists()) {
                 modelServer.setSharedSecret(
@@ -181,10 +176,10 @@ object Main {
                 )
             }
             val repositoryOverview = RepositoryOverview(repositoriesManager)
-            val historyHandler = HistoryHandler(localModelClient, repositoriesManager)
+            val historyHandler = HistoryHandler(repositoriesManager)
             val diffView = DiffView(repositoriesManager)
-            val contentExplorer = ContentExplorer(localModelClient, repositoriesManager)
-            val modelReplicationServer = ModelReplicationServer(repositoriesManager, localModelClient, inMemoryModels)
+            val contentExplorer = ContentExplorer(repositoriesManager)
+            val modelReplicationServer = ModelReplicationServer(repositoriesManager)
             val metricsApi = MetricsApiImpl()
 
             val configureNetty: NettyApplicationEngine.Configuration.() -> Unit = {
@@ -242,10 +237,10 @@ object Main {
                 contentExplorer.init(this)
                 modelReplicationServer.init(this)
                 metricsApi.init(this)
-                IdsApiImpl(repositoriesManager, localModelClient).init(this)
+                IdsApiImpl(repositoriesManager).init(this)
 
                 routing {
-                    HealthApiImpl(repositoriesManager, globalStoreClient, inMemoryModels).installRoutes(this)
+                    HealthApiImpl(repositoriesManager).installRoutes(this)
                     AboutApiImpl.installRoutes(this)
                     staticResources("/public", "public")
 

@@ -6,7 +6,6 @@ import kotlinx.coroutines.test.runTest
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.IsolatingStore
-import org.modelix.model.server.store.LocalModelClient
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -15,7 +14,7 @@ import kotlin.test.assertTrue
 class RepositoriesManagerTest {
 
     val store = spyk<IsolatingStore>(InMemoryStoreClient())
-    private val repoManager = RepositoriesManager(LocalModelClient(store))
+    private val repoManager = RepositoriesManager(store)
 
     private suspend fun initRepository(repoId: RepositoryId) {
         repoManager.createRepository(repoId, "testUser", useRoleIds = true, legacyGlobalStorage = false)

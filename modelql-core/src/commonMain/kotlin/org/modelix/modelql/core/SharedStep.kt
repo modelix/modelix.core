@@ -22,8 +22,8 @@ class SharedStep<E>() : MonoTransformingStep<E, E>() {
         return getProducer().getOutputSerializer(serializationContext)
     }
 
-    override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E> {
-        throw RuntimeException("The flow for shared steps is expected to be created by the query")
+    override fun createStream(input: StepStream<E>, context: IStreamInstantiationContext): StepStream<E> {
+        throw RuntimeException("The stream for shared steps is expected to be created by the query")
     }
 
     override fun getRootInputSteps(): Set<IStep> {
@@ -40,9 +40,11 @@ class SharedStep<E>() : MonoTransformingStep<E, E>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return SharedStep<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun toString(): String {
-        return "${getProducer()}.shared()"
+        return "${getProducer()}\n.shared()"
     }
 }

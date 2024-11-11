@@ -48,13 +48,14 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import org.modelix.authorization.installAuthentication
-import org.modelix.model.InMemoryModels
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.readVersionDelta
@@ -66,9 +67,6 @@ import org.modelix.model.server.api.v2.VersionDeltaStreamV2
 import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.runWithNettyServer
 import org.modelix.model.server.store.InMemoryStoreClient
-import org.modelix.model.server.store.LocalModelClient
-import org.modelix.model.server.store.forContextRepository
-import org.modelix.modelql.core.assertNotEmpty
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -80,20 +78,17 @@ class ModelReplicationServerTest {
 
     private data class Fixture(
         val storeClient: InMemoryStoreClient,
-        val modelClient: LocalModelClient,
         val repositoriesManager: IRepositoriesManager,
         val modelReplicationServer: ModelReplicationServer,
     )
 
     private fun getDefaultModelReplicationServerFixture(): Fixture {
         val storeClient = InMemoryStoreClient()
-        val modelClient = LocalModelClient(storeClient.forContextRepository())
-        val repositoriesManager = RepositoriesManager(modelClient)
+        val repositoriesManager = RepositoriesManager(storeClient)
         return Fixture(
             storeClient,
-            modelClient,
             repositoriesManager,
-            ModelReplicationServer(repositoriesManager, modelClient, InMemoryModels()),
+            ModelReplicationServer(repositoriesManager),
         )
     }
 
@@ -105,7 +100,7 @@ class ModelReplicationServerTest {
             installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
             fixture.modelReplicationServer.init(this)
-            IdsApiImpl(fixture.repositoriesManager, fixture.modelClient).init(this)
+            IdsApiImpl(fixture.repositoriesManager).init(this)
         }
 
         coroutineScope {
@@ -235,22 +230,20 @@ class ModelReplicationServerTest {
     fun `server responds with error when failing to compute delta before starting to respond`() {
         // Arrange
         val storeClient = InMemoryStoreClient()
-        val modelClient = LocalModelClient(storeClient.forContextRepository())
-        val repositoriesManager = RepositoriesManager(modelClient)
+        val repositoriesManager = RepositoriesManager(storeClient)
         val faultyRepositoriesManager = object :
             IRepositoriesManager by repositoriesManager {
-            override suspend fun computeDelta(versionHash: String, baseVersionHash: String?): ObjectData {
+            override suspend fun computeDelta(repository: RepositoryId?, versionHash: String, baseVersionHash: String?): ObjectData {
                 error("Unexpected error.")
             }
         }
-        val modelReplicationServer = ModelReplicationServer(faultyRepositoriesManager, modelClient, InMemoryModels())
+        val modelReplicationServer = ModelReplicationServer(faultyRepositoriesManager)
         val repositoryId = RepositoryId("repo1")
         val branchRef = repositoryId.getBranchReference()
 
         runWithTestModelServer(
             Fixture(
                 storeClient,
-                modelClient,
                 faultyRepositoriesManager,
                 modelReplicationServer,
             ),
@@ -276,12 +269,11 @@ class ModelReplicationServerTest {
         val repositoryId = RepositoryId("repo1")
         val branchRef = repositoryId.getBranchReference()
         val storeClient = InMemoryStoreClient()
-        val modelClient = LocalModelClient(storeClient.forContextRepository())
-        val repositoriesManager = RepositoriesManager(modelClient)
+        val repositoriesManager = RepositoriesManager(storeClient)
         val faultyRepositoriesManager = object :
             IRepositoriesManager by repositoriesManager {
-            override suspend fun computeDelta(versionHash: String, baseVersionHash: String?): ObjectData {
-                val originalFlow = repositoriesManager.computeDelta(versionHash, baseVersionHash).asFlow()
+            override suspend fun computeDelta(repository: RepositoryId?, versionHash: String, baseVersionHash: String?): ObjectData {
+                val originalFlow = repositoriesManager.computeDelta(repository, versionHash, baseVersionHash).asFlow()
                 val brokenFlow = channelFlow<Pair<String, String>> {
                     error("Unexpected error.")
                 }
@@ -307,7 +299,7 @@ class ModelReplicationServerTest {
             }
         }
 
-        val modelReplicationServer = ModelReplicationServer(faultyRepositoriesManager, modelClient, InMemoryModels())
+        val modelReplicationServer = ModelReplicationServer(faultyRepositoriesManager)
         val setupBlock = { application: Application -> modelReplicationServer.init(application) }
         val testBlock: suspend (server: NettyApplicationEngine) -> Unit = { server ->
             withTimeout(10.seconds) {
@@ -356,8 +348,7 @@ class ModelReplicationServerTest {
     @Test
     fun `responds with application problem+json in case of errors`() {
         val storeClient = InMemoryStoreClient()
-        val modelClient = LocalModelClient(storeClient)
-        val repositoriesManager = RepositoriesManager(modelClient)
+        val repositoriesManager = RepositoriesManager(storeClient)
         val errorMessage = "expected test failure"
         val faultyRepositoriesManager = object :
             IRepositoriesManager by repositoriesManager {
@@ -365,12 +356,11 @@ class ModelReplicationServerTest {
                 error(errorMessage)
             }
         }
-        val modelReplicationServer = ModelReplicationServer(faultyRepositoriesManager, modelClient, InMemoryModels())
+        val modelReplicationServer = ModelReplicationServer(faultyRepositoriesManager)
 
         runWithTestModelServer(
             Fixture(
                 storeClient,
-                modelClient,
                 faultyRepositoriesManager,
                 modelReplicationServer,
             ),
@@ -534,4 +524,8 @@ class ModelReplicationServerTest {
         response shouldHaveStatus HttpStatusCode.NotFound
         problem.type shouldBe "/problems/object-value-not-found"
     }
+}
+
+fun <T> Flow<T>.assertNotEmpty(additionalMessage: () -> String = { "" }): Flow<T> {
+    return onEmpty { throw IllegalArgumentException("At least one element was expected. " + additionalMessage()) }
 }

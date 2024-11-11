@@ -31,27 +31,21 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.sync.Mutex
 import org.junit.jupiter.api.Test
 import org.modelix.authorization.installAuthentication
-import org.modelix.model.InMemoryModels
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
-import org.modelix.model.server.store.LocalModelClient
-import org.modelix.model.server.store.forGlobalRepository
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
 class V1ApiTest {
 
     private fun runApiTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
-        val inMemoryModels = InMemoryModels()
-        val store = InMemoryStoreClient().forGlobalRepository()
-        val localModelClient = LocalModelClient(store)
-        val repositoriesManager = RepositoriesManager(localModelClient)
+        val repositoriesManager = RepositoriesManager(InMemoryStoreClient())
 
         application {
             installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
-            KeyValueLikeModelServer(repositoriesManager, store, inMemoryModels).init(this)
+            KeyValueLikeModelServer(repositoriesManager).init(this)
         }
 
         block()

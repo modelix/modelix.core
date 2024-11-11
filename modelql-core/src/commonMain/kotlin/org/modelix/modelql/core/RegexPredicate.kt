@@ -32,14 +32,16 @@ class RegexPredicate(val regex: Regex) : SimpleMonoTransformingStep<String?, Boo
 
     @Serializable
     @SerialName("regex")
-    class Descriptor(val pattern: String) : CoreStepDescriptor() {
+    data class Descriptor(val pattern: String) : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return RegexPredicate(Regex(pattern))
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(pattern)
     }
 
     override fun toString(): String {
-        return "${getProducers().single()}.matches(/${regex.pattern}/)"
+        return "${getProducers().single()}\n.matches(/${regex.pattern}/)"
     }
 }
 

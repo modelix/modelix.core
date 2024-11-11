@@ -13,12 +13,16 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.map
+import com.badoo.reaktive.observable.asObservable
+import com.badoo.reaktive.observable.firstOrDefault
+import com.badoo.reaktive.observable.flatMap
+import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.observable.observableOfEmpty
+import com.badoo.reaktive.single.flatten
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.modelix.streams.filterBySingle
 import kotlin.experimental.ExperimentalTypeInference
 
 class WhenStep<In, Out>(
@@ -27,7 +31,9 @@ class WhenStep<In, Out>(
 ) : MonoTransformingStep<In, Out>() {
 
     override fun toString(): String {
-        return "when()" + cases.joinToString("") { ".if(${it.first}).then(${it.second})" } + ".else($elseCase)"
+        return "when()" + cases.joinToString("") {
+            ".if(\n${it.first.toString().prependIndent("  ")}\n).then(\n${it.second.toString().prependIndent("  ")}\n)"
+        } + ".else(\n${elseCase.toString().prependIndent("  ")}\n)"
     }
 
     override fun canBeEmpty(): Boolean {
@@ -49,12 +55,27 @@ class WhenStep<In, Out>(
 
     @Serializable
     @SerialName("when")
-    class Descriptor(val cases: List<Pair<QueryId, QueryId>>, val elseCase: QueryId? = null) : StepDescriptor() {
+    data class Descriptor(val cases: List<Pair<QueryId, QueryId>>, val elseCase: QueryId? = null) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return WhenStep<Any?, Any?>(
                 cases.map { context.getOrCreateQuery(it.first) as MonoUnboundQuery<Any?, Boolean?> to context.getOrCreateQuery(it.second) as MonoUnboundQuery<Any?, Any?> },
                 elseCase?.let { context.getOrCreateQuery(it) as MonoUnboundQuery<Any?, Any?> },
             )
+        }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor {
+            return Descriptor(
+                cases.map { idReassignments.reassign(it.first) to idReassignments.reassign(it.second) },
+                elseCase?.let { idReassignments.reassign(it) },
+            )
+        }
+
+        override fun prepareNormalization(idReassignments: IdReassignments) {
+            for (case in cases) {
+                idReassignments.visitQuery(case.first)
+                idReassignments.visitQuery(case.second)
+            }
+            elseCase?.let { idReassignments.visitQuery(it) }
         }
     }
 
@@ -73,16 +94,17 @@ class WhenStep<In, Out>(
         )
     }
 
-    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
-        return input.flatMapConcat {
-            for ((index, case) in cases.withIndex()) {
-                if (case.first.evaluate(context.evaluationContext, it.value).presentAndEqual(true)) {
-                    return@flatMapConcat case.second.asFlow(context.evaluationContext, it).map { MultiplexedOutput(index, it) }
-                }
-            }
-            val elseCaseIndex = cases.size
-            return@flatMapConcat elseCase?.asFlow(context.evaluationContext, it)?.map { MultiplexedOutput(elseCaseIndex, it) }
-                ?: emptyFlow<Out>().asStepFlow(this)
+    override fun createStream(input: StepStream<In>, context: IStreamInstantiationContext): StepStream<Out> {
+        return input.flatMap { inputElement ->
+            cases.withIndex().asObservable().filterBySingle { (index, case) ->
+                case.first.asStream(context.evaluationContext, inputElement).map { it.value == true }.firstOrDefault(false)
+            }.map { (index, case) ->
+                case.second.asStream(context.evaluationContext, inputElement).map { MultiplexedOutput(index, it) }
+            }.firstOrDefault {
+                val elseCaseIndex = cases.size
+                elseCase?.asStream(context.evaluationContext, inputElement)?.map { MultiplexedOutput(elseCaseIndex, it) }
+                    ?: observableOfEmpty()
+            }.flatten()
         }
     }
 }

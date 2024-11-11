@@ -13,20 +13,22 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.firstOrNull
+import com.badoo.reaktive.maybe.defaultIfEmpty
+import com.badoo.reaktive.maybe.map
+import com.badoo.reaktive.observable.firstOrComplete
+import com.badoo.reaktive.single.Single
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
-
-    override suspend fun aggregate(input: StepFlow<E>): IStepOutput<E?> {
-        return input.firstOrNull()?.let { MultiplexedOutput(0, it) }
-            ?: MultiplexedOutput(1, null.asStepOutput(this))
+    override fun aggregate(input: StepStream<E>, context: IStreamInstantiationContext): Single<IStepOutput<E?>> {
+        return input.firstOrComplete().map { MultiplexedOutput(0, it) }
+            .defaultIfEmpty(MultiplexedOutput(1, null.asStepOutput(this)))
     }
 
     override fun toString(): String {
-        return "${getProducer()}.firstOrNull()"
+        return "${getProducer()}\n.firstOrNull()"
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E?>> {
@@ -47,6 +49,8 @@ class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return FirstOrNullStep<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 }
 

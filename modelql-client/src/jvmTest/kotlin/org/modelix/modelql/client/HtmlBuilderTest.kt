@@ -47,10 +47,8 @@ import org.modelix.modelql.untyped.property
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.ExperimentalTime
 
 class HtmlBuilderTest {
-    @OptIn(ExperimentalTime::class)
     private fun runTest(block: suspend (HttpClient) -> Unit) = testApplication {
         withTimeout(20.seconds) {
             application {

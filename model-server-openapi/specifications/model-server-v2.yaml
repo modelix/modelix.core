@@ -322,6 +322,8 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200json'
+        "404":
+          $ref: '#/components/responses/modelql-404'
         default:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/init:
@@ -427,6 +429,8 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200json'
+        "404":
+          $ref: '#/components/responses/modelql-404'
         default:
           $ref: '#/components/responses/GeneralError'
 
@@ -499,6 +503,8 @@ components:
         application/problem+json:
           schema:
             $ref: 'problem.yaml#/Problem'
+    "modelql-404":
+      description: "A IProducingStep<INodeReference>.resolve() call failed to find the node."
     GeneralError:
       description: Unexpected error
       content:

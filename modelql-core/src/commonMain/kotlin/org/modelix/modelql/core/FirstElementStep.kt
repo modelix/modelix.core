@@ -13,7 +13,7 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.take
+import com.badoo.reaktive.observable.take
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -21,14 +21,14 @@ import kotlinx.serialization.Serializable
 class FirstElementStep<E>() : MonoTransformingStep<E, E>() {
     override fun canBeMultiple(): Boolean = false
 
-    override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E> {
+    override fun createStream(input: StepStream<E>, context: IStreamInstantiationContext): StepStream<E> {
         return input.take(1)
     }
 
     override fun requiresSingularQueryInput(): Boolean = true
 
     override fun toString(): String {
-        return getProducer().toString() + ".first()"
+        return "${getProducer()}\n.first()"
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>> {
@@ -43,6 +43,8 @@ class FirstElementStep<E>() : MonoTransformingStep<E, E>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return FirstElementStep<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = FirstElementDescriptor()
     }
 }
 

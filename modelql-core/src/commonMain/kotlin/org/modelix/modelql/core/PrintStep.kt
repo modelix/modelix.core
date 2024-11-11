@@ -13,7 +13,7 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.map
+import com.badoo.reaktive.observable.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -23,9 +23,9 @@ class PrintStep<E>(val prefix: String) : MonoTransformingStep<E, E>() {
         return getProducer().getOutputSerializer(serializationContext)
     }
 
-    override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E> {
+    override fun createStream(input: StepStream<E>, context: IStreamInstantiationContext): StepStream<E> {
         return input.map {
-            println(prefix + input)
+            println(prefix + it.value)
             it
         }
     }
@@ -34,14 +34,16 @@ class PrintStep<E>(val prefix: String) : MonoTransformingStep<E, E>() {
 
     @Serializable
     @SerialName("print")
-    class Descriptor(val prefix: String = "") : CoreStepDescriptor() {
+    data class Descriptor(val prefix: String = "") : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return PrintStep<Any?>(prefix)
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(prefix)
     }
 
     override fun toString(): String {
-        return "${getProducers().single()}.print(\"$prefix\")"
+        return "${getProducers().single()}\n.print(\"$prefix\")"
     }
 }
 

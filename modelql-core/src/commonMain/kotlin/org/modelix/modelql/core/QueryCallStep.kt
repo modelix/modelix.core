@@ -29,8 +29,8 @@ class QueryCallStep<In, Out>(val queryRef: QueryReference<out IUnboundQuery<In, 
 
     fun getQuery(): IUnboundQuery<In, *, Out> = queryRef.query!!
 
-    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
-        return getQuery().asFlow(context.evaluationContext, input)
+    override fun createStream(input: StepStream<In>, context: IStreamInstantiationContext): StepStream<Out> {
+        return getQuery().asStream(context.evaluationContext, input)
     }
 
     override fun requiresSingularQueryInput(): Boolean = true
@@ -40,14 +40,20 @@ class QueryCallStep<In, Out>(val queryRef: QueryReference<out IUnboundQuery<In, 
     }
 
     override fun toString(): String {
-        return "${getProducer()}.callQuery(${queryRef.getId()})"
+        return "${getProducer()}\n.callQuery(${queryRef.getId()})"
     }
 
     @Serializable
     @SerialName("queryCall")
-    class Descriptor(val queryId: QueryId) : StepDescriptor() {
+    data class Descriptor(val queryId: QueryId) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return QueryCallStep<Any?, Any?>(context.getOrCreateQueryReference(queryId) as QueryReference<IUnboundQuery<Any?, *, Any?>>)
+        }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(idReassignments.reassign(queryId))
+
+        override fun prepareNormalization(idReassignments: IdReassignments) {
+            idReassignments.visitQuery(queryId)
         }
     }
 }

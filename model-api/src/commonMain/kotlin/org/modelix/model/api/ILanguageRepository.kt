@@ -1,5 +1,7 @@
 package org.modelix.model.api
 
+import org.modelix.model.api.meta.NullConcept
+
 /**
  * An [ILanguageRepository] contains languages and their corresponding concepts.
  */
@@ -178,6 +180,7 @@ object DefaultLanguageRepository : ILanguageRepository {
     override fun getPriority(): Int = 0
 
     init {
+        registerConcept(NullConcept)
         BuiltinLanguages.getAllLanguages().forEach { registerLanguage(it) }
     }
 }

@@ -13,11 +13,8 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.fold
+import com.badoo.reaktive.observable.asObservable
+import com.badoo.reaktive.observable.flatMap
 import kotlinx.coroutines.test.TestResult
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -32,6 +29,7 @@ import kotlinx.serialization.modules.subclass
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
@@ -300,19 +298,6 @@ class ModelQLTest {
     }
 
     @Test
-    fun testZipFlowVsSequence() = runTestWithTimeout {
-        val flowSize = (1..10).asFlow().flatMapConcat {
-            combine(listOf(flowOf(it), (30..60).asFlow())) { it[0] to it[1] }
-        }.fold(0) { acc, it -> acc + it.first * it.second }
-
-        val sequenceSize = (1..10).asSequence().flatMap {
-            CombiningSequence(arrayOf(sequenceOf(it), (30..60).asSequence()))
-        }.fold(0) { acc, it -> acc + (it[0] as Int) * (it[1] as Int) }
-
-        assertEquals(flowSize, sequenceSize)
-    }
-
-    @Test
     fun test_firstOrNull_nullIfEmpty() = runTestWithTimeout {
         val result = remoteProductDatabaseQuery { db ->
             db.products.firstOrNull().nullIfEmpty()
@@ -367,22 +352,65 @@ class ModelQLTest {
         assertEquals(testDatabase.products.drop(3).take(5).map { it.title }, result)
     }
 
-//    @Test
-//    fun testIndexLookup() {
-//        val result = remoteProductDatabaseQuery { db ->
-//            db.products.filter { it.images.size() }.toSet()
-//            db.products.flatMap { it.zip(it.images.assertNotEmpty()) }.mapLocal2 {
-//                val product = it.first.getLater()
-//                val image = it.second.getLater()
-//                onSuccess {
-//                    val localProduct: Product = product.get()
-//                    val localImage: String = image.get()
-//                    localProduct to localImage
-//                }
-//            }.toList()
-//        }
-//        assertEquals(132, result.size)
-//    }
+    @Test
+    fun testFind() = runTestWithTimeout {
+        val result: String = remoteProductDatabaseQuery { db ->
+            db.find({ it.products }, { it.id }, 3.asMono()).title
+        }
+        assertEquals("Samsung Universe 9", result)
+    }
+
+    @Test
+    fun testIllegalCrossQueryStreams() = runTestWithTimeout {
+        val ex = assertFailsWith(IllegalArgumentException::class) {
+            remoteProductDatabaseQuery<String> { db ->
+                // The `elements` query uses the outside `db` instead of the input `it`.
+                // The query is only allowed to use values from its input, otherwise it wouldn't be cacheable.
+                db.find({ db.products }, { it.id }, 3.asMono()).title
+            }
+        }
+        val expectedMessage = "Unsupported cross-query usage of"
+        assertEquals(expectedMessage, (ex.message ?: "").take(expectedMessage.length))
+    }
+
+    @Test
+    fun testFindAll() = runTestWithTimeout {
+        val result: List<String> = remoteProductDatabaseQuery { db ->
+            db.findAll({ it.products }, { it.category }, "smartphones".asMono()).map { it.title }.toList()
+        }
+        assertEquals(listOf("iPhone 9", "iPhone X", "Samsung Universe 9", "OPPOF19", "Huawei P30"), result)
+    }
+
+    @Test
+    fun testFindAllMultipleKeys() = runTestWithTimeout {
+        val result: List<String> = remoteProductDatabaseQuery { db ->
+            db.findAll({ it.products }, { it.category }, fluxOf("smartphones", "laptops")).map { it.title }.toList()
+        }
+        assertEquals(
+            listOf(
+                "iPhone 9",
+                "iPhone X",
+                "Samsung Universe 9",
+                "OPPOF19",
+                "Huawei P30",
+                "MacBook Pro",
+                "Samsung Galaxy Book",
+                "Microsoft Surface Laptop 4",
+                "Infinix INBOOK",
+                "HP Pavilion 15-DK1056WM",
+            ),
+            result,
+        )
+    }
+
+    @Test
+    fun assertNotEmpty_throws_IllegalArgumentException() = runTestWithTimeout {
+        assertFailsWith(IllegalArgumentException::class) {
+            remoteProductDatabaseQuery<List<String>> { db ->
+                db.products.filter { false.asMono() }.assertNotEmpty().map { it.title }.toList()
+            }
+        }
+    }
 
     data class MyNonSerializableClass(val id: Int, val title: String, val images: List<MyImage>)
     data class MyImage(val url: String)
@@ -418,8 +446,8 @@ suspend fun <ResultT> doRemoteProductDatabaseQuery(body: (IMonoStep<ProductDatab
 }
 
 class ProductsTraversal() : FluxTransformingStep<ProductDatabase, Product>() {
-    override fun createFlow(input: StepFlow<ProductDatabase>, context: IFlowInstantiationContext): StepFlow<Product> {
-        return input.flatMapConcat { it.value.products.asFlow() }.asStepFlow(this)
+    override fun createStream(input: StepStream<ProductDatabase>, context: IStreamInstantiationContext): StepStream<Product> {
+        return input.flatMap { it.value.products.asObservable() }.asStepStream(this)
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Product>> = serializationContext.serializer<Product>().stepOutputSerializer(this)
@@ -434,6 +462,8 @@ class ProductsTraversal() : FluxTransformingStep<ProductDatabase, Product>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return ProductsTraversal()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 }
 
@@ -455,6 +485,8 @@ class ProductTitleTraversal : SimpleMonoTransformingStep<Product, String>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return ProductTitleTraversal()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 }
 class ProductCategoryTraversal : SimpleMonoTransformingStep<Product, String>() {
@@ -475,6 +507,8 @@ class ProductCategoryTraversal : SimpleMonoTransformingStep<Product, String>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return ProductCategoryTraversal()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 }
 class ProductIdTraversal : SimpleMonoTransformingStep<Product, Int>() {
@@ -494,11 +528,13 @@ class ProductIdTraversal : SimpleMonoTransformingStep<Product, Int>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return ProductIdTraversal()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 }
 class ProductImagesTraversal : FluxTransformingStep<Product, String>() {
-    override fun createFlow(input: StepFlow<Product>, context: IFlowInstantiationContext): StepFlow<String> {
-        return input.flatMapConcat { it.value.images.asFlow() }.asStepFlow(this)
+    override fun createStream(input: StepStream<Product>, context: IStreamInstantiationContext): StepStream<String> {
+        return input.flatMap { it.value.images.asObservable() }.asStepStream(this)
     }
 
     override fun toString(): String {
@@ -513,6 +549,8 @@ class ProductImagesTraversal : FluxTransformingStep<Product, String>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return ProductImagesTraversal()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 }
 

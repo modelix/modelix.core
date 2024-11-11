@@ -33,7 +33,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @Ignore("Doesn't support parallel transactions (yet)")
-class MabBasedStoreClientParallelTransactionsTest : StoreClientParallelTransactionsTest(InMemoryStoreClient().forGlobalRepository())
+class MapBasedStoreClientParallelTransactionsTest : StoreClientParallelTransactionsTest(InMemoryStoreClient().forGlobalRepository())
 
 class IgniteStoreClientParallelTransactionsTest : StoreClientParallelTransactionsTest(IgniteStoreClient(inmemory = true).forGlobalRepository())
 

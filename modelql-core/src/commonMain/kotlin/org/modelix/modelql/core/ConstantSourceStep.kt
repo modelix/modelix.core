@@ -13,7 +13,7 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.flowOf
+import com.badoo.reaktive.observable.observableOf
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -53,14 +53,13 @@ open class ConstantSourceStep<E>(val element: E, val type: KType) : ProducingSte
     override fun requiresSingularQueryInput(): Boolean = false
     override fun hasSideEffect(): Boolean = false
     override fun requiresWriteAccess(): Boolean = false
-    override fun needsCoroutineScope(): Boolean = false
 
     override fun evaluateStatically(): E {
         return element
     }
 
-    override fun createFlow(context: IFlowInstantiationContext): StepFlow<E> {
-        return flowOf(element.asStepOutput(this))
+    override fun createStream(context: IStreamInstantiationContext): StepStream<E> {
+        return observableOf(element.asStepOutput(this))
     }
 
     override fun toString(): String {
@@ -75,13 +74,15 @@ open class ConstantSourceStep<E>(val element: E, val type: KType) : ProducingSte
 
     @Serializable(with = Descriptor.Serializer::class)
     @SerialName("monoSource")
-    class Descriptor(val element: Any?, val elementType: String) : CoreStepDescriptor() {
+    data class Descriptor(val element: Any?, val elementType: String) : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return ConstantSourceStep<Any?>(
                 element,
                 string2type[elementType] ?: throw IllegalArgumentException("Unsupported type: $elementType"),
             )
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(element, elementType)
 
         class Serializer : KSerializer<Descriptor> {
             override fun deserialize(decoder: Decoder): Descriptor {
@@ -165,3 +166,15 @@ fun String?.asMono() = createConstantSourceStep(this)
 fun Set<String?>.asMono() = createConstantSourceStep(this)
 
 inline fun <reified T> nullMono(): IMonoStep<T?> = ConstantSourceStep<T?>(null, typeOf<T?>())
+
+fun fluxOf(vararg elements: String): IFluxStep<String> = when (elements.size) {
+    0 -> nullMono<String>().filterNotNull().asFlux()
+    1 -> elements.first().asMono().asFlux()
+    else -> {
+        var result = elements[0].asMono().plus(elements[1].asMono())
+        for (e in elements.drop(2)) {
+            result = result.plus(e.asMono())
+        }
+        result
+    }
+}

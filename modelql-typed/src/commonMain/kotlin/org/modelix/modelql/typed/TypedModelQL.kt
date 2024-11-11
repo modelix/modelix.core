@@ -13,7 +13,7 @@
  */
 package org.modelix.modelql.typed
 
-import kotlinx.coroutines.flow.map
+import com.badoo.reaktive.observable.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
@@ -36,18 +36,17 @@ import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.getAllSubConcepts
-import org.modelix.model.api.key
-import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IStreamInstantiationContext
 import org.modelix.modelql.core.IdentityStep
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.StepDescriptor
-import org.modelix.modelql.core.StepFlow
+import org.modelix.modelql.core.StepStream
 import org.modelix.modelql.core.asStepOutput
 import org.modelix.modelql.core.asString
 import org.modelix.modelql.core.emptyStringIfNull
@@ -89,10 +88,10 @@ object TypedModelQL {
     }
 
     fun rawProperty(input: IMonoStep<ITypedNode>, link: ITypedProperty<*>): IMonoStep<String?> {
-        return input.untyped().property(link.untyped().key())
+        return input.untyped().property(link.untyped().toReference())
     }
     fun rawProperty(input: IFluxStep<ITypedNode>, link: ITypedProperty<*>): IFluxStep<String?> {
-        return input.untyped().property(link.untyped().key())
+        return input.untyped().property(link.untyped().toReference())
     }
     fun optionalStringProperty(input: IMonoStep<ITypedNode>, link: ITypedProperty<String>): IMonoStep<String?> {
         return rawProperty(input, link)
@@ -132,31 +131,31 @@ object TypedModelQL {
     }
 
     fun <ParentT : ITypedNode, ChildT : ITypedNode> children(input: IMonoStep<ParentT>, link: ITypedMandatorySingleChildLink<ChildT>): IMonoStep<ChildT> {
-        return input.untyped().children(link.untyped().key()).typedUnsafe(link.getTypedChildConcept().getInstanceInterface()).first()
+        return input.untyped().children(link.untyped().toReference()).typedUnsafe(link.getTypedChildConcept().getInstanceInterface()).first()
     }
     fun <ParentT : ITypedNode, ChildT : ITypedNode> children(input: IMonoStep<ParentT>, link: ITypedSingleChildLink<ChildT>): IMonoStep<ChildT?> {
-        return input.untyped().children(link.untyped().key()).typedUnsafe(link.getTypedChildConcept().getInstanceInterface()).firstOrNull()
+        return input.untyped().children(link.untyped().toReference()).typedUnsafe(link.getTypedChildConcept().getInstanceInterface()).firstOrNull()
     }
     fun <ParentT : ITypedNode, ChildT : ITypedNode> children(input: IProducingStep<ParentT>, link: ITypedChildListLink<ChildT>): IFluxStep<ChildT> {
-        return input.flatMap { it.untyped().children(link.untyped().key()).typedUnsafe(link.getTypedChildConcept().getInstanceInterface()) }
+        return input.flatMap { it.untyped().children(link.untyped().toReference()).typedUnsafe(link.getTypedChildConcept().getInstanceInterface()) }
     }
     fun <ParentT : ITypedNode, ChildT : ITypedNode> children(input: IFluxStep<ParentT>, link: ITypedChildLink<ChildT>): IFluxStep<ChildT> {
-        return input.untyped().flatMap { it.children(link.untyped().key()) }.typedUnsafe(link.getTypedChildConcept().getInstanceInterface())
+        return input.untyped().flatMap { it.children(link.untyped().toReference()) }.typedUnsafe(link.getTypedChildConcept().getInstanceInterface())
     }
 
     fun <ParentT : ITypedNode, ChildT : ITypedNode, Out : ChildT> addNewChild(input: IMonoStep<ParentT>, link: ITypedChildListLink<ChildT>, index: Int = -1, concept: IConceptOfTypedNode<Out>): IMonoStep<Out> {
         val conceptRef = ConceptReference(concept.untyped().getUID())
-        return input.untyped().addNewChild(link.untyped(), index, conceptRef).ofConcept(concept)
+        return input.untyped().addNewChild(link.untyped().toReference(), index, conceptRef).ofConcept(concept)
     }
 
     fun <ParentT : ITypedNode, ChildT : ITypedNode, Out : ChildT> setChild(input: IMonoStep<ParentT>, link: ITypedSingleChildLink<ChildT>, concept: IConceptOfTypedNode<Out>): IMonoStep<Out> {
         val conceptRef = ConceptReference(concept.untyped().getUID())
-        input.untyped().children(link.untyped().key()).firstOrNull().mapIfNotNull { it.remove() }
-        return input.untyped().addNewChild(link.untyped(), conceptRef).ofConcept(concept)
+        input.untyped().children(link.untyped().toReference()).firstOrNull().mapIfNotNull { it.remove() }
+        return input.untyped().addNewChild(link.untyped().toReference(), conceptRef).ofConcept(concept)
     }
 
     fun <SourceT : ITypedNode, TargetT : ITypedNode> reference(input: IMonoStep<SourceT>, link: ITypedReferenceLink<TargetT>): IMonoStep<TargetT> {
-        return input.untyped().reference(link.untyped().key()).typedUnsafe<TargetT>(link.getTypedTargetConcept().getInstanceInterface())
+        return input.untyped().reference(link.untyped().toReference()).typedUnsafe<TargetT>(link.getTypedTargetConcept().getInstanceInterface())
     }
     fun <SourceT : ITypedNode, TargetT : ITypedNode> reference(input: IFluxStep<SourceT>, link: ITypedReferenceLink<TargetT>): IFluxStep<TargetT> {
         return input.map { reference(it, link) }
@@ -171,7 +170,7 @@ object TypedModelQL {
     @Suppress("UNCHECKED_CAST")
     fun <SourceT : ITypedNode, TargetT : ITypedNode> setReference(input: IMonoStep<SourceT>, link: ITypedReferenceLink<TargetT>, target: IMonoStep<TargetT?>?): IMonoStep<SourceT> {
         val targetOrNull = target?.untyped() ?: nullMono<String>() as IMonoStep<INode?> // cast is necessary since nullMono<INode> cannot be serialized
-        input.untyped().setReference(link.untyped(), targetOrNull)
+        input.untyped().setReference(link.untyped().toReference(), targetOrNull)
         return input
     }
 }
@@ -203,7 +202,7 @@ class TypedNodeStep<Typed : ITypedNode>(val nodeClass: KClass<out Typed>) : Mono
         return TypedNodeSerializer(nodeClass, inputSerializer).stepOutputSerializer(this)
     }
 
-    override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<Typed> {
+    override fun createStream(input: StepStream<INode>, context: IStreamInstantiationContext): StepStream<Typed> {
         return input.map { it.value.typed(nodeClass).asStepOutput(this) }
     }
 
@@ -212,7 +211,7 @@ class TypedNodeStep<Typed : ITypedNode>(val nodeClass: KClass<out Typed>) : Mono
     }
 
     override fun toString(): String {
-        return "${getProducers().single()}.typed()"
+        return "${getProducers().single()}\n.typed()"
     }
 }
 
@@ -245,7 +244,7 @@ class UntypedNodeStep : MonoTransformingStep<ITypedNode, INode>() {
         return UntypedNodeSerializer(getProducer().getOutputSerializer(serializationContext).upcast()).stepOutputSerializer(this)
     }
 
-    override fun createFlow(input: StepFlow<ITypedNode>, context: IFlowInstantiationContext): StepFlow<INode> {
+    override fun createStream(input: StepStream<ITypedNode>, context: IStreamInstantiationContext): StepStream<INode> {
         return input.map { it.value.unwrap().asStepOutput(this) }
     }
 
@@ -254,7 +253,7 @@ class UntypedNodeStep : MonoTransformingStep<ITypedNode, INode>() {
     }
 
     override fun toString(): String {
-        return "${getProducers().single()}.untyped()"
+        return "${getProducers().single()}\n.untyped()"
     }
 }
 

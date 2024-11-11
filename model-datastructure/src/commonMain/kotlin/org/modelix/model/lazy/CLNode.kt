@@ -56,9 +56,6 @@ class CLNode(private val tree: CLTree, private val data: CPNode) {
         return tree
     }
 
-    val parent: CLNode?
-        get() = tree.resolveElement(data.parentId)?.let { CLNode(tree, it) }
-
     val parentId: Long
         get() = data.parentId
 
@@ -70,38 +67,6 @@ class CLNode(private val tree: CLTree, private val data: CPNode) {
 
     fun getData(): CPNode {
         return data
-    }
-
-    fun getChildren(bulkQuery: IBulkQuery): IBulkQuery.Value<Iterable<CLNode>> {
-        return (getTree() as CLTree).resolveElements(getData().getChildrenIds().toList(), bulkQuery)
-            .map { elements -> elements.map { CLNode(tree, it) } }
-    }
-
-    fun getDescendants(bulkQuery: IBulkQuery, includeSelf: Boolean): IBulkQuery.Value<Iterable<CLNode>> {
-        return if (includeSelf) {
-            getDescendants(bulkQuery, false)
-                .map { descendants -> (sequenceOf(this) + descendants).asIterable() }
-        } else {
-            getChildren(bulkQuery).flatMap { children: Iterable<CLNode> ->
-                val d: IBulkQuery.Value<Iterable<CLNode>> = bulkQuery
-                    .flatMap(children) { child: CLNode -> child.getDescendants(bulkQuery, true) }
-                    .map { it.flatten() }
-                d
-            }
-        }
-    }
-
-    fun getAncestors(bulkQuery: IBulkQuery, includeSelf: Boolean): IBulkQuery.Value<List<CLNode>> {
-        return if (includeSelf) {
-            getAncestors(bulkQuery, false).map { ancestors -> (listOf(this) + ancestors) }
-        } else {
-            val parentNode = parent
-            if (parentNode == null) {
-                bulkQuery.constant(listOf())
-            } else {
-                parentNode.getAncestors(bulkQuery, true)
-            }
-        }
     }
 
     val concept: String?

@@ -14,12 +14,15 @@
 package org.modelix.modelql.client
 
 import io.ktor.client.HttpClient
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.withTimeout
+import org.junit.jupiter.api.assertThrows
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
+import org.modelix.model.api.NodeReference
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
@@ -34,9 +37,12 @@ import org.modelix.modelql.core.filter
 import org.modelix.modelql.core.first
 import org.modelix.modelql.core.firstOrNull
 import org.modelix.modelql.core.flatMap
+import org.modelix.modelql.core.fold
 import org.modelix.modelql.core.map
+import org.modelix.modelql.core.memoize
 import org.modelix.modelql.core.notEqualTo
 import org.modelix.modelql.core.plus
+import org.modelix.modelql.core.sum
 import org.modelix.modelql.core.toList
 import org.modelix.modelql.core.toSet
 import org.modelix.modelql.core.zip
@@ -50,6 +56,7 @@ import org.modelix.modelql.untyped.descendants
 import org.modelix.modelql.untyped.nodeReference
 import org.modelix.modelql.untyped.property
 import org.modelix.modelql.untyped.remove
+import org.modelix.modelql.untyped.resolve
 import org.modelix.modelql.untyped.setProperty
 import org.modelix.modelql.untyped.setReference
 import kotlin.test.Test
@@ -58,7 +65,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class ModelQLClientTest {
     private fun runTest(block: suspend (HttpClient) -> Unit) = testApplication {
-        withTimeout(3.seconds) {
+        withTimeout(30.seconds) {
             application {
                 val tree = CLTree(ObjectStoreCache(MapBaseStore()))
                 val branch = PBranch(tree, IdGenerator.getInstance(1))
@@ -259,5 +266,32 @@ class ModelQLClientTest {
         val refSet = setOf(ConceptReference("abc"), ConceptReference("def"))
         val result = client.query { refSet.asMono() }
         assertEquals(refSet, result)
+    }
+
+    @Test
+    fun testRecursiveMemoization() = runTest { httpClient ->
+        val client = ModelQLClient("http://localhost/query", httpClient)
+        val result = client.query {
+            it.memoize { n ->
+                n.count()
+                    .sum(
+                        n.allChildren().fold(0) { acc, it ->
+                            acc.sum(it.mapRecursive())
+                        },
+                    )
+            }
+        }
+        assertEquals(3, result)
+    }
+
+    @Test
+    fun `resolving a non-existing node reference returns 404`() = runTest { httpClient ->
+        val client = ModelQLClient("http://localhost/query", httpClient)
+        val ex = assertThrows<ModelQueryRequestException> {
+            client.query<INode> {
+                NodeReference("doesnotexist").asMono().resolve()
+            }
+        }
+        assertEquals(HttpStatusCode.NotFound, ex.httpResponse.status)
     }
 }

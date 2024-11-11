@@ -22,7 +22,7 @@ open class IdentityStep<E> : TransformingStep<E, E>(), IFluxOrMonoStep<E> {
         return getProducer().getOutputSerializer(serializationContext)
     }
 
-    override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E> {
+    override fun createStream(input: StepStream<E>, context: IStreamInstantiationContext): StepStream<E> {
         return input
     }
 
@@ -35,7 +35,7 @@ open class IdentityStep<E> : TransformingStep<E, E>(), IFluxOrMonoStep<E> {
     }
 
     override fun toString(): String {
-        return "${getProducer()}.identity()"
+        return "${getProducer()}"
     }
 
     @Serializable
@@ -44,6 +44,8 @@ open class IdentityStep<E> : TransformingStep<E, E>(), IFluxOrMonoStep<E> {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return IdentityStep<Any?>()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = IdentityStepDescriptor()
     }
 }
 

@@ -13,17 +13,18 @@
  */
 package org.modelix.model.server.handlers
 
+import com.badoo.reaktive.coroutinesinterop.asFlow
+import com.badoo.reaktive.observable.map
+import gnu.trove.set.hash.THashSet
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import org.apache.commons.collections4.map.LRUMap
 import org.modelix.model.ModelMigrations
@@ -33,36 +34,31 @@ import org.modelix.model.api.IReadTransaction
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IdGeneratorDummy
 import org.modelix.model.api.PBranch
+import org.modelix.model.async.getRecursively
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
-import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.KVEntryReference
-import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.computeDelta
 import org.modelix.model.persistent.CPVersion
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.SerializationUtil
 import org.modelix.model.server.api.v2.toMap
-import org.modelix.model.server.store.IStoreClient
-import org.modelix.model.server.store.LocalModelClient
+import org.modelix.model.server.store.IsolatingStore
 import org.modelix.model.server.store.ObjectInRepository
-import org.modelix.model.server.store.forGlobalRepository
-import org.modelix.model.server.store.forRepository
-import org.modelix.model.server.store.getGenericStore
+import org.modelix.model.server.store.StoreManager
 import org.modelix.model.server.store.pollEntry
 import org.modelix.model.server.store.runTransactionSuspendable
-import org.modelix.model.server.store.withGlobalRepository
-import org.modelix.model.server.store.withRepository
-import org.modelix.model.server.store.withRepositoryInCoroutine
+import org.modelix.streams.endOfSynchronousPipeline
 import org.slf4j.LoggerFactory
 import java.lang.ref.SoftReference
 import java.util.UUID
 
 // The methods in this class are almost cohesive, so the number of functions is fine.
 @Suppress("complexity.TooManyFunctions")
-class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
+class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
+    constructor(store: IsolatingStore) : this(StoreManager(store))
 
     init {
         fun migrateLegacyRepositoriesList(infoBranch: IBranch) {
@@ -78,27 +74,25 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
         }
 
         fun doMigrations() {
-            store.withGlobalRepository {
-                store.runTransaction {
-                    val v1BranchKey = RepositoryId("info").getBranchReference().getKey()
-                    val infoVersionHash = client[v1BranchKey] ?: return@runTransaction
-                    val infoVersion = CLVersion(infoVersionHash, client.storeCache)
-                    val infoBranch: IBranch = PBranch(infoVersion.getTree(), IdGeneratorDummy())
+            stores.genericStore.runTransaction {
+                val repositoryId = RepositoryId("info")
+                val v1BranchKey = repositoryId.getBranchReference().getKey()
+                val infoVersionHash = stores.getGlobalKeyValueStore()[v1BranchKey] ?: return@runTransaction
+                val infoVersion = CLVersion(infoVersionHash, getLegacyObjectStore(repositoryId))
+                val infoBranch: IBranch = PBranch(infoVersion.getTree(), IdGeneratorDummy())
 
-                    ModelMigrations.useResolvedConceptsFromMetaModel(infoBranch)
-                    migrateLegacyRepositoriesList(infoBranch)
-                }
+                ModelMigrations.useResolvedConceptsFromMetaModel(infoBranch)
+                migrateLegacyRepositoriesList(infoBranch)
             }
         }
 
         doMigrations()
     }
 
-    private val store: IStoreClient get() = client.store
-    private val objectStore: IDeserializingKeyValueStore get() = client.storeCache
+    override fun getStoreManager(): StoreManager = stores
 
     fun generateClientId(repositoryId: RepositoryId): Long {
-        return client.store.generateId("$KEY_PREFIX:${repositoryId.id}:clientId")
+        return stores.getGlobalStoreClient().generateId("$KEY_PREFIX:${repositoryId.id}:clientId")
     }
 
     /**
@@ -111,8 +105,8 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
      * it also gets stored under the current and all legacy database keys.
      */
     override suspend fun maybeInitAndGetSeverId(): String {
-        val store = store.getGenericStore().forGlobalRepository()
-        return store.runTransactionSuspendable {
+        val store = stores.getGlobalStoreClient()
+        return stores.runTransactionSuspendable {
             var serverId = store[SERVER_ID_KEY]
             if (serverId == null) {
                 serverId = store[LEGACY_SERVER_ID_KEY2]
@@ -131,7 +125,7 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
     }
 
     fun getRepositories(isolated: Boolean): Set<RepositoryId> {
-        val repositoriesList = store.getGenericStore()[ObjectInRepository.global(repositoriesListKey(isolated))]
+        val repositoriesList = stores.genericStore[ObjectInRepository.global(repositoriesListKey(isolated))]
         val emptyRepositoriesList = repositoriesList.isNullOrBlank()
         return if (emptyRepositoriesList) {
             emptySet()
@@ -159,19 +153,24 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
         userName: String?,
         useRoleIds: Boolean,
         legacyGlobalStorage: Boolean,
-    ): CLVersion = store.runTransactionSuspendable {
+    ): CLVersion {
         val isolated = !legacyGlobalStorage
-        store.withRepository(repositoryId.takeIf { isolated }) {
+        val globalStore = stores.getGlobalStoreClient()
+        return stores.runTransactionSuspendable {
             val masterBranch = repositoryId.getBranchReference()
             if (repositoryExists(repositoryId)) throw RepositoryAlreadyExistsException(repositoryId.id)
             val existingRepositories = getRepositories(isolated)
-            store.put(repositoriesListKey(isolated), (existingRepositories + repositoryId).joinToString("\n") { it.id }, false)
-            store.getGenericStore().put(branchListKey(repositoryId, isolated), masterBranch.branchName, false)
+            globalStore.put(
+                repositoriesListKey(isolated),
+                (existingRepositories + repositoryId).joinToString("\n") { it.id },
+                false,
+            )
+            stores.genericStore.put(branchListKey(repositoryId, isolated), masterBranch.branchName, false)
             val initialVersion = CLVersion.createRegularVersion(
-                id = client.idGenerator.generate(),
+                id = stores.idGenerator.generate(),
                 time = Clock.System.now().epochSeconds.toString(),
                 author = userName,
-                tree = CLTree(null, null, client.storeCache, useRoleIds = useRoleIds),
+                tree = CLTree(null, null, stores.getLegacyObjectStore(repositoryId.takeIf { isolated }), useRoleIds = useRoleIds),
                 baseVersion = null,
                 operations = emptyArray(),
             )
@@ -181,7 +180,7 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
     }
 
     fun getBranchNames(repositoryId: RepositoryId): Set<String> {
-        return store.getGenericStore()[branchListKey(repositoryId)]?.ifEmpty { null }?.lines()?.toSet().orEmpty()
+        return stores.genericStore[branchListKey(repositoryId)]?.ifEmpty { null }?.lines()?.toSet().orEmpty()
     }
 
     override fun getBranches(repositoryId: RepositoryId): Set<BranchReference> {
@@ -200,7 +199,7 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
         if (missingRepositories.isNotEmpty()) {
             // Isolated repositories are created and added to the list in `createRepository`.
             // Unknown repositories are assumed to be legacy ones without isolated storage.
-            store.put(repositoriesListKey(false), (getRepositories(false) + missingRepositories).joinToString("\n") { it.id })
+            stores.getGlobalStoreClient().put(repositoriesListKey(false), (getRepositories(false) + missingRepositories).joinToString("\n") { it.id })
         }
     }
 
@@ -210,10 +209,10 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
     private fun ensureBranchesAreInList(repository: RepositoryId, branchNames: Set<String>) {
         if (branchNames.isEmpty()) return
         val key = branchListKey(repository)
-        val existingBranches = store.getGenericStore()[key]?.lines()?.toSet().orEmpty()
+        val existingBranches = stores.genericStore[key]?.lines()?.toSet().orEmpty()
         val missingBranches = branchNames - existingBranches
         if (missingBranches.isNotEmpty()) {
-            store.getGenericStore().put(key, (existingBranches + missingBranches).joinToString("\n"))
+            stores.genericStore.put(key, (existingBranches + missingBranches).joinToString("\n"))
         }
     }
 
@@ -226,9 +225,9 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
     }
 
     override suspend fun removeRepository(repository: RepositoryId): Boolean {
-        val genericStore = store.getGenericStore()
+        val genericStore = stores.genericStore
 
-        return store.runTransactionSuspendable {
+        return stores.runTransactionSuspendable {
             if (!repositoryExists(repository)) {
                 return@runTransactionSuspendable false
             }
@@ -240,14 +239,14 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
             val isolated = checkNotNull(isIsolated(repository)) { "Repository not found: $repository" }
             val existingRepositories = getRepositories(isolated)
             val remainingRepositories = existingRepositories - repository
-            store.put(repositoriesListKey(isolated), remainingRepositories.joinToString("\n") { it.id })
+            stores.getGlobalStoreClient().put(repositoriesListKey(isolated), remainingRepositories.joinToString("\n") { it.id })
             genericStore.removeRepositoryObjects(repository)
             true
         }
     }
 
     override suspend fun removeBranches(repository: RepositoryId, branchNames: Set<String>) {
-        return store.runTransactionSuspendable {
+        return stores.runTransactionSuspendable {
             removeBranchesBlocking(repository, branchNames)
         }
     }
@@ -258,11 +257,11 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
      */
     override fun removeBranchesBlocking(repository: RepositoryId, branchNames: Set<String>) {
         if (branchNames.isEmpty()) return
-        store.runTransaction {
+        stores.genericStore.runTransaction {
             val key = branchListKey(repository)
-            val existingBranches = store.getGenericStore()[key]?.lines()?.toSet().orEmpty()
+            val existingBranches = stores.genericStore[key]?.lines()?.toSet().orEmpty()
             val remainingBranches = existingBranches - branchNames
-            store.getGenericStore().put(key, remainingBranches.joinToString("\n"))
+            stores.genericStore.put(key, remainingBranches.joinToString("\n"))
             for (branchName in branchNames) {
                 putVersionHash(repository.getBranchReference(branchName), null)
             }
@@ -270,7 +269,7 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
     }
 
     override suspend fun mergeChanges(branch: BranchReference, newVersionHash: String): String {
-        return store.runTransactionSuspendable {
+        return stores.runTransactionSuspendable {
             mergeChangesBlocking(branch, newVersionHash)
         }
     }
@@ -280,26 +279,25 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
      * Caller is expected to execute it outside the request thread.
      */
     override fun mergeChangesBlocking(branch: BranchReference, newVersionHash: String): String =
-        runWithRepositoryBlocking(branch.repositoryId) {
-            store.runTransaction {
-                val headHash = getVersionHashBlocking(branch)
-                val mergedHash = if (headHash == null) {
-                    newVersionHash
-                } else {
-                    val headVersion = CLVersion(headHash, client.storeCache)
-                    val newVersion = CLVersion(newVersionHash, client.storeCache)
-                    require(headVersion.getTree().getId() == newVersion.getTree().getId()) {
-                        "Attempt to merge a model with ID '${newVersion.getTree().getId()}'" +
-                            " into one with ID '${headVersion.getTree().getId()}'"
-                    }
-                    val mergedVersion = VersionMerger(client.storeCache, client.idGenerator)
-                        .mergeChange(headVersion, newVersion)
-                    mergedVersion.getContentHash()
+        stores.genericStore.runTransaction {
+            val headHash = getVersionHashBlocking(branch)
+            val mergedHash = if (headHash == null) {
+                newVersionHash
+            } else {
+                val legacyObjectStore = getLegacyObjectStore(branch.repositoryId)
+                val headVersion = CLVersion(headHash, legacyObjectStore)
+                val newVersion = CLVersion(newVersionHash, legacyObjectStore)
+                require(headVersion.getTree().getId() == newVersion.getTree().getId()) {
+                    "Attempt to merge a model with ID '${newVersion.getTree().getId()}'" +
+                        " into one with ID '${headVersion.getTree().getId()}'"
                 }
-                ensureBranchInList(branch)
-                putVersionHash(branch, mergedHash)
-                mergedHash
+                val mergedVersion = VersionMerger(legacyObjectStore, stores.idGenerator)
+                    .mergeChange(headVersion, newVersion)
+                mergedVersion.getContentHash()
             }
+            ensureBranchInList(branch)
+            putVersionHash(branch, mergedHash)
+            mergedHash
         }
 
     override suspend fun getVersion(branch: BranchReference): CLVersion? {
@@ -307,12 +305,12 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
     }
 
     override suspend fun getVersion(repository: RepositoryId, versionHash: String): CLVersion? {
-        val storeForVersion = if (isIsolated(repository) == true) client.store.forRepository(repository) else client.store.getGenericStore().forGlobalRepository()
-        return CLVersion.tryLoadFromHash(versionHash, ObjectStoreCache(LocalModelClient(storeForVersion)))
+        val legacyObjectStore = getLegacyObjectStore(repository.takeIf { isIsolated(repository) == true })
+        return CLVersion.tryLoadFromHash(versionHash, legacyObjectStore)
     }
 
     override suspend fun getVersionHash(branch: BranchReference): String? {
-        return store.runTransactionSuspendable {
+        return stores.runTransactionSuspendable {
             getVersionHashBlocking(branch)
         }
     }
@@ -322,83 +320,53 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
      * Caller is expected to execute it outside the request thread.
      */
     private fun getVersionHashBlocking(branch: BranchReference): String? {
-        return store.runTransaction {
+        return stores.genericStore.runTransaction {
             val isolated = isIsolated(branch.repositoryId)
             if (isolated == null) {
                 // migrate existing but unknown legacy branch
-                val legacyHash = store.getGenericStore()[legacyBranchKey(branch)] ?: return@runTransaction null
+                val legacyHash = stores.genericStore[legacyBranchKey(branch)] ?: return@runTransaction null
                 ensureBranchInList(branch)
                 putVersionHash(branch, legacyHash)
                 return@runTransaction legacyHash
             } else {
-                return@runTransaction store.getGenericStore()[branchKey(branch, isolated = isolated)]
+                return@runTransaction stores.genericStore[branchKey(branch, isolated = isolated)]
             }
         }
     }
 
     private fun putVersionHash(branch: BranchReference, hash: String?) {
         val isolated = isIsolated(branch.repositoryId) ?: false
-        store.getGenericStore().put(branchKey(branch, isolated), hash, false)
+        stores.genericStore.put(branchKey(branch, isolated), hash, false)
         if (!isolated) {
-            store.getGenericStore().put(legacyBranchKey(branch), hash, false)
+            stores.genericStore.put(legacyBranchKey(branch), hash, false)
         }
     }
 
     override suspend fun pollVersionHash(branch: BranchReference, lastKnown: String?): String {
-        return pollEntry(client.store.getGenericStore(), branchKey(branch), lastKnown)
+        return pollEntry(stores.genericStore, branchKey(branch), lastKnown)
             ?: throw IllegalStateException("No version found for branch '${branch.branchName}' in repository '${branch.repositoryId}'")
     }
 
-    private val versionDeltaCache = VersionDeltaCache(client.storeCache)
-    override suspend fun computeDelta(versionHash: String, baseVersionHash: String?): ObjectData {
+    private val versionDeltaCache = VersionDeltaCache(stores)
+    override suspend fun computeDelta(repository: RepositoryId?, versionHash: String, baseVersionHash: String?): ObjectData {
         if (versionHash == baseVersionHash) return ObjectData.empty
         if (baseVersionHash == null) {
             // no need to cache anything if there is no delta computation happening
-            return allObjectDataAsFlow(versionHash)
+            return allObjectDataAsFlow(repository, versionHash)
         }
 
-        return versionDeltaCache.getOrComputeDelta(versionHash, baseVersionHash)
+        return versionDeltaCache.getOrComputeDelta(repository?.takeIf { isIsolated(it) ?: false }, versionHash, baseVersionHash)
     }
 
-    private fun allObjectDataAsFlow(versionHash: String): ObjectDataFlow {
-        val hashObjectFlow = channelFlow {
-            // Our bulk query is blocking, therefor we explicitly launch it on one of the Dispatchers.IO.
-            // Without it, the consumer could accidentally start the flow on this thread and block it.
-            launch(Dispatchers.IO) {
-                // Use a bulk query to make as few request to the underlying store as possible.
-                val bulkQuery = objectStore.newBulkQuery()
-                // It is unsatisfactory that we have to keep already emitted hashes in memory.
-                // But without changing the underlying model,
-                // we have to do this to not emit objects more than once.
-                val seenHashes = mutableSetOf<String>()
-                fun emitObjects(entry: KVEntryReference<*>) {
-                    if (seenHashes.contains(entry.getHash())) return
-                    seenHashes.add(entry.getHash())
-                    bulkQuery.query(entry).onReceive {
-                        val value = checkNotNull(it) { "No value received for ${entry.getHash()}" }
-                        // Use `send` instead of `trySend`,
-                        // because `trySend` fails if the channel capacity is full.
-                        // This might happen if the data is produced faster than consumed.
-                        // A better solution would be to have bulk queries which itself are asynchronous
-                        // but doing that needs more consideration.
-                        runBlocking {
-                            // Maybe we should avoid Flow<Pair<String, String>> and use Flow<String>.
-                            // This needs profiling
-                            channel.send(entry.getHash() to value.serialize())
-                        }
-                        for (referencedEntry in value.getReferencedEntries()) {
-                            emitObjects(referencedEntry)
-                        }
-                    }
-                }
-                emitObjects(KVEntryReference(versionHash, CPVersion.DESERIALIZER))
-                LOG.debug("Starting to bulk query all objects.")
-                bulkQuery.executeQuery()
-            }
-        }
-        val checkedHashObjectFlow = hashObjectFlow.checkObjectHashes()
-        val objectData = ObjectDataFlow(checkedHashObjectFlow)
-        return objectData
+    private fun allObjectDataAsFlow(repository: RepositoryId?, versionHash: String): ObjectDataFlow {
+        val asyncStore = getAsyncStore(repository)
+        return asyncStore.getRecursively(KVEntryReference(versionHash, CPVersion.DESERIALIZER), THashSet())
+            .map { it.first.getHash() to it.second.serialize() }
+            .endOfSynchronousPipeline()
+            .asFlow()
+            .checkObjectHashes()
+            .flowOn(Dispatchers.IO)
+            .let { ObjectDataFlow(it) }
     }
 
     private fun branchKey(branch: BranchReference, isolated: Boolean = isIsolated(branch.repositoryId) ?: true): ObjectInRepository {
@@ -437,14 +405,6 @@ class RepositoriesManager(val client: LocalModelClient) : IRepositoriesManager {
             }
         }
         return result
-    }
-
-    override suspend fun <R> runWithRepository(repository: RepositoryId, body: suspend () -> R): R {
-        return store.withRepositoryInCoroutine(repository.takeIf { isIsolated(repository) == true }, body)
-    }
-
-    private fun <R> runWithRepositoryBlocking(repository: RepositoryId, body: () -> R): R {
-        return store.withRepository(repository.takeIf { isIsolated(repository) == true }, body)
     }
 
     companion object {
@@ -491,26 +451,27 @@ private fun Flow<Pair<String, String>>.checkObjectHashes(): Flow<Pair<String, St
     return onEach { HashUtil.checkObjectHash(it.first, it.second) }
 }
 
-class VersionDeltaCache(val store: IDeserializingKeyValueStore) {
+class VersionDeltaCache(val stores: StoreManager) {
 
     companion object {
         private val LOG = LoggerFactory.getLogger(VersionDeltaCache::class.java)
     }
 
-    private val cacheMap = LRUMap<Pair<String, String?>, SoftReference<Deferred<ObjectDataMap>>>(10)
+    private val cacheMap = LRUMap<Triple<RepositoryId?, String, String?>, SoftReference<Deferred<ObjectDataMap>>>(10)
 
-    suspend fun getOrComputeDelta(versionHash: String, baseVersionHash: String): ObjectDataMap {
+    suspend fun getOrComputeDelta(repository: RepositoryId?, versionHash: String, baseVersionHash: String): ObjectDataMap {
         return coroutineScope {
             val deferredDelta = synchronized(cacheMap) {
-                val key = versionHash to baseVersionHash
+                val key = Triple(repository, versionHash, baseVersionHash)
                 val existingDeferredDelta = cacheMap[key]?.get()
                 if (existingDeferredDelta != null) {
                     LOG.debug("Version delta found in cache for {}.", key)
                     existingDeferredDelta
                 } else {
                     LOG.debug("Version delta not found in cache for {}.", key)
-                    val version = CLVersion(versionHash, store)
-                    val baseVersion = CLVersion(baseVersionHash, store)
+                    val legacyObjectStore = stores.getLegacyObjectStore(repository)
+                    val version = CLVersion(versionHash, legacyObjectStore)
+                    val baseVersion = CLVersion(baseVersionHash, legacyObjectStore)
                     val newDeferredDelta = async(Dispatchers.IO) {
                         LOG.debug("Computing for delta for {}.", key)
                         val result = ObjectDataMap(version.computeDelta(baseVersion))

@@ -13,19 +13,18 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEmpty
+import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.observable.switchIfEmpty
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmName
 
 class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : TransformingStep<In, Out>(), IFluxOrMonoStep<Out> {
-    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
-        val downCastedInput: StepFlow<Out> = input
-        return downCastedInput.map { MultiplexedOutput(0, it) }.onEmpty {
-            emitAll(alternative.asFlow(context.evaluationContext, Unit.asStepOutput(null)).map { MultiplexedOutput(1, it) })
+    override fun createStream(input: StepStream<In>, context: IStreamInstantiationContext): StepStream<Out> {
+        val downCastedInput: StepStream<Out> = input
+        return downCastedInput.map { MultiplexedOutput(0, it) }.switchIfEmpty {
+            alternative.asStream(context.evaluationContext, Unit.asStepOutput(null)).map { MultiplexedOutput(1, it) }
         }
     }
 
@@ -48,14 +47,20 @@ class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : 
 
     @Serializable
     @SerialName("ifEmpty")
-    class Descriptor(val alternative: QueryId) : CoreStepDescriptor() {
+    data class Descriptor(val alternative: QueryId) : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return IfEmptyStep<Any?, Any?>(context.getOrCreateQuery(alternative) as UnboundQuery<Unit, *, Any?>)
+        }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(idReassignments.reassign(alternative))
+
+        override fun prepareNormalization(idReassignments: IdReassignments) {
+            idReassignments.visitQuery(alternative)
         }
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.ifEmpty { $alternative }"""
+        return "${getProducers().single()}\n.ifEmpty { $alternative }"
     }
 }
 

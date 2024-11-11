@@ -32,4 +32,5 @@ data class SimpleProperty
     }
 
     override fun getSimpleName(): String = simpleName
+    override fun toReference(): IPropertyReference = IPropertyReference.fromIdAndName(uid, simpleName)
 }

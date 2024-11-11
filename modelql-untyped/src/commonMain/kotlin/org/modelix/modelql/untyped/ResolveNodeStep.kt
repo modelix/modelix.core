@@ -13,33 +13,34 @@
  */
 package org.modelix.modelql.untyped
 
-import kotlinx.coroutines.flow.map
+import com.badoo.reaktive.observable.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
+import org.modelix.model.api.UnresolvableNodeReferenceException
 import org.modelix.model.api.resolveInCurrentContext
-import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IStreamInstantiationContext
+import org.modelix.modelql.core.IdReassignments
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.StepDescriptor
-import org.modelix.modelql.core.StepFlow
-import org.modelix.modelql.core.asStepFlow
+import org.modelix.modelql.core.StepStream
+import org.modelix.modelql.core.asStepStream
 import org.modelix.modelql.core.stepOutputSerializer
 
 class ResolveNodeStep() : MonoTransformingStep<INodeReference, INode>() {
-    override fun createFlow(input: StepFlow<INodeReference>, context: IFlowInstantiationContext): StepFlow<INode> {
+    override fun createStream(input: StepStream<INodeReference>, context: IStreamInstantiationContext): StepStream<INode> {
         return input.map {
-            it.value.resolveInCurrentContext() ?: throw IllegalArgumentException("Node not found: ${it.value}")
-        }.asStepFlow(this)
+            it.value.resolveInCurrentContext() ?: throw UnresolvableNodeReferenceException(it.value)
+        }.asStepStream(this)
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<INode>> {
@@ -54,10 +55,12 @@ class ResolveNodeStep() : MonoTransformingStep<INodeReference, INode>() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return ResolveNodeStep()
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor()
     }
 
     override fun toString(): String {
-        return getProducers().single().toString() + ".resolve()"
+        return "${getProducers().single()}\n.resolve()"
     }
 }
 

@@ -13,7 +13,7 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.map
+import com.badoo.reaktive.observable.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -25,7 +25,7 @@ class ZipElementAccessStep<Out>(val index: Int) : MonoTransformingStep<IZipOutpu
         return zipSerializer.elementSerializers[index]
     }
 
-    override fun createFlow(input: StepFlow<IZipOutput<Any?>>, context: IFlowInstantiationContext): StepFlow<Out> {
+    override fun createStream(input: StepStream<IZipOutput<Any?>>, context: IStreamInstantiationContext): StepStream<Out> {
         return input.map { (it as ZipStepOutput<*, *>).values[index].upcast() }
     }
 
@@ -35,10 +35,12 @@ class ZipElementAccessStep<Out>(val index: Int) : MonoTransformingStep<IZipOutpu
 
     @Serializable
     @SerialName("zip.output.access")
-    class Descriptor(val index: Int) : CoreStepDescriptor() {
+    data class Descriptor(val index: Int) : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return ZipElementAccessStep<Any?>(index)
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(index)
     }
 
     override fun toString(): String {
@@ -53,7 +55,7 @@ val <T> IMonoStep<IZip2Output<*, *, T>>.second: IMonoStep<T>
 val <T> IMonoStep<IZip3Output<*, *, *, T>>.third: IMonoStep<T>
     get() = ZipElementAccessStep<T>(2).also { connect(it) }
 
-@Deprecated("Use fourth, the version without type", ReplaceWith("fourth"))
+@Deprecated("Use fourth, the version without typo", ReplaceWith("fourth"))
 val <T> IMonoStep<IZip4Output<*, *, *, *, T>>.forth: IMonoStep<T>
     get() = ZipElementAccessStep<T>(3).also { connect(it) }
 val <T> IMonoStep<IZip4Output<*, *, *, *, T>>.fourth: IMonoStep<T>

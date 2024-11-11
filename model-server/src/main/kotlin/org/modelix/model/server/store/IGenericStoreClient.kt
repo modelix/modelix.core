@@ -45,6 +45,7 @@ interface IGenericStoreClient<KeyT> : AutoCloseable {
         val entries = getAll(keys.toSet())
         return keys.map { entries[it] }
     }
+    fun getIfCached(key: KeyT): String?
     fun getAll(keys: Set<KeyT>): Map<KeyT, String?>
     fun getAll(): Map<KeyT, String?>
     fun put(key: KeyT, value: String?, silent: Boolean = false) = putAll(mapOf(key to value))

@@ -40,6 +40,7 @@ dokka = "1.9.20"
 detekt = "1.23.7"
 xmlunit = "2.10.0"
 kotest = "5.9.1"
+reaktive = "2.2.0"
 testcontainers = "1.20.3"
 keycloak = "26.0.2"
 
@@ -137,3 +138,9 @@ jimfs = { group = "com.google.jimfs", name = "jimfs", version = "1.3.0" }
 
 testcontainers = { group = "org.testcontainers", name = "testcontainers", version.ref = "testcontainers" }
 testcontainers-postgresql = { group = "org.testcontainers", name = "postgresql", version.ref = "testcontainers" }
+
+# The official publication with the group ID com.badoo.reaktive is built for JVM 17
+reaktive = { group = "org.modelix.reaktive", name = "reaktive", version.ref = "reaktive" }
+reaktive-testing = { group = "org.modelix.reaktive", name = "reaktive-testing", version.ref = "reaktive" }
+reaktive-annotations = { group = "org.modelix.reaktive", name = "reaktive-annotations", version.ref = "reaktive" }
+reaktive-coroutines-interop = { group = "org.modelix.reaktive", name = "coroutines-interop", version.ref = "reaktive" }

@@ -17,12 +17,12 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.modelix.model.api.IChildLink
+import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INode
-import org.modelix.model.api.key
-import org.modelix.model.api.resolveChildLinkOrFallback
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IdReassignments
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.SerializationContext
@@ -30,7 +30,7 @@ import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.TransformingStepWithParameter
 import org.modelix.modelql.core.connect
 
-class MoveNodeStep(val role: String?, val index: Int) :
+class MoveNodeStep(val link: IChildLinkReference, val index: Int) :
     TransformingStepWithParameter<INode, INode, INode, INode>() {
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<INode>> {
@@ -43,12 +43,12 @@ class MoveNodeStep(val role: String?, val index: Int) :
     }
 
     override fun transformElement(input: IStepOutput<INode>, parameter: IStepOutput<INode>?): IStepOutput<INode> {
-        input.value.moveChild(input.value.resolveChildLinkOrFallback(role), index, parameter!!.value)
+        input.value.moveChild(link.toLegacy(), index, parameter!!.value)
         return input
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {
-        return Descriptor(role, index)
+        return Descriptor(link.getIdOrNameOrNull(), link, index)
     }
 
     override fun requiresWriteAccess(): Boolean {
@@ -56,25 +56,33 @@ class MoveNodeStep(val role: String?, val index: Int) :
     }
 
     override fun toString(): String {
-        return "${getProducer()}.moveChild($role, $index, ${getParameterProducer()})"
+        return "${getProducer()}\n.moveChild($link, $index, ${getParameterProducer()})"
     }
 
     @Serializable
     @SerialName("untyped.moveChild")
-    class Descriptor(val role: String?, val index: Int) : StepDescriptor() {
+    data class Descriptor(val role: String?, val link: IChildLinkReference? = null, val index: Int) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
-            return MoveNodeStep(role, index)
+            return MoveNodeStep(link ?: IChildLinkReference.fromUnclassifiedString(role), index)
         }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(role, link, index)
     }
 }
 
+@Deprecated("provide an IChildLinkReference")
 fun IMonoStep<INode>.moveChild(link: String?, index: Int = -1, child: IMonoStep<INode>): IMonoStep<INode> {
+    return moveChild(IChildLinkReference.fromUnclassifiedString(link), index, child)
+}
+
+fun IMonoStep<INode>.moveChild(link: IChildLinkReference, index: Int = -1, child: IMonoStep<INode>): IMonoStep<INode> {
     return MoveNodeStep(link, index).also {
         connect(it)
         child.connect(it)
     }
 }
 
+@Deprecated("provide an IChildLinkReference")
 fun IMonoStep<INode>.moveChild(link: IChildLink, index: Int = -1, child: IMonoStep<INode>): IMonoStep<INode> {
-    return moveChild(link.key(), index, child)
+    return moveChild(link.toReference(), index, child)
 }

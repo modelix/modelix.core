@@ -13,17 +13,15 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.shareIn
-import kotlinx.coroutines.flow.take
+import com.badoo.reaktive.observable.Observable
+import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.single.Single
+import com.badoo.reaktive.single.asObservable
+import com.badoo.reaktive.single.flatMapIterable
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
+import org.modelix.streams.cached
 import kotlin.reflect.KType
 
 interface IStep {
@@ -34,35 +32,32 @@ interface IStep {
 
     fun requiresWriteAccess(): Boolean = false
     fun hasSideEffect(): Boolean = requiresWriteAccess()
-    fun needsCoroutineScope() = false
     fun requiresSingularQueryInput(): Boolean
 
     fun getRootInputSteps(): Set<IStep> = if (this is IConsumingStep<*>) getProducers().flatMap { it.getRootInputSteps() }.toSet() else setOf(this)
 }
 
-interface IFlowInstantiationContext {
+interface IStreamInstantiationContext {
     val evaluationContext: QueryEvaluationContext
-    val coroutineScope: CoroutineScope?
-    fun <T> getOrCreateFlow(step: IProducingStep<T>): StepFlow<T>
-    fun <T> getFlow(step: IProducingStep<T>): Flow<T>?
+    fun <T> getOrCreateStream(step: IProducingStep<T>): StepStream<T>
+    fun <T> getStream(step: IProducingStep<T>): Observable<T>?
 }
-class FlowInstantiationContext(
+class StreamInstantiationContext(
     override var evaluationContext: QueryEvaluationContext,
-    override val coroutineScope: CoroutineScope?,
     val query: UnboundQuery<*, *, *>,
-) : IFlowInstantiationContext {
-    private val createdProducers = HashMap<IProducingStep<*>, Flow<*>>()
-    fun <T> put(step: IProducingStep<T>, producer: Flow<T>) {
+) : IStreamInstantiationContext {
+    private val createdProducers = HashMap<IProducingStep<*>, Observable<*>>()
+    fun <T> put(step: IProducingStep<T>, producer: Observable<T>) {
         createdProducers[step] = producer
     }
-    override fun <T> getOrCreateFlow(step: IProducingStep<T>): StepFlow<T> {
-        if (evaluationContext.hasValue(step)) return evaluationContext.getValue(step).asFlow()
-        return (createdProducers as MutableMap<IProducingStep<T>, StepFlow<T>>)
-            .getOrPut(step) { step.createFlow(this) }
+    override fun <T> getOrCreateStream(step: IProducingStep<T>): StepStream<T> {
+        if (evaluationContext.hasValue(step)) return evaluationContext.getValue(step).flatMapIterable { it }
+        return (createdProducers as MutableMap<IProducingStep<T>, StepStream<T>>)
+            .getOrPut(step) { step.createStream(this) }
     }
 
-    override fun <T> getFlow(step: IProducingStep<T>): Flow<T>? {
-        return (createdProducers as MutableMap<IProducingStep<T>, Flow<T>>)[step]
+    override fun <T> getStream(step: IProducingStep<T>): Observable<T>? {
+        return (createdProducers as MutableMap<IProducingStep<T>, Observable<T>>)[step]
     }
 }
 
@@ -89,7 +84,7 @@ interface IProducingStep<out E> : IStep {
     fun addConsumer(consumer: IConsumingStep<E>)
     fun getConsumers(): List<IConsumingStep<*>>
     fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>>
-    fun createFlow(context: IFlowInstantiationContext): StepFlow<E>
+    fun createStream(context: IStreamInstantiationContext): StepStream<E>
 
     fun outputIsConsumedMultipleTimes(): Boolean {
         return getConsumers().size > 1 || getConsumers().any { it.inputIsConsumedMultipleTimes() }
@@ -174,10 +169,10 @@ abstract class TransformingStep<In, Out> : IProcessingStep<In, Out>, ProducingSt
 
     fun getProducer(): IProducingStep<In> = producer!!
 
-    protected abstract fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out>
+    protected abstract fun createStream(input: StepStream<In>, context: IStreamInstantiationContext): StepStream<Out>
 
-    override fun createFlow(context: IFlowInstantiationContext): StepFlow<Out> {
-        return createFlow(context.getOrCreateFlow(getProducer()), context)
+    override fun createStream(context: IStreamInstantiationContext): StepStream<Out> {
+        return createStream(context.getOrCreateStream(getProducer()), context)
     }
 }
 
@@ -190,7 +185,7 @@ abstract class MonoTransformingStep<In, Out> : TransformingStep<In, Out>(), IMon
 }
 
 abstract class SimpleMonoTransformingStep<In, Out> : MonoTransformingStep<In, Out>() {
-    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
+    override fun createStream(input: StepStream<In>, context: IStreamInstantiationContext): StepStream<Out> {
         return input.map { transform(context.evaluationContext, it.value).asStepOutput(this) }
     }
     abstract fun transform(evaluationContext: QueryEvaluationContext, input: In): Out
@@ -208,24 +203,14 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
     override fun canBeMultiple(): Boolean = false
     override fun requiresSingularQueryInput(): Boolean = true
 
-    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
-        val flow = flow {
-            emit(aggregate(input))
-        }
-        return if (outputIsConsumedMultipleTimes()) {
-            val scope = context.coroutineScope ?: throw RuntimeException("Coroutine scope required for caching of $this")
-            flow.shareIn(scope, SharingStarted.Lazily, 1)
-                .take(1) // The shared flow seems to ignore that there are no more elements and keeps the subscribers active.
-        } else {
-            flow
-        }
+    override fun createStream(input: StepStream<In>, context: IStreamInstantiationContext): StepStream<Out> {
+        val aggregated = aggregate(input, context)
+        return (if (outputIsConsumedMultipleTimes()) aggregated.cached() else aggregated).asObservable()
     }
-
-    override fun needsCoroutineScope() = outputIsConsumedMultipleTimes()
 
     override fun inputIsConsumedMultipleTimes(): Boolean {
         return false
     }
 
-    protected abstract suspend fun aggregate(input: StepFlow<In>): IStepOutput<Out>
+    protected abstract fun aggregate(input: StepStream<In>, context: IStreamInstantiationContext): Single<IStepOutput<Out>>
 }

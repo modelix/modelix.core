@@ -14,6 +14,7 @@
 
 package org.modelix.model.server.handlers
 
+import com.google.common.cache.CacheBuilder
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
@@ -43,15 +44,15 @@ import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.hasPermission
 import org.modelix.authorization.requiresLogin
-import org.modelix.model.InMemoryModels
-import org.modelix.model.api.ITree
+import org.modelix.model.api.IBranch
 import org.modelix.model.api.PBranch
+import org.modelix.model.api.TreeAsBranch
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.getRootNode
+import org.modelix.model.api.runSynchronized
 import org.modelix.model.area.getArea
 import org.modelix.model.client2.checkObjectHashes
 import org.modelix.model.client2.getAllObjects
-import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
@@ -61,10 +62,16 @@ import org.modelix.model.server.api.v2.ImmutableObjectsStream
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.api.v2.VersionDeltaStream
 import org.modelix.model.server.api.v2.VersionDeltaStreamV2
-import org.modelix.model.server.store.IStoreClient
-import org.modelix.model.server.store.LocalModelClient
-import org.modelix.model.server.store.withGlobalRepositoryInCoroutine
+import org.modelix.model.server.store.StoreManager
+import org.modelix.modelql.core.IMemoizationPersistence
+import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.MonoUnboundQuery
+import org.modelix.modelql.core.QueryEvaluationContext
+import org.modelix.modelql.core.QueryGraphDescriptor
+import org.modelix.modelql.core.upcast
 import org.modelix.modelql.server.ModelQLServer
+import org.modelix.streams.exactlyOne
+import org.modelix.streams.getSynchronous
 import org.slf4j.LoggerFactory
 
 /**
@@ -74,20 +81,14 @@ import org.slf4j.LoggerFactory
 @Suppress("TooManyFunctions") // result of the API spec
 class ModelReplicationServer(
     private val repositoriesManager: IRepositoriesManager,
-    private val modelClient: LocalModelClient,
-    private val inMemoryModels: InMemoryModels,
 ) : V2Api() {
-    constructor(repositoriesManager: RepositoriesManager) :
-        this(repositoriesManager, repositoriesManager.client, InMemoryModels())
-
-    constructor(modelClient: LocalModelClient) : this(RepositoriesManager(modelClient), modelClient, InMemoryModels())
-    constructor(storeClient: IStoreClient) : this(LocalModelClient(storeClient))
 
     companion object {
         private val LOG = LoggerFactory.getLogger(ModelReplicationServer::class.java)
     }
 
-    private val storeClient: IStoreClient get() = modelClient.store
+    private val stores: StoreManager get() = repositoriesManager.getStoreManager()
+    private val indexPersistence: IMemoizationPersistence = InMemoryMemoizationPersistence()
 
     fun init(application: Application) {
         application.routing {
@@ -99,10 +100,6 @@ class ModelReplicationServer(
 
     private fun repositoryId(paramValue: String?) =
         RepositoryId(checkNotNull(paramValue) { "Parameter 'repository' not available" })
-
-    private suspend fun <R> runWithRepository(repository: String, body: suspend () -> R): R {
-        return repositoriesManager.runWithRepository(repositoryId(repository), body)
-    }
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositories() {
         call.respondText(
@@ -127,11 +124,9 @@ class ModelReplicationServer(
         lastKnown: String?,
     ) {
         checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
-        runWithRepository(repository) {
-            val branchRef = repositoryId(repository).getBranchReference(branch)
-            val versionHash = repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
-            call.respondDelta(versionHash, lastKnown)
-        }
+        val branchRef = repositoryId(repository).getBranchReference(branch)
+        val versionHash = repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
+        call.respondDelta(RepositoryId(repository), versionHash, lastKnown)
     }
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositoryBranchV1(
@@ -140,11 +135,9 @@ class ModelReplicationServer(
         lastKnown: String?,
     ) {
         checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
-        runWithRepository(repository) {
-            val branchRef = repositoryId(repository).getBranchReference(branch)
-            val versionHash = repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
-            call.respond(BranchV1(branch, versionHash))
-        }
+        val branchRef = repositoryId(repository).getBranchReference(branch)
+        val versionHash = repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
+        call.respond(BranchV1(branch, versionHash))
     }
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.deleteRepositoryBranch(
@@ -173,11 +166,9 @@ class ModelReplicationServer(
         branch: String,
     ) {
         checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
-        runWithRepository(repository) {
-            val branchRef = repositoryId(repository).getBranchReference(branch)
-            val versionHash = repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
-            call.respondText(versionHash)
-        }
+        val branchRef = repositoryId(repository).getBranchReference(branch)
+        val versionHash = repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
+        call.respondText(versionHash)
     }
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.initializeRepository(
@@ -186,27 +177,23 @@ class ModelReplicationServer(
         legacyGlobalStorage: Boolean?,
     ) {
         checkPermission(ModelServerPermissionSchema.repository(repository).create)
-        runWithRepository(repository) {
-            val initialVersion = repositoriesManager.createRepository(
-                repositoryId(repository),
-                call.getUserName(),
-                useRoleIds ?: true,
-                legacyGlobalStorage ?: false,
-            )
-            call.respondDelta(initialVersion.getContentHash(), null)
-        }
+        val initialVersion = repositoriesManager.createRepository(
+            repositoryId(repository),
+            call.getUserName(),
+            useRoleIds ?: true,
+            legacyGlobalStorage ?: false,
+        )
+        call.respondDelta(RepositoryId(repository), initialVersion.getContentHash(), null)
     }
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.deleteRepository(repository: String) {
         checkPermission(ModelServerPermissionSchema.repository(repository).delete)
 
-        runWithRepository(repository) {
-            val foundAndDeleted = repositoriesManager.removeRepository(repositoryId(repository))
-            if (foundAndDeleted) {
-                call.respond(HttpStatusCode.NoContent)
-            } else {
-                call.respond(HttpStatusCode.NotFound)
-            }
+        val foundAndDeleted = repositoriesManager.removeRepository(repositoryId(repository))
+        if (foundAndDeleted) {
+            call.respond(HttpStatusCode.NoContent)
+        } else {
+            call.respond(HttpStatusCode.NotFound)
         }
     }
 
@@ -215,14 +202,12 @@ class ModelReplicationServer(
         branch: String,
     ) {
         checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).push)
-        runWithRepository(repository) {
-            val branchRef = repositoryId(repository).getBranchReference(branch)
-            val deltaFromClient = call.receive<VersionDelta>()
-            deltaFromClient.checkObjectHashes()
-            storeClient.putAll(deltaFromClient.getAllObjects())
-            val mergedHash = repositoriesManager.mergeChanges(branchRef, deltaFromClient.versionHash)
-            call.respondDelta(mergedHash, deltaFromClient.versionHash)
-        }
+        val branchRef = repositoryId(repository).getBranchReference(branch)
+        val deltaFromClient = call.receive<VersionDelta>()
+        deltaFromClient.checkObjectHashes()
+        repositoriesManager.getStoreClient(RepositoryId(repository)).putAll(deltaFromClient.getAllObjects())
+        val mergedHash = repositoriesManager.mergeChanges(branchRef, deltaFromClient.versionHash)
+        call.respondDelta(RepositoryId(repository), mergedHash, deltaFromClient.versionHash)
     }
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.pollRepositoryBranch(
@@ -231,11 +216,9 @@ class ModelReplicationServer(
         lastKnown: String?,
     ) {
         checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
-        runWithRepository(repository) {
-            val branchRef = repositoryId(repository).getBranchReference(branch)
-            val newVersionHash = repositoriesManager.pollVersionHash(branchRef, lastKnown)
-            call.respondDelta(newVersionHash, lastKnown)
-        }
+        val branchRef = repositoryId(repository).getBranchReference(branch)
+        val newVersionHash = repositoriesManager.pollVersionHash(branchRef, lastKnown)
+        call.respondDelta(RepositoryId(repository), newVersionHash, lastKnown)
     }
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.postRepositoryObjectsGetAll(repository: String) {
@@ -247,10 +230,8 @@ class ModelReplicationServer(
             keys.add(line)
         }
 
-        val objects = runWithRepository(repository) {
-            withContext(Dispatchers.IO) {
-                modelClient.store.getAll(keys)
-            }
+        val objects = withContext(Dispatchers.IO) {
+            repositoriesManager.getStoreClient(RepositoryId(repository)).getAll(keys)
         }
 
         for (entry in objects) {
@@ -270,11 +251,9 @@ class ModelReplicationServer(
         legacyGlobalStorage: Boolean?,
     ) {
         checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
-        runWithRepository(repository) {
-            val branchRef = repositoryId(repository).getBranchReference(branch)
-            val newVersionHash = repositoriesManager.pollVersionHash(branchRef, lastKnown)
-            call.respondText(newVersionHash)
-        }
+        val branchRef = repositoryId(repository).getBranchReference(branch)
+        val newVersionHash = repositoriesManager.pollVersionHash(branchRef, lastKnown)
+        call.respondText(newVersionHash)
     }
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositoryVersionHash(
@@ -283,50 +262,50 @@ class ModelReplicationServer(
         lastKnown: String?,
     ) {
         checkPermission(ModelServerPermissionSchema.repository(repository).objects.read)
-        runWithRepository(repository) {
-            if (repositoriesManager.getVersion(repositoryId(repository), versionHash) == null) {
-                throw VersionNotFoundException(versionHash)
-            }
-            call.respondDelta(versionHash, lastKnown)
+        if (repositoriesManager.getVersion(repositoryId(repository), versionHash) == null) {
+            throw VersionNotFoundException(versionHash)
         }
+        call.respondDelta(RepositoryId(repository), versionHash, lastKnown)
     }
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.postRepositoryBranchQuery(
         repository: String,
-        branch: String,
+        branchName: String,
     ) {
-        val branchRef = repositoryId(repository).getBranchReference(branch)
+        val branchRef = repositoryId(repository).getBranchReference(branchName)
         checkPermission(ModelServerPermissionSchema.branch(branchRef).query)
-        runWithRepository(repository) {
-            val version = repositoriesManager.getVersion(branchRef) ?: throw BranchNotFoundException(branchRef)
-            LOG.trace("Running query on {} @ {}", branchRef, version)
-            val initialTree = version.getTree()
-            val otBranch = OTBranch(
-                PBranch(initialTree, modelClient.idGenerator),
-                modelClient.idGenerator,
-                modelClient.storeCache,
-            )
+        val version = repositoriesManager.getVersion(branchRef) ?: throw BranchNotFoundException(branchRef)
+        LOG.trace("Running query on {} @ {}", branchRef, version)
+        val initialTree = version.getTree()
 
+        IMemoizationPersistence.CONTEXT_INSTANCE.runInCoroutine(indexPersistence) {
+            lateinit var branch: IBranch
             ModelQLServer.handleCall(call, { writeAccess ->
-                if (writeAccess) {
-                    otBranch.getRootNode() to otBranch.getArea()
+                branch = if (writeAccess) {
+                    OTBranch(
+                        PBranch(initialTree, stores.idGenerator),
+                        stores.idGenerator,
+                        repositoriesManager.getLegacyObjectStore(RepositoryId(repository)),
+                    )
                 } else {
-                    val model = inMemoryModels.getModel(initialTree).await()
-                    model.getNode(ITree.ROOT_ID) to model.getArea()
+                    TreeAsBranch(initialTree)
                 }
+                branch.getRootNode() to branch.getArea()
             }, {
                 // writing the new version has to happen before call.respond is invoked, otherwise subsequent queries
                 // from the same client may still be executed on the old version.
-                val (ops, newTree) = otBranch.getPendingChanges()
-                if (newTree != initialTree) {
-                    val newVersion = CLVersion.createRegularVersion(
-                        id = modelClient.idGenerator.generate(),
-                        author = getUserName(),
-                        tree = newTree as CLTree,
-                        baseVersion = version,
-                        operations = ops.map { it.getOriginalOp() }.toTypedArray(),
-                    )
-                    repositoriesManager.mergeChanges(branchRef, newVersion.getContentHash())
+                (branch as? OTBranch)?.let { otBranch ->
+                    val (ops, newTree) = otBranch.getPendingChanges()
+                    if (newTree != initialTree) {
+                        val newVersion = CLVersion.createRegularVersion(
+                            id = stores.idGenerator.generate(),
+                            author = getUserName(),
+                            tree = newTree,
+                            baseVersion = version,
+                            operations = ops.map { it.getOriginalOp() }.toTypedArray(),
+                        )
+                        repositoriesManager.mergeChanges(branchRef, newVersion.getContentHash())
+                    }
                 }
             })
         }
@@ -337,12 +316,10 @@ class ModelReplicationServer(
         repository: String,
     ) {
         checkPermission(ModelServerPermissionSchema.repository(repository).objects.read)
-        runWithRepository(repository) {
-            val version = CLVersion.loadFromHash(versionHash, modelClient.storeCache)
-            val initialTree = version.getTree()
-            val branch = TreePointer(initialTree)
-            ModelQLServer.handleCall(call, branch.getRootNode(), branch.getArea())
-        }
+        val version = CLVersion.loadFromHash(versionHash, repositoriesManager.getLegacyObjectStore(RepositoryId(repository)))
+        val initialTree = version.getTree()
+        val branch = TreePointer(initialTree)
+        ModelQLServer.handleCall(call, branch.getRootNode(), branch.getArea())
     }
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.putRepositoryObjects(repository: String) {
@@ -366,7 +343,9 @@ class ModelReplicationServer(
             entries[key] = value
         }
 
-        runWithRepository(repository) { withContext(Dispatchers.IO) { storeClient.putAll(entries, true) } }
+        withContext(Dispatchers.IO) {
+            repositoriesManager.getStoreClient(RepositoryId(repository)).putAll(entries, true)
+        }
         call.respondText("${entries.size} objects received")
     }
 
@@ -376,44 +355,43 @@ class ModelReplicationServer(
         lastKnown: String?,
     ) {
         checkPermission(ModelServerPermissionSchema.legacyGlobalObjects.read)
-        storeClient.withGlobalRepositoryInCoroutine {
-            if (storeClient[versionHash] == null) {
-                throw VersionNotFoundException(versionHash)
-            }
-            call.respondDelta(versionHash, lastKnown)
+        if (stores.getGlobalStoreClient()[versionHash] == null) {
+            throw VersionNotFoundException(versionHash)
         }
+        call.respondDelta(null, versionHash, lastKnown)
     }
 
-    private suspend fun ApplicationCall.respondDelta(versionHash: String, baseVersionHash: String?) {
+    private suspend fun ApplicationCall.respondDelta(repositoryId: RepositoryId?, versionHash: String, baseVersionHash: String?) {
         val expectedTypes = request.acceptItems().map { ContentType.parse(it.value) }
         return if (expectedTypes.any { it.match(VersionDeltaStreamV2.CONTENT_TYPE) }) {
-            respondDeltaAsObjectStreamV2(versionHash, baseVersionHash)
+            respondDeltaAsObjectStreamV2(repositoryId, versionHash, baseVersionHash)
         } else if (expectedTypes.any { it.match(VersionDeltaStream.CONTENT_TYPE) }) {
-            respondDeltaAsObjectStreamV1(versionHash, baseVersionHash, false)
+            respondDeltaAsObjectStreamV1(repositoryId, versionHash, baseVersionHash, false)
         } else if (expectedTypes.any { it.match(ContentType.Application.Json) }) {
-            respondDeltaAsJson(versionHash, baseVersionHash)
+            respondDeltaAsJson(repositoryId, versionHash, baseVersionHash)
         } else {
-            respondDeltaAsObjectStreamV1(versionHash, baseVersionHash, true)
+            respondDeltaAsObjectStreamV1(repositoryId, versionHash, baseVersionHash, true)
         }
     }
 
-    private suspend fun ApplicationCall.respondDeltaAsJson(versionHash: String, baseVersionHash: String?) {
+    private suspend fun ApplicationCall.respondDeltaAsJson(repositoryId: RepositoryId?, versionHash: String, baseVersionHash: String?) {
         val delta = VersionDelta(
             versionHash,
             baseVersionHash,
-            objectsMap = repositoriesManager.computeDelta(versionHash, baseVersionHash).asMap(),
+            objectsMap = repositoriesManager.computeDelta(repositoryId, versionHash, baseVersionHash).asMap(),
         )
         respond(delta)
     }
 
     private suspend fun ApplicationCall.respondDeltaAsObjectStreamV1(
+        repositoryId: RepositoryId?,
         versionHash: String,
         baseVersionHash: String?,
         plainText: Boolean,
     ) {
         // Call `computeDelta` before starting to respond.
         // It could already throw an exception, and in that case we do not want a successful response status.
-        val objectData = repositoriesManager.computeDelta(versionHash, baseVersionHash)
+        val objectData = repositoriesManager.computeDelta(repositoryId, versionHash, baseVersionHash)
         val contentType = if (plainText) ContentType.Text.Plain else VersionDeltaStream.CONTENT_TYPE
         respondBytesWriter(contentType) {
             this.useClosingWithoutCause {
@@ -430,8 +408,8 @@ class ModelReplicationServer(
         }
     }
 
-    private suspend fun ApplicationCall.respondDeltaAsObjectStreamV2(versionHash: String, baseVersionHash: String?) {
-        val objectData = repositoriesManager.computeDelta(versionHash, baseVersionHash)
+    private suspend fun ApplicationCall.respondDeltaAsObjectStreamV2(repositoryId: RepositoryId?, versionHash: String, baseVersionHash: String?) {
+        val objectData = repositoriesManager.computeDelta(repositoryId, versionHash, baseVersionHash)
         respondBytesWriter(VersionDeltaStreamV2.CONTENT_TYPE) {
             this.useClosingWithoutCause {
                 VersionDeltaStreamV2.encodeVersionDeltaStreamV2(this, versionHash, objectData.asFlow())
@@ -488,4 +466,36 @@ private fun PipelineContext<Unit, ApplicationCall>.parameter(name: String): Stri
 
 private fun ApplicationCall.parameter(name: String): String {
     return requireNotNull(parameters[name]) { "Unknown parameter '$name'" }
+}
+
+class InMemoryMemoizationPersistence : IMemoizationPersistence {
+
+    private val cache = CacheBuilder.newBuilder().softValues().build<IndexCacheKey, IStepOutput<*>>()
+
+    /**
+     * Used for deduplication of instances to safe memory.
+     */
+    private val descriptorInstances = CacheBuilder.newBuilder().maximumSize(100).build<QueryGraphDescriptor, QueryGraphDescriptor>()
+
+    override fun <In, Out> getMemoizer(query: MonoUnboundQuery<In, Out>): IMemoizationPersistence.Memoizer<In, Out> {
+        return MemoizerImpl(query, query.createDescriptor().normalize().deduplicate())
+    }
+
+    private inner class MemoizerImpl<In, Out>(val query: MonoUnboundQuery<In, Out>, val normalizedQueryDescriptor: QueryGraphDescriptor) : IMemoizationPersistence.Memoizer<In, Out> {
+        override fun memoize(input: IStepOutput<In>): IStepOutput<Out> {
+            runSynchronized(cache) {
+                return cache.get(IndexCacheKey(normalizedQueryDescriptor, input)) {
+                    query.asStream(QueryEvaluationContext.EMPTY, input).exactlyOne().getSynchronous()
+                }.upcast()
+            }
+        }
+    }
+
+    private fun QueryGraphDescriptor.deduplicate() = descriptorInstances.get(this) { this }
+
+    private data class IndexCacheKey(val query: QueryGraphDescriptor, val input: Any?)
+
+    private class IndexData<K, V>(val map: Map<K, List<IStepOutput<V>>>)
+
+    private fun <K, V> IndexData<*, *>.upcast() = this as IndexData<K, V>
 }

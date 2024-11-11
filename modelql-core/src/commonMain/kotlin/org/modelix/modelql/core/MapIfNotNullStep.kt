@@ -13,9 +13,9 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
+import com.badoo.reaktive.observable.flatMap
+import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.observable.observableOf
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -26,10 +26,10 @@ class MapIfNotNullStep<In : Any, Out>(val query: MonoUnboundQuery<In, Out>) : Mo
         return query.requiresWriteAccess()
     }
 
-    override fun createFlow(input: StepFlow<In?>, context: IFlowInstantiationContext): StepFlow<Out?> {
-        return input.flatMapConcat { stepOutput ->
-            stepOutput.value?.let { query.asFlow(context.evaluationContext, stepOutput.upcast()).map { MultiplexedOutput(1, it) } }
-                ?: flowOf(MultiplexedOutput(0, stepOutput.upcast()))
+    override fun createStream(input: StepStream<In?>, context: IStreamInstantiationContext): StepStream<Out?> {
+        return input.flatMap { stepOutput ->
+            stepOutput.value?.let { query.asStream(context.evaluationContext, stepOutput.upcast()).map { MultiplexedOutput(1, it) } }
+                ?: observableOf(MultiplexedOutput(0, stepOutput.upcast()))
         }
     }
 
@@ -49,16 +49,22 @@ class MapIfNotNullStep<In : Any, Out>(val query: MonoUnboundQuery<In, Out>) : Mo
     }
 
     override fun toString(): String {
-        return "${getProducer()}.mapIfNotNull { $query }"
+        return "${getProducer()}\n.mapIfNotNull {\n${query.toString().prependIndent("  ")}\n}"
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor(context.load(query))
 
     @Serializable
     @SerialName("mapIfNotNull")
-    class Descriptor(val queryId: QueryId) : CoreStepDescriptor() {
+    data class Descriptor(val queryId: QueryId) : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return MapIfNotNullStep<Any, Any?>(context.getOrCreateQuery(queryId) as MonoUnboundQuery<Any, Any?>)
+        }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(idReassignments.reassign(queryId))
+
+        override fun prepareNormalization(idReassignments: IdReassignments) {
+            idReassignments.visitQuery(queryId)
         }
     }
 }

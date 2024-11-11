@@ -18,7 +18,7 @@ import kotlinx.coroutines.withContext
 
 actual class ContextValue<E>(private val initialStack: List<E>) {
 
-    private val valueStack = ThreadLocal.withInitial { initialStack }
+    private val valueStack = java.lang.ThreadLocal.withInitial { initialStack }
 
     actual constructor() : this(emptyList())
 

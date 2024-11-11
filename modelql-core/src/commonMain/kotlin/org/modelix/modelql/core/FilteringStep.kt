@@ -13,10 +13,12 @@
  */
 package org.modelix.modelql.core
 
-import kotlinx.coroutines.flow.filter
+import com.badoo.reaktive.observable.firstOrDefault
+import com.badoo.reaktive.observable.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.modelix.streams.filterBySingle
 
 class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : TransformingStep<E, E>(), IMonoStep<E>, IFluxStep<E> {
 
@@ -32,10 +34,8 @@ class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : Transform
         }
     }
 
-    override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E> {
-        // return condition.asFlow(input).zip(input) { c, it -> c to it }.filter { it.first == true }.map { it.second }
-        return input.filter { condition.asFlow(context.evaluationContext, it).value.optionalSingle().presentAndEqual(true) }
-        // return input.filter { condition.evaluate(it.value).presentAndEqual(true) }
+    override fun createStream(input: StepStream<E>, context: IStreamInstantiationContext): StepStream<E> {
+        return input.filterBySingle { condition.asStream(context.evaluationContext, it).map { it.value == true }.firstOrDefault(false) }
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>> {
@@ -43,16 +43,22 @@ class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : Transform
     }
 
     override fun toString(): String {
-        return """${getProducers().single()}.filter { $condition }"""
+        return "${getProducers().single()}\n.filter {\n${condition.toString().prependIndent("  ")}\n}"
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor(context.load(condition))
 
     @Serializable
     @SerialName("filter")
-    class Descriptor(val queryId: QueryId) : CoreStepDescriptor() {
+    data class Descriptor(val queryId: QueryId) : CoreStepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
             return FilteringStep<Any?>(context.getOrCreateQuery(queryId) as MonoUnboundQuery<Any?, Boolean?>)
+        }
+
+        override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(idReassignments.reassign(queryId))
+
+        override fun prepareNormalization(idReassignments: IdReassignments) {
+            idReassignments.visitQuery(queryId)
         }
     }
 }

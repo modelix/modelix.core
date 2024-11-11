@@ -155,10 +155,10 @@ class ModelClientV2(
     }
 
     override suspend fun initRepositoryWithLegacyStorage(repository: RepositoryId): IVersion {
-        return initRepository(repository, useRoleIds = false, legacyGlobalStorage = true)
+        return initRepository(repository, useRoleIds = true, legacyGlobalStorage = true)
     }
 
-    suspend fun initRepository(repository: RepositoryId, useRoleIds: Boolean = false, legacyGlobalStorage: Boolean = false): IVersion {
+    suspend fun initRepository(repository: RepositoryId, useRoleIds: Boolean = true, legacyGlobalStorage: Boolean = false): IVersion {
         return httpClient.preparePost {
             url {
                 parameter("useRoleIds", useRoleIds)

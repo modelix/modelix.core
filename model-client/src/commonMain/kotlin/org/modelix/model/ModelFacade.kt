@@ -24,7 +24,7 @@ import kotlin.jvm.JvmOverloads
 object ModelFacade {
 
     @JvmOverloads
-    fun newLocalTree(useRoleIds: Boolean = false): ITree {
+    fun newLocalTree(useRoleIds: Boolean = true): ITree {
         return CLTree(ObjectStoreCache(MapBaseStore()), useRoleIds = useRoleIds)
     }
 

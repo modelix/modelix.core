@@ -62,7 +62,7 @@ fun createNewTreeData(
 
 class CLTree(val data: CPTree, val asyncStore: IAsyncObjectStore) : ITree by AsyncAsSynchronousTree(AsyncTree(data, asyncStore)), IBulkTree {
 
-    constructor(store: IAsyncObjectStore, useRoleIds: Boolean = false) : this(createNewTreeData(store, useRoleIds = useRoleIds), store)
+    constructor(store: IAsyncObjectStore, useRoleIds: Boolean = true) : this(createNewTreeData(store, useRoleIds = useRoleIds), store)
     constructor(store: IDeserializingKeyValueStore, useRoleIds: Boolean = true) : this(store.getAsyncStore(), useRoleIds)
     constructor(data: CPTree, store: IDeserializingKeyValueStore) : this(data, store.getAsyncStore())
 
@@ -153,7 +153,7 @@ class CLTree(val data: CPTree, val asyncStore: IAsyncObjectStore) : ITree by Asy
 
     class Builder(var store: IAsyncObjectStore) {
         private var repositoryId: RepositoryId? = null
-        private var useRoleIds: Boolean = false
+        private var useRoleIds: Boolean = true
 
         fun useRoleIds(value: Boolean = true): Builder {
             this.useRoleIds = value

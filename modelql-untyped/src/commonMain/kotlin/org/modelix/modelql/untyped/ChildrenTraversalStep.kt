@@ -22,24 +22,24 @@ import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.async.asAsyncNode
 import org.modelix.modelql.core.FluxTransformingStep
-import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IStreamInstantiationContext
 import org.modelix.modelql.core.IdReassignments
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.StepDescriptor
-import org.modelix.modelql.core.StepFlow
-import org.modelix.modelql.core.asStepFlow
+import org.modelix.modelql.core.StepStream
+import org.modelix.modelql.core.asStepStream
 import org.modelix.modelql.core.connect
 import org.modelix.modelql.core.stepOutputSerializer
 
 class ChildrenTraversalStep(val link: IChildLinkReference) : FluxTransformingStep<INode, INode>(), IFluxStep<INode> {
-    override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<INode> {
-        return input.flatMap { it.value.asAsyncNode().getChildren(link).map { it.asRegularNode() } }.asStepFlow(this)
+    override fun createStream(input: StepStream<INode>, context: IStreamInstantiationContext): StepStream<INode> {
+        return input.flatMap { it.value.asAsyncNode().getChildren(link).map { it.asRegularNode() } }.asStepStream(this)
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<INode>> {

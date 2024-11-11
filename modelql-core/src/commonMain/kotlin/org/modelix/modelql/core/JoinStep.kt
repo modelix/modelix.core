@@ -49,8 +49,8 @@ class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
         producer.addConsumer(this)
     }
 
-    override fun createFlow(context: IFlowInstantiationContext): StepFlow<E> {
-        return producers.mapIndexed { prodIndex, it -> context.getOrCreateFlow(it).map { MultiplexedOutput(prodIndex, it) } }.asObservable().flatten()
+    override fun createStream(context: IStreamInstantiationContext): StepStream<E> {
+        return producers.mapIndexed { prodIndex, it -> context.getOrCreateStream(it).map { MultiplexedOutput(prodIndex, it) } }.asObservable().flatten()
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>> {

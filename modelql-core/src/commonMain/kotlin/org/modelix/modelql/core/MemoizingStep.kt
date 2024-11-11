@@ -40,7 +40,7 @@ class MemoizingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : MonoTransfo
         return query.requiresWriteAccess()
     }
 
-    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
+    override fun createStream(input: StepStream<In>, context: IStreamInstantiationContext): StepStream<Out> {
         val memoizer = IMemoizationPersistence.CONTEXT_INSTANCE.getValue().getMemoizer(query)
         return input.map {
             memoizer.memoize(it)

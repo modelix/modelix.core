@@ -31,12 +31,12 @@ interface IStepOutput<out E> {
 
 fun <T> IStepOutput<*>.upcast(): IStepOutput<T> = this as IStepOutput<T>
 
-typealias StepFlow<E> = Observable<IStepOutput<E>>
-typealias MonoStepFlow<E> = Single<IStepOutput<E>>
+typealias StepStream<E> = Observable<IStepOutput<E>>
+typealias MonoStepStream<E> = Single<IStepOutput<E>>
 val <T> Observable<IStepOutput<T>>.value: Observable<T> get() = map { it.value }
-fun <T> Observable<T>.asStepFlow(owner: IProducingStep<T>?): StepFlow<T> = map { it.asStepOutput(owner) }
-fun <T> Single<T>.asStepFlow(owner: IProducingStep<T>?): MonoStepFlow<T> = map { it.asStepOutput(owner) }
-fun <T> StepFlow<*>.upcast(): StepFlow<T> = this as StepFlow<T>
+fun <T> Observable<T>.asStepStream(owner: IProducingStep<T>?): StepStream<T> = map { it.asStepOutput(owner) }
+fun <T> Single<T>.asStepStream(owner: IProducingStep<T>?): MonoStepStream<T> = map { it.asStepOutput(owner) }
+fun <T> StepStream<*>.upcast(): StepStream<T> = this as StepStream<T>
 
 class SimpleStepOutput<out E>(override val value: E, val owner: IProducingStep<E>?) : IStepOutput<E> {
     override fun toString(): String {

@@ -23,8 +23,8 @@ import kotlinx.serialization.Serializable
 import org.modelix.streams.fold
 
 class IntSumAggregationStep : AggregationStep<Int, Int>() {
-    override fun aggregate(input: StepFlow<Int>, context: IFlowInstantiationContext): Single<IStepOutput<Int>> {
-        return input.fold(0) { acc, it -> acc + it.value }.asStepFlow(this)
+    override fun aggregate(input: StepStream<Int>, context: IStreamInstantiationContext): Single<IStepOutput<Int>> {
+        return input.fold(0) { acc, it -> acc + it.value }.asStepStream(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()

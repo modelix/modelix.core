@@ -148,7 +148,7 @@ class MultimapCollectorStepOutputSerializer<K, V>(inputElementSerializer: KSeria
 class ListCollectorStep<E> : CollectorStep<E, List<E>>() {
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
-    override fun aggregate(input: StepFlow<E>, context: IFlowInstantiationContext): Single<IStepOutput<List<E>>> {
+    override fun aggregate(input: StepStream<E>, context: IStreamInstantiationContext): Single<IStepOutput<List<E>>> {
         return input.toList().map { inputList ->
             val outputList = inputList.map { it.value }
             CollectorStepOutput(inputList, inputList, outputList)
@@ -178,7 +178,7 @@ class SetCollectorStep<E> : CollectorStep<E, Set<E>>() {
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
-    override fun aggregate(input: StepFlow<E>, context: IFlowInstantiationContext): Single<IStepOutput<Set<E>>> {
+    override fun aggregate(input: StepStream<E>, context: IStreamInstantiationContext): Single<IStepOutput<Set<E>>> {
         return input.toList().map { inputAsList ->
             val inputList = ArrayList<IStepOutput<E>>()
             val outputSet = HashSet<E>()
@@ -210,7 +210,7 @@ class MapCollectorStep<K, V> : CollectorStep<IZip2Output<Any?, K, V>, Map<K, V>>
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
-    override fun aggregate(input: StepFlow<IZip2Output<Any?, K, V>>, context: IFlowInstantiationContext): Single<IStepOutput<Map<K, V>>> {
+    override fun aggregate(input: StepStream<IZip2Output<Any?, K, V>>, context: IStreamInstantiationContext): Single<IStepOutput<Map<K, V>>> {
         return input.toList().map { inputAsList ->
             val inputList = ArrayList<IStepOutput<IZip2Output<Any?, K, V>>>()
             val internalMap = HashMap<K, IStepOutput<V>>()
@@ -253,7 +253,7 @@ class MultimapCollectorStep<K, V> : CollectorStep<IZip2Output<Any?, K, V>, Map<K
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
-    override fun aggregate(input: StepFlow<IZip2Output<Any?, K, V>>, context: IFlowInstantiationContext): Single<IStepOutput<Map<K, List<V>>>> {
+    override fun aggregate(input: StepStream<IZip2Output<Any?, K, V>>, context: IStreamInstantiationContext): Single<IStepOutput<Map<K, List<V>>>> {
         return input.toList().map { inputAsList ->
             val inputList = ArrayList<IStepOutput<IZip2Output<Any?, K, V>>>()
             val internalMap = HashMap<K, MutableList<IStepOutput<V>>>()

@@ -25,7 +25,7 @@ class ZipElementAccessStep<Out>(val index: Int) : MonoTransformingStep<IZipOutpu
         return zipSerializer.elementSerializers[index]
     }
 
-    override fun createFlow(input: StepFlow<IZipOutput<Any?>>, context: IFlowInstantiationContext): StepFlow<Out> {
+    override fun createStream(input: StepStream<IZipOutput<Any?>>, context: IStreamInstantiationContext): StepStream<Out> {
         return input.map { (it as ZipStepOutput<*, *>).values[index].upcast() }
     }
 

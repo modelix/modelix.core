@@ -58,7 +58,7 @@ open class ConstantSourceStep<E>(val element: E, val type: KType) : ProducingSte
         return element
     }
 
-    override fun createFlow(context: IFlowInstantiationContext): StepFlow<E> {
+    override fun createStream(context: IStreamInstantiationContext): StepStream<E> {
         return observableOf(element.asStepOutput(this))
     }
 

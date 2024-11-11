@@ -37,7 +37,7 @@ import org.modelix.modelql.core.IMonoUnboundQuery
 import org.modelix.modelql.core.IQueryExecutor
 import org.modelix.modelql.core.IUnboundQuery
 import org.modelix.modelql.core.IZip2Output
-import org.modelix.modelql.core.StepFlow
+import org.modelix.modelql.core.StepStream
 import org.modelix.modelql.core.asMono
 import org.modelix.modelql.core.asStepOutput
 import org.modelix.modelql.core.filterNotNull
@@ -72,7 +72,7 @@ abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL,
         return this
     }
 
-    override fun <Out> createFlow(query: IUnboundQuery<INode, *, Out>): StepFlow<Out> {
+    override fun <Out> createStream(query: IUnboundQuery<INode, *, Out>): StepStream<Out> {
         return singleFromCoroutine {
             val result = when (query) {
                 is IMonoUnboundQuery<*, *> -> {

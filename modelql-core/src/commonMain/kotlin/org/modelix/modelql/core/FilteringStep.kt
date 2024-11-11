@@ -34,8 +34,8 @@ class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : Transform
         }
     }
 
-    override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E> {
-        return input.filterBySingle { condition.asFlow(context.evaluationContext, it).map { it.value == true }.firstOrDefault(false) }
+    override fun createStream(input: StepStream<E>, context: IStreamInstantiationContext): StepStream<E> {
+        return input.filterBySingle { condition.asStream(context.evaluationContext, it).map { it.value == true }.firstOrDefault(false) }
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>> {

@@ -24,7 +24,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 class ListAsFluxStep<E> : FluxTransformingStep<List<E>, E>() {
-    override fun createFlow(input: StepFlow<List<E>>, context: IFlowInstantiationContext): StepFlow<E> {
+    override fun createStream(input: StepStream<List<E>>, context: IStreamInstantiationContext): StepStream<E> {
         return input.flatMap {
             when (it) {
                 is CollectorStepOutput<*, *, *> -> {

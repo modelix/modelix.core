@@ -36,17 +36,17 @@ import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.getAllSubConcepts
-import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IProducingStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IStreamInstantiationContext
 import org.modelix.modelql.core.IdentityStep
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.StepDescriptor
-import org.modelix.modelql.core.StepFlow
+import org.modelix.modelql.core.StepStream
 import org.modelix.modelql.core.asStepOutput
 import org.modelix.modelql.core.asString
 import org.modelix.modelql.core.emptyStringIfNull
@@ -202,7 +202,7 @@ class TypedNodeStep<Typed : ITypedNode>(val nodeClass: KClass<out Typed>) : Mono
         return TypedNodeSerializer(nodeClass, inputSerializer).stepOutputSerializer(this)
     }
 
-    override fun createFlow(input: StepFlow<INode>, context: IFlowInstantiationContext): StepFlow<Typed> {
+    override fun createStream(input: StepStream<INode>, context: IStreamInstantiationContext): StepStream<Typed> {
         return input.map { it.value.typed(nodeClass).asStepOutput(this) }
     }
 
@@ -244,7 +244,7 @@ class UntypedNodeStep : MonoTransformingStep<ITypedNode, INode>() {
         return UntypedNodeSerializer(getProducer().getOutputSerializer(serializationContext).upcast()).stepOutputSerializer(this)
     }
 
-    override fun createFlow(input: StepFlow<ITypedNode>, context: IFlowInstantiationContext): StepFlow<INode> {
+    override fun createStream(input: StepStream<ITypedNode>, context: IStreamInstantiationContext): StepStream<INode> {
         return input.map { it.value.unwrap().asStepOutput(this) }
     }
 

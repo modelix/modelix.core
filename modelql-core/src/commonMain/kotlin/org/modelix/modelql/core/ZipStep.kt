@@ -92,17 +92,17 @@ open class ZipStep<CommonIn, Out : ZipNOutputC<CommonIn>>() : ProducingStep<Out>
 
     private fun ZipNOutputC<CommonIn>.upcast(): Out = this as Out
 
-    override fun createFlow(context: IFlowInstantiationContext): Observable<ZipStepOutput<Out, CommonIn>> {
-        val inputFlows: List<Observable<IStepOutput<CommonIn>>> = producers.map {
-            val possiblyEmptyFlow = context.getOrCreateFlow(it)
+    override fun createStream(context: IStreamInstantiationContext): Observable<ZipStepOutput<Out, CommonIn>> {
+        val inputStreams: List<Observable<IStepOutput<CommonIn>>> = producers.map {
+            val possiblyEmptyStreams = context.getOrCreateStream(it)
             if (it is AllowEmptyStep) {
-                possiblyEmptyFlow
+                possiblyEmptyStreams
             } else {
-                possiblyEmptyFlow.assertNotEmpty { producers.toString() }
+                possiblyEmptyStreams.assertNotEmpty { producers.toString() }
             }
         }
 
-        return inputFlows.zipRepeating().map { ZipStepOutput<Out, CommonIn>(it) }
+        return inputStreams.zipRepeating().map { ZipStepOutput<Out, CommonIn>(it) }
     }
 }
 
@@ -134,7 +134,7 @@ class AssertNotEmptyStep<E>() : IdentityStep<E>() {
         return false
     }
 
-    override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E> {
+    override fun createStream(input: StepStream<E>, context: IStreamInstantiationContext): StepStream<E> {
         return input.assertNotEmpty { "$this" }
     }
 

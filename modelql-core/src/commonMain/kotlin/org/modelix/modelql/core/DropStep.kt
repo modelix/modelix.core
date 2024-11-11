@@ -24,7 +24,7 @@ class DropStep<E>(val count: Int) : TransformingStep<E, E>(), IMonoStep<E>, IFlu
 
     override fun canBeMultiple(): Boolean = getProducer().canBeMultiple()
 
-    override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E> {
+    override fun createStream(input: StepStream<E>, context: IStreamInstantiationContext): StepStream<E> {
         return input.skip(count.toLong())
     }
 

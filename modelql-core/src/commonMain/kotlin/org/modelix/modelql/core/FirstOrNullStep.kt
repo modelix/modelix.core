@@ -22,7 +22,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
-    override fun aggregate(input: StepFlow<E>, context: IFlowInstantiationContext): Single<IStepOutput<E?>> {
+    override fun aggregate(input: StepStream<E>, context: IStreamInstantiationContext): Single<IStepOutput<E?>> {
         return input.firstOrComplete().map { MultiplexedOutput(0, it) }
             .defaultIfEmpty(MultiplexedOutput(1, null.asStepOutput(this)))
     }

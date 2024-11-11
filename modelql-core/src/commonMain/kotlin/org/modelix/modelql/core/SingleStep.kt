@@ -21,7 +21,7 @@ import org.modelix.streams.exactlyOne
 
 class SingleStep<E>() : AggregationStep<E, E>() {
 
-    override fun aggregate(input: StepFlow<E>, context: IFlowInstantiationContext): Single<IStepOutput<E>> {
+    override fun aggregate(input: StepStream<E>, context: IStreamInstantiationContext): Single<IStepOutput<E>> {
         return input.exactlyOne()
     }
 

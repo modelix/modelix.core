@@ -26,9 +26,9 @@ class MapIfNotNullStep<In : Any, Out>(val query: MonoUnboundQuery<In, Out>) : Mo
         return query.requiresWriteAccess()
     }
 
-    override fun createFlow(input: StepFlow<In?>, context: IFlowInstantiationContext): StepFlow<Out?> {
+    override fun createStream(input: StepStream<In?>, context: IStreamInstantiationContext): StepStream<Out?> {
         return input.flatMap { stepOutput ->
-            stepOutput.value?.let { query.asFlow(context.evaluationContext, stepOutput.upcast()).map { MultiplexedOutput(1, it) } }
+            stepOutput.value?.let { query.asStream(context.evaluationContext, stepOutput.upcast()).map { MultiplexedOutput(1, it) } }
                 ?: observableOf(MultiplexedOutput(0, stepOutput.upcast()))
         }
     }

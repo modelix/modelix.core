@@ -37,26 +37,26 @@ interface IStep {
     fun getRootInputSteps(): Set<IStep> = if (this is IConsumingStep<*>) getProducers().flatMap { it.getRootInputSteps() }.toSet() else setOf(this)
 }
 
-interface IFlowInstantiationContext {
+interface IStreamInstantiationContext {
     val evaluationContext: QueryEvaluationContext
-    fun <T> getOrCreateFlow(step: IProducingStep<T>): StepFlow<T>
-    fun <T> getFlow(step: IProducingStep<T>): Observable<T>?
+    fun <T> getOrCreateStream(step: IProducingStep<T>): StepStream<T>
+    fun <T> getStream(step: IProducingStep<T>): Observable<T>?
 }
-class FlowInstantiationContext(
+class StreamInstantiationContext(
     override var evaluationContext: QueryEvaluationContext,
     val query: UnboundQuery<*, *, *>,
-) : IFlowInstantiationContext {
+) : IStreamInstantiationContext {
     private val createdProducers = HashMap<IProducingStep<*>, Observable<*>>()
     fun <T> put(step: IProducingStep<T>, producer: Observable<T>) {
         createdProducers[step] = producer
     }
-    override fun <T> getOrCreateFlow(step: IProducingStep<T>): StepFlow<T> {
+    override fun <T> getOrCreateStream(step: IProducingStep<T>): StepStream<T> {
         if (evaluationContext.hasValue(step)) return evaluationContext.getValue(step).flatMapIterable { it }
-        return (createdProducers as MutableMap<IProducingStep<T>, StepFlow<T>>)
-            .getOrPut(step) { step.createFlow(this) }
+        return (createdProducers as MutableMap<IProducingStep<T>, StepStream<T>>)
+            .getOrPut(step) { step.createStream(this) }
     }
 
-    override fun <T> getFlow(step: IProducingStep<T>): Observable<T>? {
+    override fun <T> getStream(step: IProducingStep<T>): Observable<T>? {
         return (createdProducers as MutableMap<IProducingStep<T>, Observable<T>>)[step]
     }
 }
@@ -84,7 +84,7 @@ interface IProducingStep<out E> : IStep {
     fun addConsumer(consumer: IConsumingStep<E>)
     fun getConsumers(): List<IConsumingStep<*>>
     fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>>
-    fun createFlow(context: IFlowInstantiationContext): StepFlow<E>
+    fun createStream(context: IStreamInstantiationContext): StepStream<E>
 
     fun outputIsConsumedMultipleTimes(): Boolean {
         return getConsumers().size > 1 || getConsumers().any { it.inputIsConsumedMultipleTimes() }
@@ -169,10 +169,10 @@ abstract class TransformingStep<In, Out> : IProcessingStep<In, Out>, ProducingSt
 
     fun getProducer(): IProducingStep<In> = producer!!
 
-    protected abstract fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out>
+    protected abstract fun createStream(input: StepStream<In>, context: IStreamInstantiationContext): StepStream<Out>
 
-    override fun createFlow(context: IFlowInstantiationContext): StepFlow<Out> {
-        return createFlow(context.getOrCreateFlow(getProducer()), context)
+    override fun createStream(context: IStreamInstantiationContext): StepStream<Out> {
+        return createStream(context.getOrCreateStream(getProducer()), context)
     }
 }
 
@@ -185,7 +185,7 @@ abstract class MonoTransformingStep<In, Out> : TransformingStep<In, Out>(), IMon
 }
 
 abstract class SimpleMonoTransformingStep<In, Out> : MonoTransformingStep<In, Out>() {
-    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
+    override fun createStream(input: StepStream<In>, context: IStreamInstantiationContext): StepStream<Out> {
         return input.map { transform(context.evaluationContext, it.value).asStepOutput(this) }
     }
     abstract fun transform(evaluationContext: QueryEvaluationContext, input: In): Out
@@ -203,7 +203,7 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
     override fun canBeMultiple(): Boolean = false
     override fun requiresSingularQueryInput(): Boolean = true
 
-    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
+    override fun createStream(input: StepStream<In>, context: IStreamInstantiationContext): StepStream<Out> {
         val aggregated = aggregate(input, context)
         return (if (outputIsConsumedMultipleTimes()) aggregated.cached() else aggregated).asObservable()
     }
@@ -212,5 +212,5 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
         return false
     }
 
-    protected abstract fun aggregate(input: StepFlow<In>, context: IFlowInstantiationContext): Single<IStepOutput<Out>>
+    protected abstract fun aggregate(input: StepStream<In>, context: IStreamInstantiationContext): Single<IStepOutput<Out>>
 }

@@ -21,10 +21,10 @@ import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmName
 
 class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : TransformingStep<In, Out>(), IFluxOrMonoStep<Out> {
-    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
-        val downCastedInput: StepFlow<Out> = input
+    override fun createStream(input: StepStream<In>, context: IStreamInstantiationContext): StepStream<Out> {
+        val downCastedInput: StepStream<Out> = input
         return downCastedInput.map { MultiplexedOutput(0, it) }.switchIfEmpty {
-            alternative.asFlow(context.evaluationContext, Unit.asStepOutput(null)).map { MultiplexedOutput(1, it) }
+            alternative.asStream(context.evaluationContext, Unit.asStepOutput(null)).map { MultiplexedOutput(1, it) }
         }
     }
 

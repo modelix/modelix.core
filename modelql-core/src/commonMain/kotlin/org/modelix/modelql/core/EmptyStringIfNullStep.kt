@@ -31,7 +31,7 @@ class EmptyStringIfNullStep : MonoTransformingStep<String?, String>() {
         )
     }
 
-    override fun createFlow(input: StepFlow<String?>, context: IFlowInstantiationContext): StepFlow<String> {
+    override fun createStream(input: StepStream<String?>, context: IStreamInstantiationContext): StepStream<String> {
         return input.map {
             if (it.value == null) {
                 MultiplexedOutput(1, "".asStepOutput(this))

@@ -45,13 +45,13 @@ class FoldingStep<In : CommonIn, Out : CommonIn, CommonIn>(private val operation
         }
     }
 
-    override fun aggregate(input: StepFlow<CommonIn>, context: IFlowInstantiationContext): Single<IStepOutput<Out>> {
-        val initialValue: IStepOutput<Out> = context.getOrCreateFlow<Out>(getInitialValueProducer()).exactlyOne().getSynchronous()
+    override fun aggregate(input: StepStream<CommonIn>, context: IStreamInstantiationContext): Single<IStepOutput<Out>> {
+        val initialValue: IStepOutput<Out> = context.getOrCreateStream<Out>(getInitialValueProducer()).exactlyOne().getSynchronous()
         return input.fold(initialValue) { acc, value -> fold(acc, value) }
     }
 
     private fun fold(acc: IStepOutput<Out>, value: IStepOutput<CommonIn>): IStepOutput<Out> {
-        return operation.asFlow(QueryEvaluationContext.EMPTY, ZipStepOutput(listOf(acc, value))).exactlyOne().getSynchronous()
+        return operation.asStream(QueryEvaluationContext.EMPTY, ZipStepOutput(listOf(acc, value))).exactlyOne().getSynchronous()
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Out>> {

@@ -31,8 +31,8 @@ class NullIfEmpty<E>() : MonoTransformingStep<E, E?>() {
         )
     }
 
-    override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E?> {
-        val downcast: StepFlow<E?> = input
+    override fun createStream(input: StepStream<E>, context: IStreamInstantiationContext): StepStream<E?> {
+        val downcast: StepStream<E?> = input
         return downcast.map { MultiplexedOutput(0, it) }
             .defaultIfEmpty(MultiplexedOutput(1, null.asStepOutput(this@NullIfEmpty)))
     }

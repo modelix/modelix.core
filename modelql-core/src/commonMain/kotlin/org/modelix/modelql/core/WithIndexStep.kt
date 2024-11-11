@@ -14,8 +14,6 @@
 package org.modelix.modelql.core
 
 import com.badoo.reaktive.observable.map
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.withIndex
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -36,7 +34,7 @@ class WithIndexStep<E> : MonoTransformingStep<E, IZip2Output<Any?, E, Int>>() {
         )
     }
 
-    override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<IZip2Output<Any?, E, Int>> {
+    override fun createStream(input: StepStream<E>, context: IStreamInstantiationContext): StepStream<IZip2Output<Any?, E, Int>> {
         return input.withIndex().map { ZipStepOutput(listOf(it.value, it.index.asStepOutput(this))) }
     }
 

@@ -485,7 +485,7 @@ class InMemoryMemoizationPersistence : IMemoizationPersistence {
         override fun memoize(input: IStepOutput<In>): IStepOutput<Out> {
             runSynchronized(cache) {
                 return cache.get(IndexCacheKey(normalizedQueryDescriptor, input)) {
-                    query.asFlow(QueryEvaluationContext.EMPTY, input).exactlyOne().getSynchronous()
+                    query.asStream(QueryEvaluationContext.EMPTY, input).exactlyOne().getSynchronous()
                 }.upcast()
             }
         }

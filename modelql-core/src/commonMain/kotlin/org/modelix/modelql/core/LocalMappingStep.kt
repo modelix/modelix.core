@@ -25,7 +25,7 @@ open class LocalMappingStep<In, Out>(val transformation: (In) -> Out) : MonoTran
         return LocalMappingSerializer(this, getProducer().getOutputSerializer(serializationContext)).stepOutputSerializer(this)
     }
 
-    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
+    override fun createStream(input: StepStream<In>, context: IStreamInstantiationContext): StepStream<Out> {
         return input.map { transformation(it.value).asStepOutput(this) }
     }
 

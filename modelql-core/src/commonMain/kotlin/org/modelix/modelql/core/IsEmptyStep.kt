@@ -20,8 +20,8 @@ import kotlinx.serialization.Serializable
 import org.modelix.streams.isEmpty
 
 class IsEmptyStep() : AggregationStep<Any?, Boolean>() {
-    override fun aggregate(input: StepFlow<Any?>, context: IFlowInstantiationContext): Single<IStepOutput<Boolean>> {
-        return input.isEmpty().asStepFlow(this)
+    override fun aggregate(input: StepStream<Any?>, context: IStreamInstantiationContext): Single<IStepOutput<Boolean>> {
+        return input.isEmpty().asStepStream(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()

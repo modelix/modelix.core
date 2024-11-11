@@ -52,12 +52,12 @@ abstract class TransformingStepWithParameterBase<In : CommonIn, ParameterT : Com
         }
     }
 
-    override fun createFlow(input: StepFlow<CommonIn>, context: IFlowInstantiationContext): StepFlow<Out> {
+    override fun createStream(input: StepStream<CommonIn>, context: IStreamInstantiationContext): StepStream<Out> {
         if (hasStaticParameter) {
             return input.flatMap { transformElementToMultiple(it.upcast<In>(), staticParameterValue as IStepOutput<ParameterT>) }
         } else {
-            val parameterFlow = context.getOrCreateFlow<ParameterT>(getParameterProducer())
-            val parameterValue = parameterFlow.firstOrNull()
+            val parameterStream = context.getOrCreateStream<ParameterT>(getParameterProducer())
+            val parameterValue = parameterStream.firstOrNull()
             return listOf(input, parameterValue.asObservable()).zipRepeating().flatMap {
                 transformElementToMultiple(it[0]!!.upcast(), it[1]?.upcast())
             }

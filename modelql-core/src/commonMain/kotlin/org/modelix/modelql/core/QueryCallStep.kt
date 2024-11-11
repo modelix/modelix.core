@@ -29,8 +29,8 @@ class QueryCallStep<In, Out>(val queryRef: QueryReference<out IUnboundQuery<In, 
 
     fun getQuery(): IUnboundQuery<In, *, Out> = queryRef.query!!
 
-    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
-        return getQuery().asFlow(context.evaluationContext, input)
+    override fun createStream(input: StepStream<In>, context: IStreamInstantiationContext): StepStream<Out> {
+        return getQuery().asStream(context.evaluationContext, input)
     }
 
     override fun requiresSingularQueryInput(): Boolean = true

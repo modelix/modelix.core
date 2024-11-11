@@ -36,7 +36,7 @@ class NoMemoizationPersistence : IMemoizationPersistence {
     override fun <In, Out> getMemoizer(query: MonoUnboundQuery<In, Out>): IMemoizationPersistence.Memoizer<In, Out> {
         return object : IMemoizationPersistence.Memoizer<In, Out> {
             override fun memoize(input: IStepOutput<In>): IStepOutput<Out> {
-                return query.asFlow(QueryEvaluationContext.EMPTY, input).exactlyOne().getSynchronous()
+                return query.asStream(QueryEvaluationContext.EMPTY, input).exactlyOne().getSynchronous()
             }
         }
     }

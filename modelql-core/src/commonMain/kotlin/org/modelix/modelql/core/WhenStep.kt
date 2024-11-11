@@ -94,15 +94,15 @@ class WhenStep<In, Out>(
         )
     }
 
-    override fun createFlow(input: StepFlow<In>, context: IFlowInstantiationContext): StepFlow<Out> {
+    override fun createStream(input: StepStream<In>, context: IStreamInstantiationContext): StepStream<Out> {
         return input.flatMap { inputElement ->
             cases.withIndex().asObservable().filterBySingle { (index, case) ->
-                case.first.asFlow(context.evaluationContext, inputElement).map { it.value == true }.firstOrDefault(false)
+                case.first.asStream(context.evaluationContext, inputElement).map { it.value == true }.firstOrDefault(false)
             }.map { (index, case) ->
-                case.second.asFlow(context.evaluationContext, inputElement).map { MultiplexedOutput(index, it) }
+                case.second.asStream(context.evaluationContext, inputElement).map { MultiplexedOutput(index, it) }
             }.firstOrDefault {
                 val elseCaseIndex = cases.size
-                elseCase?.asFlow(context.evaluationContext, inputElement)?.map { MultiplexedOutput(elseCaseIndex, it) }
+                elseCase?.asStream(context.evaluationContext, inputElement)?.map { MultiplexedOutput(elseCaseIndex, it) }
                     ?: observableOfEmpty()
             }.flatten()
         }

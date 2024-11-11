@@ -20,8 +20,8 @@ import kotlinx.serialization.Serializable
 import org.modelix.streams.count
 
 class CountingStep() : AggregationStep<Any?, Int>() {
-    override fun aggregate(input: StepFlow<Any?>, context: IFlowInstantiationContext): Single<IStepOutput<Int>> {
-        return input.count().asStepFlow(this)
+    override fun aggregate(input: StepStream<Any?>, context: IStreamInstantiationContext): Single<IStepOutput<Int>> {
+        return input.count().asStepStream(this)
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = CountDescriptor()

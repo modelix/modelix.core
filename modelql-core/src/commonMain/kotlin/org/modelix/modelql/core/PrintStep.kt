@@ -23,7 +23,7 @@ class PrintStep<E>(val prefix: String) : MonoTransformingStep<E, E>() {
         return getProducer().getOutputSerializer(serializationContext)
     }
 
-    override fun createFlow(input: StepFlow<E>, context: IFlowInstantiationContext): StepFlow<E> {
+    override fun createStream(input: StepStream<E>, context: IStreamInstantiationContext): StepStream<E> {
         return input.map {
             println(prefix + it.value)
             it

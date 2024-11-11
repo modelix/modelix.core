@@ -20,26 +20,25 @@ import kotlinx.serialization.Serializable
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.getAllSubConcepts
-import org.modelix.modelql.core.IFlowInstantiationContext
 import org.modelix.modelql.core.IFluxStep
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.modelql.core.IStep
 import org.modelix.modelql.core.IStepOutput
+import org.modelix.modelql.core.IStreamInstantiationContext
 import org.modelix.modelql.core.IdReassignments
 import org.modelix.modelql.core.MonoTransformingStep
 import org.modelix.modelql.core.QueryDeserializationContext
 import org.modelix.modelql.core.QueryGraphDescriptorBuilder
 import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.StepDescriptor
-import org.modelix.modelql.core.StepFlow
-import org.modelix.modelql.untyped.AllReferencesTraversalStep.Descriptor
+import org.modelix.modelql.core.StepStream
 
 class OfConceptStep(val conceptUIDs: Set<String>) : MonoTransformingStep<INode?, INode>() {
-    override fun createFlow(input: StepFlow<INode?>, context: IFlowInstantiationContext): StepFlow<INode> {
+    override fun createStream(input: StepStream<INode?>, context: IStreamInstantiationContext): StepStream<INode> {
         return input.filter {
             val value = it.value
             value != null && conceptUIDs.contains(value.getConceptReference()?.getUID())
-        } as StepFlow<INode>
+        } as StepStream<INode>
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<INode>> {

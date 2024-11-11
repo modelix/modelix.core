@@ -492,7 +492,7 @@ class QueryInput<E> : ProducingStep<E>(), IMonoStep<E> {
     }
 
     override fun createStream(context: IStreamInstantiationContext): StepStream<E> {
-        throw RuntimeException("The stream for the query input step is expected to be created by the query")
+        throw IllegalArgumentException("Unsupported cross-query usage of $this in ${owner.query}")
     }
 
     override fun canBeEmpty(): Boolean = false

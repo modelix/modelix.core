@@ -361,6 +361,19 @@ class ModelQLTest {
     }
 
     @Test
+    fun testIllegalCrossQueryStreams() = runTestWithTimeout {
+        val ex = assertFailsWith(IllegalArgumentException::class) {
+            remoteProductDatabaseQuery<String> { db ->
+                // The `elements` query uses the outside `db` instead of the input `it`.
+                // The query is only allowed to use values from its input, otherwise it wouldn't be cacheable.
+                db.find({ db.products }, { it.id }, 3.asMono()).title
+            }
+        }
+        val expectedMessage = "Unsupported cross-query usage of"
+        assertEquals(expectedMessage, (ex.message ?: "").take(expectedMessage.length))
+    }
+
+    @Test
     fun testFindAll() = runTestWithTimeout {
         val result: List<String> = remoteProductDatabaseQuery { db ->
             db.findAll({ it.products }, { it.category }, "smartphones".asMono()).map { it.title }.toList()

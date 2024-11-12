@@ -148,9 +148,7 @@ export class ReactiveINodeJS implements INodeJS {
       index,
       concept,
     );
-    return unreacitveNode
-      ? toReactiveINodeJS(unreacitveNode, this.cache)
-      : unreacitveNode;
+    return toReactiveINodeJS(unreacitveNode, this.cache);
   }
 
   removeChild(child: INodeJS): void {
@@ -182,10 +180,6 @@ export class ReactiveINodeJS implements INodeJS {
   }
 
   setReferenceTargetNode(role: string, target: INodeJS | undefined): void {
-    // Do not call `this.unreactiveNode.setReferenceTargetNode` directly,
-    // because the target is declared as `INodeJS`, but actuall an `NodeAdapterJS` is expected.
-    // Just using the reference is cleaner then unwrapping
-    // then checking for ReactiveINodeJS and eventuall unwrapping it
     return this.unreactiveNode.setReferenceTargetNode(
       role,
       unwrapReactiveINodeJS(target),

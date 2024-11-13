@@ -13,10 +13,11 @@ export function handleChange(change: ChangeJS, cache: Cache<ReactiveINodeJS>) {
   if (reacitveNode === undefined) {
     return;
   }
-  if (change instanceof PropertyChanged || change instanceof ReferenceChanged) {
-    reacitveNode.triggerChangeInRole(change.role);
+  if (change instanceof PropertyChanged) {
+    reacitveNode.triggerChangeInProperty(change.role);
+  } else if (change instanceof ReferenceChanged) {
+    reacitveNode.triggerChangeInReference(change.role);
   } else if (change instanceof ChildrenChanged) {
-    reacitveNode.triggerChangeInRole(change.role);
-    reacitveNode.triggerChangeInAllChildren();
+    reacitveNode.triggerChangeInChild(change.role);
   }
 }

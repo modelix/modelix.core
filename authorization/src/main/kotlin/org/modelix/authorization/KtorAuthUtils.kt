@@ -71,6 +71,12 @@ fun ApplicationCall.checkPermission(resource: KeycloakResource, scope: KeycloakS
     }
 }
 
+fun ApplicationCall.hasPermission(resource: KeycloakResource, scope: KeycloakScope): Boolean {
+    if (!application.getModelixAuthorizationConfig().permissionCheckingEnabled()) return true
+    val principal = principal<AccessTokenPrincipal>() ?: throw NotLoggedInException()
+    return KeycloakUtils.hasPermission(principal.jwt, resource, scope)
+}
+
 fun PipelineContext<*, ApplicationCall>.checkPermission(permissionParts: PermissionParts) {
     call.checkPermission(permissionParts)
 }

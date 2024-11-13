@@ -28,7 +28,7 @@ object KeycloakUtils {
     fun isEnabled() = BASE_URL != null
 
     val authzClient: AuthzClient by lazy {
-        require(isEnabled()) { "Keycloak is not enabled" }
+        check(isEnabled()) { "Keycloak is not enabled" }
         patchUrls(
             AuthzClient.create(
                 Configuration(
@@ -117,11 +117,13 @@ object KeycloakUtils {
 
     @Synchronized
     fun hasPermission(identityOrAccessToken: DecodedJWT, resourceSpec: KeycloakResource, scope: KeycloakScope): Boolean {
+        if (ModelixAuthorizationConfig.PERMISSION_CHECKS_ENABLED == false) return true
         val key = identityOrAccessToken to resourceSpec to scope
         return permissionCache.get(key) { checkPermission(identityOrAccessToken, resourceSpec, scope) }
     }
 
     private fun checkPermission(identityOrAccessToken: DecodedJWT, resourceSpec: KeycloakResource, scope: KeycloakScope): Boolean {
+        if (ModelixAuthorizationConfig.PERMISSION_CHECKS_ENABLED == false) return true
         ensureResourcesExists(resourceSpec, identityOrAccessToken)
 
         if (isAccessToken(identityOrAccessToken)) {

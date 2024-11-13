@@ -79,7 +79,7 @@ interface IModelixAuthorizationConfig {
 }
 
 class ModelixAuthorizationConfig : IModelixAuthorizationConfig {
-    override var permissionChecksEnabled: Boolean? = getBooleanFromEnv("MODELIX_PERMISSION_CHECKS_ENABLED")
+    override var permissionChecksEnabled: Boolean? = PERMISSION_CHECKS_ENABLED
     override var generateFakeTokens: Boolean? = getBooleanFromEnv("MODELIX_GENERATE_FAKE_JWT")
     override var debugEndpointsEnabled: Boolean = true
     override var hmac512Key: String? = null
@@ -188,6 +188,10 @@ class ModelixAuthorizationConfig : IModelixAuthorizationConfig {
     override fun configureForUnitTests() {
         generateFakeTokens = true
         permissionChecksEnabled = false
+    }
+
+    companion object {
+        val PERMISSION_CHECKS_ENABLED = getBooleanFromEnv("MODELIX_PERMISSION_CHECKS_ENABLED")
     }
 }
 

@@ -143,3 +143,6 @@ reaktive = { group = "org.modelix.reaktive", name = "reaktive", version.ref = "r
 reaktive-testing = { group = "org.modelix.reaktive", name = "reaktive-testing", version.ref = "reaktive" }
 reaktive-annotations = { group = "org.modelix.reaktive", name = "reaktive-annotations", version.ref = "reaktive" }
 reaktive-coroutines-interop = { group = "org.modelix.reaktive", name = "coroutines-interop", version.ref = "reaktive" }
+
+nimbus-jose-jwt = { group = "com.nimbusds", name = "nimbus-jose-jwt", version = "9.46" }
+bouncycastle-bcpkix = { group = "org.bouncycastle", name = "bcpkix-lts8on", version = "2.73.7" }

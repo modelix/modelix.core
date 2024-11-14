@@ -22,6 +22,8 @@ import com.auth0.jwt.exceptions.JWTVerificationException
 import com.auth0.jwt.interfaces.DecodedJWT
 import com.auth0.jwt.interfaces.JWTVerifier
 import com.google.common.cache.CacheBuilder
+import com.nimbusds.jose.jwk.JWKSet
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
@@ -55,6 +57,7 @@ private val LOG = mu.KotlinLogging.logger { }
  * JWT based authorization plugin.
  */
 object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig, ModelixAuthorizationPluginInstance> {
+
     override fun install(
         pipeline: ApplicationCallPipeline,
         configure: IModelixAuthorizationConfig.() -> Unit,
@@ -76,7 +79,7 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                             .withIssuer("modelix")
                             .withAudience("modelix")
                             .withClaim("email", "unit-tests@example.com")
-                            .sign(config.getJwtSignatureAlgorithmOrNull() ?: Algorithm.HMAC256("unit-tests"))
+                            .sign(Algorithm.HMAC256("unit-tests"))
                         context.principal(AccessTokenPrincipal(JWT.decode(token)))
                     }
                 })
@@ -99,6 +102,13 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                 }
             }
         }
+
+        application.routing {
+            get(".well-known/jwks.json") {
+                call.respondText(JWKSet(listOfNotNull(config.ownPublicKey)).toPublicJWKSet().toString(), ContentType.Application.Json)
+            }
+        }
+
         if (config.debugEndpointsEnabled) {
             application.routing {
                 authenticate(MODELIX_JWT_AUTH) {

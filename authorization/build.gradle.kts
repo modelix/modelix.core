@@ -19,7 +19,11 @@ dependencies {
     implementation(libs.ktor.client.cio)
     implementation(libs.kotlin.reflect)
     implementation(libs.kotlin.logging)
+    api(libs.nimbus.jose.jwt)
+    runtimeOnly(libs.bouncycastle.bcpkix)
     testImplementation(kotlin("test"))
+    testImplementation(libs.ktor.server.test.host)
+    testImplementation(libs.kotlin.coroutines.test)
 }
 
 publishing {

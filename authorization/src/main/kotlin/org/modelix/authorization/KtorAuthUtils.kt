@@ -1,9 +1,8 @@
 package org.modelix.authorization
 
 import com.auth0.jwt.JWT
-import com.auth0.jwt.JWTCreator
-import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.DecodedJWT
+import com.nimbusds.jwt.JWTClaimsSet
 import io.ktor.http.auth.AuthScheme
 import io.ktor.http.auth.HttpAuthHeader
 import io.ktor.server.application.Application
@@ -20,8 +19,6 @@ import io.ktor.server.routing.Route
 import io.ktor.util.pipeline.PipelineContext
 import org.modelix.authorization.permissions.PermissionEvaluator
 import org.modelix.authorization.permissions.PermissionParts
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 
 internal const val MODELIX_JWT_AUTH = "modelixJwtAuth"
 
@@ -96,20 +93,12 @@ fun ApplicationCall.getPermissionEvaluator(): PermissionEvaluator {
     return application.plugin(ModelixAuthorization).getPermissionEvaluator(this)
 }
 
-fun createModelixAccessToken(hmac512key: String, user: String, grantedPermissions: List<String>, additionalTokenContent: (JWTCreator.Builder) -> Unit = {}): String {
-    return createModelixAccessToken(Algorithm.HMAC512(hmac512key), user, grantedPermissions, additionalTokenContent)
-}
-
-/**
- * Creates a valid JWT token that is compatible to servers with the [ModelixAuthorization] plugin installed.
- */
-fun createModelixAccessToken(algorithm: Algorithm, user: String, grantedPermissions: List<String>, additionalTokenContent: (JWTCreator.Builder) -> Unit = {}): String {
-    return JWT.create()
-        .withClaim("preferred_username", user)
-        .withClaim("permissions", grantedPermissions)
-        .withExpiresAt(Instant.now().plus(12, ChronoUnit.HOURS))
-        .also(additionalTokenContent)
-        .sign(algorithm)
+fun createModelixAccessToken(hmac512key: String, user: String, grantedPermissions: List<String>, additionalTokenContent: (JWTClaimsSet.Builder) -> Unit = {}): String {
+    return ModelixJWTUtil().also {
+        it.setHmac512Key(hmac512key)
+    }.createAccessToken(user, grantedPermissions) {
+        additionalTokenContent(it.claimSetBuilder)
+    }
 }
 
 private fun Map<String, Any>?.readRolesArray(): List<String> {

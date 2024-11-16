@@ -18,12 +18,19 @@ package permissions
 
 import org.modelix.authorization.permissions.PermissionEvaluator
 import org.modelix.authorization.permissions.PermissionParts
-import org.modelix.authorization.permissions.Schema
 import org.modelix.authorization.permissions.SchemaInstance
 import org.modelix.model.server.ModelServerPermissionSchema
+import kotlin.test.Test
 
-abstract class PermissionTestBase(private val explicitlyGrantedPermissions: List<PermissionParts>, val schema: Schema = ModelServerPermissionSchema.SCHEMA) {
-    val evaluator = PermissionEvaluator(SchemaInstance(schema)).also { evaluator ->
-        explicitlyGrantedPermissions.forEach { evaluator.grantPermission(it) }
+class UnknownPermissionGrantTest {
+    /**
+     * A token may contain granted permission of other services. They should not result in an exception.
+     */
+    @Test
+    fun `unknown permission in token is ignored`() {
+        val evaluator = PermissionEvaluator(SchemaInstance(ModelServerPermissionSchema.SCHEMA))
+        for (i in 0..5) {
+            evaluator.grantPermission(PermissionParts(ModelServerPermissionSchema.repository("myFirstRepo").branch("main").push.parts.take(i)) + "some-non-existent-permission")
+        }
     }
 }

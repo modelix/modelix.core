@@ -9,15 +9,15 @@ type ChangeJS = org.modelix.model.client2.ChangeJS;
 
 export function handleChange(change: ChangeJS, cache: Cache<ReactiveINodeJS>) {
   const unreactiveNode = change.node;
-  const reacitveNode = cache.get(unreactiveNode);
-  if (reacitveNode === undefined) {
+  const reactiveNode = cache.get(unreactiveNode);
+  if (reactiveNode === undefined) {
     return;
   }
   if (change instanceof PropertyChanged) {
-    reacitveNode.triggerChangeInProperty(change.role);
+    reactiveNode.triggerChangeInProperty(change.role);
   } else if (change instanceof ReferenceChanged) {
-    reacitveNode.triggerChangeInReference(change.role);
+    reactiveNode.triggerChangeInReference(change.role);
   } else if (change instanceof ChildrenChanged) {
-    reacitveNode.triggerChangeInChild(change.role);
+    reactiveNode.triggerChangeInChild(change.role);
   }
 }

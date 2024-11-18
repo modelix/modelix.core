@@ -11,12 +11,12 @@ export function toReactiveINodeJS(
   return cache.memoize(node, () => new ReactiveINodeJS(node, cache));
 }
 
-// This declaration specifies the types of the implemenation in `unwrapReactiveINodeJS` further.
+// This declaration specifies the types of the implementation in `unwrapReactiveINodeJS` further.
 // It declares, that when
 // * an `INodeJS` is given an `INodeJS` is returned
 // * an `undefined` is given an `undefined` is returned
 // * an `null` is given an `null` is returned
-// This so called conditional types help avoid unneed assertsion about types on the usage site.
+// This so called conditional types help avoid unneeded assertions about types on the usage site.
 // See. https://www.typescriptlang.org/docs/handbook/2/conditional-types.html
 function unwrapReactiveINodeJS<T extends INodeJS | null | undefined>(
   maybeReactive: T,
@@ -34,7 +34,7 @@ function unwrapReactiveINodeJS(
   }
 }
 
-// `any` is currectly provided as the type for references from `@modelix/ts-model-api`,
+// `any` is correctly provided as the type for references from `@modelix/ts-model-api`,
 // so we have to work with it for now.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type INodeReferenceJS = any;
@@ -108,10 +108,10 @@ export class ReactiveINodeJS implements INodeJS {
 
   getParent(): INodeJS | undefined {
     // This does not need to be made reacitve for the same reason as getRoleInParent
-    const unreacitveNode = this.unreactiveNode.getParent();
-    return unreacitveNode
-      ? toReactiveINodeJS(unreacitveNode, this.cache)
-      : unreacitveNode;
+    const unreactiveNode = this.unreactiveNode.getParent();
+    return unreactiveNode
+      ? toReactiveINodeJS(unreactiveNode, this.cache)
+      : unreactiveNode;
   }
 
   remove(): void {
@@ -143,12 +143,12 @@ export class ReactiveINodeJS implements INodeJS {
     index: number,
     concept: IConceptJS | undefined,
   ): INodeJS {
-    const unreacitveNode = this.unreactiveNode.addNewChild(
+    const unreactiveNode = this.unreactiveNode.addNewChild(
       role,
       index,
       concept,
     );
-    return toReactiveINodeJS(unreacitveNode, this.cache);
+    return toReactiveINodeJS(unreactiveNode, this.cache);
   }
 
   removeChild(child: INodeJS): void {
@@ -200,7 +200,11 @@ export class ReactiveINodeJS implements INodeJS {
   }
 
   getPropertyValue(role: string): string | undefined {
-    const ref = this.getOrCreateRefForRole(this.byRoleRefToProperty, role, this.propertyGetter);
+    const ref = this.getOrCreateRefForRole(
+      this.byRoleRefToProperty,
+      role,
+      this.propertyGetter,
+    );
     return ref.value;
   }
 

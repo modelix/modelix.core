@@ -3,14 +3,14 @@ import { watchEffect } from "vue";
 /**
  * This function takes a `promiseEffect` callback and executes it every time its used reactive values are changed.
  *
- * If a promise is fullfilled, the `onfulfilled` call back is called with the value and aboolean,
+ * If a promise is fulfilled, the `onfulfilled` call back is called with the value and a boolean,
  * which indicates if the value is the result of the last create promise.
  *
  * If a promise is rejected, the `onrejected` call back is called with the reason and a boolean,
  * which indicates if the value is the result of the last create promise.
  *
- * This function is usefull, if you need to trigger a new promise every time some reavtive value changes and
- * then need to distinguashe if the value/error of the settled promise comes from the last started promise.
+ * This function is useful, if you need to trigger a new promise every time some reavtive value changes and
+ * then need to distinguish if the value/error of the settled promise comes from the last started promise.
  *
  * @param promiseEffect A function that may create a new promise.
  *
@@ -30,7 +30,7 @@ export function useLastPromiseEffect<ValueT>(
     const thisPromise = promiseEffect();
     lastStartedPromise = thisPromise;
     const isResultOfLastStartedPromise = () =>
-      // `lastStartedPromise` might be diffrent to `thisPromise`,
+      // `lastStartedPromise` might be different to `thisPromise`,
       // because this function gets called asynchronously, when `thisPromise` is settled.
       // In the meantime `promiseEffect()` might have been called again and assigned a new value to `lastStartedPromise`.
       lastStartedPromise == thisPromise;

@@ -143,6 +143,8 @@ export class ReactiveINodeJS implements INodeJS {
     index: number,
     concept: IConceptJS | undefined,
   ): INodeJS {
+    // The related Vue-`Ref` does not need to be triggered.
+    // It will be updated through the changed listener of the branch.
     const unreactiveNode = this.unreactiveNode.addNewChild(
       role,
       index,
@@ -180,6 +182,8 @@ export class ReactiveINodeJS implements INodeJS {
   }
 
   setReferenceTargetNode(role: string, target: INodeJS | undefined): void {
+    // The related Vue-`Ref` does not need to be triggered.
+    // It will be updated through the changed listener of the branch.
     return this.unreactiveNode.setReferenceTargetNode(
       role,
       unwrapReactiveINodeJS(target),
@@ -190,6 +194,8 @@ export class ReactiveINodeJS implements INodeJS {
     role: string,
     target: INodeReferenceJS | undefined,
   ): void {
+    // The related Vue-`Ref` does not need to be triggered.
+    // It will be updated through the changed listener of the branch.
     this.unreactiveNode.setReferenceTargetRef(role, target);
   }
 
@@ -209,6 +215,8 @@ export class ReactiveINodeJS implements INodeJS {
   }
 
   setPropertyValue(role: string, value: string | undefined): void {
+    // The related Vue-`Ref` does not need to be triggered.
+    // It will be updated through the changed listener of the branch.
     this.unreactiveNode.setPropertyValue(role, value);
   }
 

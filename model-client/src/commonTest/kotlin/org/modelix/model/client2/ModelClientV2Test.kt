@@ -19,6 +19,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.respondError
+import io.ktor.client.plugins.ServerResponseException
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
@@ -69,5 +70,47 @@ class ModelClientV2Test {
         assertFailsWith<VersionDeltaStreamV2.Companion.IncompleteData> {
             modelClient.pull(branchRef, null)
         }
+    }
+
+    @Test
+    fun retriesCanBeConfigured() = runTest {
+        val url = "http://localhost/v2"
+        val mockEngine = MockEngine {
+            respondError(HttpStatusCode.InternalServerError)
+        }
+        val retries = 2U
+        val httpClient = HttpClient(mockEngine)
+        val modelClient = ModelClientV2.builder()
+            .client(httpClient)
+            .retries(retries)
+            .url(url)
+            .build()
+
+        assertFailsWith<ServerResponseException> {
+            modelClient.init()
+        }
+
+        // We receive one initial request and then the configured number of retries.
+        assertEquals(1 + retries.toInt(), mockEngine.requestHistory.size)
+    }
+
+    @Test
+    fun retriesCanBeDisabled() = runTest {
+        val url = "http://localhost/v2"
+        val mockEngine = MockEngine {
+            respondError(HttpStatusCode.InternalServerError)
+        }
+        val httpClient = HttpClient(mockEngine)
+        val modelClient = ModelClientV2.builder()
+            .client(httpClient)
+            .retries(0U)
+            .url(url)
+            .build()
+
+        assertFailsWith<ServerResponseException> {
+            modelClient.init()
+        }
+
+        assertEquals(1, mockEngine.requestHistory.size)
     }
 }

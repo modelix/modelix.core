@@ -499,6 +499,9 @@ abstract class ModelClientV2Builder {
     protected var connectTimeout: Duration = 1.seconds
     protected var requestTimeout: Duration = 30.seconds
 
+    // 0 and 1 mean "disable retries"
+    protected var retries: UInt = 3U
+
     fun build(): ModelClientV2 {
         return ModelClientV2(
             httpClient?.config { configureHttpClient(this) } ?: createHttpClient(),
@@ -537,6 +540,16 @@ abstract class ModelClientV2Builder {
         return this
     }
 
+    /**
+     * Configures the number of retries to be performed in case a request has failed.
+     *
+     * @param num 0 to disable the retry mechanism
+     */
+    fun retries(num: UInt): ModelClientV2Builder {
+        this.retries = num
+        return this
+    }
+
     protected open fun configureHttpClient(config: HttpClientConfig<*>) {
         config.apply {
             expectSuccess = true
@@ -548,17 +561,19 @@ abstract class ModelClientV2Builder {
                 connectTimeoutMillis = connectTimeout.inWholeMilliseconds
                 requestTimeoutMillis = requestTimeout.inWholeMilliseconds
             }
-            install(HttpRequestRetry) {
-                retryOnExceptionOrServerErrors(maxRetries = 3)
-                exponentialDelay()
-                modifyRequest {
-                    try {
-//                    connectionStatus = ConnectionStatus.SERVER_ERROR
-                        this.response?.call?.client?.coroutineContext?.let { CoroutineScope(it) }?.launch {
-                            response?.let { println(it.bodyAsText()) }
+            if (retries > 1U) {
+                install(HttpRequestRetry) {
+                    retryOnExceptionOrServerErrors(maxRetries = retries.toInt())
+                    exponentialDelay()
+                    modifyRequest {
+                        try {
+                            //                    connectionStatus = ConnectionStatus.SERVER_ERROR
+                            this.response?.call?.client?.coroutineContext?.let { CoroutineScope(it) }?.launch {
+                                response?.let { println(it.bodyAsText()) }
+                            }
+                        } catch (e: Exception) {
+                            LOG.debug(e) { "" }
                         }
-                    } catch (e: Exception) {
-                        LOG.debug(e) { "" }
                     }
                 }
             }

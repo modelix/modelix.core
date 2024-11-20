@@ -91,7 +91,10 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
 
         application.routing {
             get(".well-known/jwks.json") {
-                call.respondText(JWKSet(listOfNotNull(config.ownPublicKey)).toPublicJWKSet().toString(), ContentType.Application.Json)
+                call.respondText(
+                    JWKSet(listOfNotNull(config.ownPublicKey)).toPublicJWKSet().toString(),
+                    ContentType.Application.Json,
+                )
             }
         }
 

@@ -5,6 +5,10 @@ plugins {
     kotlin("plugin.serialization")
 }
 
+java {
+    withSourcesJar()
+}
+
 dependencies {
     implementation(libs.kotlin.serialization.json)
     implementation(libs.kotlin.serialization.yaml)
@@ -31,7 +35,7 @@ dependencies {
 publishing {
     publications {
         create<MavenPublication>("maven") {
-            from(components["kotlin"])
+            from(components["java"])
         }
     }
 }

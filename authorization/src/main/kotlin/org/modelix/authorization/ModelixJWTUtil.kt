@@ -16,6 +16,7 @@
 
 package org.modelix.authorization
 
+import com.auth0.jwt.interfaces.DecodedJWT
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.JWSObject
@@ -47,6 +48,9 @@ import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.contentType
 import kotlinx.coroutines.runBlocking
+import org.modelix.authorization.permissions.PermissionEvaluator
+import org.modelix.authorization.permissions.Schema
+import org.modelix.authorization.permissions.SchemaInstance
 import java.io.File
 import java.net.URI
 import java.net.URL
@@ -67,6 +71,7 @@ class ModelixJWTUtil {
     private val jwksUrls = LinkedHashSet<URL>()
     private var expectedKeyId: String? = null
     private var ktorClient: HttpClient? = null
+    var accessControlDataProvider: IAccessControlDataProvider = EmptyAccessControlDataProvider()
 
     fun canVerifyTokens(): Boolean {
         return hmacKeys.isNotEmpty() || rsaPublicKeys.isNotEmpty() || jwksUrls.isNotEmpty()
@@ -157,6 +162,51 @@ class ModelixJWTUtil {
             .toPayload()
         val header = JWSHeader.Builder(algorithm).keyID(signingKeyId).build()
         return JWSObject(header, payload).also { it.sign(signer) }.serialize()
+    }
+
+    fun createPermissionEvaluator(token: DecodedJWT, schema: Schema): PermissionEvaluator {
+        return createPermissionEvaluator(token, SchemaInstance(schema))
+    }
+
+    fun createPermissionEvaluator(token: DecodedJWT, schema: SchemaInstance): PermissionEvaluator {
+        return PermissionEvaluator(schema).also { loadGrantedPermissions(token, it) }
+    }
+
+    fun loadGrantedPermissions(token: DecodedJWT, evaluator: PermissionEvaluator) {
+        val permissions = token.claims["permissions"]?.asList(String::class.java)
+
+        // There is a difference between access tokens and identity tokens.
+        // An identity token just contains the user ID and the service has to know the granted permissions.
+        // An access token has more limited permissions and is issued for a specific task. It contains the list of
+        // granted permissions. Since tokens are signed and created by a trusted authority we don't have to check the
+        // list of permissions against our own access control data.
+        if (permissions != null) {
+            permissions.forEach { evaluator.grantPermission(it) }
+        } else {
+            val directGrants = extractUserId(token)?.let { userId ->
+                accessControlDataProvider.getGrantedPermissionsForUser(userId)
+            }.orEmpty() + extractUserRoles(token).flatMap { role ->
+                accessControlDataProvider.getGrantedPermissionsForRole(role)
+            }.toSet()
+            directGrants.forEach { permission ->
+                evaluator.grantPermission(permission)
+            }
+        }
+    }
+
+    fun extractUserId(jwt: DecodedJWT): String? {
+        return jwt.getClaim("email")?.asString()
+            ?: jwt.getClaim("preferred_username")?.asString()
+    }
+
+    fun extractUserRoles(jwt: DecodedJWT): List<String> {
+        val keycloakRoles = jwt
+            .getClaim("realm_access")?.asMap()
+            ?.get("roles")
+            ?.let { it as? List<*> }
+            ?.mapNotNull { it as? String }
+            ?: emptyList()
+        return keycloakRoles
     }
 
     fun generateRSAPrivateKey(): JWK {

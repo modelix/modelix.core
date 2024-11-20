@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2024.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,20 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.modelix.authorization
 
-import com.auth0.jwt.interfaces.DecodedJWT
-import io.ktor.server.auth.Principal
+import org.modelix.authorization.permissions.PermissionParts
 
-class AccessTokenPrincipal(val jwt: DecodedJWT) : Principal {
-    fun getUserName(): String? = ModelixJWTUtil().extractUserId(jwt)
+interface IAccessControlDataProvider {
+    fun getGrantedPermissionsForUser(userId: String): Set<PermissionParts>
+    fun getGrantedPermissionsForRole(role: String): Set<PermissionParts>
+}
 
-    override fun equals(other: Any?): Boolean {
-        if (other !is AccessTokenPrincipal) return false
-        return other.jwt.token.equals(jwt.token)
+class EmptyAccessControlDataProvider : IAccessControlDataProvider {
+    override fun getGrantedPermissionsForUser(userId: String): Set<PermissionParts> {
+        return emptySet()
     }
 
-    override fun hashCode(): Int {
-        return jwt.token.hashCode()
+    override fun getGrantedPermissionsForRole(role: String): Set<PermissionParts> {
+        return emptySet()
     }
 }

@@ -97,6 +97,8 @@ interface IModelixAuthorizationConfig {
      */
     var permissionSchema: Schema
 
+    var accessControlDataProvider: IAccessControlDataProvider
+
     /**
      * Generates fake tokens and allows all requests.
      */
@@ -120,6 +122,7 @@ class ModelixAuthorizationConfig : IModelixAuthorizationConfig {
         }
     override var jwkKeyId: String? = System.getenv("MODELIX_JWK_KEY_ID")
     override var permissionSchema: Schema = buildPermissionSchema { }
+    override var accessControlDataProvider: IAccessControlDataProvider = EmptyAccessControlDataProvider()
 
     private val hmac512KeyFromEnv by lazy {
         System.getenv("MODELIX_JWT_SIGNATURE_HMAC512_KEY")
@@ -134,9 +137,10 @@ class ModelixAuthorizationConfig : IModelixAuthorizationConfig {
             ?: System.getenv("MODELIX_JWT_SIGNATURE_HMAC256_KEY_FILE")?.let { File(it).readText() }
     }
 
-    private val jwtUtil: ModelixJWTUtil by lazy {
+    val jwtUtil: ModelixJWTUtil by lazy {
         val util = ModelixJWTUtil()
 
+        util.accessControlDataProvider = accessControlDataProvider
         util.loadKeysFromEnvironment()
 
         listOfNotNull<Pair<String, JWSAlgorithm>>(

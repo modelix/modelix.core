@@ -189,21 +189,7 @@ class ModelixAuthorizationPluginInstance(val config: ModelixAuthorizationConfig)
     fun createSchemaInstance() = SchemaInstance(config.permissionSchema)
 
     fun loadGrantedPermissions(principal: AccessTokenPrincipal, evaluator: PermissionEvaluator) {
-        val permissions = principal.jwt.claims["permissions"]?.asList(String::class.java)
-
-        // There is a difference between access tokens and identity tokens.
-        // An identity token just contains the user ID and the service has to know the granted permissions.
-        // An access token has more limited permissions and is issued for a specific task. It contains the list of
-        // granted permissions. Since tokens are signed and created by a trusted authority we don't have to check the
-        // list of permissions against our own access control data.
-        if (permissions != null) {
-            permissions.forEach { evaluator.grantPermission(it) }
-        } else {
-            val userId = principal.getUserName()
-            if (userId != null) {
-                // TODO load permissions for the user from some external source
-            }
-        }
+        config.jwtUtil.loadGrantedPermissions(principal.jwt, evaluator)
     }
 }
 

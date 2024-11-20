@@ -7,7 +7,6 @@ import io.ktor.http.auth.AuthScheme
 import io.ktor.http.auth.HttpAuthHeader
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.application.plugin
@@ -29,49 +28,10 @@ fun Application.installAuthentication(unitTestMode: Boolean = false) {
     }
 }
 
-fun Route.requiresPermission(resource: KeycloakResource, permissionType: EPermissionType, body: Route.() -> Unit) {
-    requiresPermission(resource, permissionType.toKeycloakScope(), body)
-}
-
-fun Route.requiresRead(resource: KeycloakResource, body: Route.() -> Unit) {
-    requiresPermission(resource, KeycloakScope.READ, body)
-}
-
-fun Route.requiresWrite(resource: KeycloakResource, body: Route.() -> Unit) {
-    requiresPermission(resource, KeycloakScope.WRITE, body)
-}
-
-fun Route.requiresDelete(resource: KeycloakResource, body: Route.() -> Unit) {
-    requiresPermission(resource, KeycloakScope.DELETE, body)
-}
-
-fun Route.requiresPermission(resource: KeycloakResource, scope: KeycloakScope, body: Route.() -> Unit) {
-    requiresLogin {
-        intercept(ApplicationCallPipeline.Call) {
-            call.checkPermission(resource, scope)
-        }
-        body()
-    }
-}
-
 fun Route.requiresLogin(body: Route.() -> Unit) {
     authenticate(MODELIX_JWT_AUTH) {
         body()
     }
-}
-
-fun ApplicationCall.checkPermission(resource: KeycloakResource, scope: KeycloakScope) {
-    if (!application.getModelixAuthorizationConfig().permissionCheckingEnabled()) return
-    val principal = principal<AccessTokenPrincipal>() ?: throw NotLoggedInException()
-    if (!KeycloakUtils.hasPermission(principal.jwt, resource, scope)) {
-        throw NoPermissionException(principal, resource.name, scope.name)
-    }
-}
-
-fun ApplicationCall.hasPermission(resource: KeycloakResource, scope: KeycloakScope): Boolean {
-    if (!application.getModelixAuthorizationConfig().permissionCheckingEnabled()) return true
-    val principal = principal<AccessTokenPrincipal>() ?: throw NotLoggedInException()
-    return KeycloakUtils.hasPermission(principal.jwt, resource, scope)
 }
 
 fun PipelineContext<*, ApplicationCall>.checkPermission(permissionParts: PermissionParts) {
@@ -133,14 +93,4 @@ fun ApplicationCall.getUserName(): String? {
 @Deprecated("Use ModelixAuthorizationConfig.nullIfInvalid")
 fun DecodedJWT.nullIfInvalid(): DecodedJWT? {
     return ModelixAuthorizationConfig().nullIfInvalid(this)
-}
-
-private var cachedServiceAccountToken: DecodedJWT? = null
-val serviceAccountTokenProvider: () -> String = {
-    var token: DecodedJWT? = cachedServiceAccountToken?.nullIfInvalid()
-    if (token == null) {
-        token = KeycloakUtils.getServiceAccountToken()
-        cachedServiceAccountToken = token
-    }
-    token.token
 }

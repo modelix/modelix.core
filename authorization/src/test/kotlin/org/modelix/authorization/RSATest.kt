@@ -47,8 +47,7 @@ class RSATest {
         val util = ModelixJWTUtil()
         util.addJwksUrl(URI("http://localhost/.well-known/jwks.json").toURL())
         util.useKtorClient(client)
-        util.setRSAPrivateKey(rsaPrivateKey)
-        val token = util.createAccessToken("unit-test@example.com", listOf())
+        val token = ModelixJWTUtil().also { it.setRSAPrivateKey(rsaPrivateKey) }.createAccessToken("unit-test@example.com", listOf())
         util.verifyToken(token)
     }
 
@@ -58,7 +57,7 @@ class RSATest {
         util.addJwksUrl(URI("http://localhost/.well-known/jwks.json").toURL())
         util.useKtorClient(client)
         util.generateRSAPrivateKey()
-        val token = util.createAccessToken("unit-test@example.com", listOf())
+        val token = ModelixJWTUtil().also { it.generateRSAPrivateKey() }.createAccessToken("unit-test@example.com", listOf())
         val ex = assertFailsWith(BadJOSEException::class) {
             util.verifyToken(token)
         }

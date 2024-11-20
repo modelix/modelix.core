@@ -116,6 +116,7 @@ class ModelixJWTUtil {
         requireNotNull(key.keyID) { "Key doesn't specify a key ID: $key" }
         requireNotNull(key.algorithm) { "Key doesn't specify an algorithm: $key" }
         this.rsaPrivateKey = key
+        addPublicKey(key.toPublicJWK())
     }
 
     private fun addHmacKey(key: ByteArray, algorithm: JWSAlgorithm) {

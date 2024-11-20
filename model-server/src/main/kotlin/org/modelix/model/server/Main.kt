@@ -176,6 +176,7 @@ object Main {
                 install(Routing)
                 install(ModelixAuthorization) {
                     permissionSchema = ModelServerPermissionSchema.SCHEMA
+                    installStatusPages = false
                 }
                 install(ForwardedHeaders)
                 install(CallLogging) {

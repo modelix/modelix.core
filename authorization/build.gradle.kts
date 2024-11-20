@@ -12,7 +12,6 @@ java {
 dependencies {
     implementation(libs.kotlin.serialization.json)
     implementation(libs.kotlin.serialization.yaml)
-    implementation(libs.keycloak.authz.client)
     implementation(libs.guava)
     api(libs.ktor.server.auth)
     api(libs.ktor.server.auth.jwt)

@@ -49,6 +49,11 @@ interface IModelixAuthorizationConfig {
     var debugEndpointsEnabled: Boolean
 
     /**
+     * NotLoggedInException and NoPermissionException will be turned into HTTP status codes 401 and 403
+     */
+    var installStatusPages: Boolean
+
+    /**
      * The pre-shared key for the HMAC512 signature algorithm.
      * The environment variables MODELIX_JWT_SIGNATURE_HMAC512_KEY or MODELIX_JWT_SIGNATURE_HMAC512_KEY_FILE can be
      * used instead.
@@ -109,6 +114,7 @@ class ModelixAuthorizationConfig : IModelixAuthorizationConfig {
     override var permissionChecksEnabled: Boolean? = PERMISSION_CHECKS_ENABLED
     override var generateFakeTokens: Boolean? = getBooleanFromEnv("MODELIX_GENERATE_FAKE_JWT")
     override var debugEndpointsEnabled: Boolean = true
+    override var installStatusPages: Boolean = false
     override var hmac512Key: String? = null
     override var hmac384Key: String? = null
     override var hmac256Key: String? = null

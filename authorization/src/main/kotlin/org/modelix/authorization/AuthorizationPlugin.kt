@@ -39,6 +39,7 @@ import io.ktor.server.auth.jwt.jwt
 import io.ktor.server.auth.principal
 import io.ktor.server.html.respondHtml
 import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
+import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
@@ -109,6 +110,17 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                     JWKSet(listOfNotNull(config.ownPublicKey)).toPublicJWKSet().toString(),
                     ContentType.Application.Json,
                 )
+            }
+        }
+
+        if (config.installStatusPages) {
+            application.install(StatusPages) {
+                exception<NotLoggedInException> { call, cause ->
+                    call.respondText(text = "401: ${cause.message}", status = HttpStatusCode.Unauthorized)
+                }
+                exception<NoPermissionException> { call, cause ->
+                    call.respondText(text = "403: ${cause.message}", status = HttpStatusCode.Forbidden)
+                }
             }
         }
 

@@ -35,10 +35,7 @@ import kotlinx.html.span
 import org.json.JSONArray
 import org.json.JSONObject
 import org.modelix.authorization.EPermissionType
-import org.modelix.authorization.KeycloakResourceType
-import org.modelix.authorization.KeycloakScope
 import org.modelix.authorization.NoPermissionException
-import org.modelix.authorization.asResource
 import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.requiresLogin
@@ -53,9 +50,6 @@ import org.modelix.model.server.templates.PageWithMenuBar
 import java.io.IOException
 import java.util.*
 import java.util.regex.Pattern
-
-val PERMISSION_MODEL_SERVER = "model-server".asResource()
-val MODEL_SERVER_ENTRY = KeycloakResourceType("model-server-entry", KeycloakScope.READ_WRITE_DELETE)
 
 private class NotFoundException(description: String?) : RuntimeException(description)
 

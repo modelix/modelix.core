@@ -21,6 +21,9 @@ import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.JWK
 import io.ktor.server.application.Application
 import io.ktor.server.application.plugin
+import org.modelix.authorization.permissions.FileSystemAccessControlPersistence
+import org.modelix.authorization.permissions.IAccessControlPersistence
+import org.modelix.authorization.permissions.InMemoryAccessControlPersistence
 import org.modelix.authorization.permissions.Schema
 import org.modelix.authorization.permissions.buildPermissionSchema
 import java.io.File
@@ -102,7 +105,7 @@ interface IModelixAuthorizationConfig {
      */
     var permissionSchema: Schema
 
-    var accessControlDataProvider: IAccessControlDataProvider
+    var accessControlPersistence: IAccessControlPersistence
 
     /**
      * Generates fake tokens and allows all requests.
@@ -128,7 +131,9 @@ class ModelixAuthorizationConfig : IModelixAuthorizationConfig {
         }
     override var jwkKeyId: String? = System.getenv("MODELIX_JWK_KEY_ID")
     override var permissionSchema: Schema = buildPermissionSchema { }
-    override var accessControlDataProvider: IAccessControlDataProvider = EmptyAccessControlDataProvider()
+    override var accessControlPersistence: IAccessControlPersistence = System.getenv("MODELIX_ACCESS_CONTROL_FILE")
+        ?.let { path -> FileSystemAccessControlPersistence(File(path)) }
+        ?: InMemoryAccessControlPersistence()
 
     private val hmac512KeyFromEnv by lazy {
         System.getenv("MODELIX_JWT_SIGNATURE_HMAC512_KEY")
@@ -146,7 +151,7 @@ class ModelixAuthorizationConfig : IModelixAuthorizationConfig {
     val jwtUtil: ModelixJWTUtil by lazy {
         val util = ModelixJWTUtil()
 
-        util.accessControlDataProvider = accessControlDataProvider
+        util.accessControlDataProvider = accessControlPersistence
         util.loadKeysFromEnvironment()
 
         listOfNotNull<Pair<String, JWSAlgorithm>>(

@@ -149,6 +149,14 @@ class ModelixJWTUtil {
         return JWSObject(header, payload).also { it.sign(signer) }.serialize()
     }
 
+    fun isAccessToken(token: DecodedJWT): Boolean {
+        return extractPermissions(token) != null
+    }
+
+    fun isIdentityToken(token: DecodedJWT): Boolean {
+        return !isAccessToken(token)
+    }
+
     fun createPermissionEvaluator(token: DecodedJWT, schema: Schema): PermissionEvaluator {
         return createPermissionEvaluator(token, SchemaInstance(schema))
     }
@@ -157,8 +165,12 @@ class ModelixJWTUtil {
         return PermissionEvaluator(schema).also { loadGrantedPermissions(token, it) }
     }
 
+    fun extractPermissions(token: DecodedJWT): List<String>? {
+        return token.claims["permissions"]?.asList(String::class.java)
+    }
+
     fun loadGrantedPermissions(token: DecodedJWT, evaluator: PermissionEvaluator) {
-        val permissions = token.claims["permissions"]?.asList(String::class.java)
+        val permissions = extractPermissions(token)
 
         // There is a difference between access tokens and identity tokens.
         // An identity token just contains the user ID and the service has to know the granted permissions.

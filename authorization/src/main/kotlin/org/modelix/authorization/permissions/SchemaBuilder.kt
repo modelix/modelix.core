@@ -17,7 +17,7 @@
 package org.modelix.authorization.permissions
 
 fun buildPermissionSchema(body: SchemaBuilder.() -> Unit): Schema {
-    return SchemaBuilder().also(body).build()
+    return SchemaBuilder().apply { extends(PermissionSchemaBase.SCHEMA) }.also(body).build()
 }
 
 /**

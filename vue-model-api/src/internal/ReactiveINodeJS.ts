@@ -1,6 +1,8 @@
 import type { IConceptJS, INodeJS } from "@modelix/ts-model-api";
-import { customRef, markRaw } from "vue";
+import type { Ref } from "vue";
+import { markRaw, shallowRef } from "vue";
 import type { Cache } from "./Cache";
+import type { Nullable } from "@modelix/model-client";
 
 export function toReactiveINodeJS(
   node: INodeJS,
@@ -9,12 +11,12 @@ export function toReactiveINodeJS(
   return cache.memoize(node, () => new ReactiveINodeJS(node, cache));
 }
 
-// This declaration specifies the types of the implemenation in `unwrapReactiveINodeJS` further.
+// This declaration specifies the types of the implementation in `unwrapReactiveINodeJS` further.
 // It declares, that when
 // * an `INodeJS` is given an `INodeJS` is returned
 // * an `undefined` is given an `undefined` is returned
 // * an `null` is given an `null` is returned
-// This so called conditional types help avoid unneed assertsion about types on the usage site.
+// This so called conditional types help avoid unneeded assertions about types on the usage site.
 // See. https://www.typescriptlang.org/docs/handbook/2/conditional-types.html
 function unwrapReactiveINodeJS<T extends INodeJS | null | undefined>(
   maybeReactive: T,
@@ -32,20 +34,24 @@ function unwrapReactiveINodeJS(
   }
 }
 
-// `any` is currectly provided as the type for references from `@modelix/ts-model-api`,
+// `any` is correctly provided as the type for references from `@modelix/ts-model-api`,
 // so we have to work with it for now.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type INodeReferenceJS = any;
 
-interface TrackAndTrigger {
-  track: () => void;
-  trigger: () => void;
-}
-
 export class ReactiveINodeJS implements INodeJS {
-  private byRoleTrackAndTrigger: Map<string | undefined, TrackAndTrigger> =
+  private byRoleRefToProperty: Map<string, Ref<string | undefined>> = new Map();
+  private byRoleRefToReferenceTargetNode: Map<
+    string,
+    Ref<INodeJS | undefined>
+  > = new Map();
+  private byRoleRefToReferenceTargetRef: Map<
+    string,
+    Ref<INodeReferenceJS | undefined>
+  > = new Map();
+  private byRoleRefToChildren: Map<string | undefined, Ref<INodeJS[]>> =
     new Map();
-  private trackAndTriggerForAllChildren: TrackAndTrigger | undefined;
+  private refForAllChildren: Ref<INodeJS[]> | undefined = undefined;
 
   constructor(
     public readonly unreactiveNode: INodeJS,
@@ -55,6 +61,30 @@ export class ReactiveINodeJS implements INodeJS {
     // see. https://vuejs.org/api/reactivity-advanced.html#markraw
     markRaw(this);
   }
+
+  private propertyGetter = (role: string) =>
+    this.unreactiveNode.getPropertyValue(role);
+
+  private referenceTargetRefGetter = (role: string) =>
+    this.unreactiveNode.getReferenceTargetRef(role);
+
+  private referenceTargetNodeGetter = (role: string) => {
+    const unreactiveTargetNode =
+      this.unreactiveNode.getReferenceTargetNode(role);
+    return unreactiveTargetNode
+      ? toReactiveINodeJS(unreactiveTargetNode, this.cache)
+      : unreactiveTargetNode;
+  };
+
+  private childrenGetter = (role: string | undefined) =>
+    this.unreactiveNode
+      .getChildren(role)
+      .map((node) => toReactiveINodeJS(node, this.cache));
+
+  private allChildrenGetter = () =>
+    this.unreactiveNode
+      .getAllChildren()
+      .map((node) => toReactiveINodeJS(node, this.cache));
 
   getConcept(): IConceptJS | undefined {
     return this.unreactiveNode.getConcept();
@@ -78,10 +108,10 @@ export class ReactiveINodeJS implements INodeJS {
 
   getParent(): INodeJS | undefined {
     // This does not need to be made reacitve for the same reason as getRoleInParent
-    const unreacitveNode = this.unreactiveNode.getParent();
-    return unreacitveNode
-      ? toReactiveINodeJS(unreacitveNode, this.cache)
-      : unreacitveNode;
+    const unreactiveNode = this.unreactiveNode.getParent();
+    return unreactiveNode
+      ? toReactiveINodeJS(unreactiveNode, this.cache)
+      : unreactiveNode;
   }
 
   remove(): void {
@@ -89,19 +119,19 @@ export class ReactiveINodeJS implements INodeJS {
   }
 
   getChildren(role: string | undefined): INodeJS[] {
-    const { track } = this.getOrCreateTrackAndTriggerForRole(role);
-    track();
-    return this.unreactiveNode
-      .getChildren(role)
-      .map((node) => toReactiveINodeJS(node, this.cache));
+    const ref = this.getOrCreateRefForRole(
+      this.byRoleRefToChildren,
+      role,
+      this.childrenGetter,
+    );
+    return ref.value;
   }
 
   getAllChildren(): INodeJS[] {
-    const { track } = this.getOrCreateTrackAndTriggerForAllChildren();
-    track();
-    return this.unreactiveNode
-      .getAllChildren()
-      .map((node) => toReactiveINodeJS(node, this.cache));
+    if (this.refForAllChildren == undefined) {
+      this.refForAllChildren = shallowRef(this.allChildrenGetter());
+    }
+    return this.refForAllChildren!.value;
   }
 
   moveChild(role: string | undefined, index: number, child: INodeJS): void {
@@ -113,14 +143,14 @@ export class ReactiveINodeJS implements INodeJS {
     index: number,
     concept: IConceptJS | undefined,
   ): INodeJS {
-    const unreacitveNode = this.unreactiveNode.addNewChild(
+    // The related Vue-`Ref` does not need to be triggered.
+    // It will be updated through the changed listener of the branch.
+    const unreactiveNode = this.unreactiveNode.addNewChild(
       role,
       index,
       concept,
     );
-    return unreacitveNode
-      ? toReactiveINodeJS(unreacitveNode, this.cache)
-      : unreacitveNode;
+    return toReactiveINodeJS(unreactiveNode, this.cache);
   }
 
   removeChild(child: INodeJS): void {
@@ -134,25 +164,26 @@ export class ReactiveINodeJS implements INodeJS {
   }
 
   getReferenceTargetNode(role: string): INodeJS | undefined {
-    const { track } = this.getOrCreateTrackAndTriggerForRole(role);
-    track();
-    const unreacitveNode = this.unreactiveNode.getReferenceTargetNode(role);
-    return unreacitveNode
-      ? toReactiveINodeJS(unreacitveNode, this.cache)
-      : unreacitveNode;
+    const ref = this.getOrCreateRefForRole(
+      this.byRoleRefToReferenceTargetNode,
+      role,
+      this.referenceTargetNodeGetter,
+    );
+    return ref.value;
   }
 
   getReferenceTargetRef(role: string): INodeReferenceJS | undefined {
-    const { track } = this.getOrCreateTrackAndTriggerForRole(role);
-    track();
-    return this.unreactiveNode.getReferenceTargetRef(role);
+    const ref = this.getOrCreateRefForRole(
+      this.byRoleRefToReferenceTargetRef,
+      role,
+      this.referenceTargetRefGetter,
+    );
+    return ref.value;
   }
 
   setReferenceTargetNode(role: string, target: INodeJS | undefined): void {
-    // Do not call `this.unreactiveNode.setReferenceTargetNode` directly,
-    // because the target is declared as `INodeJS`, but actuall an `NodeAdapterJS` is expected.
-    // Just using the reference is cleaner then unwrapping
-    // then checking for ReactiveINodeJS and eventuall unwrapping it
+    // The related Vue-`Ref` does not need to be triggered.
+    // It will be updated through the changed listener of the branch.
     return this.unreactiveNode.setReferenceTargetNode(
       role,
       unwrapReactiveINodeJS(target),
@@ -163,6 +194,8 @@ export class ReactiveINodeJS implements INodeJS {
     role: string,
     target: INodeReferenceJS | undefined,
   ): void {
+    // The related Vue-`Ref` does not need to be triggered.
+    // It will be updated through the changed listener of the branch.
     this.unreactiveNode.setReferenceTargetRef(role, target);
   }
 
@@ -173,69 +206,63 @@ export class ReactiveINodeJS implements INodeJS {
   }
 
   getPropertyValue(role: string): string | undefined {
-    const { track } = this.getOrCreateTrackAndTriggerForRole(role);
-    track();
-    return this.unreactiveNode.getPropertyValue(role);
+    const ref = this.getOrCreateRefForRole(
+      this.byRoleRefToProperty,
+      role,
+      this.propertyGetter,
+    );
+    return ref.value;
   }
 
   setPropertyValue(role: string, value: string | undefined): void {
+    // The related Vue-`Ref` does not need to be triggered.
+    // It will be updated through the changed listener of the branch.
     this.unreactiveNode.setPropertyValue(role, value);
   }
 
-  private getOrCreateTrackAndTriggerForAllChildren(): TrackAndTrigger {
-    if (this.trackAndTriggerForAllChildren === undefined) {
-      customRef((track, trigger) => {
-        this.trackAndTriggerForAllChildren = {
-          track,
-          trigger,
-        };
-        return {
-          // Getter and setter ar empty for the same reason as in `getOrCreateTrackAndTriggerForRole`
-          get() {},
-          set() {},
-        };
-      });
+  getOrCreateRefForRole<RoleT, ValueT>(
+    byRoleRefs: Map<RoleT, Ref<ValueT>>,
+    role: RoleT,
+    getValue: (role: RoleT) => ValueT,
+  ): Ref<ValueT> {
+    const maybeCreatedShallowRef = byRoleRefs.get(role);
+
+    if (maybeCreatedShallowRef != undefined) {
+      return maybeCreatedShallowRef;
+    } else {
+      const newRef = shallowRef(getValue(role));
+      byRoleRefs.set(role, newRef);
+      return newRef;
     }
-    // `this.trackAndTriggerForAllChildren` will always be set, because the `factory`
-    // argument of `customRef` will be evaluated immedialty.
-    return this.trackAndTriggerForAllChildren!;
   }
 
-  private getOrCreateTrackAndTriggerForRole(
-    role: string | undefined,
-  ): TrackAndTrigger {
-    const existing = this.byRoleTrackAndTrigger.get(role);
-    if (existing !== undefined) {
-      return existing;
+  triggerChangeInChild(role: Nullable<string>) {
+    if (this.refForAllChildren) {
+      this.refForAllChildren.value = this.allChildrenGetter();
     }
-    let created;
-    customRef((track, trigger) => {
-      created = {
-        track,
-        trigger,
-      };
-      this.byRoleTrackAndTrigger.set(role, created);
-      return {
-        // The getters and setters will never be called directly
-        // and therefore the are empty.
-        // We use `customRef` to get access to a pair of `trigger` and `track`
-        // to call them directly from outside.
-        get() {},
-        set() {},
-      };
-    });
-    // `created` will always be set, because the `factory`
-    // argument of `customRef` will be evaluated immedialty.
-    return created!;
+
+    const normalizedRole = role ?? undefined;
+    const maybeRef = this.byRoleRefToChildren.get(normalizedRole);
+    if (maybeRef) {
+      maybeRef.value = this.childrenGetter(normalizedRole);
+    }
   }
 
-  triggerChangeInRole(role: string | undefined | null) {
-    const normalizedRole =
-      role !== undefined && role !== null ? role : undefined;
-    this.byRoleTrackAndTrigger.get(normalizedRole)?.trigger();
+  triggerChangeInReference(role: string) {
+    const maybeTargetNodeRef = this.byRoleRefToReferenceTargetNode.get(role);
+    if (maybeTargetNodeRef) {
+      maybeTargetNodeRef.value = this.referenceTargetNodeGetter(role);
+    }
+    const maybeTargetRefRef = this.byRoleRefToReferenceTargetRef.get(role);
+    if (maybeTargetRefRef) {
+      maybeTargetRefRef.value = this.referenceTargetRefGetter(role);
+    }
   }
 
-  triggerChangeInAllChildren() {
-    this.trackAndTriggerForAllChildren?.trigger();
+  triggerChangeInProperty(role: string) {
+    const maybeRef = this.byRoleRefToProperty.get(role);
+    if (maybeRef) {
+      maybeRef.value = this.propertyGetter(role);
+    }
   }
 }

@@ -14,7 +14,7 @@
   ],
   "scripts": {
     "build": "tsc --build",
-    "test": "jest",
+    "test": "node --expose-gc node_modules/.bin/jest",
     "prettier": "prettier . --check",
     "prettier:fix": "npm run prettier -- --write"
   },

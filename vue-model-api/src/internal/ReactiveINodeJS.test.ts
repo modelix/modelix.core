@@ -1,5 +1,6 @@
 import { useModelsFromJson } from "../useModelsFromJson";
 import { computed, isReactive, reactive } from "vue";
+import { runGarbageCollection } from "./runGarbageCollection";
 
 const root = {
   root: {
@@ -158,4 +159,23 @@ test("removing a node is reactive", () => {
 
   node.remove();
   expect(computedProperty.value).toHaveLength(childCount - 1);
+});
+
+test("garbage collection does not break reactivity", async () => {
+  const rootNode = useRootNode();
+  // Do not assign the child object to a variable because this would prevent GC from collecting.
+  // MODELIX-1041 was caused by child object being garbage collected even when Vue components were subscribed to their properties.
+  function getChild() {
+    return rootNode.getAllChildren()[0];
+  }
+  getChild().setPropertyValue("name", "firstName");
+  const computedChildNames = computed(() =>
+    getChild().getPropertyValue("name"),
+  );
+  expect(computedChildNames.value).toEqual("firstName");
+
+  await runGarbageCollection();
+  getChild().setPropertyValue("name", "secondName");
+
+  expect(computedChildNames.value).toEqual("secondName");
 });

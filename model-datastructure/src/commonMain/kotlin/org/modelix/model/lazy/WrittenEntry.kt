@@ -30,4 +30,8 @@ class WrittenEntry<E : IKVValue>(
     override fun write(store: IDeserializingKeyValueStore) {}
 
     override fun getDeserializer(): (String) -> E = deserializer
+
+    override fun toString(): String {
+        return hash
+    }
 }

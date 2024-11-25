@@ -26,6 +26,7 @@ import kotlinx.html.title
 import kotlinx.html.tr
 import kotlinx.html.unsafe
 import org.modelix.authorization.hasPermission
+import org.modelix.authorization.requiresLogin
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.model.server.handlers.IRepositoriesManager
@@ -35,13 +36,14 @@ class RepositoryOverview(private val repoManager: IRepositoriesManager) {
 
     fun init(application: Application) {
         application.routing {
-            get("/repos") {
-                call.respondHtmlTemplate(PageWithMenuBar("repos/", "..")) {
-                    headContent {
-                        title("Repositories")
-                        script(type = "text/javascript") {
-                            unsafe {
-                                +"""
+            requiresLogin {
+                get("/repos") {
+                    call.respondHtmlTemplate(PageWithMenuBar("repos/", "..")) {
+                        headContent {
+                            title("Repositories")
+                            script(type = "text/javascript") {
+                                unsafe {
+                                    +"""
                                     function removeBranch(repository, branch) {
                                         if (confirm('Are you sure you want to delete the branch ' + branch + ' of repository ' +repository + '?')) {
                                             fetch('../v2/repositories/' + repository + '/branches/' + branch, { method: 'DELETE'})
@@ -55,11 +57,12 @@ class RepositoryOverview(private val repoManager: IRepositoriesManager) {
                                             .then( _ => location.reload())
                                         }
                                     }
-                                """.trimIndent()
+                                    """.trimIndent()
+                                }
                             }
                         }
+                        bodyContent { buildMainPage(call) }
                     }
-                    bodyContent { buildMainPage(call) }
                 }
             }
         }

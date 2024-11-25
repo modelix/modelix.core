@@ -136,6 +136,10 @@ class ModelixJWTUtil {
                 }
             }
         }
+
+        // allows multiple URLs (MODELIX_JWK_URI1, MODELIX_JWK_URI2, MODELIX_JWK_URI_MODEL_SERVER, ...)
+        System.getenv().filter { it.key.startsWith("MODELIX_JWK_URI") }.values
+            .forEach { addJwksUrl(URI(it).toURL()) }
     }
 
     fun createAccessToken(user: String, grantedPermissions: List<String>, additionalTokenContent: (TokenBuilder) -> Unit = {}): String {

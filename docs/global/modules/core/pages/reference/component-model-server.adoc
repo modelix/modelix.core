@@ -95,10 +95,6 @@ To enable it you can specify the following environment variables.
 |MODELIX_JWK_KEY_ID
 |Optional key ID that can be used together with `MODELIX_JWK_URI`. If specified, it ensures that only tokens that use the specified key are valid. If not specified, a token can use any RSA (256, 384 and 512) key provided by `MODELIX_JWK_URI`.
 
-|KEYCLOAK_BASE_URL
- KEYCLOAK_REALM
-|Legacy variables for the keycloak based authorization used by the Modelix Helm charts for workspaces.
-
 |===
 
 The `permissions` claim of the token is expected to list directly granted permission.

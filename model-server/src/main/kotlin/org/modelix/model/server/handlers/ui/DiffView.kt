@@ -48,6 +48,7 @@ import kotlinx.html.thead
 import kotlinx.html.tr
 import org.modelix.authorization.checkPermission
 import org.modelix.authorization.hasPermission
+import org.modelix.authorization.requiresLogin
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.lazy.CLTree
@@ -83,48 +84,50 @@ class DiffView(private val repositoryManager: RepositoriesManager) {
      */
     fun init(application: Application) {
         application.routing {
-            get("/diff") {
-                val visibleRepositories = repositoryManager.getRepositories().filter {
-                    call.hasPermission(ModelServerPermissionSchema.repository(it).list)
-                }
-                call.respondHtmlTemplate(PageWithMenuBar("diff", "..")) {
-                    bodyContent {
-                        buildDiffInputPage(visibleRepositories)
+            requiresLogin {
+                get("/diff") {
+                    val visibleRepositories = repositoryManager.getRepositories().filter {
+                        call.hasPermission(ModelServerPermissionSchema.repository(it).list)
+                    }
+                    call.respondHtmlTemplate(PageWithMenuBar("diff", "..")) {
+                        bodyContent {
+                            buildDiffInputPage(visibleRepositories)
+                        }
                     }
                 }
-            }
-            get("/diff/view") {
-                val repoId =
-                    (call.request.queryParameters["repository"])?.let { param -> RepositoryId(param) } ?: throw HttpException(
+                get("/diff/view") {
+                    val repoId =
+                        (call.request.queryParameters["repository"])?.let { param -> RepositoryId(param) } ?: throw HttpException(
+                            HttpStatusCode.BadRequest,
+                            "missing repository",
+                        )
+                    call.checkPermission(ModelServerPermissionSchema.repository(repoId).objects.read)
+
+                    val oldVersionHash = call.request.queryParameters["oldVersionHash"] ?: throw HttpException(
                         HttpStatusCode.BadRequest,
-                        "missing repository",
+                        "missing oldVersionHash",
                     )
-                call.checkPermission(ModelServerPermissionSchema.repository(repoId).objects.read)
+                    val newVersionHash = call.request.queryParameters["newVersionHash"] ?: throw HttpException(
+                        HttpStatusCode.BadRequest,
+                        "missing newVersionHash",
+                    )
 
-                val oldVersionHash = call.request.queryParameters["oldVersionHash"] ?: throw HttpException(
-                    HttpStatusCode.BadRequest,
-                    "missing oldVersionHash",
-                )
-                val newVersionHash = call.request.queryParameters["newVersionHash"] ?: throw HttpException(
-                    HttpStatusCode.BadRequest,
-                    "missing newVersionHash",
-                )
+                    val sizeLimit = call.request.queryParameters["sizeLimit"]?.let { param ->
+                        param.toIntOrNull() ?: throw HttpException(HttpStatusCode.BadRequest, "invalid sizeLimit")
+                    } ?: DEFAULT_SIZE_LIMIT
 
-                val sizeLimit = call.request.queryParameters["sizeLimit"]?.let { param ->
-                    param.toIntOrNull() ?: throw HttpException(HttpStatusCode.BadRequest, "invalid sizeLimit")
-                } ?: DEFAULT_SIZE_LIMIT
+                    val oldVersion = repositoryManager.getVersion(repoId, oldVersionHash) ?: throw VersionNotFoundException(
+                        oldVersionHash,
+                    )
+                    val newVersion = repositoryManager.getVersion(repoId, newVersionHash) ?: throw VersionNotFoundException(
+                        newVersionHash,
+                    )
 
-                val oldVersion = repositoryManager.getVersion(repoId, oldVersionHash) ?: throw VersionNotFoundException(
-                    oldVersionHash,
-                )
-                val newVersion = repositoryManager.getVersion(repoId, newVersionHash) ?: throw VersionNotFoundException(
-                    newVersionHash,
-                )
-
-                val diff = calculateDiff(oldVersion, newVersion, sizeLimit)
-                call.respondHtmlTemplate(PageWithMenuBar("diff", baseUrl)) {
-                    bodyContent {
-                        buildDiffView(diff, oldVersionHash, newVersionHash, repoId.id, sizeLimit)
+                    val diff = calculateDiff(oldVersion, newVersion, sizeLimit)
+                    call.respondHtmlTemplate(PageWithMenuBar("diff", baseUrl)) {
+                        bodyContent {
+                            buildDiffView(diff, oldVersionHash, newVersionHash, repoId.id, sizeLimit)
+                        }
                     }
                 }
             }

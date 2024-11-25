@@ -17,6 +17,7 @@
 package org.modelix.model.server
 
 import org.modelix.authorization.permissions.PermissionParts
+import org.modelix.authorization.permissions.PermissionSchemaBase
 import org.modelix.authorization.permissions.buildPermissionSchema
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
@@ -45,7 +46,9 @@ object ModelServerPermissionSchema {
 
     val SCHEMA = buildPermissionSchema {
         resource(MODEL_SERVER) {
-            permission(ADMIN)
+            permission(ADMIN) {
+                includedIn(PermissionSchemaBase.cluster.admin.parts[0], PermissionSchemaBase.cluster.admin.parts[1])
+            }
         }
 
         resource(PERMISSION_SCHEMA) {

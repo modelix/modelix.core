@@ -60,6 +60,7 @@ import kotlinx.html.tr
 import kotlinx.html.ul
 import kotlinx.html.unsafe
 import org.modelix.authorization.checkPermission
+import org.modelix.authorization.requiresLogin
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INodeResolutionScope
 import org.modelix.model.api.ITree
@@ -86,127 +87,129 @@ class ContentExplorer(private val repoManager: IRepositoriesManager) {
             get("/content") {
                 call.respondRedirect("../repos/")
             }
-            get("/content/repositories/{repository}/branches/{branch}/latest") {
-                val repository = call.parameters["repository"]
-                val branch = call.parameters["branch"]
-                if (repository.isNullOrEmpty()) {
-                    call.respondText("repository not found", status = HttpStatusCode.BadRequest)
-                    return@get
-                }
-                if (branch.isNullOrEmpty()) {
-                    call.respondText("branch not found", status = HttpStatusCode.BadRequest)
-                    return@get
-                }
-                call.checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
+            requiresLogin {
+                get("/content/repositories/{repository}/branches/{branch}/latest") {
+                    val repository = call.parameters["repository"]
+                    val branch = call.parameters["branch"]
+                    if (repository.isNullOrEmpty()) {
+                        call.respondText("repository not found", status = HttpStatusCode.BadRequest)
+                        return@get
+                    }
+                    if (branch.isNullOrEmpty()) {
+                        call.respondText("branch not found", status = HttpStatusCode.BadRequest)
+                        return@get
+                    }
+                    call.checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
 
-                val latestVersion = repoManager.getVersion(BranchReference(RepositoryId(repository), branch))
-                if (latestVersion == null) {
-                    call.respondText("unable to find latest version", status = HttpStatusCode.InternalServerError)
-                    return@get
-                } else {
-                    call.respondRedirect("../../../versions/${latestVersion.getContentHash()}/")
+                    val latestVersion = repoManager.getVersion(BranchReference(RepositoryId(repository), branch))
+                    if (latestVersion == null) {
+                        call.respondText("unable to find latest version", status = HttpStatusCode.InternalServerError)
+                        return@get
+                    } else {
+                        call.respondRedirect("../../../versions/${latestVersion.getContentHash()}/")
+                    }
                 }
-            }
-            get("/content/repositories/{repository}/versions/{versionHash}") {
-                val repositoryId = call.parameters["repository"]?.let { RepositoryId(it) }
-                if (repositoryId == null) {
-                    call.respondText("repository parameter missing", status = HttpStatusCode.BadRequest)
-                    return@get
-                }
-                call.checkPermission(ModelServerPermissionSchema.repository(repositoryId).objects.read)
-                val versionHash = call.parameters["versionHash"]
-                if (versionHash.isNullOrEmpty()) {
-                    call.respondText("version parameter missing", status = HttpStatusCode.BadRequest)
-                    return@get
-                }
+                get("/content/repositories/{repository}/versions/{versionHash}") {
+                    val repositoryId = call.parameters["repository"]?.let { RepositoryId(it) }
+                    if (repositoryId == null) {
+                        call.respondText("repository parameter missing", status = HttpStatusCode.BadRequest)
+                        return@get
+                    }
+                    call.checkPermission(ModelServerPermissionSchema.repository(repositoryId).objects.read)
+                    val versionHash = call.parameters["versionHash"]
+                    if (versionHash.isNullOrEmpty()) {
+                        call.respondText("version parameter missing", status = HttpStatusCode.BadRequest)
+                        return@get
+                    }
 
-                // IMPORTANT Do not let `expandTo` be an arbitrary string to avoid code injection.
-                // The value of `expandTo` is expanded into JavaScript.
-                val expandTo = call.request.queryParameters["expandTo"]?.let {
-                    it.toLongOrNull() ?: return@get call.respondText("Invalid expandTo value. Provide a node id.", status = HttpStatusCode.BadRequest)
-                }
+                    // IMPORTANT Do not let `expandTo` be an arbitrary string to avoid code injection.
+                    // The value of `expandTo` is expanded into JavaScript.
+                    val expandTo = call.request.queryParameters["expandTo"]?.let {
+                        it.toLongOrNull() ?: return@get call.respondText("Invalid expandTo value. Provide a node id.", status = HttpStatusCode.BadRequest)
+                    }
 
-                val tree = CLVersion.loadFromHash(versionHash, repoManager.getLegacyObjectStore(repositoryId)).getTree()
-                val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
+                    val tree = CLVersion.loadFromHash(versionHash, repoManager.getLegacyObjectStore(repositoryId)).getTree()
+                    val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
 
-                val expandedNodes = expandTo?.let { nodeId -> getAncestorsAndSelf(nodeId, tree) }.orEmpty()
+                    val expandedNodes = expandTo?.let { nodeId -> getAncestorsAndSelf(nodeId, tree) }.orEmpty()
 
-                call.respondHtmlTemplate(PageWithMenuBar("repos/", "../../../../..")) {
-                    headContent {
-                        title("Content Explorer")
-                        link("../../../../../public/content-explorer.css", rel = "stylesheet")
-                        script("text/javascript", src = "../../../../../public/content-explorer.js") {}
-                        if (expandTo != null) {
-                            script("text/javascript") {
-                                unsafe {
-                                    +"""
+                    call.respondHtmlTemplate(PageWithMenuBar("repos/", "../../../../..")) {
+                        headContent {
+                            title("Content Explorer")
+                            link("../../../../../public/content-explorer.css", rel = "stylesheet")
+                            script("text/javascript", src = "../../../../../public/content-explorer.js") {}
+                            if (expandTo != null) {
+                                script("text/javascript") {
+                                    unsafe {
+                                        +"""
                                         document.addEventListener("DOMContentLoaded", function(event) {
                                             scrollToElement('$expandTo');
                                         });
                                     """.trimIndent()
+                                    }
                                 }
                             }
                         }
+                        bodyContent { contentPageBody(rootNode, versionHash, expandedNodes, expandTo) }
                     }
-                    bodyContent { contentPageBody(rootNode, versionHash, expandedNodes, expandTo) }
                 }
-            }
-            post("/content/repositories/{repository}/versions/{versionHash}") {
-                val repositoryId = call.parameters["repository"]?.let { RepositoryId(it) }
-                if (repositoryId == null) {
-                    call.respondText("repository parameter missing", status = HttpStatusCode.BadRequest)
-                    return@post
+                post("/content/repositories/{repository}/versions/{versionHash}") {
+                    val repositoryId = call.parameters["repository"]?.let { RepositoryId(it) }
+                    if (repositoryId == null) {
+                        call.respondText("repository parameter missing", status = HttpStatusCode.BadRequest)
+                        return@post
+                    }
+                    val versionHash = call.parameters["versionHash"]
+                    if (versionHash.isNullOrEmpty()) {
+                        call.respondText("version parameter missing", status = HttpStatusCode.BadRequest)
+                        return@post
+                    }
+
+                    call.checkPermission(ModelServerPermissionSchema.repository(repositoryId).objects.read)
+
+                    val expandedNodes = call.receive<ContentExplorerExpandedNodes>()
+
+                    val tree = CLVersion.loadFromHash(versionHash, stores.getLegacyObjectStore(repositoryId)).getTree()
+                    val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
+
+                    var expandedNodeIds = expandedNodes.expandedNodeIds
+                    if (expandedNodes.expandAll) {
+                        expandedNodeIds = expandedNodeIds + collectExpandableChildNodes(rootNode, expandedNodes.expandedNodeIds.toSet())
+                    }
+
+                    call.respondText(
+                        buildString {
+                            appendHTML().ul("treeRoot") {
+                                nodeItem(rootNode, expandedNodeIds.toSet())
+                            }
+                        },
+                    )
                 }
-                val versionHash = call.parameters["versionHash"]
-                if (versionHash.isNullOrEmpty()) {
-                    call.respondText("version parameter missing", status = HttpStatusCode.BadRequest)
-                    return@post
-                }
+                get("/content/repositories/{repository}/versions/{versionHash}/{nodeId}") {
+                    val id = call.parameters["nodeId"]?.toLongOrNull()
+                        ?: return@get call.respondText("node id not found", status = HttpStatusCode.NotFound)
 
-                call.checkPermission(ModelServerPermissionSchema.repository(repositoryId).objects.read)
+                    val versionHash = call.parameters["versionHash"]
+                        ?: return@get call.respondText("version hash not found", status = HttpStatusCode.NotFound)
 
-                val expandedNodes = call.receive<ContentExplorerExpandedNodes>()
+                    val repositoryId = call.parameters["repository"]
+                        ?: return@get call.respondText("repository parameter missing", status = HttpStatusCode.BadRequest)
 
-                val tree = CLVersion.loadFromHash(versionHash, stores.getLegacyObjectStore(repositoryId)).getTree()
-                val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
+                    call.checkPermission(ModelServerPermissionSchema.repository(repositoryId).objects.read)
 
-                var expandedNodeIds = expandedNodes.expandedNodeIds
-                if (expandedNodes.expandAll) {
-                    expandedNodeIds = expandedNodeIds + collectExpandableChildNodes(rootNode, expandedNodes.expandedNodeIds.toSet())
-                }
+                    val version = try {
+                        CLVersion.loadFromHash(versionHash, stores.getLegacyObjectStore(RepositoryId(repositoryId)))
+                    } catch (ex: RuntimeException) {
+                        return@get call.respondText("version not found", status = HttpStatusCode.NotFound)
+                    }
 
-                call.respondText(
-                    buildString {
-                        appendHTML().ul("treeRoot") {
-                            nodeItem(rootNode, expandedNodeIds.toSet())
-                        }
-                    },
-                )
-            }
-            get("/content/repositories/{repository}/versions/{versionHash}/{nodeId}") {
-                val id = call.parameters["nodeId"]?.toLongOrNull()
-                    ?: return@get call.respondText("node id not found", status = HttpStatusCode.NotFound)
+                    val node = PNodeAdapter(id, TreePointer(version.getTree())).takeIf { it.isValid }
 
-                val versionHash = call.parameters["versionHash"]
-                    ?: return@get call.respondText("version hash not found", status = HttpStatusCode.NotFound)
-
-                val repositoryId = call.parameters["repository"]
-                    ?: return@get call.respondText("repository parameter missing", status = HttpStatusCode.BadRequest)
-
-                call.checkPermission(ModelServerPermissionSchema.repository(repositoryId).objects.read)
-
-                val version = try {
-                    CLVersion.loadFromHash(versionHash, stores.getLegacyObjectStore(RepositoryId(repositoryId)))
-                } catch (ex: RuntimeException) {
-                    return@get call.respondText("version not found", status = HttpStatusCode.NotFound)
-                }
-
-                val node = PNodeAdapter(id, TreePointer(version.getTree())).takeIf { it.isValid }
-
-                if (node != null) {
-                    call.respondHtml { body { nodeInspector(node) } }
-                } else {
-                    call.respondText("node id not found", status = HttpStatusCode.NotFound)
+                    if (node != null) {
+                        call.respondHtml { body { nodeInspector(node) } }
+                    } else {
+                        call.respondText("node id not found", status = HttpStatusCode.NotFound)
+                    }
                 }
             }
         }

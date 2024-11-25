@@ -52,6 +52,7 @@ import kotlinx.html.ul
 import kotlinx.html.unsafe
 import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
+import org.modelix.authorization.requiresLogin
 import org.modelix.model.LinearHistory
 import org.modelix.model.api.PBranch
 import org.modelix.model.lazy.BranchReference
@@ -82,45 +83,47 @@ class HistoryHandler(private val repositoriesManager: IRepositoriesManager) {
             get("/history") {
                 call.respondRedirect("../repos/")
             }
-            get("/history/{repoId}/{branch}") {
-                val repositoryId = RepositoryId(call.parameters["repoId"]!!)
-                val branch = repositoryId.getBranchReference(call.parameters["branch"]!!)
-                call.checkPermission(ModelServerPermissionSchema.branch(branch).pull)
-                val params = call.request.queryParameters
-                val limit = toInt(params["limit"], 500)
-                val skip = toInt(params["skip"], 0)
-                val latestVersion = repositoriesManager.getVersion(branch)
-                checkNotNull(latestVersion) { "Branch not found: $branch" }
-                call.respondHtmlTemplate(PageWithMenuBar("repos/", "../../..")) {
-                    headContent {
-                        style {
-                            unsafe {
-                                raw(
-                                    """
+            requiresLogin {
+                get("/history/{repoId}/{branch}") {
+                    val repositoryId = RepositoryId(call.parameters["repoId"]!!)
+                    val branch = repositoryId.getBranchReference(call.parameters["branch"]!!)
+                    call.checkPermission(ModelServerPermissionSchema.branch(branch).pull)
+                    val params = call.request.queryParameters
+                    val limit = toInt(params["limit"], 500)
+                    val skip = toInt(params["skip"], 0)
+                    val latestVersion = repositoriesManager.getVersion(branch)
+                    checkNotNull(latestVersion) { "Branch not found: $branch" }
+                    call.respondHtmlTemplate(PageWithMenuBar("repos/", "../../..")) {
+                        headContent {
+                            style {
+                                unsafe {
+                                    raw(
+                                        """
                                     body {
                                         font-family: sans-serif;
                                     }
                                     """.trimIndent(),
-                                )
+                                    )
+                                }
                             }
+                            repositoryPageStyle()
                         }
-                        repositoryPageStyle()
-                    }
-                    bodyContent {
-                        buildRepositoryPage(branch, latestVersion, params["head"], skip, limit)
+                        bodyContent {
+                            buildRepositoryPage(branch, latestVersion, params["head"], skip, limit)
+                        }
                     }
                 }
-            }
-            post("/history/{repoId}/{branch}/revert") {
-                val repositoryId = RepositoryId(call.parameters["repoId"]!!)
-                val branch = repositoryId.getBranchReference(call.parameters["branch"]!!)
-                call.checkPermission(ModelServerPermissionSchema.branch(branch).write)
-                val params = call.receiveParameters()
-                val fromVersion = params["from"]!!
-                val toVersion = params["to"]!!
-                val user = getUserName()
-                revert(branch, fromVersion, toVersion, user)
-                call.respondRedirect(".")
+                post("/history/{repoId}/{branch}/revert") {
+                    val repositoryId = RepositoryId(call.parameters["repoId"]!!)
+                    val branch = repositoryId.getBranchReference(call.parameters["branch"]!!)
+                    call.checkPermission(ModelServerPermissionSchema.branch(branch).write)
+                    val params = call.receiveParameters()
+                    val fromVersion = params["from"]!!
+                    val toVersion = params["to"]!!
+                    val user = getUserName()
+                    revert(branch, fromVersion, toVersion, user)
+                    call.respondRedirect(".")
+                }
             }
 //                post("/history/{repoId}/{branch}/delete") {
 //                    val repositoryId = call.parameters["repoId"]!!

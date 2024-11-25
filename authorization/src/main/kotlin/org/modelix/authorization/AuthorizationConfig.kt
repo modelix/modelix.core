@@ -114,12 +114,7 @@ class ModelixAuthorizationConfig : IModelixAuthorizationConfig {
     override var hmac256Key: String? = null
     override var ownPublicKey: JWK? = null
     private val foreignPublicKeys = ArrayList<JWK>()
-    override var jwkUri: URI? = System.getenv("MODELIX_JWK_URI")?.let { URI(it) }
-        ?: System.getenv("KEYCLOAK_BASE_URL")?.let { keycloakBaseUrl ->
-            System.getenv("KEYCLOAK_REALM")?.let { keycloakRealm ->
-                URI("${keycloakBaseUrl}realms/$keycloakRealm/protocol/openid-connect/certs")
-            }
-        }
+    override var jwkUri: URI? = null
     override var jwkKeyId: String? = System.getenv("MODELIX_JWK_KEY_ID")
     override var permissionSchema: Schema = buildPermissionSchema { }
     override var accessControlPersistence: IAccessControlPersistence = System.getenv("MODELIX_ACCESS_CONTROL_FILE")
@@ -155,10 +150,6 @@ class ModelixAuthorizationConfig : IModelixAuthorizationConfig {
         ).forEach { util.addHmacKey(it.first, it.second) }
 
         jwkUri?.let { util.addJwksUrl(it.toURL()) }
-
-        // allows multiple URLs (MODELIX_JWK_URI1, MODELIX_JWK_URI2, MODELIX_JWK_URI_MODEL_SERVER, ...)
-        System.getenv().filter { it.key.startsWith("MODELIX_JWK_URI") }.values
-            .forEach { util.addJwksUrl(URI(it).toURL()) }
 
         foreignPublicKeys.forEach { util.addPublicKey(it) }
 

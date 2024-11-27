@@ -110,6 +110,9 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                 exception<NoPermissionException> { call, cause ->
                     call.respondText(text = "403: ${cause.message}", status = HttpStatusCode.Forbidden)
                 }
+                exception<Throwable> { call, cause ->
+                    call.respondText(text = "500: $cause", status = HttpStatusCode.InternalServerError)
+                }
             }
         }
 

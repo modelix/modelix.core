@@ -20,6 +20,7 @@ import io.kotest.assertions.ktor.client.shouldHaveStatus
 import io.kotest.matchers.string.shouldContain
 import io.ktor.client.call.body
 import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
@@ -35,7 +36,10 @@ import org.jsoup.select.Evaluator
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.ITree
 import org.modelix.model.api.NodeReferenceById
+import org.modelix.model.api.PNodeAdapter
+import org.modelix.model.api.addNewChild
 import org.modelix.model.client.successful
+import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.runWrite
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
@@ -138,6 +142,33 @@ class ContentExplorerTest {
         assertTrue { root.`is`(Evaluator.Tag("ul")) }
         assertTrue { root.`is`(Evaluator.Class("treeRoot")) }
         assertTrue { root.childrenSize() > 0 }
+    }
+
+    @Test
+    fun `nodes can be expanded to`() = runTest {
+        val client = createHttpClient()
+        val branchRef = RepositoryId("node-expand-to-test").getBranchReference("master")
+        client.post("/v2/repositories/${branchRef.repositoryId}/init")
+        val modelClient = ModelClientV2.builder()
+            .client(client)
+            .url("/v2")
+            .build().also { it.init() }
+
+        modelClient.use {
+            val newestChild = modelClient.runWrite(branchRef) { rootNode ->
+                rootNode.addNewChild(null)
+                    .addNewChild(null)
+                    .addNewChild(null)
+            }
+            val versionHash = modelClient.pullHash(branchRef)
+            val expandToId = (newestChild as PNodeAdapter).nodeId
+
+            val response = client.get("/content/repositories/${branchRef.repositoryId}/versions/$versionHash/") {
+                parameter("expandTo", expandToId)
+            }
+            response shouldHaveStatus HttpStatusCode.OK
+            response.bodyAsText() shouldContain expandToId.toString()
+        }
     }
 
     @Test

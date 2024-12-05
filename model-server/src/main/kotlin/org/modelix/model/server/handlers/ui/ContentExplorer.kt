@@ -75,7 +75,6 @@ import org.modelix.model.server.handlers.NodeNotFoundException
 import org.modelix.model.server.handlers.getLegacyObjectStore
 import org.modelix.model.server.store.StoreManager
 import org.modelix.model.server.templates.PageWithMenuBar
-import kotlin.collections.set
 
 class ContentExplorer(private val repoManager: IRepositoriesManager) {
 
@@ -215,7 +214,7 @@ class ContentExplorer(private val repoManager: IRepositoriesManager) {
     private fun getAncestorsAndSelf(expandTo: Long, tree: CLTree): Set<String> {
         val seq = generateSequence(expandTo) { id ->
             try {
-                tree.getParent(id)
+                tree.getParent(id).takeIf { it != 0L } // getParent returns 0L for root node
             } catch (e: org.modelix.model.lazy.NodeNotFoundException) {
                 throw NodeNotFoundException(id, e)
             }

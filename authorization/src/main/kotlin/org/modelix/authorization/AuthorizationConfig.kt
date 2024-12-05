@@ -85,9 +85,9 @@ interface IModelixAuthorizationConfig {
     var jwkUri: URI?
 
     /**
-     * The ID of the public key for the RSA signature.
+     * If set, only this key is allowed to sign tokens, even if the jwkUri provides multiple keys.
      */
-    @Deprecated("The key ID is supposed to be retrieved from the token")
+    @Deprecated("Untrusted keys shouldn't even be return by the jwkUri or configured in some other way")
     var jwkKeyId: String?
 
     /**
@@ -95,6 +95,12 @@ interface IModelixAuthorizationConfig {
      */
     var permissionSchema: Schema
 
+    /**
+     * Via /permissions/manage, users can grant permissions to ID tokens.
+     * By default, changes are not persisted.
+     * As an alternative to this configuration option, the environment variable MODELIX_ACCESS_CONTROL_FILE can be used
+     * to write changes to disk.
+     */
     var accessControlPersistence: IAccessControlPersistence
 
     /**
@@ -213,7 +219,7 @@ private fun getBooleanFromEnv(name: String): Boolean? {
 
 internal fun ByteArray.repeatBytes(minimumSize: Int): ByteArray {
     if (size >= minimumSize) return this
-    val repeated = ByteArray(((size / 256) + 1) * 256)
+    val repeated = ByteArray(minimumSize)
     for (i in repeated.indices) repeated[i] = this[i % size]
     return repeated
 }

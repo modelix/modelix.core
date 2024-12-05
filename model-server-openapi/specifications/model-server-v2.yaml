@@ -322,8 +322,8 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200json'
-        "404":
-          $ref: '#/components/responses/modelql-404'
+        "422":
+          $ref: '#/components/responses/ModelQlQueryExecutionFailed'
         default:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/init:
@@ -429,8 +429,8 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200json'
-        "404":
-          $ref: '#/components/responses/modelql-404'
+        "422":
+          $ref: '#/components/responses/ModelQlQueryExecutionFailed'
         default:
           $ref: '#/components/responses/GeneralError'
 
@@ -503,8 +503,16 @@ components:
         application/problem+json:
           schema:
             $ref: 'problem.yaml#/Problem'
-    "modelql-404":
-      description: "A IProducingStep<INodeReference>.resolve() call failed to find the node."
+    "ModelQlQueryExecutionFailed":
+      description: "A syntactically valid query failed to provide a result due to a mismatch of the query and the underlying data."
+      content:
+        text/plain:
+          schema:
+            type: string
+            description: "Contains a technical error description why query execution failed."
+            example: |-
+              server version: 0.0.0
+              Exception in thread "main" java.lang.IllegalArgumentException: At least one element was expected. it<1004>.typed().flatMap { ...
     GeneralError:
       description: Unexpected error
       content:

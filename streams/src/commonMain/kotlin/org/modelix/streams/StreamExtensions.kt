@@ -34,6 +34,8 @@ import com.badoo.reaktive.single.map
 import com.badoo.reaktive.single.subscribe
 import kotlinx.coroutines.flow.single
 
+class StreamAssertionError(message: String) : IllegalArgumentException(message)
+
 fun Observable<*>.count(): Single<Int> = collect({ arrayOf(0) }) { acc, it -> acc[0]++ }.map { it[0] }
 fun <T, R> Observable<T>.fold(initial: R, operation: (R, T) -> R): Single<R> {
     return collect({ mutableListOf(initial) }) { acc, it -> acc[0] = operation(acc[0], it) }.map { it[0] }
@@ -51,13 +53,13 @@ fun <T> Observable<T>.withIndex(): Observable<IndexedValue<T>> {
     return map { IndexedValue(index++, it) }
 }
 fun <T> Observable<T>.assertNotEmpty(message: () -> String): Observable<T> {
-    return this.switchIfEmpty { throw IllegalArgumentException("At least one element was expected. " + message()) }
+    return this.switchIfEmpty { throw StreamAssertionError("At least one element was expected. xxx " + message()) }
 }
 fun <T> Maybe<T>.assertEmpty(message: (T) -> String): Completable {
-    return map { throw IllegalArgumentException(message(it)) }.asCompletable()
+    return map { throw StreamAssertionError(message(it)) }.asCompletable()
 }
 fun <T> Observable<T>.assertEmpty(message: (T) -> String): Completable {
-    return map { throw IllegalArgumentException(message(it)) }.asCompletable()
+    return map { throw StreamAssertionError(message(it)) }.asCompletable()
 }
 fun <T> Single<T>.cached(): Single<T> {
     return this.asObservable().replay(1).autoConnect()

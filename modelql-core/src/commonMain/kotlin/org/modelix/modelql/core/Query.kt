@@ -62,13 +62,15 @@ private abstract class BoundQuery<In, out AggregationOut, out ElementOut>(val ex
     }
 }
 
+class EmptyQueryResultException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
+
 private class MonoBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val query: MonoUnboundQuery<In, Out>) : BoundQuery<In, Out, Out>(executor), IMonoQuery<Out> {
 
     override suspend fun execute(): IStepOutput<Out> {
         try {
             return executor.createStream(query).exactlyOne().getSuspending()
         } catch (ex: NoSuchElementException) {
-            throw RuntimeException("Empty query result: " + this, ex)
+            throw EmptyQueryResultException("Empty query result: $this", ex)
         }
     }
 
@@ -170,7 +172,7 @@ class MonoUnboundQuery<In, ElementOut>(
         try {
             return asStream(evaluationContext, input.asObservable()).exactlyOne().getSynchronous()
         } catch (ex: NoSuchElementException) {
-            throw RuntimeException("Empty query result: " + this, ex)
+            throw EmptyQueryResultException("Empty query result: $this", ex)
         }
     }
 

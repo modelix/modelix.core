@@ -7,6 +7,7 @@ import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.assertThrows
 import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.NodeReference
@@ -17,6 +18,7 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.modelql.core.IFluxUnboundQuery
+import org.modelix.modelql.core.assertNotEmpty
 import org.modelix.modelql.core.buildFluxQuery
 import org.modelix.modelql.core.contains
 import org.modelix.modelql.core.count
@@ -262,8 +264,8 @@ class ModelQLClientTest {
             it.memoize { n ->
                 n.count()
                     .sum(
-                        n.allChildren().fold(0) { acc, it ->
-                            acc.sum(it.mapRecursive())
+                        n.allChildren().fold(0) { acc, child ->
+                            acc.sum(child.mapRecursive())
                         },
                     )
             }
@@ -272,13 +274,35 @@ class ModelQLClientTest {
     }
 
     @Test
-    fun `resolving a non-existing node reference returns 404`() = runTest { httpClient ->
+    fun `resolving a non-existing node reference returns 422`() = runTest { httpClient ->
         val client = ModelQLClient("http://localhost/query", httpClient)
         val ex = assertThrows<ModelQueryRequestException> {
             client.query<INode> {
                 NodeReference("doesnotexist").asMono().resolve()
             }
         }
-        assertEquals(HttpStatusCode.NotFound, ex.httpResponse.status)
+        assertEquals(HttpStatusCode.UnprocessableEntity, ex.httpResponse.status)
+    }
+
+    @Test
+    fun `failed assertions in queries return 422`() = runTest { httpClient ->
+        val client = ModelQLClient("http://localhost/query", httpClient)
+        val ex = assertThrows<ModelQueryRequestException> {
+            client.query<INode> {
+                it.children(IChildLinkReference.fromName("test")).first().assertNotEmpty()
+            }
+        }
+        assertEquals(HttpStatusCode.UnprocessableEntity, ex.httpResponse.status)
+    }
+
+    @Test
+    fun `empty query results return 422`() = runTest { httpClient ->
+        val client = ModelQLClient("http://localhost/query", httpClient)
+        val ex = assertThrows<ModelQueryRequestException> {
+            client.query<INode> {
+                it.children(IChildLinkReference.fromName("test")).first()
+            }
+        }
+        assertEquals(HttpStatusCode.UnprocessableEntity, ex.httpResponse.status)
     }
 }

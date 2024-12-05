@@ -103,6 +103,7 @@ class ModelixJWTUtil {
     }
 
     fun addHmacKey(key: String, algorithm: JWSAlgorithm) {
+        // nimbusds checks for weak keys that are shorter than 256 bytes
         addHmacKey(key.toByteArray().repeatBytes(256), algorithm)
     }
 

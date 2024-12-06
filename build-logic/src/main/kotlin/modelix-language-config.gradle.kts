@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import gradle.kotlin.dsl.accessors._9d6accdeac6876c73060866945fb6d8c.java
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinMultiplatformPluginWrapper
@@ -25,9 +24,11 @@ import org.modelix.MODELIX_JDK_VERSION
 import org.modelix.MODELIX_JVM_TARGET
 import org.modelix.MODELIX_KOTLIN_API_VERSION
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(MODELIX_JDK_VERSION))
+plugins.withType<JavaPlugin> {
+    extensions.configure<JavaPluginExtension> {
+        toolchain {
+            languageVersion.set(JavaLanguageVersion.of(MODELIX_JDK_VERSION))
+        }
     }
 }
 

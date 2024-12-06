@@ -18,10 +18,8 @@ package org.modelix.model.server.handlers
 
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.ApplicationCall
-import io.ktor.server.application.call
 import io.ktor.server.response.respondText
-import io.ktor.util.pipeline.PipelineContext
+import io.ktor.server.routing.RoutingContext
 import org.modelix.model.server.handlers.KeyValueLikeModelServer.Companion.PROTECTED_PREFIX
 import org.modelix.model.server.store.StoreManager
 
@@ -31,7 +29,7 @@ class HealthApiImpl(
 
     private val stores: StoreManager get() = repositoriesManager.stores
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.getHealth() {
+    override suspend fun RoutingContext.getHealth() {
         if (isHealthy()) {
             call.respondText(text = "healthy", contentType = ContentType.Text.Plain, status = HttpStatusCode.OK)
         } else {

@@ -17,13 +17,11 @@
 package org.modelix.model.server.handlers
 
 import io.ktor.server.application.Application
-import io.ktor.server.application.ApplicationCall
-import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.metrics.micrometer.MicrometerMetrics
 import io.ktor.server.response.respond
+import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.routing
-import io.ktor.util.pipeline.PipelineContext
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmInfoMetrics
@@ -70,7 +68,7 @@ class MetricsApiImpl : MetricsApi() {
         }
     }
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.getMetrics() {
+    override suspend fun RoutingContext.getMetrics() {
         call.respond(appMicrometerRegistry.scrape())
     }
 }

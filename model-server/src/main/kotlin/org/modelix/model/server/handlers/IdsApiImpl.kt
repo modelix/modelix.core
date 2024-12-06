@@ -17,12 +17,10 @@
 package org.modelix.model.server.handlers
 
 import io.ktor.server.application.Application
-import io.ktor.server.application.ApplicationCall
-import io.ktor.server.application.call
 import io.ktor.server.plugins.origin
 import io.ktor.server.response.respondText
+import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.routing
-import io.ktor.util.pipeline.PipelineContext
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.requiresLogin
 
@@ -33,7 +31,7 @@ class IdsApiImpl(
     private val repositoriesManager: IRepositoriesManager,
 ) : IdsApi() {
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.getServerId() {
+    override suspend fun RoutingContext.getServerId() {
         // Currently, the server ID is initialized in KeyValueLikeModelServer eagerly on startup.
         // Should KeyValueLikeModelServer be removed or change,
         // RepositoriesManager#maybeInitAndGetSeverId will initialize the server ID lazily on the first request.
@@ -44,11 +42,11 @@ class IdsApiImpl(
         call.respondText(serverId)
     }
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.getUserId() {
+    override suspend fun RoutingContext.getUserId() {
         call.respondText(call.getUserName() ?: call.request.origin.remoteHost)
     }
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.generateClientId() {
+    override suspend fun RoutingContext.generateClientId() {
         call.respondText(repositoriesManager.getStoreManager().getGlobalStoreClient().generateId("clientId").toString())
     }
 

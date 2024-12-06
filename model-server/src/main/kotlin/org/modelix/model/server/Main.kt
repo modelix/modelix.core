@@ -22,14 +22,13 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.application.call
 import io.ktor.server.application.install
+import io.ktor.server.engine.connector
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.http.content.staticResources
 import io.ktor.server.netty.Netty
-import io.ktor.server.netty.NettyApplicationEngine
-import io.ktor.server.plugins.callloging.CallLogging
-import io.ktor.server.plugins.callloging.processingTimeMillis
+import io.ktor.server.plugins.calllogging.CallLogging
+import io.ktor.server.plugins.calllogging.processingTimeMillis
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.plugins.forwardedheaders.ForwardedHeaders
@@ -41,7 +40,6 @@ import io.ktor.server.request.path
 import io.ktor.server.resources.Resources
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.IgnoreTrailingSlash
-import io.ktor.server.routing.Routing
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
@@ -81,9 +79,9 @@ import java.io.File
 import java.io.FileReader
 import java.io.IOException
 import java.nio.charset.StandardCharsets
-import java.time.Duration
 import java.util.Properties
 import javax.sql.DataSource
+import kotlin.time.Duration.Companion.seconds
 
 object Main {
     private val LOG = LoggerFactory.getLogger(Main::class.java)
@@ -182,12 +180,10 @@ object Main {
             val modelReplicationServer = ModelReplicationServer(repositoriesManager)
             val metricsApi = MetricsApiImpl()
 
-            val configureNetty: NettyApplicationEngine.Configuration.() -> Unit = {
-                this.responseWriteTimeoutSeconds = cmdLineArgs.responseWriteTimeoutSeconds
-            }
-
-            val ktorServer: NettyApplicationEngine = embeddedServer(Netty, port = port, configure = configureNetty) {
-                install(Routing)
+            val ktorServer = embeddedServer(Netty, configure = {
+                connector { this.port = port }
+                responseWriteTimeoutSeconds = cmdLineArgs.responseWriteTimeoutSeconds
+            }) {
                 install(ModelixAuthorization) {
                     permissionSchema = ModelServerPermissionSchema.SCHEMA
                 }
@@ -209,8 +205,8 @@ object Main {
                 // https://opensource.zalando.com/restful-api-guidelines/#136
                 install(IgnoreTrailingSlash)
                 install(WebSockets) {
-                    pingPeriod = Duration.ofSeconds(30)
-                    timeout = Duration.ofSeconds(30)
+                    pingPeriod = 30.seconds
+                    timeout = 30.seconds
                     maxFrameSize = Long.MAX_VALUE
                     masking = false
                 }

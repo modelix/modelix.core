@@ -56,7 +56,6 @@ jobs:
         with:
           images: |
             modelix/model-server
-            modelix/modelix-model
           tags: |
             type=raw,value=${{ steps.version.outputs.VERSION }},enable=true
             type=raw,value=latest,enable=${{ github.event_name == 'push' }}

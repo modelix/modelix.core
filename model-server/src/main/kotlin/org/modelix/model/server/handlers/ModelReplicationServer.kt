@@ -27,9 +27,9 @@ import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytesWriter
 import io.ktor.server.response.respondText
 import io.ktor.server.response.respondTextWriter
+import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.routing
 import io.ktor.util.cio.use
-import io.ktor.util.pipeline.PipelineContext
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.close
 import io.ktor.utils.io.readUTF8Line
@@ -101,7 +101,7 @@ class ModelReplicationServer(
     private fun repositoryId(paramValue: String?) =
         RepositoryId(checkNotNull(paramValue) { "Parameter 'repository' not available" })
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositories() {
+    override suspend fun RoutingContext.getRepositories() {
         call.respondText(
             repositoriesManager.getRepositories()
                 .filter { call.hasPermission(ModelServerPermissionSchema.repository(it).list) }
@@ -109,7 +109,7 @@ class ModelReplicationServer(
         )
     }
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositoryBranches(repository: String) {
+    override suspend fun RoutingContext.getRepositoryBranches(repository: String) {
         call.respondText(
             repositoriesManager
                 .getBranchNames(repositoryId(repository))
@@ -118,7 +118,7 @@ class ModelReplicationServer(
         )
     }
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositoryBranchDelta(
+    override suspend fun RoutingContext.getRepositoryBranchDelta(
         repository: String,
         branch: String,
         lastKnown: String?,
@@ -129,7 +129,7 @@ class ModelReplicationServer(
         call.respondDelta(RepositoryId(repository), versionHash, lastKnown)
     }
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositoryBranchV1(
+    override suspend fun RoutingContext.getRepositoryBranchV1(
         repository: String,
         branch: String,
         lastKnown: String?,
@@ -140,7 +140,7 @@ class ModelReplicationServer(
         call.respond(BranchV1(branch, versionHash))
     }
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.deleteRepositoryBranch(
+    override suspend fun RoutingContext.deleteRepositoryBranch(
         repository: String,
         branch: String,
     ) {
@@ -161,7 +161,7 @@ class ModelReplicationServer(
         call.respond(HttpStatusCode.NoContent)
     }
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositoryBranchHash(
+    override suspend fun RoutingContext.getRepositoryBranchHash(
         repository: String,
         branch: String,
     ) {
@@ -171,7 +171,7 @@ class ModelReplicationServer(
         call.respondText(versionHash)
     }
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.initializeRepository(
+    override suspend fun RoutingContext.initializeRepository(
         repository: String,
         useRoleIds: Boolean?,
         legacyGlobalStorage: Boolean?,
@@ -186,7 +186,7 @@ class ModelReplicationServer(
         call.respondDelta(RepositoryId(repository), initialVersion.getContentHash(), null)
     }
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.deleteRepository(repository: String) {
+    override suspend fun RoutingContext.deleteRepository(repository: String) {
         checkPermission(ModelServerPermissionSchema.repository(repository).delete)
 
         val foundAndDeleted = repositoriesManager.removeRepository(repositoryId(repository))
@@ -197,7 +197,7 @@ class ModelReplicationServer(
         }
     }
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.postRepositoryBranch(
+    override suspend fun RoutingContext.postRepositoryBranch(
         repository: String,
         branch: String,
     ) {
@@ -210,7 +210,7 @@ class ModelReplicationServer(
         call.respondDelta(RepositoryId(repository), mergedHash, deltaFromClient.versionHash)
     }
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.pollRepositoryBranch(
+    override suspend fun RoutingContext.pollRepositoryBranch(
         repository: String,
         branch: String,
         lastKnown: String?,
@@ -221,7 +221,7 @@ class ModelReplicationServer(
         call.respondDelta(RepositoryId(repository), newVersionHash, lastKnown)
     }
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.postRepositoryObjectsGetAll(repository: String) {
+    override suspend fun RoutingContext.postRepositoryObjectsGetAll(repository: String) {
         checkPermission(ModelServerPermissionSchema.repository(repository).objects.read)
         val channel = call.receiveChannel()
         val keys = hashSetOf<String>()
@@ -244,7 +244,7 @@ class ModelReplicationServer(
         }
     }
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.pollRepositoryBranchHash(
+    override suspend fun RoutingContext.pollRepositoryBranchHash(
         repository: String,
         branch: String,
         lastKnown: String?,
@@ -256,7 +256,7 @@ class ModelReplicationServer(
         call.respondText(newVersionHash)
     }
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositoryVersionHash(
+    override suspend fun RoutingContext.getRepositoryVersionHash(
         versionHash: String,
         repository: String,
         lastKnown: String?,
@@ -268,7 +268,7 @@ class ModelReplicationServer(
         call.respondDelta(RepositoryId(repository), versionHash, lastKnown)
     }
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.postRepositoryBranchQuery(
+    override suspend fun RoutingContext.postRepositoryBranchQuery(
         repository: String,
         branchName: String,
     ) {
@@ -311,7 +311,7 @@ class ModelReplicationServer(
         }
     }
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.postRepositoryVersionHashQuery(
+    override suspend fun RoutingContext.postRepositoryVersionHashQuery(
         versionHash: String,
         repository: String,
     ) {
@@ -322,7 +322,7 @@ class ModelReplicationServer(
         ModelQLServer.handleCall(call, branch.getRootNode(), branch.getArea())
     }
 
-    override suspend fun PipelineContext<Unit, ApplicationCall>.putRepositoryObjects(repository: String) {
+    override suspend fun RoutingContext.putRepositoryObjects(repository: String) {
         checkPermission(ModelServerPermissionSchema.repository(parameter("repository")).objects.add)
 
         val channel = call.receiveChannel()
@@ -350,7 +350,7 @@ class ModelReplicationServer(
     }
 
     @Deprecated("deprecated flag is set in the OpenAPI specification")
-    override suspend fun PipelineContext<Unit, ApplicationCall>.getVersionHash(
+    override suspend fun RoutingContext.getVersionHash(
         versionHash: String,
         lastKnown: String?,
     ) {
@@ -460,7 +460,7 @@ private fun <K, V> Map<K, V?>.checkValuesNotNull(lazyMessage: (K) -> Any): Map<K
     }
 } as Map<K, V>
 
-private fun PipelineContext<Unit, ApplicationCall>.parameter(name: String): String {
+private fun RoutingContext.parameter(name: String): String {
     return call.parameter(name)
 }
 

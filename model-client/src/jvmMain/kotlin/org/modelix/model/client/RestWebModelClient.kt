@@ -42,6 +42,7 @@ import io.ktor.util.reflect.TypeInfo
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
 import io.ktor.utils.io.core.readText
+import io.ktor.utils.io.readRemaining
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -68,25 +69,6 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.LinkedList
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
-import kotlin.collections.Iterable
-import kotlin.collections.LinkedHashMap
-import kotlin.collections.List
-import kotlin.collections.Map
-import kotlin.collections.MutableList
-import kotlin.collections.MutableMap
-import kotlin.collections.Set
-import kotlin.collections.component1
-import kotlin.collections.component2
-import kotlin.collections.emptyList
-import kotlin.collections.emptySet
-import kotlin.collections.filter
-import kotlin.collections.forEach
-import kotlin.collections.iterator
-import kotlin.collections.minus
-import kotlin.collections.plus
-import kotlin.collections.set
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -172,8 +154,8 @@ class RestWebModelClient @JvmOverloads constructor(
                         contentType: ContentType,
                         charset: Charset,
                         typeInfo: TypeInfo,
-                        value: Any,
-                    ): OutgoingContent {
+                        value: Any?,
+                    ): OutgoingContent? {
                         return TextContent(value.toString(), contentType)
                     }
                 },

@@ -30,7 +30,8 @@ import io.ktor.server.auth.parseAuthorizationHeader
 import io.ktor.server.auth.principal
 import io.ktor.server.request.header
 import io.ktor.server.routing.Route
-import io.ktor.util.pipeline.PipelineContext
+import io.ktor.server.routing.RoutingContext
+import io.ktor.server.routing.intercept
 import org.modelix.authorization.permissions.PermissionEvaluator
 import org.modelix.authorization.permissions.PermissionParts
 import java.time.Instant
@@ -84,7 +85,7 @@ fun ApplicationCall.checkPermission(resource: KeycloakResource, scope: KeycloakS
     }
 }
 
-fun PipelineContext<*, ApplicationCall>.checkPermission(permissionParts: PermissionParts) {
+fun RoutingContext.checkPermission(permissionParts: PermissionParts) {
     call.checkPermission(permissionParts)
 }
 
@@ -140,7 +141,7 @@ fun ApplicationCall.jwtFromHeaders(): DecodedJWT? {
 
 fun ApplicationCall.jwt() = principal<AccessTokenPrincipal>()?.jwt ?: jwtFromHeaders()
 
-fun PipelineContext<Unit, ApplicationCall>.getUserName(): String? {
+fun RoutingContext.getUserName(): String? {
     return call.getUserName()
 }
 

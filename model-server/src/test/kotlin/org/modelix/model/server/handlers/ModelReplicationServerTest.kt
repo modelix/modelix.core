@@ -43,6 +43,8 @@ import io.ktor.serialization.kotlinx.KotlinxSerializationConverter
 import io.ktor.serialization.kotlinx.json.DefaultJson
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
+import io.ktor.server.application.port
+import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.netty.NettyApplicationEngine
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
@@ -55,7 +57,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
-import org.modelix.authorization.installAuthentication
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.readVersionDelta
@@ -97,8 +98,7 @@ class ModelReplicationServerTest {
         block: suspend ApplicationTestBuilder.(scope: CoroutineScope, fixture: Fixture) -> Unit,
     ) = testApplication {
         application {
-            installAuthentication(unitTestMode = true)
-            installDefaultServerPlugins()
+            installDefaultServerPlugins(unitTestMode = true)
             fixture.modelReplicationServer.init(this)
             IdsApiImpl(fixture.repositoriesManager).init(this)
         }
@@ -287,8 +287,8 @@ class ModelReplicationServerTest {
         }
         repositoriesManager.createRepository(repositoryId, null)
 
-        suspend fun createClient(server: NettyApplicationEngine): HttpClient {
-            val port = server.resolvedConnectors().first().port
+        fun createClient(server: EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration>): HttpClient {
+            val port = server.environment.config.port
             return HttpClient(CIO) {
                 defaultRequest {
                     url("http://localhost:$port")
@@ -301,7 +301,7 @@ class ModelReplicationServerTest {
 
         val modelReplicationServer = ModelReplicationServer(faultyRepositoriesManager)
         val setupBlock = { application: Application -> modelReplicationServer.init(application) }
-        val testBlock: suspend (server: NettyApplicationEngine) -> Unit = { server ->
+        val testBlock: suspend (server: EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration>) -> Unit = { server ->
             withTimeout(10.seconds) {
                 val client = createClient(server)
                 // Act

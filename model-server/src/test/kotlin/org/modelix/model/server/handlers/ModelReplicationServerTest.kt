@@ -28,6 +28,8 @@ import io.ktor.serialization.kotlinx.KotlinxSerializationConverter
 import io.ktor.serialization.kotlinx.json.DefaultJson
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
+import io.ktor.server.application.port
+import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.netty.NettyApplicationEngine
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
@@ -287,8 +289,8 @@ class ModelReplicationServerTest {
             repositoriesManager.createRepository(repositoryId, null)
         }
 
-        suspend fun createClient(server: NettyApplicationEngine): HttpClient {
-            val port = server.resolvedConnectors().first().port
+        fun createClient(server: EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration>): HttpClient {
+            val port = server.environment.config.port
             return HttpClient(CIO) {
                 defaultRequest {
                     url("http://localhost:$port")
@@ -301,7 +303,7 @@ class ModelReplicationServerTest {
 
         val modelReplicationServer = ModelReplicationServer(faultyRepositoriesManager)
         val setupBlock = { application: Application -> modelReplicationServer.init(application) }
-        val testBlock: suspend (server: NettyApplicationEngine) -> Unit = { server ->
+        val testBlock: suspend (server: EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration>) -> Unit = { server ->
             withTimeout(10.seconds) {
                 val client = createClient(server)
                 // Act

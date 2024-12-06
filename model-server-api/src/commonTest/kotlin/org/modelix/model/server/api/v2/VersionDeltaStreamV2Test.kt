@@ -1,8 +1,8 @@
 package org.modelix.model.server.api.v2
 
 import io.ktor.util.cio.use
-import io.ktor.util.toByteArray
 import io.ktor.utils.io.ByteChannel
+import io.ktor.utils.io.toByteArray
 import io.ktor.utils.io.writeFully
 import io.ktor.utils.io.writeStringUtf8
 import kotlinx.coroutines.flow.emptyFlow

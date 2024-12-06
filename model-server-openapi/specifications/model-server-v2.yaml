@@ -429,8 +429,8 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200json'
-        "404":
-          $ref: '#/components/responses/modelql-404'
+        "422":
+          $ref: '#/components/responses/modelql-422'
         default:
           $ref: '#/components/responses/GeneralError'
 
@@ -503,8 +503,8 @@ components:
         application/problem+json:
           schema:
             $ref: 'problem.yaml#/Problem'
-    "modelql-404":
-      description: "A IProducingStep<INodeReference>.resolve() call failed to find the node."
+    "modelql-422":
+      description: "A syntactically valid query failed to provide a result due to a mismatch of the query and the underlying data."
     GeneralError:
       description: Unexpected error
       content:

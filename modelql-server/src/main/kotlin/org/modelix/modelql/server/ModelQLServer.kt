@@ -26,6 +26,7 @@ import kotlinx.serialization.KSerializer
 import org.modelix.model.api.INode
 import org.modelix.model.api.UnresolvableNodeReferenceException
 import org.modelix.model.area.IArea
+import org.modelix.modelql.core.EmptyQueryResultException
 import org.modelix.modelql.core.IMonoUnboundQuery
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MODELIX_VERSION
@@ -35,6 +36,7 @@ import org.modelix.modelql.core.VersionAndData
 import org.modelix.modelql.core.upcast
 import org.modelix.modelql.untyped.UntypedModelQL
 import org.modelix.modelql.untyped.createQueryExecutor
+import org.modelix.streams.StreamAssertionError
 import kotlin.system.measureTimeMillis
 
 class ModelQLServer private constructor(val rootNodeProvider: () -> INode?, val area: IArea? = null) {
@@ -114,17 +116,19 @@ class ModelQLServer private constructor(val rootNodeProvider: () -> INode?, val 
                 val serializedResult = json.encodeToString(VersionAndData.serializer(serializer), versionAndResult)
                 afterQueryExecution()
                 call.respondText(text = serializedResult, contentType = ContentType.Application.Json)
-            } catch (ex: UnresolvableNodeReferenceException) {
+            } catch (ex: Exception) {
                 afterQueryExecution()
+                val statusCode = when (ex) {
+                    is UnresolvableNodeReferenceException,
+                    is StreamAssertionError,
+                    is EmptyQueryResultException,
+                    -> HttpStatusCode.UnprocessableEntity
+
+                    else -> HttpStatusCode.InternalServerError
+                }
                 call.respondText(
                     text = "server version: $MODELIX_VERSION\n" + ex.stackTraceToString(),
-                    status = HttpStatusCode.NotFound,
-                )
-            } catch (ex: Throwable) {
-                afterQueryExecution()
-                call.respondText(
-                    text = "server version: $MODELIX_VERSION\n" + ex.stackTraceToString(),
-                    status = HttpStatusCode.InternalServerError,
+                    status = statusCode,
                 )
             }
         }

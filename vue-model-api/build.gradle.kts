@@ -134,3 +134,5 @@ tasks.named<NpmPackTask>("packJsPackage") {
 tasks.assemble {
     dependsOn("packJsPackage")
 }
+
+tasks.named("packJsPackage") { dependsOn(":setupNodeEverywhere") }

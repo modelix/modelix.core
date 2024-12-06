@@ -25,7 +25,7 @@ kotlinx-kover = { id = "org.jetbrains.kotlinx.kover", version = "0.8.3" }
 docker-compose = { id = "com.avast.gradle.docker-compose" , version = "0.17.11" }
 
 [versions]
-kotlin = "2.0.21"
+kotlin = "2.1.0"
 kotlinCoroutines="1.9.0"
 ktor="2.3.12"
 kotlinHtml="0.8.0"

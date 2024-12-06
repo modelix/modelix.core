@@ -174,3 +174,5 @@ npmPublish {
         }
     }
 }
+
+tasks.named("packJsPackage") { dependsOn(":setupNodeEverywhere") }

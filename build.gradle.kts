@@ -2,6 +2,7 @@
 import com.github.gradle.node.NodeExtension
 import com.github.gradle.node.NodePlugin
 import io.gitlab.arturbosch.detekt.Detekt
+import org.gradle.kotlin.dsl.withType
 import org.jetbrains.dokka.base.DokkaBase
 import org.jetbrains.dokka.base.DokkaBaseConfiguration
 import org.jetbrains.dokka.gradle.DokkaTaskPartial
@@ -22,6 +23,7 @@ plugins {
     alias(libs.plugins.node) apply false
     alias(libs.plugins.detekt)
     alias(libs.plugins.kotlinx.kover)
+    alias(libs.plugins.npm.publish) apply false
 }
 
 group = "org.modelix"
@@ -207,4 +209,22 @@ publishing {
             setMetadata()
         }
     }
+}
+
+// make all 'packJsPackage' tasks depend on all 'kotlinNodeJsSetup' tasks, because gradle complained about this being missing
+tasks.register("setupNodeEverywhere") {
+    dependsOn(":bulk-model-sync-lib:kotlinNodeJsSetup")
+    dependsOn(":kotlin-utils:kotlinNodeJsSetup")
+    dependsOn(":model-api:kotlinNodeJsSetup")
+    dependsOn(":model-api-gen-runtime:kotlinNodeJsSetup")
+    dependsOn(":model-client:kotlinNodeJsSetup")
+    dependsOn(":model-datastructure:kotlinNodeJsSetup")
+    dependsOn(":model-server-api:kotlinNodeJsSetup")
+    dependsOn(":modelql-client:kotlinNodeJsSetup")
+    dependsOn(":modelql-core:kotlinNodeJsSetup")
+    dependsOn(":modelql-html:kotlinNodeJsSetup")
+    dependsOn(":modelql-typed:kotlinNodeJsSetup")
+    dependsOn(":modelql-untyped:kotlinNodeJsSetup")
+    dependsOn(":streams:kotlinNodeJsSetup")
+    dependsOn(":model-client:integration-tests:kotlinNodeJsSetup")
 }

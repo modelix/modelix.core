@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2024.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,20 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.modelix.authorization
 
-import com.auth0.jwt.interfaces.DecodedJWT
-import io.ktor.server.auth.Principal
+import com.nimbusds.jose.JWSHeader
+import com.nimbusds.jose.proc.JWSKeySelector
+import com.nimbusds.jose.proc.SecurityContext
+import java.security.Key
 
-class AccessTokenPrincipal(val jwt: DecodedJWT) : Principal {
-    fun getUserName(): String? = ModelixJWTUtil().extractUserId(jwt)
-
-    override fun equals(other: Any?): Boolean {
-        if (other !is AccessTokenPrincipal) return false
-        return other.jwt.token.equals(jwt.token)
-    }
-
-    override fun hashCode(): Int {
-        return jwt.token.hashCode()
+internal class CompositeJWSKeySelector<C : SecurityContext>(val selectors: List<JWSKeySelector<C>>) : JWSKeySelector<C> {
+    override fun selectJWSKeys(
+        header: JWSHeader,
+        context: C?,
+    ): List<Key> {
+        return selectors.flatMap { it.selectJWSKeys(header, context) }
     }
 }

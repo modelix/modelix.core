@@ -16,19 +16,18 @@
 
 package org.modelix.authorization
 
-import com.auth0.jwk.JwkProvider
-import com.auth0.jwk.JwkProviderBuilder
-import com.auth0.jwt.JWT
-import com.auth0.jwt.JWTVerifier
-import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.DecodedJWT
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.jwk.JWK
 import io.ktor.server.application.Application
 import io.ktor.server.application.plugin
+import org.modelix.authorization.permissions.FileSystemAccessControlPersistence
+import org.modelix.authorization.permissions.IAccessControlPersistence
+import org.modelix.authorization.permissions.InMemoryAccessControlPersistence
 import org.modelix.authorization.permissions.Schema
 import org.modelix.authorization.permissions.buildPermissionSchema
 import java.io.File
 import java.net.URI
-import java.security.interfaces.RSAPublicKey
 
 private val LOG = mu.KotlinLogging.logger { }
 
@@ -53,6 +52,11 @@ interface IModelixAuthorizationConfig {
     var debugEndpointsEnabled: Boolean
 
     /**
+     * NotLoggedInException and NoPermissionException will be turned into HTTP status codes 401 and 403
+     */
+    var installStatusPages: Boolean
+
+    /**
      * The pre-shared key for the HMAC512 signature algorithm.
      * The environment variables MODELIX_JWT_SIGNATURE_HMAC512_KEY or MODELIX_JWT_SIGNATURE_HMAC512_KEY_FILE can be
      * used instead.
@@ -74,13 +78,26 @@ interface IModelixAuthorizationConfig {
     var hmac256Key: String?
 
     /**
+     * This key is made available at /.well-known/jwks.json so that other services can verify that a token was created
+     * by this server.
+     */
+    var ownPublicKey: JWK?
+
+    /**
+     * In addition to JWKS URLs you can directly provide keys for verification of tokens sent in requests to
+     * this server.
+     */
+    fun addForeignPublicKey(key: JWK)
+
+    /**
      * If RSA signatures a used, the public key will be downloaded from this registry.
      */
     var jwkUri: URI?
 
     /**
-     * The ID of the public key for the RSA signature.
+     * If set, only this key is allowed to sign tokens, even if the jwkUri provides multiple keys.
      */
+    @Deprecated("Untrusted keys shouldn't even be return by the jwkUri or configured in some other way")
     var jwkKeyId: String?
 
     /**
@@ -89,26 +106,35 @@ interface IModelixAuthorizationConfig {
     var permissionSchema: Schema
 
     /**
+     * Via /permissions/manage, users can grant permissions to ID tokens.
+     * By default, changes are not persisted.
+     * As an alternative to this configuration option, the environment variable MODELIX_ACCESS_CONTROL_FILE can be used
+     * to write changes to disk.
+     */
+    var accessControlPersistence: IAccessControlPersistence
+
+    /**
      * Generates fake tokens and allows all requests.
      */
     fun configureForUnitTests()
 }
 
 class ModelixAuthorizationConfig : IModelixAuthorizationConfig {
-    override var permissionChecksEnabled: Boolean? = getBooleanFromEnv("MODELIX_PERMISSION_CHECKS_ENABLED")
+    override var permissionChecksEnabled: Boolean? = PERMISSION_CHECKS_ENABLED
     override var generateFakeTokens: Boolean? = getBooleanFromEnv("MODELIX_GENERATE_FAKE_JWT")
     override var debugEndpointsEnabled: Boolean = true
+    override var installStatusPages: Boolean = false
     override var hmac512Key: String? = null
     override var hmac384Key: String? = null
     override var hmac256Key: String? = null
-    override var jwkUri: URI? = System.getenv("MODELIX_JWK_URI")?.let { URI(it) }
-        ?: System.getenv("KEYCLOAK_BASE_URL")?.let { keycloakBaseUrl ->
-            System.getenv("KEYCLOAK_REALM")?.let { keycloakRealm ->
-                URI("${keycloakBaseUrl}realms/$keycloakRealm/protocol/openid-connect/certs")
-            }
-        }
+    override var ownPublicKey: JWK? = null
+    private val foreignPublicKeys = ArrayList<JWK>()
+    override var jwkUri: URI? = null
     override var jwkKeyId: String? = System.getenv("MODELIX_JWK_KEY_ID")
     override var permissionSchema: Schema = buildPermissionSchema { }
+    override var accessControlPersistence: IAccessControlPersistence = System.getenv("MODELIX_ACCESS_CONTROL_FILE")
+        ?.let { path -> FileSystemAccessControlPersistence(File(path)) }
+        ?: InMemoryAccessControlPersistence()
 
     private val hmac512KeyFromEnv by lazy {
         System.getenv("MODELIX_JWT_SIGNATURE_HMAC512_KEY")
@@ -123,58 +149,35 @@ class ModelixAuthorizationConfig : IModelixAuthorizationConfig {
             ?: System.getenv("MODELIX_JWT_SIGNATURE_HMAC256_KEY_FILE")?.let { File(it).readText() }
     }
 
-    private val cachedJwkProvider: JwkProvider? by lazy {
-        jwkUri?.let { JwkProviderBuilder(it.toURL()).build() }
+    val jwtUtil: ModelixJWTUtil by lazy {
+        val util = ModelixJWTUtil()
+
+        util.accessControlDataProvider = accessControlPersistence
+        util.loadKeysFromEnvironment()
+
+        listOfNotNull<Pair<String, JWSAlgorithm>>(
+            hmac512Key?.let { it to JWSAlgorithm.HS512 },
+            hmac384Key?.let { it to JWSAlgorithm.HS384 },
+            hmac256Key?.let { it to JWSAlgorithm.HS256 },
+            hmac512KeyFromEnv?.let { it to JWSAlgorithm.HS512 },
+            hmac384KeyFromEnv?.let { it to JWSAlgorithm.HS384 },
+            hmac256KeyFromEnv?.let { it to JWSAlgorithm.HS256 },
+        ).forEach { util.addHmacKey(it.first, it.second) }
+
+        jwkUri?.let { util.addJwksUrl(it.toURL()) }
+
+        foreignPublicKeys.forEach { util.addPublicKey(it) }
+
+        jwkKeyId?.let { util.requireKeyId(it) }
+        util
     }
 
-    private val algorithm: Algorithm? by lazy {
-        hmac512Key?.let { return@lazy Algorithm.HMAC512(it) }
-        hmac384Key?.let { return@lazy Algorithm.HMAC384(it) }
-        hmac256Key?.let { return@lazy Algorithm.HMAC256(it) }
-        hmac512KeyFromEnv?.let { return@lazy Algorithm.HMAC512(it) }
-        hmac384KeyFromEnv?.let { return@lazy Algorithm.HMAC384(it) }
-        hmac256KeyFromEnv?.let { return@lazy Algorithm.HMAC256(it) }
-
-        val localJwkProvider = cachedJwkProvider
-        val localJwkKeyId = jwkKeyId
-        if (localJwkProvider == null || localJwkKeyId == null) {
-            return@lazy null
-        }
-        return@lazy getAlgorithmFromJwkProviderAndKeyId(localJwkProvider, localJwkKeyId)
-    }
-
-    private fun getAlgorithmFromJwkProviderAndKeyId(jwkProvider: JwkProvider, jwkKeyId: String): Algorithm {
-        val jwk = jwkProvider.get(jwkKeyId)
-        val publicKey = jwk.publicKey as? RSAPublicKey ?: error("Invalid key type: ${jwk.publicKey}")
-        return when (jwk.algorithm) {
-            "RS256" -> Algorithm.RSA256(publicKey, null)
-            "RSA384" -> Algorithm.RSA384(publicKey, null)
-            "RS512" -> Algorithm.RSA512(publicKey, null)
-            else -> error("Unsupported algorithm: ${jwk.algorithm}")
-        }
-    }
-
-    fun getJwtSignatureAlgorithmOrNull(): Algorithm? {
-        return algorithm
-    }
-
-    fun getJwkProvider(): JwkProvider? {
-        return cachedJwkProvider
+    override fun addForeignPublicKey(key: JWK) {
+        foreignPublicKeys.add(key)
     }
 
     fun verifyTokenSignature(token: DecodedJWT) {
-        val algorithm = getJwtSignatureAlgorithmOrNull()
-        val jwkProvider = getJwkProvider()
-
-        val verifier = if (algorithm != null) {
-            getVerifierForSpecificAlgorithm(algorithm)
-        } else if (jwkProvider != null) {
-            val algorithmForKeyFromToken = getAlgorithmFromJwkProviderAndKeyId(jwkProvider, token.keyId)
-            getVerifierForSpecificAlgorithm(algorithmForKeyFromToken)
-        } else {
-            error("Either an JWT algorithm or a JWK URI must be configured.")
-        }
-        verifier.verify(token)
+        jwtUtil.verifyToken(token.token) // will throw an exception if it's invalid
     }
 
     fun nullIfInvalid(token: DecodedJWT): DecodedJWT? {
@@ -194,16 +197,20 @@ class ModelixAuthorizationConfig : IModelixAuthorizationConfig {
      *
      * The fake token is generated so that we always have a username that can be used in the server logic.
      */
-    fun shouldGenerateFakeTokens() = generateFakeTokens ?: (algorithm == null && cachedJwkProvider == null)
+    fun shouldGenerateFakeTokens() = generateFakeTokens ?: !jwtUtil.canVerifyTokens()
 
     /**
      * Whether permission checking should be enabled based on the configuration values provided.
      */
-    fun permissionCheckingEnabled() = permissionChecksEnabled ?: (algorithm != null || cachedJwkProvider != null)
+    fun permissionCheckingEnabled() = permissionChecksEnabled ?: jwtUtil.canVerifyTokens()
 
     override fun configureForUnitTests() {
         generateFakeTokens = true
         permissionChecksEnabled = false
+    }
+
+    companion object {
+        val PERMISSION_CHECKS_ENABLED = getBooleanFromEnv("MODELIX_PERMISSION_CHECKS_ENABLED")
     }
 }
 
@@ -219,6 +226,9 @@ private fun getBooleanFromEnv(name: String): Boolean? {
     }
 }
 
-internal fun getVerifierForSpecificAlgorithm(algorithm: Algorithm): JWTVerifier =
-    JWT.require(algorithm)
-        .build()
+internal fun ByteArray.repeatBytes(minimumSize: Int): ByteArray {
+    if (size >= minimumSize) return this
+    val repeated = ByteArray(minimumSize)
+    for (i in repeated.indices) repeated[i] = this[i % size]
+    return repeated
+}

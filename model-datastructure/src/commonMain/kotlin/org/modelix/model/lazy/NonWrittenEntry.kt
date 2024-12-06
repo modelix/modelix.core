@@ -50,4 +50,8 @@ class NonWrittenEntry<E : IKVValue> : IKVEntryReference<E> {
             deserialized.isWritten = true
         }
     }
+
+    override fun toString(): String {
+        return hash
+    }
 }

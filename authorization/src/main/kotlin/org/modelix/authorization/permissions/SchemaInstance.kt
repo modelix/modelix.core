@@ -116,6 +116,23 @@ class SchemaInstance(val schema: Schema) {
             val includedIn: MutableSet<PermissionInstance> = HashSet()
             val includes: MutableSet<PermissionInstance> = HashSet()
 
+            fun transitiveIncludes(acc: MutableSet<PermissionInstance> = LinkedHashSet()): Set<PermissionInstance> {
+                for (p in includes) {
+                    acc.add(p)
+                    p.transitiveIncludes(acc)
+                }
+                return acc
+            }
+
+            fun transitiveIncludedIn(acc: MutableSet<PermissionInstance> = LinkedHashSet()): Set<PermissionInstance> {
+                for (p in includedIn) {
+                    if (acc.contains(p)) continue
+                    acc.add(p)
+                    p.transitiveIncludedIn(acc)
+                }
+                return acc
+            }
+
             fun updateIncludes() {
                 permissionSchema.includedIn.forEach { target ->
                     resolveResourceInstance(target.resourceName)?.let {

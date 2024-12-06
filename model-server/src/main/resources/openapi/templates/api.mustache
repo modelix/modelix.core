@@ -16,7 +16,7 @@ import io.ktor.server.resources.head
 import io.ktor.server.resources.patch
 {{/featureResources}}
 import io.ktor.server.routing.*
-import io.ktor.util.pipeline.PipelineContext
+import io.ktor.server.routing.RoutingContext
 {{#imports}}import {{import}}
 {{/imports}}
 
@@ -42,7 +42,7 @@ abstract class {{classname}} {
      {{#isDeprecated}}
      @Deprecated("deprecated flag is set in the OpenAPI specification")
      {{/isDeprecated}}
-    abstract suspend fun PipelineContext<Unit, ApplicationCall>.{{operationId}}{{#lambda.titlecase}}{{key}}{{/lambda.titlecase}}({{#allParams}}{{paramName}}: {{{dataType}}}{{^required}}?{{/required}}{{#required}}{{#isNullable}}?{{/isNullable}}{{/required}}{{^-last}}, {{/-last}}{{/allParams}})
+    abstract suspend fun RoutingContext.{{operationId}}{{#lambda.titlecase}}{{key}}{{/lambda.titlecase}}({{#allParams}}{{paramName}}: {{{dataType}}}{{^required}}?{{/required}}{{#required}}{{#isNullable}}?{{/isNullable}}{{/required}}{{^-last}}, {{/-last}}{{/allParams}})
 
                 {{/entrySet}}
             {{/x-modelix-media-type-handlers}}
@@ -62,7 +62,7 @@ abstract class {{classname}} {
     {{#isDeprecated}}
     @Deprecated("deprecated flag is set in the OpenAPI specification")
     {{/isDeprecated}}
-    abstract suspend fun PipelineContext<Unit, ApplicationCall>.{{operationId}}({{#allParams}}{{paramName}}: {{{dataType}}}{{^required}}?{{/required}}{{#required}}{{#isNullable}}?{{/isNullable}}{{/required}}{{^-last}}, {{/-last}}{{/allParams}})
+    abstract suspend fun RoutingContext.{{operationId}}({{#allParams}}{{paramName}}: {{{dataType}}}{{^required}}?{{/required}}{{#required}}{{#isNullable}}?{{/isNullable}}{{/required}}{{^-last}}, {{/-last}}{{/allParams}})
 
             {{/x-modelix-media-type-handlers}}
         {{/vendorExtensions}}

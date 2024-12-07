@@ -38,16 +38,6 @@ While this component is independent of MPS, it is possible to replicates the dat
 This can be achieved using the modelix MPS plugin: One can connect an MPS instances to a `model-server`, upload the current module repository, and keep it synchronized.
 This can also be a local MPS instance without a web editor - both options are supported at the same time.
 
-
-== Development
-
-To reformat and add license header to all files run:
-
-[source,bash]
---
-../gradlew spotlessApply
---
-
 == APIs
 
 Valid keys are keys starting with the PROTECTED_PREFIX ($$$).

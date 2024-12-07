@@ -1,4 +1,3 @@
-
 import com.github.gradle.node.NodeExtension
 import com.github.gradle.node.NodePlugin
 import io.gitlab.arturbosch.detekt.Detekt
@@ -18,7 +17,6 @@ plugins {
     `version-catalog`
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.gitVersion)
-    alias(libs.plugins.spotless) apply false
     alias(libs.plugins.dokka)
     alias(libs.plugins.node) apply false
     alias(libs.plugins.detekt)

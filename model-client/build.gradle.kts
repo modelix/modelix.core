@@ -3,7 +3,6 @@ import dev.petuska.npm.publish.task.NpmPackTask
 plugins {
     `maven-publish`
     `modelix-kotlin-multiplatform`
-    alias(libs.plugins.spotless)
     alias(libs.plugins.npm.publish)
 }
 
@@ -78,28 +77,6 @@ kotlin {
                 implementation(npm("ws", "^8.17.1"))
             }
         }
-    }
-}
-
-spotless {
-    kotlin {
-        licenseHeader(
-            "/*\n" +
-                """ * Licensed under the Apache License, Version 2.0 (the "License");""" + "\n" +
-                """ * you may not use this file except in compliance with the License.""" + "\n" +
-                """ * You may obtain a copy of the License at""" + "\n" +
-                """ *""" + "\n" +
-                """ *  http://www.apache.org/licenses/LICENSE-2.0""" + "\n" +
-                """ *""" + "\n" +
-                """ * Unless required by applicable law or agreed to in writing,""" + "\n" +
-                """ * software distributed under the License is distributed on an""" + "\n" +
-                """ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY""" + "\n" +
-                """ * KIND, either express or implied.  See the License for the""" + "\n" +
-                """ * specific language governing permissions and limitations""" + "\n" +
-                """ * under the License.""" + "\n" +
-                " */\n" +
-                "\n",
-        )
     }
 }
 

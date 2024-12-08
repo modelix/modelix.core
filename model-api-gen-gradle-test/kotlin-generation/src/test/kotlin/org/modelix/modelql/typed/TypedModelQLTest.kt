@@ -227,7 +227,7 @@ class TypedModelQLTest {
                 .untyped()
                 .toList()
         }.map { it.typed<StaticMethodDeclaration>() }
-        assertEquals("plus", result[0].name)
+        assertEquals("plus", result[0].query { it.name })
     }
 
     @Test
@@ -239,7 +239,7 @@ class TypedModelQLTest {
                 .filter { it.visibility.instanceOf(C_PublicVisibility) }
                 .toList()
         }
-        assertEquals("plus", result[0].name)
+        assertEquals("plus", result[0].query { it.name })
     }
 
     @Test
@@ -257,8 +257,9 @@ class TypedModelQLTest {
                 .member
                 .ofConcept(C_StaticMethodDeclaration)
                 .first()
+                .name
         }
-        assertEquals(expected, actual.name)
+        assertEquals(expected, actual)
     }
 
     @Test
@@ -297,7 +298,7 @@ class TypedModelQLTest {
                 .first()
         }
         assertNotEquals(expected, oldValue)
-        assertEquals(expected, actual.variableDeclaration.name)
+        assertEquals(expected, actual.query { it.variableDeclaration.name })
     }
 
     @Test

@@ -112,7 +112,10 @@ open class ConstantSourceStep<E>(val element: E, val type: KType) : ProducingSte
             override fun serialize(encoder: Encoder, value: Descriptor) {
                 encoder.encodeStructure(descriptor) {
                     encodeStringElement(descriptor, 0, value.elementType)
-                    encodeSerializableElement(descriptor, 1, encoder.serializersModule.serializer(string2type[value.elementType]!!), value.element)
+                    val type = requireNotNull(string2type[value.elementType]) {
+                        "Unsupported type: ${value.elementType}"
+                    }
+                    encodeSerializableElement(descriptor, 1, encoder.serializersModule.serializer(type), value.element)
                     if (value.owner != null) {
                         encodeLongElement(descriptor, 2, value.owner!!)
                     }
@@ -165,7 +168,7 @@ fun String?.asMono() = createConstantSourceStep(this)
 @JvmName("asMono_nullable")
 fun Set<String?>.asMono() = createConstantSourceStep(this)
 
-inline fun <reified T> nullMono(): IMonoStep<T?> = ConstantSourceStep<T?>(null, typeOf<T?>())
+fun <T> nullMono(): IMonoStep<T?> = (null as String?).asMono() as IMonoStep<T?>
 
 fun fluxOf(vararg elements: String): IFluxStep<String> = when (elements.size) {
     0 -> nullMono<String>().filterNotNull().asFlux()

@@ -24,6 +24,7 @@ import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.IPropertyReference
+import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.NodeReference
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
@@ -43,6 +44,7 @@ import org.modelix.modelql.core.fold
 import org.modelix.modelql.core.map
 import org.modelix.modelql.core.memoize
 import org.modelix.modelql.core.notEqualTo
+import org.modelix.modelql.core.orNull
 import org.modelix.modelql.core.plus
 import org.modelix.modelql.core.sum
 import org.modelix.modelql.core.toList
@@ -58,6 +60,7 @@ import org.modelix.modelql.untyped.descendants
 import org.modelix.modelql.untyped.nodeReference
 import org.modelix.modelql.untyped.property
 import org.modelix.modelql.untyped.query
+import org.modelix.modelql.untyped.reference
 import org.modelix.modelql.untyped.remove
 import org.modelix.modelql.untyped.resolve
 import org.modelix.modelql.untyped.setProperty
@@ -258,7 +261,7 @@ class ModelQLClientTest {
     fun `test IMonoStep nodeRefAndConcept`() = runTest { httpClient ->
         val client = ModelQLClient("http://localhost/query", httpClient)
 
-        val nullNode = client.getRootNode().getReferenceTarget("nonExistentReference")
+        val nullNode = client.getRootNode().query { it.reference(IReferenceLinkReference.fromName("nonExistentReference")).orNull() }
 
         assertEquals(null, nullNode)
     }

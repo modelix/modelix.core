@@ -44,8 +44,8 @@ abstract class StoreClientTest(val store: IStoreClient) {
 
     @Test
     fun `transaction can be started from inside a transaction`() {
-        store.runTransaction {
-            store.runTransaction {
+        store.runWriteTransaction {
+            store.runWriteTransaction {
                 store.put("abc", "def")
             }
         }
@@ -66,7 +66,7 @@ abstract class StoreClientTest(val store: IStoreClient) {
         repeat(2) {
             val rand = Random(it)
             launch {
-                store.runTransaction {
+                store.runWriteTransaction {
                     repeat(10) {
                         val value = rand.nextInt().toString()
                         store.put(key, value)
@@ -88,7 +88,7 @@ abstract class StoreClientTest(val store: IStoreClient) {
         store.put(key, value1)
         assertEquals(value1, store.get(key))
         assertFailsWith(NullPointerException::class) {
-            store.runTransaction {
+            store.runWriteTransaction {
                 store.put(key, value2)
                 assertEquals(value2, store.get(key))
                 throw NullPointerException()
@@ -124,7 +124,7 @@ abstract class StoreClientTest(val store: IStoreClient) {
         coroutineScope {
             launch {
                 assertFailsWith(NullPointerException::class) {
-                    store.runTransaction {
+                    store.runWriteTransaction {
                         assertEquals(value1, store.get(key))
                         store.put(key, value2, silent = false)
                         assertEquals(value2, store.get(key))
@@ -134,7 +134,7 @@ abstract class StoreClientTest(val store: IStoreClient) {
             }
 
             launch {
-                store.runTransaction {
+                store.runWriteTransaction {
                     assertEquals(value1, store.get(key))
                     store.put(key, value3, silent = false)
                     assertEquals(value3, store.get(key))

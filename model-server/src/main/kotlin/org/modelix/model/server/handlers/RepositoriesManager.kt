@@ -74,10 +74,10 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         }
 
         fun doMigrations() {
-            stores.genericStore.runTransaction {
+            stores.genericStore.runWriteTransaction {
                 val repositoryId = RepositoryId("info")
                 val v1BranchKey = repositoryId.getBranchReference().getKey()
-                val infoVersionHash = stores.getGlobalKeyValueStore()[v1BranchKey] ?: return@runTransaction
+                val infoVersionHash = stores.getGlobalKeyValueStore()[v1BranchKey] ?: return@runWriteTransaction
                 val infoVersion = CLVersion(infoVersionHash, getLegacyObjectStore(repositoryId))
                 val infoBranch: IBranch = PBranch(infoVersion.getTree(), IdGeneratorDummy())
 
@@ -257,7 +257,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
      */
     override fun removeBranchesBlocking(repository: RepositoryId, branchNames: Set<String>) {
         if (branchNames.isEmpty()) return
-        stores.genericStore.runTransaction {
+        stores.genericStore.runWriteTransaction {
             val key = branchListKey(repository)
             val existingBranches = stores.genericStore[key]?.lines()?.toSet().orEmpty()
             val remainingBranches = existingBranches - branchNames
@@ -279,7 +279,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
      * Caller is expected to execute it outside the request thread.
      */
     override fun mergeChangesBlocking(branch: BranchReference, newVersionHash: String): String =
-        stores.genericStore.runTransaction {
+        stores.genericStore.runWriteTransaction {
             val headHash = getVersionHashBlocking(branch)
             val mergedHash = if (headHash == null) {
                 newVersionHash
@@ -320,16 +320,16 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
      * Caller is expected to execute it outside the request thread.
      */
     private fun getVersionHashBlocking(branch: BranchReference): String? {
-        return stores.genericStore.runTransaction {
+        return stores.genericStore.runWriteTransaction {
             val isolated = isIsolated(branch.repositoryId)
             if (isolated == null) {
                 // migrate existing but unknown legacy branch
-                val legacyHash = stores.genericStore[legacyBranchKey(branch)] ?: return@runTransaction null
+                val legacyHash = stores.genericStore[legacyBranchKey(branch)] ?: return@runWriteTransaction null
                 ensureBranchInList(branch)
                 putVersionHash(branch, legacyHash)
-                return@runTransaction legacyHash
+                return@runWriteTransaction legacyHash
             } else {
-                return@runTransaction stores.genericStore[branchKey(branch, isolated = isolated)]
+                return@runWriteTransaction stores.genericStore[branchKey(branch, isolated = isolated)]
             }
         }
     }

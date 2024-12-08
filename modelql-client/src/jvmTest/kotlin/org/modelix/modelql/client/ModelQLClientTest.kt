@@ -20,8 +20,10 @@ import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.assertThrows
 import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
+import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.NodeReference
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
@@ -55,6 +57,7 @@ import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.descendants
 import org.modelix.modelql.untyped.nodeReference
 import org.modelix.modelql.untyped.property
+import org.modelix.modelql.untyped.query
 import org.modelix.modelql.untyped.remove
 import org.modelix.modelql.untyped.resolve
 import org.modelix.modelql.untyped.setProperty
@@ -293,5 +296,24 @@ class ModelQLClientTest {
             }
         }
         assertEquals(HttpStatusCode.NotFound, ex.httpResponse.status)
+    }
+
+    @Test
+    fun `implicit queries are not allowed anymore`() = runTest { httpClient ->
+        // it's too easy to use them accidentally inside mapLocal blocks
+
+        val client = ModelQLClient("http://localhost/query", httpClient)
+        val firstModule = client.query<INode> { it.children(IChildLinkReference.fromName("modules")).first() }
+        assertThrows<UnsupportedOperationException> {
+            firstModule.getPropertyValue(IPropertyReference.fromName("name").toLegacy())
+        }
+    }
+
+    @Test
+    fun `explicit queries can be used instead of implicit ones`() = runTest { httpClient ->
+        val client = ModelQLClient("http://localhost/query", httpClient)
+        val firstModule = client.query<INode> { it.children(IChildLinkReference.fromName("modules")).first() }
+        val name = firstModule.query { it.property(IPropertyReference.fromName("name")) }
+        assertEquals("abc", name)
     }
 }

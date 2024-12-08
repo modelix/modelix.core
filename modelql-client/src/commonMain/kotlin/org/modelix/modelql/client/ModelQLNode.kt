@@ -65,6 +65,8 @@ import org.modelix.modelql.untyped.roleInParent
 import org.modelix.modelql.untyped.setProperty
 import org.modelix.modelql.untyped.setReference
 
+expect val implicitQueriesEnabled: Boolean
+
 abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL, IQueryExecutor<INode> {
     override fun usesRoleIds(): Boolean = true
 
@@ -93,6 +95,14 @@ abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL,
         }.flatMapIterable { it }
     }
 
+    private fun <R> implicitQuery(body: (IMonoStep<INode>) -> IMonoStep<R>): R {
+        if (implicitQueriesEnabled) {
+            return blockingQuery(body)
+        } else {
+            throw UnsupportedOperationException("Implicit queries are disabled. Use .query instead.")
+        }
+    }
+
     fun <R> blockingQuery(body: (IMonoStep<INode>) -> IMonoStep<R>): R {
         val client = client
         return client.blockingQuery { root ->
@@ -112,13 +122,13 @@ abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL,
         get() = true
 
     override val roleInParent: String?
-        get() = blockingQuery { it.roleInParent() }
+        get() = implicitQuery { it.roleInParent() }
 
     override val parent: INode?
-        get() = blockingQuery { it.parent().orNull() }
+        get() = implicitQuery { it.parent().orNull() }
 
     override fun getChildren(role: IChildLink): Iterable<INode> {
-        return blockingQuery { it.children(role.key()).toList() }
+        return implicitQuery { it.children(role.key()).toList() }
     }
 
     override fun getChildren(role: String?): Iterable<INode> {
@@ -126,10 +136,10 @@ abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL,
     }
 
     override val allChildren: Iterable<INode>
-        get() = blockingQuery { it.allChildren().toList() }
+        get() = implicitQuery { it.allChildren().toList() }
 
     override fun moveChild(role: IChildLink, index: Int, child: INode) {
-        blockingQuery { it.moveChild(role, index, child.reference.asMono().resolve()) }
+        implicitQuery { it.moveChild(role, index, child.reference.asMono().resolve()) }
     }
 
     override fun moveChild(role: String?, index: Int, child: INode) {
@@ -137,7 +147,7 @@ abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL,
     }
 
     override fun addNewChild(role: IChildLink, index: Int, concept: IConceptReference?): INode {
-        return blockingQuery { it.addNewChild(role, index, concept as ConceptReference?).first() }
+        return implicitQuery { it.addNewChild(role, index, concept as ConceptReference?).first() }
     }
 
     override fun addNewChild(role: IChildLink, index: Int, concept: IConcept?): INode {
@@ -153,15 +163,15 @@ abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL,
     }
 
     override fun removeChild(child: INode) {
-        blockingQuery { child.reference.asMono().resolve().remove() }
+        implicitQuery { child.reference.asMono().resolve().remove() }
     }
 
     override fun getReferenceTarget(role: String): INode? {
-        return blockingQuery { it.reference(role).filterNotNull().nodeRefAndConcept().orNull() }?.toNode()
+        return implicitQuery { it.reference(role).filterNotNull().nodeRefAndConcept().orNull() }?.toNode()
     }
 
     override fun getReferenceTargetRef(role: String): INodeReference? {
-        return blockingQuery { it.reference(role).nodeReference().orNull() }
+        return implicitQuery { it.reference(role).nodeReference().orNull() }
     }
 
     override fun setReferenceTarget(link: IReferenceLink, target: INode?) {
@@ -169,7 +179,7 @@ abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL,
     }
 
     override fun setReferenceTarget(role: IReferenceLink, target: INodeReference?) {
-        blockingQuery { it.setReference(role, target.asMono().mapIfNotNull { it.resolve() }) }
+        implicitQuery { it.setReference(role, target.asMono().mapIfNotNull { it.resolve() }) }
     }
 
     override fun setReferenceTarget(role: String, target: INode?) {
@@ -177,11 +187,11 @@ abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL,
     }
 
     override fun getPropertyValue(role: String): String? {
-        return blockingQuery { it.property(role) }
+        return implicitQuery { it.property(role) }
     }
 
     override fun setPropertyValue(property: IProperty, value: String?) {
-        blockingQuery { it.setProperty(property, value.asMono()) }
+        implicitQuery { it.setProperty(property, value.asMono()) }
     }
 
     override fun setPropertyValue(role: String, value: String?) {

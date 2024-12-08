@@ -4,6 +4,8 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
+import mu.KotlinLogging
+import org.modelix.authorization.installAuthentication
 import org.modelix.model.IKeyListener
 import org.modelix.model.client.RestWebModelClient
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
@@ -16,12 +18,18 @@ import kotlin.test.assertNotNull
 import kotlin.test.fail
 import kotlin.time.Duration.Companion.seconds
 
+private val LOG = KotlinLogging.logger { }
+
 class ModelClientTest {
 
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         application {
-            installDefaultServerPlugins()
-            KeyValueLikeModelServer(RepositoriesManager(InMemoryStoreClient())).init(this)
+            try {
+                installDefaultServerPlugins()
+                KeyValueLikeModelServer(RepositoriesManager(InMemoryStoreClient())).init(this)
+            } catch (ex: Throwable) {
+                LOG.error("", ex)
+            }
         }
         block()
     }

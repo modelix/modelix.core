@@ -7,7 +7,9 @@ import org.modelix.model.lazy.RepositoryId
  * A store that saves data on a per-repository basis.
  * The primary key is of type [ObjectInRepository].
  */
-interface IsolatingStore : IGenericStoreClient<ObjectInRepository> {
+typealias IsolatingStore = IGenericStoreClient<ObjectInRepository>
+
+interface IRepositoryAwareStore : IsolatingStore {
     /**
      * Default implementation for removing repository objects.
      * May be overridden by more efficient, store-specific implementations.
@@ -37,5 +39,8 @@ interface IGenericStoreClient<KeyT> : AutoCloseable {
     fun listen(key: KeyT, listener: IGenericKeyListener<KeyT>)
     fun removeListener(key: KeyT, listener: IGenericKeyListener<KeyT>)
     fun generateId(key: KeyT): Long
-    fun <T> runTransaction(body: () -> T): T
+    fun <T> runWriteTransaction(body: () -> T): T = getTransactionManager().runWrite(body)
+    fun <T> runReadTransaction(body: () -> T): T = getTransactionManager().runRead(body)
+    fun getTransactionManager(): ITransactionManager
+    fun getImmutableStore(): IImmutableStore<KeyT>
 }

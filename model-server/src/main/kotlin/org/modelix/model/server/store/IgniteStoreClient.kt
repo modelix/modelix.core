@@ -22,6 +22,8 @@ import org.apache.ignite.cache.CachePeekMode
 import org.apache.ignite.cache.query.ScanQuery
 import org.apache.ignite.lang.IgniteBiPredicate
 import org.apache.ignite.lang.IgniteClosure
+import org.apache.ignite.transactions.TransactionConcurrency
+import org.apache.ignite.transactions.TransactionIsolation
 import org.modelix.kotlin.utils.ContextValue
 import org.modelix.model.IGenericKeyListener
 import org.modelix.model.lazy.RepositoryId
@@ -62,6 +64,11 @@ class IgniteStoreClient(jdbcProperties: Properties? = null, private val inmemory
     }
 
     /**
+     * This works only with a single instance of the model server.
+     */
+    private val locks = TransactionLocks()
+
+    /**
      * Instantiate an IgniteStoreClient
      *
      * @param jdbcConfFile adopt the configuration specified. If it is not specified, configuration
@@ -95,18 +102,22 @@ class IgniteStoreClient(jdbcProperties: Properties? = null, private val inmemory
     }
 
     override fun getIfCached(key: ObjectInRepository): String? {
+        locks.assertRead()
         return cache.localPeek(key, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP)
     }
 
     override fun getAll(keys: Set<ObjectInRepository>): Map<ObjectInRepository, String?> {
+        locks.assertRead()
         return cache.getAll(keys)
     }
 
     override fun getAll(): Map<ObjectInRepository, String?> {
+        locks.assertRead()
         return cache.associate { it.key to it.value }
     }
 
     override fun removeRepositoryObjects(repositoryId: RepositoryId) {
+        locks.assertWrite()
         if (!inmemory) {
             // Not all entries are in the cache. We delete them directly instead of loading them into the cache first.
             // This should be safe as the repository has already been removed from the list of available ones.
@@ -145,19 +156,19 @@ class IgniteStoreClient(jdbcProperties: Properties? = null, private val inmemory
     }
 
     override fun putAll(entries: Map<ObjectInRepository, String?>, silent: Boolean) {
+        locks.assertWrite()
+
         // Sorting is important to avoid deadlocks (lock ordering).
         // The documentation of IgniteCache.putAll also states that this a requirement.
         val sortedEntries = entries.toSortedMap()
         val deletes = sortedEntries.asSequence().filter { it.value == null }.map { it.key }.toSet()
         val puts = sortedEntries.filterValues { it != null }
-        runTransaction {
-            if (deletes.isNotEmpty()) cache.removeAll(deletes)
-            if (puts.isNotEmpty()) cache.putAll(puts)
-            if (!silent) {
-                for (key in sortedEntries.keys) {
-                    if (HashUtil.isSha256(key.key)) continue
-                    pendingChangeMessages.entryChanged(key)
-                }
+        if (deletes.isNotEmpty()) cache.removeAll(deletes)
+        if (puts.isNotEmpty()) cache.putAll(puts)
+        if (!silent) {
+            for (key in sortedEntries.keys) {
+                if (HashUtil.isSha256(key.key)) continue
+                pendingChangeMessages.entryChanged(key)
             }
         }
     }
@@ -177,19 +188,42 @@ class IgniteStoreClient(jdbcProperties: Properties? = null, private val inmemory
         return cache.invoke(key, ClientIdProcessor())
     }
 
-    override fun <T> runTransaction(body: () -> T): T {
-        val transactions = ignite.transactions()
-        if (transactions.tx() == null) {
-            transactions.txStart().use { tx ->
-                return pendingChangeMessages.runAndFlush {
-                    val result = body()
-                    tx.commit()
-                    result
+    override fun <T> runWriteTransaction(body: () -> T): T {
+        return locks.runWrite {
+            val transactions = ignite.transactions()
+            if (transactions.tx() == null) {
+                // Ignites fine-grained lock management per entry isn't suitable for our use case.
+                // We use a global ReentrantReadWriteLock instead, which ensures that, if there is a write transaction,
+                // no other read or write transactions can be active.
+                // This allows us to configure the lowest transaction level in Ignite with the highest performance.
+                // TODO Before we can support multiple model-server instances, we have to implement a cluster-wide
+                //      global locking mechanism.
+                //      See also https://issues.modelix.org/issue/MODELIX-344/Support-multiple-model-server-instances
+                transactions.txStart(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED).use { tx ->
+                    pendingChangeMessages.runAndFlush {
+                        val result = body()
+                        tx.commit()
+                        result
+                    }
                 }
+            } else {
+                // already in a transaction
+                body()
             }
-        } else {
-            // already in a transaction
-            return body()
+        }
+    }
+
+    override fun <T> runReadTransaction(body: () -> T): T {
+        return locks.runRead {
+            val transactions = ignite.transactions()
+            if (transactions.tx() == null) {
+                transactions.txStart(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED).use { tx ->
+                    body()
+                }
+            } else {
+                // already in a transaction
+                body()
+            }
         }
     }
 

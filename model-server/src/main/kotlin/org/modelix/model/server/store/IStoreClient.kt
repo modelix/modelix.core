@@ -30,11 +30,11 @@ suspend fun <T> StoreManager.runTransactionSuspendable(body: () -> T): T {
 }
 
 suspend fun <T> IsolatingStore.runTransactionSuspendable(body: () -> T): T {
-    return withContext(Dispatchers.IO) { runTransaction(body) }
+    return withContext(Dispatchers.IO) { runWriteTransaction(body) }
 }
 
 suspend fun <T> IStoreClient.runTransactionSuspendable(body: () -> T): T {
-    return withContext(Dispatchers.IO) { runTransaction(body) }
+    return withContext(Dispatchers.IO) { runWriteTransaction(body) }
 }
 
 suspend fun pollEntry(storeClient: IsolatingStore, key: ObjectInRepository, lastKnownValue: String?): String? {

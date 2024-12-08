@@ -53,5 +53,6 @@ interface IGenericStoreClient<KeyT> : AutoCloseable {
     fun listen(key: KeyT, listener: IGenericKeyListener<KeyT>)
     fun removeListener(key: KeyT, listener: IGenericKeyListener<KeyT>)
     fun generateId(key: KeyT): Long
-    fun <T> runTransaction(body: () -> T): T
+    fun <T> runWriteTransaction(body: () -> T): T
+    fun <T> runReadTransaction(body: () -> T): T
 }

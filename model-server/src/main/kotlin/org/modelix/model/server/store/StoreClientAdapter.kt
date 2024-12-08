@@ -92,8 +92,12 @@ abstract class StoreClientAdapter(val client: IsolatingStore) : IStoreClient {
         return client.generateId(key.withRepoScope())
     }
 
-    override fun <T> runTransaction(body: () -> T): T {
-        return client.runTransaction(body)
+    override fun <T> runWriteTransaction(body: () -> T): T {
+        return client.runWriteTransaction(body)
+    }
+
+    override fun <T> runReadTransaction(body: () -> T): T {
+        return client.runReadTransaction(body)
     }
 
     override fun close() {

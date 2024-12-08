@@ -39,9 +39,11 @@ class InMemoryStoreClient : IsolatingStore {
     private var transactionValues: MutableMap<ObjectInRepository, String?>? = null
     private val changeNotifier = ChangeNotifier(this)
     private val pendingChangeMessages = PendingChangeMessages(changeNotifier::notifyListeners)
+    private val locks = TransactionLocks()
 
     @Synchronized
     override fun get(key: ObjectInRepository): String? {
+        locks.assertRead()
         return if (transactionValues?.contains(key) == true) transactionValues!![key] else values[key]
     }
 
@@ -56,6 +58,7 @@ class InMemoryStoreClient : IsolatingStore {
 
     @Synchronized
     override fun getAll(): Map<ObjectInRepository, String?> {
+        locks.assertRead()
         return values + (transactionValues ?: emptyMap())
     }
 
@@ -66,20 +69,17 @@ class InMemoryStoreClient : IsolatingStore {
 
     @Synchronized
     override fun put(key: ObjectInRepository, value: String?, silent: Boolean) {
-        runTransaction {
-            (transactionValues ?: values)[key] = value
-            if (!silent) {
-                pendingChangeMessages.entryChanged(key)
-            }
+        locks.assertWrite()
+        (transactionValues ?: values)[key] = value
+        if (!silent) {
+            pendingChangeMessages.entryChanged(key)
         }
     }
 
     @Synchronized
     override fun putAll(entries: Map<ObjectInRepository, String?>, silent: Boolean) {
-        runTransaction {
-            for ((key, value) in entries) {
-                put(key, value, silent)
-            }
+        for ((key, value) in entries) {
+            put(key, value, silent)
         }
     }
 
@@ -95,13 +95,16 @@ class InMemoryStoreClient : IsolatingStore {
 
     @Synchronized
     override fun generateId(key: ObjectInRepository): Long {
-        val id = generateId(get(key))
-        put(key, id.toString(), false)
-        return id
+        // This is an atomic operation that doesn't require the caller to start a transaction
+        return runWriteTransaction {
+            val id = generateId(get(key))
+            put(key, id.toString(), false)
+            id
+        }
     }
 
     @Synchronized
-    override fun <T> runTransaction(body: () -> T): T {
+    override fun <T> runWriteTransaction(body: () -> T): T {
         if (transactionValues == null) {
             return pendingChangeMessages.runAndFlush {
                 try {
@@ -124,6 +127,8 @@ class InMemoryStoreClient : IsolatingStore {
             return body()
         }
     }
+
+    override fun <T> runReadTransaction(body: () -> T): T = locks.runRead(body)
 
     override fun close() {
     }

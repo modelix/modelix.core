@@ -25,9 +25,11 @@ class HealthApiImpl(
 
     private fun isHealthy(): Boolean {
         val store = stores.getGlobalStoreClient()
-        val value = toLong(store[HEALTH_KEY]) + 1
-        store.put(HEALTH_KEY, java.lang.Long.toString(value))
-        return toLong(store[HEALTH_KEY]) >= value
+        return store.getTransactionManager().runWrite {
+            val value = toLong(store[HEALTH_KEY]) + 1
+            store.put(HEALTH_KEY, java.lang.Long.toString(value))
+            toLong(store[HEALTH_KEY]) >= value
+        }
     }
 
     private fun toLong(value: String?): Long {

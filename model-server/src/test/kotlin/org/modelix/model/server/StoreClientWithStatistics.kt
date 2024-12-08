@@ -1,10 +1,10 @@
 package org.modelix.model.server
 
-import org.modelix.model.server.store.IsolatingStore
+import org.modelix.model.server.store.IRepositoryAwareStore
 import org.modelix.model.server.store.ObjectInRepository
 import java.util.concurrent.atomic.AtomicLong
 
-class StoreClientWithStatistics(val store: IsolatingStore) : IsolatingStore by store {
+class StoreClientWithStatistics(val store: IRepositoryAwareStore) : IRepositoryAwareStore by store {
     private val totalRequests = AtomicLong()
 
     fun getTotalRequests() = totalRequests.get()

@@ -28,6 +28,7 @@ abstract class StoreClientParallelTransactionsTest(val store: IStoreClient) {
         store.close()
     }
 
+    @Ignore("write transactions cannot run in parallel anymore")
     @Test
     fun `notifications are not lost because of parallel transactions`() = runTest {
         val threadBlocker = ThreadBlocker()
@@ -43,7 +44,7 @@ abstract class StoreClientParallelTransactionsTest(val store: IStoreClient) {
         )
 
         launch(Dispatchers.IO) {
-            store.runTransaction {
+            store.runWriteTransaction {
                 store.put("key1", "valueA")
                 threadBlocker.reachPointInTime(1)
                 threadBlocker.sleepUntilPointInTime(2)
@@ -56,7 +57,7 @@ abstract class StoreClientParallelTransactionsTest(val store: IStoreClient) {
         }
 
         launch(Dispatchers.IO) {
-            store.runTransaction {
+            store.runWriteTransaction {
                 threadBlocker.sleepUntilPointInTime(1)
                 store.put("key2", "valueB")
                 threadBlocker.reachPointInTime(2)
@@ -67,6 +68,55 @@ abstract class StoreClientParallelTransactionsTest(val store: IStoreClient) {
         threadBlocker.sleepUntilPointInTime(3)
         val notifiedValue = notifiedValueFuture.get(10, TimeUnit.SECONDS)
         assertEquals("valueB", notifiedValue)
+    }
+
+    @Test
+    fun `non-ordered writes don't result in a deadlock`() = runTest {
+        // fine-grained locks always have the potential to cause a deadlock when they are not acquired in the
+        // same order (lock ordering).
+        // Ignite manages locks per entry. We already sort the entries in putAll, but that's not sufficient because
+        // There can still be multiple put calls.
+        // This test reproduces this issue which is now fixed by preventing parallel write transactions.
+
+        val threadBlocker = ThreadBlocker()
+
+        launch(Dispatchers.IO) {
+            println("(1) launched")
+            threadBlocker.reachPointInTime(1)
+            threadBlocker.sleepUntilPointInTime(2)
+            store.runWriteTransaction {
+                println("(1) inside transaction")
+
+                println("(1) writing a = c1")
+                store.put("a", "c1")
+                println("(1) done a = c1")
+
+                Thread.sleep(100)
+
+                println("(1) writing b = c1")
+                store.put("b", "c1")
+                println("(1) done b = c1")
+            }
+        }
+
+        launch(Dispatchers.IO) {
+            println("(2) launched")
+            threadBlocker.sleepUntilPointInTime(1)
+            threadBlocker.reachPointInTime(2)
+            store.runWriteTransaction {
+                println("(2) inside transaction")
+
+                println("(2) writing b = c2")
+                store.put("b", "c2")
+                println("(1) done b = c2")
+
+                Thread.sleep(100)
+
+                println("(2) writing a = c2")
+                store.put("a", "c2")
+                println("(2) done a = c2")
+            }
+        }
     }
 }
 

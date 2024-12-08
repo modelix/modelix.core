@@ -16,11 +16,11 @@ suspend fun <T> StoreManager.runTransactionSuspendable(body: () -> T): T {
 }
 
 suspend fun <T> IsolatingStore.runTransactionSuspendable(body: () -> T): T {
-    return withContext(Dispatchers.IO) { runTransaction(body) }
+    return withContext(Dispatchers.IO) { runWriteTransaction(body) }
 }
 
 suspend fun <T> IStoreClient.runTransactionSuspendable(body: () -> T): T {
-    return withContext(Dispatchers.IO) { runTransaction(body) }
+    return withContext(Dispatchers.IO) { runWriteTransaction(body) }
 }
 
 suspend fun pollEntry(storeClient: IsolatingStore, key: ObjectInRepository, lastKnownValue: String?): String? {
@@ -53,7 +53,7 @@ suspend fun pollEntry(storeClient: IsolatingStore, key: ObjectInRepository, last
                 // known value.
                 // Registering the listener without needing it is less
                 // likely to happen.
-                val value = storeClient[key]
+                val value = storeClient.runReadTransaction { storeClient[key] }
                 if (value != lastKnownValue) {
                     callHandler(value)
                     return@coroutineScope
@@ -65,7 +65,7 @@ suspend fun pollEntry(storeClient: IsolatingStore, key: ObjectInRepository, last
         } finally {
             storeClient.removeListener(key, listener)
         }
-        if (!handlerCalled) result = storeClient[key]
+        if (!handlerCalled) result = storeClient.runReadTransaction { storeClient[key] }
     }
     return result
 }

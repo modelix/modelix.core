@@ -20,6 +20,16 @@ jobs:
       - uses: actions/setup-python@v5
       - uses: pre-commit/action@v3.0.1
 
+  openapi-linting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v4
+      - uses: stoplightio/spectral-action@v0.8.9
+        with:
+          file_glob: 'model-server-openapi/specifications/model-server-*.yaml'
+        continue-on-error: true
+
   openapi-breaking-changes:
     runs-on: ubuntu-latest
     permissions:

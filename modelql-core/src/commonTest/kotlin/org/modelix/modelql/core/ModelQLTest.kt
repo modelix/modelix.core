@@ -412,6 +412,15 @@ class ModelQLTest {
         }
     }
 
+    @Test
+    fun null_mono_of_non_serializable_type() = runTestWithTimeout {
+        val result = remoteProductDatabaseQuery { db ->
+            // This caused an exception during serialization of the query before
+            nullMono<MyNonSerializableClass>()
+        }
+        assertEquals(null, result)
+    }
+
     data class MyNonSerializableClass(val id: Int, val title: String, val images: List<MyImage>)
     data class MyImage(val url: String)
 }

@@ -11,5 +11,6 @@
   enabledManagers: [
     "pre-commit",
     "gradle-wrapper",
+    "nvm",
   ],
 }

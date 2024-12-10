@@ -52,6 +52,10 @@ fun Project.registerVersionGenerationTask(packageName: String) {
             }
         }
 
+        tasks.withType<org.jetbrains.kotlin.gradle.dsl.KotlinJsCompile>().all {
+            dependsOn(generateVersionVariable)
+        }
+
         tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
             dependsOn(generateVersionVariable)
         }

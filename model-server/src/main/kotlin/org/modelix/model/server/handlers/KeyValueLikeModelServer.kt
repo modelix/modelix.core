@@ -21,10 +21,7 @@ import kotlinx.html.span
 import org.json.JSONArray
 import org.json.JSONObject
 import org.modelix.authorization.EPermissionType
-import org.modelix.authorization.KeycloakResourceType
-import org.modelix.authorization.KeycloakScope
 import org.modelix.authorization.NoPermissionException
-import org.modelix.authorization.asResource
 import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.requiresLogin
@@ -39,9 +36,6 @@ import org.modelix.model.server.templates.PageWithMenuBar
 import java.io.IOException
 import java.util.*
 import java.util.regex.Pattern
-
-val PERMISSION_MODEL_SERVER = "model-server".asResource()
-val MODEL_SERVER_ENTRY = KeycloakResourceType("model-server-entry", KeycloakScope.READ_WRITE_DELETE)
 
 private class NotFoundException(description: String?) : RuntimeException(description)
 
@@ -286,6 +280,9 @@ class KeyValueLikeModelServer(
                 serverId = {
                     throw NoPermissionException("'$key' is read-only.")
                 },
+                legacyClientId = {
+                    throw NoPermissionException("Directly writing to 'clientId' is not allowed")
+                },
                 unknown = {
                     userDefinedEntries[key] = value
                 },
@@ -341,6 +338,7 @@ class KeyValueLikeModelServer(
             serverId = {
                 if (isWrite) throw NoPermissionException("'$key' is read-only.")
             },
+            legacyClientId = {},
             unknown = {
                 call.checkPermission(ModelServerPermissionSchema.legacyUserDefinedObjects.run { if (isWrite) write else read })
             },
@@ -352,6 +350,7 @@ class KeyValueLikeModelServer(
         immutableObject: () -> R,
         branch: (branch: BranchReference) -> R,
         serverId: () -> R,
+        legacyClientId: () -> R,
         unknown: () -> R,
     ): R {
         return when {
@@ -360,6 +359,7 @@ class KeyValueLikeModelServer(
             key.startsWith(PROTECTED_PREFIX) -> throw NoPermissionException("Access to keys starting with '$PROTECTED_PREFIX' is only permitted to the model server itself.")
             key.startsWith(RepositoriesManager.KEY_PREFIX) -> throw NoPermissionException("Access to keys starting with '${RepositoriesManager.KEY_PREFIX}' is only permitted to the model server itself.")
             key == RepositoriesManager.LEGACY_SERVER_ID_KEY || key == RepositoriesManager.LEGACY_SERVER_ID_KEY2 -> serverId()
+            key == "clientId" -> legacyClientId()
             else -> unknown()
         }
     }

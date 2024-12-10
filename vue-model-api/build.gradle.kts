@@ -1,7 +1,9 @@
 import com.github.gradle.node.npm.task.NpmTask
+import dev.petuska.npm.publish.task.NodeExecTask
 import dev.petuska.npm.publish.task.NpmPackTask
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
+import org.gradle.kotlin.dsl.withType
 
 plugins {
     base
@@ -135,4 +137,6 @@ tasks.assemble {
     dependsOn("packJsPackage")
 }
 
-tasks.named("packJsPackage") { dependsOn(":setupNodeEverywhere") }
+tasks.withType(NodeExecTask::class) {
+    dependsOn(":setupNodeEverywhere")
+}

@@ -1,3 +1,6 @@
+import dev.petuska.npm.publish.task.NodeExecTask
+import org.gradle.kotlin.dsl.withType
+
 plugins {
   base
   alias(libs.plugins.node)
@@ -80,4 +83,6 @@ npmPublish {
   }
 }
 
-tasks.named("packJsPackage") { dependsOn(":setupNodeEverywhere") }
+tasks.withType(NodeExecTask::class) {
+  dependsOn(":setupNodeEverywhere")
+}

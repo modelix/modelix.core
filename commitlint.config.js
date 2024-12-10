@@ -15,6 +15,7 @@ module.exports = {
         "model-client",
         "model-datastructure",
         "model-server",
+        "model-server-openapi",
         "modelql",
         "mps-model-adapters",
         "mps-model-server",

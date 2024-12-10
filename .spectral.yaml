@@ -1,0 +1,85 @@
+extends:
+  - https://raw.githubusercontent.com/baloise-incubator/spectral-ruleset/5b2386ffa4d0ab4ccef0e1fc87f3d00fefc81eea/zalando.yml
+  - "spectral:oas"
+rules:
+  # We don't need an API info for internal use
+  must-have-info-contact-email: false
+  must-have-info-contact-name: false
+  must-have-info-contact-url: false
+  must-have-info-x-api-id: false
+  must-provide-api-audience: false
+
+  # The rule is based on an outdated problem specification
+  must-use-valid-problem-json-schema: false
+
+  # We would lose enum support from openapi-generator
+  should-use-x-extensible-enum: false
+
+overrides:
+  # Get error-free for what's present at the time of introducing the linter. New things should follow the conventions.
+  - files:
+      - 'model-server-v2.yaml'
+    rules:
+      must-use-lowercase-with-hypens-for-path-segements: warn
+  - files:
+      - 'model-server-v2.yaml#/paths/~1repositories~1%7Brepository%7D~1branches~1%7Bbranch%7D/get/parameters/0/name'
+      - 'model-server-v2.yaml#/paths/~1repositories~1%7Brepository%7D~1branches~1%7Bbranch%7D~1poll/get/parameters/0/name'
+      - 'model-server-v2.yaml#/paths/~1repositories~1%7Brepository%7D~1branches~1%7Bbranch%7D~1pollHash/get/parameters/0/name'
+      - 'model-server-v2.yaml#/paths/~1repositories~1%7Brepository%7D~1branches~1%7Bbranch%7D~1pollHash/get/parameters/1/name'
+      - 'model-server-v2.yaml#/paths/~1repositories~1%7Brepository%7D~1init/post/parameters/0/name'
+      - 'model-server-v2.yaml#/paths/~1repositories~1%7Brepository%7D~1init/post/parameters/1/name'
+      - 'model-server-v2.yaml#/paths/~1repositories~1%7Brepository%7D~1versions~1%7BversionHash%7D/get/parameters/0/name'
+      - 'model-server-v2.yaml#/paths/~1versions~1%7BversionHash%7D/get/parameters/0/name'
+    rules:
+      must-use-snake-case-for-query-parameters: warn
+  - files:
+      - 'model-server-v2.yaml#/paths/~1repositories~1%7Brepository%7D~1branches~1%7Bbranch%7D/get/responses/200/content/application~1x-modelix-objects-v2/schema'
+      - 'model-server-v2.yaml#/paths/~1repositories~1%7Brepository%7D~1branches~1%7Bbranch%7D/get/responses/200/content/application~1x-modelix-objects/schema'
+      - 'model-server-v2.yaml#/paths/~1repositories~1%7Brepository%7D~1branches~1%7Bbranch%7D/get/responses/200/content/text~1plain/schema'
+      - 'model-server-v2.yaml#/paths/~1repositories~1%7Brepository%7D~1delete/post/responses/204/content/text~1plain/schema'
+      - 'model-server-v2.yaml#/components/responses/200/content/text~1plain/schema'
+      - 'model-server-v2.yaml#/components/responses/200json/content/application~1json/schema'
+      - 'model-server-v2.yaml#/components/responses/versionDelta/content/application~1x-modelix-objects/schema'
+      - 'model-server-v2.yaml#/components/responses/versionDelta/content/application~1x-modelix-objects-v2/schema'
+      - 'model-server-v2.yaml#/components/responses/versionDelta/content/text~1plain/schema'
+    rules:
+      must-always-return-json-objects-as-top-level-data-structures: warn
+  - files:
+      - 'model-server-v2.yaml#/components/responses/modelql-404'
+    rules:
+      must-use-problem-json-for-errors: warn
+  - files:
+      - 'model-server-v1.yaml#/paths/~1getAll'
+      - 'model-server-v1.yaml#/paths/~1getEmail'
+      - 'model-server-v1.yaml#/paths/~1getRecursively~1%7Bkey%7D'
+      - 'model-server-v1.yaml#/paths/~1putAll'
+    rules:
+      must-use-lowercase-with-hypens-for-path-segements: warn
+  - files:
+      - 'model-server-v1.yaml#/paths/~1poll~1%7Bkey%7D/get/parameters/1/name'
+    rules:
+      must-use-snake-case-for-query-parameters: warn
+  - files:
+      - 'model-server-v1.yaml#/components/responses/200/content/text~1plain/schema'
+      - 'model-server-v1.yaml#/components/responses/200json/content/application~1json/schema'
+    rules:
+      must-always-return-json-objects-as-top-level-data-structures: warn
+  - files:
+      - 'model-server-operative.yaml#/paths/~1metrics/get/responses'
+      - 'model-server-operative.yaml#/paths/~1about/get/responses'
+    rules:
+      must-specify-default-response: warn
+  - files:
+      - 'model-server-operative.yaml#/components/responses/Healthy/content/text~1plain/schema'
+    rules:
+      must-always-return-json-objects-as-top-level-data-structures: warn
+
+    # Mandatory format for metrics
+  - files:
+      - 'model-server-operative.yaml#/components/responses/MetricsResponse/content/text~1plain/schema'
+    rules:
+      must-always-return-json-objects-as-top-level-data-structures: off
+  - files:
+      - 'model-server-operative.yaml#/components/responses/MetricsResponse/content/text~1plain'
+    rules:
+      should-prefer-standard-media-type-names: off

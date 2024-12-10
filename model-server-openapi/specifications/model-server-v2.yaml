@@ -94,6 +94,8 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/branches:
     get:
       tags:
@@ -378,6 +380,8 @@ paths:
                 type: string
         "404":
           $ref: '#/components/responses/404'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/versions/{versionHash}:
     get:
       tags:

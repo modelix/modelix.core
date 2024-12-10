@@ -76,8 +76,42 @@ abstract class StoreClientAdapter(val client: IsolatingStore) : IStoreClient {
         return client.generateId(key.withRepoScope())
     }
 
-    override fun <T> runTransaction(body: () -> T): T {
-        return client.runTransaction(body)
+    override fun getTransactionManager(): ITransactionManager {
+        return client.getTransactionManager()
+    }
+
+    override fun getImmutableStore(): IImmutableStore<String> {
+        val immutableStore = client.getImmutableStore()
+        return object : IImmutableStore<String> {
+            override fun getAll(keys: Set<String>): Map<String, String> {
+                val fromRepository = immutableStore.getAll(keys.map { it.withRepoScope() }.toSet()).mapKeys { it.key.key }
+                if (getRepositoryId() == null) return fromRepository
+
+                // Existing databases may have objects stored without information about the repository.
+                // Try to load these legacy entries.
+                val missingKeys = fromRepository.entries.asSequence().filter { it.value == null }.map {
+                    ObjectInRepository.global(
+                        it.key,
+                    )
+                }.toSet()
+                if (missingKeys.isEmpty()) return fromRepository
+                val fromGlobal = immutableStore.getAll(missingKeys).mapKeys { it.key.key }
+
+                return fromRepository + fromGlobal
+            }
+
+            override fun addAll(entries: Map<String, String>) {
+                immutableStore.addAll(entries.mapKeys { it.key.withRepoScope() })
+            }
+
+            override fun getIfCached(key: String): String? {
+                val fromRepository = immutableStore.getIfCached(key.withRepoScope())
+                if (fromRepository != null) return fromRepository
+                // Existing databases may have objects stored without information about the repository.
+                // Try to load these legacy entries.
+                return immutableStore.getIfCached(ObjectInRepository.global(key))
+            }
+        }
     }
 
     override fun close() {

@@ -7,6 +7,7 @@ import org.modelix.model.IKeyListener
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.model.server.store.MissingWriteTransactionException
 import org.modelix.model.server.store.forGlobalRepository
 import java.util.Collections
 import kotlin.random.Random
@@ -14,7 +15,6 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertNull
 
 class MapBasedStoreClientTest : StoreClientTest(InMemoryStoreClient().forGlobalRepository())
 class IgniteStoreClientTest : StoreClientTest(IgniteStoreClient(inmemory = true).forGlobalRepository())
@@ -28,20 +28,20 @@ abstract class StoreClientTest(val store: IStoreClient) {
 
     @Test
     fun `transaction can be started from inside a transaction`() {
-        store.runTransaction {
-            store.runTransaction {
+        store.runWriteTransaction {
+            store.runWriteTransaction {
                 store.put("abc", "def")
             }
         }
     }
 
     @Test
-    fun `allow put without transaction`() {
+    fun `put without transaction fails`() {
         val key = "ljnrdlfkesmgf"
         val value = "izujztdrsew"
-        assertNull(store.get(key))
-        store.put(key, value)
-        assertEquals(value, store.get(key))
+        assertFailsWith<MissingWriteTransactionException> {
+            store.put(key, value)
+        }
     }
 
     @Test
@@ -50,7 +50,7 @@ abstract class StoreClientTest(val store: IStoreClient) {
         repeat(2) {
             val rand = Random(it)
             launch {
-                store.runTransaction {
+                store.runWriteTransaction {
                     repeat(10) {
                         val value = rand.nextInt().toString()
                         store.put(key, value)
@@ -69,16 +69,16 @@ abstract class StoreClientTest(val store: IStoreClient) {
         val value1 = "a"
         val value2 = "b"
 
-        store.put(key, value1)
-        assertEquals(value1, store.get(key))
+        store.runWriteTransaction { store.put(key, value1) }
+        assertEquals(value1, store.runReadTransaction { store.get(key) })
         assertFailsWith(NullPointerException::class) {
-            store.runTransaction {
+            store.runWriteTransaction {
                 store.put(key, value2)
                 assertEquals(value2, store.get(key))
                 throw NullPointerException()
             }
         }
-        assertEquals(value1, store.get(key)) // failed transaction should be rolled back
+        assertEquals(value1, store.runReadTransaction { store.get(key) }) // failed transaction should be rolled back
     }
 
     @Test
@@ -99,8 +99,8 @@ abstract class StoreClientTest(val store: IStoreClient) {
             },
         )
 
-        store.put(key, value1)
-        assertEquals(value1, store.get(key))
+        store.runWriteTransaction { store.put(key, value1) }
+        assertEquals(value1, store.runReadTransaction { store.get(key) })
 
         assertEquals(setOf<String?>(value1), valuesSeenByListener)
         valuesSeenByListener.clear()
@@ -108,7 +108,7 @@ abstract class StoreClientTest(val store: IStoreClient) {
         coroutineScope {
             launch {
                 assertFailsWith(NullPointerException::class) {
-                    store.runTransaction {
+                    store.runWriteTransaction {
                         assertEquals(value1, store.get(key))
                         store.put(key, value2, silent = false)
                         assertEquals(value2, store.get(key))
@@ -118,7 +118,7 @@ abstract class StoreClientTest(val store: IStoreClient) {
             }
 
             launch {
-                store.runTransaction {
+                store.runWriteTransaction {
                     assertEquals(value1, store.get(key))
                     store.put(key, value3, silent = false)
                     assertEquals(value3, store.get(key))

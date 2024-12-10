@@ -12,19 +12,23 @@ import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.RepositoryId
 import java.lang.ref.SoftReference
 
-class StoreManager(val genericStore: IsolatingStore) {
+class StoreManager(val genericStore: IRepositoryAwareStore) {
 
     private val repositorySpecificStores = HashMap<RepositoryId?, SoftReference<IAsyncObjectStore>>()
     val clientId: Int by lazy { getGlobalStoreClient().generateId("clientId").toInt() }
     val idGenerator: IIdGenerator by lazy { IdGenerator.getInstance(clientId) }
 
-    fun getGlobalStoreClient() = getStoreClient(null)
+    fun getTransactionManager(): ITransactionManager = genericStore.getTransactionManager()
 
-    fun getStoreClient(repository: RepositoryId?): IStoreClient {
-        return if (repository == null) {
-            genericStore.forGlobalRepository()
-        } else {
-            genericStore.forRepository(repository)
+    fun getGlobalStoreClient(immutable: Boolean = false) = getStoreClient(null, immutable)
+
+    fun getStoreClient(repository: RepositoryId?, immutable: Boolean): IStoreClient {
+        return (if (immutable) genericStore.getImmutableStore().asGenericStore() else genericStore).let {
+            if (repository == null) {
+                it.forGlobalRepository()
+            } else {
+                it.forRepository(repository)
+            }
         }
     }
 
@@ -35,7 +39,7 @@ class StoreManager(val genericStore: IsolatingStore) {
 
         val newStore = BulkAsyncStore(
             CachingAsyncStore(
-                StoreClientAsAsyncStore(getStoreClient(repository)),
+                StoreClientAsAsyncStore(getStoreClient(repository, true)),
                 cacheSize = System.getenv("MODELIX_OBJECT_CACHE_SIZE")?.toIntOrNull() ?: 500_000,
             ),
         )
@@ -48,7 +52,7 @@ class StoreManager(val genericStore: IsolatingStore) {
     fun getGlobalKeyValueStore() = getKeyValueStore(null)
 
     fun getKeyValueStore(repository: RepositoryId?): IKeyValueStore {
-        return StoreClientAsKeyValueStore(getStoreClient(repository))
+        return StoreClientAsKeyValueStore(getStoreClient(repository, true))
     }
 
     fun asModelClient(repository: RepositoryId?): IModelClient {

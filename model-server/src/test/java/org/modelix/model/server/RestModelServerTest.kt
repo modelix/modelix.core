@@ -6,7 +6,6 @@ import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.forGlobalRepository
-import org.modelix.model.server.store.getGenericStore
 
 class RestModelServerTest {
     @Test
@@ -20,9 +19,10 @@ class RestModelServerTest {
 
     @Test
     fun testCollectExistingKeyNotHash() {
-        val storeClient = InMemoryStoreClient().forGlobalRepository()
+        val genericStore = InMemoryStoreClient()
+        val storeClient = genericStore.forGlobalRepository()
         storeClient.put("existingKey", "foo", false)
-        val rms = KeyValueLikeModelServer(RepositoriesManager(storeClient.getGenericStore()))
+        val rms = KeyValueLikeModelServer(RepositoriesManager(genericStore))
         val result = rms.collect("existingKey", null)
         Assert.assertEquals(1, result.length().toLong())
         Assert.assertEquals(
@@ -35,12 +35,13 @@ class RestModelServerTest {
 
     @Test
     fun testCollectExistingKeyHash() {
-        val storeClient = InMemoryStoreClient().forGlobalRepository()
+        val genericStore = InMemoryStoreClient()
+        val storeClient = genericStore.forGlobalRepository()
         storeClient.put("existingKey", "hash-*0123456789-0123456789-0123456789-00001", false)
         storeClient.put("hash-*0123456789-0123456789-0123456789-00001", "bar", false)
         val rms =
             KeyValueLikeModelServer(
-                RepositoriesManager(storeClient.getGenericStore()),
+                RepositoriesManager(genericStore),
             )
         val result = rms.collect("existingKey", null)
         Assert.assertEquals(2, result.length().toLong())
@@ -58,7 +59,8 @@ class RestModelServerTest {
 
     @Test
     fun testCollectExistingKeyHashChained() {
-        val storeClient = InMemoryStoreClient().forGlobalRepository()
+        val genericStore = InMemoryStoreClient()
+        val storeClient = genericStore.forGlobalRepository()
         storeClient.put("root", "hash-*0123456789-0123456789-0123456789-00001", false)
         storeClient.put(
             "hash-*0123456789-0123456789-0123456789-00001",
@@ -78,7 +80,7 @@ class RestModelServerTest {
         storeClient.put("hash-*0123456789-0123456789-0123456789-00004", "end", false)
         val rms =
             KeyValueLikeModelServer(
-                RepositoriesManager(storeClient.getGenericStore()),
+                RepositoriesManager(genericStore),
             )
         val result = rms.collect("root", null)
         Assert.assertEquals(5, result.length().toLong())
@@ -111,7 +113,8 @@ class RestModelServerTest {
 
     @Test
     fun testCollectExistingKeyHashChainedWithRepetitions() {
-        val storeClient = InMemoryStoreClient().forGlobalRepository()
+        val genericStore = InMemoryStoreClient()
+        val storeClient = genericStore.forGlobalRepository()
         storeClient.put("root", "hash-*0123456789-0123456789-0123456789-00001", false)
         storeClient.put(
             "hash-*0123456789-0123456789-0123456789-00001",
@@ -130,7 +133,7 @@ class RestModelServerTest {
         )
         val rms =
             KeyValueLikeModelServer(
-                RepositoriesManager(storeClient.getGenericStore()),
+                RepositoriesManager(genericStore),
             )
         val result = rms.collect("root", null)
         Assert.assertEquals(4, result.length().toLong())

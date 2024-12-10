@@ -1,3 +1,4 @@
+import dev.petuska.npm.publish.task.NodeExecTask
 import dev.petuska.npm.publish.task.NpmPackTask
 
 plugins {
@@ -152,4 +153,6 @@ npmPublish {
     }
 }
 
-tasks.named("packJsPackage") { dependsOn(":setupNodeEverywhere") }
+tasks.withType(NodeExecTask::class) {
+    dependsOn(":setupNodeEverywhere")
+}

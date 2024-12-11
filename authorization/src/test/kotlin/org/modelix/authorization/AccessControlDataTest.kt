@@ -26,7 +26,7 @@ class AccessControlDataTest {
     @Test
     fun `can grant permissions to identity tokens`() {
         val token = JWT.create()
-            .withClaim("email", email)
+            .withClaim(KeycloakTokenConstants.EMAIL, email)
             .sign(Algorithm.HMAC256("unit-tests"))
             .let { JWT.decode(it) }
         val data = AccessControlData().withGrantToUser(email, PermissionParts("r1", "write").fullId)

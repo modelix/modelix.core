@@ -61,10 +61,6 @@ fun createModelixAccessToken(hmac512key: String, user: String, grantedPermission
     }
 }
 
-private fun Map<String, Any>?.readRolesArray(): List<String> {
-    return this?.get("roles") as? List<String> ?: emptyList()
-}
-
 fun ApplicationCall.getBearerToken(): String? {
     val authHeader = request.parseAuthorizationHeader()
     if (authHeader == null || authHeader.authScheme != AuthScheme.Bearer) return null

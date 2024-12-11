@@ -66,7 +66,7 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                         val token = JWT.create()
                             .withIssuer("modelix")
                             .withAudience("modelix")
-                            .withClaim("email", "unit-tests@example.com")
+                            .withClaim(KeycloakTokenConstants.EMAIL, "unit-tests@example.com")
                             .sign(Algorithm.HMAC256("unit-tests"))
                         // The signing algorithm and key isn't relevant because the token is already considered valid
                         // and the signature is never checked.

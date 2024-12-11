@@ -144,8 +144,8 @@ class ModelixJWTUtil {
         }
 
         val payload = JWTClaimsSet.Builder()
-            .claim("preferred_username", user)
-            .claim("permissions", grantedPermissions)
+            .claim(KeycloakTokenConstants.PREFERRED_USERNAME, user)
+            .claim(ModelixTokenConstants.PERMISSIONS, grantedPermissions)
             .expirationTime(Date(Instant.now().plus(12, ChronoUnit.HOURS).toEpochMilli()))
             .also { additionalTokenContent(TokenBuilder(it)) }
             .build()
@@ -171,7 +171,7 @@ class ModelixJWTUtil {
     }
 
     fun extractPermissions(token: DecodedJWT): List<String>? {
-        return token.claims["permissions"]?.asList(String::class.java)
+        return token.claims[ModelixTokenConstants.PERMISSIONS]?.asList(String::class.java)
     }
 
     fun loadGrantedPermissions(token: DecodedJWT, evaluator: PermissionEvaluator) {
@@ -197,14 +197,14 @@ class ModelixJWTUtil {
     }
 
     fun extractUserId(jwt: DecodedJWT): String? {
-        return jwt.getClaim("email")?.asString()
-            ?: jwt.getClaim("preferred_username")?.asString()
+        return jwt.getClaim(KeycloakTokenConstants.EMAIL)?.asString()
+            ?: jwt.getClaim(KeycloakTokenConstants.PREFERRED_USERNAME)?.asString()
     }
 
     fun extractUserRoles(jwt: DecodedJWT): List<String> {
         val keycloakRoles = jwt
-            .getClaim("realm_access")?.asMap()
-            ?.get("roles")
+            .getClaim(KeycloakTokenConstants.REALM_ACCESS)?.asMap()
+            ?.get(KeycloakTokenConstants.REALM_ACCESS_ROLES)
             ?.let { it as? List<*> }
             ?.mapNotNull { it as? String }
             ?: emptyList()

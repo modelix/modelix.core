@@ -17,8 +17,6 @@ class AdminPermissionOnServerTest : PermissionTestBase(listOf(ModelServerPermiss
                 "legacy-user-defined-entries/read",
                 "legacy-user-defined-entries/write",
                 "model-server/admin",
-                "permission-schema/read",
-                "permission-schema/write",
                 "repository/my-repo/admin",
                 "repository/my-repo/branch/my-branch/admin",
                 "repository/my-repo/branch/my-branch/create",

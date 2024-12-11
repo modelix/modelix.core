@@ -4,6 +4,7 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.application
 import io.ktor.server.application.call
 import io.ktor.server.application.plugin
+import io.ktor.server.auth.principal
 import io.ktor.server.html.respondHtml
 import io.ktor.server.request.receiveParameters
 import io.ktor.server.response.respond
@@ -26,8 +27,8 @@ import kotlinx.html.td
 import kotlinx.html.textInput
 import kotlinx.html.th
 import kotlinx.html.tr
-import org.modelix.authorization.permissions.PermissionParts
-import org.modelix.authorization.permissions.PermissionSchemaBase
+import org.modelix.authorization.permissions.PermissionInstanceReference
+import org.modelix.authorization.permissions.PermissionParser
 
 fun Route.installPermissionManagementHandlers() {
     route("permissions") {
@@ -42,9 +43,7 @@ fun Route.installPermissionManagementHandlers() {
             val roleId = formParameters["roleId"]
             require(userId != null || roleId != null) { "userId or roleId required" }
             val permissionId = requireNotNull(formParameters["permissionId"]) { "permissionId not specified" }
-
-            // a user can grant his own permission to other users
-            checkPermission(PermissionParts.fromString(permissionId))
+            call.checkCanGranPermission(permissionId)
 
             if (userId != null) {
                 application.plugin(ModelixAuthorization).config.accessControlPersistence.update {
@@ -59,12 +58,12 @@ fun Route.installPermissionManagementHandlers() {
             call.respond("Granted $permissionId to ${userId ?: roleId}")
         }
         post("remove-grant") {
-            call.checkPermission(PermissionSchemaBase.permissionData.write)
             val formParameters = call.receiveParameters()
             val userId = formParameters["userId"]
             val roleId = formParameters["roleId"]
             require(userId != null || roleId != null) { "userId or roleId required" }
             val permissionId = requireNotNull(formParameters["permissionId"]) { "permissionId not specified" }
+            call.checkCanGranPermission(permissionId)
             if (userId != null) {
                 application.plugin(ModelixAuthorization).config.accessControlPersistence.update {
                     it.withoutGrantToUser(userId, permissionId)
@@ -138,7 +137,7 @@ fun HTML.buildPermissionManagementPage(call: ApplicationCall, pluginInstance: Mo
                 th { +"Permission" }
             }
             for ((userId, permission) in pluginInstance.config.accessControlPersistence.read().grantsToUsers.flatMap { entry -> entry.value.map { entry.key to it } }) {
-                if (!call.hasPermission(PermissionParts.fromString(permission))) continue
+                if (!call.canGrantPermission(permission)) continue
 
                 tr {
                     td {
@@ -174,7 +173,7 @@ fun HTML.buildPermissionManagementPage(call: ApplicationCall, pluginInstance: Mo
                 th { +"Permission" }
             }
             for ((roleId, permission) in pluginInstance.config.accessControlPersistence.read().grantsToRoles.flatMap { entry -> entry.value.map { entry.key to it } }) {
-                if (!call.hasPermission(PermissionParts.fromString(permission))) continue
+                if (!call.canGrantPermission(permission)) continue
 
                 tr {
                     td {
@@ -213,32 +212,30 @@ fun HTML.buildPermissionManagementPage(call: ApplicationCall, pluginInstance: Mo
                 th { +"Grant" }
             }
             for (deniedPermission in pluginInstance.getDeniedPermissions()) {
-                if (!call.hasPermission(deniedPermission.permissionId)) continue
+                if (!call.canGrantPermission(deniedPermission.permissionRef)) continue
 
                 val userId = deniedPermission.userId
                 tr {
                     td {
-                        +userId.orEmpty()
+                        +userId
                     }
                     td {
-                        +deniedPermission.permissionId.fullId
+                        +deniedPermission.permissionRef.toPermissionParts().fullId
                     }
                     td {
-                        if (userId != null) {
-                            val evaluator = pluginInstance.createPermissionEvaluator()
-                            val permissionInstance = evaluator.instantiatePermission(deniedPermission.permissionId)
-                            val candidates = (setOf(permissionInstance) + permissionInstance.transitiveIncludedIn())
-                            postForm(action = "grant") {
-                                hiddenInput {
-                                    name = "userId"
-                                    value = userId
-                                }
-                                for (candidate in candidates) {
-                                    div {
-                                        submitInput {
-                                            name = "permissionId"
-                                            value = candidate.ref.toString()
-                                        }
+                        val evaluator = pluginInstance.createPermissionEvaluator()
+                        val permissionInstance = evaluator.instantiatePermission(deniedPermission.permissionRef)
+                        val candidates = (setOf(permissionInstance) + permissionInstance.transitiveIncludedIn())
+                        postForm(action = "grant") {
+                            hiddenInput {
+                                name = "userId"
+                                value = userId
+                            }
+                            for (candidate in candidates) {
+                                div {
+                                    submitInput {
+                                        name = "permissionId"
+                                        value = candidate.ref.toString()
                                     }
                                 }
                             }
@@ -248,4 +245,33 @@ fun HTML.buildPermissionManagementPage(call: ApplicationCall, pluginInstance: Mo
             }
         }
     }
+}
+
+fun ApplicationCall.canGrantPermission(permissionId: String): Boolean {
+    return canGrantPermission(parsePermission(permissionId))
+}
+
+fun ApplicationCall.canGrantPermission(permissionRef: PermissionInstanceReference): Boolean {
+    val plugin = application.plugin(ModelixAuthorization)
+    val schema = plugin.config.permissionSchema
+    val resources = generateSequence(permissionRef.resource) { it.parent }
+    return resources.any {
+        // hardcoded admin/owner to keep it simple and not having to introduce a permission schema for permissions
+        val managers = listOf(
+            PermissionInstanceReference("admin", it),
+            PermissionInstanceReference("owner", it),
+        )
+        managers.any { it.isValid(schema) && plugin.hasPermission(this, it) }
+    }
+}
+
+fun ApplicationCall.checkCanGranPermission(id: String) {
+    if (!canGrantPermission(id)) {
+        val principal = principal<AccessTokenPrincipal>()
+        throw NoPermissionException(principal, null, null, "${principal?.getUserName()} has no permission '$id'")
+    }
+}
+
+fun ApplicationCall.parsePermission(id: String): PermissionInstanceReference {
+    return application.plugin(ModelixAuthorization).config.permissionSchema.let { PermissionParser(it) }.parse(id)
 }

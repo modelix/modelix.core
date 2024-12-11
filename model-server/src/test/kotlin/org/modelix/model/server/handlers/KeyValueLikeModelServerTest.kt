@@ -10,7 +10,6 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
-import org.modelix.authorization.installAuthentication
 import org.modelix.model.client.RestWebModelClient
 import org.modelix.model.client2.runWrite
 import org.modelix.model.lazy.CLVersion
@@ -31,7 +30,6 @@ class KeyValueLikeModelServerTest {
         val repositoriesManager = RepositoriesManager(store)
 
         application {
-            installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
             KeyValueLikeModelServer(repositoriesManager).init(this)
             ModelReplicationServer(repositoriesManager).init(this)

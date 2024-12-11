@@ -14,7 +14,6 @@ import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.async
 import kotlinx.coroutines.sync.Mutex
 import org.junit.jupiter.api.Test
-import org.modelix.authorization.installAuthentication
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
@@ -27,7 +26,6 @@ class V1ApiTest {
         val repositoriesManager = RepositoriesManager(InMemoryStoreClient())
 
         application {
-            installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
             KeyValueLikeModelServer(repositoriesManager).init(this)
         }

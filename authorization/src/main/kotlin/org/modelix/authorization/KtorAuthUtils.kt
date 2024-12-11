@@ -17,6 +17,7 @@ import io.ktor.server.request.header
 import io.ktor.server.routing.Route
 import io.ktor.util.pipeline.PipelineContext
 import org.modelix.authorization.permissions.PermissionEvaluator
+import org.modelix.authorization.permissions.PermissionInstanceReference
 import org.modelix.authorization.permissions.PermissionParts
 
 internal const val MODELIX_JWT_AUTH = "modelixJwtAuth"
@@ -46,6 +47,10 @@ fun ApplicationCall.checkPermission(permissionToCheck: PermissionParts) {
 }
 
 fun ApplicationCall.hasPermission(permissionToCheck: PermissionParts): Boolean {
+    return application.plugin(ModelixAuthorization).hasPermission(this, permissionToCheck)
+}
+
+fun ApplicationCall.hasPermission(permissionToCheck: PermissionInstanceReference): Boolean {
     return application.plugin(ModelixAuthorization).hasPermission(this, permissionToCheck)
 }
 

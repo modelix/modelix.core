@@ -7,7 +7,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.junit.Assert.assertFalse
-import org.modelix.authorization.installAuthentication
 import org.modelix.model.api.ChildLinkFromName
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IBranch
@@ -117,7 +116,6 @@ class ReplicatedModelTest {
 
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         application {
-            installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
             val repoManager = RepositoriesManager(InMemoryStoreClient())
             ModelReplicationServer(repoManager).init(this)

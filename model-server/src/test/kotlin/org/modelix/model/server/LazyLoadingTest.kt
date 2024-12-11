@@ -2,7 +2,6 @@ package org.modelix.model.server
 
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
-import org.modelix.authorization.installAuthentication
 import org.modelix.model.api.INode
 import org.modelix.model.api.NullChildLink
 import org.modelix.model.api.PBranch
@@ -39,7 +38,6 @@ class LazyLoadingTest {
 
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         application {
-            installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
             val store = InMemoryStoreClient()
             val repoManager = RepositoriesManager(store)

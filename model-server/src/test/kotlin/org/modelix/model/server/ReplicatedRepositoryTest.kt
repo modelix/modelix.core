@@ -9,7 +9,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.RepetitionInfo
-import org.modelix.authorization.installAuthentication
 import org.modelix.model.ModelFacade
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.IBranch
@@ -51,7 +50,6 @@ class ReplicatedRepositoryTest {
 
     private fun runTest(block: suspend ApplicationTestBuilder.(scope: CoroutineScope) -> Unit) = testApplication {
         application {
-            installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
             val storeClient = InMemoryStoreClient()
             val repositoriesManager = RepositoriesManager(storeClient)

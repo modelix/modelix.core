@@ -38,7 +38,10 @@ class PermissionEvaluator(val schemaInstance: SchemaInstance) {
     }
 
     fun instantiatePermission(permissionId: PermissionParts): SchemaInstance.ResourceInstance.PermissionInstance {
-        val permissionRef = parser.parse(permissionId)
+        return instantiatePermission(parser.parse(permissionId))
+    }
+
+    fun instantiatePermission(permissionRef: PermissionInstanceReference): SchemaInstance.ResourceInstance.PermissionInstance {
         val instance = schemaInstance.instantiatePermission(permissionRef)
         hasPermission(permissionRef) // permissions are instantiated during the check
         return instance

@@ -32,6 +32,8 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.util.AttributeKey
 import org.modelix.authorization.permissions.PermissionEvaluator
+import org.modelix.authorization.permissions.PermissionInstanceReference
+import org.modelix.authorization.permissions.PermissionParser
 import org.modelix.authorization.permissions.PermissionParts
 import org.modelix.authorization.permissions.SchemaInstance
 import java.nio.charset.StandardCharsets
@@ -169,11 +171,15 @@ class ModelixAuthorizationPluginInstance(val config: ModelixAuthorizationConfig)
     private val deniedPermissionRequests: MutableSet<DeniedPermissionRequest> = Collections.synchronizedSet(LinkedHashSet())
     private val permissionCache = CacheBuilder.newBuilder()
         .expireAfterWrite(5, TimeUnit.SECONDS)
-        .build<Pair<AccessTokenPrincipal, PermissionParts>, Boolean>()
+        .build<Pair<AccessTokenPrincipal, PermissionInstanceReference>, Boolean>()
 
     fun getDeniedPermissions(): Set<DeniedPermissionRequest> = deniedPermissionRequests.toSet()
 
     fun hasPermission(call: ApplicationCall, permissionToCheck: PermissionParts): Boolean {
+        return hasPermission(call, PermissionParser(config.permissionSchema).parse(permissionToCheck))
+    }
+
+    fun hasPermission(call: ApplicationCall, permissionToCheck: PermissionInstanceReference): Boolean {
         if (!config.permissionCheckingEnabled()) return true
 
         val principal = call.principal<AccessTokenPrincipal>() ?: throw NotLoggedInException()
@@ -184,7 +190,7 @@ class ModelixAuthorizationPluginInstance(val config: ModelixAuthorizationConfig)
                     if (userId != null) {
                         synchronized(deniedPermissionRequests) {
                             deniedPermissionRequests += DeniedPermissionRequest(
-                                permissionId = permissionToCheck,
+                                permissionRef = permissionToCheck,
                                 userId = userId,
                                 jwtPayload = principal.jwt.payload,
                             )
@@ -222,7 +228,7 @@ class ModelixAuthorizationPluginInstance(val config: ModelixAuthorizationConfig)
 }
 
 data class DeniedPermissionRequest(
-    val permissionId: PermissionParts,
+    val permissionRef: PermissionInstanceReference,
     val userId: String,
     val jwtPayload: String,
 ) {

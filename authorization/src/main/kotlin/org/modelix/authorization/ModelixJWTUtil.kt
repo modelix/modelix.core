@@ -253,8 +253,7 @@ class ModelixJWTUtil {
     }
 
     fun extractUserId(jwt: DecodedJWT): String? {
-        return jwt.getClaim(KeycloakTokenConstants.EMAIL)?.asString()
-            ?: jwt.getClaim(KeycloakTokenConstants.PREFERRED_USERNAME)?.asString()
+        return Companion.extractUserId(jwt)
     }
 
     fun extractUserRoles(jwt: DecodedJWT): List<String> {
@@ -325,6 +324,13 @@ class ModelixJWTUtil {
         val claimSetBuilder: JWTClaimsSet.Builder get() = builder
         fun claim(name: String, value: String) {
             builder.claim(name, value)
+        }
+    }
+
+    companion object {
+        fun extractUserId(jwt: DecodedJWT): String? {
+            return jwt.getClaim(KeycloakTokenConstants.EMAIL)?.asString()
+                ?: jwt.getClaim(KeycloakTokenConstants.PREFERRED_USERNAME)?.asString()
         }
     }
 }

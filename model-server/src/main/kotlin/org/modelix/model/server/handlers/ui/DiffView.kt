@@ -72,7 +72,7 @@ class DiffView(private val repositoryManager: RepositoriesManager) {
             requiresLogin {
                 get("/diff") {
                     @OptIn(RequiresTransaction::class)
-                    call.respondHtmlTemplate(PageWithMenuBar("diff", "..")) {
+                    call.respondHtmlTemplateInTransaction(repositoryManager.getTransactionManager(), PageWithMenuBar("diff", "..")) {
                         val visibleRepositories = repositoryManager.getRepositories().filter {
                             call.hasPermission(ModelServerPermissionSchema.repository(it).list)
                         }

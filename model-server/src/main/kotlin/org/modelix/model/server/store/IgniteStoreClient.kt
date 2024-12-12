@@ -247,13 +247,9 @@ class IgniteStoreClient(jdbcProperties: Properties? = null, private val inmemory
 
     override fun getImmutableStore(): IImmutableStore<ObjectInRepository> {
         return object : IImmutableStore<ObjectInRepository> {
-            override fun getAll(keys: Set<ObjectInRepository>): Map<ObjectInRepository, String> {
+            override fun getAll(keys: Set<ObjectInRepository>): Map<ObjectInRepository, String?> {
                 keys.forEach { require(HashUtil.isSha256(it.key)) { "Not an immutable object: $it" } }
-                return cache.getAll(keys).mapValues {
-                    val value = it.value
-                    if (value == null) throw ObjectValueNotFoundException(it.key.key)
-                    value
-                }
+                return cache.getAll(keys)
             }
 
             override fun addAll(entries: Map<ObjectInRepository, String>) {

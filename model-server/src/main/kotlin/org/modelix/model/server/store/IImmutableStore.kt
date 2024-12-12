@@ -7,7 +7,7 @@ import org.modelix.model.IGenericKeyListener
  * Doesn't require transactions.
  */
 interface IImmutableStore<KeyT> {
-    fun getAll(keys: Set<KeyT>): Map<KeyT, String>
+    fun getAll(keys: Set<KeyT>): Map<KeyT, String?>
     fun addAll(entries: Map<KeyT, String>)
     fun getIfCached(key: KeyT): String?
 }

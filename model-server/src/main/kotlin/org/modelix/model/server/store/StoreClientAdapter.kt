@@ -90,7 +90,7 @@ abstract class StoreClientAdapter(val client: IsolatingStore) : IStoreClient {
     override fun getImmutableStore(): IImmutableStore<String> {
         val immutableStore = client.getImmutableStore()
         return object : IImmutableStore<String> {
-            override fun getAll(keys: Set<String>): Map<String, String> {
+            override fun getAll(keys: Set<String>): Map<String, String?> {
                 val fromRepository = immutableStore.getAll(keys.map { it.withRepoScope() }.toSet()).mapKeys { it.key.key }
                 if (getRepositoryId() == null) return fromRepository
 

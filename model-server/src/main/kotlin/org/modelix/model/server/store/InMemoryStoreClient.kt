@@ -2,7 +2,6 @@ package org.modelix.model.server.store
 
 import org.modelix.model.IGenericKeyListener
 import org.modelix.model.persistent.HashUtil
-import org.modelix.model.server.handlers.ObjectValueNotFoundException
 import org.slf4j.LoggerFactory
 
 fun generateId(idStr: String?): Long {
@@ -138,14 +137,10 @@ class InMemoryStoreClient : IsolatingStore, ITransactionManager, IRepositoryAwar
 
     override fun getImmutableStore(): IImmutableStore<ObjectInRepository> {
         return object : IImmutableStore<ObjectInRepository> {
-            override fun getAll(keys: Set<ObjectInRepository>): Map<ObjectInRepository, String> {
+            override fun getAll(keys: Set<ObjectInRepository>): Map<ObjectInRepository, String?> {
                 keys.forEach { require(HashUtil.isSha256(it.key)) { "Not an immutable object: $it" } }
                 @OptIn(RequiresTransaction::class)
-                return runRead { this@InMemoryStoreClient.getAll(keys) }.mapValues {
-                    val value = it.value
-                    if (value == null) throw ObjectValueNotFoundException(it.key.key)
-                    value
-                }
+                return runRead { this@InMemoryStoreClient.getAll(keys) }
             }
 
             override fun addAll(entries: Map<ObjectInRepository, String>) {

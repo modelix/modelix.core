@@ -6,6 +6,8 @@ import com.auth0.jwt.exceptions.JWTVerificationException
 import com.auth0.jwt.interfaces.DecodedJWT
 import com.auth0.jwt.interfaces.JWTVerifier
 import com.google.common.cache.CacheBuilder
+import com.nimbusds.jose.jwk.JWKSet
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
@@ -21,6 +23,7 @@ import io.ktor.server.auth.jwt.jwt
 import io.ktor.server.auth.principal
 import io.ktor.server.html.respondHtml
 import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
+import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
@@ -29,8 +32,13 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.util.AttributeKey
 import org.modelix.authorization.permissions.PermissionEvaluator
+import org.modelix.authorization.permissions.PermissionInstanceReference
+import org.modelix.authorization.permissions.PermissionParser
 import org.modelix.authorization.permissions.PermissionParts
 import org.modelix.authorization.permissions.SchemaInstance
+import java.nio.charset.StandardCharsets
+import java.util.Base64
+import java.util.Collections
 import java.util.concurrent.TimeUnit
 
 private val LOG = mu.KotlinLogging.logger { }
@@ -39,6 +47,7 @@ private val LOG = mu.KotlinLogging.logger { }
  * JWT based authorization plugin.
  */
 object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig, ModelixAuthorizationPluginInstance> {
+
     override fun install(
         pipeline: ApplicationCallPipeline,
         configure: IModelixAuthorizationConfig.() -> Unit,
@@ -59,8 +68,10 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                         val token = JWT.create()
                             .withIssuer("modelix")
                             .withAudience("modelix")
-                            .withClaim("email", "unit-tests@example.com")
-                            .sign(config.getJwtSignatureAlgorithmOrNull() ?: Algorithm.HMAC256("unit-tests"))
+                            .withClaim(KeycloakTokenConstants.EMAIL, "unit-tests@example.com")
+                            .sign(Algorithm.HMAC256("unit-tests"))
+                        // The signing algorithm and key isn't relevant because the token is already considered valid
+                        // and the signature is never checked.
                         context.principal(AccessTokenPrincipal(JWT.decode(token)))
                     }
                 })
@@ -83,10 +94,34 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                 }
             }
         }
-        if (config.debugEndpointsEnabled) {
-            application.routing {
-                authenticate(MODELIX_JWT_AUTH) {
-                    (installedIntoRoute ?: this).apply {
+
+        application.routing {
+            get(".well-known/jwks.json") {
+                call.respondText(
+                    JWKSet(listOfNotNull(config.ownPublicKey)).toPublicJWKSet().toString(),
+                    ContentType.Application.Json,
+                )
+            }
+        }
+
+        if (config.installStatusPages) {
+            application.install(StatusPages) {
+                exception<NotLoggedInException> { call, cause ->
+                    call.respondText(text = "401: ${cause.message}", status = HttpStatusCode.Unauthorized)
+                }
+                exception<NoPermissionException> { call, cause ->
+                    call.respondText(text = "403: ${cause.message}", status = HttpStatusCode.Forbidden)
+                }
+                exception<Throwable> { call, cause ->
+                    call.respondText(text = "500: $cause", status = HttpStatusCode.InternalServerError)
+                }
+            }
+        }
+
+        application.routing {
+            authenticate(MODELIX_JWT_AUTH) {
+                (installedIntoRoute ?: this).apply {
+                    if (config.debugEndpointsEnabled) {
                         get("/user") {
                             val jwt = call.principal<AccessTokenPrincipal>()?.jwt ?: call.jwtFromHeaders()
                             if (jwt == null) {
@@ -117,9 +152,13 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                             }
                         }
                     }
+                    if (config.permissionManagementEnabled) {
+                        installPermissionManagementHandlers()
+                    }
                 }
             }
         }
+
         val pluginInstance = ModelixAuthorizationPluginInstance(config)
         return pluginInstance
     }
@@ -128,16 +167,40 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
 }
 
 class ModelixAuthorizationPluginInstance(val config: ModelixAuthorizationConfig) {
+
+    private val deniedPermissionRequests: MutableSet<DeniedPermissionRequest> = Collections.synchronizedSet(LinkedHashSet())
     private val permissionCache = CacheBuilder.newBuilder()
         .expireAfterWrite(5, TimeUnit.SECONDS)
-        .build<Pair<AccessTokenPrincipal, PermissionParts>, Boolean>()
+        .build<Pair<AccessTokenPrincipal, PermissionInstanceReference>, Boolean>()
+
+    fun getDeniedPermissions(): Set<DeniedPermissionRequest> = deniedPermissionRequests.toSet()
 
     fun hasPermission(call: ApplicationCall, permissionToCheck: PermissionParts): Boolean {
+        return hasPermission(call, PermissionParser(config.permissionSchema).parse(permissionToCheck))
+    }
+
+    fun hasPermission(call: ApplicationCall, permissionToCheck: PermissionInstanceReference): Boolean {
         if (!config.permissionCheckingEnabled()) return true
 
         val principal = call.principal<AccessTokenPrincipal>() ?: throw NotLoggedInException()
         return permissionCache.get(principal to permissionToCheck) {
-            getPermissionEvaluator(principal).hasPermission(permissionToCheck)
+            getPermissionEvaluator(principal).hasPermission(permissionToCheck).also { granted ->
+                if (!granted) {
+                    val userId = principal.getUserName()
+                    if (userId != null) {
+                        synchronized(deniedPermissionRequests) {
+                            deniedPermissionRequests += DeniedPermissionRequest(
+                                permissionRef = permissionToCheck,
+                                userId = userId,
+                                jwtPayload = principal.jwt.payload,
+                            )
+                            while (deniedPermissionRequests.size >= 100) {
+                                deniedPermissionRequests.iterator().also { it.next() }.remove()
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -160,22 +223,16 @@ class ModelixAuthorizationPluginInstance(val config: ModelixAuthorizationConfig)
     fun createSchemaInstance() = SchemaInstance(config.permissionSchema)
 
     fun loadGrantedPermissions(principal: AccessTokenPrincipal, evaluator: PermissionEvaluator) {
-        val permissions = principal.jwt.claims["permissions"]?.asList(String::class.java)
-
-        // There is a difference between access tokens and identity tokens.
-        // An identity token just contains the user ID and the service has to know the granted permissions.
-        // An access token has more limited permissions and is issued for a specific task. It contains the list of
-        // granted permissions. Since tokens are signed and created by a trusted authority we don't have to check the
-        // list of permissions against our own access control data.
-        if (permissions != null) {
-            permissions.forEach { evaluator.grantPermission(it) }
-        } else {
-            val userId = principal.getUserName()
-            if (userId != null) {
-                // TODO load permissions for the user from some external source
-            }
-        }
+        config.jwtUtil.loadGrantedPermissions(principal.jwt, evaluator)
     }
+}
+
+data class DeniedPermissionRequest(
+    val permissionRef: PermissionInstanceReference,
+    val userId: String,
+    val jwtPayload: String,
+) {
+    fun jwtPayloadJson() = String(Base64.getUrlDecoder().decode(jwtPayload), StandardCharsets.UTF_8)
 }
 
 /**

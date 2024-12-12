@@ -4,7 +4,6 @@ import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
-import org.modelix.authorization.installAuthentication
 import org.modelix.model.client.successful
 import org.modelix.model.server.installDefaultServerPlugins
 import kotlin.test.Test
@@ -14,7 +13,6 @@ class IndexPageTest {
 
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         application {
-            installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
             IndexPage().init(this)
         }

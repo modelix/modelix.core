@@ -40,7 +40,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
-import org.modelix.authorization.installAuthentication
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.readVersionDelta
@@ -82,7 +81,6 @@ class ModelReplicationServerTest {
         block: suspend ApplicationTestBuilder.(scope: CoroutineScope, fixture: Fixture) -> Unit,
     ) = testApplication {
         application {
-            installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
             fixture.modelReplicationServer.init(this)
             IdsApiImpl(fixture.repositoriesManager).init(this)

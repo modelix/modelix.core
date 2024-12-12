@@ -13,7 +13,6 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.websocket.WebSockets
 import kotlinx.coroutines.runBlocking
 import org.modelix.authorization.ModelixAuthorization
-import org.modelix.authorization.installAuthentication
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.server.Main.installStatusPages
 import org.modelix.model.server.handlers.Paths.registerJsonTypes
@@ -55,7 +54,6 @@ fun runWithNettyServer(
     testBlock: suspend (server: NettyApplicationEngine) -> Unit,
 ) {
     val nettyServer: NettyApplicationEngine = io.ktor.server.engine.embeddedServer(Netty, port = 0) {
-        installAuthentication(unitTestMode = true)
         installDefaultServerPlugins()
         setupBlock(this)
     }

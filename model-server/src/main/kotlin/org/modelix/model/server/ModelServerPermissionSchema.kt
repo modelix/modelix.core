@@ -1,6 +1,7 @@
 package org.modelix.model.server
 
 import org.modelix.authorization.permissions.PermissionParts
+import org.modelix.authorization.permissions.PermissionSchemaBase
 import org.modelix.authorization.permissions.buildPermissionSchema
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
@@ -8,7 +9,6 @@ import org.modelix.model.lazy.RepositoryId
 object ModelServerPermissionSchema {
     private const val MODEL_SERVER = "model-server"
     private const val ADMIN = "admin"
-    private const val PERMISSION_SCHEMA = "permission-schema"
     private const val WRITE = "write"
     private const val READ = "read"
     private const val LEGACY_USER_DEFINED_ENTRIES = "legacy-user-defined-entries"
@@ -29,31 +29,22 @@ object ModelServerPermissionSchema {
 
     val SCHEMA = buildPermissionSchema {
         resource(MODEL_SERVER) {
-            permission(ADMIN)
+            permission(ADMIN) {
+                includedIn(PermissionSchemaBase.cluster.admin.parts[0], PermissionSchemaBase.cluster.admin.parts[1])
+            }
         }
 
-        resource(PERMISSION_SCHEMA) {
+        resource(LEGACY_USER_DEFINED_ENTRIES) {
             permission(WRITE) {
                 includedIn(MODEL_SERVER, ADMIN)
                 permission(READ)
             }
         }
 
-        resource(LEGACY_USER_DEFINED_ENTRIES) {
-            permission(READ) {
-                includedIn(MODEL_SERVER, ADMIN)
-            }
-            permission(WRITE) {
-                includedIn(MODEL_SERVER, ADMIN)
-            }
-        }
-
         resource(LEGACY_GLOBAL_OBJECTS) {
-            permission(READ) {
-                includedIn(MODEL_SERVER, ADMIN)
-            }
             permission(ADD) {
                 includedIn(MODEL_SERVER, ADMIN)
+                permission(READ)
             }
         }
 

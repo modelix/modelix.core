@@ -1,6 +1,6 @@
 package org.modelix.model.server
 
-import com.auth0.jwt.JWTCreator
+import com.nimbusds.jwt.JWTClaimsSet
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BearerTokens
@@ -19,6 +19,7 @@ import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
 import java.time.Instant
+import java.util.Date
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
@@ -62,7 +63,7 @@ class PermissionsTest {
         return createModelClient(grantedPermissions = grantedPermissions.toList())
     }
 
-    suspend fun ApplicationTestBuilder.createModelClient(grantedPermissions: List<PermissionParts>, hmac512key: String = jwtSignatureKey, tokenModifier: (JWTCreator.Builder) -> Unit = {}): ModelClientV2 {
+    suspend fun ApplicationTestBuilder.createModelClient(grantedPermissions: List<PermissionParts>, hmac512key: String = jwtSignatureKey, tokenModifier: (JWTClaimsSet.Builder) -> Unit = {}): ModelClientV2 {
         val url = "http://localhost/v2"
         return ModelClientV2.builder().url(url).client(
             client.config {
@@ -323,7 +324,7 @@ class PermissionsTest {
     fun `cannot create repository with expired token`() = runTest {
         val repoId = RepositoryId("repo1")
         val client = createModelClient(grantedPermissions = listOf(ModelServerPermissionSchema.repository(repoId).write)) { jwt ->
-            jwt.withExpiresAt(Instant.now().minusSeconds(300))
+            jwt.expirationTime(Date(Instant.now().minusSeconds(300).toEpochMilli()))
         }
 
         assertUnauthorized {
@@ -345,7 +346,7 @@ class PermissionsTest {
     fun `can create repository with non-expired token`() = runTest {
         val repoId = RepositoryId("repo1")
         val client = createModelClient(grantedPermissions = listOf(ModelServerPermissionSchema.repository(repoId).write)) { jwt ->
-            jwt.withExpiresAt(Instant.now().plusSeconds(10))
+            jwt.expirationTime(Date(Instant.now().plusSeconds(10).toEpochMilli()))
         }
 
         client.initRepository(repoId)

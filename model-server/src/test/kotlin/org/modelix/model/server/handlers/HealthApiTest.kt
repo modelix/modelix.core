@@ -11,7 +11,6 @@ import io.mockk.every
 import io.mockk.spyk
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Test
-import org.modelix.authorization.installAuthentication
 import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.store.InMemoryStoreClient
 import kotlin.test.AfterTest
@@ -24,7 +23,6 @@ class HealthApiTest {
 
     private fun runApiTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         application {
-            installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
             routing {
                 healthApiSpy.installRoutes(this)

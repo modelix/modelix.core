@@ -1,5 +1,7 @@
 package org.modelix.authorization.permissions
 
+import org.modelix.authorization.UnknownPermissionException
+
 /**
  * Instantiates the abstract schema with data from an actual system.
  */
@@ -69,9 +71,8 @@ class SchemaInstance(val schema: Schema) {
 
         fun getOrCreatePermissionInstance(name: String): PermissionInstance {
             return permissions.getOrPut(name) {
-                val permissionSchema = requireNotNull(resourceSchema.permissions[name]) {
-                    "Permission '$name' not found in $reference"
-                }
+                val permissionSchema = resourceSchema.permissions[name]
+                if (permissionSchema == null) throw UnknownPermissionException("", unknownElement = name)
                 PermissionInstance(permissionSchema, PermissionInstanceReference(name, reference))
             }
         }
@@ -99,6 +100,23 @@ class SchemaInstance(val schema: Schema) {
         inner class PermissionInstance(val permissionSchema: Permission, val ref: PermissionInstanceReference) {
             val includedIn: MutableSet<PermissionInstance> = HashSet()
             val includes: MutableSet<PermissionInstance> = HashSet()
+
+            fun transitiveIncludes(acc: MutableSet<PermissionInstance> = LinkedHashSet()): Set<PermissionInstance> {
+                for (p in includes) {
+                    acc.add(p)
+                    p.transitiveIncludes(acc)
+                }
+                return acc
+            }
+
+            fun transitiveIncludedIn(acc: MutableSet<PermissionInstance> = LinkedHashSet()): Set<PermissionInstance> {
+                for (p in includedIn) {
+                    if (acc.contains(p)) continue
+                    acc.add(p)
+                    p.transitiveIncludedIn(acc)
+                }
+                return acc
+            }
 
             fun updateIncludes() {
                 permissionSchema.includedIn.forEach { target ->
@@ -140,5 +158,13 @@ data class PermissionInstanceReference(val permissionName: String, val resource:
     fun toPermissionParts() = resource.toPermissionParts() + permissionName
     override fun toString(): String {
         return toPermissionParts().toString()
+    }
+    fun isValid(schema: Schema): Boolean {
+        return try {
+            PermissionParser(schema).parse(toPermissionParts())
+            true
+        } catch (ex: UnknownPermissionException) {
+            false
+        }
     }
 }

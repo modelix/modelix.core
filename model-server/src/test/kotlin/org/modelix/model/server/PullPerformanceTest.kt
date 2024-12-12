@@ -3,7 +3,6 @@ package org.modelix.model.server
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.coroutineScope
-import org.modelix.authorization.installAuthentication
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
@@ -25,7 +24,6 @@ class PullPerformanceTest {
         val storeClientWithStatistics = StoreClientWithStatistics(InMemoryStoreClient())
         val repositoriesManager = RepositoriesManager(storeClientWithStatistics)
         application {
-            installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
             ModelReplicationServer(repositoriesManager).init(this)
             KeyValueLikeModelServer(repositoriesManager).init(this)

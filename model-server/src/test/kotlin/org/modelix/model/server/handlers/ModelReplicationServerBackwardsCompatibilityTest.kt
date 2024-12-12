@@ -4,7 +4,6 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
-import org.modelix.authorization.installAuthentication
 import org.modelix.model.client.RestWebModelClient
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.RepositoryId
@@ -24,7 +23,6 @@ class ModelReplicationServerBackwardsCompatibilityTest {
         val modelReplicationServer = ModelReplicationServer(repositoriesManager)
         val keyValueLikeModelServer = KeyValueLikeModelServer(repositoriesManager)
         application {
-            installAuthentication(unitTestMode = true)
             installDefaultServerPlugins()
             modelReplicationServer.init(this)
             keyValueLikeModelServer.init(this)

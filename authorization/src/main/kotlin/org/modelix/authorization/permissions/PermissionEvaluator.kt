@@ -1,5 +1,7 @@
 package org.modelix.authorization.permissions
 
+import org.modelix.authorization.UnknownPermissionException
+
 class PermissionEvaluator(val schemaInstance: SchemaInstance) {
     private val allGrantedPermissions: MutableSet<PermissionInstanceReference> = HashSet()
     private val parser = PermissionParser(schemaInstance.schema)
@@ -7,11 +9,15 @@ class PermissionEvaluator(val schemaInstance: SchemaInstance) {
     fun getAllGrantedPermissions(): Set<PermissionInstanceReference> = schemaInstance.getAllPermissions().map { it.ref }.filter { hasPermission(it) }.toSet()
 
     fun grantPermission(permissionId: String) {
-        grantPermission(parser.parse(permissionId))
+        grantPermission(PermissionParts.fromString(permissionId))
     }
 
     fun grantPermission(permissionId: PermissionParts) {
-        grantPermission(parser.parse(permissionId))
+        try {
+            grantPermission(parser.parse(permissionId))
+        } catch (ex: UnknownPermissionException) {
+            // Tokens may also contain permissions for other services.
+        }
     }
 
     fun grantPermission(permissionRef: PermissionInstanceReference) {
@@ -32,7 +38,10 @@ class PermissionEvaluator(val schemaInstance: SchemaInstance) {
     }
 
     fun instantiatePermission(permissionId: PermissionParts): SchemaInstance.ResourceInstance.PermissionInstance {
-        val permissionRef = parser.parse(permissionId)
+        return instantiatePermission(parser.parse(permissionId))
+    }
+
+    fun instantiatePermission(permissionRef: PermissionInstanceReference): SchemaInstance.ResourceInstance.PermissionInstance {
         val instance = schemaInstance.instantiatePermission(permissionRef)
         hasPermission(permissionRef) // permissions are instantiated during the check
         return instance

@@ -28,6 +28,7 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.model.server.store.ObjectInRepository
+import org.modelix.model.server.store.RequiresTransaction
 import org.modelix.model.server.store.StoreManager
 import org.modelix.model.server.store.pollEntry
 import org.modelix.model.server.store.runReadIO
@@ -61,6 +62,7 @@ class KeyValueLikeModelServer(
         // request to initialize it lazily, would make the code less robust.
         // Each change in the logic of RepositoriesManager#maybeInitAndGetSeverId would need
         // the special conditions in the affected requests to be updated.
+        @OptIn(RequiresTransaction::class)
         repositoriesManager.getTransactionManager().runWrite { repositoriesManager.maybeInitAndGetSeverId() }
         application.apply {
             modelServerModule()
@@ -89,6 +91,7 @@ class KeyValueLikeModelServer(
                 get<Paths.getKeyGet> {
                     val key = call.parameters["key"]!!
                     checkKeyPermission(key, EPermissionType.READ)
+                    @OptIn(RequiresTransaction::class)
                     val value = runRead { stores.getGlobalStoreClient()[key] }
                     respondValue(key, value)
                 }
@@ -113,6 +116,7 @@ class KeyValueLikeModelServer(
                 get<Paths.getRecursivelyKeyGet> {
                     val key = call.parameters["key"]!!
                     checkKeyPermission(key, EPermissionType.READ)
+                    @OptIn(RequiresTransaction::class)
                     call.respondText(runRead { collect(key, this) }.toString(2), contentType = ContentType.Application.Json)
                 }
 
@@ -120,6 +124,7 @@ class KeyValueLikeModelServer(
                     val key = call.parameters["key"]!!
                     val value = call.receiveText()
                     try {
+                        @OptIn(RequiresTransaction::class)
                         runWrite {
                             putEntries(mapOf(key to value))
                         }
@@ -141,6 +146,7 @@ class KeyValueLikeModelServer(
                     }
                     entries = sortByDependency(entries)
                     try {
+                        @OptIn(RequiresTransaction::class)
                         runWrite {
                             putEntries(entries)
                         }
@@ -162,6 +168,7 @@ class KeyValueLikeModelServer(
                         checkKeyPermission(key, EPermissionType.READ)
                         keys.add(key)
                     }
+                    @OptIn(RequiresTransaction::class)
                     val values = runRead { stores.getGlobalStoreClient(false).getAll(keys) }
                     for (i in keys.indices) {
                         val respEntry = JSONObject()
@@ -203,6 +210,7 @@ class KeyValueLikeModelServer(
         return sorted
     }
 
+    @RequiresTransaction
     fun collect(rootKey: String, callContext: CallContext?): JSONArray {
         val result = JSONArray()
         val processed: MutableSet<String> = HashSet()
@@ -244,6 +252,7 @@ class KeyValueLikeModelServer(
         return result
     }
 
+    @RequiresTransaction
     private fun CallContext.putEntries(newEntries: Map<String, String?>) {
         val referencedKeys: MutableSet<String> = HashSet()
         for ((key, value) in newEntries) {
@@ -312,7 +321,7 @@ class KeyValueLikeModelServer(
                 repositoriesManager.removeBranches(branch.repositoryId, setOf(branch.branchName))
             } else {
                 checkPermission(ModelServerPermissionSchema.branch(branch).push)
-                repositoriesManager.mergeChangesBlocking(branch, value)
+                repositoriesManager.mergeChanges(branch, value)
             }
         }
     }

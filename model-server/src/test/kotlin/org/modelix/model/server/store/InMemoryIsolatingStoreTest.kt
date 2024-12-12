@@ -21,12 +21,14 @@ class InMemoryIsolatingStoreTest {
                 ObjectInRepository(repoId.id, "key0") to "value0",
                 ObjectInRepository(repoId.id, "key1") to "value1",
             )
+            @OptIn(RequiresTransaction::class)
             store.runWrite {
                 store.putAll(entries)
 
                 store.removeRepositoryObjects(repoId)
             }
 
+            @OptIn(RequiresTransaction::class)
             assertTrue { store.runRead { store.getAll() }.isEmpty() }
         }
 
@@ -37,6 +39,7 @@ class InMemoryIsolatingStoreTest {
                 ObjectInRepository(existingId.id, "key0") to "value0",
                 ObjectInRepository(existingId.id, "key1") to "value1",
             )
+            @OptIn(RequiresTransaction::class)
             store.runWrite { store.putAll(existingEntries) }
 
             val toDeleteId = RepositoryId("toDelete")
@@ -44,17 +47,20 @@ class InMemoryIsolatingStoreTest {
                 ObjectInRepository(toDeleteId.id, "key0") to "value0",
                 ObjectInRepository(toDeleteId.id, "key1") to "value1",
             )
+            @OptIn(RequiresTransaction::class)
             store.runWrite {
                 store.putAll(toDeleteEntries)
                 store.removeRepositoryObjects(toDeleteId)
             }
 
+            @OptIn(RequiresTransaction::class)
             assertEquals(existingEntries, store.runRead { store.getAll() })
         }
 
         @Test
         fun `removing a non-existing repository does not throw`() {
             assertDoesNotThrow {
+                @OptIn(RequiresTransaction::class)
                 store.runWrite { store.removeRepositoryObjects(RepositoryId("invalid")) }
             }
         }

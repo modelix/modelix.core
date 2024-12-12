@@ -7,6 +7,7 @@ import org.modelix.model.IKeyListener
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.model.server.store.RequiresTransaction
 import org.modelix.model.server.store.forGlobalRepository
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
@@ -38,12 +39,14 @@ abstract class StoreClientParallelTransactionsTest(val store: IStoreClient) {
             "key2",
             object : IKeyListener {
                 override fun changed(key: String, value: String?) {
-                    notifiedValueFuture.complete(store[key]!!)
+                    @OptIn(RequiresTransaction::class)
+                    notifiedValueFuture.complete(store.runReadTransaction { store[key] }!!)
                 }
             },
         )
 
         launch(Dispatchers.IO) {
+            @OptIn(RequiresTransaction::class)
             store.runWriteTransaction {
                 store.put("key1", "valueA")
                 threadBlocker.reachPointInTime(1)
@@ -57,6 +60,7 @@ abstract class StoreClientParallelTransactionsTest(val store: IStoreClient) {
         }
 
         launch(Dispatchers.IO) {
+            @OptIn(RequiresTransaction::class)
             store.runWriteTransaction {
                 threadBlocker.sleepUntilPointInTime(1)
                 store.put("key2", "valueB")
@@ -84,6 +88,7 @@ abstract class StoreClientParallelTransactionsTest(val store: IStoreClient) {
             println("(1) launched")
             threadBlocker.reachPointInTime(1)
             threadBlocker.sleepUntilPointInTime(2)
+            @OptIn(RequiresTransaction::class)
             store.runWriteTransaction {
                 println("(1) inside transaction")
 
@@ -103,6 +108,7 @@ abstract class StoreClientParallelTransactionsTest(val store: IStoreClient) {
             println("(2) launched")
             threadBlocker.sleepUntilPointInTime(1)
             threadBlocker.reachPointInTime(2)
+            @OptIn(RequiresTransaction::class)
             store.runWriteTransaction {
                 println("(2) inside transaction")
 

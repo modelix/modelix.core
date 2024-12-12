@@ -24,7 +24,10 @@ fun IsolatingStore.loadDump(file: File): Int {
                 ObjectInRepository.global(it.key)
             }
         }
-        putAll(entries, silent = true)
+        @OptIn(RequiresTransaction::class)
+        getTransactionManager().runWrite {
+            putAll(entries, silent = true)
+        }
     }
     return n
 }
@@ -32,17 +35,20 @@ fun IsolatingStore.loadDump(file: File): Int {
 @Synchronized
 @Throws(IOException::class)
 fun IsolatingStore.writeDump(file: File) {
-    file.writer().use { writer ->
-        for ((key, value) in getAll()) {
-            if (value == null) continue
-            writer.append(key.key)
-            if (!key.isGlobal()) {
-                writer.append(REPOSITORY_SEPARATOR)
-                writer.append(key.getRepositoryId())
+    @OptIn(RequiresTransaction::class)
+    getTransactionManager().runRead {
+        file.writer().use { writer ->
+            for ((key, value) in getAll()) {
+                if (value == null) continue
+                writer.append(key.key)
+                if (!key.isGlobal()) {
+                    writer.append(REPOSITORY_SEPARATOR)
+                    writer.append(key.getRepositoryId())
+                }
+                writer.append("#")
+                writer.append(value)
+                writer.append("\n")
             }
-            writer.append("#")
-            writer.append(value)
-            writer.append("\n")
         }
     }
 }

@@ -17,15 +17,18 @@ abstract class StoreClientAdapter(val client: IsolatingStore) : IStoreClient {
         }
     }
 
+    @RequiresTransaction
     override fun get(key: String): String? {
         return getAll(setOf(key))[key]
     }
 
+    @RequiresTransaction
     override fun getAll(keys: List<String>): List<String?> {
         val map = getAll(keys.toSet())
         return keys.map { map[it] }
     }
 
+    @RequiresTransaction
     override fun getIfCached(key: String): String? {
         val fromRepository = client.getIfCached(key.withRepoScope())
         if (fromRepository != null) return fromRepository
@@ -34,6 +37,7 @@ abstract class StoreClientAdapter(val client: IsolatingStore) : IStoreClient {
         return client.getIfCached(ObjectInRepository.global(key))
     }
 
+    @RequiresTransaction
     override fun getAll(keys: Set<String>): Map<String, String?> {
         val fromRepository = client.getAll(keys.map { it.withRepoScope() }.toSet()).mapKeys { it.key.key }
         if (getRepositoryId() == null) return fromRepository
@@ -51,15 +55,18 @@ abstract class StoreClientAdapter(val client: IsolatingStore) : IStoreClient {
         return fromRepository + fromGlobal
     }
 
+    @RequiresTransaction
     override fun getAll(): Map<String, String?> {
         throw UnsupportedOperationException()
         // return client.getAll().filterKeys { it.repositoryId == null || it.repositoryId == repositoryId?.id }.mapKeys { it.key.key }
     }
 
+    @RequiresTransaction
     override fun put(key: String, value: String?, silent: Boolean) {
         client.put(key.withRepoScope(), value, silent)
     }
 
+    @RequiresTransaction
     override fun putAll(entries: Map<String, String?>, silent: Boolean) {
         client.putAll(entries.mapKeys { it.key.withRepoScope() }, silent)
     }

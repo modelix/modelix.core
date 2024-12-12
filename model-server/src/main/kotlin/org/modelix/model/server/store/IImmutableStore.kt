@@ -15,18 +15,22 @@ interface IImmutableStore<KeyT> {
 fun <KeyT> IImmutableStore<KeyT>.asGenericStore() = ImmutableStoreAsGenericStore(this)
 
 class ImmutableStoreAsGenericStore<KeyT>(val store: IImmutableStore<KeyT>) : IGenericStoreClient<KeyT> {
+    @RequiresTransaction
     override fun getAll(keys: Set<KeyT>): Map<KeyT, String?> {
         return store.getAll(keys)
     }
 
+    @RequiresTransaction
     override fun getAll(): Map<KeyT, String?> {
         throw UnsupportedOperationException()
     }
 
+    @RequiresTransaction
     override fun getIfCached(key: KeyT): String? {
         return store.getIfCached(key)
     }
 
+    @RequiresTransaction
     override fun putAll(entries: Map<KeyT, String?>, silent: Boolean) {
         store.addAll(entries.mapValues { requireNotNull(it.value) { "Deleting entries not allowed: $it" } })
     }
@@ -44,7 +48,7 @@ class ImmutableStoreAsGenericStore<KeyT>(val store: IImmutableStore<KeyT>) : IGe
     }
 
     override fun getTransactionManager(): ITransactionManager {
-        throw UnsupportedOperationException()
+        return NoTransactionManager()
     }
 
     override fun getImmutableStore(): IImmutableStore<KeyT> {

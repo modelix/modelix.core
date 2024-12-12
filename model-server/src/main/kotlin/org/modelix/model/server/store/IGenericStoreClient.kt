@@ -16,6 +16,7 @@ interface IRepositoryAwareStore : IsolatingStore {
      *
      * Callers need to ensure that the repository is not usable anymore before calling this method.
      */
+    @RequiresTransaction
     fun removeRepositoryObjects(repositoryId: RepositoryId) {
         val keysToDelete = getAll().asSequence()
             .map { it.key }
@@ -26,15 +27,28 @@ interface IRepositoryAwareStore : IsolatingStore {
 }
 
 interface IGenericStoreClient<KeyT> : AutoCloseable {
+    @RequiresTransaction
     operator fun get(key: KeyT): String? = getAll(listOf(key)).first()
+
+    @RequiresTransaction
     fun getAll(keys: List<KeyT>): List<String?> {
         val entries = getAll(keys.toSet())
         return keys.map { entries[it] }
     }
+
+    @RequiresTransaction
     fun getIfCached(key: KeyT): String?
+
+    @RequiresTransaction
     fun getAll(keys: Set<KeyT>): Map<KeyT, String?>
+
+    @RequiresTransaction
     fun getAll(): Map<KeyT, String?>
+
+    @RequiresTransaction
     fun put(key: KeyT, value: String?, silent: Boolean = false) = putAll(mapOf(key to value))
+
+    @RequiresTransaction
     fun putAll(entries: Map<KeyT, String?>, silent: Boolean = false)
     fun listen(key: KeyT, listener: IGenericKeyListener<KeyT>)
     fun removeListener(key: KeyT, listener: IGenericKeyListener<KeyT>)

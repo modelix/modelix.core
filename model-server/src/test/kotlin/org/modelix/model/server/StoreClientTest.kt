@@ -8,6 +8,7 @@ import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.MissingWriteTransactionException
+import org.modelix.model.server.store.RequiresTransaction
 import org.modelix.model.server.store.forGlobalRepository
 import java.util.Collections
 import kotlin.random.Random
@@ -28,6 +29,7 @@ abstract class StoreClientTest(val store: IStoreClient) {
 
     @Test
     fun `transaction can be started from inside a transaction`() {
+        @OptIn(RequiresTransaction::class)
         store.runWriteTransaction {
             store.runWriteTransaction {
                 store.put("abc", "def")
@@ -40,6 +42,7 @@ abstract class StoreClientTest(val store: IStoreClient) {
         val key = "ljnrdlfkesmgf"
         val value = "izujztdrsew"
         assertFailsWith<MissingWriteTransactionException> {
+            @OptIn(RequiresTransaction::class)
             store.put(key, value)
         }
     }
@@ -50,6 +53,7 @@ abstract class StoreClientTest(val store: IStoreClient) {
         repeat(2) {
             val rand = Random(it)
             launch {
+                @OptIn(RequiresTransaction::class)
                 store.runWriteTransaction {
                     repeat(10) {
                         val value = rand.nextInt().toString()
@@ -69,15 +73,19 @@ abstract class StoreClientTest(val store: IStoreClient) {
         val value1 = "a"
         val value2 = "b"
 
+        @OptIn(RequiresTransaction::class)
         store.runWriteTransaction { store.put(key, value1) }
+        @OptIn(RequiresTransaction::class)
         assertEquals(value1, store.runReadTransaction { store.get(key) })
         assertFailsWith(NullPointerException::class) {
+            @OptIn(RequiresTransaction::class)
             store.runWriteTransaction {
                 store.put(key, value2)
                 assertEquals(value2, store.get(key))
                 throw NullPointerException()
             }
         }
+        @OptIn(RequiresTransaction::class)
         assertEquals(value1, store.runReadTransaction { store.get(key) }) // failed transaction should be rolled back
     }
 
@@ -94,12 +102,15 @@ abstract class StoreClientTest(val store: IStoreClient) {
             object : IKeyListener {
                 override fun changed(key: String, value: String?) {
                     valuesSeenByListener += value
-                    valuesSeenByListener += store.get(key)
+                    @OptIn(RequiresTransaction::class)
+                    valuesSeenByListener += store.runReadTransaction { store.get(key) }
                 }
             },
         )
 
+        @OptIn(RequiresTransaction::class)
         store.runWriteTransaction { store.put(key, value1) }
+        @OptIn(RequiresTransaction::class)
         assertEquals(value1, store.runReadTransaction { store.get(key) })
 
         assertEquals(setOf<String?>(value1), valuesSeenByListener)
@@ -108,6 +119,7 @@ abstract class StoreClientTest(val store: IStoreClient) {
         coroutineScope {
             launch {
                 assertFailsWith(NullPointerException::class) {
+                    @OptIn(RequiresTransaction::class)
                     store.runWriteTransaction {
                         assertEquals(value1, store.get(key))
                         store.put(key, value2, silent = false)
@@ -118,6 +130,7 @@ abstract class StoreClientTest(val store: IStoreClient) {
             }
 
             launch {
+                @OptIn(RequiresTransaction::class)
                 store.runWriteTransaction {
                     assertEquals(value1, store.get(key))
                     store.put(key, value3, silent = false)

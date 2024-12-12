@@ -6,6 +6,7 @@ import kotlinx.coroutines.test.runTest
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.store.IRepositoryAwareStore
 import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.model.server.store.RequiresTransaction
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,6 +17,7 @@ class RepositoriesManagerTest {
     val store = spyk<IRepositoryAwareStore>(InMemoryStoreClient())
     private val repoManager = RepositoriesManager(store)
 
+    @RequiresTransaction
     private fun initRepository(repoId: RepositoryId) {
         repoManager.createRepository(repoId, "testUser", useRoleIds = true, legacyGlobalStorage = false)
     }
@@ -28,10 +30,12 @@ class RepositoriesManagerTest {
     @Test
     fun `deleting default branch works`() = runTest {
         val repoId = RepositoryId("branch-removal")
+        @OptIn(RequiresTransaction::class)
         repoManager.getTransactionManager().runWrite {
             initRepository(repoId)
             repoManager.removeBranches(repoId, setOf("master"))
         }
+        @OptIn(RequiresTransaction::class)
         val branches = repoManager.getTransactionManager().runRead { repoManager.getBranches(repoId) }
         assertTrue { branches.none { it.branchName == "master" } }
     }
@@ -39,17 +43,22 @@ class RepositoriesManagerTest {
     @Test
     fun `repository data is removed when removing repository`() = runTest {
         val repoId = RepositoryId("abc")
+        @OptIn(RequiresTransaction::class)
         repoManager.getTransactionManager().runWrite {
             initRepository(repoId)
             repoManager.removeRepository(repoId)
         }
-        verify(exactly = 1) { store.removeRepositoryObjects(repoId) }
+        @OptIn(RequiresTransaction::class)
+        store.runWriteTransaction {
+            verify(exactly = 1) { store.removeRepositoryObjects(repoId) }
+        }
     }
 
     @Test
     fun `data of other repositories remains intact when removing a repository`() = runTest {
         val existingRepo = RepositoryId("existing")
         val toBeDeletedRepo = RepositoryId("tobedeleted")
+        @OptIn(RequiresTransaction::class)
         repoManager.getTransactionManager().runWrite {
             initRepository(existingRepo)
             initRepository(toBeDeletedRepo)

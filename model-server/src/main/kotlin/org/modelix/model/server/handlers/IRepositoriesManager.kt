@@ -7,6 +7,7 @@ import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.ITransactionManager
+import org.modelix.model.server.store.RequiresTransaction
 import org.modelix.model.server.store.StoreManager
 
 interface IRepositoriesManager {
@@ -19,29 +20,38 @@ interface IRepositoriesManager {
      * If the server ID was created previously but is only stored under a legacy database key,
      * it also gets stored under the current and all legacy database keys.
      */
+    @RequiresTransaction
     fun maybeInitAndGetSeverId(): String
+
+    @RequiresTransaction
     fun getRepositories(): Set<RepositoryId>
+
+    @RequiresTransaction
     fun createRepository(repositoryId: RepositoryId, userName: String?, useRoleIds: Boolean = true, legacyGlobalStorage: Boolean = false): CLVersion
+
+    @RequiresTransaction
     fun removeRepository(repository: RepositoryId): Boolean
 
+    @RequiresTransaction
     fun getBranches(repositoryId: RepositoryId): Set<BranchReference>
 
     /**
      * Same as [removeBranches] but blocking.
      * Caller is expected to execute it outside the request thread.
      */
+    @RequiresTransaction
     fun removeBranches(repository: RepositoryId, branchNames: Set<String>)
+
+    @RequiresTransaction
     fun getVersion(branch: BranchReference): CLVersion?
     fun getVersion(repository: RepositoryId, versionHash: String): CLVersion?
+
+    @RequiresTransaction
     fun getVersionHash(branch: BranchReference): String?
     suspend fun pollVersionHash(branch: BranchReference, lastKnown: String?): String
-    fun mergeChanges(branch: BranchReference, newVersionHash: String): String
 
-    /**
-     * Same as [mergeChanges] but blocking.
-     * Caller is expected to execute it outside the request thread.
-     */
-    fun mergeChangesBlocking(branch: BranchReference, newVersionHash: String): String
+    @RequiresTransaction
+    fun mergeChanges(branch: BranchReference, newVersionHash: String): String
     suspend fun computeDelta(repository: RepositoryId?, versionHash: String, baseVersionHash: String?): ObjectData
 
     /**
@@ -56,6 +66,7 @@ interface IRepositoriesManager {
     fun getTransactionManager(): ITransactionManager
 }
 
+@RequiresTransaction
 fun IRepositoriesManager.getBranchNames(repositoryId: RepositoryId): Set<String> {
     return getBranches(repositoryId).map { it.branchName }.toSet()
 }

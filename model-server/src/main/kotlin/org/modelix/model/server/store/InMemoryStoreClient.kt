@@ -29,31 +29,37 @@ class InMemoryStoreClient : IsolatingStore, ITransactionManager, IRepositoryAwar
     private val pendingChangeMessages = PendingChangeMessages(changeNotifier::notifyListeners)
     private val locks = TransactionLocks()
 
+    @RequiresTransaction
     override fun get(key: ObjectInRepository): String? {
         locks.assertRead()
         return if (transactionValues?.contains(key) == true) transactionValues!![key] else values[key]
     }
 
+    @RequiresTransaction
     override fun getIfCached(key: ObjectInRepository): String? {
         locks.assertRead()
         return get(key)
     }
 
+    @RequiresTransaction
     override fun getAll(keys: List<ObjectInRepository>): List<String?> {
         locks.assertRead()
         return keys.map { get(it) }
     }
 
+    @RequiresTransaction
     override fun getAll(): Map<ObjectInRepository, String?> {
         locks.assertRead()
         return values + (transactionValues ?: emptyMap())
     }
 
+    @RequiresTransaction
     override fun getAll(keys: Set<ObjectInRepository>): Map<ObjectInRepository, String?> {
         locks.assertRead()
         return keys.associateWith { get(it) }
     }
 
+    @RequiresTransaction
     override fun put(key: ObjectInRepository, value: String?, silent: Boolean) {
         locks.assertWrite()
         (transactionValues ?: values)[key] = value
@@ -62,6 +68,7 @@ class InMemoryStoreClient : IsolatingStore, ITransactionManager, IRepositoryAwar
         }
     }
 
+    @RequiresTransaction
     override fun putAll(entries: Map<ObjectInRepository, String?>, silent: Boolean) {
         locks.assertWrite()
         for ((key, value) in entries) {
@@ -79,6 +86,7 @@ class InMemoryStoreClient : IsolatingStore, ITransactionManager, IRepositoryAwar
 
     override fun generateId(key: ObjectInRepository): Long {
         // This is an atomic operation that doesn't require the caller to start a transaction
+        @OptIn(RequiresTransaction::class)
         return runWriteTransaction {
             val id = generateId(get(key))
             put(key, id.toString(), false)
@@ -132,6 +140,7 @@ class InMemoryStoreClient : IsolatingStore, ITransactionManager, IRepositoryAwar
         return object : IImmutableStore<ObjectInRepository> {
             override fun getAll(keys: Set<ObjectInRepository>): Map<ObjectInRepository, String> {
                 keys.forEach { require(HashUtil.isSha256(it.key)) { "Not an immutable object: $it" } }
+                @OptIn(RequiresTransaction::class)
                 return runRead { this@InMemoryStoreClient.getAll(keys) }.mapValues {
                     val value = it.value
                     if (value == null) throw ObjectValueNotFoundException(it.key.key)
@@ -144,11 +153,13 @@ class InMemoryStoreClient : IsolatingStore, ITransactionManager, IRepositoryAwar
                     require(HashUtil.isSha256(it.key.key)) { "Not an immutable object: $it" }
                     HashUtil.checkObjectHash(it.key.key, it.value)
                 }
+                @OptIn(RequiresTransaction::class)
                 runWrite { this@InMemoryStoreClient.putAll(entries) }
             }
 
             override fun getIfCached(key: ObjectInRepository): String? {
                 require(HashUtil.isSha256(key.key)) { "Not an immutable object: $key" }
+                @OptIn(RequiresTransaction::class)
                 return runRead { this@InMemoryStoreClient.getIfCached(key) }
             }
         }

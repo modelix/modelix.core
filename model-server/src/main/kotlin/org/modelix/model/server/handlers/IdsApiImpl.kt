@@ -9,6 +9,8 @@ import io.ktor.server.routing.routing
 import io.ktor.util.pipeline.PipelineContext
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.requiresLogin
+import org.modelix.model.server.store.RequiresTransaction
+import org.modelix.model.server.store.runReadIO
 
 /**
  * Implementation of the REST API that is responsible for handling client and server IDs.
@@ -24,7 +26,11 @@ class IdsApiImpl(
         //
         // Functionally, it does not matter if the server ID is created eagerly or lazily,
         // as long as the same server ID is returned from the same server.
-        val serverId = repositoriesManager.maybeInitAndGetSeverId()
+        val serverId =
+            @OptIn(RequiresTransaction::class)
+            repositoriesManager.getTransactionManager().runReadIO {
+                repositoriesManager.maybeInitAndGetSeverId()
+            }
         call.respondText(serverId)
     }
 

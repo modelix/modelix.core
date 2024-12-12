@@ -35,6 +35,7 @@ import org.modelix.model.server.api.v2.toMap
 import org.modelix.model.server.store.IRepositoryAwareStore
 import org.modelix.model.server.store.ITransactionManager
 import org.modelix.model.server.store.ObjectInRepository
+import org.modelix.model.server.store.RequiresTransaction
 import org.modelix.model.server.store.StoreManager
 import org.modelix.model.server.store.assertWrite
 import org.modelix.model.server.store.pollEntry
@@ -49,11 +50,10 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
     constructor(store: IRepositoryAwareStore) : this(StoreManager(store))
 
     init {
+        @RequiresTransaction
         fun migrateLegacyRepositoriesList(infoBranch: IBranch) {
             val legacyRepositories = listLegacyRepositories(infoBranch).groupBy { it.repositoryId }
             if (legacyRepositories.isNotEmpty()) {
-                // To not use `runTransactionSuspendable` like everywhere else,
-                // because this is blocking initialization code anyways.
                 ensureRepositoriesAreInList(legacyRepositories.keys)
                 for ((legacyRepository, legacyBranches) in legacyRepositories) {
                     ensureBranchesAreInList(legacyRepository, legacyBranches.map { it.branchName }.toSet())
@@ -62,6 +62,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         }
 
         fun doMigrations() {
+            @OptIn(RequiresTransaction::class)
             stores.getTransactionManager().runWrite {
                 val repositoryId = RepositoryId("info")
                 val v1BranchKey = repositoryId.getBranchReference().getKey()
@@ -96,6 +97,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
      * If the server ID was created previously but is only stored under a legacy database key,
      * it also gets stored under the current and all legacy database keys.
      */
+    @RequiresTransaction
     override fun maybeInitAndGetSeverId(): String {
         val store = stores.getGlobalStoreClient()
         var serverId = store[SERVER_ID_KEY]
@@ -110,10 +112,12 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         return serverId
     }
 
+    @RequiresTransaction
     override fun getRepositories(): Set<RepositoryId> {
         return getRepositories(false) + getRepositories(true)
     }
 
+    @RequiresTransaction
     fun getRepositories(isolated: Boolean): Set<RepositoryId> {
         val repositoriesList = stores.genericStore[ObjectInRepository.global(repositoriesListKey(isolated))]
         val emptyRepositoriesList = repositoriesList.isNullOrBlank()
@@ -131,6 +135,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
     override fun isIsolated(repository: RepositoryId): Boolean? {
         // The repository might not exist, but new repositories will be created with isolated storage.
         // If a repository is not part of the legacy ones it's considered isolated.
+        @OptIn(RequiresTransaction::class)
         return stores.getTransactionManager().runRead {
             if (getRepositories(true).contains(repository)) return@runRead true
             if (getRepositories(false).contains(repository)) return@runRead false
@@ -138,8 +143,10 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         }
     }
 
+    @OptIn(RequiresTransaction::class)
     private fun repositoryExists(repositoryId: RepositoryId) = getRepositories().contains(repositoryId)
 
+    @RequiresTransaction
     override fun createRepository(
         repositoryId: RepositoryId,
         userName: String?,
@@ -170,10 +177,12 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         return initialVersion
     }
 
+    @RequiresTransaction
     fun getBranchNames(repositoryId: RepositoryId): Set<String> {
         return stores.genericStore[branchListKey(repositoryId)]?.ifEmpty { null }?.lines()?.toSet().orEmpty()
     }
 
+    @RequiresTransaction
     override fun getBranches(repositoryId: RepositoryId): Set<BranchReference> {
         return getBranchNames(repositoryId)
             .map { repositoryId.getBranchReference(it) }
@@ -181,9 +190,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
             .toSet()
     }
 
-    /**
-     * Must be executed inside a transaction
-     */
+    @RequiresTransaction
     private fun ensureRepositoriesAreInList(repositoryIds: Set<RepositoryId>) {
         if (repositoryIds.isEmpty()) return
         val missingRepositories = repositoryIds - getRepositories()
@@ -194,9 +201,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         }
     }
 
-    /**
-     * Must be executed inside a transaction
-     */
+    @RequiresTransaction
     private fun ensureBranchesAreInList(repository: RepositoryId, branchNames: Set<String>) {
         if (branchNames.isEmpty()) return
         val key = branchListKey(repository)
@@ -207,14 +212,13 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         }
     }
 
-    /**
-     * Must be executed inside a transaction
-     */
+    @RequiresTransaction
     private fun ensureBranchInList(branch: BranchReference) {
         ensureRepositoriesAreInList(setOf(branch.repositoryId))
         ensureBranchesAreInList(branch.repositoryId, setOf(branch.branchName))
     }
 
+    @RequiresTransaction
     override fun removeRepository(repository: RepositoryId): Boolean {
         val genericStore = stores.genericStore
 
@@ -234,10 +238,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         return true
     }
 
-    /**
-     * Same as [removeBranches] but blocking.
-     * Caller is expected to execute it outside the request thread.
-     */
+    @RequiresTransaction
     override fun removeBranches(repository: RepositoryId, branchNames: Set<String>) {
         if (branchNames.isEmpty()) return
         val key = branchListKey(repository)
@@ -249,15 +250,8 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         }
     }
 
+    @RequiresTransaction
     override fun mergeChanges(branch: BranchReference, newVersionHash: String): String {
-        return mergeChangesBlocking(branch, newVersionHash)
-    }
-
-    /**
-     * Same as [mergeChanges] but blocking.
-     * Caller is expected to execute it outside the request thread.
-     */
-    override fun mergeChangesBlocking(branch: BranchReference, newVersionHash: String): String {
         val headHash = getVersionHash(branch)
         val mergedHash = if (headHash == null) {
             newVersionHash
@@ -278,6 +272,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         return mergedHash
     }
 
+    @RequiresTransaction
     override fun getVersion(branch: BranchReference): CLVersion? {
         return getVersionHash(branch)?.let { getVersion(branch.repositoryId, it) }
     }
@@ -287,10 +282,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         return CLVersion.tryLoadFromHash(versionHash, legacyObjectStore)
     }
 
-    /**
-     * Same as [getVersionHash] but blocking.
-     * Caller is expected to execute it outside the request thread.
-     */
+    @RequiresTransaction
     override fun getVersionHash(branch: BranchReference): String? {
         val isolated = isIsolated(branch.repositoryId)
         if (isolated == null) {
@@ -304,6 +296,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         }
     }
 
+    @RequiresTransaction
     private fun putVersionHash(branch: BranchReference, hash: String?) {
         val isolated = isIsolated(branch.repositoryId) ?: false
         stores.genericStore.put(branchKey(branch, isolated), hash, false)

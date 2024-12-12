@@ -28,10 +28,12 @@ class StoreClientAsAsyncStore(val store: IStoreClient) : IAsyncObjectStore {
     }
 
     override fun <T : Any> getIfCached(key: ObjectHash<T>): T? {
+        @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
         return store.getIfCached(key.hash)?.let { key.deserializer(it) }
     }
 
     override fun <T : Any> get(key: ObjectHash<T>): Maybe<T> {
+        @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
         val value = store.get(key.hash) ?: return maybeOfEmpty()
         return key.deserializer(value).toMaybe()
     }
@@ -39,6 +41,8 @@ class StoreClientAsAsyncStore(val store: IStoreClient) : IAsyncObjectStore {
     override fun getAllAsStream(keys: Observable<ObjectHash<*>>): Observable<Pair<ObjectHash<*>, Any?>> {
         val keysList = keys.toList().getSynchronous()
         val keysMap = keysList.associateBy { it.hash }
+
+        @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
         val serializedValues = store.getAll(keysMap.keys)
         return serializedValues.map {
             val ref = keysMap[it.key]!!
@@ -48,6 +52,8 @@ class StoreClientAsAsyncStore(val store: IStoreClient) : IAsyncObjectStore {
 
     override fun getAllAsMap(keys: List<ObjectHash<*>>): Single<Map<ObjectHash<*>, Any?>> {
         val keysMap = keys.associateBy { it.hash }
+
+        @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
         val serializedValues = store.getAll(keysMap.keys)
         return serializedValues.map {
             val ref = keysMap[it.key]!!
@@ -56,6 +62,7 @@ class StoreClientAsAsyncStore(val store: IStoreClient) : IAsyncObjectStore {
     }
 
     override fun putAll(entries: Map<ObjectHash<*>, IKVValue>): Completable {
+        @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
         store.putAll(entries.entries.associate { it.key.hash to it.value.serialize() })
         return completableOfEmpty()
     }

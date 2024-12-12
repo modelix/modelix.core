@@ -58,6 +58,7 @@ import org.modelix.model.server.handlers.ui.RepositoryOverview
 import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.IsolatingStore
+import org.modelix.model.server.store.RequiresTransaction
 import org.modelix.model.server.store.forGlobalRepository
 import org.modelix.model.server.store.loadDump
 import org.modelix.model.server.store.writeDump
@@ -149,9 +150,12 @@ object Main {
             }
             var i = 0
             val globalStoreClient = storeClient.forGlobalRepository()
-            while (i < cmdLineArgs.setValues.size) {
-                globalStoreClient.put(cmdLineArgs.setValues[i], cmdLineArgs.setValues[i + 1])
-                i += 2
+            @OptIn(RequiresTransaction::class)
+            globalStoreClient.getTransactionManager().runWrite {
+                while (i < cmdLineArgs.setValues.size) {
+                    globalStoreClient.put(cmdLineArgs.setValues[i], cmdLineArgs.setValues[i + 1])
+                    i += 2
+                }
             }
             val repositoriesManager = RepositoriesManager(storeClient)
             val modelServer = KeyValueLikeModelServer(repositoriesManager)

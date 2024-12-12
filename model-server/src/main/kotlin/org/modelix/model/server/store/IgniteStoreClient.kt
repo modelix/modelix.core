@@ -94,21 +94,25 @@ class IgniteStoreClient(jdbcProperties: Properties? = null, private val inmemory
         SqlUtils(dataSource.connection).ensureSchemaInitialization()
     }
 
+    @RequiresTransaction
     override fun getIfCached(key: ObjectInRepository): String? {
         localLocks.assertRead()
         return cache.localPeek(key, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP)
     }
 
+    @RequiresTransaction
     override fun getAll(keys: Set<ObjectInRepository>): Map<ObjectInRepository, String?> {
         localLocks.assertRead()
         return cache.getAll(keys)
     }
 
+    @RequiresTransaction
     override fun getAll(): Map<ObjectInRepository, String?> {
         localLocks.assertRead()
         return cache.associate { it.key to it.value }
     }
 
+    @RequiresTransaction
     override fun removeRepositoryObjects(repositoryId: RepositoryId) {
         localLocks.assertWrite()
         if (!inmemory) {
@@ -148,6 +152,7 @@ class IgniteStoreClient(jdbcProperties: Properties? = null, private val inmemory
         }
     }
 
+    @RequiresTransaction
     override fun putAll(entries: Map<ObjectInRepository, String?>, silent: Boolean) {
         localLocks.assertWrite()
 
@@ -321,7 +326,8 @@ class ChangeNotifier(val store: IsolatingStore) {
         private var lastNotifiedValue: String? = null
 
         fun notifyIfChanged() {
-            val value = store.get(key)
+            @OptIn(RequiresTransaction::class)
+            val value = store.runReadTransaction { store.get(key) }
             if (value == lastNotifiedValue) return
             lastNotifiedValue = value
 

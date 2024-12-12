@@ -52,13 +52,13 @@ import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.TreePointer
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.model.server.handlers.IRepositoriesManager
 import org.modelix.model.server.handlers.NodeNotFoundException
-import org.modelix.model.server.handlers.getLegacyObjectStore
+import org.modelix.model.server.store.RequiresTransaction
 import org.modelix.model.server.store.StoreManager
+import org.modelix.model.server.store.runReadIO
 import org.modelix.model.server.templates.PageWithMenuBar
 
 class ContentExplorer(private val repoManager: IRepositoriesManager) {
@@ -84,12 +84,15 @@ class ContentExplorer(private val repoManager: IRepositoriesManager) {
                     }
                     call.checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
 
-                    val latestVersion = repoManager.getVersion(BranchReference(RepositoryId(repository), branch))
+                    @OptIn(RequiresTransaction::class)
+                    val latestVersion = repoManager.getTransactionManager().runReadIO {
+                        repoManager.getVersionHash(BranchReference(RepositoryId(repository), branch))
+                    }
                     if (latestVersion == null) {
                         call.respondText("unable to find latest version", status = HttpStatusCode.InternalServerError)
                         return@get
                     } else {
-                        call.respondRedirect("../../../versions/${latestVersion.getContentHash()}/")
+                        call.respondRedirect("../../../versions/$latestVersion/")
                     }
                 }
                 get("/content/repositories/{repository}/versions/{versionHash}") {
@@ -111,7 +114,14 @@ class ContentExplorer(private val repoManager: IRepositoriesManager) {
                         it.toLongOrNull() ?: return@get call.respondText("Invalid expandTo value. Provide a node id.", status = HttpStatusCode.BadRequest)
                     }
 
-                    val tree = CLVersion.loadFromHash(versionHash, repoManager.getLegacyObjectStore(repositoryId)).getTree()
+                    val version = repoManager.getTransactionManager().runReadIO {
+                        repoManager.getVersion(repositoryId, versionHash)
+                    }
+                    if (version == null) {
+                        call.respondText("version $versionHash not found", status = HttpStatusCode.NotFound)
+                        return@get
+                    }
+                    val tree = version.getTree()
                     val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
 
                     val expandedNodes = expandTo?.let { nodeId -> getAncestorsAndSelf(nodeId, tree) }.orEmpty()
@@ -152,7 +162,14 @@ class ContentExplorer(private val repoManager: IRepositoriesManager) {
 
                     val expandedNodes = call.receive<ContentExplorerExpandedNodes>()
 
-                    val tree = CLVersion.loadFromHash(versionHash, stores.getLegacyObjectStore(repositoryId)).getTree()
+                    val version = repoManager.getTransactionManager().runReadIO {
+                        repoManager.getVersion(repositoryId, versionHash)
+                    }
+                    if (version == null) {
+                        call.respondText("version $versionHash not found", status = HttpStatusCode.NotFound)
+                        return@post
+                    }
+                    val tree = version.getTree()
                     val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
 
                     var expandedNodeIds = expandedNodes.expandedNodeIds
@@ -180,12 +197,13 @@ class ContentExplorer(private val repoManager: IRepositoriesManager) {
 
                     call.checkPermission(ModelServerPermissionSchema.repository(repositoryId).objects.read)
 
-                    val version = try {
-                        CLVersion.loadFromHash(versionHash, stores.getLegacyObjectStore(RepositoryId(repositoryId)))
-                    } catch (ex: RuntimeException) {
-                        return@get call.respondText("version not found", status = HttpStatusCode.NotFound)
+                    val version = repoManager.getTransactionManager().runReadIO {
+                        repoManager.getVersion(RepositoryId(repositoryId), versionHash)
                     }
-
+                    if (version == null) {
+                        call.respondText("version $versionHash not found", status = HttpStatusCode.NotFound)
+                        return@get
+                    }
                     val node = PNodeAdapter(id, TreePointer(version.getTree())).takeIf { it.isValid }
 
                     if (node != null) {

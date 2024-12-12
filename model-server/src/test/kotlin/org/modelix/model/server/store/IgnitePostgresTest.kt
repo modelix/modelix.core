@@ -43,6 +43,7 @@ class IgnitePostgresTest {
 
     @Test
     fun `can get values for multiple keys when Ignite has not cached the keys yet`() {
+        @OptIn(RequiresTransaction::class)
         store.runRead {
             // The actual keys are irrelevant for this test.
             // A fresh client will have no keys cached.
@@ -57,6 +58,7 @@ class IgnitePostgresTest {
 
     @Test
     fun `store immutable object in repository`() {
+        @OptIn(RequiresTransaction::class)
         store.runWrite {
             val value = "immutable value " + System.nanoTime()
             val hash = HashUtil.sha256(value)
@@ -73,6 +75,7 @@ class IgnitePostgresTest {
 
     @Test
     fun `store immutable object in global storage`() {
+        @OptIn(RequiresTransaction::class)
         store.runWrite {
             val value = "immutable value " + System.nanoTime()
             val hash = HashUtil.sha256(value)
@@ -86,6 +89,7 @@ class IgnitePostgresTest {
 
     @Test
     fun `store mutable object in repository`() {
+        @OptIn(RequiresTransaction::class)
         store.runWrite {
             val value = "mutable value " + System.nanoTime()
             val hash = "mutable key " + System.nanoTime()
@@ -102,6 +106,7 @@ class IgnitePostgresTest {
 
     @Test
     fun `store mutable object in global storage`() {
+        @OptIn(RequiresTransaction::class)
         store.runWrite {
             val value = "mutable value " + System.nanoTime()
             val hash = "mutable key " + System.nanoTime()
@@ -115,6 +120,7 @@ class IgnitePostgresTest {
 
     @Test
     fun `read mutable legacy entry`() {
+        @OptIn(RequiresTransaction::class)
         store.runRead {
             val key = ObjectInRepository.global(":v2:repositories")
             assertEquals("courses", store.get(key))
@@ -123,6 +129,7 @@ class IgnitePostgresTest {
 
     @Test
     fun `overwrite mutable legacy entry`() {
+        @OptIn(RequiresTransaction::class)
         store.runWrite {
             val key = ObjectInRepository.global(":v2:repositories:courses:branches")
             assertEquals("master", store.get(key))
@@ -133,6 +140,7 @@ class IgnitePostgresTest {
 
     @Test
     fun `delete overwritten mutable legacy entry`() {
+        @OptIn(RequiresTransaction::class)
         store.runWrite {
             val key = ObjectInRepository.global(":v2:repositories:courses:branches:master")
             assertEquals("7fQeo*xrdfZuHZtaKhbp0OosarV5tVR8N3pW8JPkl7ZE", store.get(key))
@@ -145,6 +153,7 @@ class IgnitePostgresTest {
 
     @Test
     fun `read immutable legacy entry`() {
+        @OptIn(RequiresTransaction::class)
         store.runRead {
             val key = ObjectInRepository.global("2YAqw*tJWjb2t2RMO8ypIvHn8QpHjwmIUdhdFygV9lUE")
             assertEquals("S/5/0/W7HBQ*K6ZbUt76ti7r2pTscLVsWd8oiqIOIsKTpQB8Aw", store.get(key))

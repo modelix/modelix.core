@@ -5,11 +5,38 @@ import kotlinx.coroutines.withContext
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.withLock
 
+/**
+ * Each call of runRead/runWrite can be annotated with @OptIn(RequiresTransaction::class)
+ * All other usages should propagate this annotation.
+ *
+ * Unfortunately, there is no way to automatically opt in the body of runRead/runWrite.
+ * Checked exceptions in Java would allow stopping the propagation based on the execution flow,
+ * but Kotlin doesn't have checked exceptions.
+ * It's still better having to annotate everything instead of noticing missing transactions only at runtime.
+ */
+@Target(AnnotationTarget.PROPERTY, AnnotationTarget.FUNCTION)
+@RequiresOptIn(level = RequiresOptIn.Level.ERROR)
+annotation class RequiresTransaction
+
 interface ITransactionManager {
     fun canRead(): Boolean
     fun canWrite(): Boolean
     fun <R> runRead(body: () -> R): R
     fun <R> runWrite(body: () -> R): R
+}
+
+class NoTransactionManager : ITransactionManager {
+    override fun canRead(): Boolean = true
+
+    override fun canWrite(): Boolean = true
+
+    override fun <R> runRead(body: () -> R): R {
+        return body()
+    }
+
+    override fun <R> runWrite(body: () -> R): R {
+        return body()
+    }
 }
 
 suspend fun <R> ITransactionManager.runWriteIO(body: () -> R): R {
@@ -24,16 +51,17 @@ suspend fun <R> ITransactionManager.runReadIO(body: () -> R): R {
     }
 }
 
+@RequiresTransaction
 fun ITransactionManager.assertRead() {
-    if (!canRead()) throw MissingReadTransactionException()
+    if (!canRead()) throw MissingTransactionException()
 }
 
+@RequiresTransaction
 fun ITransactionManager.assertWrite() {
     if (!canWrite()) throw MissingWriteTransactionException()
 }
 
-abstract class MissingTransactionException(message: String) : RuntimeException(message)
-class MissingReadTransactionException() : MissingTransactionException("Read transaction required")
+open class MissingTransactionException(message: String = "Transaction required") : Exception(message)
 class MissingWriteTransactionException() : MissingTransactionException("Write transaction required")
 
 /**

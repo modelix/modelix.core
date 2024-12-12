@@ -51,6 +51,7 @@ import org.modelix.model.server.api.v2.VersionDeltaStreamV2
 import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.runWithNettyServer
 import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.model.server.store.RequiresTransaction
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -146,6 +147,7 @@ class ModelReplicationServerTest {
         val repositoryId = RepositoryId("repo1")
 
         runWithTestModelServer { _, fixture ->
+            @OptIn(RequiresTransaction::class)
             fixture.repositoriesManager.getTransactionManager().runWrite {
                 fixture.repositoriesManager.createRepository(repositoryId, null)
             }
@@ -194,6 +196,7 @@ class ModelReplicationServerTest {
         val defaultBranchRef = repositoryId.getBranchReference("master")
 
         runWithTestModelServer { _, fixture ->
+            @OptIn(RequiresTransaction::class)
             fixture.repositoriesManager.getTransactionManager().runWrite {
                 fixture.repositoriesManager.createRepository(repositoryId, null)
                 fixture.repositoriesManager.mergeChanges(
@@ -209,6 +212,7 @@ class ModelReplicationServerTest {
             }
 
             assertEquals(HttpStatusCode.NoContent, response.status)
+            @OptIn(RequiresTransaction::class)
             val branchNames = fixture.repositoriesManager.getTransactionManager().runRead {
                 fixture.repositoriesManager.getBranchNames(repositoryId)
             }
@@ -238,6 +242,7 @@ class ModelReplicationServerTest {
                 modelReplicationServer,
             ),
         ) { _, _ ->
+            @OptIn(RequiresTransaction::class)
             repositoriesManager.getTransactionManager().runWrite {
                 repositoriesManager.createRepository(repositoryId, null)
             }
@@ -277,6 +282,7 @@ class ModelReplicationServerTest {
                 )
             }
         }
+        @OptIn(RequiresTransaction::class)
         repositoriesManager.getTransactionManager().runWrite {
             repositoriesManager.createRepository(repositoryId, null)
         }
@@ -346,6 +352,7 @@ class ModelReplicationServerTest {
         val errorMessage = "expected test failure"
         val faultyRepositoriesManager = object :
             IRepositoriesManager by repositoriesManager {
+            @RequiresTransaction
             override fun getRepositories(): Set<RepositoryId> {
                 error(errorMessage)
             }
@@ -387,6 +394,7 @@ class ModelReplicationServerTest {
         val repositoryId = RepositoryId("repo1")
 
         runWithTestModelServer { _, fixture ->
+            @OptIn(RequiresTransaction::class)
             fixture.repositoriesManager.getTransactionManager().runWrite {
                 fixture.repositoriesManager.createRepository(repositoryId, null)
             }
@@ -410,6 +418,7 @@ class ModelReplicationServerTest {
             ContentType.parse("application/x.modelix.branch+json;version=1").withCharset(Charsets.UTF_8)
 
         runWithTestModelServer { _, fixture ->
+            @OptIn(RequiresTransaction::class)
             fixture.repositoriesManager.getTransactionManager().runWrite {
                 fixture.repositoriesManager.createRepository(repositoryId, null)
             }

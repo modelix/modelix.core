@@ -1,27 +1,13 @@
 package org.modelix.model.server.store
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.modelix.model.IGenericKeyListener
 import kotlin.time.Duration.Companion.seconds
 
 interface IStoreClient : IGenericStoreClient<String>
-
-suspend fun <T> StoreManager.runTransactionSuspendable(body: () -> T): T {
-    return genericStore.runTransactionSuspendable(body)
-}
-
-suspend fun <T> IsolatingStore.runTransactionSuspendable(body: () -> T): T {
-    return withContext(Dispatchers.IO) { runTransaction(body) }
-}
-
-suspend fun <T> IStoreClient.runTransactionSuspendable(body: () -> T): T {
-    return withContext(Dispatchers.IO) { runTransaction(body) }
-}
 
 suspend fun pollEntry(storeClient: IsolatingStore, key: ObjectInRepository, lastKnownValue: String?): String? {
     var result: String? = null
@@ -53,7 +39,8 @@ suspend fun pollEntry(storeClient: IsolatingStore, key: ObjectInRepository, last
                 // known value.
                 // Registering the listener without needing it is less
                 // likely to happen.
-                val value = storeClient[key]
+                @OptIn(RequiresTransaction::class)
+                val value = storeClient.runReadTransaction { storeClient[key] }
                 if (value != lastKnownValue) {
                     callHandler(value)
                     return@coroutineScope
@@ -65,7 +52,10 @@ suspend fun pollEntry(storeClient: IsolatingStore, key: ObjectInRepository, last
         } finally {
             storeClient.removeListener(key, listener)
         }
-        if (!handlerCalled) result = storeClient[key]
+        if (!handlerCalled) {
+            @OptIn(RequiresTransaction::class)
+            result = storeClient.runReadTransaction { storeClient[key] }
+        }
     }
     return result
 }

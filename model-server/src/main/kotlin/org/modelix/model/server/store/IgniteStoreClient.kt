@@ -3,11 +3,15 @@ package org.modelix.model.server.store
 import mu.KotlinLogging
 import org.apache.ignite.Ignite
 import org.apache.ignite.IgniteCache
+import org.apache.ignite.IgniteSemaphore
 import org.apache.ignite.Ignition
 import org.apache.ignite.cache.CachePeekMode
 import org.apache.ignite.cache.query.ScanQuery
+import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.lang.IgniteBiPredicate
 import org.apache.ignite.lang.IgniteClosure
+import org.apache.ignite.transactions.TransactionConcurrency
+import org.apache.ignite.transactions.TransactionIsolation
 import org.modelix.kotlin.utils.ContextValue
 import org.modelix.model.IGenericKeyListener
 import org.modelix.model.lazy.RepositoryId
@@ -26,6 +30,8 @@ private val LOG = KotlinLogging.logger { }
  */
 class IgniteStoreClient(jdbcProperties: Properties? = null, private val inmemory: Boolean = false) :
     IsolatingStore,
+    ITransactionManager,
+    IRepositoryAwareStore,
     AutoCloseable {
 
     companion object {
@@ -47,6 +53,10 @@ class IgniteStoreClient(jdbcProperties: Properties? = null, private val inmemory
         )
     }
 
+    private val localLocks = TransactionLocks()
+    private val maxReadTransactions = 1_000
+    private val globalReadTransactions: IgniteSemaphore
+
     /**
      * Instantiate an IgniteStoreClient
      *
@@ -65,34 +75,46 @@ class IgniteStoreClient(jdbcProperties: Properties? = null, private val inmemory
             }
         }
         if (!inmemory) updateDatabaseSchema()
-        ignite = Ignition.start(javaClass.getResource(igniteConfigName))
-        cache = ignite.getOrCreateCache("model")
 
+        // When running tests, Ignite complains about an already running instance, if we don't provide a unique name.
+        val instanceName = if (inmemory) UUID.randomUUID().toString() else null
+        ignite = IgnitionEx.start(javaClass.getResource(igniteConfigName), instanceName, null, null)
+        cache = ignite.getOrCreateCache("model")
         ignite.message().localListen(ENTRY_CHANGED_TOPIC) { _: UUID?, key: Any? ->
             if (key is ObjectInRepository) {
                 changeNotifier.notifyListeners(key)
             }
             true
         }
+
+        globalReadTransactions = ignite.semaphore("global-reads", maxReadTransactions, true, true)
     }
 
     private fun updateDatabaseSchema() {
         SqlUtils(dataSource.connection).ensureSchemaInitialization()
     }
 
+    @RequiresTransaction
     override fun getIfCached(key: ObjectInRepository): String? {
+        localLocks.assertRead()
         return cache.localPeek(key, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP)
     }
 
+    @RequiresTransaction
     override fun getAll(keys: Set<ObjectInRepository>): Map<ObjectInRepository, String?> {
+        localLocks.assertRead()
         return cache.getAll(keys)
     }
 
+    @RequiresTransaction
     override fun getAll(): Map<ObjectInRepository, String?> {
+        localLocks.assertRead()
         return cache.associate { it.key to it.value }
     }
 
+    @RequiresTransaction
     override fun removeRepositoryObjects(repositoryId: RepositoryId) {
+        localLocks.assertWrite()
         if (!inmemory) {
             // Not all entries are in the cache. We delete them directly instead of loading them into the cache first.
             // This should be safe as the repository has already been removed from the list of available ones.
@@ -130,20 +152,21 @@ class IgniteStoreClient(jdbcProperties: Properties? = null, private val inmemory
         }
     }
 
+    @RequiresTransaction
     override fun putAll(entries: Map<ObjectInRepository, String?>, silent: Boolean) {
+        localLocks.assertWrite()
+
         // Sorting is important to avoid deadlocks (lock ordering).
         // The documentation of IgniteCache.putAll also states that this a requirement.
         val sortedEntries = entries.toSortedMap()
         val deletes = sortedEntries.asSequence().filter { it.value == null }.map { it.key }.toSet()
         val puts = sortedEntries.filterValues { it != null }
-        runTransaction {
-            if (deletes.isNotEmpty()) cache.removeAll(deletes)
-            if (puts.isNotEmpty()) cache.putAll(puts)
-            if (!silent) {
-                for (key in sortedEntries.keys) {
-                    if (HashUtil.isSha256(key.key)) continue
-                    pendingChangeMessages.entryChanged(key)
-                }
+        if (deletes.isNotEmpty()) cache.removeAll(deletes)
+        if (puts.isNotEmpty()) cache.putAll(puts)
+        if (!silent) {
+            for (key in sortedEntries.keys) {
+                if (HashUtil.isSha256(key.key)) continue
+                pendingChangeMessages.entryChanged(key)
             }
         }
     }
@@ -163,19 +186,84 @@ class IgniteStoreClient(jdbcProperties: Properties? = null, private val inmemory
         return cache.invoke(key, ClientIdProcessor())
     }
 
-    override fun <T> runTransaction(body: () -> T): T {
-        val transactions = ignite.transactions()
-        if (transactions.tx() == null) {
-            transactions.txStart().use { tx ->
-                return pendingChangeMessages.runAndFlush {
-                    val result = body()
-                    tx.commit()
-                    result
+    override fun <T> runWrite(body: () -> T): T {
+        return if (localLocks.canWrite()) {
+            body()
+        } else {
+            localLocks.runWrite {
+                // Acquiring `maxReadTransactions` number of permits, ensures that a:
+                //  * write transaction is only started when no read transaction is currently running
+                //  * no read transaction starts while a write transaction is running
+                globalReadTransactions.acquireAndRun(maxReadTransactions) {
+                    val transactions = ignite.transactions()
+                    check(transactions.tx() == null) { "Already inside a transaction" }
+                    // `OPTIMISTIC` and `READ_COMMITTED`
+                    // are used instead of the default `PESSIMISTIC` and `REPEATABLE_READ`
+                    // because they acquire fewer locks when writing.
+                    // It is ok to acquire fewer locks,
+                    // because the `globalReadTransactions`
+                    // semaphore ensures no writes can happen in parallel.
+                    transactions.txStart(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED).use { tx ->
+                        pendingChangeMessages.runAndFlush {
+                            val result = body()
+                            tx.commit()
+                            result
+                        }
+                    }
                 }
             }
+        }
+    }
+
+    override fun <T> runRead(body: () -> T): T {
+        return if (localLocks.canRead()) {
+            if (localLocks.canWrite()) {
+                // downgrade
+                localLocks.runRead(body)
+            } else {
+                body()
+            }
         } else {
-            // already in a transaction
-            return body()
+            localLocks.runRead {
+                globalReadTransactions.acquireAndRun(1) {
+                    // No ignite transaction necessary for read-only access
+                    body()
+                }
+            }
+        }
+    }
+
+    override fun canRead(): Boolean {
+        return localLocks.canRead()
+    }
+
+    override fun canWrite(): Boolean {
+        return localLocks.canWrite()
+    }
+
+    override fun getTransactionManager(): ITransactionManager {
+        return this
+    }
+
+    override fun getImmutableStore(): IImmutableStore<ObjectInRepository> {
+        return object : IImmutableStore<ObjectInRepository> {
+            override fun getAll(keys: Set<ObjectInRepository>): Map<ObjectInRepository, String?> {
+                keys.forEach { require(HashUtil.isSha256(it.key)) { "Not an immutable object: $it" } }
+                return cache.getAll(keys)
+            }
+
+            override fun addAll(entries: Map<ObjectInRepository, String>) {
+                entries.forEach {
+                    require(HashUtil.isSha256(it.key.key)) { "Not an immutable object: $it" }
+                    HashUtil.checkObjectHash(it.key.key, it.value)
+                }
+                cache.putAll(entries)
+            }
+
+            override fun getIfCached(key: ObjectInRepository): String? {
+                require(HashUtil.isSha256(key.key)) { "Not an immutable object: $key" }
+                return cache.localPeek(key, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP)
+            }
         }
     }
 
@@ -234,7 +322,8 @@ class ChangeNotifier(val store: IsolatingStore) {
         private var lastNotifiedValue: String? = null
 
         fun notifyIfChanged() {
-            val value = store.get(key)
+            @OptIn(RequiresTransaction::class)
+            val value = store.runReadTransaction { store.get(key) }
             if (value == lastNotifiedValue) return
             lastNotifiedValue = value
 
@@ -246,5 +335,14 @@ class ChangeNotifier(val store: IsolatingStore) {
                 }
             }
         }
+    }
+}
+
+private fun <R> IgniteSemaphore.acquireAndRun(permits: Int, body: () -> R): R {
+    this.acquire(permits)
+    try {
+        return body()
+    } finally {
+        this.release(permits)
     }
 }

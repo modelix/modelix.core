@@ -1,22 +1,31 @@
 package org.modelix.model.server.handlers.ui
 
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.TextContent
 import io.ktor.http.encodeURLPathPart
+import io.ktor.http.withCharset
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
-import io.ktor.server.html.respondHtmlTemplate
+import io.ktor.server.html.Template
+import io.ktor.server.response.respond
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
+import io.ktor.utils.io.charsets.Charsets
 import kotlinx.html.FlowContent
 import kotlinx.html.FlowOrInteractiveOrPhrasingContent
+import kotlinx.html.HTML
 import kotlinx.html.a
 import kotlinx.html.button
 import kotlinx.html.h1
+import kotlinx.html.html
 import kotlinx.html.i
 import kotlinx.html.onClick
 import kotlinx.html.p
 import kotlinx.html.script
 import kotlinx.html.span
+import kotlinx.html.stream.createHTML
 import kotlinx.html.table
 import kotlinx.html.tbody
 import kotlinx.html.td
@@ -30,7 +39,25 @@ import org.modelix.authorization.requiresLogin
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.model.server.handlers.IRepositoriesManager
+import org.modelix.model.server.store.ITransactionManager
+import org.modelix.model.server.store.RequiresTransaction
+import org.modelix.model.server.store.runReadIO
 import org.modelix.model.server.templates.PageWithMenuBar
+
+suspend fun <TTemplate : Template<HTML>> ApplicationCall.respondHtmlTemplateInTransaction(
+    transactionManager: ITransactionManager,
+    template: TTemplate,
+    status: HttpStatusCode = HttpStatusCode.OK,
+    body: TTemplate.() -> Unit,
+) {
+    val html = transactionManager.runReadIO {
+        template.body()
+        createHTML().html {
+            with(template) { apply() }
+        }
+    }
+    respond(TextContent(html, ContentType.Text.Html.withCharset(Charsets.UTF_8), status))
+}
 
 class RepositoryOverview(private val repoManager: IRepositoriesManager) {
 
@@ -38,7 +65,8 @@ class RepositoryOverview(private val repoManager: IRepositoriesManager) {
         application.routing {
             requiresLogin {
                 get("/repos") {
-                    call.respondHtmlTemplate(PageWithMenuBar("repos/", "..")) {
+                    @OptIn(RequiresTransaction::class)
+                    call.respondHtmlTemplateInTransaction(repoManager.getTransactionManager(), PageWithMenuBar("repos/", "..")) {
                         headContent {
                             title("Repositories")
                             script(type = "text/javascript") {
@@ -68,6 +96,7 @@ class RepositoryOverview(private val repoManager: IRepositoriesManager) {
         }
     }
 
+    @RequiresTransaction
     private fun FlowContent.buildMainPage(call: ApplicationCall) {
         h1 { +"Choose Repository" }
         val repositories = repoManager.getRepositories().filter { call.hasPermission(ModelServerPermissionSchema.repository(it).list) }

@@ -7,6 +7,7 @@ import org.modelix.model.IKeyValueStore
 class StoreClientAsKeyValueStore(val store: IStoreClient) : IKeyValueStore {
 
     override fun get(key: String): String? {
+        @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
         return store[key]
     }
 
@@ -15,11 +16,14 @@ class StoreClientAsKeyValueStore(val store: IStoreClient) : IKeyValueStore {
     }
 
     override fun put(key: String, value: String?) {
+        @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
         store.put(key, value)
     }
 
     override fun getAll(keys: Iterable<String>): Map<String, String?> {
         val keyList = IterableUtils.toList(keys)
+
+        @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
         val values = store.getAll(keyList)
         val result: MutableMap<String, String?> = LinkedHashMap()
         for (i in keyList.indices) {
@@ -29,6 +33,7 @@ class StoreClientAsKeyValueStore(val store: IStoreClient) : IKeyValueStore {
     }
 
     override fun putAll(entries: Map<String, String?>) {
+        @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
         store.putAll(entries)
     }
 

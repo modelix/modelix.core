@@ -44,6 +44,7 @@ import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.model.server.handlers.HttpException
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.handlers.VersionNotFoundException
+import org.modelix.model.server.store.RequiresTransaction
 import org.modelix.model.server.templates.PageWithMenuBar
 import org.modelix.streams.getSynchronous
 
@@ -70,10 +71,11 @@ class DiffView(private val repositoryManager: RepositoriesManager) {
         application.routing {
             requiresLogin {
                 get("/diff") {
-                    val visibleRepositories = repositoryManager.getRepositories().filter {
-                        call.hasPermission(ModelServerPermissionSchema.repository(it).list)
-                    }
-                    call.respondHtmlTemplate(PageWithMenuBar("diff", "..")) {
+                    @OptIn(RequiresTransaction::class)
+                    call.respondHtmlTemplateInTransaction(repositoryManager.getTransactionManager(), PageWithMenuBar("diff", "..")) {
+                        val visibleRepositories = repositoryManager.getRepositories().filter {
+                            call.hasPermission(ModelServerPermissionSchema.repository(it).list)
+                        }
                         bodyContent {
                             buildDiffInputPage(visibleRepositories)
                         }

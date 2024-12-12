@@ -13,7 +13,6 @@ import io.ktor.server.resources.put
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.routing
 import io.ktor.util.pipeline.PipelineContext
-import kotlinx.coroutines.runBlocking
 import kotlinx.html.br
 import kotlinx.html.div
 import kotlinx.html.h1
@@ -29,9 +28,11 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.model.server.store.ObjectInRepository
+import org.modelix.model.server.store.RequiresTransaction
 import org.modelix.model.server.store.StoreManager
 import org.modelix.model.server.store.pollEntry
-import org.modelix.model.server.store.runTransactionSuspendable
+import org.modelix.model.server.store.runReadIO
+import org.modelix.model.server.store.runWriteIO
 import org.modelix.model.server.templates.PageWithMenuBar
 import java.io.IOException
 import java.util.*
@@ -61,7 +62,8 @@ class KeyValueLikeModelServer(
         // request to initialize it lazily, would make the code less robust.
         // Each change in the logic of RepositoriesManager#maybeInitAndGetSeverId would need
         // the special conditions in the affected requests to be updated.
-        runBlocking { repositoriesManager.maybeInitAndGetSeverId() }
+        @OptIn(RequiresTransaction::class)
+        repositoriesManager.getTransactionManager().runWrite { repositoriesManager.maybeInitAndGetSeverId() }
         application.apply {
             modelServerModule()
         }
@@ -89,7 +91,8 @@ class KeyValueLikeModelServer(
                 get<Paths.getKeyGet> {
                     val key = call.parameters["key"]!!
                     checkKeyPermission(key, EPermissionType.READ)
-                    val value = stores.getGlobalKeyValueStore()[key]
+                    @OptIn(RequiresTransaction::class)
+                    val value = runRead { stores.getGlobalStoreClient()[key] }
                     respondValue(key, value)
                 }
                 get<Paths.pollKeyGet> {
@@ -106,21 +109,25 @@ class KeyValueLikeModelServer(
                 post<Paths.counterKeyPost> {
                     val key = call.parameters["key"]!!
                     checkKeyPermission(key, EPermissionType.WRITE)
-                    val value = stores.getGlobalStoreClient().generateId(key)
+                    val value = stores.getGlobalStoreClient(false).generateId(key)
                     call.respondText(text = value.toString())
                 }
 
                 get<Paths.getRecursivelyKeyGet> {
                     val key = call.parameters["key"]!!
                     checkKeyPermission(key, EPermissionType.READ)
-                    call.respondText(collect(key, this).toString(2), contentType = ContentType.Application.Json)
+                    @OptIn(RequiresTransaction::class)
+                    call.respondText(runRead { collect(key, this) }.toString(2), contentType = ContentType.Application.Json)
                 }
 
                 put<Paths.putKeyPut> {
                     val key = call.parameters["key"]!!
                     val value = call.receiveText()
                     try {
-                        putEntries(mapOf(key to value))
+                        @OptIn(RequiresTransaction::class)
+                        runWrite {
+                            putEntries(mapOf(key to value))
+                        }
                         call.respondText("OK")
                     } catch (e: NotFoundException) {
                         throw HttpException(HttpStatusCode.NotFound, title = "Not found", details = e.message, cause = e)
@@ -139,7 +146,10 @@ class KeyValueLikeModelServer(
                     }
                     entries = sortByDependency(entries)
                     try {
-                        putEntries(entries)
+                        @OptIn(RequiresTransaction::class)
+                        runWrite {
+                            putEntries(entries)
+                        }
                         call.respondText(entries.size.toString() + " entries written")
                     } catch (e: NotFoundException) {
                         throw HttpException(HttpStatusCode.NotFound, title = "Not found", details = e.message, cause = e)
@@ -158,7 +168,8 @@ class KeyValueLikeModelServer(
                         checkKeyPermission(key, EPermissionType.READ)
                         keys.add(key)
                     }
-                    val values = stores.getGlobalStoreClient().getAll(keys)
+                    @OptIn(RequiresTransaction::class)
+                    val values = runRead { stores.getGlobalStoreClient(false).getAll(keys) }
                     for (i in keys.indices) {
                         val respEntry = JSONObject()
                         respEntry.put("key", keys[i])
@@ -199,6 +210,7 @@ class KeyValueLikeModelServer(
         return sorted
     }
 
+    @RequiresTransaction
     fun collect(rootKey: String, callContext: CallContext?): JSONArray {
         val result = JSONArray()
         val processed: MutableSet<String> = HashSet()
@@ -210,7 +222,7 @@ class KeyValueLikeModelServer(
             if (callContext != null) {
                 keys.forEach { callContext.checkKeyPermission(it, EPermissionType.READ) }
             }
-            val values = stores.getGlobalStoreClient().getAll(keys)
+            val values = stores.getGlobalStoreClient(false).getAll(keys)
             for (i in keys.indices) {
                 val key = keys[i]
                 val value = values[i]
@@ -240,7 +252,8 @@ class KeyValueLikeModelServer(
         return result
     }
 
-    private suspend fun CallContext.putEntries(newEntries: Map<String, String?>) {
+    @RequiresTransaction
+    private fun CallContext.putEntries(newEntries: Map<String, String?>) {
         val referencedKeys: MutableSet<String> = HashSet()
         for ((key, value) in newEntries) {
             checkKeyPermission(key, EPermissionType.WRITE)
@@ -300,17 +313,15 @@ class KeyValueLikeModelServer(
             // We could try to move the objects later, but since this API is deprecated, it's not worth the effort.
         }
 
-        stores.getGlobalStoreClient().runTransactionSuspendable {
-            stores.genericStore.putAll(hashedObjects.mapKeys { ObjectInRepository.global(it.key) })
-            stores.genericStore.putAll(userDefinedEntries.mapKeys { ObjectInRepository.global(it.key) })
-            for ((branch, value) in branchChanges) {
-                if (value == null) {
-                    checkPermission(ModelServerPermissionSchema.branch(branch).delete)
-                    repositoriesManager.removeBranchesBlocking(branch.repositoryId, setOf(branch.branchName))
-                } else {
-                    checkPermission(ModelServerPermissionSchema.branch(branch).push)
-                    repositoriesManager.mergeChangesBlocking(branch, value)
-                }
+        stores.genericStore.putAll(hashedObjects.mapKeys { ObjectInRepository.global(it.key) })
+        stores.genericStore.putAll(userDefinedEntries.mapKeys { ObjectInRepository.global(it.key) })
+        for ((branch, value) in branchChanges) {
+            if (value == null) {
+                checkPermission(ModelServerPermissionSchema.branch(branch).delete)
+                repositoriesManager.removeBranches(branch.repositoryId, setOf(branch.branchName))
+            } else {
+                checkPermission(ModelServerPermissionSchema.branch(branch).push)
+                repositoriesManager.mergeChanges(branch, value)
             }
         }
     }
@@ -362,5 +373,13 @@ class KeyValueLikeModelServer(
             key == "clientId" -> legacyClientId()
             else -> unknown()
         }
+    }
+
+    private suspend fun <R> runRead(body: () -> R): R {
+        return repositoriesManager.getTransactionManager().runReadIO(body)
+    }
+
+    private suspend fun <R> runWrite(body: () -> R): R {
+        return repositoriesManager.getTransactionManager().runWriteIO(body)
     }
 }

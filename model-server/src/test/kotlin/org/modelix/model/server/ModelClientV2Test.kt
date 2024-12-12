@@ -2,6 +2,7 @@ package org.modelix.model.server
 
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
+import mu.KotlinLogging
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
@@ -36,16 +37,22 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
+private val LOG = KotlinLogging.logger { }
+
 class ModelClientV2Test {
 
     private lateinit var statistics: StoreClientWithStatistics
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         application {
-            installDefaultServerPlugins()
-            statistics = StoreClientWithStatistics(InMemoryStoreClient())
-            val repoManager = RepositoriesManager(statistics)
-            ModelReplicationServer(repoManager).init(this)
-            IdsApiImpl(repoManager).init(this)
+            try {
+                installDefaultServerPlugins()
+                statistics = StoreClientWithStatistics(InMemoryStoreClient())
+                val repoManager = RepositoriesManager(statistics)
+                ModelReplicationServer(repoManager).init(this)
+                IdsApiImpl(repoManager).init(this)
+            } catch (ex: Throwable) {
+                LOG.error("", ex)
+            }
         }
         block()
     }

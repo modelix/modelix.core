@@ -51,11 +51,14 @@ class IgnitePostgresRepositoryRemovalTest {
             ObjectInRepository(toDelete.id, "key0") to "value0",
             ObjectInRepository(toDelete.id, "key1") to "value1",
         )
-        store.putAll(entries)
+        @OptIn(RequiresTransaction::class)
+        store.runWrite { store.putAll(entries) }
 
-        store.removeRepositoryObjects(toDelete)
+        @OptIn(RequiresTransaction::class)
+        store.runWrite { store.removeRepositoryObjects(toDelete) }
 
-        assertTrue { store.getAll(entries.keys).isEmpty() }
+        @OptIn(RequiresTransaction::class)
+        assertTrue { store.runRead { store.getAll(entries.keys) }.isEmpty() }
     }
 
     @Test
@@ -67,7 +70,8 @@ class IgnitePostgresRepositoryRemovalTest {
                 check(it.updateCount == 1)
             }
 
-        store.removeRepositoryObjects(toDelete)
+        @OptIn(RequiresTransaction::class)
+        store.getTransactionManager().runWrite { store.removeRepositoryObjects(toDelete) }
 
         dbConnection.prepareStatement("SELECT * FROM modelix.model WHERE repository = ?").use {
             it.setString(1, toDelete.id)
@@ -88,7 +92,8 @@ class IgnitePostgresRepositoryRemovalTest {
                 check(it.updateCount == 1)
             }
 
-        store.removeRepositoryObjects(toDelete)
+        @OptIn(RequiresTransaction::class)
+        store.runWrite { store.removeRepositoryObjects(toDelete) }
 
         dbConnection.prepareStatement("SELECT * FROM modelix.model WHERE repository = ?").use {
             it.setString(1, existing.id)
@@ -103,22 +108,27 @@ class IgnitePostgresRepositoryRemovalTest {
             ObjectInRepository(existing.id, "key0") to "value0",
             ObjectInRepository(existing.id, "key1") to "value1",
         )
-        store.putAll(existingEntries)
+        @OptIn(RequiresTransaction::class)
+        store.runWrite { store.putAll(existingEntries) }
 
         val toDeleteEntries = mapOf(
             ObjectInRepository(toDelete.id, "key0") to "value0",
             ObjectInRepository(toDelete.id, "key1") to "value1",
         )
-        store.putAll(toDeleteEntries)
-        store.removeRepositoryObjects(toDelete)
+        @OptIn(RequiresTransaction::class)
+        store.runWrite { store.putAll(toDeleteEntries) }
+        @OptIn(RequiresTransaction::class)
+        store.runWrite { store.removeRepositoryObjects(toDelete) }
 
-        assertEquals(existingEntries, store.getAll())
+        @OptIn(RequiresTransaction::class)
+        assertEquals(existingEntries, store.runRead { store.getAll() })
     }
 
     @Test
     fun `removing a non-existing repository does not throw`() {
         assertDoesNotThrow {
-            store.removeRepositoryObjects(RepositoryId("invalid"))
+            @OptIn(RequiresTransaction::class)
+            store.runWrite { store.removeRepositoryObjects(RepositoryId("invalid")) }
         }
     }
 }

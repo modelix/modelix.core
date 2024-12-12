@@ -53,7 +53,10 @@ import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.model.server.handlers.BranchNotFoundException
 import org.modelix.model.server.handlers.IRepositoriesManager
 import org.modelix.model.server.handlers.getLegacyObjectStore
+import org.modelix.model.server.store.RequiresTransaction
 import org.modelix.model.server.store.StoreManager
+import org.modelix.model.server.store.runReadIO
+import org.modelix.model.server.store.runWriteIO
 import org.modelix.model.server.templates.PageWithMenuBar
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -75,7 +78,11 @@ class HistoryHandler(private val repositoriesManager: IRepositoriesManager) {
                     val params = call.request.queryParameters
                     val limit = toInt(params["limit"], 500)
                     val skip = toInt(params["skip"], 0)
-                    val latestVersion = repositoriesManager.getVersion(branch)
+                    val latestVersion =
+                        @OptIn(RequiresTransaction::class)
+                        repositoriesManager.getTransactionManager().runReadIO {
+                            repositoriesManager.getVersion(branch)
+                        }
                     checkNotNull(latestVersion) { "Branch not found: $branch" }
                     call.respondHtmlTemplate(PageWithMenuBar("repos/", "../../..")) {
                         headContent {
@@ -105,7 +112,10 @@ class HistoryHandler(private val repositoriesManager: IRepositoriesManager) {
                     val fromVersion = params["from"]!!
                     val toVersion = params["to"]!!
                     val user = getUserName()
-                    revert(branch, fromVersion, toVersion, user)
+                    @OptIn(RequiresTransaction::class)
+                    repositoriesManager.getTransactionManager().runWriteIO {
+                        revert(branch, fromVersion, toVersion, user)
+                    }
                     call.respondRedirect(".")
                 }
             }
@@ -118,7 +128,8 @@ class HistoryHandler(private val repositoriesManager: IRepositoriesManager) {
         }
     }
 
-    private suspend fun revert(repositoryAndBranch: BranchReference, from: String?, to: String?, author: String?) {
+    @RequiresTransaction
+    private fun revert(repositoryAndBranch: BranchReference, from: String?, to: String?, author: String?) {
         val version = repositoriesManager.getVersion(repositoryAndBranch) ?: throw BranchNotFoundException(repositoryAndBranch)
         val branch = OTBranch(PBranch(version.getTree(), stores.idGenerator), stores.idGenerator, repositoriesManager.getLegacyObjectStore(repositoryAndBranch.repositoryId))
         branch.runWriteT { t ->

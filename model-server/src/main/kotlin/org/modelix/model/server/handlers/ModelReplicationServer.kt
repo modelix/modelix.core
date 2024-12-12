@@ -48,7 +48,10 @@ import org.modelix.model.server.api.v2.ImmutableObjectsStream
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.api.v2.VersionDeltaStream
 import org.modelix.model.server.api.v2.VersionDeltaStreamV2
+import org.modelix.model.server.store.RequiresTransaction
 import org.modelix.model.server.store.StoreManager
+import org.modelix.model.server.store.runReadIO
+import org.modelix.model.server.store.runWriteIO
 import org.modelix.modelql.core.IMemoizationPersistence
 import org.modelix.modelql.core.IStepOutput
 import org.modelix.modelql.core.MonoUnboundQuery
@@ -89,7 +92,8 @@ class ModelReplicationServer(
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositories() {
         call.respondText(
-            repositoriesManager.getRepositories()
+            @OptIn(RequiresTransaction::class)
+            runRead { repositoriesManager.getRepositories() }
                 .filter { call.hasPermission(ModelServerPermissionSchema.repository(it).list) }
                 .joinToString("\n") { it.id },
         )
@@ -97,8 +101,8 @@ class ModelReplicationServer(
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.getRepositoryBranches(repository: String) {
         call.respondText(
-            repositoriesManager
-                .getBranchNames(repositoryId(repository))
+            @OptIn(RequiresTransaction::class)
+            runRead { repositoriesManager.getBranchNames(repositoryId(repository)) }
                 .filter { call.hasPermission(ModelServerPermissionSchema.repository(repository).branch(it).list) }
                 .joinToString("\n"),
         )
@@ -111,7 +115,11 @@ class ModelReplicationServer(
     ) {
         checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
         val branchRef = repositoryId(repository).getBranchReference(branch)
-        val versionHash = repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
+
+        @OptIn(RequiresTransaction::class)
+        val versionHash = runRead {
+            repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
+        }
         call.respondDelta(RepositoryId(repository), versionHash, lastKnown)
     }
 
@@ -122,7 +130,11 @@ class ModelReplicationServer(
     ) {
         checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
         val branchRef = repositoryId(repository).getBranchReference(branch)
-        val versionHash = repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
+
+        @OptIn(RequiresTransaction::class)
+        val versionHash = runRead {
+            repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
+        }
         call.respond(BranchV1(branch, versionHash))
     }
 
@@ -138,11 +150,14 @@ class ModelReplicationServer(
 
         checkPermission(ModelServerPermissionSchema.repository(repositoryId).branch(branch).delete)
 
-        if (!repositoriesManager.getBranchNames(repositoryId).contains(branch)) {
-            throw BranchNotFoundException(branch, repositoryId.id)
-        }
+        @OptIn(RequiresTransaction::class)
+        runWrite {
+            if (!repositoriesManager.getBranchNames(repositoryId).contains(branch)) {
+                throw BranchNotFoundException(branch, repositoryId.id)
+            }
 
-        repositoriesManager.removeBranches(repositoryId, setOf(branch))
+            repositoriesManager.removeBranches(repositoryId, setOf(branch))
+        }
 
         call.respond(HttpStatusCode.NoContent)
     }
@@ -153,7 +168,11 @@ class ModelReplicationServer(
     ) {
         checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
         val branchRef = repositoryId(repository).getBranchReference(branch)
-        val versionHash = repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
+
+        @OptIn(RequiresTransaction::class)
+        val versionHash = runRead {
+            repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
+        }
         call.respondText(versionHash)
     }
 
@@ -163,19 +182,25 @@ class ModelReplicationServer(
         legacyGlobalStorage: Boolean?,
     ) {
         checkPermission(ModelServerPermissionSchema.repository(repository).create)
-        val initialVersion = repositoriesManager.createRepository(
-            repositoryId(repository),
-            call.getUserName(),
-            useRoleIds ?: true,
-            legacyGlobalStorage ?: false,
-        )
+        @OptIn(RequiresTransaction::class)
+        val initialVersion = runWrite {
+            repositoriesManager.createRepository(
+                repositoryId(repository),
+                call.getUserName(),
+                useRoleIds ?: true,
+                legacyGlobalStorage ?: false,
+            )
+        }
         call.respondDelta(RepositoryId(repository), initialVersion.getContentHash(), null)
     }
 
     override suspend fun PipelineContext<Unit, ApplicationCall>.deleteRepository(repository: String) {
         checkPermission(ModelServerPermissionSchema.repository(repository).delete)
 
-        val foundAndDeleted = repositoriesManager.removeRepository(repositoryId(repository))
+        @OptIn(RequiresTransaction::class)
+        val foundAndDeleted = runWrite {
+            repositoriesManager.removeRepository(repositoryId(repository))
+        }
         if (foundAndDeleted) {
             call.respond(HttpStatusCode.NoContent)
         } else {
@@ -191,8 +216,12 @@ class ModelReplicationServer(
         val branchRef = repositoryId(repository).getBranchReference(branch)
         val deltaFromClient = call.receive<VersionDelta>()
         deltaFromClient.checkObjectHashes()
-        repositoriesManager.getStoreClient(RepositoryId(repository)).putAll(deltaFromClient.getAllObjects())
-        val mergedHash = repositoriesManager.mergeChanges(branchRef, deltaFromClient.versionHash)
+        @OptIn(RequiresTransaction::class) // no transactions required for immutable store
+        repositoriesManager.getStoreClient(RepositoryId(repository), true).putAll(deltaFromClient.getAllObjects())
+        @OptIn(RequiresTransaction::class)
+        val mergedHash = runWrite {
+            repositoriesManager.mergeChanges(branchRef, deltaFromClient.versionHash)
+        }
         call.respondDelta(RepositoryId(repository), mergedHash, deltaFromClient.versionHash)
     }
 
@@ -217,7 +246,8 @@ class ModelReplicationServer(
         }
 
         val objects = withContext(Dispatchers.IO) {
-            repositoriesManager.getStoreClient(RepositoryId(repository)).getAll(keys)
+            @OptIn(RequiresTransaction::class) // no transactions required for immutable store
+            repositoriesManager.getStoreClient(RepositoryId(repository), true).getAll(keys)
         }
 
         for (entry in objects) {
@@ -260,7 +290,8 @@ class ModelReplicationServer(
     ) {
         val branchRef = repositoryId(repository).getBranchReference(branchName)
         checkPermission(ModelServerPermissionSchema.branch(branchRef).query)
-        val version = repositoriesManager.getVersion(branchRef) ?: throw BranchNotFoundException(branchRef)
+        @OptIn(RequiresTransaction::class)
+        val version = runRead { repositoriesManager.getVersion(branchRef) ?: throw BranchNotFoundException(branchRef) }
         LOG.trace("Running query on {} @ {}", branchRef, version)
         val initialTree = version.getTree()
 
@@ -290,7 +321,10 @@ class ModelReplicationServer(
                             baseVersion = version,
                             operations = ops.map { it.getOriginalOp() }.toTypedArray(),
                         )
-                        repositoriesManager.mergeChanges(branchRef, newVersion.getContentHash())
+                        @OptIn(RequiresTransaction::class)
+                        runWrite {
+                            repositoriesManager.mergeChanges(branchRef, newVersion.getContentHash())
+                        }
                     }
                 }
             })
@@ -330,7 +364,8 @@ class ModelReplicationServer(
         }
 
         withContext(Dispatchers.IO) {
-            repositoriesManager.getStoreClient(RepositoryId(repository)).putAll(entries, true)
+            @OptIn(RequiresTransaction::class) // no transactions required for immutable store
+            repositoriesManager.getStoreClient(RepositoryId(repository), true).putAll(entries, true)
         }
         call.respondText("${entries.size} objects received")
     }
@@ -341,7 +376,8 @@ class ModelReplicationServer(
         lastKnown: String?,
     ) {
         checkPermission(ModelServerPermissionSchema.legacyGlobalObjects.read)
-        if (stores.getGlobalStoreClient()[versionHash] == null) {
+        @OptIn(RequiresTransaction::class)
+        if (runRead { stores.getGlobalStoreClient()[versionHash] } == null) {
             throw VersionNotFoundException(versionHash)
         }
         call.respondDelta(null, versionHash, lastKnown)
@@ -401,6 +437,14 @@ class ModelReplicationServer(
                 VersionDeltaStreamV2.encodeVersionDeltaStreamV2(this, versionHash, objectData.asFlow())
             }
         }
+    }
+
+    private suspend fun <R> runRead(body: () -> R): R {
+        return repositoriesManager.getTransactionManager().runReadIO(body)
+    }
+
+    private suspend fun <R> runWrite(body: () -> R): R {
+        return repositoriesManager.getTransactionManager().runWriteIO(body)
     }
 }
 

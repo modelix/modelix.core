@@ -37,5 +37,10 @@
                 </bean>
             </list>
         </property>
+
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.isolated.IsolatedDiscoverySpi">
+            </bean>
+        </property>
     </bean>
 </beans>

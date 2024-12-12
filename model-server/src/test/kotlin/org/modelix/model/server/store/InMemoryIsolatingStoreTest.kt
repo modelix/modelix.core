@@ -21,11 +21,15 @@ class InMemoryIsolatingStoreTest {
                 ObjectInRepository(repoId.id, "key0") to "value0",
                 ObjectInRepository(repoId.id, "key1") to "value1",
             )
-            store.putAll(entries)
+            @OptIn(RequiresTransaction::class)
+            store.runWrite {
+                store.putAll(entries)
 
-            store.removeRepositoryObjects(repoId)
+                store.removeRepositoryObjects(repoId)
+            }
 
-            assertTrue { store.getAll().isEmpty() }
+            @OptIn(RequiresTransaction::class)
+            assertTrue { store.runRead { store.getAll() }.isEmpty() }
         }
 
         @Test
@@ -35,23 +39,29 @@ class InMemoryIsolatingStoreTest {
                 ObjectInRepository(existingId.id, "key0") to "value0",
                 ObjectInRepository(existingId.id, "key1") to "value1",
             )
-            store.putAll(existingEntries)
+            @OptIn(RequiresTransaction::class)
+            store.runWrite { store.putAll(existingEntries) }
 
             val toDeleteId = RepositoryId("toDelete")
             val toDeleteEntries = mapOf(
                 ObjectInRepository(toDeleteId.id, "key0") to "value0",
                 ObjectInRepository(toDeleteId.id, "key1") to "value1",
             )
-            store.putAll(toDeleteEntries)
-            store.removeRepositoryObjects(toDeleteId)
+            @OptIn(RequiresTransaction::class)
+            store.runWrite {
+                store.putAll(toDeleteEntries)
+                store.removeRepositoryObjects(toDeleteId)
+            }
 
-            assertEquals(existingEntries, store.getAll())
+            @OptIn(RequiresTransaction::class)
+            assertEquals(existingEntries, store.runRead { store.getAll() })
         }
 
         @Test
         fun `removing a non-existing repository does not throw`() {
             assertDoesNotThrow {
-                store.removeRepositoryObjects(RepositoryId("invalid"))
+                @OptIn(RequiresTransaction::class)
+                store.runWrite { store.removeRepositoryObjects(RepositoryId("invalid")) }
             }
         }
     }

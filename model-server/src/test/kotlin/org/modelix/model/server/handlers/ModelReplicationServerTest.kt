@@ -51,6 +51,7 @@ import org.modelix.model.server.api.v2.VersionDeltaStreamV2
 import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.runWithNettyServer
 import org.modelix.model.server.store.InMemoryStoreClient
+import org.modelix.model.server.store.RequiresTransaction
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -146,7 +147,10 @@ class ModelReplicationServerTest {
         val repositoryId = RepositoryId("repo1")
 
         runWithTestModelServer { _, fixture ->
-            fixture.repositoriesManager.createRepository(repositoryId, null)
+            @OptIn(RequiresTransaction::class)
+            fixture.repositoriesManager.getTransactionManager().runWrite {
+                fixture.repositoriesManager.createRepository(repositoryId, null)
+            }
 
             val response = client.delete {
                 url {
@@ -192,11 +196,14 @@ class ModelReplicationServerTest {
         val defaultBranchRef = repositoryId.getBranchReference("master")
 
         runWithTestModelServer { _, fixture ->
-            fixture.repositoriesManager.createRepository(repositoryId, null)
-            fixture.repositoriesManager.mergeChanges(
-                repositoryId.getBranchReference(branch),
-                checkNotNull(fixture.repositoriesManager.getVersionHash(defaultBranchRef)) { "Default branch must exist" },
-            )
+            @OptIn(RequiresTransaction::class)
+            fixture.repositoriesManager.getTransactionManager().runWrite {
+                fixture.repositoriesManager.createRepository(repositoryId, null)
+                fixture.repositoriesManager.mergeChanges(
+                    repositoryId.getBranchReference(branch),
+                    checkNotNull(fixture.repositoriesManager.getVersionHash(defaultBranchRef)) { "Default branch must exist" },
+                )
+            }
 
             val response = client.delete {
                 url {
@@ -205,7 +212,11 @@ class ModelReplicationServerTest {
             }
 
             assertEquals(HttpStatusCode.NoContent, response.status)
-            assertFalse(fixture.repositoriesManager.getBranchNames(repositoryId).contains(branch))
+            @OptIn(RequiresTransaction::class)
+            val branchNames = fixture.repositoriesManager.getTransactionManager().runRead {
+                fixture.repositoriesManager.getBranchNames(repositoryId)
+            }
+            assertFalse(branchNames.contains(branch))
         }
     }
 
@@ -231,7 +242,10 @@ class ModelReplicationServerTest {
                 modelReplicationServer,
             ),
         ) { _, _ ->
-            repositoriesManager.createRepository(repositoryId, null)
+            @OptIn(RequiresTransaction::class)
+            repositoriesManager.getTransactionManager().runWrite {
+                repositoriesManager.createRepository(repositoryId, null)
+            }
 
             // Act
             val response = client.get {
@@ -268,7 +282,10 @@ class ModelReplicationServerTest {
                 )
             }
         }
-        repositoriesManager.createRepository(repositoryId, null)
+        @OptIn(RequiresTransaction::class)
+        repositoriesManager.getTransactionManager().runWrite {
+            repositoriesManager.createRepository(repositoryId, null)
+        }
 
         suspend fun createClient(server: NettyApplicationEngine): HttpClient {
             val port = server.resolvedConnectors().first().port
@@ -335,6 +352,7 @@ class ModelReplicationServerTest {
         val errorMessage = "expected test failure"
         val faultyRepositoriesManager = object :
             IRepositoriesManager by repositoriesManager {
+            @RequiresTransaction
             override fun getRepositories(): Set<RepositoryId> {
                 error(errorMessage)
             }
@@ -376,7 +394,10 @@ class ModelReplicationServerTest {
         val repositoryId = RepositoryId("repo1")
 
         runWithTestModelServer { _, fixture ->
-            fixture.repositoriesManager.createRepository(repositoryId, null)
+            @OptIn(RequiresTransaction::class)
+            fixture.repositoriesManager.getTransactionManager().runWrite {
+                fixture.repositoriesManager.createRepository(repositoryId, null)
+            }
 
             val response = client.get {
                 url {
@@ -397,7 +418,10 @@ class ModelReplicationServerTest {
             ContentType.parse("application/x.modelix.branch+json;version=1").withCharset(Charsets.UTF_8)
 
         runWithTestModelServer { _, fixture ->
-            fixture.repositoriesManager.createRepository(repositoryId, null)
+            @OptIn(RequiresTransaction::class)
+            fixture.repositoriesManager.getTransactionManager().runWrite {
+                fixture.repositoriesManager.createRepository(repositoryId, null)
+            }
             val client = createClient {
                 install(ContentNegotiation) {
                     json()

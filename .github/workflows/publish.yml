@@ -101,7 +101,7 @@ jobs:
       # Try to log in early. If this fails, there's no reason to perform the remaining steps
       - name: Log in to Docker Hub
         # Only attempt to log in if we later attempt to push.
-        if: ${{ env.PUSH }}
+        if: ${{ env.PUSH == 'true' }}
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_HUB_USER }}

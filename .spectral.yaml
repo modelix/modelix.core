@@ -45,9 +45,17 @@ overrides:
     rules:
       must-always-return-json-objects-as-top-level-data-structures: warn
   - files:
-      - 'model-server-v2.yaml#/components/responses/modelql-404'
+      - 'model-server-v2.yaml#/components/responses/ModelQlQueryExecutionFailed'
     rules:
       must-use-problem-json-for-errors: warn
+      # We continue using 409 instead of 400 to not make breaking changes.
+      # When introducing code 409,
+      # we were not aware that it was considered an uncommon status code
+      # and that uncommon codes should not be used.
+      # See https://opensource.zalando.com/restful-api-guidelines/#150
+      must-use-standard-http-status-codes: warn
+      # Plain text instead of a JSON object is also still used to avoid breaking changes.
+      must-always-return-json-objects-as-top-level-data-structures: warn
   - files:
       - 'model-server-v1.yaml#/paths/~1getAll'
       - 'model-server-v1.yaml#/paths/~1getEmail'

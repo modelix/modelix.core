@@ -216,8 +216,11 @@ class ModelReplicationServer(
         val branchRef = repositoryId(repository).getBranchReference(branch)
         val deltaFromClient = call.receive<VersionDelta>()
         deltaFromClient.checkObjectHashes()
-        @OptIn(RequiresTransaction::class) // no transactions required for immutable store
-        repositoriesManager.getStoreClient(RepositoryId(repository), true).putAll(deltaFromClient.getAllObjects())
+        val objectsFromClient = deltaFromClient.getAllObjects()
+        withContext(Dispatchers.IO) {
+            @OptIn(RequiresTransaction::class) // no transactions required for immutable store
+            repositoriesManager.getStoreClient(RepositoryId(repository), true).putAll(objectsFromClient)
+        }
         @OptIn(RequiresTransaction::class)
         val mergedHash = runWrite {
             repositoriesManager.mergeChanges(branchRef, deltaFromClient.versionHash)

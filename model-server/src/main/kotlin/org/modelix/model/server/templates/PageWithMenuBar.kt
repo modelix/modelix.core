@@ -41,7 +41,7 @@ class PageWithMenuBar(val activePage: String, val baseUrl: String) : Template<HT
                     "diff" to "Diff View",
                     "headers" to "HTTP Headers",
                     "user" to "JWT token",
-                    "permissions" to "Permissions",
+                    "permissions/" to "Permissions",
                     "swagger" to "SwaggerUI",
                     "about" to "About",
                 )

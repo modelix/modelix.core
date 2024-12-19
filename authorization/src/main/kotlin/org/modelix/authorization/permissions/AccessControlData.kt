@@ -20,6 +20,9 @@ data class AccessControlData(
      * Grants based on user roles extracted from the JWT token.
      */
     val grantsToRoles: Map<String, Set<String>> = emptyMap(),
+
+    val knownUsers: Set<String> = emptySet(),
+    val knownRoles: Set<String> = emptySet(),
 ) {
 
     /**
@@ -87,6 +90,25 @@ interface IAccessControlPersistence : IAccessControlDataProvider {
         read().grantsToRoles[role]?.map { PermissionParts.fromString(it) }?.toSet() ?: emptySet()
 }
 
+fun IAccessControlPersistence.recordKnownUser(user: String?) {
+    if (user == null) return
+    recordKnownUsers(listOf(user))
+}
+
+fun IAccessControlPersistence.recordKnownUsers(users: List<String>) {
+    if (read().knownUsers.containsAll(users)) return // avoid write lock
+    update {
+        it.copy(knownUsers = it.knownUsers + users)
+    }
+}
+
+fun IAccessControlPersistence.recordKnownRoles(roles: List<String>) {
+    if (read().knownRoles.containsAll(roles)) return // avoid write lock
+    update {
+        it.copy(knownRoles = it.knownRoles + roles)
+    }
+}
+
 class FileSystemAccessControlPersistence(val file: File) : IAccessControlPersistence {
 
     private var data: AccessControlData = if (file.exists()) {
@@ -101,7 +123,10 @@ class FileSystemAccessControlPersistence(val file: File) : IAccessControlPersist
 
     @Synchronized
     override fun update(updater: (AccessControlData) -> AccessControlData) {
-        data = updater(data)
+        val oldData = data
+        val newData = updater(data)
+        if (oldData == newData) return
+        data = newData
         writeFile()
     }
 

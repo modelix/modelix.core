@@ -58,6 +58,7 @@ import org.modelix.model.server.handlers.ui.RepositoryOverview
 import org.modelix.model.server.store.IgniteStoreClient
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.IsolatingStore
+import org.modelix.model.server.store.ObjectInRepository
 import org.modelix.model.server.store.RequiresTransaction
 import org.modelix.model.server.store.forGlobalRepository
 import org.modelix.model.server.store.loadDump
@@ -181,6 +182,10 @@ object Main {
                 install(ModelixAuthorization) {
                     permissionSchema = ModelServerPermissionSchema.SCHEMA
                     installStatusPages = false
+                    accessControlPersistence = DBAccessControlPersistence(
+                        storeClient,
+                        ObjectInRepository.global(RepositoriesManager.KEY_PREFIX + ":access-control-data"),
+                    )
                 }
                 install(ForwardedHeaders)
                 install(CallLogging) {

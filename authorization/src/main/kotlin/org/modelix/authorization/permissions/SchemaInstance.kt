@@ -1,5 +1,6 @@
 package org.modelix.authorization.permissions
 
+import kotlinx.serialization.Serializable
 import org.modelix.authorization.UnknownPermissionException
 
 /**
@@ -140,11 +141,14 @@ class SchemaInstance(val schema: Schema) {
     }
 }
 
+@Serializable
 data class ResourceInstanceReference(
     val name: String,
     val parameterValues: List<String>,
     val parent: ResourceInstanceReference?,
 ) {
+    val fullId: String get() = toPermissionParts().fullId
+
     override fun toString(): String {
         return toPermissionParts().toString()
     }
@@ -156,6 +160,7 @@ data class ResourceInstanceReference(
 
 data class PermissionInstanceReference(val permissionName: String, val resource: ResourceInstanceReference) {
     fun toPermissionParts() = resource.toPermissionParts() + permissionName
+    val fullId: String get() = toPermissionParts().fullId
     override fun toString(): String {
         return toPermissionParts().toString()
     }

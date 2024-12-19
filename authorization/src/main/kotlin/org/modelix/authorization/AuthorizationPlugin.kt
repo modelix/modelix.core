@@ -15,13 +15,13 @@ import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.BaseRouteScopedPlugin
 import io.ktor.server.application.call
 import io.ktor.server.application.install
+import io.ktor.server.application.plugin
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.AuthenticationContext
 import io.ktor.server.auth.AuthenticationProvider
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.jwt.jwt
 import io.ktor.server.auth.principal
-import io.ktor.server.html.respondHtml
 import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
@@ -31,14 +31,15 @@ import io.ktor.server.routing.application
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.util.AttributeKey
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.modelix.authorization.permissions.PermissionEvaluator
 import org.modelix.authorization.permissions.PermissionInstanceReference
 import org.modelix.authorization.permissions.PermissionParser
 import org.modelix.authorization.permissions.PermissionParts
 import org.modelix.authorization.permissions.SchemaInstance
-import java.nio.charset.StandardCharsets
-import java.util.Base64
-import java.util.Collections
+import org.modelix.authorization.permissions.recordKnownRoles
+import org.modelix.authorization.permissions.recordKnownUser
 import java.util.concurrent.TimeUnit
 
 private val LOG = mu.KotlinLogging.logger { }
@@ -85,7 +86,18 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                     }
                     validate {
                         try {
-                            jwtFromHeaders()?.let(::AccessTokenPrincipal)
+                            val authPlugin = application.plugin(ModelixAuthorization)
+                            val authConfig = authPlugin.config
+                            jwtFromHeaders()
+                                ?.let { authConfig.nullIfInvalid(it) }
+                                ?.also { jwt ->
+                                    application.launch(Dispatchers.IO) {
+                                        val accessControlPersistence = authConfig.accessControlPersistence
+                                        accessControlPersistence.recordKnownUser(authConfig.jwtUtil.extractUserId(jwt))
+                                        accessControlPersistence.recordKnownRoles(authConfig.jwtUtil.extractUserRoles(jwt))
+                                    }
+                                }
+                                ?.let(::AccessTokenPrincipal)
                         } catch (e: Exception) {
                             LOG.warn(e) { "Failed to read JWT token" }
                             null
@@ -146,11 +158,6 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                                 )
                             }
                         }
-                        get("permissions") {
-                            call.respondHtml {
-                                buildPermissionPage(call.getPermissionEvaluator())
-                            }
-                        }
                     }
                     if (config.permissionManagementEnabled) {
                         installPermissionManagementHandlers()
@@ -168,12 +175,9 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
 
 class ModelixAuthorizationPluginInstance(val config: ModelixAuthorizationConfig) {
 
-    private val deniedPermissionRequests: MutableSet<DeniedPermissionRequest> = Collections.synchronizedSet(LinkedHashSet())
     private val permissionCache = CacheBuilder.newBuilder()
         .expireAfterWrite(5, TimeUnit.SECONDS)
         .build<Pair<AccessTokenPrincipal, PermissionInstanceReference>, Boolean>()
-
-    fun getDeniedPermissions(): Set<DeniedPermissionRequest> = deniedPermissionRequests.toSet()
 
     fun hasPermission(call: ApplicationCall, permissionToCheck: PermissionParts): Boolean {
         return hasPermission(call, PermissionParser(config.permissionSchema).parse(permissionToCheck))
@@ -184,23 +188,7 @@ class ModelixAuthorizationPluginInstance(val config: ModelixAuthorizationConfig)
 
         val principal = call.principal<AccessTokenPrincipal>() ?: throw NotLoggedInException()
         return permissionCache.get(principal to permissionToCheck) {
-            getPermissionEvaluator(principal).hasPermission(permissionToCheck).also { granted ->
-                if (!granted) {
-                    val userId = principal.getUserName()
-                    if (userId != null) {
-                        synchronized(deniedPermissionRequests) {
-                            deniedPermissionRequests += DeniedPermissionRequest(
-                                permissionRef = permissionToCheck,
-                                userId = userId,
-                                jwtPayload = principal.jwt.payload,
-                            )
-                            while (deniedPermissionRequests.size >= 100) {
-                                deniedPermissionRequests.iterator().also { it.next() }.remove()
-                            }
-                        }
-                    }
-                }
-            }
+            getPermissionEvaluator(principal).hasPermission(permissionToCheck)
         }
     }
 
@@ -225,14 +213,6 @@ class ModelixAuthorizationPluginInstance(val config: ModelixAuthorizationConfig)
     fun loadGrantedPermissions(principal: AccessTokenPrincipal, evaluator: PermissionEvaluator) {
         config.jwtUtil.loadGrantedPermissions(principal.jwt, evaluator)
     }
-}
-
-data class DeniedPermissionRequest(
-    val permissionRef: PermissionInstanceReference,
-    val userId: String,
-    val jwtPayload: String,
-) {
-    fun jwtPayloadJson() = String(Base64.getUrlDecoder().decode(jwtPayload), StandardCharsets.UTF_8)
 }
 
 /**

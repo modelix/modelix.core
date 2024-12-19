@@ -7,19 +7,19 @@ jobs:
     name: Lint PR commits
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           fetch-depth: 0
       # Use this action to run commitlint because pre-commit does not run it in CI.
       # pre-commit probably does not run commitlint in CI because pre-commit can only run it in the `commit-msg` stage.
-      - uses: wagoid/commitlint-github-action@v6
+      - uses: wagoid/commitlint-github-action@0184f5a228ee06430bb9e67d65f73a1a6767496a # v6
 
   test-release:
     name: Dry-run semantic-release
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           fetch-depth: 0
       - name: Checkout branch
@@ -28,11 +28,11 @@ jobs:
         # branches.
         run: git checkout -b main
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
         with:
           node-version-file: '.nvmrc'
       - name: Cache Node packages
-        uses: actions/cache@v4
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4
         with:
           path: node_modules
           key: release-${{ hashFiles('package.json') }}-${{ hashFiles('package-lock.json') }}

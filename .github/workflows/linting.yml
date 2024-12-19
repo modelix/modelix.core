@@ -7,25 +7,25 @@ jobs:
   pre-commit:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
         with:
           node-version-file: '.nvmrc'
-      - uses: actions/cache@v4
+      - uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4
         with:
           path: node_modules
           key: release-${{ hashFiles('package.json') }}-${{ hashFiles('package-lock.json') }}
       - name: Install dependencies
         run: npm ci
-      - uses: actions/setup-python@v5
-      - uses: pre-commit/action@v3.0.1
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5
+      - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
 
   openapi-linting:
     runs-on: ubuntu-24.04
     steps:
       - name: Clone repo
-        uses: actions/checkout@v4
-      - uses: stoplightio/spectral-action@v0.8.11
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: stoplightio/spectral-action@2ad0b9302e32a77c1caccf474a9b2191a8060d83 # v0.8.11
         with:
           file_glob: 'model-server-openapi/specifications/model-server-*.yaml'
           spectral_ruleset: .spectral.yaml
@@ -37,7 +37,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Clone repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           # We need the history to find the common ancestor of the PR and the target branch from which we fetch the
           # baseline OpenAPI specifications to compare against.

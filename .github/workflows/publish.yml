@@ -35,7 +35,7 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Configure the project version
         id: version
@@ -101,7 +101,7 @@ jobs:
       # Try to log in early. If this fails, there's no reason to perform the remaining steps
       - name: Log in to Docker Hub
         # Only attempt to log in if we later attempt to push.
-        if: ${{ env.PUSH }}
+        if: ${{ env.PUSH == 'true' }}
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_HUB_USER }}

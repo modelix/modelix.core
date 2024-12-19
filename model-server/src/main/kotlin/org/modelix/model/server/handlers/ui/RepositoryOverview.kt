@@ -16,6 +16,7 @@ import io.ktor.utils.io.charsets.Charsets
 import kotlinx.html.FlowContent
 import kotlinx.html.FlowOrInteractiveOrPhrasingContent
 import kotlinx.html.HTML
+import kotlinx.html.HTMLTag
 import kotlinx.html.a
 import kotlinx.html.button
 import kotlinx.html.h1
@@ -26,6 +27,8 @@ import kotlinx.html.p
 import kotlinx.html.script
 import kotlinx.html.span
 import kotlinx.html.stream.createHTML
+import kotlinx.html.style
+import kotlinx.html.svg
 import kotlinx.html.table
 import kotlinx.html.tbody
 import kotlinx.html.td
@@ -34,6 +37,7 @@ import kotlinx.html.thead
 import kotlinx.html.title
 import kotlinx.html.tr
 import kotlinx.html.unsafe
+import kotlinx.html.visit
 import org.modelix.authorization.hasPermission
 import org.modelix.authorization.requiresLogin
 import org.modelix.model.lazy.RepositoryId
@@ -112,7 +116,7 @@ class RepositoryOverview(private val repoManager: IRepositoriesManager) {
                         }
                         th { +"Branch" }
                         th {
-                            colSpan = "3"
+                            colSpan = "4"
                             +"Actions"
                         }
                     }
@@ -125,6 +129,7 @@ class RepositoryOverview(private val repoManager: IRepositoriesManager) {
                             td {
                                 rowSpan = repoRowSpan
                                 +repository.id
+                                buildPermissionManagementLink(repository.id, null)
                             }
                             td {
                                 rowSpan = repoRowSpan
@@ -145,6 +150,7 @@ class RepositoryOverview(private val repoManager: IRepositoriesManager) {
                                         span {
                                             +branch.branchName
                                         }
+                                        buildPermissionManagementLink(repository.id, branch.branchName)
                                     }
                                     td {
                                         buildHistoryLink(repository.id, branch.branchName)
@@ -174,6 +180,19 @@ internal fun FlowOrInteractiveOrPhrasingContent.buildHistoryLink(repositoryId: S
 internal fun FlowOrInteractiveOrPhrasingContent.buildExploreLatestLink(repositoryId: String, branchName: String) {
     a("../content/repositories/${repositoryId.encodeURLPathPart()}/branches/${branchName.encodeURLPathPart()}/latest/") {
         +"Explore Latest Version"
+    }
+}
+
+internal fun FlowOrInteractiveOrPhrasingContent.buildPermissionManagementLink(repositoryId: String, branchName: String?) {
+    val resourceId = ModelServerPermissionSchema.repository(repositoryId)
+        .let { if (branchName == null) it.resource else it.branch(branchName).resource }
+        .fullId
+    a("../permissions/resources/${resourceId.encodeURLPathPart()}/") {
+        svg {
+            style = "color: rgba(0, 0, 0, 0.87); fill: rgba(0, 0, 0, 0.87); width: 20px; height: 20px;"
+            attributes["viewBox"] = "0 0 24 24"
+            HTMLTag("path", consumer, mapOf("d" to "M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2m-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2m3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1z"), null, false, false).visit {}
+        }
     }
 }
 

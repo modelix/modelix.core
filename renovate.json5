@@ -12,5 +12,6 @@
     "pre-commit",
     "gradle-wrapper",
     "nvm",
+    "github-actions",
   ],
 }

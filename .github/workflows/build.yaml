@@ -11,7 +11,7 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
 
     permissions:
@@ -84,7 +84,7 @@ jobs:
           category: detekt
 
   test-model-api-gen-gradle:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK
@@ -104,7 +104,7 @@ jobs:
         run: model-api-gen-gradle-test/ci.sh
 
   test-model-client-js:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK
@@ -124,7 +124,7 @@ jobs:
         run: model-client-js-test/ci.sh
 
   test-bulk-model-sync-gradle:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK

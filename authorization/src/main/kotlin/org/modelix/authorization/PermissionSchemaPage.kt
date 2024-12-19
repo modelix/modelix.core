@@ -15,21 +15,17 @@ import kotlinx.html.td
 import kotlinx.html.th
 import kotlinx.html.tr
 import kotlinx.html.ul
-import org.modelix.authorization.permissions.PermissionEvaluator
+import kotlinx.html.unsafe
 import org.modelix.authorization.permissions.Resource
-import org.modelix.authorization.permissions.ResourceInstanceReference
+import org.modelix.authorization.permissions.Schema
 import org.modelix.authorization.permissions.SchemaInstance
 
-fun HTML.buildPermissionPage(evaluator: PermissionEvaluator) {
-    buildPermissionPage(evaluator.schemaInstance)
-}
-
-fun HTML.buildPermissionPage(schemaInstance: SchemaInstance) {
-    instantiateParameterizedResources(schemaInstance)
+fun HTML.buildSchemaPage(schema: Schema) {
     head {
         style {
-            //language=CSS
-            +"""
+            unsafe {
+                //language=CSS
+                +"""
                 table {
                     border: 1px solid #ccc;
                     border-collapse: collapse;
@@ -38,22 +34,15 @@ fun HTML.buildPermissionPage(schemaInstance: SchemaInstance) {
                     border: 1px solid #ccc;
                     padding: 3px 12px;
                 }
-            """.trimIndent()
+                """.trimIndent()
+            }
         }
     }
     body {
         h1 {
-            +"Known Permissions"
-        }
-        schemaInstance.resources.values.filter { it.parent == null }.forEachIndexed { index, resourceInstance ->
-            if (index != 0) br { }
-            buildResourceInstance(resourceInstance)
-        }
-
-        h1 {
             +"Permission Schema"
         }
-        schemaInstance.schema.resources.values.forEachIndexed { index, resource ->
+        schema.resources.values.forEachIndexed { index, resource ->
             if (index != 0) br { }
             buildResource(resource)
         }
@@ -164,27 +153,5 @@ private fun FlowContent.buildResource(resource: Resource) {
                 buildResource(childResource)
             }
         }
-    }
-}
-
-private fun instantiateParameterizedResources(schemaInstance: SchemaInstance) {
-    for (resource in schemaInstance.schema.resources.values) {
-        if (resource.parameters.isEmpty()) continue
-        val ref = ResourceInstanceReference(resource.name, resource.parameters.map { "<${resource.name}.$it>" }, null)
-        val instance = schemaInstance.instantiateResource(ref)
-        instantiateParameterizedResources(schemaInstance, instance, ref)
-    }
-}
-
-private fun instantiateParameterizedResources(
-    schemaInstance: SchemaInstance,
-    parentInstance: SchemaInstance.ResourceInstance,
-    parentRef: ResourceInstanceReference,
-) {
-    for (resource in parentInstance.resourceSchema.resources.values) {
-        if (resource.parameters.isEmpty()) continue
-        val ref = ResourceInstanceReference(resource.name, resource.parameters.map { "<${resource.name}.$it>" }, parentRef)
-        val instance = schemaInstance.instantiateResource(ref)
-        instantiateParameterizedResources(schemaInstance, instance, ref)
     }
 }

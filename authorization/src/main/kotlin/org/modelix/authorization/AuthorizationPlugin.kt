@@ -15,13 +15,13 @@ import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.BaseRouteScopedPlugin
 import io.ktor.server.application.call
 import io.ktor.server.application.install
+import io.ktor.server.application.plugin
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.AuthenticationContext
 import io.ktor.server.auth.AuthenticationProvider
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.jwt.jwt
 import io.ktor.server.auth.principal
-import io.ktor.server.html.respondHtml
 import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
@@ -31,11 +31,15 @@ import io.ktor.server.routing.application
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.util.AttributeKey
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.modelix.authorization.permissions.PermissionEvaluator
 import org.modelix.authorization.permissions.PermissionInstanceReference
 import org.modelix.authorization.permissions.PermissionParser
 import org.modelix.authorization.permissions.PermissionParts
 import org.modelix.authorization.permissions.SchemaInstance
+import org.modelix.authorization.permissions.recordKnownRoles
+import org.modelix.authorization.permissions.recordKnownUser
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 import java.util.Collections
@@ -85,7 +89,18 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                     }
                     validate {
                         try {
-                            jwtFromHeaders()?.let(::AccessTokenPrincipal)
+                            val authPlugin = application.plugin(ModelixAuthorization)
+                            val authConfig = authPlugin.config
+                            jwtFromHeaders()
+                                ?.let { authConfig.nullIfInvalid(it) }
+                                ?.also { jwt ->
+                                    application.launch(Dispatchers.IO) {
+                                        val accessControlPersistence = authConfig.accessControlPersistence
+                                        accessControlPersistence.recordKnownUser(authConfig.jwtUtil.extractUserId(jwt))
+                                        accessControlPersistence.recordKnownRoles(authConfig.jwtUtil.extractUserRoles(jwt))
+                                    }
+                                }
+                                ?.let(::AccessTokenPrincipal)
                         } catch (e: Exception) {
                             LOG.warn(e) { "Failed to read JWT token" }
                             null
@@ -144,11 +159,6 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                                 |
                                     """.trimMargin(),
                                 )
-                            }
-                        }
-                        get("permissions") {
-                            call.respondHtml {
-                                buildPermissionPage(call.getPermissionEvaluator())
                             }
                         }
                     }

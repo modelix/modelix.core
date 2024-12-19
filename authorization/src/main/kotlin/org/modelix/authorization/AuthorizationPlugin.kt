@@ -40,9 +40,6 @@ import org.modelix.authorization.permissions.PermissionParts
 import org.modelix.authorization.permissions.SchemaInstance
 import org.modelix.authorization.permissions.recordKnownRoles
 import org.modelix.authorization.permissions.recordKnownUser
-import java.nio.charset.StandardCharsets
-import java.util.Base64
-import java.util.Collections
 import java.util.concurrent.TimeUnit
 
 private val LOG = mu.KotlinLogging.logger { }
@@ -178,12 +175,9 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
 
 class ModelixAuthorizationPluginInstance(val config: ModelixAuthorizationConfig) {
 
-    private val deniedPermissionRequests: MutableSet<DeniedPermissionRequest> = Collections.synchronizedSet(LinkedHashSet())
     private val permissionCache = CacheBuilder.newBuilder()
         .expireAfterWrite(5, TimeUnit.SECONDS)
         .build<Pair<AccessTokenPrincipal, PermissionInstanceReference>, Boolean>()
-
-    fun getDeniedPermissions(): Set<DeniedPermissionRequest> = deniedPermissionRequests.toSet()
 
     fun hasPermission(call: ApplicationCall, permissionToCheck: PermissionParts): Boolean {
         return hasPermission(call, PermissionParser(config.permissionSchema).parse(permissionToCheck))
@@ -194,23 +188,7 @@ class ModelixAuthorizationPluginInstance(val config: ModelixAuthorizationConfig)
 
         val principal = call.principal<AccessTokenPrincipal>() ?: throw NotLoggedInException()
         return permissionCache.get(principal to permissionToCheck) {
-            getPermissionEvaluator(principal).hasPermission(permissionToCheck).also { granted ->
-                if (!granted) {
-                    val userId = principal.getUserName()
-                    if (userId != null) {
-                        synchronized(deniedPermissionRequests) {
-                            deniedPermissionRequests += DeniedPermissionRequest(
-                                permissionRef = permissionToCheck,
-                                userId = userId,
-                                jwtPayload = principal.jwt.payload,
-                            )
-                            while (deniedPermissionRequests.size >= 100) {
-                                deniedPermissionRequests.iterator().also { it.next() }.remove()
-                            }
-                        }
-                    }
-                }
-            }
+            getPermissionEvaluator(principal).hasPermission(permissionToCheck)
         }
     }
 
@@ -235,14 +213,6 @@ class ModelixAuthorizationPluginInstance(val config: ModelixAuthorizationConfig)
     fun loadGrantedPermissions(principal: AccessTokenPrincipal, evaluator: PermissionEvaluator) {
         config.jwtUtil.loadGrantedPermissions(principal.jwt, evaluator)
     }
-}
-
-data class DeniedPermissionRequest(
-    val permissionRef: PermissionInstanceReference,
-    val userId: String,
-    val jwtPayload: String,
-) {
-    fun jwtPayloadJson() = String(Base64.getUrlDecoder().decode(jwtPayload), StandardCharsets.UTF_8)
 }
 
 /**

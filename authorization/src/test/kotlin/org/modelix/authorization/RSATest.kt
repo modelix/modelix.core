@@ -318,4 +318,47 @@ class RSATest {
             verifyingUtil.verifyToken(tokenString)
         }
     }
+
+    @Test
+    fun `can verify own tokens`() {
+        val privateKeyPem1 = """
+            -----BEGIN RSA PRIVATE KEY-----
+            MIIEogIBAAKCAQEAyB+2c/hRX7lhcTKHOom13F7dVnujy1XndcYp4y42NIxRZDui
+            mOU/inkH6tJsclIftPeYSWnSTWRc5ZG268pRMjD6rMCxCTyo1S7VGuXtdPbfL1ma
+            kCYfpKALBZdLgrYVkor49CP2cBdKPldYUT7+EpqFxXkaeL073bS3vPPdxN/riuYu
+            3df3tLe9+st6Tr6+rv1+HK+dRegPok8ryMOogT96QyF7ygLDQ1WW/v/CZI5y+jW1
+            xEpWnHRkRqHWTtIMjWN6WK+ez1kg4tlQDWmMn4bywmTPRs38weLEMnTUrjfrOxOc
+            59rWOyE7b186RrDf1F1ezLiVUlLA9L7ThydM3QIDAQABAoIBAEXspsCgrDYpPP3j
+            bNKsWWn1j5rvOo0KqARDyFEDzZbQzIOcPrTzrR8CKR0IhzHutftyY7iLDBtUjQz9
+            vA9pMrO532zLK1CR7GAIrBdo7W5n8BXIVjQ1zeqkrRU4Bv9WBfWdL12Gz03dJWjg
+            9g/1VatEaKdWKES1whw2T9jq0Ls/7/uRTtL31g6SnI/UW5RnZe4TQhNtnTltts6T
+            eHUU7MjKIlB4VQrHx8up/QdsMIvXihv72jm374nZe6U3e8HmuGb71qXA4YPFju5c
+            Aict16PVNUTb2ZAylH33NB0k1LlHaCbkQM+Cy3jhhtb1XERXt7tDyS/hiC++HG6b
+            jlAvqzUCgYEA27OjEbEbw60ca9goC/mafZoDofZWA3aNI+TR15EsFAYQHtoE4DLy
+            Nrlm0syqqJJwf117jLhu+KpKrJtb36XqfUqnwwISAilnr6OnPT47qs8dbrRIxnap
+            COh9yw0YerLFPuJ9HTPZMCWs7ufDcXJyuRfjL25lq/kv7jGD6jHRvnMCgYEA6TAG
+            PK/OyIizT4OtdzNbejQ7W+9wi4tfhjF8OMmgQb6kpsmSmhoaFCQ5SAg9MwqbL2q1
+            3XSEkPXljONqWmkQZ/2Eo4WHveOKoKj/07LiRucs5jjHyr5pea80z5lTnE8i7MJX
+            eNSTqi3b9WnV0J0EHhg7qgAbH/q+c5gtiqgkI28CgYB9z0ONSQdmKUaCNzjPirK+
+            RCjaYW7l8shmCo1jzT0ZhlNK53wtSt9LGSZZhlwfxiPnu4eZkK/zc8jpSNn2m1NJ
+            RiwFTrUzSbSXbrbBKlcOvCXVlCWsiJzJfiEy2p/u+1paZWZSB7PSj3CVKmDQIUKy
+            3Yv6SFSugzbARtiMjtTWIwKBgGFKDyAcvap/FkjTiHkWLVFkH2vxD0S5RoaHeOt8
+            e+dSMgIAUbEHuN+0aU27WkVEZJC49d3KclDEtxw7+bB060pnxIIxAPxhxgHX4Lyj
+            grLQWrRG9lyJaxpA1kjTEMZDYi/juXkJP/6dmYrfuDyMdh5UP/hiiO6jv/gcgsu5
+            8THzAoGAUGCnccd4JAXK3/rmkCLT++M18G6ik+qaTMdhGnC9opTDWDvxWF6jHj7w
+            4/wol7RQf0qmWZr6sSg+dg/cEOvAxBDiayl7WALnEpGhh2+aKkDVIy7JSTOm3fkO
+            P1Z2sotIDXrYJrdKl/BvWh80ifVYjHp9J/cOhMSyj/HCMhxexhY=
+            -----END RSA PRIVATE KEY-----
+        """.trimIndent().trim()
+
+        val privateKeyFile = File.createTempFile("modelix_rsa_test", ".pem")
+        privateKeyFile.deleteOnExit()
+        privateKeyFile.writeText(privateKeyPem1)
+
+        val util = ModelixJWTUtil()
+        util.loadKeysFromFiles(privateKeyFile)
+
+        val tokenString = util.createAccessToken("units-test@example.com", listOf())
+        util.verifyToken(tokenString)
+    }
 }

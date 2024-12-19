@@ -6,6 +6,7 @@ import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.JWSSigner
 import com.nimbusds.jose.JWSVerifier
+import com.nimbusds.jose.KeySourceException
 import com.nimbusds.jose.crypto.MACSigner
 import com.nimbusds.jose.crypto.RSASSASigner
 import com.nimbusds.jose.crypto.factories.DefaultJWSVerifierFactory
@@ -69,7 +70,11 @@ class ModelixJWTUtil {
             val keySelectors: List<JWSKeySelector<SecurityContext>> = hmacKeys.map { it.toPair() }.map {
                 SingleKeyJWSKeySelector<SecurityContext>(it.first, SecretKeySpec(it.second, it.first.name))
             } + jwkSources.map {
-                JWSAlgorithmFamilyJWSKeySelector.fromJWKSource<SecurityContext>(it)
+                try {
+                    JWSAlgorithmFamilyJWSKeySelector.fromJWKSource<SecurityContext>(it)
+                } catch (ex: KeySourceException) {
+                    throw KeySourceException("Couldn't retrieve JWKs from $it", ex)
+                }
             }
 
             processor.jwsKeySelector = if (keySelectors.size == 1) keySelectors.single() else CompositeJWSKeySelector(keySelectors)
@@ -328,6 +333,10 @@ class ModelixJWTUtil {
         override fun readFile(): JWKSet {
             return JWKSet(ensureValidKey(JWK.parseFromPEMEncodedObjects(file.readText())))
         }
+
+        override fun toString(): String {
+            return "PemFileJWKSet[$file]"
+        }
     }
 
     private open inner class FileJWKSet<C : SecurityContext>(val file: File) : JWKSource<C> {
@@ -340,11 +349,25 @@ class ModelixJWTUtil {
 
         override fun get(jwkSelector: JWKSelector, context: C?): List<JWK?>? {
             val jwks = cached.takeIf { System.currentTimeMillis() - loadedAt < fileRefreshTime.inWholeMilliseconds }
-                ?: readFile().also {
+                ?: readFile().let { jwks ->
+                    JWKSet(
+                        jwks.keys.flatMap { key ->
+                            if (key.isPrivate) {
+                                listOf(key, key.toPublicJWK())
+                            } else {
+                                listOf(key)
+                            }
+                        },
+                    )
+                }.also {
                     cached = it
                     loadedAt = System.currentTimeMillis()
                 }
             return jwkSelector.select(jwks)
+        }
+
+        override fun toString(): String {
+            return "FileJWKSet[$file]"
         }
     }
 

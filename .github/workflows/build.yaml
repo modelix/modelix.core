@@ -68,6 +68,15 @@ jobs:
       - name: Combine SARIF files
         run: |
           npx @microsoft/sarif-multitool merge --merge-runs --output-file merged.sarif  $(find . -iname '*.sarif*')
+        env:
+          # Disables globalization support.
+          # This makes the @microsoft/sarif-multitool work without ICU package installed.
+          # If not disabled, we get the following error:
+          # > Process terminated.
+          # > Couldn't find a valid ICU package installed on the system.
+          # > Set the configuration flag System.Globalization.Invariant to true
+          # > if you want to run with no globalization support.
+          DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: 1
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v3
         with:

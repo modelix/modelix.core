@@ -110,9 +110,9 @@ fun IAccessControlPersistence.recordKnownRoles(roles: List<String>) {
 }
 
 class FileSystemAccessControlPersistence(val file: File) : IAccessControlPersistence {
-
+    private val json = Json { ignoreUnknownKeys = true }
     private var data: AccessControlData = if (file.exists()) {
-        Json.decodeFromString<AccessControlData>(file.readText())
+        json.decodeFromString<AccessControlData>(file.readText())
     } else {
         AccessControlData()
     }.withLegacyRoles()
@@ -131,7 +131,7 @@ class FileSystemAccessControlPersistence(val file: File) : IAccessControlPersist
     }
 
     private fun writeFile() {
-        file.writeText(Json.encodeToString(data))
+        file.writeText(json.encodeToString(data))
     }
 }
 

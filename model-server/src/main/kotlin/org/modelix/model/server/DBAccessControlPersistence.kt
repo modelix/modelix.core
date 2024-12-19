@@ -8,7 +8,7 @@ import org.modelix.model.server.store.IGenericStoreClient
 import org.modelix.model.server.store.RequiresTransaction
 
 class DBAccessControlPersistence<E>(val store: IGenericStoreClient<E>, val key: E) : IAccessControlPersistence {
-    private val json = Json { ignoreUnknownKeys }
+    private val json = Json { ignoreUnknownKeys = true }
     override fun read(): AccessControlData {
         @OptIn(RequiresTransaction::class)
         return store.runReadTransaction {

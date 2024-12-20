@@ -12,7 +12,6 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.async.getAncestors
 import org.modelix.model.api.async.getDescendants
 import org.modelix.model.async.AsyncAsSynchronousTree
-import org.modelix.model.async.AsyncStoreAsLegacyDeserializingStore
 import org.modelix.model.async.AsyncTree
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.persistent.CPHamtInternal
@@ -58,7 +57,7 @@ class CLTree(val data: CPTree, val asyncStore: IAsyncObjectStore) : ITree by Asy
         store,
     )
 
-    val store: IDeserializingKeyValueStore = AsyncStoreAsLegacyDeserializingStore(asyncStore)
+    val store: IDeserializingKeyValueStore = asyncStore.getLegacyObjectStore()
 
     override fun getId(): String = data.id
 

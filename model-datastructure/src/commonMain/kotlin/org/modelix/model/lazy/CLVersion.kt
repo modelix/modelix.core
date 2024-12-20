@@ -22,7 +22,6 @@ import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.async.getDescendants
 import org.modelix.model.async.AsyncAsSynchronousTree
-import org.modelix.model.async.AsyncStoreAsLegacyDeserializingStore
 import org.modelix.model.async.AsyncTree
 import org.modelix.model.async.BulkQueryAsAsyncStore
 import org.modelix.model.async.IAsyncObjectStore
@@ -277,7 +276,7 @@ class CLVersion : IVersion {
         }
 
         fun tryLoadFromHash(hash: String, store: IAsyncObjectStore): Maybe<CLVersion> {
-            return KVEntryReference(hash, CPVersion.DESERIALIZER).getValue(store).notNull().map { CLVersion(it, AsyncStoreAsLegacyDeserializingStore(store)) }
+            return KVEntryReference(hash, CPVersion.DESERIALIZER).getValue(store).notNull().map { CLVersion(it, store) }
         }
     }
 

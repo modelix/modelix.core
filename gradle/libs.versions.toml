@@ -15,7 +15,7 @@ modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version.ref = "mo
 dokka = {id = "org.jetbrains.dokka", version.ref = "dokka"}
 node = {id = "com.github.node-gradle.node", version = "7.1.0"}
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
-npm-publish = { id = "dev.petuska.npm.publish", version = "3.4.3" }
+npm-publish = { id = "dev.petuska.npm.publish", version = "3.5.0" }
 test-logger = { id = "com.adarshr.test-logger", version = "4.0.0" }
 shadow = { id = "com.github.johnrengelman.shadow", version = "8.1.1" }
 intellij = { id = "org.jetbrains.intellij", version = "1.17.4" }

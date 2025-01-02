@@ -3,6 +3,16 @@ plugins {
     `java-gradle-plugin`
 }
 
+tasks.test {
+    // The tests execute the Gradle build for modelix.core which requires Java 21.
+    // It requires Java 21 for the Gradle plugin `dev.petuska.npm.publish`.
+    javaLauncher.set(
+        javaToolchains.launcherFor {
+            languageVersion.set(JavaLanguageVersion.of(21))
+        },
+    )
+}
+
 dependencies {
     implementation(project(":model-client", "jvmRuntimeElements"))
     implementation(project(":bulk-model-sync-lib"))

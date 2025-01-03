@@ -13,5 +13,19 @@
     "gradle-wrapper",
     "nvm",
     "github-actions",
+    "custom.regex"
   ],
+  customManagers: [
+    {
+      depNameTemplate: "Node.js",
+      // Custom manager for Docker image version in version.properties
+      customType: "regex",
+      fileMatch: ["^gradle/libs.versions.toml$"],
+      matchStrings: [
+        'node="(?<currentValue>.*?)"'
+      ],
+      datasourceTemplate: "node-version",
+      versioningTemplate: "node"
+    }
+  ]
 }

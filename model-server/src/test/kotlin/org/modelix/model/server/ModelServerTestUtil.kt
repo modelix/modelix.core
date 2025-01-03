@@ -4,6 +4,9 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.application.pluginOrNull
+import io.ktor.server.engine.EmbeddedServer
+import io.ktor.server.engine.connector
+import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.netty.NettyApplicationEngine
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
@@ -51,9 +54,12 @@ fun Application.installDefaultServerPlugins(unitTestMode: Boolean = true) {
  */
 fun runWithNettyServer(
     setupBlock: (application: Application) -> Unit,
-    testBlock: suspend (server: NettyApplicationEngine) -> Unit,
+    testBlock: suspend (server: EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration>) -> Unit,
 ) {
-    val nettyServer: NettyApplicationEngine = io.ktor.server.engine.embeddedServer(Netty, port = 0) {
+    val nettyServer = embeddedServer(Netty, configure = {
+        connector { this.port = 0 }
+        responseWriteTimeoutSeconds = 30
+    }) {
         installDefaultServerPlugins()
         setupBlock(this)
     }

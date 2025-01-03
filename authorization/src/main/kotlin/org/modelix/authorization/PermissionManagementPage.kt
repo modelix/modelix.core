@@ -11,10 +11,11 @@ import io.ktor.server.request.receiveParameters
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
+import io.ktor.server.routing.RoutingContext
+import io.ktor.server.routing.application
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
-import io.ktor.util.pipeline.PipelineContext
 import kotlinx.html.FlowContent
 import kotlinx.html.a
 import kotlinx.html.body
@@ -83,7 +84,7 @@ fun Route.installPermissionManagementHandlers() {
                 }
             }
             route("{resourceId}") {
-                fun PipelineContext<*, ApplicationCall>.resourceId(): String = call.parameters["resourceId"]!!
+                fun RoutingContext.resourceId(): String = call.parameters["resourceId"]!!
                 get("/") {
                     val resourceId = resourceId()
                     val plugin = call.application.plugin(ModelixAuthorization)
@@ -240,8 +241,8 @@ fun Route.installPermissionManagementHandlers() {
                 }
                 route("permissions") {
                     route("{permissionName}") {
-                        fun PipelineContext<*, ApplicationCall>.permissionName(): String = call.parameters["permissionName"]!!
-                        fun PipelineContext<*, ApplicationCall>.permissionId(): String = "${resourceId()}/${permissionName()}"
+                        fun RoutingContext.permissionName(): String = call.parameters["permissionName"]!!
+                        fun RoutingContext.permissionId(): String = "${resourceId()}/${permissionName()}"
                         post("grant") {
                             val formParameters = call.receiveParameters()
                             grant(formParameters["userId"], formParameters["roleId"], permissionId())
@@ -300,34 +301,34 @@ fun FlowContent.buildPermissionIncludesList(currentResource: ResourceInstanceRef
     }
 }
 
-private fun PipelineContext<*, ApplicationCall>.grant(userId: String?, roleId: String?, permissionId: String) {
+private fun RoutingContext.grant(userId: String?, roleId: String?, permissionId: String) {
     val userId = userId?.takeIf { it.isNotBlank() }
     val roleId = roleId?.takeIf { it.isNotBlank() }
     require(userId != null || roleId != null) { "userId or roleId required" }
     call.checkCanGranPermission(permissionId)
 
     if (userId != null) {
-        application.plugin(ModelixAuthorization).config.accessControlPersistence.update {
+        call.application.plugin(ModelixAuthorization).config.accessControlPersistence.update {
             it.withGrantToUser(userId, permissionId)
         }
     }
     if (roleId != null) {
-        application.plugin(ModelixAuthorization).config.accessControlPersistence.update {
+        call.application.plugin(ModelixAuthorization).config.accessControlPersistence.update {
             it.withGrantToRole(roleId, permissionId)
         }
     }
 }
 
-private fun PipelineContext<*, ApplicationCall>.removeGrant(userId: String?, roleId: String?, permissionId: String) {
+private fun RoutingContext.removeGrant(userId: String?, roleId: String?, permissionId: String) {
     require(userId != null || roleId != null) { "userId or roleId required" }
     call.checkCanGranPermission(permissionId)
     if (userId != null) {
-        application.plugin(ModelixAuthorization).config.accessControlPersistence.update {
+        call.application.plugin(ModelixAuthorization).config.accessControlPersistence.update {
             it.withoutGrantToUser(userId, permissionId)
         }
     }
     if (roleId != null) {
-        application.plugin(ModelixAuthorization).config.accessControlPersistence.update {
+        call.application.plugin(ModelixAuthorization).config.accessControlPersistence.update {
             it.withoutGrantToUser(roleId, permissionId)
         }
     }

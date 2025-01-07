@@ -11,6 +11,7 @@ import io.ktor.server.resources.get
 import io.ktor.server.resources.post
 import io.ktor.server.resources.put
 import io.ktor.server.response.respondText
+import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.routing
 import io.ktor.util.pipeline.PipelineContext
 import kotlinx.html.br
@@ -211,7 +212,7 @@ class KeyValueLikeModelServer(
     }
 
     @RequiresTransaction
-    fun collect(rootKey: String, callContext: CallContext?): JSONArray {
+    fun collect(rootKey: String, routingContext: RoutingContext?): JSONArray {
         val result = JSONArray()
         val processed: MutableSet<String> = HashSet()
         val pending: MutableSet<String> = HashSet()
@@ -219,8 +220,8 @@ class KeyValueLikeModelServer(
         while (pending.isNotEmpty()) {
             val keys: List<String> = ArrayList(pending)
             pending.clear()
-            if (callContext != null) {
-                keys.forEach { callContext.checkKeyPermission(it, EPermissionType.READ) }
+            if (routingContext != null) {
+                keys.forEach { routingContext.checkKeyPermission(it, EPermissionType.READ) }
             }
             val values = stores.getGlobalStoreClient(false).getAll(keys)
             for (i in keys.indices) {
@@ -253,7 +254,7 @@ class KeyValueLikeModelServer(
     }
 
     @RequiresTransaction
-    private fun CallContext.putEntries(newEntries: Map<String, String?>) {
+    private fun RoutingContext.putEntries(newEntries: Map<String, String?>) {
         val referencedKeys: MutableSet<String> = HashSet()
         for ((key, value) in newEntries) {
             checkKeyPermission(key, EPermissionType.WRITE)
@@ -326,7 +327,7 @@ class KeyValueLikeModelServer(
         }
     }
 
-    private suspend fun CallContext.respondValue(key: String, value: String?) {
+    private suspend fun RoutingContext.respondValue(key: String, value: String?) {
         if (value == null) {
             throw HttpException(HttpStatusCode.NotFound, details = "key '$key' not found")
         } else {
@@ -335,7 +336,7 @@ class KeyValueLikeModelServer(
     }
 
     @Throws(IOException::class)
-    private fun CallContext.checkKeyPermission(key: String, type: EPermissionType) {
+    private fun RoutingContext.checkKeyPermission(key: String, type: EPermissionType) {
         val isWrite = type == EPermissionType.WRITE
         switchKeyType(
             key = key,

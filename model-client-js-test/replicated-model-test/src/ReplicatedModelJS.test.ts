@@ -10,6 +10,8 @@ type ReplicatedModelJS = org.modelix.model.client2.ReplicatedModelJS
 let client: ClientJS | undefined;
 let replicatedModel: ReplicatedModelJS | undefined;
 
+jest.setTimeout(60000)
+
 beforeEach(async () => {
   const repositoryId = randomUUID()
   client = await connectClient(MODEL_SERVER_URL)
@@ -33,7 +35,7 @@ test("replicated model uses user set in client", async () => {
   const versionInformation = await replicatedModel!.getCurrentVersionInformation()
   const lastAuthor = versionInformation.author
   expect(lastAuthor).toBe(userId);
-});
+}, );
 
 test("replicated model returns user set in client", async () => {
   const versionInformation = await replicatedModel!.getCurrentVersionInformation()

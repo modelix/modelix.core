@@ -3,11 +3,9 @@ package org.modelix.model.mpsadapters
 import jetbrains.mps.lang.smodel.generator.smodelAdapter.SNodeOperations
 import jetbrains.mps.smodel.MPSModuleRepository
 import jetbrains.mps.smodel.adapter.MetaAdapterByDeclaration
-import jetbrains.mps.smodel.adapter.ids.SConceptId
 import jetbrains.mps.smodel.adapter.ids.SContainmentLinkId
 import jetbrains.mps.smodel.adapter.ids.SPropertyId
 import jetbrains.mps.smodel.adapter.ids.SReferenceLinkId
-import jetbrains.mps.smodel.adapter.structure.concept.SConceptAdapterById
 import jetbrains.mps.smodel.adapter.structure.link.SContainmentLinkAdapterById
 import jetbrains.mps.smodel.adapter.structure.property.SPropertyAdapterById
 import jetbrains.mps.smodel.adapter.structure.ref.SReferenceLinkAdapterById
@@ -62,20 +60,25 @@ data class MPSNode(val node: SNode) : IDefaultNodeAdapter, IReplaceableNode {
         }
 
     override fun replaceNode(concept: ConceptReference?): INode {
-        requireNotNull(concept) { "Can't replace $node with null concept. Use BaseConcept explicitly." }
+        requireNotNull(concept) { "Cannot replace node `$node` with a null concept. Explicitly specify a concept (e.g., `BaseConcept`)." }
+        val parent = requireNotNull(node.parent) { "Cannot replace node `$node` because it has no parent." }
+
+        val mpsConcept = MPSConcept.tryParseUID(concept.uid)
+        requireNotNull(mpsConcept) { "Concept UID `${concept.uid}` cannot be parsed as MPS concept." }
+        val sConcept = MetaAdapterByDeclaration.asInstanceConcept(mpsConcept.concept)
 
         val id = node.nodeId
         val model = checkNotNull(node.model) { "Node is not part of a model" }
-        val newNode = model.createNode(SConceptAdapterById(SConceptId.deserialize(concept.uid), ""), id)
+        val newNode = model.createNode(sConcept, id)
         node.properties.forEach { newNode.setProperty(it, node.getProperty(it)) }
         node.references.forEach { newNode.setReference(it.link, it.targetNodeReference) }
         node.children.forEach { child ->
             val link = checkNotNull(child.containmentLink) { "Containment link of child node not found" }
+            node.removeChild(child)
             newNode.addChild(link, child)
         }
 
-        val parent = checkNotNull(node.parent) { "Cannot replace node without a parent" }
-        parent.insertChildBefore(getMPSContainmentLink(getContainmentLink()), node, newNode)
+        parent.insertChildBefore(getMPSContainmentLink(getContainmentLink()), newNode, node)
         node.delete()
         return MPSNode(newNode)
     }

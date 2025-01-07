@@ -5,13 +5,16 @@ plugins:
 apis:
   model-server@v2:
     root: ./specifications/model-server-v2.yaml
+    output: ./build/bundled/model-server-v2.yaml
     decorators:
       plugin/use-server-path: {}
   model-server@v1:
     root: ./specifications/model-server-v1.yaml
+    output: ./build/bundled/model-server-v1.yaml
     decorators:
       plugin/use-server-path: {}
   model-server@operative:
     root: ./specifications/model-server-operative.yaml
+    output: ./build/bundled/model-server-operative.yaml
     decorators:
       plugin/use-server-path: {}

@@ -26,7 +26,7 @@ val bundleSpecs = tasks.register<NpxTask>("bundleSpecs") {
     outputs.dir(bundleDir)
 
     command.set("redocly")
-    args.addAll("bundle", "--output", bundleDir.toString())
+    args.addAll("bundle")
 }
 
 // We combine all specifications into one to deduplicate things like the Problem type

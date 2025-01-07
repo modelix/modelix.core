@@ -61,15 +61,31 @@ data class MPSNode(val node: SNode) : IDefaultNodeAdapter, IReplaceableNode {
 
     override fun replaceNode(concept: ConceptReference?): INode {
         requireNotNull(concept) { "Cannot replace node `$node` with a null concept. Explicitly specify a concept (e.g., `BaseConcept`)." }
-        val parent = requireNotNull(node.parent) { "Cannot replace node `$node` because it has no parent." }
-
         val mpsConcept = MPSConcept.tryParseUID(concept.uid)
         requireNotNull(mpsConcept) { "Concept UID `${concept.uid}` cannot be parsed as MPS concept." }
         val sConcept = MetaAdapterByDeclaration.asInstanceConcept(mpsConcept.concept)
 
-        val id = node.nodeId
-        val model = checkNotNull(node.model) { "Node is not part of a model" }
-        val newNode = model.createNode(sConcept, id)
+        val maybeModel = node.model
+        val maybeParent = node.parent
+        val containmentLink = getMPSContainmentLink(getContainmentLink())
+        val maybeNextSibling = node.nextSibling
+        // The existing node needs to be deleted before the replacing node is created,
+        // because `SModel.createNode` will not use the provided ID if it already exists.
+        node.delete()
+
+        val newNode = if (maybeModel != null) {
+            maybeModel.createNode(sConcept, node.nodeId)
+        } else {
+            jetbrains.mps.smodel.SNode(sConcept, node.nodeId)
+        }
+
+        if (maybeParent != null) {
+            // When `maybeNextSibling` is `null`, `replacingNode` is inserted as a last child.
+            maybeParent.insertChildBefore(containmentLink, newNode, maybeNextSibling)
+        } else if (maybeModel != null) {
+            maybeModel.addRootNode(newNode)
+        }
+
         node.properties.forEach { newNode.setProperty(it, node.getProperty(it)) }
         node.references.forEach { newNode.setReference(it.link, it.targetNodeReference) }
         node.children.forEach { child ->
@@ -78,8 +94,6 @@ data class MPSNode(val node: SNode) : IDefaultNodeAdapter, IReplaceableNode {
             newNode.addChild(link, child)
         }
 
-        parent.insertChildBefore(getMPSContainmentLink(getContainmentLink()), newNode, node)
-        node.delete()
         return MPSNode(newNode)
     }
 

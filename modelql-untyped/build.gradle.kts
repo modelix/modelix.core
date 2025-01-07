@@ -17,7 +17,9 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
+                implementation(project(":model-datastructure"))
                 implementation(kotlin("test"))
+                implementation(libs.kotlin.coroutines.test)
             }
         }
         val jvmMain by getting {

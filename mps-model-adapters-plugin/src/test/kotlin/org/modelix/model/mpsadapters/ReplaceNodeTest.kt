@@ -25,8 +25,11 @@ class ReplaceNodeTest : MpsAdaptersTestBase("SimpleProject") {
             val rootNode = model.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes).single() as IReplaceableNode
 
             val oldProperties = rootNode.getAllProperties().toSet()
+            check(oldProperties.isNotEmpty()) { "Test should replace node with properties." }
             val oldReferences = rootNode.getAllReferenceTargetRefs().toSet()
+            check(oldReferences.isNotEmpty()) { "Test should replace node with references." }
             val oldChildren = rootNode.allChildren.toList()
+            check(oldChildren.isNotEmpty()) { "Test should replace node with children." }
 
             val newConcept = ConceptReference("mps:f3061a53-9226-4cc5-a443-f952ceaf5816/1083245097125")
             val newNode = rootNode.replaceNode(newConcept)

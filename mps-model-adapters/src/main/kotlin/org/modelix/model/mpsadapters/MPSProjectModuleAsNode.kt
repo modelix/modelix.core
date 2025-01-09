@@ -28,7 +28,7 @@ data class MPSProjectModuleAsNode(val project: ProjectBase, val module: SModule)
 
     override fun getReferenceTarget(link: IReferenceLink): INode? {
         if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)) {
-            return MPSModuleAsNode(module)
+            return MPSModuleAsNode(module).asLegacyNode()
         }
         return null
     }

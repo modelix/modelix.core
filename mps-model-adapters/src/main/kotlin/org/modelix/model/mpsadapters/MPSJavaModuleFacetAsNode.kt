@@ -25,7 +25,7 @@ data class MPSJavaModuleFacetAsNode(val facet: JavaModuleFacet) : IDefaultNodeAd
     override val concept: IConcept
         get() = BuiltinLanguages.MPSRepositoryConcepts.JavaModuleFacet
     override val parent: INode?
-        get() = facet.module?.let { MPSModuleAsNode(it) }
+        get() = facet.module?.let { MPSModuleAsNode(it).asLegacyNode() }
 
     override fun getContainmentLink(): IChildLink {
         return BuiltinLanguages.MPSRepositoryConcepts.Module.facets

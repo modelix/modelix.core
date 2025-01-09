@@ -152,7 +152,7 @@ class ModelImporterOrderPropertyTest {
 
         val childIds = branch.getRootNode().allChildren.single()
             .getChildren(TestLanguage.AConcept.childLink1).toList()
-            .map(INode::originalId).toSet()
+            .map(INode::getOriginalReference).toSet()
         // child3 is removed
         // child4 is added
         assertEquals(setOf("child1", "child2", "child4"), childIds)
@@ -220,9 +220,9 @@ class ModelImporterOrderPropertyTest {
 
         val parent = branch.getRootNode().allChildren.single()
         val childLink1NodeIds = parent.getChildren(TestLanguage.AConcept.childLink1).toList()
-            .map(INode::originalId).toSet()
+            .map(INode::getOriginalReference).toSet()
         val childLink2NodesIds = parent.getChildren(TestLanguage.AConcept.childLink2).toList()
-            .map(INode::originalId).toSet()
+            .map(INode::getOriginalReference).toSet()
         assertEquals(setOf("child2"), childLink1NodeIds)
         // child1 moved from childLink1Nodes to childLink2Nodes
         assertEquals(setOf("child1"), childLink2NodesIds)
@@ -296,7 +296,7 @@ class ModelImporterOrderPropertyTest {
 
         val childNodeIds = branch.getRootNode().allChildren.single()
             .getChildren(TestLanguage.AConcept.childLink1).toList()
-            .map(INode::originalId).toSet()
+            .map(INode::getOriginalReference).toSet()
         // child1 and child2 have now in the same parent
         assertEquals(setOf("child1", "child2"), childNodeIds)
     }
@@ -346,7 +346,7 @@ class ModelImporterOrderPropertyTest {
         modelImporter.import(dataToImport)
 
         val childIdsOrdered = branch.getRootNode().getChildren("unknownRole").toList()
-            .map(INode::originalId)
+            .map(INode::getOriginalReference)
 
         // For child1 and child 2 their role cannot be resolved.
         // Therefore, they are reordered.

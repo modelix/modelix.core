@@ -14,6 +14,9 @@ import org.modelix.model.data.NodeData
  */
 interface INode {
 
+    fun asReadableNode(): IReadableNode = if (this is IReadableNode) this else LegacyNodeAsWritableNode(this)
+    fun asWritableNode(): IWritableNode = if (this is IWritableNode) this else LegacyNodeAsWritableNode(this)
+
     /**
      * Returns the area of which this node is part of.
      */
@@ -204,8 +207,8 @@ interface INode {
 
     // <editor-fold desc="non-string based API">
     fun usesRoleIds(): Boolean = false
-    fun getContainmentLink(): IChildLink? = roleInParent?.let { role ->
-        parent?.concept?.getAllChildLinks()?.find { (if (usesRoleIds()) it.getUID() else it.getSimpleName()) == role }
+    fun getContainmentLink(): IChildLink? = roleInParent?.let { IChildLinkReference.fromUnclassifiedString(it) }?.let { role ->
+        parent?.concept?.getAllChildLinks()?.find { it.toReference().matches(role) } ?: role.toLegacy()
     }
     fun getChildren(link: IChildLink): Iterable<INode> = getChildren(link.key(this))
     fun moveChild(role: IChildLink, index: Int, child: INode) = moveChild(role.key(this), index, child)
@@ -316,10 +319,11 @@ interface IReplaceableNode : INode {
 fun IRole.key(): String = RoleAccessContext.getKey(this)
 fun IRole.key(node: INode): String = toReference().key(node)
 fun IRoleReference.key(node: INode): String = if (node.usesRoleIds()) getIdOrName() else getNameOrId()
-fun IChildLink.key(node: INode): String? = when (this) {
-    is NullChildLink -> null
-    else -> (this as IRole).key(node)
+fun IChildLinkReference.key(node: INode): String? = when (this) {
+    is NullChildLinkReference -> null
+    else -> (this as IRoleReference).key(node)
 }
+fun IChildLink.key(node: INode): String? = toReference().key(node)
 fun INode.usesRoleIds(): Boolean = if (this is INodeEx) this.usesRoleIds() else false
 fun INode.getChildren(link: IChildLink): Iterable<INode> = if (this is INodeEx) getChildren(link) else getChildren(link.key(this))
 fun INode.moveChild(role: IChildLink, index: Int, child: INode): Unit = if (this is INodeEx) moveChild(role, index, child) else moveChild(role.key(this), index, child)
@@ -363,12 +367,13 @@ fun INode.resolveProperty(role: String): IProperty {
  *         or null, if this concept has no child link or an exception was thrown during concept resolution
  */
 fun INode.tryResolveChildLink(role: String): IChildLink? {
-    val c = this.tryGetConcept() ?: return null
-    val allLinks = c.getAllChildLinks()
-    return allLinks.find { it.key(this) == role }
-        ?: allLinks.find { it.getSimpleName() == role }
-        ?: allLinks.find { it.getUID() == role }
+    return asReadableNode().tryResolveChildLink(IChildLinkReference.fromUnclassifiedString(role))?.toLegacy()
 }
+
+fun IReadableNode.tryResolveChildLink(role: IChildLinkReference): IChildLinkDefinition? {
+    return tryGetConcept()?.tryResolveChildLink(role)
+}
+
 fun INode.resolveChildLinkOrFallback(role: String?): IChildLink {
     if (role == null) return NullChildLink
     return tryResolveChildLink(role) ?: IChildLink.fromName(role)
@@ -380,12 +385,9 @@ fun INode.resolveChildLinkOrFallback(role: String?): IChildLink {
  *         or null, if this node has no reference link or an exception was thrown during concept resolution
  */
 fun INode.tryResolveReferenceLink(role: String): IReferenceLink? {
-    val c = this.tryGetConcept() ?: return null
-    val allLinks = c.getAllReferenceLinks()
-    return allLinks.find { it.key(this) == role }
-        ?: allLinks.find { it.getSimpleName() == role }
-        ?: allLinks.find { it.getUID() == role }
+    return tryGetConcept()?.tryResolveReferenceLink(IReferenceLinkReference.fromUnclassifiedString(role))?.toLegacy()
 }
+
 fun INode.resolveReferenceLinkOrFallback(role: String): IReferenceLink {
     return tryResolveReferenceLink(role) ?: IReferenceLink.fromName(role)
 }
@@ -409,12 +411,18 @@ fun INode.tryResolveProperty(role: String): IProperty? {
  * Assume children to be ordered by default.
  * Unordered children are the special case that can be declared by setting [[IChildLink.isOrdered]] to `false`.
  */
+@Deprecated("provide a IChildLinkReference")
 fun INode.isChildRoleOrdered(role: String?): Boolean {
+    return asReadableNode().isChildRoleOrdered(IChildLinkReference.fromUnclassifiedString(role))
     return if (role == null) {
         true
     } else {
         this.tryResolveChildLink(role)?.isOrdered ?: true
     }
+}
+
+fun IReadableNode.isChildRoleOrdered(role: IChildLinkReference): Boolean {
+    return this.tryResolveChildLink(role)?.isOrdered ?: true
 }
 
 fun INode.resolvePropertyOrFallback(role: String): IProperty {
@@ -423,6 +431,10 @@ fun INode.resolvePropertyOrFallback(role: String): IProperty {
 
 fun INode.remove() {
     parent?.removeChild(this)
+}
+
+fun IWritableNode.remove() {
+    getParent()?.removeChild(this)
 }
 
 fun INode.index(): Int {

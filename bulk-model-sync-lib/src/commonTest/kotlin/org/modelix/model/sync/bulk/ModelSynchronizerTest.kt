@@ -2,16 +2,18 @@ package org.modelix.model.sync.bulk
 
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.IBranch
-import org.modelix.model.api.INode
-import org.modelix.model.api.IProperty
+import org.modelix.model.api.IChildLinkReference
+import org.modelix.model.api.IReadableNode
+import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.PNodeAdapter
-import org.modelix.model.api.addNewChild
 import org.modelix.model.api.getDescendants
+import org.modelix.model.api.getOriginalOrCurrentReference
 import org.modelix.model.api.getRootNode
+import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.data.ModelData
-import org.modelix.model.data.NodeData.Companion.ID_PROPERTY_KEY
+import org.modelix.model.data.NodeData
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.operations.AddNewChildOp
@@ -32,16 +34,16 @@ open class ModelSynchronizerTest : AbstractModelSyncTest() {
     fun `can handle added child without original id (without existing sibling)`() {
         val sourceBranch = createLocalBranch().apply {
             runWrite {
-                getRootNode().apply {
-                    setPropertyValue(ID_PROPERTY_KEY, "root")
-                    addNewChild("test")
+                getRootNode().asWritableNode().apply {
+                    setPropertyValue(NodeData.ID_PROPERTY_REF, "root")
+                    addNewChild(IChildLinkReference.fromName("test"), -1, NullConcept.getReference())
                 }
             }
         }.toOTBranch()
 
         val targetBranch = createLocalBranch().apply {
             runWrite {
-                getRootNode().setPropertyValue(ID_PROPERTY_KEY, "root")
+                getRootNode().asWritableNode().setPropertyValue(NodeData.ID_PROPERTY_REF, "root")
             }
         }.toOTBranch()
 
@@ -56,19 +58,20 @@ open class ModelSynchronizerTest : AbstractModelSyncTest() {
     fun `can handle added child without original id (with existing sibling)`() {
         val sourceBranch = createLocalBranch().apply {
             runWrite {
-                getRootNode().apply {
-                    setPropertyValue(ID_PROPERTY_KEY, "root")
-                    addNewChild("test").setPropertyValue(ID_PROPERTY_KEY, "sibling")
-                    addNewChild("test")
+                getRootNode().asWritableNode().apply {
+                    setPropertyValue(NodeData.ID_PROPERTY_REF, "root")
+                    addNewChild(IChildLinkReference.fromName("test"), -1, NullConcept.getReference()).setPropertyValue(NodeData.ID_PROPERTY_REF, "sibling")
+                    addNewChild(IChildLinkReference.fromName("test"), -1, NullConcept.getReference())
                 }
             }
         }.toOTBranch()
 
         val targetBranch = createLocalBranch().apply {
             runWrite {
-                getRootNode().apply {
-                    setPropertyValue(ID_PROPERTY_KEY, "root")
-                    addNewChild("test").setPropertyValue(ID_PROPERTY_KEY, "sibling")
+                getRootNode().asWritableNode().apply {
+                    setPropertyValue(NodeData.ID_PROPERTY_REF, "root")
+                    addNewChild(IChildLinkReference.fromName("test"), -1, NullConcept.getReference())
+                        .setPropertyValue(NodeData.ID_PROPERTY_REF, "sibling")
                 }
             }
         }.toOTBranch()
@@ -95,8 +98,8 @@ open class ModelSynchronizerTest : AbstractModelSyncTest() {
                 val targetRoot = targetBranch.getRootNode()
                 val synchronizer = ModelSynchronizer(
                     filter = BasicFilter,
-                    sourceRoot = sourceRoot,
-                    targetRoot = targetRoot,
+                    sourceRoot = sourceRoot.asReadableNode(),
+                    targetRoot = targetRoot.asWritableNode(),
                     nodeAssociation = BasicAssociation(targetBranch),
                 )
                 synchronizer.synchronize()
@@ -116,7 +119,7 @@ open class ModelSynchronizerTest : AbstractModelSyncTest() {
 
         sourceBranch.runWrite {
             val rootNode = sourceBranch.getRootNode()
-            rootNode.setPropertyValue(IProperty.fromName(ID_PROPERTY_KEY), rootNode.reference.serialize())
+            rootNode.asWritableNode().setPropertyValue(NodeData.ID_PROPERTY_REF, rootNode.reference.serialize())
             val grower = RandomModelChangeGenerator(rootNode, rand).growingOperationsOnly()
             for (i in 1..100) {
                 grower.applyRandomChange()
@@ -144,8 +147,8 @@ open class ModelSynchronizerTest : AbstractModelSyncTest() {
         otBranch.runWrite {
             ModelSynchronizer(
                 filter = BasicFilter,
-                sourceRoot = sourceBranch.getRootNode(),
-                targetRoot = targetBranch.getRootNode(),
+                sourceRoot = sourceBranch.getRootNode().asReadableNode(),
+                targetRoot = targetBranch.getRootNode().asWritableNode(),
                 nodeAssociation = BasicAssociation(targetBranch),
             )
         }
@@ -161,27 +164,29 @@ open class ModelSynchronizerTest : AbstractModelSyncTest() {
     }
 
     object BasicFilter : ModelSynchronizer.IFilter {
-        override fun needsDescentIntoSubtree(subtreeRoot: INode): Boolean {
+        override fun needsDescentIntoSubtree(subtreeRoot: IReadableNode): Boolean {
             return true
         }
 
-        override fun needsSynchronization(node: INode): Boolean {
+        override fun needsSynchronization(node: IReadableNode): Boolean {
             return true
         }
     }
 
     class BasicAssociation(private val target: IBranch) : INodeAssociation {
 
-        override fun resolveTarget(sourceNode: INode): INode? {
+        override fun resolveTarget(sourceNode: IReadableNode): IWritableNode? {
+            val sourceNode = sourceNode.asLegacyNode()
             require(sourceNode is PNodeAdapter)
             return target.computeRead {
-                target.getRootNode().getDescendants(true).find { sourceNode.originalId() == it.originalId() }
-            }
+                target.getRootNode().getDescendants(true)
+                    .find { sourceNode.getOriginalOrCurrentReference() == it.getOriginalOrCurrentReference() }
+            }?.asWritableNode()
         }
 
-        override fun associate(sourceNode: INode, targetNode: INode) {
-            if (sourceNode.getOriginalReference() != targetNode.getOriginalReference()) {
-                targetNode.setPropertyValue(IProperty.fromName(ID_PROPERTY_KEY), sourceNode.reference.serialize())
+        override fun associate(sourceNode: IReadableNode, targetNode: IWritableNode) {
+            if (sourceNode.getOriginalOrCurrentReference() != targetNode.getOriginalOrCurrentReference()) {
+                targetNode.setPropertyValue(NodeData.ID_PROPERTY_REF, sourceNode.getNodeReference().serialize())
             }
         }
     }

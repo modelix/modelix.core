@@ -23,7 +23,7 @@ interface IDefaultNodeAdapter : IDeprecatedNodeDefaults {
     }
 
     override fun getOriginalReference(): String? {
-        return reference.serialize()
+        return null
     }
 
     override fun getPropertyLinks(): List<IProperty> {

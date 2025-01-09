@@ -6,6 +6,7 @@ import kotlinx.serialization.json.Json
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
+import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.LocalPNodeReference
@@ -110,7 +111,10 @@ data class NodeData(
         /**
          * Users should not use this directly. Use [INode.getOriginalReference].
          */
+        @Deprecated("Use ID_PROPERTY_REF", replaceWith = ReplaceWith("ID_PROPERTY_REF"))
         const val ID_PROPERTY_KEY = "#originalRef#"
+
+        val ID_PROPERTY_REF = IPropertyReference.fromIdAndName("#originalRef#", "#originalRef#")
 
         @Deprecated("Use ID_PROPERTY_KEY", replaceWith = ReplaceWith("ID_PROPERTY_KEY"))
         const val idPropertyKey = ID_PROPERTY_KEY

@@ -132,7 +132,7 @@ object MPSBulkSynchronizer {
 
                 repository.modelAccess.runReadAction {
                     println("Exporting module $pos of $numIncludedModules: '${module.moduleName}'")
-                    val exporter = ModelExporter(MPSModuleAsNode(module))
+                    val exporter = ModelExporter(MPSModuleAsNode(module).asLegacyNode())
                     val outputFile = outputPath.resolve(module.moduleName + ".json")
                     exporter.export(outputFile)
                     println("Exported module $pos of $numIncludedModules: '${module.moduleName}'")
@@ -182,7 +182,7 @@ object MPSBulkSynchronizer {
                 val moduleFile = File(fileName)
                 if (moduleFile.exists()) {
                     val expectedData: ModelData = moduleFile.inputStream().use(Json::decodeFromStream)
-                    sequenceOf(ExistingAndExpectedNode(MPSModuleAsNode(module), expectedData))
+                    sequenceOf(ExistingAndExpectedNode(MPSModuleAsNode(module).asLegacyNode(), expectedData))
                 } else {
                     println("Skip importing ${module.moduleName}} because $fileName does not exist.")
                     sequenceOf()
@@ -282,8 +282,8 @@ object MPSBulkSynchronizer {
             treePointer.runRead {
                 val synchronizer = ModelSynchronizer(
                     CompositeFilter(listOf(invalidationTree, includedModulesFilter)),
-                    treePointer.getRootNode(),
-                    MPSRepositoryAsNode(repository),
+                    treePointer.getRootNode().asReadableNode(),
+                    MPSRepositoryAsNode(repository).asWritableNode(),
                     NodeAssociationToMps(MPSArea(repository)),
                 )
                 synchronizer.synchronize()

@@ -169,6 +169,8 @@ fun IConcept?.isSubConceptOf(superConcept: IConcept?) = this?.isSubConceptOf(sup
 
 fun IConcept.conceptAlias() = getConceptProperty("alias")
 
+fun IConcept?.getReference(): ConceptReference = this?.getReference().upcast()
+
 /**
  * Checks if this is a sub-concept of the [IConcept] that is identified by the [superConceptReference]'s UID.
  *

@@ -25,7 +25,7 @@ class ModelImporterWithMPSAdaptersTest : MPSTestBase() {
         model.addRootNode(root1)
         val root2 = model.createNode(classConcept)
         model.addRootNode(root2)
-        val moduleAdapter = MPSModuleAsNode(module)
+        val moduleAdapter = MPSModuleAsNode(module).asLegacyNode()
         // Arrange: Create export data
         val dataWithRootsInOneOrder = ModelData(root = moduleAdapter.asExported())
         val modelWitRootsInOneOrder = dataWithRootsInOneOrder.root.children[0]

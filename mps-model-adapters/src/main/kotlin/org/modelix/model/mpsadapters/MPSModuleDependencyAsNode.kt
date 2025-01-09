@@ -37,7 +37,7 @@ data class MPSModuleDependencyAsNode(
     override val concept: IConcept
         get() = BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency
     override val parent: INode
-        get() = MPSModuleAsNode(importer)
+        get() = MPSModuleAsNode(importer).asLegacyNode()
 
     override fun getPropertyValue(property: IProperty): String? {
         val moduleDependency = BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency

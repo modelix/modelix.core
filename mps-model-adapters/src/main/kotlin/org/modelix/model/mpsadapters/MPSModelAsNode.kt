@@ -5,99 +5,93 @@ import jetbrains.mps.smodel.ModelImports
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.SModuleId
+import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.BuiltinLanguages
-import org.modelix.model.api.IChildLink
+import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
-import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
-import org.modelix.model.api.IProperty
-import org.modelix.model.api.NullChildLink
-import org.modelix.model.area.IArea
+import org.modelix.model.api.IPropertyReference
+import org.modelix.model.api.IReferenceLinkReference
+import org.modelix.model.api.IWritableNode
 
-data class MPSModelAsNode(val model: SModel) : IDefaultNodeAdapter {
+data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
 
-    private val childrenAccessors: Map<IChildLink, () -> Iterable<INode>> = mapOf(
-        BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes to { model.rootNodes.map { MPSNode(it) } },
-        BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports to {
-            ModelImports(model).importedModels.mapNotNull { modelRef ->
-                val target = modelRef.resolve(model.repository)
-                target?.let { MPSModelImportAsNode(it, model) }
-            }
-        },
-        BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages to { getImportedLanguagesAndDevKits() },
-    )
-
-    override fun getArea(): IArea {
-        return MPSArea(model.repository)
-    }
-
-    override val reference: INodeReference
-        get() = MPSModelReference(model.reference)
-    override val concept: IConcept
-        get() = BuiltinLanguages.MPSRepositoryConcepts.Model
-    override val parent: INode
-        get() = MPSModuleAsNode(model.module)
-
-    override val allChildren: Iterable<INode>
-        get() = childrenAccessors.values.flatMap { it() }
-
-    override fun removeChild(child: INode) {
-        val link = child.getContainmentLink() ?: error("ContainmentLink not found for node $child")
-        if (link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages)) {
-            removeUsedLanguage(child)
-        }
-        super.removeChild(child)
-    }
-
-    private fun removeUsedLanguage(languageNode: INode) {
-        check(model is SModelDescriptorStub) { "Model '$model' is not a SModelDescriptor." }
-        check(languageNode is MPSSingleLanguageDependencyAsNode) { "Node $languageNode to be removed is not a single language dependency." }
-
-        val languageToRemove = MetaAdapterFactory.getLanguage(languageNode.moduleReference)
-        model.deleteLanguageId(languageToRemove)
-    }
-
-    override fun getContainmentLink(): IChildLink {
-        return BuiltinLanguages.MPSRepositoryConcepts.Module.models
-    }
-
-    override fun getChildren(link: IChildLink): Iterable<INode> {
-        if (link is NullChildLink) return emptyList()
-        for (childrenAccessor in childrenAccessors) {
-            if (link.conformsTo(childrenAccessor.key)) return childrenAccessor.value()
-        }
-        return emptyList()
-    }
-
-    private fun getImportedLanguagesAndDevKits(): List<INode> {
-        if (model !is SModelDescriptorStub) return emptyList()
-
-        val importedLanguagesAndDevKits = mutableListOf<INode>()
-        importedLanguagesAndDevKits.addAll(
-            model.importedLanguageIds().filter { it.sourceModuleReference != null }.map {
-                MPSSingleLanguageDependencyAsNode(
-                    it.sourceModuleReference,
-                    model.getLanguageImportVersion(it),
-                    modelImporter = model,
-                )
+    companion object {
+        private val propertyAccessors = listOf<Pair<IPropertyReference, IPropertyAccessor<SModel>>>(
+            BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference() to object : IPropertyAccessor<SModel> {
+                override fun read(element: SModel): String? = element.name.value
+            },
+            BuiltinLanguages.MPSRepositoryConcepts.Model.id.toReference() to object : IPropertyAccessor<SModel> {
+                override fun read(element: SModel): String? = element.modelId.toString()
+            },
+            BuiltinLanguages.MPSRepositoryConcepts.Model.stereotype.toReference() to object : IPropertyAccessor<SModel> {
+                override fun read(element: SModel): String? = element.name.stereotype
             },
         )
-        importedLanguagesAndDevKits.addAll(
-            model.importedDevkits().map { MPSDevKitDependencyAsNode(it, modelImporter = model) },
+        private val referenceAccessors = listOf<Pair<IReferenceLinkReference, IReferenceAccessor<SModel>>>()
+        private val childAccessors = listOf<Pair<IChildLinkReference, IChildAccessor<SModel>>>(
+            BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.toReference() to object : IChildAccessor<SModel> {
+                override fun read(element: SModel): List<IWritableNode> = element.rootNodes.map { MPSWritableNode(it) }
+            },
+            BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports.toReference() to object : IChildAccessor<SModel> {
+                override fun read(element: SModel): List<IWritableNode> = ModelImports(element).importedModels.mapNotNull { modelRef ->
+                    val target = modelRef.resolve(element.repository)
+                    target?.let { MPSModelImportAsNode(it, element).asWritableNode() }
+                }
+            },
+            BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages.toReference() to object : IChildAccessor<SModel> {
+                override fun read(element: SModel): List<IWritableNode> {
+                    if (element !is SModelDescriptorStub) return emptyList()
+
+                    return element.importedLanguageIds().filter { it.sourceModuleReference != null }.map {
+                        MPSSingleLanguageDependencyAsNode(
+                            it.sourceModuleReference,
+                            element.getLanguageImportVersion(it),
+                            modelImporter = element,
+                        ).asWritableNode()
+                    } + element.importedDevkits().map {
+                        MPSDevKitDependencyAsNode(it, modelImporter = element).asWritableNode()
+                    }
+                }
+
+                override fun remove(element: SModel, child: IWritableNode) {
+                    check(element is SModelDescriptorStub) { "Model '$element' is not a SModelDescriptor." }
+                    require(child is MPSSingleLanguageDependencyAsNode) { "Node $child to be removed is not a single language dependency." }
+                    val languageToRemove = MetaAdapterFactory.getLanguage(child.moduleReference)
+                    element.deleteLanguageId(languageToRemove)
+                }
+            },
         )
-        return importedLanguagesAndDevKits
     }
 
-    override fun getPropertyValue(property: IProperty): String? {
-        return if (property.conformsTo(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)) {
-            model.name.value
-        } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Model.id)) {
-            model.modelId.toString()
-        } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Model.stereotype)) {
-            model.name.stereotype
-        } else {
-            null
-        }
+    override fun getRepository(): SRepository? {
+        return model.module?.repository
+    }
+
+    override fun getElement(): SModel {
+        return model
+    }
+
+    override fun getPropertyAccessors() = propertyAccessors
+
+    override fun getReferenceAccessors() = referenceAccessors
+
+    override fun getChildAccessors() = childAccessors
+
+    override fun getParent(): IWritableNode? {
+        return model.module?.let { MPSModuleAsNode(it) }
+    }
+
+    override fun getNodeReference(): INodeReference {
+        return MPSModelReference(model.reference)
+    }
+
+    override fun getConcept(): IConcept {
+        return BuiltinLanguages.MPSRepositoryConcepts.Model
+    }
+
+    override fun getContainmentLink(): IChildLinkReference {
+        return BuiltinLanguages.MPSRepositoryConcepts.Module.models.toReference()
     }
 
     internal fun findSingleLanguageDependency(dependencyId: SModuleId): MPSSingleLanguageDependencyAsNode? {

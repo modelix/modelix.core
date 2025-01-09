@@ -1,10 +1,13 @@
 package org.modelix.model.sync.bulk.gradle.test
 
+import GraphLang.L_GraphLang
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.modelix.model.api.ConceptReference
 import org.xmlunit.builder.Input
 import org.xmlunit.xpath.JAXPXPathEngine
 import java.io.File
+import javax.xml.transform.Source
 import kotlin.test.assertContains
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -25,10 +28,21 @@ class PullTest {
             .readText(),
     ).build()
 
+    private fun getRegisteredConcepts(xml: Source): Map<ConceptReference, String> {
+        val conceptNodes = JAXPXPathEngine().selectNodes("model/registry/language/concept", xml)
+        return conceptNodes.associate { c ->
+            val conceptId = c.attributes.getNamedItem("id").nodeValue
+            val languageId = c.parentNode.attributes.getNamedItem("id").nodeValue
+            val shortId = c.attributes.getNamedItem("index").nodeValue
+            ConceptReference("mps:$languageId/$conceptId") to shortId
+        }
+    }
+
     @Test
     fun `properties were synced to local`() {
+        val shortConceptId = getRegisteredConcepts(solution1Xml)[L_GraphLang.Node.untyped().getReference()]
         val properties = JAXPXPathEngine()
-            .selectNodes("model/node/node[@concept='1DmExO']/property", solution1Xml)
+            .selectNodes("model/node/node[@concept='$shortConceptId']/property", solution1Xml)
 
         val actual = properties.map { it.attributes.getNamedItem("value").nodeValue }
         val expected = listOf("X", "Y", "Z", "NewNode", "D", "E")
@@ -38,8 +52,9 @@ class PullTest {
 
     @Test
     fun `added child was synced to local`() {
+        val shortConceptId = getRegisteredConcepts(solution1Xml)[L_GraphLang.Node.untyped().getReference()]
         val xpath = JAXPXPathEngine()
-        val nodes = xpath.selectNodes("model/node/node[@concept='1DmExO']", solution1Xml)
+        val nodes = xpath.selectNodes("model/node/node[@concept='$shortConceptId']", solution1Xml)
 
         val nodeNames = nodes.flatMap { xpath.selectNodes("property", it) }
             .map { it.attributes.getNamedItem("value").nodeValue }

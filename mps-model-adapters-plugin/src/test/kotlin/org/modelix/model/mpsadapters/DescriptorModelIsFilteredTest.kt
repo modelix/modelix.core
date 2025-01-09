@@ -14,7 +14,7 @@ class DescriptorModelIsFilteredTest : MpsAdaptersTestBase("SimpleProject") {
             assertEquals(1, descriptorModels.size)
             assertEquals(2, module.models.count())
 
-            assertEquals(1, MPSModuleAsNode(module).getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.models).count())
+            assertEquals(1, MPSModuleAsNode(module).asLegacyNode().getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.models).count())
         }
     }
 }

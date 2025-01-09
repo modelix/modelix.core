@@ -25,13 +25,13 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
 
     private fun resolveMPSModelReference(ref: INodeReference): INode {
         if (ref is MPSModelReference) {
-            return ref.modelReference.resolve(repository).let { MPSModelAsNode(it) }
+            return ref.modelReference.resolve(repository).let { MPSModelAsNode(it).asLegacyNode() }
         }
 
         val serialized = ref.serialize().substringAfter("${MPSModelReference.PREFIX}:")
         val modelRef = PersistenceFacade.getInstance().createModelReference(serialized)
 
-        return MPSModelAsNode(modelRef.resolve(repository))
+        return MPSModelAsNode(modelRef.resolve(repository)).asLegacyNode()
     }
 
     override fun getRoot(): INode {
@@ -52,7 +52,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
         val serialized = ref.serialize()
         val prefix = serialized.substringBefore(":")
         return when (prefix) {
-            MPSModuleReference.PREFIX -> resolveMPSModuleReference(ref)
+            MPSModuleReference.PREFIX -> resolveMPSModuleReference(ref)?.asLegacyNode()
             MPSModelReference.PREFIX -> resolveMPSModelReference(ref)
             MPSNodeReference.PREFIX, "mps-node" -> resolveMPSNodeReference(ref) // mps-node for backwards compatibility
             MPSDevKitDependencyReference.PREFIX -> resolveMPSDevKitDependencyReference(ref)
@@ -162,7 +162,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
         return moduleRef.resolve(repository)?.let { MPSModuleAsNode(it) }
     }
 
-    private fun resolveMPSNodeReference(ref: INodeReference): MPSNode? {
+    private fun resolveMPSNodeReference(ref: INodeReference): INode? {
         if (ref is MPSNodeReference) {
             return resolveSNodeReferenceToMPSNode(ref.ref)
         }
@@ -175,7 +175,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
         return resolveSNodeReferenceToMPSNode(SNodePointer.deserialize(serializedMPSRef))
     }
 
-    private fun resolveSNodeReferenceToMPSNode(sNodeReference: SNodeReference): MPSNode? {
+    private fun resolveSNodeReferenceToMPSNode(sNodeReference: SNodeReference): INode? {
         return sNodeReference.resolve(repository)?.let { MPSNode(it) }
     }
 
@@ -194,7 +194,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
             .substringBefore(MPSDevKitDependencyReference.SEPARATOR)
 
         val importer = serialized.substringAfter(MPSDevKitDependencyReference.SEPARATOR)
-        val foundImporter = resolveNode(NodeReference(importer))
+        val foundImporter = resolveNode(NodeReference(importer))?.asWritableNode()
 
         val moduleId = PersistenceFacade.getInstance().createModuleId(serializedModuleId)
 
@@ -331,7 +331,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
             .substringBefore(MPSSingleLanguageDependencyReference.SEPARATOR)
 
         val importer = serialized.substringAfter(MPSSingleLanguageDependencyReference.SEPARATOR)
-        val foundImporter = resolveNode(NodeReference(importer))
+        val foundImporter = resolveNode(NodeReference(importer))?.asWritableNode()
 
         val moduleId = PersistenceFacade.getInstance().createModuleId(serializedModuleId)
 

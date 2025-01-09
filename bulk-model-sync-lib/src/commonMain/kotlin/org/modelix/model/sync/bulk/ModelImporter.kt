@@ -7,8 +7,10 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.INodeResolutionScope
 import org.modelix.model.api.IReplaceableNode
+import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.SerializedNodeReference
 import org.modelix.model.api.getDescendants
+import org.modelix.model.api.getOriginalOrCurrentReference
 import org.modelix.model.api.isChildRoleOrdered
 import org.modelix.model.api.remove
 import org.modelix.model.api.resolveInCurrentContext
@@ -38,6 +40,7 @@ class ModelImporter(
     private val root: INode,
     private val continueOnError: Boolean,
     private val childFilter: (INode) -> Boolean = { true },
+    private val writeOriginalIds: Boolean = root is PNodeAdapter,
 ) {
     // We have seen imports where the `originalIdToExisting` had a dozen ten million entries.
     // Therefore, choose a map with is optimized for memory usage.
@@ -183,10 +186,10 @@ class ModelImporter(
                     .forEach { (newChild, expected) ->
                         val expectedId = expected.originalId()
                         checkNotNull(expectedId) { "Specified node '$expected' has no ID." }
-                        if (newChild.originalId() == null) {
+                        if (newChild.getOriginalReference() == null) {
                             newChild.setPropertyValue(NodeData.ID_PROPERTY_KEY, expectedId)
                         }
-                        originalIdToExisting[newChild.originalId() ?: expectedId] = newChild.reference
+                        originalIdToExisting[newChild.getOriginalReference() ?: expectedId] = newChild.reference
                         syncNode(newChild, expected, progressReporter)
                     }
                 continue
@@ -194,7 +197,7 @@ class ModelImporter(
 
             // optimization for when there is no change in the child list
             // size check first to avoid querying the original ID
-            if (expectedNodes.size == existingNodes.size && expectedNodes.map { it.originalId() } == existingNodes.map { it.originalId() }) {
+            if (expectedNodes.size == existingNodes.size && expectedNodes.map { it.originalId() } == existingNodes.map { it.getOriginalOrCurrentReference() }) {
                 existingNodes.zip(expectedNodes).forEach {
                     syncNode(it.first, it.second, progressReporter)
                 }
@@ -219,19 +222,19 @@ class ModelImporter(
                     // Reusable indexing would be possible if we switch from
                     // a depth-first import to a breadth-first import.)
                     existingChildren
-                        .indexOfFirst { existingChild -> existingChild.originalId() == expected.originalId() }
+                        .indexOfFirst { existingChild -> existingChild.getOriginalOrCurrentReference() == expected.originalId() }
                 }
                 // existingChildren.getOrNull handles `-1` as needed by returning `null`.
                 val nodeAtIndex = existingChildren.getOrNull(newIndex)
                 val expectedConcept = expected.concept?.let { s -> ConceptReference(s) }
-                val childNode = if (nodeAtIndex?.originalId() != expectedId) {
+                val childNode = if (nodeAtIndex?.getOriginalOrCurrentReference() != expectedId) {
                     val existingNodeReference = originalIdToExisting[expectedId]
                     if (existingNodeReference == null) {
                         val newChild = existingParent.addNewChild(role, newIndex, expectedConcept)
-                        if (newChild.originalId() == null) {
+                        if (writeOriginalIds && newChild.getOriginalOrCurrentReference() != expectedId) {
                             newChild.setPropertyValue(NodeData.idPropertyKey, expectedId)
                         }
-                        newChild.originalId()?.let { newlyCreatedIds.add(it) }
+                        newlyCreatedIds.add(newChild.getOriginalOrCurrentReference())
                         originalIdToExisting[expectedId] = newChild.reference
                         newChild
                     } else {
@@ -259,7 +262,7 @@ class ModelImporter(
             // Do not use existingNodes, but call node.getChildren(role) because
             // the recursive synchronization in the meantime already removed some nodes from node.getChildren(role).
             nodesToRemove += existingParent.getChildren(role).filterNot { existingNode ->
-                val id = existingNode.originalId()
+                val id = existingNode.getOriginalOrCurrentReference()
                 expectedNodesIds.contains(id) || newlyCreatedIds.contains(id)
             }
         }
@@ -277,13 +280,13 @@ class ModelImporter(
     private fun buildExistingIndex(): MutableMap<String, INodeReference> {
         val localOriginalIdToExisting = createMemoryEfficientMap<String, INodeReference>()
         root.getDescendants(true).forEach { node ->
-            node.originalId()?.let { localOriginalIdToExisting[it] = node.reference }
+            node.getOriginalOrCurrentReference().let { localOriginalIdToExisting[it] = node.reference }
         }
         return localOriginalIdToExisting
     }
 
     private fun syncProperties(node: INode, nodeData: NodeData) {
-        if (node.originalId() == null) {
+        if (writeOriginalIds && node.getOriginalReference() == null) {
             node.setPropertyValue(NodeData.idPropertyKey, nodeData.originalId())
         }
 
@@ -319,14 +322,10 @@ class ModelImporter(
     private fun referenceNeedsUpdate(node: INode, referenceRole: String, expectedTargetRef: String): Boolean {
         val actualTarget = node.getReferenceTarget(referenceRole)
             ?: return true // previously unresolvable reference might become resolvable e.g., when a referenced node was added
-        val actualTargetRef = actualTarget.originalId() ?: node.getReferenceTargetRef(referenceRole)?.serialize()
+        val actualTargetRef = actualTarget.getOriginalReference() ?: node.getReferenceTargetRef(referenceRole)?.serialize()
 
         return actualTargetRef != expectedTargetRef
     }
-}
-
-internal fun INode.originalId(): String? {
-    return this.getOriginalReference()
 }
 
 internal fun NodeData.originalId(): String? {

@@ -49,6 +49,9 @@ sealed interface IRoleDefinition {
     fun getSimpleName(): String
     val isOptional: Boolean
     fun toReference(): IRoleReference
+
+    @Deprecated("use IRoleReference or IRoleDefinition instead of IRole")
+    fun toLegacy(): IRole
 }
 
 @Serializable
@@ -70,6 +73,23 @@ sealed interface IRoleReference {
     fun toLegacy(): IRole
 }
 
+fun IRoleReference.matches(other: IRoleReference): Boolean {
+    return when (this) {
+        is IPropertyReference -> when (other) {
+            is IPropertyReference -> this.matches(other)
+            else -> false
+        }
+        is IReferenceLinkReference -> when (other) {
+            is IReferenceLinkReference -> this.matches(other)
+            else -> false
+        }
+        is IChildLinkReference -> when (other) {
+            is IChildLinkReference -> this.matches(other)
+            else -> false
+        }
+    }
+}
+
 @Serializable
 sealed interface IUnclassifiedRoleReference : IRoleReference {
     fun getStringValue(): String
@@ -86,7 +106,7 @@ sealed interface IRoleReferenceByUID : IRoleReference {
 }
 
 @Serializable
-abstract class AbstractRoleReference : IRoleReference {
+sealed class AbstractRoleReference : IRoleReference {
     override fun getUID(): String = throw UnsupportedOperationException()
     override fun getSimpleName(): String = throw UnsupportedOperationException()
 }
@@ -131,4 +151,44 @@ abstract class RoleFromName() : IRole {
 
     override val isOptional: Boolean
         get() = throw UnsupportedOperationException()
+}
+
+fun <T : IRoleReference> Sequence<T>.mergeWith(others: Sequence<T>): List<T> {
+    val remaining = others.toMutableList()
+    val merged = ArrayList<T>()
+    outer@for (left in this) {
+        for (i in remaining.indices) {
+            val right = remaining[i]
+            if (right.matches(left)) {
+                val mostSpecific = left.merge(right)
+                remaining.removeAt(i)
+                merged.add(mostSpecific)
+                continue@outer
+            }
+        }
+        merged.add(left)
+    }
+    merged.addAll(remaining)
+    return merged
+}
+
+/**
+ * Choose the more specific one of two matching references.
+ */
+fun <T : IRoleReference> T.merge(other: T): T {
+    return when (this) {
+        is IRoleReferenceByUID -> when (other) {
+            is IRoleReferenceByUID -> if (other is IRoleReferenceByName) other else this
+            else -> this
+        }
+        is IRoleReferenceByName -> when (other) {
+            is IRoleReferenceByUID -> other
+            else -> this
+        }
+        is IUnclassifiedRoleReference -> when (other) {
+            is IUnclassifiedRoleReference -> this
+            else -> other
+        }
+        else -> this
+    }
 }

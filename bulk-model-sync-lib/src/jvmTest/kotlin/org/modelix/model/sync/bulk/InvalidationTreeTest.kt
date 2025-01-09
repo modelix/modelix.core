@@ -21,7 +21,7 @@ class InvalidationTreeTest {
 
         invalidationTree.invalidate(testTree, 32L)
 
-        val invalidatedNode = treePointer.computeRead { treePointer.getNode(32L) }
+        val invalidatedNode = treePointer.computeRead { treePointer.getNode(32L).asReadableNode() }
         assertTrue { invalidationTree.needsSynchronization(invalidatedNode) }
     }
 
@@ -35,7 +35,7 @@ class InvalidationTreeTest {
 
         val invalidatedNode = treePointer.computeRead { treePointer.getNode(32L) }
         val ancestors = invalidatedNode.getAncestors(includeSelf = false)
-        assertTrue { ancestors.all { invalidationTree.needsDescentIntoSubtree(it) } }
+        assertTrue { ancestors.all { invalidationTree.needsDescentIntoSubtree(it.asReadableNode()) } }
     }
 
     @Test
@@ -47,8 +47,8 @@ class InvalidationTreeTest {
         invalidationTree.invalidate(testTree, 3L)
 
         val descendants = treePointer.getNode(3L).getDescendants(false)
-        assertTrue { descendants.none { invalidationTree.needsSynchronization(it) } }
-        assertTrue { descendants.none { invalidationTree.needsDescentIntoSubtree(it) } }
+        assertTrue { descendants.none { invalidationTree.needsSynchronization(it.asReadableNode()) } }
+        assertTrue { descendants.none { invalidationTree.needsDescentIntoSubtree(it.asReadableNode()) } }
     }
 
     @Test
@@ -62,19 +62,19 @@ class InvalidationTreeTest {
 
         val ancestors = treePointer.getNode(3L).getAncestors(false)
 
-        assertTrue { ancestors.all { invalidationTree.needsDescentIntoSubtree(it) } }
-        assertTrue { ancestors.none { invalidationTree.needsSynchronization(it) } }
+        assertTrue { ancestors.all { invalidationTree.needsDescentIntoSubtree(it.asReadableNode()) } }
+        assertTrue { ancestors.none { invalidationTree.needsSynchronization(it.asReadableNode()) } }
 
-        assertTrue { invalidationTree.needsSynchronization(treePointer.getNode(3L)) }
-        assertTrue { invalidationTree.needsDescentIntoSubtree(treePointer.getNode(3L)) }
+        assertTrue { invalidationTree.needsSynchronization(treePointer.getNode(3L).asReadableNode()) }
+        assertTrue { invalidationTree.needsDescentIntoSubtree(treePointer.getNode(3L).asReadableNode()) }
 
-        assertFalse { invalidationTree.needsSynchronization(treePointer.getNode(31L)) }
-        assertTrue { invalidationTree.needsDescentIntoSubtree(treePointer.getNode(31L)) }
+        assertFalse { invalidationTree.needsSynchronization(treePointer.getNode(31L).asReadableNode()) }
+        assertTrue { invalidationTree.needsDescentIntoSubtree(treePointer.getNode(31L).asReadableNode()) }
 
-        assertTrue { invalidationTree.needsSynchronization(treePointer.getNode(311L)) }
+        assertTrue { invalidationTree.needsSynchronization(treePointer.getNode(311L).asReadableNode()) }
 
-        assertFalse { invalidationTree.needsSynchronization(treePointer.getNode(3111L)) }
-        assertFalse { invalidationTree.needsDescentIntoSubtree(treePointer.getNode(3111L)) }
+        assertFalse { invalidationTree.needsSynchronization(treePointer.getNode(3111L).asReadableNode()) }
+        assertFalse { invalidationTree.needsDescentIntoSubtree(treePointer.getNode(3111L).asReadableNode()) }
     }
 
     private fun getTestTreeData(): ITree {

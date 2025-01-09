@@ -6,91 +6,126 @@ import jetbrains.mps.project.ProjectBase
 import jetbrains.mps.project.ProjectManager
 import jetbrains.mps.project.Solution
 import jetbrains.mps.project.facets.JavaModuleFacet
-import jetbrains.mps.smodel.MPSModuleRepository
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.SDependencyScope
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleId
+import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.BuiltinLanguages
-import org.modelix.model.api.IChildLink
+import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
-import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
-import org.modelix.model.api.IProperty
-import org.modelix.model.area.IArea
+import org.modelix.model.api.IPropertyReference
+import org.modelix.model.api.IReferenceLinkReference
+import org.modelix.model.api.IWritableNode
 
-data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
+data class MPSModuleAsNode(val module: SModule) : MPSGenericNodeAdapter<MPSModuleAsNode>() {
 
     companion object {
         private val logger = mu.KotlinLogging.logger { }
+
+        private val propertyAccessors = listOf<Pair<IPropertyReference, IPropertyAccessor<MPSModuleAsNode>>>(
+            BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference() to object : IPropertyAccessor<MPSModuleAsNode> {
+                override fun read(element: MPSModuleAsNode): String? = element.module.moduleName
+            },
+            BuiltinLanguages.jetbrains_mps_lang_core.BaseConcept.virtualPackage.toReference() to object : IPropertyAccessor<MPSModuleAsNode> {
+                override fun read(element: MPSModuleAsNode): String? {
+                    return ProjectManager.getInstance().openedProjects.asSequence()
+                        .filterIsInstance<ProjectBase>()
+                        .mapNotNull { it.getPath(element.module) }
+                        .firstOrNull()
+                        ?.virtualFolder
+                }
+            },
+            BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference() to object : IPropertyAccessor<MPSModuleAsNode> {
+                override fun read(element: MPSModuleAsNode): String? = element.module.moduleId.toString()
+            },
+            BuiltinLanguages.MPSRepositoryConcepts.Module.moduleVersion.toReference() to object : IPropertyAccessor<MPSModuleAsNode> {
+                override fun read(element: MPSModuleAsNode): String? {
+                    val version = (element as? AbstractModule)?.moduleDescriptor?.moduleVersion ?: 0
+                    return version.toString()
+                }
+            },
+            BuiltinLanguages.MPSRepositoryConcepts.Module.compileInMPS.toReference() to object : IPropertyAccessor<MPSModuleAsNode> {
+                override fun read(element: MPSModuleAsNode): String? {
+                    return element.getCompileInMPS().toString()
+                }
+            },
+        )
+
+        private val referenceAccessors = listOf<Pair<IReferenceLinkReference, IReferenceAccessor<MPSModuleAsNode>>>()
+        private val childAccessors = listOf<Pair<IChildLinkReference, IChildAccessor<MPSModuleAsNode>>>(
+            BuiltinLanguages.MPSRepositoryConcepts.Module.models.toReference() to object : IChildAccessor<MPSModuleAsNode> {
+                override fun read(element: MPSModuleAsNode): List<IWritableNode> = element.module.models.withoutDescriptorModel().map { MPSModelAsNode(it) }
+            },
+            BuiltinLanguages.MPSRepositoryConcepts.Module.facets.toReference() to object : IChildAccessor<MPSModuleAsNode> {
+                override fun read(element: MPSModuleAsNode): List<IWritableNode> {
+                    return element.module.facets.filterIsInstance<JavaModuleFacet>()
+                        .map { MPSJavaModuleFacetAsNode(it).asWritableNode() }
+                }
+            },
+            BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies.toReference() to object : IChildAccessor<MPSModuleAsNode> {
+                override fun read(element: MPSModuleAsNode): List<IWritableNode> {
+                    val module = element.module
+                    if (module !is AbstractModule) return emptyList()
+
+                    val moduleDescriptor = module.moduleDescriptor ?: return emptyList()
+
+                    return moduleDescriptor.dependencyVersions.map { (ref, version) ->
+                        MPSModuleDependencyAsNode(
+                            moduleReference = ref,
+                            moduleVersion = version,
+                            explicit = element.isDirectDependency(module, ref.moduleId),
+                            reexport = element.isReexport(module, ref.moduleId),
+                            importer = module,
+                            dependencyScope = element.getDependencyScope(module, ref.moduleId),
+                        ).asWritableNode()
+                    }
+                }
+            },
+            BuiltinLanguages.MPSRepositoryConcepts.Module.languageDependencies.toReference() to object : IChildAccessor<MPSModuleAsNode> {
+                override fun read(element: MPSModuleAsNode): List<IWritableNode> {
+                    val module = element.module
+                    if (module !is AbstractModule) return emptyList()
+                    val moduleDescriptor = module.moduleDescriptor ?: return emptyList()
+                    return moduleDescriptor.languageVersions.map { (language, version) ->
+                        MPSSingleLanguageDependencyAsNode(language.sourceModuleReference, version, moduleImporter = module).asWritableNode()
+                    } + moduleDescriptor.usedDevkits.map { devKit ->
+                        MPSDevKitDependencyAsNode(devKit, module).asWritableNode()
+                    }
+                }
+            },
+        )
     }
 
-    private val childrenAccessors: Map<IChildLink, () -> Iterable<INode>> = mapOf(
-        BuiltinLanguages.MPSRepositoryConcepts.Module.models to { module.models.withoutDescriptorModel().map { MPSModelAsNode(it) } },
-        BuiltinLanguages.MPSRepositoryConcepts.Module.facets to { module.facets.filterIsInstance<JavaModuleFacet>().map { MPSJavaModuleFacetAsNode(it) } },
-        BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies to { getDependencies() },
-        BuiltinLanguages.MPSRepositoryConcepts.Module.languageDependencies to { getLanguageDependencies() },
-    )
-
-    override fun getArea(): IArea {
-        return MPSArea(module.repository ?: MPSModuleRepository.getInstance())
+    override fun getElement(): MPSModuleAsNode {
+        return this
     }
 
-    override val reference: INodeReference
-        get() = MPSModuleReference(module.moduleReference)
-    override val concept: IConcept
-        get() = BuiltinLanguages.MPSRepositoryConcepts.Module
-    override val parent: INode?
-        get() = module.repository?.let { MPSRepositoryAsNode(it) }
-
-    override val allChildren: Iterable<INode>
-        get() = childrenAccessors.values.flatMap { it() }
-
-    override fun getContainmentLink(): IChildLink {
-        return BuiltinLanguages.MPSRepositoryConcepts.Repository.modules
+    override fun getRepository(): SRepository? {
+        return module.repository
     }
 
-    override fun getChildren(link: IChildLink): Iterable<INode> {
-        for (childrenAccessor in childrenAccessors) {
-            if (link.conformsTo(childrenAccessor.key)) return childrenAccessor.value()
-        }
-        return emptyList()
+    override fun getPropertyAccessors() = propertyAccessors
+
+    override fun getReferenceAccessors() = referenceAccessors
+
+    override fun getChildAccessors() = childAccessors
+
+    override fun getParent(): IWritableNode? {
+        return module.repository?.let { MPSRepositoryAsNode(it).asWritableNode() }
     }
 
-    private fun getDependencies(): Iterable<INode> {
-        if (module !is AbstractModule) return emptyList()
-
-        val moduleDescriptor = module.moduleDescriptor ?: return emptyList()
-
-        return moduleDescriptor.dependencyVersions.map { (ref, version) ->
-            MPSModuleDependencyAsNode(
-                moduleReference = ref,
-                moduleVersion = version,
-                explicit = isDirectDependency(module, ref.moduleId),
-                reexport = isReexport(module, ref.moduleId),
-                importer = module,
-                dependencyScope = getDependencyScope(module, ref.moduleId),
-            )
-        }
+    override fun getNodeReference(): INodeReference {
+        return MPSModuleReference(module.moduleReference)
     }
 
-    private fun getLanguageDependencies(): Iterable<INode> {
-        if (module !is AbstractModule) return emptyList()
+    override fun getConcept(): IConcept {
+        return BuiltinLanguages.MPSRepositoryConcepts.Module
+    }
 
-        val moduleDescriptor = module.moduleDescriptor ?: return emptyList()
-        val dependencies = mutableListOf<INode>()
-
-        for ((language, version) in moduleDescriptor.languageVersions) {
-            dependencies.add(
-                MPSSingleLanguageDependencyAsNode(language.sourceModuleReference, version, moduleImporter = module),
-            )
-        }
-
-        for (devKit in moduleDescriptor.usedDevkits) {
-            dependencies.add(MPSDevKitDependencyAsNode(devKit, module))
-        }
-
-        return dependencies
+    override fun getContainmentLink(): IChildLinkReference {
+        return BuiltinLanguages.MPSRepositoryConcepts.Repository.modules.toReference()
     }
 
     private fun isDirectDependency(module: SModule, moduleId: SModuleId): Boolean {
@@ -111,27 +146,6 @@ data class MPSModuleAsNode(val module: SModule) : IDefaultNodeAdapter {
                 .firstOrNull { it.moduleRef.moduleId == moduleId }?.scope
         }
         return module.declaredDependencies.firstOrNull { it.targetModule.moduleId == moduleId }?.scope
-    }
-
-    override fun getPropertyValue(property: IProperty): String? {
-        return if (property.conformsTo(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name)) {
-            module.moduleName
-        } else if (property.conformsTo(BuiltinLanguages.jetbrains_mps_lang_core.BaseConcept.virtualPackage)) {
-            ProjectManager.getInstance().openedProjects.asSequence()
-                .filterIsInstance<ProjectBase>()
-                .mapNotNull { it.getPath(module) }
-                .firstOrNull()
-                ?.virtualFolder
-        } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.id)) {
-            module.moduleId.toString()
-        } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.moduleVersion)) {
-            val version = (module as? AbstractModule)?.moduleDescriptor?.moduleVersion ?: 0
-            version.toString()
-        } else if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.Module.compileInMPS)) {
-            getCompileInMPS().toString()
-        } else {
-            null
-        }
     }
 
     private fun getCompileInMPS(): Boolean {

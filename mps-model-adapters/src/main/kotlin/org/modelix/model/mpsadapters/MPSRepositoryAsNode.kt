@@ -17,13 +17,13 @@ import org.modelix.model.area.IArea
 data class MPSRepositoryAsNode(val repository: SRepository) : IDefaultNodeAdapter {
 
     private val childrenAccessors: Map<IChildLink, () -> Iterable<INode>> = mapOf(
-        BuiltinLanguages.MPSRepositoryConcepts.Repository.modules to { repository.modules.filter { !it.isTempModule() }.map { MPSModuleAsNode(it) } },
+        BuiltinLanguages.MPSRepositoryConcepts.Repository.modules to { repository.modules.filter { !it.isTempModule() }.map { MPSModuleAsNode(it).asLegacyNode() } },
         BuiltinLanguages.MPSRepositoryConcepts.Repository.projects to {
             ProjectManager.getInstance().openedProjects
                 .filterIsInstance<ProjectBase>()
                 .map { MPSProjectAsNode(it) }
         },
-        BuiltinLanguages.MPSRepositoryConcepts.Repository.tempModules to { repository.modules.filter { it.isTempModule() }.map { MPSModuleAsNode(it) } },
+        BuiltinLanguages.MPSRepositoryConcepts.Repository.tempModules to { repository.modules.filter { it.isTempModule() }.map { MPSModuleAsNode(it).asLegacyNode() } },
     )
 
     override fun getArea(): IArea {

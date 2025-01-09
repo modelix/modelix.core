@@ -29,7 +29,7 @@ class ReplaceNodeTest : MpsAdaptersTestBase("SimpleProject") {
         val newNode = nodeToReplace.replaceNode(newConcept)
 
         assertEquals(listOf(newNode) + nodesToKeep, rootNode.allChildren.toList())
-        assertEquals((nodeToReplace as MPSNode).node.nodeId, (newNode as MPSNode).node.nodeId)
+        assertEquals(nodeToReplace.reference.serialize(), newNode.reference.serialize())
         assertEquals(oldContainmentLink, newNode.getContainmentLink())
         assertEquals(newConcept, newNode.getConceptReference())
         assertEquals(oldProperties, newNode.getAllProperties().toSet())
@@ -46,7 +46,7 @@ class ReplaceNodeTest : MpsAdaptersTestBase("SimpleProject") {
         val newNode = rootNode.replaceNode(newConcept)
 
         assertEquals(listOf(newNode), model.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes))
-        assertEquals((rootNode as MPSNode).node.nodeId, (newNode as MPSNode).node.nodeId)
+        assertEquals(rootNode.reference.serialize(), newNode.reference.serialize())
         assertEquals(oldContainmentLink, newNode.getContainmentLink())
         assertEquals(newConcept, newNode.getConceptReference())
     }
@@ -59,10 +59,10 @@ class ReplaceNodeTest : MpsAdaptersTestBase("SimpleProject") {
         val oldContainmentLink = freeFloatingNode.getContainmentLink()
         val newConcept = ConceptReference("mps:f3061a53-9226-4cc5-a443-f952ceaf5816/1083245097125")
 
-        val newNode = freeFloatingNode.replaceNode(newConcept)
+        val newNode = freeFloatingNode.asWritableNode().changeConcept(newConcept).asLegacyNode()
 
         assertEquals(listOf(untouchedRootNode), model.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes))
-        assertEquals(freeFloatingNode.node.nodeId, (newNode as MPSNode).node.nodeId)
+        assertEquals(freeFloatingNode.reference.serialize(), newNode.reference.serialize())
         assertEquals(oldContainmentLink, newNode.getContainmentLink())
         assertEquals(newConcept, newNode.getConceptReference())
     }
@@ -81,7 +81,7 @@ class ReplaceNodeTest : MpsAdaptersTestBase("SimpleProject") {
         val newNode = nodeToReplace.replaceNode(newConcept)
 
         assertEquals(listOf(newNode), freeFloatingNode.allChildren.toList())
-        assertEquals((nodeToReplace as MPSNode).node.nodeId, (newNode as MPSNode).node.nodeId)
+        assertEquals(nodeToReplace.reference.serialize(), newNode.reference.serialize())
         assertEquals(oldContainmentLink, newNode.getContainmentLink())
         assertEquals(newConcept, newNode.getConceptReference())
     }

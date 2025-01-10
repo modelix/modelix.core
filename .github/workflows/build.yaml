@@ -45,7 +45,7 @@ jobs:
           files: |
             **/test-results/**/*.xml
       - name: Archive test report
-        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4
         # Archive test reports for introspection even if the build failed. They are most useful in this situation.
         if: always()
         with:

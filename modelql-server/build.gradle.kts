@@ -12,15 +12,8 @@ dependencies {
     implementation(kotlin("stdlib"))
 
     implementation(libs.kotlin.serialization.json)
-
-    implementation(libs.kotlin.coroutines.core)
-    implementation(libs.kotlin.coroutines.swing)
     implementation(libs.kotlin.logging)
-
     implementation(libs.ktor.server.core)
-    implementation(libs.ktor.server.cors)
-    implementation(libs.ktor.server.netty)
-    implementation(libs.ktor.server.websockets)
 }
 
 publishing {

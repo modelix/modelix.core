@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/openjdk-11:1.21-1.1733300800
+FROM registry.access.redhat.com/ubi8/openjdk-11:1.21-1.1736337912
 USER root
 WORKDIR /usr/modelix-model
 EXPOSE 28101

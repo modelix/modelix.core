@@ -106,15 +106,21 @@ data class NodeData(
     val properties: Map<String, String> = emptyMap(),
     val references: Map<String, String> = emptyMap(),
 ) {
+
+    fun normalize(): NodeData = copy(
+        children = children.map { it.normalize() },
+        properties = properties.entries.sortedBy { it.key }.associate { it.key to it.value },
+        references = references.entries.sortedBy { it.key }.associate { it.key to it.value },
+    )
+
     companion object {
 
         /**
          * Users should not use this directly. Use [INode.getOriginalReference].
          */
-        @Deprecated("Use ID_PROPERTY_REF", replaceWith = ReplaceWith("ID_PROPERTY_REF"))
         const val ID_PROPERTY_KEY = "#originalRef#"
 
-        val ID_PROPERTY_REF = IPropertyReference.fromIdAndName("#originalRef#", "#originalRef#")
+        val ID_PROPERTY_REF = IPropertyReference.fromIdAndName(ID_PROPERTY_KEY, ID_PROPERTY_KEY)
 
         @Deprecated("Use ID_PROPERTY_KEY", replaceWith = ReplaceWith("ID_PROPERTY_KEY"))
         const val idPropertyKey = ID_PROPERTY_KEY

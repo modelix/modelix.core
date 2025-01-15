@@ -63,6 +63,13 @@ data class MPSModuleAsNode(val module: SModule) : MPSGenericNodeAdapter<MPSModul
                     return element.module.facets.filterIsInstance<JavaModuleFacet>()
                         .map { MPSJavaModuleFacetAsNode(it).asWritableNode() }
                 }
+
+                override fun remove(element: MPSModuleAsNode, child: IWritableNode) {
+                    val module = element.module as AbstractModule
+                    val moduleDescriptor = checkNotNull(module.moduleDescriptor) { "Has no moduleDescriptor: $module" }
+                    val facet = child.asLegacyNode() as MPSJavaModuleFacetAsNode
+                    moduleDescriptor.removeFacetDescriptor(facet.facet)
+                }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies.toReference() to object : IChildAccessor<MPSModuleAsNode> {
                 override fun read(element: MPSModuleAsNode): List<IWritableNode> {
@@ -81,6 +88,13 @@ data class MPSModuleAsNode(val module: SModule) : MPSGenericNodeAdapter<MPSModul
                             dependencyScope = element.getDependencyScope(module, ref.moduleId),
                         ).asWritableNode()
                     }
+                }
+
+                override fun remove(element: MPSModuleAsNode, child: IWritableNode) {
+                    val module = element.module as AbstractModule
+                    val moduleDescriptor = checkNotNull(module.moduleDescriptor) { "Has no moduleDescriptor: $module" }
+                    val dependency = child.asLegacyNode() as MPSModuleDependencyAsNode
+                    moduleDescriptor.dependencyVersions.remove(dependency.moduleReference)
                 }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Module.languageDependencies.toReference() to object : IChildAccessor<MPSModuleAsNode> {

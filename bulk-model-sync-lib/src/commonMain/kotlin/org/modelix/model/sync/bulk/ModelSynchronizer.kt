@@ -1,6 +1,7 @@
 package org.modelix.model.sync.bulk
 
 import mu.KotlinLogging
+import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.IReferenceLinkReference
@@ -37,10 +38,21 @@ class ModelSynchronizer(
     private val logger = KotlinLogging.logger {}
 
     fun synchronize() {
+        synchronize(listOf(sourceRoot), listOf(targetRoot))
+    }
+
+    fun synchronize(sourceNodes: List<IReadableNode>, targetNodes: List<IWritableNode>) {
         logger.info { "Synchronizing nodes..." }
+        for ((sourceNode, targetNode) in sourceNodes.zip(targetNodes)) {
+            synchronizeNode(sourceNode, targetNode)
+        }
         synchronizeNode(sourceRoot, targetRoot)
         logger.info { "Synchronizing pending references..." }
-        pendingReferences.forEach { it.trySyncReference() }
+        pendingReferences.forEach {
+            if (!it.trySyncReference()) {
+                it.copyTargetRef()
+            }
+        }
         logger.info { "Removing extra nodes..." }
         nodesToRemove.filter { it.isValid() }.forEach { it.remove() }
         logger.info { "Synchronization finished." }
@@ -101,13 +113,22 @@ class ModelSynchronizer(
         }
     }
 
+    private fun getFilteredSourceChildren(parent: IReadableNode, role: IChildLinkReference): List<IReadableNode> {
+        return parent.getChildren(role).let { filter.filterSourceChildren(parent, role, it) }
+    }
+
+    private fun getFilteredTargetChildren(parent: IWritableNode, role: IChildLinkReference): List<IWritableNode> {
+        return parent.getChildren(role).let { filter.filterTargetChildren(parent, role, it) }
+    }
+
     private fun syncChildren(sourceParent: IReadableNode, targetParent: IWritableNode) {
         iterateMergedRoles(
             sourceParent.getAllChildren().map { it.getContainmentLink() }.distinct(),
             targetParent.getAllChildren().map { it.getContainmentLink() }.distinct(),
         ) { role ->
-            val sourceNodes = sourceParent.getChildren(role)
-            val targetNodes = targetParent.getChildren(role)
+            val sourceNodes = getFilteredSourceChildren(sourceParent, role)
+            val targetNodes = getFilteredTargetChildren(targetParent, role)
+            val unusedTargetChildren = targetNodes.toMutableSet()
 
             val allExpectedNodesDoNotExist by lazy {
                 sourceNodes.all { sourceNode ->
@@ -135,10 +156,8 @@ class ModelSynchronizer(
 
             val isOrdered = targetParent.isChildRoleOrdered(role)
 
-            val newlyCreatedIds = mutableSetOf<String>()
-
             sourceNodes.forEachIndexed { indexInImport, expected ->
-                val existingChildren = targetParent.getChildren(role).toList()
+                val existingChildren = getFilteredTargetChildren(targetParent, role)
                 val expectedId = checkNotNull(expected.originalIdOrFallback()) { "Specified node '$expected' has no id" }
                 // newIndex is the index on which to import the expected child.
                 // It might be -1 if the child does not exist and should be added at the end.
@@ -160,10 +179,6 @@ class ModelSynchronizer(
                     val existingNode = nodeAssociation.resolveTarget(expected)
                     if (existingNode == null) {
                         val newChild = targetParent.addNewChild(role, newIndex, expectedConcept)
-                        if (newChild.getOriginalReference() == null) {
-                            newChild.setPropertyValue(NodeData.ID_PROPERTY_REF, expectedId)
-                        }
-                        newChild.getOriginalReference()?.let { newlyCreatedIds.add(it) }
                         nodeAssociation.associate(expected, newChild)
                         newChild
                     } else {
@@ -173,27 +188,36 @@ class ModelSynchronizer(
                         // If the old parent and old role synchronized before the move operation,
                         // the existing child node would have been marked as to be deleted.
                         // Now that it is used, it should not be deleted.
+                        unusedTargetChildren.remove(existingNode)
                         nodesToRemove.remove(existingNode)
                         existingNode
                     }
                 } else {
+                    unusedTargetChildren.remove(nodeAtIndex)
+                    nodesToRemove.remove(nodeAtIndex)
                     nodeAtIndex
                 }
 
                 synchronizeNode(expected, childNode)
             }
 
-            val expectedNodesIds = sourceNodes.map { it.getOriginalOrCurrentReference() }.toSet()
             // Do not use existingNodes, but call node.getChildren(role) because
             // the recursive synchronization in the meantime already removed some nodes from node.getChildren(role).
-            nodesToRemove += targetParent.getChildren(role).filterNot { existingNode ->
-                val id = existingNode.getOriginalOrCurrentReference()
-                expectedNodesIds.contains(id) || newlyCreatedIds.contains(id)
-            }
+            nodesToRemove += getFilteredTargetChildren(targetParent, role).intersect(unusedTargetChildren)
         }
     }
 
     inner class PendingReference(val sourceNode: IReadableNode, val targetNode: IWritableNode, val role: IReferenceLinkReference) {
+        override fun toString(): String = "${sourceNode.getNodeReference()}[$role] : ${targetNode.getAllReferenceTargetRefs()}"
+
+        fun copyTargetRef() {
+            val oldValue = targetNode.getReferenceTargetRef(role)
+            val newValue = sourceNode.getReferenceTargetRef(role)
+            if (oldValue != newValue) {
+                targetNode.setReferenceTargetRef(role, newValue)
+            }
+        }
+
         fun trySyncReference(): Boolean {
             val expectedRef = sourceNode.getReferenceTargetRef(role)
             if (expectedRef == null) {
@@ -202,15 +226,7 @@ class ModelSynchronizer(
             }
             val actualRef = targetNode.getReferenceTargetRef(role)
 
-            // Some reference targets may be excluded from the sync,
-            // in that case a serialized reference is stored and no lookup of the target is required.
-            if (actualRef?.serialize() == expectedRef.serialize()) {
-                // already up to date
-                return true
-            }
-
-            val referenceTargetInSource = sourceNode.getReferenceTarget(role)
-            checkNotNull(referenceTargetInSource) { "Failed to resolve $expectedRef referenced by $sourceNode.$role" }
+            val referenceTargetInSource = sourceNode.getReferenceTarget(role) ?: return false
 
             val referenceTargetInTarget = nodeAssociation.resolveTarget(referenceTargetInSource)
                 ?: return false // Target cannot be resolved right now but might become resolvable later.
@@ -260,6 +276,10 @@ class ModelSynchronizer(
          * @return true iff the node must not be skipped
          */
         fun needsSynchronization(node: IReadableNode): Boolean
+
+        fun filterSourceChildren(parent: IReadableNode, role: IChildLinkReference, children: List<IReadableNode>): List<IReadableNode> = children
+
+        fun filterTargetChildren(parent: IWritableNode, role: IChildLinkReference, children: List<IWritableNode>): List<IWritableNode> = children
     }
 }
 

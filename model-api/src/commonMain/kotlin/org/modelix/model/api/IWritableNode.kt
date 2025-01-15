@@ -23,6 +23,9 @@ interface IReadableNode {
     fun getPropertyLinks(): List<IPropertyReference>
     fun getAllProperties(): List<Pair<IPropertyReference, String>>
 
+    /**
+     * Is allowed to be null, even if getReferenceTargetRef is not null.
+     */
     fun getReferenceTarget(role: IReferenceLinkReference): IReadableNode?
     fun getReferenceTargetRef(role: IReferenceLinkReference): INodeReference?
     fun getReferenceLinks(): List<IReferenceLinkReference>

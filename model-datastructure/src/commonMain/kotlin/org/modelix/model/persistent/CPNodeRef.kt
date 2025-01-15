@@ -1,13 +1,12 @@
 package org.modelix.model.persistent
 
-abstract class CPNodeRef
-internal constructor() {
+sealed class CPNodeRef() {
     abstract val isGlobal: Boolean
     abstract val isLocal: Boolean
     abstract val elementId: Long
     abstract val treeId: String?
 
-    private data class LocalRef(private val id: Long) : CPNodeRef() {
+    data class LocalRef(private val id: Long) : CPNodeRef() {
         override fun toString(): String {
             return "" + id.toString(16)
         }
@@ -27,9 +26,7 @@ internal constructor() {
             }
     }
 
-    private data class GlobalRef(val treeId1: String, val elementId1: Long) : CPNodeRef() {
-        override val treeId: String?
-        override val elementId: Long
+    data class GlobalRef(override val treeId: String, override val elementId: Long) : CPNodeRef() {
         override fun toString(): String {
             return "G$treeId#$elementId"
         }
@@ -39,11 +36,6 @@ internal constructor() {
 
         override val isLocal: Boolean
             get() = false
-
-        init {
-            treeId = treeId1
-            elementId = elementId1
-        }
     }
 
     data class ForeignRef(val serializedRef: String) : CPNodeRef() {

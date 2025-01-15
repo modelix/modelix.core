@@ -8,6 +8,8 @@ import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.NodeReference
 import org.modelix.model.api.PNodeAdapter
+import org.modelix.model.api.getOriginalOrCurrentReference
+import org.modelix.model.area.PArea
 import org.modelix.model.data.NodeData
 import org.modelix.model.mpsadapters.MPSArea
 import org.modelix.model.sync.bulk.INodeAssociation
@@ -18,7 +20,9 @@ internal class NodeAssociationToModelServer(val branch: IBranch) : INodeAssociat
         get() = ModelIndex.get(branch.transaction, NodeData.ID_PROPERTY_KEY)
 
     override fun resolveTarget(sourceNode: IReadableNode): IWritableNode? {
-        return modelIndex.find(sourceNode.getNodeReference().serialize()).map { PNodeAdapter(it, branch) }.firstOrNull()?.asWritableNode()
+        val ref = sourceNode.getOriginalOrCurrentReference()
+        return modelIndex.find(ref).map { PNodeAdapter(it, branch) }.firstOrNull()?.asWritableNode()
+            ?: PArea(branch).resolveNode(NodeReference(ref))?.asWritableNode()
     }
 
     override fun associate(sourceNode: IReadableNode, targetNode: IWritableNode) {

@@ -185,8 +185,9 @@ open class ModelSynchronizerTest : AbstractModelSyncTest() {
         }
 
         override fun associate(sourceNode: IReadableNode, targetNode: IWritableNode) {
-            if (sourceNode.getOriginalOrCurrentReference() != targetNode.getOriginalOrCurrentReference()) {
-                targetNode.setPropertyValue(NodeData.ID_PROPERTY_REF, sourceNode.getNodeReference().serialize())
+            val expected = sourceNode.getOriginalOrCurrentReference()
+            if (expected != targetNode.getOriginalOrCurrentReference()) {
+                targetNode.setPropertyValue(NodeData.ID_PROPERTY_REF, expected)
             }
         }
     }

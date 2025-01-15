@@ -166,6 +166,10 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) :
             return branch.transaction.getRole(nodeId)
         }
 
+    override fun getContainmentLink(): IChildLink? {
+        return IChildLinkReference.fromUnclassifiedString(roleInParent).toLegacy()
+    }
+
     override val isValid: Boolean
         get() {
             notifyAccess()

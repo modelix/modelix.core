@@ -22,13 +22,13 @@ data class MPSModelImportAsNode(val importedModel: SModel, val importingModel: S
     override val concept: IConcept
         get() = BuiltinLanguages.MPSRepositoryConcepts.ModelReference
     override val parent: INode
-        get() = MPSModelAsNode(importingModel)
+        get() = MPSModelAsNode(importingModel).asLegacyNode()
 
     override fun getReferenceTarget(link: IReferenceLink): INode {
         require(link.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model)) {
             "Unknown reference link '$link'"
         }
-        return MPSModelAsNode(importedModel)
+        return MPSModelAsNode(importedModel).asLegacyNode()
     }
 
     override fun getReferenceTargetRef(role: IReferenceLink): INodeReference {

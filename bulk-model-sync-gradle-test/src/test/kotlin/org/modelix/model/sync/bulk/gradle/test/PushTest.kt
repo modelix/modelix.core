@@ -20,7 +20,6 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.sync.bulk.asExported
 import org.modelix.model.withAutoTransactions
 import java.io.File
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -41,9 +40,9 @@ class PushTest {
         val files = inputDir.listFiles()?.filter { it.extension == "json" } ?: error("no json files found in ${inputDir.absolutePath}")
 
         val modules = files.map { ModelData.fromJson(it.readText()) }
-        val inputModel = ModelData(root = NodeData(children = modules.map { it.root }))
+        val inputModel = ModelData(root = NodeData(children = modules.map { it.root }).normalize())
 
-        assertContentEquals(inputModel.root.children, root.allChildren.map { it.asExported() })
+        assertEquals(inputModel.toJson(), ModelData(root = NodeData(children = root.allChildren.map { it.asExported() }).normalize()).toJson())
     }
 
     @Test

@@ -33,9 +33,9 @@ data class MPSDevKitDependencyAsNode(
         get() = BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency
     override val parent: INode
         get() = if (moduleImporter != null) {
-            MPSModuleAsNode(moduleImporter)
+            MPSModuleAsNode(moduleImporter).asLegacyNode()
         } else if (modelImporter != null) {
-            MPSModelAsNode(modelImporter)
+            MPSModelAsNode(modelImporter).asLegacyNode()
         } else {
             error("No importer found for $this")
         }

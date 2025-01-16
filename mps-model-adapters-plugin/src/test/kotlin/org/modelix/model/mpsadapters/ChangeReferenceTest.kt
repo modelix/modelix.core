@@ -39,7 +39,7 @@ class ChangeReferenceTest : MpsAdaptersTestBase("SimpleProject") {
                 rootNode.setReferenceTarget(referenceLink, model)
                 fail("Expected exception")
             } catch (e: IllegalArgumentException) {
-                assertEquals(e.message, "`target` has to be an `MPSNode` or `null`.")
+                assertEquals(e.message, "`target` has to be an `MPSWritableNode` or `null`.")
             }
         }
     }

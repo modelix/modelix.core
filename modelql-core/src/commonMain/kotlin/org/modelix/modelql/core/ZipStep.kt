@@ -9,12 +9,13 @@ import com.badoo.reaktive.observable.zip
 import com.badoo.reaktive.single.asObservable
 import com.badoo.reaktive.single.map
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.descriptors.SerialKind
 import kotlinx.serialization.descriptors.StructureKind
+import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
@@ -206,7 +207,13 @@ class ZipOutputSerializer<CommonT, Out : IZipOutput<CommonT>>(
     override val descriptor: SerialDescriptor = if (elementSerializers.size == 1) {
         elementSerializers.single().descriptor
     } else {
-        ZipNOutputDesc(elementSerializers.map { it.descriptor }.toTypedArray())
+        val typeParameters = elementSerializers.map { it.descriptor }.toTypedArray()
+        @OptIn(InternalSerializationApi::class)
+        buildSerialDescriptor("modelix.zipN", StructureKind.LIST, *typeParameters) {
+            elementSerializers.forEachIndexed { index, elementSerializer ->
+                element(index.toString(), elementSerializer.descriptor)
+            }
+        }
     }
 
     override fun serialize(encoder: Encoder, value: ZipStepOutput<Out, CommonT>) {
@@ -220,39 +227,6 @@ class ZipOutputSerializer<CommonT, Out : IZipOutput<CommonT>>(
             }
         }
     }
-}
-
-internal class ZipNOutputDesc(val elementDesc: Array<SerialDescriptor>) : SerialDescriptor {
-    @ExperimentalSerializationApi
-    override val elementsCount: Int
-        get() = elementDesc.size
-
-    @ExperimentalSerializationApi
-    override val kind: SerialKind
-        get() = StructureKind.LIST
-
-    @ExperimentalSerializationApi
-    override val serialName: String
-        get() = "modelix.zipN"
-
-    @ExperimentalSerializationApi
-    override fun getElementAnnotations(index: Int): List<Annotation> = emptyList()
-
-    @ExperimentalSerializationApi
-    override fun getElementDescriptor(index: Int): SerialDescriptor = elementDesc[index]
-
-    @ExperimentalSerializationApi
-    override fun getElementIndex(name: String): Int {
-        return name.toIntOrNull() ?: throw IllegalArgumentException("$name is not a valid list index")
-    }
-
-    @ExperimentalSerializationApi
-    override fun getElementName(index: Int): String {
-        return index.toString()
-    }
-
-    @ExperimentalSerializationApi
-    override fun isElementOptional(index: Int): Boolean = false
 }
 
 data class ZipStepOutput<E : IZipOutput<Common>, Common>(val values: List<IStepOutput<Common>>) : IStepOutput<E> {

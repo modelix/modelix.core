@@ -37,6 +37,7 @@ import org.modelix.model.sync.bulk.InvalidationTree
 import org.modelix.model.sync.bulk.ModelExporter
 import org.modelix.model.sync.bulk.ModelImporter
 import org.modelix.model.sync.bulk.ModelSynchronizer
+import org.modelix.model.sync.bulk.NodeAssociationFromModelServer
 import org.modelix.model.sync.bulk.isModuleIncluded
 import java.io.File
 import java.nio.file.Path
@@ -284,11 +285,14 @@ object MPSBulkSynchronizer {
                     CompositeFilter(listOf(invalidationTree, includedModulesFilter)),
                     treePointer.getRootNode().asReadableNode(),
                     MPSRepositoryAsNode(repository).asWritableNode(),
-                    NodeAssociationToMps(MPSArea(repository)),
+                    NodeAssociationFromModelServer(treePointer, MPSArea(repository).asModel()),
                 )
                 synchronizer.synchronize()
             }
         }
+
+        // TODO call NodeAssociationFromModelServer.writeAssociations and write the changes to the model server
+
         println("Import finished.")
         persistChanges(repository)
     }

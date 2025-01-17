@@ -36,7 +36,7 @@ class ModelImporter(
     private val continueOnError: Boolean,
     private val childFilter: (INode) -> Boolean = { true },
     private val writeOriginalIds: Boolean = root is PNodeAdapter,
-    private val nodeAssociation: INodeAssociation = TransientNodeAssociation(writeOriginalIds, root.getArea()),
+    private val nodeAssociation: INodeAssociation = TransientNodeAssociation(writeOriginalIds, root.getArea().asModel()),
 ) {
     // For MPS / Java compatibility, where a default value does not work. Can be dropped once the MPS solution is
     // updated to the constructor with two arguments.

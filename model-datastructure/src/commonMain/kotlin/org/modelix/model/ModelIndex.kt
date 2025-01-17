@@ -8,7 +8,7 @@ class ModelIndex private constructor(val tree: ITree, val propertyRole: String) 
     companion object {
         fun fromTree(tree: ITree, propertyRole: String): ModelIndex {
             val index = ModelIndex(tree, propertyRole)
-            index.loadAll(ITree.ROOT_ID)
+            index.loadAll(ITree.Companion.ROOT_ID)
             return index
         }
 

@@ -7,6 +7,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":model-api"))
+                implementation(project(":model-datastructure"))
                 implementation(libs.kotlin.serialization.json)
                 implementation(libs.kotlin.logging)
             }

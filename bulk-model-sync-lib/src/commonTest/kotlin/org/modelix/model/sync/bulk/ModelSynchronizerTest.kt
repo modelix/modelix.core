@@ -4,11 +4,8 @@ import org.modelix.model.ModelFacade
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IReadableNode
-import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.PBranch
-import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.getDescendants
-import org.modelix.model.api.getOriginalOrCurrentReference
 import org.modelix.model.api.getRootNode
 import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.client.IdGenerator
@@ -100,7 +97,7 @@ open class ModelSynchronizerTest : AbstractModelSyncTest() {
                     filter = BasicFilter,
                     sourceRoot = sourceRoot.asReadableNode(),
                     targetRoot = targetRoot.asWritableNode(),
-                    nodeAssociation = BasicAssociation(targetBranch),
+                    nodeAssociation = NodeAssociationToModelServer(targetBranch),
                 )
                 synchronizer.synchronize()
             }
@@ -149,7 +146,7 @@ open class ModelSynchronizerTest : AbstractModelSyncTest() {
                 filter = BasicFilter,
                 sourceRoot = sourceBranch.getRootNode().asReadableNode(),
                 targetRoot = targetBranch.getRootNode().asWritableNode(),
-                nodeAssociation = BasicAssociation(targetBranch),
+                nodeAssociation = NodeAssociationToModelServer(targetBranch),
             )
         }
         val operations = otBranch.getPendingChanges().first
@@ -170,25 +167,6 @@ open class ModelSynchronizerTest : AbstractModelSyncTest() {
 
         override fun needsSynchronization(node: IReadableNode): Boolean {
             return true
-        }
-    }
-
-    class BasicAssociation(private val target: IBranch) : INodeAssociation {
-
-        override fun resolveTarget(sourceNode: IReadableNode): IWritableNode? {
-            val sourceNode = sourceNode.asLegacyNode()
-            require(sourceNode is PNodeAdapter)
-            return target.computeRead {
-                target.getRootNode().getDescendants(true)
-                    .find { sourceNode.getOriginalOrCurrentReference() == it.getOriginalOrCurrentReference() }
-            }?.asWritableNode()
-        }
-
-        override fun associate(sourceNode: IReadableNode, targetNode: IWritableNode) {
-            val expected = sourceNode.getOriginalOrCurrentReference()
-            if (expected != targetNode.getOriginalOrCurrentReference()) {
-                targetNode.setPropertyValue(NodeData.ID_PROPERTY_REF, expected)
-            }
         }
     }
 }

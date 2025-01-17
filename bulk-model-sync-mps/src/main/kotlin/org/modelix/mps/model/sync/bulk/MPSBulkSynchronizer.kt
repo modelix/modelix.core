@@ -30,7 +30,8 @@ import org.modelix.model.data.ModelData
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSArea
 import org.modelix.model.mpsadapters.MPSModuleAsNode
-import org.modelix.model.mpsadapters.MPSRepositoryAsNode
+import org.modelix.model.mpsadapters.asLegacyNode
+import org.modelix.model.mpsadapters.asWritableNode
 import org.modelix.model.sync.bulk.ExistingAndExpectedNode
 import org.modelix.model.sync.bulk.InvalidatingVisitor
 import org.modelix.model.sync.bulk.InvalidationTree
@@ -191,7 +192,7 @@ object MPSBulkSynchronizer {
             }
             modulesToImport
         }
-        importModelsIntoRepository(repository, MPSRepositoryAsNode(repository), continueOnError, getModulesToImport)
+        importModelsIntoRepository(repository, repository.asLegacyNode(), continueOnError, getModulesToImport)
     }
 
     /**
@@ -284,7 +285,7 @@ object MPSBulkSynchronizer {
                 val synchronizer = ModelSynchronizer(
                     CompositeFilter(listOf(invalidationTree, includedModulesFilter)),
                     treePointer.getRootNode().asReadableNode(),
-                    MPSRepositoryAsNode(repository).asWritableNode(),
+                    repository.asWritableNode(),
                     NodeAssociationFromModelServer(treePointer, MPSArea(repository).asModel()),
                 )
                 synchronizer.synchronize()

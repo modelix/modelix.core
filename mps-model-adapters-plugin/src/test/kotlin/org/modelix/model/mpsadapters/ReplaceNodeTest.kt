@@ -108,7 +108,7 @@ class ReplaceNodeTest : MpsAdaptersTestBase("SimpleProject") {
     }
 
     private fun getModelUnderTest(): INode {
-        val repositoryNode = MPSRepositoryAsNode(mpsProject.repository)
+        val repositoryNode = mpsProject.repository.asLegacyNode()
         val module = repositoryNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Repository.modules)
             .single { it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name) == "Solution1" }
         return module.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.models).single()

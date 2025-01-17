@@ -1,22 +1,24 @@
 package org.modelix.model.mpsadapters
 
 import jetbrains.mps.smodel.MPSModuleRepository
-import jetbrains.mps.smodel.adapter.MetaAdapterByDeclaration
+import org.jetbrains.mps.openapi.language.SConcept
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
-import org.modelix.model.api.IConcept
 import org.modelix.model.api.IMutableModel
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
+import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.IReferenceLinkReference
+import org.modelix.model.api.ISyncTargetNode
 import org.modelix.model.api.IWritableNode
+import org.modelix.model.api.NewNodeSpec
 import org.modelix.model.api.upcast
 
-abstract class MPSGenericNodeAdapter<E> : IWritableNode {
+abstract class MPSGenericNodeAdapter<E> : IWritableNode, ISyncTargetNode {
 
     protected abstract fun getElement(): E
-    protected abstract fun getRepository(): SRepository?
+    abstract fun getRepository(): SRepository?
     protected abstract fun getPropertyAccessors(): List<Pair<IPropertyReference, IPropertyAccessor<E>>>
     protected abstract fun getReferenceAccessors(): List<Pair<IReferenceLinkReference, IReferenceAccessor<E>>>
     protected abstract fun getChildAccessors(): List<Pair<IChildLinkReference, IChildAccessor<E>>>
@@ -70,21 +72,23 @@ abstract class MPSGenericNodeAdapter<E> : IWritableNode {
     }
 
     override fun addNewChildren(role: IChildLinkReference, index: Int, concepts: List<ConceptReference>): List<IWritableNode> {
+        return doSyncNewChildren(role, index, concepts.map { it to null })
+    }
+
+    override fun syncNewChildren(role: IChildLinkReference, index: Int, sourceNodes: List<NewNodeSpec>): List<IWritableNode> {
+        return doSyncNewChildren(role, index, sourceNodes.map { it.conceptRef to it })
+    }
+
+    private fun doSyncNewChildren(role: IChildLinkReference, index: Int, sourceNodes: List<Pair<ConceptReference, NewNodeSpec?>>): List<IWritableNode> {
         val accessor = getChildAccessor(role)
         val repo = getRepository() ?: MPSModuleRepository.getInstance()
-        val resolvedConcepts = concepts.distinct().associateWith { concept ->
-            requireNotNull(
-                concept.let {
-                    MPSLanguageRepository(repo).resolveConcept(it.getUID())
-                        ?: MPSConcept.tryParseUID(it.getUID())
-                }?.concept?.let { MetaAdapterByDeclaration.asInstanceConcept(it) },
-            ) {
-                // A null value for the concept would default to BaseConcept, but then BaseConcept should be used explicitly.
-                "MPS concept not found: $concept"
-            }.let { MPSConcept(it) }
+        val resolvedConcepts = sourceNodes.map { it.first }.distinct().associateWith { concept ->
+            repo.resolveConcept(concept)
         }
 
-        return accessor.addNew(getElement(), index, concepts.map { resolvedConcepts[it]!! })
+        return sourceNodes.map { sourceNode ->
+            accessor.addNew(getElement(), index, SpecWithResolvedConcept(resolvedConcepts[sourceNode.first]!!, sourceNode.second))
+        }
     }
 
     override fun setReferenceTarget(role: IReferenceLinkReference, target: IWritableNode?) {
@@ -129,23 +133,33 @@ abstract class MPSGenericNodeAdapter<E> : IWritableNode {
 
     interface IPropertyAccessor<in E> {
         fun read(element: E): String?
-        fun write(element: E, value: String?): Unit = throw UnsupportedOperationException()
+        fun write(element: E, value: String?): Unit = throw UnsupportedOperationException("$this, $value")
     }
 
     interface IReferenceAccessor<in E> {
         fun read(element: E): IWritableNode?
-        fun write(element: E, value: IWritableNode?): Unit = throw UnsupportedOperationException()
+        fun write(element: E, value: IWritableNode?) {
+            throw UnsupportedOperationException()
+        }
         fun write(element: E, value: INodeReference?): Unit = throw UnsupportedOperationException()
     }
 
     interface IChildAccessor<in E> {
         fun read(element: E): List<IWritableNode>
-        fun addNew(element: E, index: Int, childConcepts: List<IConcept>): List<IWritableNode> {
-            throw UnsupportedOperationException("$this")
+        fun addNew(element: E, index: Int, sourceNode: SpecWithResolvedConcept): IWritableNode {
+            throw UnsupportedOperationException("$this, $element, $sourceNode")
         }
         fun move(element: E, index: Int, child: IWritableNode) {
-            throw UnsupportedOperationException()
+            throw UnsupportedOperationException("$this, $element, $child")
         }
         fun remove(element: E, child: IWritableNode): Unit = throw UnsupportedOperationException()
+    }
+
+    class SpecWithResolvedConcept(val concept: SConcept, val spec: NewNodeSpec?) {
+        fun getNode(): IReadableNode = spec?.node!!
+        fun getConceptReference(): ConceptReference = MPSConcept(concept).getReference()
+        override fun toString(): String {
+            return "SourceNodeAndConcept[$concept, $spec]"
+        }
     }
 }

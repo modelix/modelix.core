@@ -17,7 +17,7 @@ data class MPSProjectAsNode(val project: ProjectBase) : IDefaultNodeAdapter {
     override val concept: IConcept
         get() = BuiltinLanguages.MPSRepositoryConcepts.Project
     override val parent: INode
-        get() = MPSRepositoryAsNode(MPSModuleRepository.getInstance())
+        get() = MPSModuleRepository.getInstance().asLegacyNode()
 
     override val allChildren: Iterable<INode>
         get() = getChildren(BuiltinLanguages.MPSRepositoryConcepts.Project.projectModules)

@@ -7,6 +7,7 @@ import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IRoleReference
 import org.modelix.model.api.IWritableNode
+import org.modelix.model.api.NewNodeSpec
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.getOriginalOrCurrentReference
 import org.modelix.model.api.getOriginalReference
@@ -14,7 +15,11 @@ import org.modelix.model.api.isChildRoleOrdered
 import org.modelix.model.api.matches
 import org.modelix.model.api.mergeWith
 import org.modelix.model.api.remove
+import org.modelix.model.api.syncNewChild
+import org.modelix.model.api.syncNewChildren
+import org.modelix.model.api.tryResolve
 import org.modelix.model.data.NodeData
+import org.modelix.model.sync.bulk.ModelSynchronizer.IFilter
 
 /**
  * Similar to [ModelImporter], but the input is two [INode] instances instead of [INode] and [NodeData].
@@ -136,9 +141,9 @@ class ModelSynchronizer(
                 }
             }
 
-            // optimization that uses the bulk operation .addNewChildren
+            // optimization that uses the bulk operation .syncNewChildren
             if (targetNodes.isEmpty() && allExpectedNodesDoNotExist) {
-                targetParent.addNewChildren(role, -1, sourceNodes.map { it.getConceptReference() })
+                targetParent.syncNewChildren(role, -1, sourceNodes.map { NewNodeSpec(it) })
                     .zip(sourceNodes)
                     .forEach { (newChild, sourceChild) ->
                         nodeAssociation.associate(sourceChild, newChild)
@@ -178,13 +183,18 @@ class ModelSynchronizer(
                 val childNode = if (nodeAtIndex?.getOriginalOrCurrentReference() != expectedId) {
                     val existingNode = nodeAssociation.resolveTarget(expected)
                     if (existingNode == null) {
-                        val newChild = targetParent.addNewChild(role, newIndex, expectedConcept)
+                        val newChild = targetParent.syncNewChild(role, newIndex, NewNodeSpec(expected))
                         nodeAssociation.associate(expected, newChild)
                         newChild
                     } else {
                         // The existing child node is not only moved to a new index,
                         // it is potentially moved to a new parent and role.
-                        targetParent.moveChild(role, newIndex, existingNode)
+                        if (existingNode.getParent() != targetParent ||
+                            !existingNode.getContainmentLink().matches(role) ||
+                            role.tryResolve(targetParent.getConceptReference())?.isOrdered != false
+                        ) {
+                            targetParent.moveChild(role, newIndex, existingNode)
+                        }
                         // If the old parent and old role synchronized before the move operation,
                         // the existing child node would have been marked as to be deleted.
                         // Now that it is used, it should not be deleted.
@@ -205,6 +215,30 @@ class ModelSynchronizer(
             // the recursive synchronization in the meantime already removed some nodes from node.getChildren(role).
             nodesToRemove += getFilteredTargetChildren(targetParent, role).intersect(unusedTargetChildren)
         }
+        // tryFixCrossRoleOrder(sourceParent, targetParent)
+    }
+
+    /**
+     * In MPS and also in Modelix nodes internally are stored in a single list that is filtered when a specific role is
+     * accessed. The information about this internal order is visible when using getAllChildren().
+     * MPS uses this order in its "Generic comments" feature
+     * (see https://www.jetbrains.com/help/mps/generic-placeholders-and-generic-comments.html).
+     * Even though it is not semantically relevant, it will still be visible in the editor if we don't preserve that
+     * order.
+     */
+    private fun tryFixCrossRoleOrder(sourceParent: IReadableNode, targetParent: IWritableNode) {
+        val sourceChildren = sourceParent.getAllChildren()
+        val actualTargetChildren = targetParent.getAllChildren()
+        val expectedTargetChildren = sourceChildren.map { nodeAssociation.resolveTarget(it) ?: return }
+        if (actualTargetChildren == expectedTargetChildren) return
+
+        for (targetChild in expectedTargetChildren) {
+            try {
+                targetParent.moveChild(targetChild.getContainmentLink(), -1, targetChild)
+            } catch (ex: UnsupportedOperationException) {
+                return
+            }
+        }
     }
 
     inner class PendingReference(val sourceNode: IReadableNode, val targetNode: IWritableNode, val role: IReferenceLinkReference) {
@@ -213,7 +247,7 @@ class ModelSynchronizer(
         fun copyTargetRef() {
             val oldValue = targetNode.getReferenceTargetRef(role)
             val newValue = sourceNode.getReferenceTargetRef(role)
-            if (oldValue != newValue) {
+            if (oldValue?.serialize() != newValue?.serialize()) {
                 targetNode.setReferenceTargetRef(role, newValue)
             }
         }
@@ -280,6 +314,34 @@ class ModelSynchronizer(
         fun filterSourceChildren(parent: IReadableNode, role: IChildLinkReference, children: List<IReadableNode>): List<IReadableNode> = children
 
         fun filterTargetChildren(parent: IWritableNode, role: IChildLinkReference, children: List<IWritableNode>): List<IWritableNode> = children
+    }
+}
+
+fun IFilter.and(other: IFilter): IFilter = AndFilter(this, other)
+
+class AndFilter(val filter1: IFilter, val filter2: IFilter) : IFilter {
+    override fun needsDescentIntoSubtree(subtreeRoot: IReadableNode): Boolean {
+        return filter1.needsDescentIntoSubtree(subtreeRoot) && filter2.needsDescentIntoSubtree(subtreeRoot)
+    }
+
+    override fun needsSynchronization(node: IReadableNode): Boolean {
+        return filter1.needsSynchronization(node) && filter2.needsSynchronization(node)
+    }
+
+    override fun filterSourceChildren(
+        parent: IReadableNode,
+        role: IChildLinkReference,
+        children: List<IReadableNode>,
+    ): List<IReadableNode> {
+        return filter2.filterSourceChildren(parent, role, filter1.filterSourceChildren(parent, role, children))
+    }
+
+    override fun filterTargetChildren(
+        parent: IWritableNode,
+        role: IChildLinkReference,
+        children: List<IWritableNode>,
+    ): List<IWritableNode> {
+        return filter2.filterTargetChildren(parent, role, filter1.filterTargetChildren(parent, role, children))
     }
 }
 

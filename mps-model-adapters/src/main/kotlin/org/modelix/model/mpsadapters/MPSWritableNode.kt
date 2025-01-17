@@ -2,10 +2,12 @@ package org.modelix.model.mpsadapters
 
 import jetbrains.mps.smodel.MPSModuleRepository
 import jetbrains.mps.smodel.adapter.MetaAdapterByDeclaration
+import org.jetbrains.mps.openapi.language.SConcept
 import org.jetbrains.mps.openapi.language.SContainmentLink
 import org.jetbrains.mps.openapi.language.SProperty
 import org.jetbrains.mps.openapi.language.SReferenceLink
 import org.jetbrains.mps.openapi.model.SNode
+import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.incremental.DependencyTracking
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ConceptReference
@@ -17,10 +19,12 @@ import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IRoleReferenceByName
 import org.modelix.model.api.IRoleReferenceByUID
+import org.modelix.model.api.ISyncTargetNode
 import org.modelix.model.api.IWritableNode
+import org.modelix.model.api.NewNodeSpec
 import org.modelix.model.api.meta.NullConcept
 
-data class MPSWritableNode(val node: SNode) : IWritableNode {
+data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
     override fun getModel(): IMutableModel {
         return MPSArea(node.model?.repository ?: MPSModuleRepository.getInstance()).asModel()
     }
@@ -142,17 +146,13 @@ data class MPSWritableNode(val node: SNode) : IWritableNode {
     }
 
     override fun addNewChildren(role: IChildLinkReference, index: Int, concepts: List<ConceptReference>): List<IWritableNode> {
+        return syncNewChildren(role, index, concepts.map { NewNodeSpec(conceptRef = it) })
+    }
+
+    override fun syncNewChildren(role: IChildLinkReference, index: Int, specs: List<NewNodeSpec>): List<IWritableNode> {
         val repo = node.model?.repository ?: MPSModuleRepository.getInstance()
-        val resolvedConcepts = concepts.distinct().associateWith { concept ->
-            requireNotNull(
-                concept.let {
-                    MPSLanguageRepository(repo).resolveConcept(it.getUID())
-                        ?: MPSConcept.tryParseUID(it.getUID())
-                }?.concept?.let { MetaAdapterByDeclaration.asInstanceConcept(it) },
-            ) {
-                // A null value for the concept would default to BaseConcept, but then BaseConcept should be used explicitly.
-                "MPS concept not found: $concept"
-            }
+        val resolvedConcepts = specs.distinct().associate { spec ->
+            spec.conceptRef to repo.resolveConcept(spec.conceptRef)
         }
 
         val link = resolve(role)
@@ -162,12 +162,17 @@ data class MPSWritableNode(val node: SNode) : IWritableNode {
         val anchor = if (index == -1 || index == children.size) null else children[index]
         val model = node.model
 
-        return concepts.map { conceptRef ->
-            val resolvedConcept = checkNotNull(resolvedConcepts[conceptRef]) {}
+        return specs.map { spec ->
+            val resolvedConcept = checkNotNull(resolvedConcepts[spec.conceptRef])
+            val preferredId = spec.preferredNodeReference?.let { MPSNodeReference.tryConvert(it) }?.ref?.nodeId
             val newChild = if (model == null) {
-                jetbrains.mps.smodel.SNode(resolvedConcept)
+                if (preferredId == null) {
+                    jetbrains.mps.smodel.SNode(resolvedConcept)
+                } else {
+                    jetbrains.mps.smodel.SNode(resolvedConcept, preferredId)
+                }
             } else {
-                model.createNode(resolvedConcept)
+                model.createNode(resolvedConcept, preferredId)
             }
 
             if (anchor == null) {
@@ -276,5 +281,17 @@ data class MPSWritableNode(val node: SNode) : IWritableNode {
         return node.children.find { MPSChildLink(it.containmentLink!!).toReference().matches(link) }?.containmentLink
             ?: node.concept.containmentLinks.find { MPSChildLink(it).toReference().matches(link) }
             ?: MPSChildLink.fromReference(link).link
+    }
+}
+
+fun SRepository.resolveConcept(concept: ConceptReference): SConcept {
+    return requireNotNull(
+        concept.let {
+            MPSLanguageRepository(this).resolveConcept(it.getUID())
+                ?: MPSConcept.tryParseUID(it.getUID())
+        }?.concept?.let { MetaAdapterByDeclaration.asInstanceConcept(it) },
+    ) {
+        // A null value for the concept would default to BaseConcept, but then BaseConcept should be used explicitly.
+        "MPS concept not found: $concept"
     }
 }

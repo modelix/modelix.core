@@ -6,7 +6,7 @@ class AllChildrenActuallyReturnsAllChildrenTest : MpsAdaptersTestBase("SimplePro
 
     fun `test repository adapter consistency`() {
         readAction {
-            checkAdapterConsistence(MPSRepositoryAsNode(mpsProject.repository))
+            checkAdapterConsistence(mpsProject.repository.asLegacyNode())
         }
     }
 

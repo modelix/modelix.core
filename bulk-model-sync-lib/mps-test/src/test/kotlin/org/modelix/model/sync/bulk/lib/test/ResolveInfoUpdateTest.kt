@@ -5,7 +5,7 @@ import org.junit.Assert.assertThat
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.model.data.ModelData
-import org.modelix.model.mpsadapters.MPSRepositoryAsNode
+import org.modelix.model.mpsadapters.asLegacyNode
 import org.modelix.model.sync.bulk.ExistingAndExpectedNode
 import org.modelix.model.sync.bulk.asExported
 import org.modelix.mps.model.sync.bulk.MPSBulkSynchronizer
@@ -46,7 +46,7 @@ class ResolveInfoUpdateTest : MPSTestBase() {
         var result: INode? = null
         mpsProject.repository.modelAccess.runReadAction {
             val repository = mpsProject.repository
-            val repositoryNode = MPSRepositoryAsNode(repository)
+            val repositoryNode = repository.asLegacyNode()
             result = repositoryNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Repository.modules)
                 .single { it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name) == "NewSolution" }
         }

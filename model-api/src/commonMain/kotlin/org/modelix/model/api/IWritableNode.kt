@@ -64,3 +64,29 @@ interface IWritableNode : IReadableNode {
     fun setReferenceTarget(role: IReferenceLinkReference, target: IWritableNode?)
     fun setReferenceTargetRef(role: IReferenceLinkReference, target: INodeReference?)
 }
+
+interface ISyncTargetNode : IWritableNode {
+    fun syncNewChildren(role: IChildLinkReference, index: Int, specs: List<NewNodeSpec>): List<IWritableNode>
+}
+
+fun IWritableNode.syncNewChildren(role: IChildLinkReference, index: Int, sourceNodes: List<NewNodeSpec>): List<IWritableNode> {
+    return when (this) {
+        is ISyncTargetNode -> syncNewChildren(role, index, sourceNodes)
+        else -> addNewChildren(role, index, sourceNodes.map { it.conceptRef })
+    }
+}
+
+fun IWritableNode.syncNewChild(role: IChildLinkReference, index: Int, sourceNode: NewNodeSpec): IWritableNode {
+    return when (this) {
+        is ISyncTargetNode -> syncNewChildren(role, index, listOf(sourceNode)).single()
+        else -> addNewChild(role, index, sourceNode.conceptRef)
+    }
+}
+
+class NewNodeSpec(
+    val conceptRef: ConceptReference,
+    val node: IReadableNode? = null,
+    val preferredNodeReference: INodeReference? = null,
+) {
+    constructor(node: IReadableNode) : this(node.getConceptReference(), node, node.getOriginalReference()?.let { NodeReference(it) })
+}

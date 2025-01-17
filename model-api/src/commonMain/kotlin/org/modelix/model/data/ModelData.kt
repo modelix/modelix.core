@@ -113,7 +113,10 @@ data class NodeData(
         references = references.entries.sortedBy { it.key }.associate { it.key to it.value },
     )
 
+    fun toJson() = prettyJson.encodeToString(this)
+
     companion object {
+        private val prettyJson = Json { prettyPrint = true }
 
         /**
          * Users should not use this directly. Use [INode.getOriginalReference].

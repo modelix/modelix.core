@@ -1,6 +1,8 @@
 package org.modelix.model.async
 
 import com.badoo.reaktive.completable.andThen
+import com.badoo.reaktive.completable.asSingle
+import com.badoo.reaktive.completable.completableOfEmpty
 import com.badoo.reaktive.maybe.Maybe
 import com.badoo.reaktive.maybe.asSingleOrError
 import com.badoo.reaktive.maybe.defaultIfEmpty
@@ -346,7 +348,25 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
         newIds: LongArray,
         concepts: Array<ConceptReference>,
     ): Single<IAsyncMutableTree> {
-        val mapIncludingNewNodes = newIds.zip(concepts).asObservable().fold(nodesMap.query()) { nodesMap, (childId, concept) ->
+        require(newIds.size == newIds.distinct().size) {
+            "The specified IDs are not unique."
+        }
+        require(newIds.size == concepts.size) {
+            "The number of IDs and concepts should be the same. ${newIds.size} IDs and ${concepts.size} concepts provided."
+        }
+
+        val originalMap = nodesMap.query()
+
+        val originalMapAfterCheckForConflictingIds = originalMap.flatMap { nodesMap ->
+            newIds.fold(completableOfEmpty()) { completable, newId ->
+                completable.andThen(
+                    nodesMap.get(newId, store)
+                        .assertEmpty { "Node with ID ${newId.toString(16)} already exists." },
+                )
+            }.asSingle(nodesMap)
+        }
+
+        val mapIncludingNewNodes = newIds.zip(concepts).asObservable().fold(originalMapAfterCheckForConflictingIds) { nodesMap, (childId, concept) ->
             val childData = CPNode.create(
                 childId,
                 concept.getUID().takeIf { it != NullConcept.getUID() },
@@ -359,9 +379,7 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
                 arrayOf(),
             )
             nodesMap.flatMap {
-                it.get(childId, store)
-                    .assertEmpty { "Node with ID ${childId.toString(16)} already exists" }
-                    .andThen(it.put(childData, store))
+                it.put(childData, store)
             }
         }.flatten()
 

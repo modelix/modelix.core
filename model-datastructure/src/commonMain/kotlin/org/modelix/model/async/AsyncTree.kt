@@ -366,7 +366,7 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
             }.asSingle(nodesMap)
         }
 
-        val mapIncludingNewNodes = newIds.zip(concepts).asObservable().fold(originalMapAfterCheckForConflictingIds) { nodesMap, (childId, concept) ->
+        val mapIncludingNewNodes = newIds.zip(concepts).fold(originalMapAfterCheckForConflictingIds) { nodesMap, (childId, concept) ->
             val childData = CPNode.create(
                 childId,
                 concept.getUID().takeIf { it != NullConcept.getUID() },
@@ -381,7 +381,7 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
             nodesMap.flatMap {
                 it.put(childData, store)
             }
-        }.flatten()
+        }
 
         val newParentData = insertChildrenIntoParentData(parentId, index, newIds, role)
 
@@ -512,7 +512,7 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
 
     override fun deleteNodes(nodeIds: LongArray): Single<IAsyncMutableTree> {
         if (nodeIds.size == 1) return deleteNodeRecursive(nodeIds[0])
-        return nodeIds.asObservable().fold(singleOf(this)) { acc, nodeId -> acc.flatMap { it.deleteNodeRecursive(nodeId) } }.flatten()
+        return nodeIds.fold(singleOf(this)) { acc, nodeId -> acc.flatMap { it.deleteNodeRecursive(nodeId) } }
     }
 
     private fun deleteNodeRecursive(nodeId: Long): Single<AsyncTree> {

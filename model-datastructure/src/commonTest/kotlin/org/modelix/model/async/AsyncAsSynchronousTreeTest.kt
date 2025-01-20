@@ -7,6 +7,7 @@ import org.modelix.model.lazy.NonCachingObjectStore
 import org.modelix.model.lazy.createNewTreeData
 import org.modelix.model.persistent.MapBasedStore
 import org.modelix.streams.StreamAssertionError
+import org.modelix.streams.count
 import org.modelix.streams.getSynchronous
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -52,5 +53,17 @@ class AsyncAsSynchronousTreeTest {
         }
 
         assertEquals("Node with ID 1 already exists.", exception.message)
+    }
+
+    @Test
+    fun largeNumberOfChildrenCanBeAdded() {
+        val largeNumber = 10_000
+        val concepts = Array(largeNumber) { NullConcept.getReference() }
+        val ids = concepts.mapIndexed { index, _ -> ITree.ROOT_ID + 1 + index }.toLongArray()
+
+        val newTree = tree.addNewChildren(ITree.ROOT_ID, NullChildLinkReference, 0, ids, concepts).getSynchronous()
+
+        val childCount = newTree.getAllChildren(ITree.ROOT_ID).count().getSynchronous()
+        assertEquals(largeNumber, childCount)
     }
 }

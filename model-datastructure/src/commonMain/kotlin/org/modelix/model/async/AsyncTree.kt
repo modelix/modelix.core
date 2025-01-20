@@ -1,8 +1,8 @@
 package org.modelix.model.async
 
 import com.badoo.reaktive.completable.andThen
-import com.badoo.reaktive.completable.asSingle
-import com.badoo.reaktive.completable.completableOfEmpty
+import com.badoo.reaktive.coroutinesinterop.asFlow
+import com.badoo.reaktive.coroutinesinterop.asObservable
 import com.badoo.reaktive.maybe.Maybe
 import com.badoo.reaktive.maybe.asSingleOrError
 import com.badoo.reaktive.maybe.defaultIfEmpty
@@ -19,6 +19,7 @@ import com.badoo.reaktive.observable.observableOfEmpty
 import com.badoo.reaktive.observable.toList
 import com.badoo.reaktive.single.Single
 import com.badoo.reaktive.single.asCompletable
+import com.badoo.reaktive.single.asObservable
 import com.badoo.reaktive.single.filter
 import com.badoo.reaktive.single.flatMap
 import com.badoo.reaktive.single.flatMapIterable
@@ -28,6 +29,11 @@ import com.badoo.reaktive.single.map
 import com.badoo.reaktive.single.notNull
 import com.badoo.reaktive.single.singleOf
 import com.badoo.reaktive.single.zipWith
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flatMap
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INodeReference
@@ -341,6 +347,7 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun addNewChildren(
         parentId: Long,
         role: IChildLinkReference,
@@ -357,16 +364,32 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
 
         val originalMap = nodesMap.query()
 
-        val originalMapAfterCheckForConflictingIds = originalMap.flatMap { nodesMap ->
-            newIds.fold(completableOfEmpty()) { completable, newId ->
-                completable.andThen(
-                    nodesMap.get(newId, store)
-                        .assertEmpty { "Node with ID ${newId.toString(16)} already exists." },
-                )
-            }.asSingle(nodesMap)
+        // TODO Olekz Check how `getAll` and `putAll` could be added to `CPHamtNode`
+        //  so that no long chains of `flatMap` are needed in the first place.
+
+        // In Reaktive (and other reactive streaming libraries) long chains of `flatMap` cause stack overflows.
+        // In our case, already adding around 200 children caused a stack overflow.
+        //
+        // A workaround is to switch to Kotlin Flows.
+        // In Flows long chains of `flatMapLatest` do not cause stack overflows.
+        //
+        // Flows use coroutines and coroutines use trampolining technics to avoid stack overflows.
+        // See https://github.com/Kotlin/kotlinx.coroutines/blob/fed40ad1f9942d1b16be872cc555e08f965cf881/kotlinx-coroutines-core/common/src/internal/DispatchedContinuation.kt#L291
+        // See https://github.com/Kotlin/kotlinx.coroutines/blob/fed40ad1f9942d1b16be872cc555e08f965cf881/reactive/kotlinx-coroutines-reactive/test/IterableFlowTckTest.kt#L43
+        val originalMapAsFlow = originalMap.asObservable().asFlow()
+
+        val checkedOriginalMap = originalMapAsFlow.flatMapLatest { nodesMap ->
+            newIds.fold(flowOf(Unit)) { flow, newId ->
+                flow.flatMapLatest {
+                    nodesMap.get(newId, store).assertEmpty { "Node with ID ${newId.toString(16)} already exists." }
+                        .andThen(singleOf(Unit))
+                        .asObservable()
+                        .asFlow()
+                }
+            }.map { nodesMap }
         }
 
-        val mapIncludingNewNodes = newIds.zip(concepts).fold(originalMapAfterCheckForConflictingIds) { nodesMap, (childId, concept) ->
+        val mapIncludingNewNodesAsFlow = newIds.zip(concepts).fold(checkedOriginalMap) { nodesMap, (childId, concept) ->
             val childData = CPNode.create(
                 childId,
                 concept.getUID().takeIf { it != NullConcept.getUID() },
@@ -378,9 +401,16 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
                 arrayOf(),
                 arrayOf(),
             )
-            nodesMap.flatMap {
-                it.put(childData, store)
+            nodesMap.flatMapLatest {
+                it.put(childData, store).asObservable().asFlow()
             }
+        }
+
+        val mapIncludingNewNodes = mapIncludingNewNodesAsFlow.asObservable().toList().map {
+            require(it.size == 1) {
+                "Resulting list should have only one element."
+            }
+            it.single()
         }
 
         val newParentData = insertChildrenIntoParentData(parentId, index, newIds, role)

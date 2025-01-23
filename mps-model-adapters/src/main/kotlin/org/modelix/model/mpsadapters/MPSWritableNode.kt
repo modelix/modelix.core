@@ -23,6 +23,7 @@ import org.modelix.model.api.ISyncTargetNode
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.NewNodeSpec
 import org.modelix.model.api.meta.NullConcept
+import org.modelix.mps.api.ModelixMpsApi
 
 data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
     override fun getModel(): IMutableModel {
@@ -97,7 +98,7 @@ data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
         }
 
         node.properties.forEach { newNode.setProperty(it, node.getProperty(it)) }
-        node.references.forEach { newNode.setReference(it.link, it.targetNodeReference) }
+        node.references.forEach { ModelixMpsApi.setReference(newNode, it.link, it.targetNodeReference) }
         node.children.forEach { child ->
             val link = checkNotNull(child.containmentLink) { "Containment link of child node not found" }
             node.removeChild(child)

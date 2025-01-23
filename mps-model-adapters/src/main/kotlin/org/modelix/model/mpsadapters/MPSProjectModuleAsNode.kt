@@ -10,6 +10,7 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.area.IArea
+import org.modelix.mps.api.ModelixMpsApi
 
 data class MPSProjectModuleAsNode(val project: ProjectBase, val module: SModule) : IDefaultNodeAdapter {
 
@@ -39,7 +40,7 @@ data class MPSProjectModuleAsNode(val project: ProjectBase, val module: SModule)
 
     override fun getPropertyValue(property: IProperty): String? {
         return if (property.conformsTo(BuiltinLanguages.MPSRepositoryConcepts.ProjectModule.virtualFolder)) {
-            project.getPath(module)?.virtualFolder
+            ModelixMpsApi.getVirtualFolders(module).firstOrNull()
         } else {
             null
         }

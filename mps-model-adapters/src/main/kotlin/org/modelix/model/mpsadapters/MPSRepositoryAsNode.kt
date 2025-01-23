@@ -1,8 +1,8 @@
 package org.modelix.model.mpsadapters
 
+import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.project.ProjectBase
-import jetbrains.mps.project.ProjectManager
 import jetbrains.mps.smodel.Generator
 import jetbrains.mps.smodel.tempmodel.TempModule
 import jetbrains.mps.smodel.tempmodel.TempModule2
@@ -18,6 +18,7 @@ import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.NullChildLinkReference
+import org.modelix.mps.api.ModelixMpsApi
 
 fun SRepository.asLegacyNode(): INode = MPSRepositoryAsNode(this).asLegacyNode()
 fun SRepository.asWritableNode(): IWritableNode = MPSRepositoryAsNode(this)
@@ -41,19 +42,19 @@ data class MPSRepositoryAsNode(@get:JvmName("getRepository_") val repository: SR
                 ): IWritableNode {
                     return when (sourceNode.getConceptReference()) {
                         BuiltinLanguages.MPSRepositoryConcepts.Solution.getReference() -> {
-                            SolutionProducer(MPSContextProject.contextValue.getValue()).create(
+                            SolutionProducer(ModelixMpsApi.getMPSProject() as MPSProject).create(
                                 sourceNode.getNode().getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())!!,
                                 sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())!!.let { ModuleId.fromString(it) },
                             ).let { MPSModuleAsNode(it) }
                         }
                         BuiltinLanguages.MPSRepositoryConcepts.Language.getReference() -> {
-                            LanguageProducer(MPSContextProject.contextValue.getValue()).create(
+                            LanguageProducer(ModelixMpsApi.getMPSProject() as MPSProject).create(
                                 sourceNode.getNode().getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())!!,
                                 sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())!!.let { ModuleId.fromString(it) },
                             ).let { MPSModuleAsNode(it) }
                         }
                         BuiltinLanguages.MPSRepositoryConcepts.DevKit.getReference() -> {
-                            DevkitProducer(MPSContextProject.contextValue.getValue()).create(
+                            DevkitProducer(ModelixMpsApi.getMPSProject() as MPSProject).create(
                                 sourceNode.getNode().getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())!!,
                                 sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())!!.let { ModuleId.fromString(it) },
                             ).let { MPSModuleAsNode(it) }
@@ -69,10 +70,8 @@ data class MPSRepositoryAsNode(@get:JvmName("getRepository_") val repository: SR
             },
             BuiltinLanguages.MPSRepositoryConcepts.Repository.projects.toReference() to object : IChildAccessor<SRepository> {
                 override fun read(element: SRepository): List<IWritableNode> {
-                    return ProjectManager.getInstance().openedProjects
-                        .filterIsInstance<ProjectBase>()
-                        .plus(listOfNotNull(MPSContextProject.contextValue.getValueOrNull()))
-                        .map { MPSProjectAsNode(it).asWritableNode() }
+                    return ModelixMpsApi.getMPSProjects()
+                        .map { MPSProjectAsNode(it as ProjectBase).asWritableNode() }
                 }
             },
         )

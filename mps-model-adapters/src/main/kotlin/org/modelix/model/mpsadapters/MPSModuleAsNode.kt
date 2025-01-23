@@ -3,9 +3,8 @@ package org.modelix.model.mpsadapters
 import jetbrains.mps.persistence.MementoImpl
 import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.DevKit
+import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
-import jetbrains.mps.project.ProjectBase
-import jetbrains.mps.project.ProjectManager
 import jetbrains.mps.project.Solution
 import jetbrains.mps.project.facets.JavaModuleFacet
 import jetbrains.mps.smodel.Generator
@@ -30,6 +29,7 @@ import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.data.asData
+import org.modelix.mps.api.ModelixMpsApi
 import java.util.UUID
 
 fun MPSModuleAsNode(module: SModule) = MPSModuleAsNode.create(module)
@@ -55,16 +55,11 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
             },
             BuiltinLanguages.jetbrains_mps_lang_core.BaseConcept.virtualPackage.toReference() to object : IPropertyAccessor<SModule> {
                 override fun read(element: SModule): String? {
-                    return ProjectManager.getInstance().openedProjects.asSequence()
-                        .filterIsInstance<ProjectBase>()
-                        .mapNotNull { it.getPath(element) }
-                        .firstOrNull()
-                        ?.virtualFolder
-                        ?.takeIf { it.isNotEmpty() }
+                    return ModelixMpsApi.getVirtualFolder(element)
                 }
 
                 override fun write(element: SModule, value: String?) {
-                    MPSContextProject.contextValue.getValue().setVirtualFolder(element, value ?: "")
+                    ModelixMpsApi.setVirtualFolder(element, value)
                 }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference() to object : IPropertyAccessor<SModule> {
@@ -318,7 +313,7 @@ data class MPSLanguageAsNode(override val module: Language) : MPSModuleAsNode<La
                     index: Int,
                     sourceNode: SpecWithResolvedConcept,
                 ): IWritableNode {
-                    return GeneratorProducer(MPSContextProject.contextValue.getValue()).create(
+                    return GeneratorProducer(ModelixMpsApi.getMPSProjects().first() as MPSProject).create(
                         element,
                         sourceNode.getNode().getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())!!,
                         sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())!!.let { ModuleId.fromString(it) },
@@ -342,6 +337,7 @@ data class MPSDevkitAsNode(override val module: DevKit) : MPSModuleAsNode<DevKit
                 val originalRef = requireNotNull(refNode.getReferenceTargetRef(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference())) {
                     "Reference to module is not set: ${refNode.asLegacyNode().asData().toJson()}"
                 }
+                @Suppress("removal")
                 MPSArea(contextModule.repository ?: MPSModuleRepository.getInstance()).resolveNode(originalRef)?.asWritableNode()
             }
             checkNotNull(moduleNode)
@@ -425,8 +421,9 @@ private fun <T : SModel> Iterable<T>.withoutDescriptorModel(): List<T> {
 
 private fun SModule.getCompileInMPS(): Boolean {
     val module = this
-    if (module is DevKit || module !is AbstractModule) {
+    if (module !is Solution) {
         return false
     }
-    return module.moduleDescriptor?.compileInMPS ?: false
+    @Suppress("removal")
+    return module.moduleDescriptor.compileInMPS
 }

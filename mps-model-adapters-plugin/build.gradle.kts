@@ -1,4 +1,5 @@
 import org.modelix.copyMps
+import org.modelix.mpsMajorVersion
 
 plugins {
     `modelix-kotlin-jvm`
@@ -14,6 +15,7 @@ dependencies {
         exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
         exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-jdk8")
     }
+    testImplementation(kotlin("test"))
 }
 
 intellij {
@@ -33,6 +35,10 @@ tasks {
 
     runIde {
         autoReloadPlugins.set(true)
+    }
+
+    test {
+        onlyIf { mpsMajorVersion != "2020.3" } // incompatible with the intellij plugin
     }
 
     val mpsPluginDir = project.findProperty("mps.plugins.dir")?.toString()?.let { file(it) }

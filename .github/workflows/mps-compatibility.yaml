@@ -17,6 +17,7 @@ jobs:
     strategy:
       matrix:
         version:
+          - "2020.3"
           - "2021.1"
           - "2021.2"
           - "2021.3"
@@ -42,6 +43,7 @@ jobs:
         run: >-
           ./gradlew --build-cache
           :bulk-model-sync-mps:build
+          :bulk-model-sync-lib:mps-test:build
           :metamodel-export:build
           :mps-model-adapters:build
           :mps-model-adapters-plugin:build

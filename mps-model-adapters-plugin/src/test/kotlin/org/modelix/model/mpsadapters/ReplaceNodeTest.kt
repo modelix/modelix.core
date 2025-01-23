@@ -6,6 +6,7 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.IReplaceableNode
+import kotlin.test.assertFailsWith
 
 class ReplaceNodeTest : MpsAdaptersTestBase("SimpleProject") {
 
@@ -86,23 +87,23 @@ class ReplaceNodeTest : MpsAdaptersTestBase("SimpleProject") {
         assertEquals(newConcept, newNode.getConceptReference())
     }
 
-    fun `test fail to replace node with null concept`() = runCommandOnEDT {
+    fun `test fail to replace node with null concept`(): Unit = runCommandOnEDT {
         val rootNode = getRootUnderTest()
         val nodeToReplace = rootNode.allChildren.first() as IReplaceableNode
 
         val expectedMessage = "Cannot replace node `method1` with a null concept. Explicitly specify a concept (e.g., `BaseConcept`)."
-        assertThrows(IllegalArgumentException::class.java, expectedMessage) {
+        assertFailsWith(IllegalArgumentException::class, expectedMessage) {
             nodeToReplace.replaceNode(null)
         }
     }
 
-    fun `test fail to replace node with non mps concept`() = runCommandOnEDT {
+    fun `test fail to replace node with non mps concept`(): Unit = runCommandOnEDT {
         val rootNode = getRootUnderTest()
         val nodeToReplace = rootNode.allChildren.first() as IReplaceableNode
         val newConcept = ConceptReference("notMpsConcept")
 
         val expectedMessage = "Concept UID `notMpsConcept` cannot be parsed as MPS concept."
-        assertThrows(IllegalArgumentException::class.java, expectedMessage) {
+        assertFailsWith(IllegalArgumentException::class, expectedMessage) {
             nodeToReplace.replaceNode(newConcept)
         }
     }

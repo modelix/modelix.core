@@ -1,4 +1,5 @@
 import org.modelix.copyMps
+import org.modelix.mpsMajorVersion
 
 plugins {
     `modelix-kotlin-jvm`
@@ -20,6 +21,7 @@ dependencies {
     testImplementation(libs.kotlin.serialization.json)
     testImplementation(libs.xmlunit.matchers)
     testImplementation(libs.jimfs)
+    testImplementation(libs.modelix.mpsApi)
 }
 
 intellij {
@@ -33,5 +35,9 @@ tasks {
     // * > Cannot find IDE platform prefix. Please create a bug report at https://github.com/jetbrains/gradle-intellij-plugin. As a workaround specify `idea.platform.prefix` system property for task `buildSearchableOptions` manually.
     buildSearchableOptions {
         enabled = false
+    }
+
+    test {
+        onlyIf { mpsMajorVersion != "2020.3" } // incompatible with the intellij plugin
     }
 }

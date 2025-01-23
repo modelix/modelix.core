@@ -9,6 +9,7 @@ import com.intellij.openapi.project.ex.ProjectManagerEx
 import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.TestApplicationManager
 import com.intellij.testFramework.UsefulTestCase
+import com.intellij.util.io.delete
 import jetbrains.mps.ide.ThreadUtils
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.project.AbstractModule
@@ -16,7 +17,6 @@ import jetbrains.mps.project.MPSProject
 import jetbrains.mps.smodel.Language
 import jetbrains.mps.smodel.MPSModuleRepository
 import org.jetbrains.mps.openapi.model.EditableSModel
-import org.jetbrains.mps.openapi.model.SaveOptions
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
@@ -25,13 +25,13 @@ import org.modelix.model.data.asData
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.ObjectStoreCache
-import org.modelix.model.mpsadapters.MPSContextProject
 import org.modelix.model.mpsadapters.asReadableNode
 import org.modelix.model.mpsadapters.asWritableNode
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.sync.bulk.ModelSynchronizer
 import org.modelix.model.sync.bulk.NodeAssociationFromModelServer
 import org.modelix.model.sync.bulk.NodeAssociationToModelServer
+import org.modelix.mps.api.ModelixMpsApi
 import org.modelix.mps.model.sync.bulk.MPSProjectSyncFilter
 import org.w3c.dom.Element
 import java.io.File
@@ -39,7 +39,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.absolute
-import kotlin.io.path.deleteRecursively
 
 class RecreateProjectFromModelServerTest : UsefulTestCase() {
 
@@ -114,7 +113,7 @@ class RecreateProjectFromModelServerTest : UsefulTestCase() {
                     targetRoot = mpsRoot,
                     nodeAssociation = NodeAssociationFromModelServer(branch, mpsRoot.getModel()),
                 )
-                MPSContextProject.contextValue.computeWith(mpsProject) {
+                ModelixMpsApi.runWithProject(mpsProject) {
                     modelSynchronizer.synchronize()
                 }
             }
@@ -145,7 +144,7 @@ class RecreateProjectFromModelServerTest : UsefulTestCase() {
         val projectDirParent = Path.of("build", "test-projects").absolute()
         projectDirParent.toFile().mkdirs()
         val projectDir = Files.createTempDirectory(projectDirParent, "mps-project")
-        projectDir.deleteRecursively()
+        projectDir.delete(recursively = true)
         projectDir.toFile().mkdirs()
         projectDir.toFile().deleteOnExit()
         val options = OpenProjectTask().withProjectName("test-project")
@@ -223,7 +222,7 @@ private fun Project.captureFileContents(): Map<String, String> {
                 module as AbstractModule
                 module.save()
                 for (model in module.models.filterIsInstance<EditableSModel>()) {
-                    model.save(SaveOptions.FORCE)
+                    ModelixMpsApi.forceSave(model)
                 }
             }
         }

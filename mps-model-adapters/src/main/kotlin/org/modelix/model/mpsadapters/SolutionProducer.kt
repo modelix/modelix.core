@@ -14,8 +14,6 @@ import jetbrains.mps.project.structure.modules.SolutionDescriptor
 import jetbrains.mps.smodel.GeneralModuleFactory
 import jetbrains.mps.smodel.Generator
 import jetbrains.mps.smodel.Language
-import jetbrains.mps.smodel.ModuleDependencyVersions
-import jetbrains.mps.smodel.language.LanguageRegistry
 import jetbrains.mps.vfs.IFile
 
 class SolutionProducer(private val myProject: MPSProject) {
@@ -32,10 +30,6 @@ class SolutionProducer(private val myProject: MPSProject) {
         val descriptor: SolutionDescriptor = createSolutionDescriptor(namespace, id, descriptorFile)
         val module = GeneralModuleFactory().instantiate(descriptor, descriptorFile) as Solution
         myProject.addModule(module)
-        ModuleDependencyVersions(
-            myProject.getComponent(LanguageRegistry::class.java),
-            myProject.repository,
-        ).update(module)
         module.save()
         return module
     }
@@ -72,10 +66,6 @@ class LanguageProducer(private val myProject: MPSProject) {
         val descriptor = createDescriptor(namespace, id, descriptorFile)
         val module = GeneralModuleFactory().instantiate(descriptor, descriptorFile) as Language
         myProject.addModule(module)
-        ModuleDependencyVersions(
-            myProject.getComponent(LanguageRegistry::class.java),
-            myProject.repository,
-        ).update(module)
         module.save()
         return module
     }
@@ -147,10 +137,6 @@ class DevkitProducer(private val myProject: MPSProject) {
         val descriptor = createDescriptor(namespace, id, descriptorFile)
         val module = GeneralModuleFactory().instantiate(descriptor, descriptorFile) as DevKit
         myProject.addModule(module)
-        ModuleDependencyVersions(
-            myProject.getComponent(LanguageRegistry::class.java),
-            myProject.repository,
-        ).update(module)
         module.save()
         return module
     }

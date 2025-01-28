@@ -1,9 +1,11 @@
 package org.modelix
 
 import org.gradle.api.Project
+import org.gradle.api.artifacts.ModuleDependency
 import org.gradle.api.file.Directory
 import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.dependencies
+import org.gradle.kotlin.dsl.exclude
 import java.io.File
 import java.util.zip.ZipInputStream
 
@@ -100,4 +102,15 @@ fun Project.copyMps(): File {
 
     println("Extracting MPS done.")
     return mpsHome
+}
+
+val excludeMPSLibraries: (ModuleDependency).() -> Unit = {
+    exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-core")
+    exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-jdk8")
+    exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-swing")
+    exclude("org.jetbrains.kotlin", "kotlin-stdlib")
+    exclude("org.jetbrains.kotlin", "kotlin-stdlib-common")
+    exclude("org.jetbrains.kotlin", "kotlin-stdlib-jdk7")
+    exclude("org.jetbrains.kotlin", "kotlin-stdlib-jdk8")
+    exclude("org.jetbrains", "annotations")
 }

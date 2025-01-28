@@ -1,4 +1,5 @@
 import org.modelix.copyMps
+import org.modelix.excludeMPSLibraries
 import org.modelix.mpsMajorVersion
 
 plugins {
@@ -14,10 +15,10 @@ plugins {
 }
 
 dependencies {
-    testImplementation(project(":bulk-model-sync-lib"))
-    testImplementation(project(":bulk-model-sync-mps"))
-    testImplementation(project(":mps-model-adapters"))
-    testImplementation(project(":model-datastructure"))
+    testImplementation(project(":bulk-model-sync-lib"), excludeMPSLibraries)
+    testImplementation(project(":bulk-model-sync-mps"), excludeMPSLibraries)
+    testImplementation(project(":mps-model-adapters"), excludeMPSLibraries)
+    testImplementation(project(":model-datastructure"), excludeMPSLibraries)
     testImplementation(libs.kotlin.serialization.json)
     testImplementation(libs.xmlunit.matchers)
     testImplementation(libs.jimfs)

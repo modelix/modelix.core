@@ -92,7 +92,7 @@ interface INodeReferenceSerializer {
                 serializer.prefix + INodeReferenceSerializerEx.SEPARATOR + serializer.serialize(ref)
             } else {
                 legacySerializers.map { it.serialize(ref) }.firstOrNull { it != null }
-                    ?: throw RuntimeException("No serializer found for ${ref::class}")
+                    ?: ref.serialize()
             }
         }
 

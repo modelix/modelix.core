@@ -6,6 +6,7 @@ import kotlinx.serialization.json.Json
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
+import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.LocalPNodeReference
@@ -105,12 +106,24 @@ data class NodeData(
     val properties: Map<String, String> = emptyMap(),
     val references: Map<String, String> = emptyMap(),
 ) {
+
+    fun normalize(): NodeData = copy(
+        children = children.map { it.normalize() },
+        properties = properties.entries.sortedBy { it.key }.associate { it.key to it.value },
+        references = references.entries.sortedBy { it.key }.associate { it.key to it.value },
+    )
+
+    fun toJson() = prettyJson.encodeToString(this)
+
     companion object {
+        private val prettyJson = Json { prettyPrint = true }
 
         /**
          * Users should not use this directly. Use [INode.getOriginalReference].
          */
         const val ID_PROPERTY_KEY = "#originalRef#"
+
+        val ID_PROPERTY_REF = IPropertyReference.fromIdAndName(ID_PROPERTY_KEY, ID_PROPERTY_KEY)
 
         @Deprecated("Use ID_PROPERTY_KEY", replaceWith = ReplaceWith("ID_PROPERTY_KEY"))
         const val idPropertyKey = ID_PROPERTY_KEY

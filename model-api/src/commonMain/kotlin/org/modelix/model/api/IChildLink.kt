@@ -31,12 +31,17 @@ interface IChildLink : ILink, IChildLinkDefinition {
         get() = true
 
     override fun toReference(): IChildLinkReference = IChildLinkReference.fromIdAndName(getUID(), getSimpleName())
+
+    override fun toLegacy(): IChildLink = this
 }
 
 sealed interface IChildLinkDefinition : ILinkDefinition {
     val isMultiple: Boolean
     val isOrdered: Boolean
     override fun toReference(): IChildLinkReference
+
+    @Deprecated("use IChildLinkReference or IChildLinkDefinition instead of IChildLink")
+    override fun toLegacy(): IChildLink
 }
 
 fun IChildLink?.toReference(): IChildLinkReference = this?.toReference() ?: NullChildLinkReference
@@ -49,6 +54,8 @@ sealed interface IChildLinkReference : ILinkReference {
     fun getIdOrNameOrNull(): String? = getIdOrName()
 
     fun getNameOrIdOrNull(): String? = getNameOrId()
+
+    fun matches(other: IChildLinkReference): Boolean
 
     companion object {
         /**
@@ -103,6 +110,16 @@ object NullChildLinkReference : AbstractChildLinkReference() {
     override fun getIdOrNameOrNull(): String? = null
 
     override fun getNameOrIdOrNull(): String? = null
+
+    override fun matches(other: IChildLinkReference): Boolean {
+        return when (other) {
+            is ChildLinkReferenceByIdAndName -> false
+            is ChildLinkReferenceByName -> false
+            is ChildLinkReferenceByUID -> false
+            NullChildLinkReference -> true
+            is UnclassifiedChildLinkReference -> other.value == "null"
+        }
+    }
 }
 
 @Serializable
@@ -110,6 +127,17 @@ data class UnclassifiedChildLinkReference(val value: String) : AbstractChildLink
     override fun getStringValue(): String = value
     override fun getIdOrName(): String = value
     override fun getNameOrId(): String = value
+    override fun getUID(): String = value
+    override fun getSimpleName(): String = value
+    override fun matches(other: IChildLinkReference): Boolean {
+        return when (other) {
+            is ChildLinkReferenceByIdAndName -> value == other.uid || value == other.name
+            is ChildLinkReferenceByName -> value == other.name
+            is ChildLinkReferenceByUID -> value == other.uid
+            NullChildLinkReference -> value == "null"
+            is UnclassifiedChildLinkReference -> value == other.value
+        }
+    }
 }
 
 @Serializable
@@ -117,6 +145,15 @@ data class ChildLinkReferenceByName(override val name: String) : AbstractChildLi
     override fun getSimpleName(): String = name
     override fun getIdOrName(): String = name
     override fun getNameOrId(): String = name
+    override fun matches(other: IChildLinkReference): Boolean {
+        return when (other) {
+            is ChildLinkReferenceByIdAndName -> name == other.name
+            is ChildLinkReferenceByName -> name == other.name
+            is ChildLinkReferenceByUID -> false
+            NullChildLinkReference -> false
+            is UnclassifiedChildLinkReference -> name == other.value
+        }
+    }
 }
 
 @Serializable
@@ -124,6 +161,15 @@ data class ChildLinkReferenceByUID(val uid: String) : AbstractChildLinkReference
     override fun getUID(): String = uid
     override fun getIdOrName(): String = uid
     override fun getNameOrId(): String = uid
+    override fun matches(other: IChildLinkReference): Boolean {
+        return when (other) {
+            is ChildLinkReferenceByIdAndName -> uid == other.uid
+            is ChildLinkReferenceByName -> false
+            is ChildLinkReferenceByUID -> uid == other.uid
+            NullChildLinkReference -> false
+            is UnclassifiedChildLinkReference -> uid == other.value
+        }
+    }
 }
 
 @Serializable
@@ -132,6 +178,15 @@ data class ChildLinkReferenceByIdAndName(val uid: String, override val name: Str
     override fun getSimpleName(): String = name
     override fun getIdOrName(): String = uid
     override fun getNameOrId(): String = name
+    override fun matches(other: IChildLinkReference): Boolean {
+        return when (other) {
+            is ChildLinkReferenceByIdAndName -> uid == other.uid
+            is ChildLinkReferenceByName -> name == other.name
+            is ChildLinkReferenceByUID -> uid == other.uid
+            NullChildLinkReference -> false
+            is UnclassifiedChildLinkReference -> uid == other.value || name == other.value
+        }
+    }
 }
 
 @Deprecated("Use ChildLinkReferenceByName")
@@ -142,6 +197,8 @@ data class ChildLinkFromName(override val name: String) : LinkFromName(), IChild
         get() = throw UnsupportedOperationException()
 
     override fun toReference(): IChildLinkReference = UnclassifiedChildLinkReference(name)
+
+    override fun toLegacy(): IChildLink = this
 }
 
 @Deprecated("Use NullChildLinkReference")
@@ -169,4 +226,6 @@ object NullChildLink : IChildLink {
         get() = true
 
     override fun toReference(): IChildLinkReference = NullChildLinkReference
+
+    override fun toLegacy(): IChildLink = this
 }

@@ -1,4 +1,6 @@
 import org.modelix.copyMps
+import org.modelix.excludeMPSLibraries
+import org.modelix.mpsMajorVersion
 
 plugins {
     `modelix-kotlin-jvm`
@@ -7,13 +9,8 @@ plugins {
 }
 
 dependencies {
-    testImplementation(project(":mps-model-adapters")) {
-        // MPS provides the Kotlin standard library and coroutines.
-        // Bundling different versions of the same library can cause the plugin to break.
-        exclude(group = "org.jetbrains.kotlin")
-        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
-        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-jdk8")
-    }
+    testImplementation(project(":mps-model-adapters"), excludeMPSLibraries)
+    testImplementation(kotlin("test"))
 }
 
 intellij {
@@ -33,6 +30,10 @@ tasks {
 
     runIde {
         autoReloadPlugins.set(true)
+    }
+
+    test {
+        onlyIf { mpsMajorVersion != "2020.3" } // incompatible with the intellij plugin
     }
 
     val mpsPluginDir = project.findProperty("mps.plugins.dir")?.toString()?.let { file(it) }

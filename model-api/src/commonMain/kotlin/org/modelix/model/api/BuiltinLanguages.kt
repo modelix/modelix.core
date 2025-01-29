@@ -197,11 +197,55 @@ object BuiltinLanguages {
             directSuperConcepts = listOf(Module),
         ) {
             init { addConcept(this) }
+
+            val generators = SimpleChildLink(
+                simpleName = "generators",
+                isMultiple = true,
+                isOptional = true,
+                isOrdered = false,
+                targetConcept = Generator,
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313/7018594982789597990",
+            ).also(this::addChildLink)
         }
 
         object DevKit : SimpleConcept(
             conceptName = "DevKit",
             uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/7341098702109598213",
+            directSuperConcepts = listOf(Module),
+        ) {
+            init { addConcept(this) }
+
+            val exportedLanguages = SimpleChildLink(
+                simpleName = "exportedLanguages",
+                isMultiple = true,
+                isOptional = true,
+                isOrdered = false,
+                targetConcept = ModuleReference,
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313/3386077560723097553",
+            ).also(this::addChildLink)
+
+            val exportedSolutions = SimpleChildLink(
+                simpleName = "exportedSolutions",
+                isMultiple = true,
+                isOptional = true,
+                isOrdered = false,
+                targetConcept = ModuleReference,
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313/3386077560723097554",
+            ).also(this::addChildLink)
+
+            val extendedDevkits = SimpleChildLink(
+                simpleName = "extendedDevkits",
+                isMultiple = true,
+                isOptional = true,
+                isOrdered = false,
+                targetConcept = ModuleReference,
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313/3386077560723097555",
+            ).also(this::addChildLink)
+        }
+
+        object Generator : SimpleConcept(
+            conceptName = "Generator",
+            uid = "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/7018594982789597991",
             directSuperConcepts = listOf(Module),
         ) {
             init { addConcept(this) }
@@ -249,6 +293,7 @@ object BuiltinLanguages {
         ) {
             init { addConcept(this) }
 
+            @Deprecated("Use Repository.modules")
             val modules = SimpleChildLink(
                 simpleName = "modules",
                 isMultiple = true,

@@ -6,13 +6,13 @@ class AllChildrenActuallyReturnsAllChildrenTest : MpsAdaptersTestBase("SimplePro
 
     fun `test repository adapter consistency`() {
         readAction {
-            checkAdapterConsistence(MPSRepositoryAsNode(mpsProject.repository))
+            checkAdapterConsistence(mpsProject.repository.asLegacyNode())
         }
     }
 
     fun `test module adapter consistency`() {
         readAction {
-            for (module in mpsProject.repository.modules.map { MPSModuleAsNode(it) }) {
+            for (module in mpsProject.repository.modules.map { MPSModuleAsNode(it).asLegacyNode() }) {
                 checkAdapterConsistence(module)
             }
         }
@@ -20,7 +20,7 @@ class AllChildrenActuallyReturnsAllChildrenTest : MpsAdaptersTestBase("SimplePro
 
     fun `test model adapter consistency`() {
         readAction {
-            for (model in mpsProject.repository.modules.flatMap { it.models }.map { MPSModelAsNode(it) }) {
+            for (model in mpsProject.repository.modules.flatMap { it.models }.map { MPSModelAsNode(it).asLegacyNode() }) {
                 checkAdapterConsistence(model)
             }
         }

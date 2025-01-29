@@ -1,17 +1,19 @@
 package org.modelix
 
 import org.gradle.api.Project
+import org.gradle.api.artifacts.ModuleDependency
 import org.gradle.api.file.Directory
 import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.dependencies
+import org.gradle.kotlin.dsl.exclude
 import java.io.File
 import java.util.zip.ZipInputStream
 
 val Project.mpsMajorVersion: String get() {
-    if (project != rootProject) return rootProject.mpsVersion
+    if (project != rootProject) return rootProject.mpsMajorVersion
     return project.findProperty("mps.version.major")?.toString()?.takeIf { it.isNotEmpty() }
         ?: project.findProperty("mps.version")?.toString()?.takeIf { it.isNotEmpty() }?.replace(Regex("""(20\d\d\.\d+).*"""), "$1")
-        ?: "2021.1"
+        ?: "2024.1"
 }
 
 val Project.mpsVersion: String get() {
@@ -25,11 +27,12 @@ val Project.mpsVersion: String get() {
                     "2021.1" to "2021.1.4",
                     "2021.2" to "2021.2.6",
                     "2021.3" to "2021.3.5",
-                    "2022.2" to "2022.2.3",
-                    "2022.3" to "2022.3.1",
-                    "2023.2" to "2023.2",
-                    "2023.3" to "2023.3",
-                    "2024.1" to "2024.1-EAP1",
+                    "2022.2" to "2022.2.4",
+                    "2022.3" to "2022.3.3",
+                    "2023.2" to "2023.2.2",
+                    "2023.3" to "2023.3.2",
+                    "2024.1" to "2024.1.1",
+                    "2024.3" to "2024.3",
                 )[it],
             ) { "Unknown MPS version: $it" }
         }
@@ -99,4 +102,15 @@ fun Project.copyMps(): File {
 
     println("Extracting MPS done.")
     return mpsHome
+}
+
+val excludeMPSLibraries: (ModuleDependency).() -> Unit = {
+    exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-core")
+    exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-jdk8")
+    exclude("org.jetbrains.kotlinx", "kotlinx-coroutines-swing")
+    exclude("org.jetbrains.kotlin", "kotlin-stdlib")
+    exclude("org.jetbrains.kotlin", "kotlin-stdlib-common")
+    exclude("org.jetbrains.kotlin", "kotlin-stdlib-jdk7")
+    exclude("org.jetbrains.kotlin", "kotlin-stdlib-jdk8")
+    exclude("org.jetbrains", "annotations")
 }

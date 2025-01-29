@@ -35,6 +35,7 @@ import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IRoleReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.LocalPNodeReference
+import org.modelix.model.api.NodeReference
 import org.modelix.model.api.NullChildLinkReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.async.ChildrenChangedEvent
@@ -236,9 +237,10 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
 
     private fun CPNodeRef.convertReference(): INodeReference {
         val targetRef = this
-        return when {
-            targetRef.isLocal -> PNodeReference(targetRef.elementId, treeData.id)
-            targetRef is CPNodeRef.ForeignRef -> org.modelix.model.api.INodeReferenceSerializer.deserialize(targetRef.serializedRef)
+        return when (targetRef) {
+            is CPNodeRef.LocalRef -> PNodeReference(targetRef.elementId, treeData.id)
+            is CPNodeRef.GlobalRef -> PNodeReference(targetRef.elementId, targetRef.treeId)
+            is CPNodeRef.ForeignRef -> NodeReference(targetRef.serializedRef)
             else -> throw UnsupportedOperationException("Unsupported reference: $targetRef")
         }
     }

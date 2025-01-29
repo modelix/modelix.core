@@ -9,7 +9,7 @@ class ChangeReferenceTest : MpsAdaptersTestBase("SimpleProject") {
         // This is some reference link that is technically not part of the concept of the node it is used with.
         // But for this test, this is fine because nodes might have invalid references.
         val referenceLink = BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model
-        val repositoryNode: INode = MPSRepositoryAsNode(mpsProject.repository)
+        val repositoryNode: INode = mpsProject.repository.asLegacyNode()
         runCommandOnEDT {
             val module = repositoryNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Repository.modules)
                 .single { it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name) == "Solution1" }
@@ -27,7 +27,7 @@ class ChangeReferenceTest : MpsAdaptersTestBase("SimpleProject") {
 
     fun testCanNotSetNonMPSNodeAsReferenceTarget() {
         val referenceLink = BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model
-        val repositoryNode: INode = MPSRepositoryAsNode(mpsProject.repository)
+        val repositoryNode: INode = mpsProject.repository.asLegacyNode()
         runCommandOnEDT {
             val module = repositoryNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Repository.modules)
                 .single { it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name) == "Solution1" }
@@ -39,7 +39,7 @@ class ChangeReferenceTest : MpsAdaptersTestBase("SimpleProject") {
                 rootNode.setReferenceTarget(referenceLink, model)
                 fail("Expected exception")
             } catch (e: IllegalArgumentException) {
-                assertEquals(e.message, "`target` has to be an `MPSNode` or `null`.")
+                assertEquals(e.message, "`target` has to be an `MPSWritableNode` or `null`.")
             }
         }
     }

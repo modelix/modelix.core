@@ -2,7 +2,7 @@ package org.modelix.model.sync.bulk
 
 import gnu.trove.map.TLongObjectMap
 import gnu.trove.map.hash.TLongObjectHashMap
-import org.modelix.model.api.INode
+import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
 
@@ -36,13 +36,15 @@ class InvalidationTree(val sizeLimit: Int) : ModelSynchronizer.IFilter {
         invalidate(containmentPath)
     }
 
-    override fun needsDescentIntoSubtree(subtreeRoot: INode): Boolean {
+    override fun needsDescentIntoSubtree(subtreeRoot: IReadableNode): Boolean {
+        val subtreeRoot = subtreeRoot.asLegacyNode()
         require(subtreeRoot is PNodeAdapter)
         val path = subtreeRoot.branch.transaction.tree.ancestorsAndSelf(subtreeRoot.nodeId).toList().asReversed()
         return rootNode.needsDescentIntoSubtree(path, 0)
     }
 
-    override fun needsSynchronization(node: INode): Boolean {
+    override fun needsSynchronization(node: IReadableNode): Boolean {
+        val node = node.asLegacyNode()
         require(node is PNodeAdapter)
         val path = node.branch.transaction.tree.ancestorsAndSelf(node.nodeId).toList().asReversed()
         return rootNode.nodeNeedsUpdate(path, 0)

@@ -40,5 +40,6 @@ tasks {
 
     test {
         onlyIf { mpsMajorVersion != "2020.3" } // incompatible with the intellij plugin
+        jvmArgs("-Dintellij.platform.load.app.info.from.resources=true")
     }
 }

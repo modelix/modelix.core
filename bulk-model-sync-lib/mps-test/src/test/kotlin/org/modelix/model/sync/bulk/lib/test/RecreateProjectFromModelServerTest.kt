@@ -42,11 +42,6 @@ import kotlin.io.path.absolute
 
 class RecreateProjectFromModelServerTest : UsefulTestCase() {
 
-    init {
-        // workaround for MPS 2023.3 failing to start in test mode
-        System.setProperty("intellij.platform.load.app.info.from.resources", "true")
-    }
-
     protected lateinit var project: Project
 
     override fun runInDispatchThread() = false

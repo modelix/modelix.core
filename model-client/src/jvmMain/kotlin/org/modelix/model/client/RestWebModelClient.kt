@@ -26,6 +26,7 @@ import io.ktor.serialization.ContentConverter
 import io.ktor.util.reflect.TypeInfo
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
+import io.ktor.utils.io.core.Closeable
 import io.ktor.utils.io.core.readText
 import io.ktor.utils.io.readRemaining
 import kotlinx.coroutines.CancellationException
@@ -82,7 +83,7 @@ class RestWebModelClient @JvmOverloads constructor(
     private val authTokenProvider: (() -> String?)? = null,
     initialConnectionListeners: List<ConnectionListener> = emptyList(),
     providedClient: HttpClient? = null,
-) : IModelClient {
+) : IModelClient, Closeable {
 
     companion object {
         private val LOG = mu.KotlinLogging.logger {}
@@ -331,6 +332,10 @@ class RestWebModelClient @JvmOverloads constructor(
         }
         coroutineScope.cancel("model client disposed")
         watchdogJob?.cancel("model client disposed")
+    }
+
+    override fun close() {
+        dispose()
     }
 
     override fun getPendingSize(): Int = pendingWrites.get()

@@ -76,38 +76,42 @@ class KeyValueLikeModelServerTest {
 
     @Test
     fun `model client V1 can merge versions`() = runTest {
-        val clientV1 = RestWebModelClient(baseUrl = "http://localhost/", providedClient = client)
-        val clientV2 = createModelClient()
-        val repositoryId = RepositoryId("repo1")
-        val branchA = repositoryId.getBranchReference("branchA")
-        val branchB = repositoryId.getBranchReference("branchB")
-        clientV2.initRepositoryWithLegacyStorage(repositoryId)
-        clientV2.runWrite(branchA) { rootNode ->
-            rootNode.setPropertyValue("propertyA", "valueA")
-        }
-        clientV2.runWrite(branchB) { rootNode ->
-            rootNode.setPropertyValue("propertyB", "valueB")
-        }
-        val branchBHash = clientV2.pullHash(branchB)
+        RestWebModelClient(baseUrl = "http://localhost/", providedClient = client).use { clientV1 ->
+            createModelClient().use { clientV2 ->
+                val repositoryId = RepositoryId("repo1")
+                val branchA = repositoryId.getBranchReference("branchA")
+                val branchB = repositoryId.getBranchReference("branchB")
+                clientV2.initRepositoryWithLegacyStorage(repositoryId)
+                clientV2.runWrite(branchA) { rootNode ->
+                    rootNode.setPropertyValue("propertyA", "valueA")
+                }
+                clientV2.runWrite(branchB) { rootNode ->
+                    rootNode.setPropertyValue("propertyB", "valueB")
+                }
+                val branchBHash = clientV2.pullHash(branchB)
 
-        clientV1.putA(branchA.getKey(), branchBHash)
+                clientV1.putA(branchA.getKey(), branchBHash)
 
-        val branchAVersion = clientV2.pull(branchA, null) as CLVersion
-        assertTrue(branchAVersion.isMerge())
+                val branchAVersion = clientV2.pull(branchA, null) as CLVersion
+                assertTrue(branchAVersion.isMerge())
+            }
+        }
     }
 
     @Test
     fun `model client V1 can run a bulk query`() = runTest {
-        val clientV1 = RestWebModelClient(baseUrl = "http://localhost/", providedClient = client)
-        val clientV2 = createModelClient()
-        val repositoryId = RepositoryId("repo1")
-        val version = clientV2.initRepositoryWithLegacyStorage(repositoryId) as CLVersion
-        val treeHash = checkNotNull(version.treeHash) { "Tree has should be loaded." }
+        RestWebModelClient(baseUrl = "http://localhost/", providedClient = client).use { clientV1 ->
+            createModelClient().use { clientV2 ->
+                val repositoryId = RepositoryId("repo1")
+                val version = clientV2.initRepositoryWithLegacyStorage(repositoryId) as CLVersion
+                val treeHash = checkNotNull(version.treeHash) { "Tree has should be loaded." }
 
-        val bulkQuery = clientV1.storeCache.newBulkQuery()
-        val bulkQueryValue = bulkQuery.query(treeHash)
-        val bulkQueryResult = bulkQueryValue.getSynchronous()
+                val bulkQuery = clientV1.storeCache.newBulkQuery()
+                val bulkQueryValue = bulkQuery.query(treeHash)
+                val bulkQueryResult = bulkQueryValue.getSynchronous()
 
-        assertNotNull(bulkQueryResult)
+                assertNotNull(bulkQueryResult)
+            }
+        }
     }
 }

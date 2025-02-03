@@ -31,55 +31,59 @@ class RepositoryStorageBackwardsCompatiblityTest {
 
     @Test
     fun `model client V1 can create a repository that is visible to the V2 client`() = runTest {
-        val clientv2 = createModelClient()
-        val clientv1 = RestWebModelClient(baseUrl = "http://localhost/", providedClient = client)
-        val repositoryId = RepositoryId("repo1")
-        val branchReference = repositoryId.getBranchReference()
+        createModelClient().use { clientv2 ->
+            RestWebModelClient(baseUrl = "http://localhost/", providedClient = client).use { clientv1 ->
+                val repositoryId = RepositoryId("repo1")
+                val branchReference = repositoryId.getBranchReference()
 
-        assertEquals(listOf(), clientv2.listRepositories())
-        assertFails { clientv2.pullHash(branchReference) }
+                assertEquals(listOf(), clientv2.listRepositories())
+                assertFails { clientv2.pullHash(branchReference) }
 
-        val store = NonCachingObjectStore(clientv1)
-        val idGenerator = clientv1.idGenerator
-        val initialVersion = CLVersion.createRegularVersion(
-            id = idGenerator.generate(),
-            author = "unit-test",
-            tree = CLTree.builder(store).repositoryId(repositoryId).build(),
-            baseVersion = null,
-            operations = emptyArray(),
-        )
-        initialVersion.write()
-        clientv1.putA(branchReference.getKey(), initialVersion.getContentHash())
+                val store = NonCachingObjectStore(clientv1)
+                val idGenerator = clientv1.idGenerator
+                val initialVersion = CLVersion.createRegularVersion(
+                    id = idGenerator.generate(),
+                    author = "unit-test",
+                    tree = CLTree.builder(store).repositoryId(repositoryId).build(),
+                    baseVersion = null,
+                    operations = emptyArray(),
+                )
+                initialVersion.write()
+                clientv1.putA(branchReference.getKey(), initialVersion.getContentHash())
 
-        assertEquals(listOf(repositoryId), clientv2.listRepositories())
-        assertEquals(initialVersion.getContentHash(), clientv2.pullHash(branchReference))
+                assertEquals(listOf(repositoryId), clientv2.listRepositories())
+                assertEquals(initialVersion.getContentHash(), clientv2.pullHash(branchReference))
+            }
+        }
     }
 
     @Test
     fun `model client V2 can create a repository that is visible to the V1 client`() = runTest {
-        val clientv2 = createModelClient()
-        val clientv1 = RestWebModelClient(baseUrl = "http://localhost/", providedClient = client)
+        createModelClient().use { clientv2 ->
+            RestWebModelClient(baseUrl = "http://localhost/", providedClient = client).use { clientv1 ->
+                val repositoryId = RepositoryId("repo1")
+                val branchReference = repositoryId.getBranchReference()
+                assertEquals(listOf(), clientv2.listRepositories())
 
-        val repositoryId = RepositoryId("repo1")
-        val branchReference = repositoryId.getBranchReference()
-        assertEquals(listOf(), clientv2.listRepositories())
+                val initialVersion = clientv2.initRepository(repositoryId, legacyGlobalStorage = true)
 
-        val initialVersion = clientv2.initRepository(repositoryId, legacyGlobalStorage = true)
-
-        assertEquals(initialVersion.getContentHash(), clientv1.getA(branchReference.getKey()))
+                assertEquals(initialVersion.getContentHash(), clientv1.getA(branchReference.getKey()))
+            }
+        }
     }
 
     @Test
     fun `model client V2 can create a repository that is not visible to the V1 client`() = runTest {
-        val clientv2 = createModelClient()
-        val clientv1 = RestWebModelClient(baseUrl = "http://localhost/", providedClient = client)
+        createModelClient().use { clientv2 ->
+            RestWebModelClient(baseUrl = "http://localhost/", providedClient = client).use { clientv1 ->
+                val repositoryId = RepositoryId("repo1")
+                val branchReference = repositoryId.getBranchReference()
+                assertEquals(listOf(), clientv2.listRepositories())
 
-        val repositoryId = RepositoryId("repo1")
-        val branchReference = repositoryId.getBranchReference()
-        assertEquals(listOf(), clientv2.listRepositories())
+                clientv2.initRepository(repositoryId)
 
-        clientv2.initRepository(repositoryId)
-
-        assertEquals(null, clientv1.getA(branchReference.getKey()))
+                assertEquals(null, clientv1.getA(branchReference.getKey()))
+            }
+        }
     }
 }

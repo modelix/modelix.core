@@ -42,7 +42,7 @@ class MPSProjectSyncFilter(val projects: List<MPSProject>, val toMPS: Boolean) :
                 }
                 role.matches(BuiltinLanguages.MPSRepositoryConcepts.Repository.projects.toReference()) -> {
                     if (isMPSSide) {
-                        val included = projects.map { MPSProjectAsNode(it).asWritableNode().getNodeReference().serialize() }.toSet()
+                        val included = projects.map { MPSProjectAsNode(it).getNodeReference().serialize() }.toSet()
                         children.filter { included.contains(it.getNodeReference().serialize()) }
                     } else {
                         children

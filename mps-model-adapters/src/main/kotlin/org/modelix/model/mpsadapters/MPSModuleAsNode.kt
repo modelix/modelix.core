@@ -181,7 +181,7 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                     return moduleDescriptor.languageVersions.map { (language, version) ->
                         MPSSingleLanguageDependencyAsNode(language, moduleImporter = module)
                     } + moduleDescriptor.usedDevkits.map { devKit ->
-                        MPSDevKitDependencyAsNode(devKit, module).asWritableNode()
+                        MPSDevKitDependencyAsNode(devKit, module)
                     }
                 }
 
@@ -206,7 +206,7 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                             val name = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name.toReference()) ?: ""
                             val ref = jetbrains.mps.project.structure.modules.ModuleReference(name, ModuleId.regular(UUID.fromString(id)))
                             moduleDescriptor.usedDevkits.add(ref)
-                            MPSDevKitDependencyAsNode(ref, moduleImporter = element).asWritableNode()
+                            MPSDevKitDependencyAsNode(ref, moduleImporter = element)
                         }
                         else -> error("Unsupported: ${sourceNode.getConceptReference()}")
                     }

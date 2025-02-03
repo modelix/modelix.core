@@ -91,7 +91,7 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
                             modelImporter = element,
                         )
                     } + element.importedDevkits().map {
-                        MPSDevKitDependencyAsNode(it, modelImporter = element).asWritableNode()
+                        MPSDevKitDependencyAsNode(it, modelImporter = element)
                     }
                 }
 
@@ -120,7 +120,7 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
                             return MPSDevKitDependencyAsNode(
                                 moduleReference = ref,
                                 modelImporter = element,
-                            ).asWritableNode()
+                            )
                         }
                         else -> throw UnsupportedOperationException("Unsupported type: ${sourceNode.getConceptReference()}")
                     }

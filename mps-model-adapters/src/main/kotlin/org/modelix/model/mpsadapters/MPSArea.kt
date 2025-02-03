@@ -57,13 +57,13 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
             MPSModuleReference.PREFIX -> resolveMPSModuleReference(ref)?.asLegacyNode()
             MPSModelReference.PREFIX -> resolveMPSModelReference(ref)
             MPSNodeReference.PREFIX, "mps-node" -> resolveMPSNodeReference(ref) // mps-node for backwards compatibility
-            MPSDevKitDependencyReference.PREFIX -> resolveMPSDevKitDependencyReference(ref)
+            MPSDevKitDependencyReference.PREFIX -> resolveMPSDevKitDependencyReference(ref)?.asLegacyNode()
             MPSJavaModuleFacetReference.PREFIX -> resolveMPSJavaModuleFacetReference(ref)?.asLegacyNode()
             MPSModelImportReference.PREFIX -> resolveMPSModelImportReference(ref)?.asLegacyNode()
             MPSModuleDependencyReference.PREFIX -> resolveMPSModuleDependencyReference(ref)?.asLegacyNode()
             MPSModuleReferenceReference.PREFIX -> resolveMPSModuleReferenceReference(ref)?.asLegacyNode()
-            MPSProjectReference.PREFIX -> resolveMPSProjectReference(ref)
-            MPSProjectModuleReference.PREFIX -> resolveMPSProjectModuleReference(ref)
+            MPSProjectReference.PREFIX -> resolveMPSProjectReference(ref)?.asLegacyNode()
+            MPSProjectModuleReference.PREFIX -> resolveMPSProjectModuleReference(ref)?.asLegacyNode()
             MPSSingleLanguageDependencyReference.PREFIX -> resolveMPSSingleLanguageDependencyReference(ref)?.asLegacyNode()
             MPSRepositoryReference.PREFIX -> resolveMPSRepositoryReference()
             else -> null

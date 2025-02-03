@@ -71,7 +71,7 @@ data class MPSRepositoryAsNode(@get:JvmName("getRepository_") val repository: SR
             BuiltinLanguages.MPSRepositoryConcepts.Repository.projects.toReference() to object : IChildAccessor<SRepository> {
                 override fun read(element: SRepository): List<IWritableNode> {
                     return ModelixMpsApi.getMPSProjects()
-                        .map { MPSProjectAsNode(it as ProjectBase).asWritableNode() }
+                        .map { MPSProjectAsNode(it as ProjectBase) }
                 }
             },
         )

@@ -1,5 +1,6 @@
 import org.modelix.copyMps
 import org.modelix.excludeMPSLibraries
+import org.modelix.mpsHomeDir
 import org.modelix.mpsMajorVersion
 
 plugins {
@@ -35,6 +36,14 @@ tasks {
     test {
         onlyIf { mpsMajorVersion != "2020.3" } // incompatible with the intellij plugin
         jvmArgs("-Dintellij.platform.load.app.info.from.resources=true")
+
+        val arch = System.getProperty("os.arch")
+        val jnaDir = mpsHomeDir.get().asFile.resolve("lib/jna/$arch")
+        if (jnaDir.exists()) {
+            jvmArgs("-Djna.boot.library.path=${jnaDir.absolutePath}")
+            jvmArgs("-Djna.noclasspath=true")
+            jvmArgs("-Djna.nosys=true")
+        }
     }
 
     val mpsPluginDir = project.findProperty("mps.plugins.dir")?.toString()?.let { file(it) }

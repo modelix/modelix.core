@@ -30,7 +30,6 @@ import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.data.asData
 import org.modelix.mps.api.ModelixMpsApi
-import java.util.UUID
 
 fun MPSModuleAsNode(module: SModule) = MPSModuleAsNode.create(module)
 
@@ -155,10 +154,12 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
 
                     return when (sourceNode.getConceptReference()) {
                         BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.getReference() -> {
-                            val id = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid.toReference())
+                            val id = requireNotNull(sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid.toReference())) {
+                                "Has no ID: $sourceNode"
+                            }
                             val name = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name.toReference()) ?: ""
                             val version = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.version.toReference())?.toIntOrNull() ?: 0
-                            val ref = PersistenceFacade.getInstance().createModuleReference(ModuleId.regular(UUID.fromString(id)), name)
+                            val ref = PersistenceFacade.getInstance().createModuleReference(ModuleId.fromString(id), name)
                             moduleDescriptor.dependencyVersions[ref] = version
                             MPSModuleDependencyAsNode(element, ref)
                         }
@@ -197,14 +198,16 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                             val id = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid.toReference())
                             val name = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name.toReference()) ?: ""
                             val version = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version.toReference()) ?: ""
-                            val lang = MetaAdapterFactory.getLanguage(SLanguageId(UUID.fromString(id)), name)
+                            val lang = MetaAdapterFactory.getLanguage(SLanguageId.deserialize(id), name)
                             moduleDescriptor.languageVersions[lang] = version.toIntOrNull() ?: -1
                             MPSSingleLanguageDependencyAsNode(lang, moduleImporter = element)
                         }
                         BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency.getReference() -> {
-                            val id = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid.toReference())
+                            val id = requireNotNull(sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid.toReference())) {
+                                "Has no ID: $sourceNode"
+                            }
                             val name = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name.toReference()) ?: ""
-                            val ref = jetbrains.mps.project.structure.modules.ModuleReference(name, ModuleId.regular(UUID.fromString(id)))
+                            val ref = jetbrains.mps.project.structure.modules.ModuleReference(name, ModuleId.fromString(id))
                             moduleDescriptor.usedDevkits.add(ref)
                             MPSDevKitDependencyAsNode(ref, moduleImporter = element)
                         }

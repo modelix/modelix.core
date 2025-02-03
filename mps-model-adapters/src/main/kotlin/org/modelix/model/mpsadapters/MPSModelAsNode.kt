@@ -18,7 +18,6 @@ import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.data.asData
-import java.util.UUID
 
 data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
 
@@ -105,7 +104,7 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
                         BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.getReference() -> {
                             val id = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid.toReference())
                             val name = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name.toReference())
-                            val slang = SLanguageAdapterById(SLanguageId(UUID.fromString(id)), name ?: "")
+                            val slang = SLanguageAdapterById(SLanguageId.deserialize(id), name ?: "")
                             element.addLanguage(slang)
                             return MPSSingleLanguageDependencyAsNode(
                                 slang,
@@ -113,9 +112,11 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
                             )
                         }
                         BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency.getReference() -> {
-                            val id = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid.toReference())
+                            val id = requireNotNull(sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid.toReference())) {
+                                "Has no ID: $sourceNode"
+                            }
                             val name = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name.toReference())
-                            val ref = PersistenceFacade.getInstance().createModuleReference(ModuleId.regular(UUID.fromString(id)), name ?: "")
+                            val ref = PersistenceFacade.getInstance().createModuleReference(ModuleId.fromString(id), name ?: "")
                             element.addDevKit(ref)
                             return MPSDevKitDependencyAsNode(
                                 moduleReference = ref,

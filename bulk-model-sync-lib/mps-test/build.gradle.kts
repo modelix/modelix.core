@@ -39,7 +39,14 @@ tasks {
     }
 
     test {
-        onlyIf { mpsMajorVersion != "2020.3" } // incompatible with the intellij plugin
+        onlyIf {
+            !setOf(
+                "2020.3", // incompatible with the intellij plugin
+                "2021.2", // hangs when executed on CI
+                "2021.3", // hangs when executed on CI
+                "2022.2", // hangs when executed on CI
+            ).contains(mpsMajorVersion)
+        }
         jvmArgs("-Dintellij.platform.load.app.info.from.resources=true")
     }
 }

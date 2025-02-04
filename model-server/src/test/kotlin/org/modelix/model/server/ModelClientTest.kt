@@ -96,11 +96,11 @@ class ModelClientTest {
 
     @Test
     fun `can retrieve server id initially`() = runTest {
-        val modelClient = createModelClient()
+        createModelClient().use { modelClient ->
+            val serverId = modelClient.getA("server-id")
 
-        val serverId = modelClient.getA("server-id")
-
-        assertNotNull(serverId)
+            assertNotNull(serverId)
+        }
     }
 
     private fun ApplicationTestBuilder.createModelClient(): RestWebModelClient {

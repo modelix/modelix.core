@@ -29,7 +29,7 @@ fun NodeData.toJson(): String {
 }
 
 internal fun assertAllNodesConformToSpec(expectedRoot: NodeData, actualRoot: INode) {
-    val originalIdToNode = actualRoot.getDescendants(false).associateBy { it.originalId() }
+    val originalIdToNode = actualRoot.getDescendants(false).associateBy { it.getOriginalReference() }
     val originalIdToSpec = buildSpecIndex(expectedRoot)
     assertNodeConformsToSpec(expectedRoot, actualRoot, originalIdToSpec)
     for (expectedChild in expectedRoot.children) {
@@ -87,7 +87,7 @@ internal fun assertNodeReferencesConformToSpec(
 
 internal fun assertNodeChildOrderConformsToSpec(expected: NodeData, actual: INode) {
     val specifiedOrder = expected.children.groupBy { it.role }.mapValues { (_, children) -> children.map { it.originalId() } }
-    val actualOrder = actual.allChildren.groupBy { it.roleInParent }.mapValues { (_, children) -> children.map { it.originalId() } }
+    val actualOrder = actual.allChildren.groupBy { it.roleInParent }.mapValues { (_, children) -> children.map { it.getOriginalReference() } }
     assertEquals(specifiedOrder, actualOrder)
 }
 

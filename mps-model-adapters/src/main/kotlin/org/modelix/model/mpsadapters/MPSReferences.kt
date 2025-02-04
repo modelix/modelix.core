@@ -34,7 +34,6 @@ data class MPSNodeReference(val ref: SNodeReference) : INodeReference {
 
         internal const val PREFIX = "mps"
 
-        @Deprecated("INodeResolutionScope.resolveNode(INodeReference) is now responsible for deserializing supported references")
         fun tryConvert(ref: INodeReference): MPSNodeReference? {
             if (ref is MPSNodeReference) return ref
             val serialized = ref.serialize()

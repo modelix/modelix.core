@@ -7,10 +7,12 @@ import jetbrains.mps.project.ProjectManager
 import jetbrains.mps.project.facets.JavaModuleFacet
 import jetbrains.mps.project.structure.modules.ModuleReference
 import jetbrains.mps.smodel.GlobalModelAccess
+import jetbrains.mps.smodel.ModelImports
 import jetbrains.mps.smodel.SNodePointer
 import org.jetbrains.mps.openapi.model.SNodeReference
 import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
+import org.modelix.model.api.ChildLinkReferenceByUID
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
@@ -23,19 +25,19 @@ import org.modelix.model.area.IAreaReference
 
 data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
 
-    private fun resolveMPSModelReference(ref: INodeReference): INode {
+    private fun resolveMPSModelReference(ref: INodeReference): INode? {
         if (ref is MPSModelReference) {
-            return ref.modelReference.resolve(repository).let { MPSModelAsNode(it) }
+            return ref.modelReference.resolve(repository).let { MPSModelAsNode(it).asLegacyNode() }
         }
 
         val serialized = ref.serialize().substringAfter("${MPSModelReference.PREFIX}:")
         val modelRef = PersistenceFacade.getInstance().createModelReference(serialized)
 
-        return MPSModelAsNode(modelRef.resolve(repository))
+        return modelRef.resolve(repository)?.let { MPSModelAsNode(it).asLegacyNode() }
     }
 
     override fun getRoot(): INode {
-        return MPSRepositoryAsNode(repository)
+        return repository.asLegacyNode()
     }
 
     @Deprecated("use ILanguageRepository.resolveConcept")
@@ -52,16 +54,17 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
         val serialized = ref.serialize()
         val prefix = serialized.substringBefore(":")
         return when (prefix) {
-            MPSModuleReference.PREFIX -> resolveMPSModuleReference(ref)
+            MPSModuleReference.PREFIX -> resolveMPSModuleReference(ref)?.asLegacyNode()
             MPSModelReference.PREFIX -> resolveMPSModelReference(ref)
             MPSNodeReference.PREFIX, "mps-node" -> resolveMPSNodeReference(ref) // mps-node for backwards compatibility
-            MPSDevKitDependencyReference.PREFIX -> resolveMPSDevKitDependencyReference(ref)
-            MPSJavaModuleFacetReference.PREFIX -> resolveMPSJavaModuleFacetReference(ref)
-            MPSModelImportReference.PREFIX -> resolveMPSModelImportReference(ref)
-            MPSModuleDependencyReference.PREFIX -> resolveMPSModuleDependencyReference(ref)
-            MPSProjectReference.PREFIX -> resolveMPSProjectReference(ref)
-            MPSProjectModuleReference.PREFIX -> resolveMPSProjectModuleReference(ref)
-            MPSSingleLanguageDependencyReference.PREFIX -> resolveMPSSingleLanguageDependencyReference(ref)
+            MPSDevKitDependencyReference.PREFIX -> resolveMPSDevKitDependencyReference(ref)?.asLegacyNode()
+            MPSJavaModuleFacetReference.PREFIX -> resolveMPSJavaModuleFacetReference(ref)?.asLegacyNode()
+            MPSModelImportReference.PREFIX -> resolveMPSModelImportReference(ref)?.asLegacyNode()
+            MPSModuleDependencyReference.PREFIX -> resolveMPSModuleDependencyReference(ref)?.asLegacyNode()
+            MPSModuleReferenceReference.PREFIX -> resolveMPSModuleReferenceReference(ref)?.asLegacyNode()
+            MPSProjectReference.PREFIX -> resolveMPSProjectReference(ref)?.asLegacyNode()
+            MPSProjectModuleReference.PREFIX -> resolveMPSProjectModuleReference(ref)?.asLegacyNode()
+            MPSSingleLanguageDependencyReference.PREFIX -> resolveMPSSingleLanguageDependencyReference(ref)?.asLegacyNode()
             MPSRepositoryReference.PREFIX -> resolveMPSRepositoryReference()
             else -> null
         }
@@ -151,7 +154,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
         throw UnsupportedOperationException("Not implemented")
     }
 
-    private fun resolveMPSModuleReference(ref: INodeReference): MPSModuleAsNode? {
+    private fun resolveMPSModuleReference(ref: INodeReference): MPSModuleAsNode<*>? {
         val moduleRef = if (ref is MPSModuleReference) {
             ref.moduleReference
         } else {
@@ -162,7 +165,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
         return moduleRef.resolve(repository)?.let { MPSModuleAsNode(it) }
     }
 
-    private fun resolveMPSNodeReference(ref: INodeReference): MPSNode? {
+    private fun resolveMPSNodeReference(ref: INodeReference): INode? {
         if (ref is MPSNodeReference) {
             return resolveSNodeReferenceToMPSNode(ref.ref)
         }
@@ -175,7 +178,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
         return resolveSNodeReferenceToMPSNode(SNodePointer.deserialize(serializedMPSRef))
     }
 
-    private fun resolveSNodeReferenceToMPSNode(sNodeReference: SNodeReference): MPSNode? {
+    private fun resolveSNodeReferenceToMPSNode(sNodeReference: SNodeReference): INode? {
         return sNodeReference.resolve(repository)?.let { MPSNode(it) }
     }
 
@@ -194,13 +197,13 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
             .substringBefore(MPSDevKitDependencyReference.SEPARATOR)
 
         val importer = serialized.substringAfter(MPSDevKitDependencyReference.SEPARATOR)
-        val foundImporter = resolveNode(NodeReference(importer))
+        val foundImporter = resolveNode(NodeReference(importer))?.asWritableNode()
 
         val moduleId = PersistenceFacade.getInstance().createModuleId(serializedModuleId)
 
         return when (foundImporter) {
             is MPSModelAsNode -> foundImporter.findDevKitDependency(moduleId)
-            is MPSModuleAsNode -> foundImporter.findDevKitDependency(moduleId)
+            is MPSModuleAsNode<*> -> foundImporter.findDevKitDependency(moduleId)
             else -> null
         }
     }
@@ -236,10 +239,10 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
             PersistenceFacade.getInstance().createModelReference(serializedModelRef)
         }
 
-        val importedModel = importedModelRef.resolve(repository) ?: return null
         val importingModel = importingModelRef.resolve(repository) ?: return null
+        if (!ModelImports(importingModel).importedModels.contains(importedModelRef)) return null
 
-        return MPSModelImportAsNode(importedModel = importedModel, importingModel = importingModel)
+        return MPSModelImportAsNode(importedModel = importedModelRef, importingModel = importingModel)
     }
 
     private fun resolveMPSModuleDependencyReference(ref: INodeReference): MPSModuleDependencyAsNode? {
@@ -263,6 +266,23 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
         return userModuleReference.resolve(repository)
             ?.let { MPSModuleAsNode(it) }
             ?.findModuleDependency(usedModuleId)
+    }
+
+    private fun resolveMPSModuleReferenceReference(ref: INodeReference): MPSModuleReferenceAsNode? {
+        val ref = if (ref is MPSModuleReferenceReference) {
+            ref
+        } else {
+            val parts = ref.serialize().substringAfter("${MPSModuleReferenceReference.PREFIX}:").split(MPSModuleReferenceReference.SEPARATOR)
+            MPSModuleReferenceReference(
+                PersistenceFacade.getInstance().createModuleId(parts[0]),
+                ChildLinkReferenceByUID(parts[1]),
+                PersistenceFacade.getInstance().createModuleId(parts[2]),
+            )
+        }
+
+        val parent = MPSModuleAsNode(PersistenceFacade.getInstance().createModuleReference(ref.parent, "").resolve(repository) ?: return null)
+        return parent.getChildren(ref.link).filterIsInstance<MPSModuleReferenceAsNode>()
+            .find { it.target.moduleId == ref.target }
     }
 
     private fun resolveMPSProjectReference(ref: INodeReference): MPSProjectAsNode? {
@@ -331,18 +351,18 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
             .substringBefore(MPSSingleLanguageDependencyReference.SEPARATOR)
 
         val importer = serialized.substringAfter(MPSSingleLanguageDependencyReference.SEPARATOR)
-        val foundImporter = resolveNode(NodeReference(importer))
+        val foundImporter = resolveNode(NodeReference(importer))?.asWritableNode()
 
         val moduleId = PersistenceFacade.getInstance().createModuleId(serializedModuleId)
 
         return when (foundImporter) {
             is MPSModelAsNode -> foundImporter.findSingleLanguageDependency(moduleId)
-            is MPSModuleAsNode -> foundImporter.findSingleLanguageDependency(moduleId)
+            is MPSModuleAsNode<*> -> foundImporter.findSingleLanguageDependency(moduleId)
             else -> null
         }
     }
 
-    private fun resolveMPSRepositoryReference(): MPSRepositoryAsNode {
-        return MPSRepositoryAsNode(repository)
+    private fun resolveMPSRepositoryReference(): INode {
+        return repository.asLegacyNode()
     }
 }

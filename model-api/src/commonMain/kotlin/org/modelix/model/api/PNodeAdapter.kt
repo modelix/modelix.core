@@ -71,6 +71,16 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) :
         }
     }
 
+    override fun addNewChildren(
+        link: IChildLink,
+        index: Int,
+        concepts: List<IConceptReference?>,
+    ): List<INode> {
+        return branch.writeTransaction.addNewChildren(nodeId, link.key(this), index, concepts.toTypedArray()).map {
+            createAdapter(it)
+        }
+    }
+
     override fun addNewChild(role: IChildLink, index: Int, concept: IConcept?): INode {
         return createAdapter(branch.writeTransaction.addNewChild(nodeId, role.key(this), index, concept))
     }
@@ -155,6 +165,10 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) :
             notifyAccess()
             return branch.transaction.getRole(nodeId)
         }
+
+    override fun getContainmentLink(): IChildLink? {
+        return IChildLinkReference.fromUnclassifiedString(roleInParent).toLegacy()
+    }
 
     override val isValid: Boolean
         get() {

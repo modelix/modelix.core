@@ -10,7 +10,7 @@ class ChangePropertyTest : MpsAdaptersTestBase("SimpleProject") {
             assertEquals(1, mpsProject.projectModules.size)
         }
 
-        val repositoryNode: INode = MPSRepositoryAsNode(mpsProject.repository)
+        val repositoryNode: INode = mpsProject.repository.asLegacyNode()
 
         runCommandOnEDT {
             val module = repositoryNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Repository.modules)

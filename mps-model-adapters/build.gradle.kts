@@ -18,6 +18,7 @@ dependencies {
     implementation(libs.trove4j)
     implementation(kotlin("stdlib"))
     implementation(libs.kotlin.logging)
+    implementation(libs.modelix.mpsApi)
 }
 
 group = "org.modelix.mps"

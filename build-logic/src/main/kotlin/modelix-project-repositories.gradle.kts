@@ -2,11 +2,6 @@
 // because plugins like npm and intellij may override our settings
 repositories {
     val modelixRegex = "org\\.modelix.*"
-    mavenLocal {
-        content {
-            includeGroupByRegex(modelixRegex)
-        }
-    }
     gradlePluginPortal {
         content {
             excludeGroupByRegex(modelixRegex)
@@ -24,4 +19,5 @@ repositories {
             excludeGroupByRegex(modelixRegex)
         }
     }
+    mavenLocal()
 }

@@ -48,12 +48,12 @@ class ModelReplicationServerBackwardsCompatibilityTest {
                 .client(client)
                 .build()
             modelClientV2.init()
-            val modelClientV1 = RestWebModelClient(baseUrl = urlV1, providedClient = client)
+            RestWebModelClient(baseUrl = urlV1, providedClient = client).use { modelClientV1 ->
+                val initialVersion = modelClientV2.initRepository(repositoryId, legacyGlobalStorage = true)
 
-            val initialVersion = modelClientV2.initRepository(repositoryId, legacyGlobalStorage = true)
-
-            val branchVersionVisibleInV1 = modelClientV1.getA(defaultBranchRef.getKey())
-            assertEquals(initialVersion.getContentHash(), branchVersionVisibleInV1)
+                val branchVersionVisibleInV1 = modelClientV1.getA(defaultBranchRef.getKey())
+                assertEquals(initialVersion.getContentHash(), branchVersionVisibleInV1)
+            }
         }
     }
 
@@ -71,19 +71,20 @@ class ModelReplicationServerBackwardsCompatibilityTest {
                 .client(client)
                 .build()
             modelClientV2.init()
-            val modelClientV1 = RestWebModelClient(baseUrl = urlV1, providedClient = client)
-            val initialVersion = modelClientV2.initRepository(repositoryId, legacyGlobalStorage = true)
-            val branchVersionVisibleInV1BeforeDelete = modelClientV1.getA(branchRef.getKey())
-            assertEquals(
-                initialVersion.getContentHash(),
-                branchVersionVisibleInV1BeforeDelete,
-                "Test setup should create branch in a way that make it visible in the V1 API.",
-            )
+            RestWebModelClient(baseUrl = urlV1, providedClient = client).use { modelClientV1 ->
+                val initialVersion = modelClientV2.initRepository(repositoryId, legacyGlobalStorage = true)
+                val branchVersionVisibleInV1BeforeDelete = modelClientV1.getA(branchRef.getKey())
+                assertEquals(
+                    initialVersion.getContentHash(),
+                    branchVersionVisibleInV1BeforeDelete,
+                    "Test setup should create branch in a way that make it visible in the V1 API.",
+                )
 
-            modelClientV2.deleteBranch(branchRef)
+                modelClientV2.deleteBranch(branchRef)
 
-            val branchVersionVisibleInV1AfterDelete = modelClientV1.getA(branchRef.getKey())
-            assertNull(branchVersionVisibleInV1AfterDelete)
+                val branchVersionVisibleInV1AfterDelete = modelClientV1.getA(branchRef.getKey())
+                assertNull(branchVersionVisibleInV1AfterDelete)
+            }
         }
     }
 }

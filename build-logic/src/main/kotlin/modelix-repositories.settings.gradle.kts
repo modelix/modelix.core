@@ -1,11 +1,6 @@
 val modelixRegex = "org\\.modelix.*"
 pluginManagement {
     repositories {
-        mavenLocal {
-            content {
-                includeGroupByRegex(modelixRegex)
-            }
-        }
         gradlePluginPortal {
             content {
                 excludeGroupByRegex(modelixRegex)
@@ -22,6 +17,7 @@ pluginManagement {
                 includeGroupByRegex(modelixRegex)
             }
         }
+        mavenLocal()
     }
 }
 dependencyResolutionManagement {
@@ -44,5 +40,6 @@ dependencyResolutionManagement {
                 includeGroup("com.jetbrains")
             }
         }
+        mavenLocal()
     }
 }

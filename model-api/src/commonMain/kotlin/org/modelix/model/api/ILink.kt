@@ -16,6 +16,9 @@ interface ILink : IRole, ILinkDefinition {
 sealed interface ILinkDefinition : IRoleDefinition {
     val targetConcept: IConcept
     override fun toReference(): ILinkReference
+
+    @Deprecated("use ILinkReference or ILinkDefinition instead of ILink")
+    override fun toLegacy(): ILink
 }
 
 sealed interface ILinkReference : IRoleReference {

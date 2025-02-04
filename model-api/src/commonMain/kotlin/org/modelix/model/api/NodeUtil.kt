@@ -8,6 +8,22 @@ fun INode.getDescendants(includeSelf: Boolean): Sequence<INode> {
     }
 }
 
+fun IReadableNode.getDescendants(includeSelf: Boolean): Sequence<IReadableNode> {
+    return if (includeSelf) {
+        (sequenceOf(this) + this.getDescendants(false))
+    } else {
+        this.getAllChildren().asSequence().flatMap { it.getDescendants(true) }
+    }
+}
+
+fun IWritableNode.getDescendants(includeSelf: Boolean): Sequence<IWritableNode> {
+    return if (includeSelf) {
+        (sequenceOf(this) + this.getDescendants(false))
+    } else {
+        this.getAllChildren().asSequence().flatMap { it.getDescendants(true) }
+    }
+}
+
 fun INode?.getAncestor(concept: IConcept?, includeSelf: Boolean): INode? {
     if (this == null) {
         return null

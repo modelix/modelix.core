@@ -34,9 +34,9 @@ class ModelSynchronizerWithInvalidationTreeTest : ModelSynchronizerTest() {
                 val targetRoot = targetBranch.getRootNode()
                 val synchronizer = ModelSynchronizer(
                     filter = invalidationTree,
-                    sourceRoot = sourceRoot,
-                    targetRoot = targetRoot,
-                    nodeAssociation = BasicAssociation(targetBranch),
+                    sourceRoot = sourceRoot.asReadableNode(),
+                    targetRoot = targetRoot.asWritableNode(),
+                    nodeAssociation = NodeAssociationToModelServer(targetBranch),
                 )
                 synchronizer.synchronize()
             }
@@ -87,9 +87,9 @@ class ModelSynchronizerWithInvalidationTreeTest : ModelSynchronizerTest() {
         otBranch.runWrite {
             ModelSynchronizer(
                 filter = invalidationTree,
-                sourceRoot = sourceBranch.getRootNode(),
-                targetRoot = targetBranch.getRootNode(),
-                nodeAssociation = BasicAssociation(targetBranch),
+                sourceRoot = sourceBranch.getRootNode().asReadableNode(),
+                targetRoot = targetBranch.getRootNode().asWritableNode(),
+                nodeAssociation = NodeAssociationToModelServer(targetBranch),
             )
         }
         val operations = otBranch.getPendingChanges().first

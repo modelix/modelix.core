@@ -1,7 +1,7 @@
 package org.modelix.mps.model.sync.bulk
 
 import org.modelix.model.api.BuiltinLanguages
-import org.modelix.model.api.INode
+import org.modelix.model.api.IReadableNode
 import org.modelix.model.sync.bulk.ModelSynchronizer
 import org.modelix.model.sync.bulk.isModuleIncluded
 
@@ -20,9 +20,9 @@ class IncludedModulesFilter(
     val excludedModules: Collection<String> = emptySet(),
     val excludedModulesPrefixes: Collection<String> = emptySet(),
 ) : ModelSynchronizer.IFilter {
-    override fun needsDescentIntoSubtree(subtreeRoot: INode): Boolean {
+    override fun needsDescentIntoSubtree(subtreeRoot: IReadableNode): Boolean {
         if (subtreeRoot.getConceptReference() != BuiltinLanguages.MPSRepositoryConcepts.Module.getReference()) return true
-        val moduleName = subtreeRoot.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name) ?: return true
+        val moduleName = subtreeRoot.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference()) ?: return true
 
         return isModuleIncluded(
             moduleName = moduleName,
@@ -33,7 +33,7 @@ class IncludedModulesFilter(
         )
     }
 
-    override fun needsSynchronization(node: INode): Boolean {
+    override fun needsSynchronization(node: IReadableNode): Boolean {
         return true // We don't want to restrict this here. Other filters in the CompositeFilter will decide this.
     }
 }

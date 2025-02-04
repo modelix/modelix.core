@@ -10,6 +10,8 @@ interface IReferenceLink : ILink, IReferenceLinkDefinition {
 
     override fun toReference(): IReferenceLinkReference = IReferenceLinkReference.fromIdAndName(getUID(), getSimpleName())
 
+    override fun toLegacy(): IReferenceLink = this
+
     companion object {
         fun fromName(name: String): IReferenceLink = ReferenceLinkFromName(name)
     }
@@ -17,12 +19,17 @@ interface IReferenceLink : ILink, IReferenceLinkDefinition {
 
 sealed interface IReferenceLinkDefinition : ILinkDefinition {
     override fun toReference(): IReferenceLinkReference
+
+    @Deprecated("use IReferenceLinkReference or IReferenceLinkDefinition instead of IReferenceLink")
+    override fun toLegacy(): IReferenceLink
 }
 
 @Serializable
 sealed interface IReferenceLinkReference : ILinkReference {
 
     override fun toLegacy(): IReferenceLink
+
+    fun matches(other: IReferenceLinkReference): Boolean
 
     companion object {
         /**
@@ -65,6 +72,16 @@ data class UnclassifiedReferenceLinkReference(val value: String) : AbstractRefer
     override fun getStringValue(): String = value
     override fun getIdOrName(): String = value
     override fun getNameOrId(): String = value
+    override fun getUID(): String = value
+    override fun getSimpleName(): String = value
+    override fun matches(other: IReferenceLinkReference): Boolean {
+        return when (other) {
+            is ReferenceLinkReferenceByIdAndName -> value == other.uid || value == other.name
+            is ReferenceLinkReferenceByName -> value == other.name
+            is ReferenceLinkReferenceByUID -> value == other.uid
+            is UnclassifiedReferenceLinkReference -> value == other.value
+        }
+    }
 }
 
 @Serializable
@@ -72,6 +89,14 @@ data class ReferenceLinkReferenceByName(override val name: String) : AbstractRef
     override fun getSimpleName(): String = name
     override fun getIdOrName(): String = name
     override fun getNameOrId(): String = name
+    override fun matches(other: IReferenceLinkReference): Boolean {
+        return when (other) {
+            is ReferenceLinkReferenceByIdAndName -> name == other.name
+            is ReferenceLinkReferenceByName -> name == other.name
+            is ReferenceLinkReferenceByUID -> false
+            is UnclassifiedReferenceLinkReference -> name == other.value
+        }
+    }
 }
 
 @Serializable
@@ -79,6 +104,14 @@ data class ReferenceLinkReferenceByUID(val uid: String) : AbstractReferenceLinkR
     override fun getUID(): String = uid
     override fun getIdOrName(): String = uid
     override fun getNameOrId(): String = uid
+    override fun matches(other: IReferenceLinkReference): Boolean {
+        return when (other) {
+            is ReferenceLinkReferenceByIdAndName -> uid == other.uid
+            is ReferenceLinkReferenceByName -> false
+            is ReferenceLinkReferenceByUID -> uid == other.uid
+            is UnclassifiedReferenceLinkReference -> uid == other.value
+        }
+    }
 }
 
 @Serializable
@@ -87,6 +120,14 @@ data class ReferenceLinkReferenceByIdAndName(val uid: String, override val name:
     override fun getSimpleName(): String = name
     override fun getIdOrName(): String = uid
     override fun getNameOrId(): String = name
+    override fun matches(other: IReferenceLinkReference): Boolean {
+        return when (other) {
+            is ReferenceLinkReferenceByIdAndName -> uid == other.uid
+            is ReferenceLinkReferenceByName -> name == other.name
+            is ReferenceLinkReferenceByUID -> uid == other.uid
+            is UnclassifiedReferenceLinkReference -> uid == other.value || name == other.value
+        }
+    }
 }
 
 data class ReferenceLinkFromName(override val name: String) : LinkFromName(), IReferenceLink {

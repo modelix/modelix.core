@@ -1,6 +1,6 @@
 package org.modelix.mps.model.sync.bulk
 
-import org.modelix.model.api.INode
+import org.modelix.model.api.IReadableNode
 import org.modelix.model.sync.bulk.ModelSynchronizer
 
 /**
@@ -11,7 +11,7 @@ import org.modelix.model.sync.bulk.ModelSynchronizer
  */
 class CompositeFilter(private val filters: Collection<ModelSynchronizer.IFilter>) : ModelSynchronizer.IFilter {
 
-    override fun needsDescentIntoSubtree(subtreeRoot: INode): Boolean = filters.all { it.needsDescentIntoSubtree(subtreeRoot) }
+    override fun needsDescentIntoSubtree(subtreeRoot: IReadableNode): Boolean = filters.all { it.needsDescentIntoSubtree(subtreeRoot) }
 
-    override fun needsSynchronization(node: INode): Boolean = filters.all { it.needsSynchronization(node) }
+    override fun needsSynchronization(node: IReadableNode): Boolean = filters.all { it.needsSynchronization(node) }
 }

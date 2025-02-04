@@ -1,4 +1,7 @@
 import org.modelix.copyMps
+import org.modelix.excludeMPSLibraries
+import org.modelix.mpsHomeDir
+import org.modelix.mpsMajorVersion
 
 plugins {
     `modelix-kotlin-jvm`
@@ -7,13 +10,8 @@ plugins {
 }
 
 dependencies {
-    testImplementation(project(":mps-model-adapters")) {
-        // MPS provides the Kotlin standard library and coroutines.
-        // Bundling different versions of the same library can cause the plugin to break.
-        exclude(group = "org.jetbrains.kotlin")
-        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
-        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-jdk8")
-    }
+    testImplementation(project(":mps-model-adapters"), excludeMPSLibraries)
+    testImplementation(kotlin("test"))
 }
 
 intellij {
@@ -33,6 +31,26 @@ tasks {
 
     runIde {
         autoReloadPlugins.set(true)
+    }
+
+    test {
+        onlyIf {
+            !setOf(
+                "2020.3", // incompatible with the intellij plugin
+                "2021.2", // hangs when executed on CI
+                "2021.3", // hangs when executed on CI
+                "2022.2", // hangs when executed on CI
+            ).contains(mpsMajorVersion)
+        }
+        jvmArgs("-Dintellij.platform.load.app.info.from.resources=true")
+
+        val arch = System.getProperty("os.arch")
+        val jnaDir = mpsHomeDir.get().asFile.resolve("lib/jna/$arch")
+        if (jnaDir.exists()) {
+            jvmArgs("-Djna.boot.library.path=${jnaDir.absolutePath}")
+            jvmArgs("-Djna.noclasspath=true")
+            jvmArgs("-Djna.nosys=true")
+        }
     }
 
     val mpsPluginDir = project.findProperty("mps.plugins.dir")?.toString()?.let { file(it) }

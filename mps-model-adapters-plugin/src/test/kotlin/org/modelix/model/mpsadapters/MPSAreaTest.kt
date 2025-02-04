@@ -6,7 +6,7 @@ import org.modelix.model.api.INode
 class MPSAreaTest : MpsAdaptersTestBase("SimpleProject") {
 
     fun testResolveModuleInNonExistingProject() {
-        val repositoryNode: INode = MPSRepositoryAsNode(mpsProject.repository)
+        val repositoryNode: INode = mpsProject.repository.asLegacyNode()
         val area = repositoryNode.getArea()
         readAction {
             val nonExistingProject = MPSProjectReference("nonExistingProject")

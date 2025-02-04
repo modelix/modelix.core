@@ -89,7 +89,7 @@ abstract class ExportFromModelServer : DefaultTask() {
         val nameRole = BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name
 
         return root.allChildren.filter {
-            val isModule = it.concept?.getUID() == BuiltinLanguages.MPSRepositoryConcepts.Module.getUID()
+            val isModule = it.concept?.isSubConceptOf(BuiltinLanguages.MPSRepositoryConcepts.Module) == true
             val moduleName = it.getPropertyValue(nameRole) ?: return@filter false
             val isIncluded = isModuleIncluded(
                 moduleName,

@@ -5,6 +5,7 @@ import io.ktor.server.testing.testApplication
 import io.ktor.util.reflect.instanceOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.junit.Assert.assertFalse
 import org.modelix.model.api.ChildLinkFromName
@@ -49,27 +50,30 @@ class ReplicatedModelTest {
         // Step 2: in a new client, fetch the latest repository data
         val newClient = createModelClient()
         // we do not provide an initial version, so we expect to fetch the latest one (with one "hello" child)
-        val scope = CoroutineScope(Dispatchers.Default)
-        val replicatedModel = ReplicatedModel(newClient, defaultBranchReference, scope)
-        try {
-            replicatedModel.getBranch()
-            // if we get here, then we missed an expected exception
-            assertFalse(true)
-        } catch (ex: Exception) {
-            /*
-            Expected exception, because we did not specify an initial version.
-            So without an explicit start we do not expect anything useful here.
-             */
-            assertTrue(ex.instanceOf(IllegalStateException::class))
+        coroutineScope {
+            val scope = this
+            ReplicatedModel(newClient, defaultBranchReference, scope).use { replicatedModel ->
+                try {
+                    replicatedModel.getBranch()
+                    // if we get here, then we missed an expected exception
+                    assertFalse(true)
+                } catch (ex: Exception) {
+                    /*
+                    Expected exception, because we did not specify an initial version.
+                    So without an explicit start we do not expect anything useful here.
+                     */
+                    assertTrue(ex.instanceOf(IllegalStateException::class))
+                }
+
+                val branch = replicatedModel.start()
+                // Step 3: wait a bit so replicated model can fetch the new versions from the server
+                waitUntilChildArrives(branch, scope, 500)
+
+                // Step 4: check, eventually we must have the one "hello" child
+                val children = getHelloChildrenOfRootNode(branch)
+                assertEquals(1, children.size)
+            }
         }
-
-        val branch = replicatedModel.start()
-        // Step 3: wait a bit so replicated model can fetch the new versions from the server
-        waitUntilChildArrives(branch, scope, 500)
-
-        // Step 4: check, eventually we must have the one "hello" child
-        val children = getHelloChildrenOfRootNode(branch)
-        assertEquals(1, children.size)
     }
 
     @Test
@@ -93,25 +97,26 @@ class ReplicatedModelTest {
 
         val scope = CoroutineScope(Dispatchers.Default)
         // Step 2.2: we provide an initial version, so we expect to fetch it first (0 "hello" child)
-        val replicatedModel = ReplicatedModel(
+        ReplicatedModel(
             newClient,
             defaultBranchReference,
             providedScope = scope,
             initialRemoteVersion = initialVersionClone as CLVersion,
-        )
-        val branch = replicatedModel.getBranch()
+        ).use { replicatedModel ->
+            val branch = replicatedModel.getBranch()
 
-        // Step 3: check, here we must have 0 "hello" child
-        val emptyChildren = getHelloChildrenOfRootNode(branch)
-        assertTrue(emptyChildren.isEmpty())
+            // Step 3: check, here we must have 0 "hello" child
+            val emptyChildren = getHelloChildrenOfRootNode(branch)
+            assertTrue(emptyChildren.isEmpty())
 
-        replicatedModel.start()
-        // Step 4: wait a bit so replicated model can fetch the new versions from the server
-        waitUntilChildArrives(branch, scope, 500)
+            replicatedModel.start()
+            // Step 4: wait a bit so replicated model can fetch the new versions from the server
+            waitUntilChildArrives(branch, scope, 500)
 
-        // Step 5: check, eventually we must have 1 "hello" child
-        val children = getHelloChildrenOfRootNode(branch)
-        assertEquals(1, children.size)
+            // Step 5: check, eventually we must have 1 "hello" child
+            val children = getHelloChildrenOfRootNode(branch)
+            assertEquals(1, children.size)
+        }
     }
 
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {

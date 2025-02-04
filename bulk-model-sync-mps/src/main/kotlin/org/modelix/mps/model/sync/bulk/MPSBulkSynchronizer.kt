@@ -30,13 +30,15 @@ import org.modelix.model.data.ModelData
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSArea
 import org.modelix.model.mpsadapters.MPSModuleAsNode
-import org.modelix.model.mpsadapters.MPSRepositoryAsNode
+import org.modelix.model.mpsadapters.asLegacyNode
+import org.modelix.model.mpsadapters.asWritableNode
 import org.modelix.model.sync.bulk.ExistingAndExpectedNode
 import org.modelix.model.sync.bulk.InvalidatingVisitor
 import org.modelix.model.sync.bulk.InvalidationTree
 import org.modelix.model.sync.bulk.ModelExporter
 import org.modelix.model.sync.bulk.ModelImporter
 import org.modelix.model.sync.bulk.ModelSynchronizer
+import org.modelix.model.sync.bulk.NodeAssociationFromModelServer
 import org.modelix.model.sync.bulk.isModuleIncluded
 import java.io.File
 import java.nio.file.Path
@@ -132,7 +134,7 @@ object MPSBulkSynchronizer {
 
                 repository.modelAccess.runReadAction {
                     println("Exporting module $pos of $numIncludedModules: '${module.moduleName}'")
-                    val exporter = ModelExporter(MPSModuleAsNode(module))
+                    val exporter = ModelExporter(MPSModuleAsNode(module).asLegacyNode())
                     val outputFile = outputPath.resolve(module.moduleName + ".json")
                     exporter.export(outputFile)
                     println("Exported module $pos of $numIncludedModules: '${module.moduleName}'")
@@ -182,7 +184,7 @@ object MPSBulkSynchronizer {
                 val moduleFile = File(fileName)
                 if (moduleFile.exists()) {
                     val expectedData: ModelData = moduleFile.inputStream().use(Json::decodeFromStream)
-                    sequenceOf(ExistingAndExpectedNode(MPSModuleAsNode(module), expectedData))
+                    sequenceOf(ExistingAndExpectedNode(MPSModuleAsNode(module).asLegacyNode(), expectedData))
                 } else {
                     println("Skip importing ${module.moduleName}} because $fileName does not exist.")
                     sequenceOf()
@@ -190,7 +192,7 @@ object MPSBulkSynchronizer {
             }
             modulesToImport
         }
-        importModelsIntoRepository(repository, MPSRepositoryAsNode(repository), continueOnError, getModulesToImport)
+        importModelsIntoRepository(repository, repository.asLegacyNode(), continueOnError, getModulesToImport)
     }
 
     /**
@@ -282,13 +284,16 @@ object MPSBulkSynchronizer {
             treePointer.runRead {
                 val synchronizer = ModelSynchronizer(
                     CompositeFilter(listOf(invalidationTree, includedModulesFilter)),
-                    treePointer.getRootNode(),
-                    MPSRepositoryAsNode(repository),
-                    NodeAssociationToMps(MPSArea(repository)),
+                    treePointer.getRootNode().asReadableNode(),
+                    repository.asWritableNode(),
+                    NodeAssociationFromModelServer(treePointer, MPSArea(repository).asModel()),
                 )
                 synchronizer.synchronize()
             }
         }
+
+        // TODO call NodeAssociationFromModelServer.writeAssociations and write the changes to the model server
+
         println("Import finished.")
         persistChanges(repository)
     }

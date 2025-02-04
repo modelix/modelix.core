@@ -1,4 +1,6 @@
 import org.modelix.copyMps
+import org.modelix.excludeMPSLibraries
+import org.modelix.mpsMajorVersion
 
 plugins {
     `modelix-kotlin-jvm`
@@ -13,12 +15,14 @@ plugins {
 }
 
 dependencies {
-    testImplementation(project(":bulk-model-sync-lib"))
-    testImplementation(project(":bulk-model-sync-mps"))
-    testImplementation(project(":mps-model-adapters"))
+    testImplementation(project(":bulk-model-sync-lib"), excludeMPSLibraries)
+    testImplementation(project(":bulk-model-sync-mps"), excludeMPSLibraries)
+    testImplementation(project(":mps-model-adapters"), excludeMPSLibraries)
+    testImplementation(project(":model-datastructure"), excludeMPSLibraries)
     testImplementation(libs.kotlin.serialization.json)
     testImplementation(libs.xmlunit.matchers)
     testImplementation(libs.jimfs)
+    testImplementation(libs.modelix.mpsApi)
 }
 
 intellij {
@@ -32,5 +36,17 @@ tasks {
     // * > Cannot find IDE platform prefix. Please create a bug report at https://github.com/jetbrains/gradle-intellij-plugin. As a workaround specify `idea.platform.prefix` system property for task `buildSearchableOptions` manually.
     buildSearchableOptions {
         enabled = false
+    }
+
+    test {
+        onlyIf {
+            !setOf(
+                "2020.3", // incompatible with the intellij plugin
+                "2021.2", // hangs when executed on CI
+                "2021.3", // hangs when executed on CI
+                "2022.2", // hangs when executed on CI
+            ).contains(mpsMajorVersion)
+        }
+        jvmArgs("-Dintellij.platform.load.app.info.from.resources=true")
     }
 }

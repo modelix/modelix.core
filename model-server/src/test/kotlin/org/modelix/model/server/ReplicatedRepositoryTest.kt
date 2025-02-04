@@ -71,46 +71,48 @@ class ReplicatedRepositoryTest {
         val repositoryId = RepositoryId("repo1")
         modelClient.initRepository(repositoryId)
 
-        val replicatedModel = modelClient.getReplicatedModel(repositoryId.getBranchReference())
-        val replicatedModel2 = modelClient2.getReplicatedModel(repositoryId.getBranchReference())
-        val branch1 = replicatedModel.start()
-        val branch2 = replicatedModel2.start()
+        modelClient.getReplicatedModel(repositoryId.getBranchReference()).use { replicatedModel ->
+            modelClient2.getReplicatedModel(repositoryId.getBranchReference()).use { replicatedModel2 ->
+                val branch1 = replicatedModel.start()
+                val branch2 = replicatedModel2.start()
 
-        val rand = Random(34554)
+                val rand = Random(34554)
 
-        for (changeId in 1..10) {
-            println("change set $changeId")
-            val branchToChange = if (rand.nextBoolean()) {
-                println("changing branch 1")
-                branch1
-            } else {
-                println("changing branch 2")
-                branch2
-            }
-            branchToChange.runWrite {
-                val changeGenerator = RandomModelChangeGenerator(branchToChange.getRootNode(), rand)
-                repeat(1000) { _ ->
-                    changeGenerator.applyRandomChange()
+                for (changeId in 1..10) {
+                    println("change set $changeId")
+                    val branchToChange = if (rand.nextBoolean()) {
+                        println("changing branch 1")
+                        branch1
+                    } else {
+                        println("changing branch 2")
+                        branch2
+                    }
+                    branchToChange.runWrite {
+                        val changeGenerator = RandomModelChangeGenerator(branchToChange.getRootNode(), rand)
+                        repeat(1000) { _ ->
+                            changeGenerator.applyRandomChange()
+                        }
+                        println("new tree: " + (branchToChange.transaction.tree as CLTree).hash)
+                    }
+
+                    val syncTime = measureTime {
+                        for (timeout in 1..1000) {
+                            if (branch1.treeHash() == branch2.treeHash()) break
+                            delay(1.milliseconds)
+                        }
+                    }
+                    println("synced after $syncTime")
+                    val data1 = branch1.computeRead {
+                        println("reading on branch 1: " + branch1.treeHash())
+                        branch1.getRootNode().asData()
+                    }
+                    val data2 = branch2.computeRead {
+                        println("reading on branch 2: " + branch2.treeHash())
+                        branch2.getRootNode().asData()
+                    }
+                    assertEquals(data1, data2)
                 }
-                println("new tree: " + (branchToChange.transaction.tree as CLTree).hash)
             }
-
-            val syncTime = measureTime {
-                for (timeout in 1..1000) {
-                    if (branch1.treeHash() == branch2.treeHash()) break
-                    delay(1.milliseconds)
-                }
-            }
-            println("synced after $syncTime")
-            val data1 = branch1.computeRead {
-                println("reading on branch 1: " + branch1.treeHash())
-                branch1.getRootNode().asData()
-            }
-            val data2 = branch2.computeRead {
-                println("reading on branch 2: " + branch2.treeHash())
-                branch2.getRootNode().asData()
-            }
-            assertEquals(data1, data2)
         }
     }
 
@@ -472,18 +474,19 @@ class ReplicatedRepositoryTest {
             .also { it.init() }
         val repositoryId = RepositoryId("repo1")
         modelClient.initRepository(repositoryId)
-        val replicatedModel = modelClient.getReplicatedModel(repositoryId.getBranchReference())
-        val branch = replicatedModel.start() as OTBranch
-        val initialVersion = modelClient.pull(replicatedModel.branchRef, null) as CLVersion
+        modelClient.getReplicatedModel(repositoryId.getBranchReference()).use { replicatedModel ->
+            val branch = replicatedModel.start() as OTBranch
+            val initialVersion = modelClient.pull(replicatedModel.branchRef, null) as CLVersion
 
-        branch.computeWriteT {
-            it.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?)
-        }
-        while (replicatedModel.getCurrentVersion() == initialVersion) {
-            delay(10)
-        }
+            branch.computeWriteT {
+                it.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?)
+            }
+            while (replicatedModel.getCurrentVersion() == initialVersion) {
+                delay(10)
+            }
 
-        assertEquals(userId, replicatedModel.getCurrentVersion().author)
+            assertEquals(userId, replicatedModel.getCurrentVersion().author)
+        }
     }
 }
 

@@ -1,5 +1,6 @@
 package org.modelix.model.client2
 
+import io.ktor.utils.io.core.Closeable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -34,7 +35,7 @@ class ReplicatedModel(
     val branchRef: BranchReference,
     private val providedScope: CoroutineScope? = null,
     initialRemoteVersion: CLVersion? = null,
-) {
+) : Closeable {
     private val scope = providedScope ?: CoroutineScope(Dispatchers.Default)
     private var state = State.New
     private var localModel: LocalModel? = null
@@ -111,6 +112,10 @@ class ReplicatedModel(
         if (providedScope == null) {
             scope.cancel("disposed")
         }
+    }
+
+    override fun close() {
+        dispose()
     }
 
     private suspend fun remoteVersionReceived(newRemoteVersion: CLVersion) {

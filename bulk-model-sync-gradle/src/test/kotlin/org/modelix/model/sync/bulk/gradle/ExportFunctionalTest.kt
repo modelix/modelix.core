@@ -2,7 +2,7 @@ package org.modelix.model.sync.bulk.gradle
 
 import io.kotest.matchers.file.shouldContainFile
 import io.kotest.matchers.file.shouldContainNFiles
-import org.gradle.testkit.runner.GradleRunner
+import org.gradle.testkit.runner.internal.DefaultGradleRunner
 import org.junit.jupiter.api.io.CleanupMode
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
@@ -15,7 +15,7 @@ class ExportFunctionalTest {
 
     @TempDir(cleanup = CleanupMode.ON_SUCCESS)
     private lateinit var projectDir: File
-    private val gradle by lazy { GradleRunner.create().withProjectDir(projectDir) }
+    private val gradle by lazy { DefaultGradleRunner().withJvmArguments("-Xmx1024m").withProjectDir(projectDir) }
 
     @BeforeTest
     fun setup() {

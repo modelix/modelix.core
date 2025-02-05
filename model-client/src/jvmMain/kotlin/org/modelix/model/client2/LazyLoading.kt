@@ -22,6 +22,7 @@ import org.modelix.model.persistent.HashUtil
  * the number of requests doesn't change by this prefetching, but small requests are filled to up to their limit with
  * additional prefetch requests.
  */
+@Deprecated("Use IAsyncTree instead")
 fun IModelClientV2.lazyLoadVersion(repositoryId: RepositoryId, versionHash: String, config: CacheConfiguration = CacheConfiguration()): IVersion {
     val store = ObjectStoreCache(ModelClientAsStore(this, repositoryId), config)
     return CLVersion.loadFromHash(versionHash, store)
@@ -31,6 +32,7 @@ fun IModelClientV2.lazyLoadVersion(repositoryId: RepositoryId, versionHash: Stri
  * An overload of [IModelClientV2.lazyLoadVersion] that reads the current version hash of the branch from the server and
  * then loads that version with lazy loading support.
  */
+@Deprecated("Use IAsyncTree instead")
 suspend fun IModelClientV2.lazyLoadVersion(branchRef: BranchReference, config: CacheConfiguration = CacheConfiguration()): IVersion {
     return lazyLoadVersion(branchRef.repositoryId, pullHash(branchRef), config)
 }

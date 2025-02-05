@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dev-kit name="NewDevkit" uuid="568b2514-a608-45b5-aea5-6ffd231cea1d">
+  <exported-language name="f001438b-5c29-435b-8707-6587df3c7bc3(NewLanguage2)" />
+  <exported-language name="96c7c023-6829-44d0-b358-661f058f1c31(NewLanguage)" />
+  <exported-solutions>
+    <exported-solution>4eb87a8f-881e-4d34-9514-f5002000c363(NewRuntimeSolution)</exported-solution>
+  </exported-solutions>
+</dev-kit>

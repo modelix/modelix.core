@@ -20,6 +20,7 @@ module.exports = {
         "modelql",
         "mps-model-adapters",
         "mps-model-server",
+        "mps-sync-plugin",
         "openapi",
         "ts-model-api",
         "vue-model-api",

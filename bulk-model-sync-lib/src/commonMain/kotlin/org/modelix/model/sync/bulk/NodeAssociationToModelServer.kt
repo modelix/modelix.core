@@ -48,9 +48,9 @@ class NodeAssociationFromModelServer(val branch: IBranch, val targetModel: IMuta
     }
 
     override fun associate(sourceNode: IReadableNode, targetNode: IWritableNode) {
-        val id = nodeId(sourceNode)
         val expected = sourceNode.getOriginalOrCurrentReference()
         if (expected != targetNode.getOriginalOrCurrentReference()) {
+            val id = nodeId(sourceNode)
             pendingAssociations[id] = targetNode.getNodeReference().serialize()
         }
     }

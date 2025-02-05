@@ -12,14 +12,14 @@ import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.getOriginalOrCurrentReference
 import org.modelix.model.api.getOriginalReference
 import org.modelix.model.api.isChildRoleOrdered
+import org.modelix.model.api.isOrdered
 import org.modelix.model.api.matches
 import org.modelix.model.api.mergeWith
 import org.modelix.model.api.remove
 import org.modelix.model.api.syncNewChild
 import org.modelix.model.api.syncNewChildren
-import org.modelix.model.api.tryResolve
 import org.modelix.model.data.NodeData
-import org.modelix.model.sync.bulk.ModelSynchronizer.IFilter
+import org.modelix.model.sync.bulk.ModelSynchronizer.IIncrementalUpdateInformation
 
 /**
  * Similar to [ModelImporter], but the input is two [INode] instances instead of [INode] and [NodeData].
@@ -33,10 +33,12 @@ import org.modelix.model.sync.bulk.ModelSynchronizer.IFilter
  * @param nodeAssociation mapping between source and target nodes, that is used for internal optimizations
  */
 class ModelSynchronizer(
-    val filter: IFilter,
+    val filter: IIncrementalUpdateInformation = FullSyncFilter(),
     val sourceRoot: IReadableNode,
     val targetRoot: IWritableNode,
     val nodeAssociation: INodeAssociation,
+    val sourceMask: IModelMask = UnfilteredModelMask(),
+    val targetMask: IModelMask = UnfilteredModelMask(),
 ) {
     private val nodesToRemove: MutableSet<IWritableNode> = HashSet()
     private val pendingReferences: MutableList<PendingReference> = ArrayList()
@@ -47,26 +49,25 @@ class ModelSynchronizer(
     }
 
     fun synchronize(sourceNodes: List<IReadableNode>, targetNodes: List<IWritableNode>) {
-        logger.info { "Synchronizing nodes..." }
+        logger.debug { "Synchronizing nodes..." }
         for ((sourceNode, targetNode) in sourceNodes.zip(targetNodes)) {
             synchronizeNode(sourceNode, targetNode)
         }
-        synchronizeNode(sourceRoot, targetRoot)
-        logger.info { "Synchronizing pending references..." }
+        logger.debug { "Synchronizing pending references..." }
         pendingReferences.forEach {
             if (!it.trySyncReference()) {
                 it.copyTargetRef()
             }
         }
-        logger.info { "Removing extra nodes..." }
+        logger.debug { "Removing extra nodes..." }
         nodesToRemove.filter { it.isValid() }.forEach { it.remove() }
-        logger.info { "Synchronization finished." }
+        logger.debug { "Synchronization finished." }
     }
 
     private fun synchronizeNode(sourceNode: IReadableNode, targetNode: IWritableNode) {
         nodeAssociation.associate(sourceNode, targetNode)
         if (filter.needsSynchronization(sourceNode)) {
-            logger.info { "Synchronizing changed node. sourceNode = $sourceNode" }
+            logger.trace { "Synchronizing changed node. sourceNode = $sourceNode" }
             synchronizeProperties(sourceNode, targetNode)
             synchronizeReferences(sourceNode, targetNode)
 
@@ -81,12 +82,13 @@ class ModelSynchronizer(
 
             syncChildren(sourceNode, conceptCorrectedTargetNode)
         } else if (filter.needsDescentIntoSubtree(sourceNode)) {
-            for (sourceChild in sourceNode.getAllChildren()) {
-                val targetChild = nodeAssociation.resolveTarget(sourceChild) ?: error("Expected target node was not found. sourceChild=$sourceChild")
+            for (sourceChild in sourceMask.filterChildren(sourceNode, sourceNode.getAllChildren())) {
+                val targetChild = nodeAssociation.resolveTarget(sourceChild)
+                    ?: error("Expected target node was not found. sourceChild=${sourceChild.getNodeReference()}, originalId=${sourceChild.getOriginalReference()}")
                 synchronizeNode(sourceChild, targetChild)
             }
         } else {
-            logger.info { "Skipping subtree due to filter. root = $sourceNode" }
+            logger.trace { "Skipping subtree due to filter. root = $sourceNode" }
         }
     }
 
@@ -119,11 +121,11 @@ class ModelSynchronizer(
     }
 
     private fun getFilteredSourceChildren(parent: IReadableNode, role: IChildLinkReference): List<IReadableNode> {
-        return parent.getChildren(role).let { filter.filterSourceChildren(parent, role, it) }
+        return parent.getChildren(role).let { sourceMask.filterChildren(parent, role, it) }
     }
 
     private fun getFilteredTargetChildren(parent: IWritableNode, role: IChildLinkReference): List<IWritableNode> {
-        return parent.getChildren(role).let { filter.filterTargetChildren(parent, role, it) }
+        return parent.getChildren(role).let { targetMask.filterChildren(parent, role, it) }
     }
 
     private fun syncChildren(sourceParent: IReadableNode, targetParent: IWritableNode) {
@@ -191,7 +193,7 @@ class ModelSynchronizer(
                         // it is potentially moved to a new parent and role.
                         if (existingNode.getParent() != targetParent ||
                             !existingNode.getContainmentLink().matches(role) ||
-                            role.tryResolve(targetParent.getConceptReference())?.isOrdered != false
+                            targetParent.isOrdered(role)
                         ) {
                             targetParent.moveChild(role, newIndex, existingNode)
                         }
@@ -294,7 +296,7 @@ class ModelSynchronizer(
      *
      * It is valid for [needsDescentIntoSubtree] and [needsSynchronization] to return true for the same node.
      */
-    interface IFilter {
+    interface IIncrementalUpdateInformation {
         /**
          * Checks if a subtree needs synchronization.
          *
@@ -310,38 +312,23 @@ class ModelSynchronizer(
          * @return true iff the node must not be skipped
          */
         fun needsSynchronization(node: IReadableNode): Boolean
-
-        fun filterSourceChildren(parent: IReadableNode, role: IChildLinkReference, children: List<IReadableNode>): List<IReadableNode> = children
-
-        fun filterTargetChildren(parent: IWritableNode, role: IChildLinkReference, children: List<IWritableNode>): List<IWritableNode> = children
     }
 }
 
-fun IFilter.and(other: IFilter): IFilter = AndFilter(this, other)
+class FullSyncFilter : IIncrementalUpdateInformation {
+    override fun needsDescentIntoSubtree(subtreeRoot: IReadableNode): Boolean = true
+    override fun needsSynchronization(node: IReadableNode): Boolean = true
+}
 
-class AndFilter(val filter1: IFilter, val filter2: IFilter) : IFilter {
+fun IIncrementalUpdateInformation.and(other: IIncrementalUpdateInformation): IIncrementalUpdateInformation = AndFilter(this, other)
+
+class AndFilter(val filter1: IIncrementalUpdateInformation, val filter2: IIncrementalUpdateInformation) : IIncrementalUpdateInformation {
     override fun needsDescentIntoSubtree(subtreeRoot: IReadableNode): Boolean {
         return filter1.needsDescentIntoSubtree(subtreeRoot) && filter2.needsDescentIntoSubtree(subtreeRoot)
     }
 
     override fun needsSynchronization(node: IReadableNode): Boolean {
         return filter1.needsSynchronization(node) && filter2.needsSynchronization(node)
-    }
-
-    override fun filterSourceChildren(
-        parent: IReadableNode,
-        role: IChildLinkReference,
-        children: List<IReadableNode>,
-    ): List<IReadableNode> {
-        return filter2.filterSourceChildren(parent, role, filter1.filterSourceChildren(parent, role, children))
-    }
-
-    override fun filterTargetChildren(
-        parent: IWritableNode,
-        role: IChildLinkReference,
-        children: List<IWritableNode>,
-    ): List<IWritableNode> {
-        return filter2.filterTargetChildren(parent, role, filter1.filterTargetChildren(parent, role, children))
     }
 }
 

@@ -26,6 +26,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLBuilder
 import io.ktor.http.appendPathSegments
+import io.ktor.http.buildUrl
 import io.ktor.http.contentType
 import io.ktor.http.takeFrom
 import io.ktor.serialization.kotlinx.json.json
@@ -91,6 +92,15 @@ class ModelClientV2(
     private fun getStore(repository: RepositoryId?) = runSynchronized(storeForRepository) { storeForRepository.getOrPut(repository) { ObjectStoreCache(MapBasedStore()) } }
     private fun getRepository(store: IDeserializingKeyValueStore): RepositoryId? {
         return storeForRepository.asSequence().first { it.value.keyValueStore == store.keyValueStore }.key
+    }
+
+    override suspend fun getServerId(): String {
+        return httpClient.get {
+            url {
+                takeFrom(baseUrl)
+                appendPathSegments("server-id")
+            }
+        }.bodyAsText()
     }
 
     private suspend fun updateClientId() {
@@ -498,7 +508,11 @@ abstract class ModelClientV2Builder {
     }
 
     fun url(url: String): ModelClientV2Builder {
-        baseUrl = url
+        baseUrl = buildUrl {
+            takeFrom(url)
+            if (pathSegments.lastOrNull() == "") pathSegments = pathSegments.dropLast(1)
+            if (pathSegments.lastOrNull() != "v2") appendPathSegments("v2")
+        }.toString()
         return this
     }
 
@@ -655,21 +669,38 @@ suspend fun <T> IModelClientV2.runWriteOnBranch(branchRef: BranchReference, body
             .takeIf { it != branchRef }
             ?.let { client.pullIfExists(it) } // master branch
         ?: client.initRepository(branchRef.repositoryId)
-    val branch = OTBranch(TreePointer(baseVersion.getTree(), client.getIdGenerator()), client.getIdGenerator(), (baseVersion as CLVersion).store)
-    val result = branch.computeWrite {
+
+    var result: T? = null
+    val newVersion = baseVersion.runWrite(this) {
+        result = body(it)
+    }
+    if (newVersion != null) {
+        client.push(branchRef, newVersion, baseVersion)
+    }
+    return result as T
+}
+
+fun IVersion.runWrite(client: IModelClientV2, body: (IBranch) -> Unit): IVersion? {
+    return runWrite(client.getIdGenerator(), client.getUserId(), body)
+}
+
+fun IVersion.runWrite(idGenerator: IIdGenerator, author: String?, body: (IBranch) -> Unit): IVersion? {
+    val baseVersion = this
+    val branch = OTBranch(TreePointer(baseVersion.getTree(), idGenerator), idGenerator, (baseVersion as CLVersion).store)
+    branch.computeWrite {
         body(branch)
     }
     val (ops, newTree) = branch.getPendingChanges()
     if (ops.isEmpty()) {
-        return result
+        return null
     }
-    val newVersion = CLVersion.createRegularVersion(
-        id = client.getIdGenerator().generate(),
-        author = client.getUserId(),
+    return CLVersion.createRegularVersion(
+        id = idGenerator.generate(),
+        author = author,
         tree = newTree as CLTree,
         baseVersion = baseVersion as CLVersion?,
         operations = ops.map { it.getOriginalOp() }.toTypedArray(),
     )
-    client.push(branchRef, newVersion, baseVersion)
-    return result
 }
+
+private fun String.ensureSuffix(suffix: String) = if (endsWith(suffix)) this else this + suffix

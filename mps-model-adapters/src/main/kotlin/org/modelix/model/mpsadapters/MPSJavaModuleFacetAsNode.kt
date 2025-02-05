@@ -23,6 +23,10 @@ data class MPSJavaModuleFacetAsNode(val facet: JavaModuleFacet) : MPSGenericNode
                     // https://github.com/JetBrains/MPS/blob/2820965ff7b8836ed1d14adaf1bde29744c88147/core/project/source/jetbrains/mps/project/facets/JavaModuleFacetImpl.java
                     return true.toString()
                 }
+
+                override fun write(element: JavaModuleFacet, value: String?) {
+                    if (value != "true") throw UnsupportedOperationException("read only")
+                }
             },
             BuiltinLanguages.MPSRepositoryConcepts.JavaModuleFacet.path.toReference() to object : IPropertyAccessor<JavaModuleFacet> {
                 override fun read(facet: JavaModuleFacet): String? {

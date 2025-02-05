@@ -9,7 +9,7 @@ import org.modelix.model.sync.bulk.ModelSynchronizer
  *
  * @param filters collection of filters. If the collection is ordered, the filters will be evaluated in the specified order.
  */
-class CompositeFilter(private val filters: Collection<ModelSynchronizer.IFilter>) : ModelSynchronizer.IFilter {
+class CompositeFilter(private val filters: Collection<ModelSynchronizer.IIncrementalUpdateInformation>) : ModelSynchronizer.IIncrementalUpdateInformation {
 
     override fun needsDescentIntoSubtree(subtreeRoot: IReadableNode): Boolean = filters.all { it.needsDescentIntoSubtree(subtreeRoot) }
 

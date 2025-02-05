@@ -1,0 +1,60 @@
+package org.modelix.mps.sync3
+
+import com.intellij.openapi.components.service
+import jetbrains.mps.ide.project.ProjectHelper
+import kotlinx.coroutines.runBlocking
+import org.modelix.model.IVersion
+import org.modelix.model.lazy.BranchReference
+import java.io.Closeable
+
+interface IModelSyncService {
+    companion object {
+        @JvmStatic
+        fun getInstance(project: com.intellij.openapi.project.Project): IModelSyncService {
+            return project.service<ModelSyncService>()
+        }
+
+        @JvmStatic
+        fun getInstance(project: org.jetbrains.mps.openapi.project.Project): IModelSyncService {
+            return getInstance(ProjectHelper.toIdeaProject(project as jetbrains.mps.project.Project))
+        }
+    }
+
+    fun addServer(url: String): IServerConnection
+    fun getServerConnections(): List<IServerConnection>
+}
+
+interface IServerConnection {
+    fun activate()
+    fun deactivate()
+    fun remove()
+    fun getStatus(): Status
+
+    suspend fun pullVersion(branchRef: BranchReference): IVersion
+
+    fun bind(branchRef: BranchReference): IBinding = bind(branchRef, null)
+    fun bind(branchRef: BranchReference, lastSyncedVersionHash: String?): IBinding
+    fun getBindings(): List<IBinding>
+
+    enum class Status {
+        CONNECTED,
+        DISCONNECTED,
+    }
+}
+
+interface IBinding : Closeable {
+    val mpsProject: org.jetbrains.mps.openapi.project.Project
+    val branchRef: BranchReference
+    fun activate()
+    fun deactivate()
+
+    override fun close() = deactivate()
+
+    /**
+     * Blocks until both ends are in sync.
+     * @exception Throwable if the last synchronization failed
+     * @return the latest version
+     */
+    suspend fun flush(): IVersion
+    fun flushBlocking() = runBlocking { flush() }
+}

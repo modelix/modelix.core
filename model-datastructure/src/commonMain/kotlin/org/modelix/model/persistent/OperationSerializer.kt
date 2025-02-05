@@ -220,7 +220,7 @@ class OperationSerializer private constructor() {
 
                     override fun deserialize(serialized: String): SetConceptOp {
                         val parts = serialized.split(SEPARATOR)
-                        return SetConceptOp(nodeId = longFromHex(parts[0]), concept = deserializeConcept(parts[2]))
+                        return SetConceptOp(nodeId = longFromHex(parts[0]), concept = deserializeConcept(parts[1]))
                     }
                 },
             )

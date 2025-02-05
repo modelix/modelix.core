@@ -112,6 +112,7 @@ data class MPSModuleDependencyReference(
     }
 }
 
+// FIXME projectName is not guaranteed to be unique and not suitable to identify a project
 data class MPSProjectReference(val projectName: String) : INodeReference {
 
     companion object {

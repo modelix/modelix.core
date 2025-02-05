@@ -53,54 +53,62 @@ fun Project.copyMps(): File {
     if (project != rootProject) return rootProject.copyMps()
 
     val mpsHome = mpsHomeDir.get().asFile
-    if (mpsHome.exists()) return mpsHome
+    if (!mpsHome.exists()) {
+        println("Extracting MPS ...")
 
-    println("Extracting MPS ...")
+        // Extract MPS during configuration phase, because using it in intellij.localPath requires it to already exist.
+        val mpsZip = configurations.create("mpsZip")
+        dependencies {
+            mpsZip("com.jetbrains:mps:$mpsVersion")
+        }
+        sync {
+            from(zipTree({ mpsZip.singleFile }))
+            into(mpsHomeDir)
+        }
 
-    // Extract MPS during configuration phase, because using it in intellij.localPath requires it to already exist.
-    val mpsZip = configurations.create("mpsZip")
-    dependencies {
-        mpsZip("com.jetbrains:mps:$mpsVersion")
-    }
-    sync {
-        from(zipTree({ mpsZip.singleFile }))
-        into(mpsHomeDir)
-    }
-
-    // The IntelliJ gradle plugin doesn't search in jar files when reading plugin descriptors, but the IDE does.
-    // Copy the XML files from the jars to the META-INF folders to fix that.
-    for (pluginFolder in (mpsHomeDir.get().asFile.resolve("plugins").listFiles() ?: emptyArray())) {
-        val jars = (pluginFolder.resolve("lib").listFiles() ?: emptyArray()).filter { it.extension == "jar" }
-        for (jar in jars) {
-            jar.inputStream().use {
-                ZipInputStream(it).use { zip ->
-                    val entries = generateSequence { zip.nextEntry }
-                    for (entry in entries) {
-                        if (entry.name.substringBefore("/") != "META-INF") continue
-                        val outputFile = pluginFolder.resolve(entry.name)
-                        if (outputFile.extension != "xml") continue
-                        if (outputFile.exists()) {
-                            println("already exists: $outputFile")
-                            continue
+        // The IntelliJ gradle plugin doesn't search in jar files when reading plugin descriptors, but the IDE does.
+        // Copy the XML files from the jars to the META-INF folders to fix that.
+        for (pluginFolder in (mpsHomeDir.get().asFile.resolve("plugins").listFiles() ?: emptyArray())) {
+            val jars = (pluginFolder.resolve("lib").listFiles() ?: emptyArray()).filter { it.extension == "jar" }
+            for (jar in jars) {
+                jar.inputStream().use {
+                    ZipInputStream(it).use { zip ->
+                        val entries = generateSequence { zip.nextEntry }
+                        for (entry in entries) {
+                            if (entry.name.substringBefore("/") != "META-INF") continue
+                            val outputFile = pluginFolder.resolve(entry.name)
+                            if (outputFile.extension != "xml") continue
+                            if (outputFile.exists()) {
+                                println("already exists: $outputFile")
+                                continue
+                            }
+                            outputFile.parentFile.mkdirs()
+                            outputFile.writeBytes(zip.readAllBytes())
+                            println("copied $outputFile")
                         }
-                        outputFile.parentFile.mkdirs()
-                        outputFile.writeBytes(zip.readAllBytes())
-                        println("copied $outputFile")
                     }
                 }
             }
         }
+
+        // The build number of a local IDE is expected to contain a product code, otherwise an exception is thrown.
+        val buildTxt = mpsHomeDir.get().asFile.resolve("build.txt")
+        val buildNumber = buildTxt.readText()
+        val prefix = "MPS-"
+        if (!buildNumber.startsWith(prefix)) {
+            buildTxt.writeText("$prefix$buildNumber")
+        }
+
+        println("Extracting MPS done.")
     }
 
-    // The build number of a local IDE is expected to contain a product code, otherwise an exception is thrown.
-    val buildTxt = mpsHomeDir.get().asFile.resolve("build.txt")
-    val buildNumber = buildTxt.readText()
-    val prefix = "MPS-"
-    if (!buildNumber.startsWith(prefix)) {
-        buildTxt.writeText("$prefix$buildNumber")
+    // product-info.json is expected by the new intellij gradle plugin
+    val productInfoFile = mpsHome.resolve("product-info.json")
+    val expectedJson = ProductInfoGenerator(mpsHome).generate()
+    if (productInfoFile.readText() != expectedJson) {
+        productInfoFile.writeText(expectedJson)
     }
 
-    println("Extracting MPS done.")
     return mpsHome
 }
 

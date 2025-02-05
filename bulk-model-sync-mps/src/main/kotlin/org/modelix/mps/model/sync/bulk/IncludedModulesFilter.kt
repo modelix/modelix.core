@@ -19,7 +19,7 @@ class IncludedModulesFilter(
     val includedModulePrefixes: Collection<String>,
     val excludedModules: Collection<String> = emptySet(),
     val excludedModulesPrefixes: Collection<String> = emptySet(),
-) : ModelSynchronizer.IFilter {
+) : ModelSynchronizer.IIncrementalUpdateInformation {
     override fun needsDescentIntoSubtree(subtreeRoot: IReadableNode): Boolean {
         if (subtreeRoot.getConceptReference() != BuiltinLanguages.MPSRepositoryConcepts.Module.getReference()) return true
         val moduleName = subtreeRoot.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference()) ?: return true

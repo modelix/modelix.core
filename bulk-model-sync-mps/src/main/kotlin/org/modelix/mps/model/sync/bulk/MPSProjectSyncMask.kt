@@ -4,31 +4,17 @@ import jetbrains.mps.project.MPSProject
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IReadableNode
-import org.modelix.model.api.IWritableNode
 import org.modelix.model.mpsadapters.MPSModuleAsNode
 import org.modelix.model.mpsadapters.MPSProjectAsNode
-import org.modelix.model.sync.bulk.ModelSynchronizer
+import org.modelix.model.sync.bulk.IModelMask
 
-class MPSProjectSyncFilter(val projects: List<MPSProject>, val toMPS: Boolean) : ModelSynchronizer.IFilter {
+class MPSProjectSyncMask(val projects: List<MPSProject>, val isMPSSide: Boolean) : IModelMask {
 
-    private val fromMPS: Boolean get() = !toMPS
-
-    override fun needsDescentIntoSubtree(subtreeRoot: IReadableNode): Boolean {
-        return true
-    }
-
-    override fun needsSynchronization(node: IReadableNode): Boolean {
-        return true
-    }
-
-    private fun <T : IReadableNode> filterChildren(
+    override fun <T : IReadableNode> filterChildren(
         parent: IReadableNode,
         role: IChildLinkReference,
         children: List<T>,
-        isSourceChildren: Boolean,
     ): List<T> {
-        val isMPSSide = fromMPS == isSourceChildren
-
         return when (parent.getConceptReference()) {
             BuiltinLanguages.MPSRepositoryConcepts.Repository.getReference() -> when {
                 role.matches(BuiltinLanguages.MPSRepositoryConcepts.Repository.tempModules.toReference()) -> emptyList()
@@ -55,21 +41,5 @@ class MPSProjectSyncFilter(val projects: List<MPSProject>, val toMPS: Boolean) :
             }
             else -> children
         }
-    }
-
-    override fun filterSourceChildren(
-        parent: IReadableNode,
-        role: IChildLinkReference,
-        children: List<IReadableNode>,
-    ): List<IReadableNode> {
-        return filterChildren(parent, role, children, true)
-    }
-
-    override fun filterTargetChildren(
-        parent: IWritableNode,
-        role: IChildLinkReference,
-        children: List<IWritableNode>,
-    ): List<IWritableNode> {
-        return filterChildren(parent, role, children, false)
     }
 }

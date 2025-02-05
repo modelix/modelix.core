@@ -94,7 +94,7 @@ open class ModelSynchronizerTest : AbstractModelSyncTest() {
             targetBranch.runWrite {
                 val targetRoot = targetBranch.getRootNode()
                 val synchronizer = ModelSynchronizer(
-                    filter = BasicFilter,
+                    filter = FullSyncFilter(),
                     sourceRoot = sourceRoot.asReadableNode(),
                     targetRoot = targetRoot.asWritableNode(),
                     nodeAssociation = NodeAssociationToModelServer(targetBranch),
@@ -143,7 +143,7 @@ open class ModelSynchronizerTest : AbstractModelSyncTest() {
 
         otBranch.runWrite {
             ModelSynchronizer(
-                filter = BasicFilter,
+                filter = FullSyncFilter(),
                 sourceRoot = sourceBranch.getRootNode().asReadableNode(),
                 targetRoot = targetBranch.getRootNode().asWritableNode(),
                 nodeAssociation = NodeAssociationToModelServer(targetBranch),
@@ -157,16 +157,6 @@ open class ModelSynchronizerTest : AbstractModelSyncTest() {
 
         assertTrue("expected operations: <= $expectedNumOps, actual: ${operations.size}") {
             operations.size <= expectedNumOps
-        }
-    }
-
-    object BasicFilter : ModelSynchronizer.IFilter {
-        override fun needsDescentIntoSubtree(subtreeRoot: IReadableNode): Boolean {
-            return true
-        }
-
-        override fun needsSynchronization(node: IReadableNode): Boolean {
-            return true
         }
     }
 }

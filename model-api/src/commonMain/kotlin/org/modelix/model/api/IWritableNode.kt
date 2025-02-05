@@ -90,3 +90,7 @@ class NewNodeSpec(
 ) {
     constructor(node: IReadableNode) : this(node.getConceptReference(), node, node.getOriginalReference()?.let { NodeReference(it) })
 }
+
+fun <T : IReadableNode> T.ancestors(includeSelf: Boolean = false): Sequence<T> {
+    return generateSequence(if (includeSelf) this else getParent() as T) { it.getParent() as T }
+}

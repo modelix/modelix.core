@@ -32,7 +32,7 @@ import org.modelix.model.sync.bulk.ModelSynchronizer
 import org.modelix.model.sync.bulk.NodeAssociationFromModelServer
 import org.modelix.model.sync.bulk.NodeAssociationToModelServer
 import org.modelix.mps.api.ModelixMpsApi
-import org.modelix.mps.model.sync.bulk.MPSProjectSyncFilter
+import org.modelix.mps.model.sync.bulk.MPSProjectSyncMask
 import org.w3c.dom.Element
 import java.io.File
 import java.nio.file.Files
@@ -72,7 +72,7 @@ class RecreateProjectFromModelServerTest : UsefulTestCase() {
                 val mpsRoot = mpsProject.repository.asReadableNode()
                 val modelServerRoot = branch.getRootNode().asWritableNode()
                 ModelSynchronizer(
-                    filter = MPSProjectSyncFilter(listOf(mpsProject), toMPS = false),
+                    filter = MPSProjectSyncMask(listOf(mpsProject), toMPS = false),
                     sourceRoot = mpsRoot,
                     targetRoot = modelServerRoot,
                     nodeAssociation = NodeAssociationToModelServer(branch),
@@ -103,7 +103,7 @@ class RecreateProjectFromModelServerTest : UsefulTestCase() {
                 val mpsRoot = mpsProject.repository.asWritableNode()
                 val modelServerRoot = branch.getRootNode().asReadableNode()
                 val modelSynchronizer = ModelSynchronizer(
-                    filter = MPSProjectSyncFilter(listOf(mpsProject), toMPS = true),
+                    filter = MPSProjectSyncMask(listOf(mpsProject), toMPS = true),
                     sourceRoot = modelServerRoot,
                     targetRoot = mpsRoot,
                     nodeAssociation = NodeAssociationFromModelServer(branch, mpsRoot.getModel()),

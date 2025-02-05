@@ -274,11 +274,11 @@ object MPSBulkSynchronizer {
         println("Loading version ${version.getContentHash()}")
 
         executeCommandWithExceptionHandling(repository) {
-            val invalidationTree = InvalidationTree(1_000_000)
             val newTree = version.getTree()
+            val invalidationTree = InvalidationTree(1_000_000, newTree)
             newTree.visitChanges(
                 baseVersion.getTree(),
-                InvalidatingVisitor(newTree, invalidationTree),
+                InvalidatingVisitor(invalidationTree),
             )
             val treePointer = TreePointer(newTree)
             treePointer.runRead {

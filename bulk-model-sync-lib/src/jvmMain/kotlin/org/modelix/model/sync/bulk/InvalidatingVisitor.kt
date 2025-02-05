@@ -7,9 +7,9 @@ import org.modelix.model.data.NodeData
 /**
  * Visitor that visits a [tree] and stores the invalidation information in an [invalidationTree].
  */
-class InvalidatingVisitor(val tree: ITree, val invalidationTree: InvalidationTree) : ITreeChangeVisitorEx {
+class InvalidatingVisitor(val invalidationTree: InvalidationTree) : ITreeChangeVisitorEx {
 
-    private fun invalidateNode(nodeId: Long) = invalidationTree.invalidate(tree, nodeId)
+    private fun invalidateNode(nodeId: Long) = invalidationTree.invalidate(nodeId)
 
     override fun containmentChanged(nodeId: Long) {
         // Containment can only change if also the children of the parent changed.
@@ -25,7 +25,6 @@ class InvalidatingVisitor(val tree: ITree, val invalidationTree: InvalidationTre
     }
 
     override fun propertyChanged(nodeId: Long, role: String) {
-        if (role == NodeData.ID_PROPERTY_KEY) return
         invalidateNode(nodeId)
     }
 

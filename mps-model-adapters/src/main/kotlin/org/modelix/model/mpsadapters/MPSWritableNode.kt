@@ -16,6 +16,7 @@ import org.modelix.model.api.IConcept
 import org.modelix.model.api.IMutableModel
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
+import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IRoleReferenceByName
 import org.modelix.model.api.IRoleReferenceByUID
@@ -24,6 +25,9 @@ import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.NewNodeSpec
 import org.modelix.model.api.meta.NullConcept
 import org.modelix.mps.api.ModelixMpsApi
+
+fun SNode.asReadableNode(): IReadableNode = MPSWritableNode(this)
+fun SNode.asWritableNode(): IWritableNode = MPSWritableNode(this)
 
 data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
     override fun getModel(): IMutableModel {

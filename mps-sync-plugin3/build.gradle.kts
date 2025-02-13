@@ -29,6 +29,7 @@ dependencies {
     implementation(project(":mps-model-adapters"))
     implementation(project(":model-client"))
     implementation(libs.modelix.mpsApi)
+    implementation(libs.kotlin.logging)
 
     compileOnly(
         fileTree(mpsHomeDir).matching {

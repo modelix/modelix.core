@@ -275,10 +275,10 @@ object MPSBulkSynchronizer {
 
         executeCommandWithExceptionHandling(repository) {
             val newTree = version.getTree()
-            val invalidationTree = InvalidationTree(1_000_000, newTree)
+            val invalidationTree = InvalidationTree()
             newTree.visitChanges(
                 baseVersion.getTree(),
-                InvalidatingVisitor(invalidationTree),
+                InvalidatingVisitor(newTree, invalidationTree),
             )
             val treePointer = TreePointer(newTree)
             treePointer.runRead {

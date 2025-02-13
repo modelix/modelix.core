@@ -1,9 +1,12 @@
 package org.modelix.model.sync.bulk
 
+import org.modelix.model.api.IModel
 import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.ITree
+import org.modelix.model.api.NodeReference
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.ancestors
+import org.modelix.model.api.toSerialized
 
 /**
  * The purpose of this data structure is to store which nodes changed and need to be synchronized,
@@ -24,6 +27,24 @@ class InvalidationTree(sizeLimit: Int = 100_000) : GenericInvalidationTree<Long,
     }
 }
 
+class DefaultInvalidationTree(val root: NodeReference, sizeLimit: Int = 100_000)
+    : GenericInvalidationTree<NodeReference, IModel>(root, sizeLimit = sizeLimit) {
+    override fun ancestorsAndSelf(
+        model: IModel,
+        nodeId: NodeReference,
+    ): List<NodeReference> {
+        return model.resolveNode(nodeId)
+            ?.ancestors(includeSelf = true)
+            ?.map { it.getNodeReference().toSerialized() }
+            ?.toList()
+            ?: emptyList()
+    }
+
+    override fun getId(node: IReadableNode): NodeReference {
+        return node.getNodeReference().toSerialized()
+    }
+}
+
 abstract class GenericInvalidationTree<ID, M>(root: ID, val sizeLimit: Int = 100_000) : ModelSynchronizer.IIncrementalUpdateInformation {
     private val rootNode = Node(root)
 
@@ -35,9 +56,9 @@ abstract class GenericInvalidationTree<ID, M>(root: ID, val sizeLimit: Int = 100
     /**
      * Marks the node stored in the given containment path as changed.
      */
-    fun invalidate(containmentPath: List<ID>) {
+    fun invalidate(containmentPath: List<ID>, includingDescendants: Boolean = false) {
         require(containmentPath[0] == ITree.ROOT_ID) { "Path must start with the root node" }
-        rootNode.invalidate(containmentPath, 0)
+        rootNode.invalidate(containmentPath, 0, includingDescendants)
         rootNode.rebalance(sizeLimit)
     }
 
@@ -47,8 +68,12 @@ abstract class GenericInvalidationTree<ID, M>(root: ID, val sizeLimit: Int = 100
      * @param tree used internally for the calculation of the containment path
      * @param nodeId the id of the changed node
      */
-    fun invalidate(node: IReadableNode) {
-        invalidate(getContainmentPath(node))
+    fun invalidate(node: IReadableNode, includingDescendants: Boolean = false) {
+        invalidate(getContainmentPath(node), includingDescendants)
+    }
+
+    fun reset() {
+        rootNode.reset()
     }
 
     override fun needsDescentIntoSubtree(subtreeRoot: IReadableNode): Boolean {
@@ -56,10 +81,7 @@ abstract class GenericInvalidationTree<ID, M>(root: ID, val sizeLimit: Int = 100
     }
 
     override fun needsSynchronization(node: IReadableNode): Boolean {
-        val node = node.asLegacyNode()
-        require(node is PNodeAdapter)
-        val path = node.branch.transaction.tree.ancestorsAndSelf(node.nodeId).toList().asReversed()
-        return rootNode.nodeNeedsUpdate(path, 0)
+        return rootNode.nodeNeedsUpdate(getContainmentPath(node), 0)
     }
 
     private class Node<E>(val id: E) {
@@ -68,13 +90,28 @@ abstract class GenericInvalidationTree<ID, M>(root: ID, val sizeLimit: Int = 100
         private var allDescendantsNeedUpdate = false
         private var invalidChildren: MutableMap<E, Node<E>> = HashMap()
 
+        fun reset() {
+            subtreeSize = 1
+            nodeNeedsUpdate = false
+            allDescendantsNeedUpdate = false
+            invalidChildren = HashMap()
+        }
+
         /**
          * @return number of added nodes
          */
-        fun invalidate(path: List<E>, currentIndex: Int): Int {
+        fun invalidate(path: List<E>, currentIndex: Int, includingDescendants: Boolean): Int {
             var addedNodesCount = 0
             if (currentIndex > path.lastIndex) {
                 nodeNeedsUpdate = true
+                if (includingDescendants) {
+                    addedNodesCount -= subtreeSize - 1
+                    subtreeSize = 1
+                    allDescendantsNeedUpdate = true
+                    if (invalidChildren.isNotEmpty()) {
+                        invalidChildren = HashMap(0)
+                    }
+                }
             } else {
                 if (allDescendantsNeedUpdate) return addedNodesCount
                 val childId = path[currentIndex]
@@ -82,7 +119,7 @@ abstract class GenericInvalidationTree<ID, M>(root: ID, val sizeLimit: Int = 100
                     invalidChildren.put(childId, it)
                     addedNodesCount++
                 }
-                addedNodesCount += child.invalidate(path, currentIndex + 1)
+                addedNodesCount += child.invalidate(path, currentIndex + 1, includingDescendants)
             }
             subtreeSize += addedNodesCount
             return addedNodesCount

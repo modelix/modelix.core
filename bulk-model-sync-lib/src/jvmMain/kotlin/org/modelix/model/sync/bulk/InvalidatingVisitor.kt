@@ -2,14 +2,17 @@ package org.modelix.model.sync.bulk
 
 import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitorEx
-import org.modelix.model.data.NodeData
+import org.modelix.model.api.TreePointer
+import org.modelix.model.api.getNode
 
 /**
  * Visitor that visits a [tree] and stores the invalidation information in an [invalidationTree].
  */
-class InvalidatingVisitor(val invalidationTree: InvalidationTree) : ITreeChangeVisitorEx {
+class InvalidatingVisitor(val newTree: ITree, val invalidationTree: InvalidationTree) : ITreeChangeVisitorEx {
 
-    private fun invalidateNode(nodeId: Long) = invalidationTree.invalidate(nodeId)
+    private fun invalidateNode(nodeId: Long) {
+        invalidationTree.invalidate(TreePointer(newTree).getNode(nodeId).asReadableNode(), false)
+    }
 
     override fun containmentChanged(nodeId: Long) {
         // Containment can only change if also the children of the parent changed.

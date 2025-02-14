@@ -36,7 +36,7 @@ import org.modelix.model.mpsadapters.asReadableNode
 import org.modelix.model.sync.bulk.DefaultInvalidationTree
 import java.util.concurrent.atomic.AtomicBoolean
 
-class MPSInvalidatingListener(val repository: SRepository) :
+abstract class MPSInvalidatingListener(val repository: SRepository) :
     GlobalModelListener(),
     SNodeChangeListener,
     SModuleListener,
@@ -58,6 +58,8 @@ class MPSInvalidatingListener(val repository: SRepository) :
             syncActive.set(false)
         }
     }
+
+    abstract fun onInvalidation()
 
     private fun invalidate(node: IReadableNode) {
         if (syncActive.get()) return

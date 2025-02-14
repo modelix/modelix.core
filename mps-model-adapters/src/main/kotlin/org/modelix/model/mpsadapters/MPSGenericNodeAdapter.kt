@@ -2,6 +2,7 @@ package org.modelix.model.mpsadapters
 
 import jetbrains.mps.smodel.MPSModuleRepository
 import org.jetbrains.mps.openapi.language.SConcept
+import org.jetbrains.mps.openapi.model.SNodeId
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
@@ -162,4 +163,12 @@ abstract class MPSGenericNodeAdapter<E> : IWritableNode, ISyncTargetNode {
             return "SourceNodeAndConcept[$concept, $spec]"
         }
     }
+}
+
+fun NewNodeSpec.getPreferredSNodeId(): SNodeId? {
+    // Either use the original SNodeId that it had before it was synchronized to the model server
+    // or if the node was created outside of MPS, generate an ID based on the ID on the model server.
+    // The goal is to create a node with the same ID on all clients.
+    return preferredNodeReference?.let { MPSNodeReference.tryConvert(it) }?.ref?.nodeId
+        ?: node?.getNodeReference()?.encodeAsForeignId()
 }

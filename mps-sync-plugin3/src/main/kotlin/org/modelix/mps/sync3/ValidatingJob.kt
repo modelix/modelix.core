@@ -6,6 +6,8 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 
+private val LOG = mu.KotlinLogging.logger {  }
+
 class ValidatingJob(private val validate: suspend () -> Unit) {
     private val dirty = Channel<Unit>(1, onBufferOverflow = BufferOverflow.DROP_LATEST)
 
@@ -14,15 +16,9 @@ class ValidatingJob(private val validate: suspend () -> Unit) {
     }
 
     suspend fun run() {
-        while (true) {
-            try {
-                dirty.receive()
-                validate()
-            } catch (ex: CancellationException) {
-                break
-            } catch (ex: Throwable) {
-                Binding.Companion.LOG.warn("Exception during synchronization", ex)
-            }
+        jobLoop {
+            dirty.receive()
+            validate()
         }
     }
 }

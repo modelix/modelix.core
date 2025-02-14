@@ -37,7 +37,9 @@ dependencies {
         },
     )
 
-    //testImplementation("junit:junit:4.13.2")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation(libs.testcontainers)
+    testImplementation(libs.kotlin.coroutines.test)
 }
 
 group = "org.modelix.mps"

@@ -6,7 +6,7 @@ import com.intellij.openapi.startup.ProjectActivity
 
 class ModelSyncStartupActivity : ProjectActivity {
     override suspend fun execute(project: Project) {
-        project.service<ModelSyncForMPSProject>() // just ensure it's initialized
+        project.service<ModelSyncService>() // just ensure it's initialized
     }
 }
 

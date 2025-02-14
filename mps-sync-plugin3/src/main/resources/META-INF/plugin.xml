@@ -25,12 +25,7 @@
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-        <backgroundPostStartupActivity implementation="org.modelix.react.ssr.mps.ReactSSRServerForMPSStartupActivity" />
-        <mps.LanguageLibrary dir="/languages" />
+        <backgroundPostStartupActivity implementation="org.modelix.mps.sync3.ModelSyncStartupActivity" />
+<!--        <mps.LanguageLibrary dir="/languages" />-->
     </extensions>
-
-    <actions>
-        <action id="modelix.OpenNodeInWebEditorAction" class="org.modelix.react.ssr.mps.OpenNodeInWebEditorAction" icon="AllIcons.Nodes.PpWeb" text="Open Node in Web Editor"/>
-        <action id="modelix.ToggleInterpretedRenderer" class="org.modelix.react.ssr.mps.ToggleInterpretedRenderer" icon="AllIcons.Nodes.PpWeb" text="Toggle Web Editor Interpreter Mode"/>
-    </actions>
 </idea-plugin>

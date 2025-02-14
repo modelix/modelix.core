@@ -11,6 +11,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -36,14 +37,41 @@ import org.modelix.mps.api.ModelixMpsApi
 import org.modelix.mps.model.sync.bulk.MPSProjectSyncMask
 import org.modelix.mps.sync3.Binding.Companion.LOG
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 @Service(Service.Level.APP)
 class AppLevelModelSyncService() : Disposable {
 
-    private val coroutinesScope = CoroutineScope(Dispatchers.IO)
+    private val connections = LinkedHashMap<String, ServerConnection>()
+    private val coroutinesScope = CoroutineScope(Dispatchers.Default)
+    private val connectionCheckingJob = coroutinesScope.launchLoop(BackoffStrategy(
+        initialDelay = 3.seconds,
+        maxDelay = 10.seconds,
+        factor = 1.2
+    )) {
+        for (connection in connections.values) {
+            connection.checkConnection()
+        }
+    }
+
+    override fun dispose() {
+        coroutinesScope.cancel("disposed")
+    }
 
     class ServerConnection(val url: String) {
         val client: IModelClientV2 = ModelClientV2.builder().url(url).build()
+        var connected: Boolean = false
+
+        suspend fun checkConnection() {
+            try {
+                client.getServerId()
+                connected = true
+            } catch (ex: Throwable) {
+                connected = false
+            }
+        }
     }
 }
 
@@ -54,6 +82,16 @@ class ModelSyncService(val project: Project) : IModelSyncService, Disposable {
     private val client: IModelClientV2 = ModelClientV2.builder().url("").build()
     private val bindings = ArrayList<Binding>()
     private val coroutinesScope = CoroutineScope(Dispatchers.IO)
+
+    @Synchronized
+    override fun addServer(url: String): IServerConnection {
+        TODO("Not yet implemented")
+    }
+
+    @Synchronized
+    override fun getServerConnections(): List<IServerConnection> {
+        TODO("Not yet implemented")
+    }
 
     @Synchronized
     fun bind(branchRef: BranchReference): Binding {
@@ -146,13 +184,11 @@ class Binding(
         }
 
         // continuous sync to MPS
-        launch {
-            jobLoop {
-                client.pollHash(branchRef, lastSyncedVersion.getValue()) // just to suspend until anything changes
-                lastSyncedVersion.updateValue { oldVersion ->
-                    client.pull(branchRef, oldVersion).also { newVersion ->
-                        runSyncToMPS(oldVersion, newVersion)
-                    }
+        launchLoop {
+            client.pollHash(branchRef, lastSyncedVersion.getValue()) // just to suspend until anything changes
+            lastSyncedVersion.updateValue { oldVersion ->
+                client.pull(branchRef, oldVersion).also { newVersion ->
+                    runSyncToMPS(oldVersion, newVersion)
                 }
             }
         }
@@ -266,15 +302,46 @@ class Binding(
     }
 }
 
-inline fun CoroutineScope.jobLoop(body: () -> Unit) {
-    while (isActive) {
+fun CoroutineScope.launchLoop(body: suspend () -> Unit) = launchLoop(BackoffStrategy(), body)
+fun CoroutineScope.launchLoop(backoffStrategy: BackoffStrategy, body: suspend () -> Unit) = launch { jobLoop(backoffStrategy, body) }
+
+suspend fun jobLoop(body: suspend () -> Unit): Unit = jobLoop(BackoffStrategy(), body)
+
+suspend fun jobLoop(
+    backoffStrategy: BackoffStrategy = BackoffStrategy(),
+    body: suspend () -> Unit,
+) {
+    while (true) {
         try {
+            backoffStrategy.wait()
             body()
+            backoffStrategy.success()
         } catch (ex: CancellationException) {
             break
         } catch (ex: Throwable) {
             LOG.warn("Exception during synchronization", ex)
+            backoffStrategy.failed()
         }
+    }
+}
+
+class BackoffStrategy(
+    val initialDelay: Duration = 500.milliseconds,
+    val maxDelay: Duration = 10.seconds,
+    val factor: Double = 1.5,
+) {
+    var currentDelay: Duration = initialDelay
+
+    fun failed() {
+        currentDelay = (currentDelay * factor).coerceAtMost(maxDelay)
+    }
+
+    fun success() {
+        currentDelay = initialDelay
+    }
+
+    suspend fun wait() {
+        delay(currentDelay)
     }
 }
 

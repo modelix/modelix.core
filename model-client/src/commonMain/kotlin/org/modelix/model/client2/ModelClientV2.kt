@@ -93,6 +93,15 @@ class ModelClientV2(
         return storeForRepository.asSequence().first { it.value.keyValueStore == store.keyValueStore }.key
     }
 
+    override suspend fun getServerId(): String {
+        return httpClient.get {
+            url {
+                takeFrom(baseUrl)
+                appendPathSegments("server-id")
+            }
+        }.bodyAsText()
+    }
+
     private suspend fun updateClientId() {
         this.clientId = httpClient.post {
             url {

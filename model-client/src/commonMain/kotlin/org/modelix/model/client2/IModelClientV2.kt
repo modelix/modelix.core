@@ -22,6 +22,7 @@ import org.modelix.modelql.core.IMonoStep
  * such as [ModelClientV2].
  */
 interface IModelClientV2 {
+    suspend fun getServerId(): String
     fun getClientId(): Int
     fun getIdGenerator(): IIdGenerator
     fun getUserId(): String?

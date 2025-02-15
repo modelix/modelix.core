@@ -135,6 +135,10 @@ class ModelSyncService(val project: Project) : IModelSyncService, Disposable {
             TODO("Not yet implemented")
         }
 
+        override suspend fun pullVersion(branchRef: BranchReference): IVersion {
+            return connection.getClient().pull(branchRef, null)
+        }
+
         override fun bind(branchRef: BranchReference): IBinding {
             val binding = Binding(
                 coroutinesScope = coroutinesScope,
@@ -169,7 +173,7 @@ class Binding(
     private val lastSyncedVersion = ValueWithMutex<IVersion?>(null)
     private var syncJob: Job? = null
     private var syncToServerTask: ValidatingJob? = null
-    private var invalidatingListener: MPSInvalidatingListener? = null
+    private var invalidatingListener: MyInvalidatingListener? = null
 
     private val repository: SRepository get() = mpsProject.repository
 
@@ -283,7 +287,13 @@ class Binding(
         }
 
         val targetRoot = MPSRepositoryAsNode(repository)
-        val versionWithUpdatedAssociations = writeToMPS {
+        writeToMPS {
+            if (invalidatingListener?.hasAnyInvalidations() == true) {
+                // Concurrent modification!
+                // Write changes from MPS to a new version first and try again after it is merged.
+                return@writeToMPS
+            }
+
             val branch = TreePointer(newVersion.getTree())
             val nodeAssociation = NodeAssociationFromModelServer(branch, targetRoot.getModel())
             ModelSynchronizer(
@@ -294,9 +304,6 @@ class Binding(
                 sourceMask = MPSProjectSyncMask(mpsProjects, false),
                 targetMask = MPSProjectSyncMask(mpsProjects, true),
             ).synchronize()
-
-            // TODO use foreign IDs for nodes not created in MPS?
-            // nodeAssociation.writeAssociations()
         }
     }
 
@@ -342,11 +349,7 @@ class Binding(
                 sync(FullSyncFilter()).also {
                     // registering the listener after the sync is sufficient
                     // because we are in a read action that prevents model changes
-                    invalidatingListener = object : MPSInvalidatingListener(repository) {
-                        override fun onInvalidation() {
-                            syncToServerTask?.invalidate()
-                        }
-                    }.also { it.start(repository) }
+                    invalidatingListener = MyInvalidatingListener().also { it.start(repository) }
                 }
             } else {
                 invalidatingListener!!.runSync { sync(it) }
@@ -363,6 +366,12 @@ class Binding(
      */
     private suspend fun runSyncToServer(oldVersion: IVersion): IVersion? {
         return runSyncFromMPS(oldVersion)?.let { client().push(branchRef, it, oldVersion) }
+    }
+
+    private inner class MyInvalidatingListener : MPSInvalidatingListener(repository) {
+        override fun onInvalidation() {
+            syncToServerTask?.invalidate()
+        }
     }
 }
 

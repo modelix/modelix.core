@@ -76,6 +76,8 @@ abstract class GenericInvalidationTree<ID, M>(root: ID, val sizeLimit: Int = 100
         rootNode.reset()
     }
 
+    fun hasAnyInvalidations(): Boolean = rootNode.hasAnyInvalidations()
+
     override fun needsDescentIntoSubtree(subtreeRoot: IReadableNode): Boolean {
         return rootNode.needsDescentIntoSubtree(getContainmentPath(subtreeRoot), 0)
     }
@@ -89,6 +91,8 @@ abstract class GenericInvalidationTree<ID, M>(root: ID, val sizeLimit: Int = 100
         private var nodeNeedsUpdate: Boolean = false
         private var allDescendantsNeedUpdate = false
         private var invalidChildren: MutableMap<E, Node<E>> = HashMap()
+
+        fun hasAnyInvalidations() = nodeNeedsUpdate || allDescendantsNeedUpdate || invalidChildren.isNotEmpty()
 
         fun reset() {
             subtreeSize = 1

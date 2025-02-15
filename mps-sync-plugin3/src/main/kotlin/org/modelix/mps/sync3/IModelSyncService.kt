@@ -30,6 +30,8 @@ interface IServerConnection {
     fun remove()
     fun getStatus(): Status
 
+    suspend fun pullVersion(branchRef: BranchReference): IVersion
+
     fun bind(branchRef: BranchReference): IBinding
     fun getBindings(): List<IBinding>
 

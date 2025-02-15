@@ -74,7 +74,7 @@ data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
 
     override fun getParent(): IWritableNode? {
         DependencyTracking.accessed((MPSContainmentDependency(node)))
-        return node.parent?.let { MPSWritableNode(it) }
+        return node.parent?.let { MPSWritableNode(it) } ?: node.model?.let { MPSModelAsNode(it) }
     }
 
     override fun changeConcept(newConcept: ConceptReference): IWritableNode {

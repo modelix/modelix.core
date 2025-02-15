@@ -1,16 +1,23 @@
 package org.modelix.mps.sync3
 
+import com.badoo.reaktive.observable.toList
 import com.intellij.testFramework.TestApplicationManager
+import jetbrains.mps.smodel.SNodeUtil
 import kotlinx.coroutines.runBlocking
 import org.modelix.model.api.TreePointer
+import org.modelix.model.api.async.PropertyChangedEvent
+import org.modelix.model.api.async.TreeChangeEvent
 import org.modelix.model.api.getDescendants
 import org.modelix.model.api.getRootNode
+import org.modelix.model.api.key
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.data.NodeData
 import org.modelix.model.data.asData
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSModuleAsNode
+import org.modelix.model.mpsadapters.MPSProperty
+import org.modelix.streams.getSuspending
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.images.builder.ImageFromDockerfile
@@ -77,8 +84,8 @@ class ProjectSyncTest : MPSTestBase() {
     }
 
     fun `test write to new repo after checkout`(): Unit = runWithModelServer { port ->
-        val branchRef1 = RepositoryId("sync-test-c1").getBranchReference()
-        val branchRef2 = RepositoryId("sync-test2-c2").getBranchReference()
+        val branchRef1 = RepositoryId("sync-test-A").getBranchReference()
+        val branchRef2 = RepositoryId("sync-test-B").getBranchReference()
         syncProjectToServer("nonTrivialProject", port, branchRef1)
 
         val emptyProject = openTestProject(null)
@@ -101,13 +108,54 @@ class ProjectSyncTest : MPSTestBase() {
         val binding2 = connection.bind(branchRef2)
         binding2.flush()
 
-        suspend fun pullJson(ref: BranchReference) = connection.pullVersion(ref).getTree().let { TreePointer(it) }.getRootNode().asData().normalizeIds().toJson()
+        suspend fun pullJson(ref: BranchReference) = connection
+            .pullVersion(ref)
+            .getTree()
+            .let { TreePointer(it) }
+            .getRootNode()
+            .asData()
+            .normalizeIds()
+            .toJson()
 
         assertEquals(pullJson(branchRef1), pullJson(branchRef2))
     }
 
+    fun `test sync after MPS change`(): Unit = runWithModelServer { port ->
+        val branchRef = RepositoryId("sync-test").getBranchReference()
+        openTestProject("nonTrivialProject")
+        val service = IModelSyncService.getInstance(mpsProject)
+        val connection = service.addServer("http://localhost:$port")
+        val binding = connection.bind(branchRef)
+        val version1 = binding.flush()
+
+        val nameProperty = SNodeUtil.property_INamedConcept_name
+        command {
+            val node = mpsProject.projectModules
+                .first { it.moduleName == "NewSolution" }
+                .models
+                .flatMap { it.rootNodes }
+                .first { it.getProperty(nameProperty) == "MyClass" }
+            println("will change property")
+            node.setProperty(nameProperty, "Changed")
+            println("property changed")
+        }
+        println("command done")
+
+        val version2 = binding.flush()
+
+        println("Version 1: $version1")
+        println("Version 2: $version2")
+
+        val changes: List<TreeChangeEvent> = version2.getTree().asAsyncTree().getChanges(version1.getTree().asAsyncTree(), false).toList().getSuspending()
+        assertEquals(1, changes.size)
+        val change = changes.single() as PropertyChangedEvent
+        assertEquals(MPSProperty(nameProperty).getUID(), change.role.getUID())
+        assertEquals("MyClass", version1.getTree().getProperty(change.nodeId, change.role.key(version1.getTree())))
+        assertEquals("Changed", version2.getTree().getProperty(change.nodeId, change.role.key(version1.getTree())))
+    }
+
     private fun runWithModelServer(body: suspend (port: Int) -> Unit) = runBlocking {
-        val mps: GenericContainer<*> = GenericContainer(modelServerImage)
+        val modelServer: GenericContainer<*> = GenericContainer(modelServerImage)
             .withExposedPorts(28101)
             .withCommand("-inmemory")
             .waitingFor(Wait.forListeningPort().withStartupTimeout(3.minutes.toJavaDuration()))
@@ -115,11 +163,11 @@ class ProjectSyncTest : MPSTestBase() {
                 println(it.utf8StringWithoutLineEnding)
             }
 
-        mps.start()
+        modelServer.start()
         try {
-            body(mps.firstMappedPort)
+            body(modelServer.firstMappedPort)
         } finally {
-            mps.stop()
+            modelServer.stop()
         }
     }
 

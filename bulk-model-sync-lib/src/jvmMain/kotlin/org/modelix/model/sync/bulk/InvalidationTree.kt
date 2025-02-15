@@ -57,7 +57,7 @@ abstract class GenericInvalidationTree<ID, M>(root: ID, val sizeLimit: Int = 100
      * Marks the node stored in the given containment path as changed.
      */
     fun invalidate(containmentPath: List<ID>, includingDescendants: Boolean = false) {
-        require(containmentPath[0] == ITree.ROOT_ID) { "Path must start with the root node" }
+        require(containmentPath[0] == rootNode.id) { "Path must start with the root node. Expected: ${rootNode.id}, was: $containmentPath" }
         rootNode.invalidate(containmentPath, 0, includingDescendants)
         rootNode.rebalance(sizeLimit)
     }

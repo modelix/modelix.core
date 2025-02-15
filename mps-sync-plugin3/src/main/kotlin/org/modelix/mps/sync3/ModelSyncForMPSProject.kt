@@ -193,16 +193,37 @@ class Binding(
     }
 
     override suspend fun flush(): IVersion {
-        while (syncJob?.isActive == true) {
-            lastSyncedVersion.flush()?.getOrThrow()?.let { return it }
-            delay(100.milliseconds)
-        }
-
-        throw IllegalStateException("Synchronization job is not running")
+        ensureInitialized()
+        syncToServer()
+        return syncToMPS()
     }
 
     private suspend fun CoroutineScope.syncJob() {
         // initial sync
+        initialSync()
+
+        // continuous sync to MPS
+        launchLoop {
+            val newHash = client().pollHash(branchRef, lastSyncedVersion.getValue())
+            if (newHash != lastSyncedVersion.getValue()?.getContentHash()) {
+                LOG.debug { "New remote version detected: $newHash" }
+                syncToMPS()
+            }
+        }
+
+        // continuous sync to server
+        syncToServerTask = launchValidation {
+            syncToServer()
+        }
+    }
+
+    suspend fun ensureInitialized() {
+        if (lastSyncedVersion.getValue() == null) {
+            initialSync()
+        }
+    }
+
+    private suspend fun initialSync() {
         lastSyncedVersion.updateValue { oldVersion ->
             LOG.debug { "Running initial synchronization" }
             if (oldVersion == null) {
@@ -213,61 +234,54 @@ class Binding(
                     LOG.debug { "Repository don't exist. Will copy the local project to the server." }
                     // repository doesn't exist -> copy the local project to the server
                     val emptyVersion = client().initRepository(branchRef.repositoryId)
-                    runSyncToServer(emptyVersion) ?: emptyVersion
+                    doSyncToServer(emptyVersion) ?: emptyVersion
                 } else {
                     LOG.debug { "Repository exists. Will checkout version $remoteVersion" }
-                    runSyncToMPS(oldVersion, remoteVersion)
+                    doSyncToMPS(oldVersion, remoteVersion)
                     remoteVersion
                 }
             } else {
                 // binding is activated again after being deactivated
 
                 // push local changes that happened while the binding was deactivated
-                println("runSyncFromMPS")
-                val localChanges = runSyncFromMPS(oldVersion)
+                val localChanges = doSyncFromMPS(oldVersion)
                 val remoteVersion = if (localChanges != null) {
                     val mergedVersion = client().push(branchRef, localChanges, oldVersion)
-                    runSyncToMPS(oldVersion, mergedVersion)
+                    doSyncToMPS(oldVersion, mergedVersion)
                     mergedVersion
                 } else {
                     client().pull(branchRef, oldVersion)
                 }
 
                 // load remote changes into MPS
-                runSyncToMPS(oldVersion, remoteVersion)
+                doSyncToMPS(oldVersion, remoteVersion)
 
                 remoteVersion
             }
         }
+    }
 
-        // continuous sync to MPS
-        launchLoop {
-            val newHash = client().pollHash(branchRef, lastSyncedVersion.getValue())
-            if (newHash != lastSyncedVersion.getValue()?.getContentHash()) {
-                LOG.debug { "New remote version detected: $newHash" }
-                lastSyncedVersion.updateValue { oldVersion ->
-                    client().pull(branchRef, oldVersion).also { newVersion ->
-                        runSyncToMPS(oldVersion, newVersion)
-                    }
-                }
-            }
-        }
-
-        // continuous sync to server
-        syncToServerTask = launchValidation {
-            lastSyncedVersion.updateValue { oldVersion ->
-                if (oldVersion == null) {
-                    // have to wait for initial sync
-                    oldVersion
-                } else {
-                    val newVersion = runSyncToServer(oldVersion)
-                    newVersion ?: oldVersion
-                }
+    suspend fun syncToMPS(): IVersion {
+        return lastSyncedVersion.updateValue { oldVersion ->
+            client().pull(branchRef, oldVersion).also { newVersion ->
+                doSyncToMPS(oldVersion, newVersion)
             }
         }
     }
 
-    private suspend fun runSyncToMPS(oldVersion: IVersion?, newVersion: IVersion) {
+    suspend fun syncToServer(): IVersion? {
+        return lastSyncedVersion.updateValue { oldVersion ->
+            if (oldVersion == null) {
+                // have to wait for initial sync
+                oldVersion
+            } else {
+                val newVersion = doSyncToServer(oldVersion)
+                newVersion ?: oldVersion
+            }
+        }
+    }
+
+    private suspend fun doSyncToMPS(oldVersion: IVersion?, newVersion: IVersion) {
         if (oldVersion?.getContentHash() == newVersion.getContentHash()) return
 
         LOG.debug { "Updating MPS project from $oldVersion to $newVersion" }
@@ -322,7 +336,7 @@ class Binding(
     /**
      * @return null if nothing changed
      */
-    private suspend fun runSyncFromMPS(oldVersion: IVersion): IVersion? {
+    private suspend fun doSyncFromMPS(oldVersion: IVersion): IVersion? {
         check(lastSyncedVersion.isLocked())
 
         LOG.debug { "Commiting MPS changes" }
@@ -364,8 +378,8 @@ class Binding(
     /**
      * @return null if nothing changed
      */
-    private suspend fun runSyncToServer(oldVersion: IVersion): IVersion? {
-        return runSyncFromMPS(oldVersion)?.let { client().push(branchRef, it, oldVersion) }
+    private suspend fun doSyncToServer(oldVersion: IVersion): IVersion? {
+        return doSyncFromMPS(oldVersion)?.let { client().push(branchRef, it, oldVersion) }
     }
 
     private inner class MyInvalidatingListener : MPSInvalidatingListener(repository) {

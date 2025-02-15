@@ -5,6 +5,13 @@ import org.modelix.model.api.IReadableNode
 
 interface IModelMask {
     fun <T : IReadableNode> filterChildren(parent: IReadableNode, role: IChildLinkReference, children: List<T>): List<T>
+
+    fun <T : IReadableNode> filterChildren(parent: IReadableNode, children: List<T>): List<T> {
+        val included = children.groupBy { it.getContainmentLink() }
+            .flatMap { filterChildren(parent, it.key, it.value) }
+            .toSet()
+        return children.filter { included.contains(it) }
+    }
 }
 
 class UnfilteredModelMask : IModelMask {

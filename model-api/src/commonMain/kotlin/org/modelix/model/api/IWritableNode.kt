@@ -92,5 +92,5 @@ class NewNodeSpec(
 }
 
 fun <T : IReadableNode> T.ancestors(includeSelf: Boolean = false): Sequence<T> {
-    return generateSequence(if (includeSelf) this else getParent() as T) { it.getParent() as T }
+    return generateSequence(if (includeSelf) this else getParent() as T?) { it.getParent() as T? }
 }

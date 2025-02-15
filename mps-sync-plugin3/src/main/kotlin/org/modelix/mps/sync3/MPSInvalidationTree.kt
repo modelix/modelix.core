@@ -66,6 +66,7 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
     private fun invalidate(node: IReadableNode) {
         if (syncActive.get()) return
         invalidationTree.invalidate(node)
+        onInvalidation()
     }
 
     private fun invalidate(node: SNode) {

@@ -3,6 +3,7 @@ package org.modelix.mps.sync3
 import com.intellij.ide.impl.OpenProjectTask
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.EDT
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.project.ex.ProjectManagerEx
@@ -12,6 +13,8 @@ import com.intellij.util.io.delete
 import jetbrains.mps.ide.ThreadUtils
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.project.MPSProject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -68,6 +71,14 @@ abstract class MPSTestBase : UsefulTestCase() {
 
     protected fun <R> writeAction(body: () -> R): R {
         return mpsProject.modelAccess.computeWriteAction(body)
+    }
+
+    protected suspend fun <R> command(body: () -> R): R {
+        var result: R? = null
+        withContext(Dispatchers.EDT) {
+            mpsProject.modelAccess.executeCommand { result = body() }
+        }
+        return result as R
     }
 
     protected fun <R> writeActionOnEdt(body: () -> R): R {

@@ -7,6 +7,7 @@ import jetbrains.mps.smodel.adapter.ids.SLanguageId
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import jetbrains.mps.smodel.adapter.structure.language.SLanguageAdapterById
 import org.jetbrains.mps.openapi.model.SModel
+import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
@@ -73,7 +74,12 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
                         val moduleName = importedModule.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference()) ?: ""
                         PersistenceFacade.getInstance().createModuleReference(ModuleId.fromString(moduleId), moduleName)
                     }
-                    val modelRef = PersistenceFacade.getInstance().createModelReference(moduleRef, PersistenceFacade.getInstance().createModelId(modelId), modelName)
+                    val smodelId: SModelId = PersistenceFacade.getInstance().createModelId(modelId)
+                    val modelRef = PersistenceFacade.getInstance().createModelReference(
+                        moduleRef.takeIf { !smodelId.isGloballyUnique },
+                        smodelId,
+                        modelName,
+                    )
                     ModelImports(element).addModelImport(modelRef)
                     return MPSModelImportAsNode(modelRef, element)
                 }

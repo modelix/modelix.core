@@ -42,9 +42,11 @@ open class ModelPersistenceWithFixedId(val moduleRef: SModuleReference, val mode
             throw UnsupportedDataSourceException(dataSource)
         }
         val header = SModelHeader.create(ModelPersistence.LAST_VERSION)
-        // We could provide a module ID to createModelReference, but MPS also doesn't provide one when creating a model.
-        val modelReference: SModelReference =
-            PersistenceFacade.getInstance().createModelReference(null, modelId, modelName.value)
+        val modelReference: SModelReference = PersistenceFacade.getInstance().createModelReference(
+            moduleRef.takeIf { !modelId.isGloballyUnique },
+            modelId,
+            modelName.value,
+        )
         header.modelReference = modelReference
         val rv = DefaultSModelDescriptor(ModelPersistenceFacility(this, dataSource as StreamDataSource), header)
         if (dataSource.getTimestamp() != -1L) {

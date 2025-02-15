@@ -27,7 +27,6 @@ import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.NewNodeSpec
 import org.modelix.model.api.NodeReference
 import org.modelix.model.api.meta.NullConcept
-import org.modelix.model.data.NodeData
 import org.modelix.mps.api.ModelixMpsApi
 
 fun SNode.asReadableNode(): IReadableNode = MPSWritableNode(this)

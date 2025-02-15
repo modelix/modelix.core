@@ -2,6 +2,7 @@ package org.modelix.mps.sync3
 
 import com.intellij.openapi.components.service
 import jetbrains.mps.ide.project.ProjectHelper
+import kotlinx.coroutines.runBlocking
 import org.modelix.model.IVersion
 import org.modelix.model.lazy.BranchReference
 import java.io.Closeable
@@ -34,7 +35,7 @@ interface IServerConnection {
 
     enum class Status {
         CONNECTED,
-        DISCONNECTED
+        DISCONNECTED,
     }
 }
 
@@ -52,4 +53,5 @@ interface IBinding : Closeable {
      * @return the latest version
      */
     suspend fun flush(): IVersion
+    fun flushBlocking() = runBlocking { flush() }
 }

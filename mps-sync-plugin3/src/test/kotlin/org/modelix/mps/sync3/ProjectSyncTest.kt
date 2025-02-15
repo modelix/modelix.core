@@ -1,7 +1,6 @@
 package org.modelix.mps.sync3
 
 import com.intellij.testFramework.TestApplicationManager
-import jetbrains.mps.ide.project.ProjectHelper
 import kotlinx.coroutines.runBlocking
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.getDescendants
@@ -9,7 +8,7 @@ import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.mpsadapters.MPSRepositoryAsNode
+import org.modelix.model.mpsadapters.MPSModuleAsNode
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.images.builder.ImageFromDockerfile
@@ -37,9 +36,10 @@ class ProjectSyncTest : MPSTestBase() {
         val project = openTestProject(testDataName)
         val service = IModelSyncService.getInstance(project)
         val connection = service.addServer("http://localhost:$port")
-        val binding = connection.bind(branchRef).use {
-            it.flush()
-        }
+        val binding = connection.bind(branchRef)
+        binding.flush()
+        binding.close()
+        project.close()
     }
 
     fun `test initial sync to server`(): Unit = runWithModelServer { port ->
@@ -58,13 +58,19 @@ class ProjectSyncTest : MPSTestBase() {
         syncProjectToServer("nonTrivialProject", port, branchRef)
 
         val emptyProject = openTestProject(null)
-        val service = IModelSyncService.getInstance(project)
+        val service = IModelSyncService.getInstance(emptyProject)
         val connection = service.addServer("http://localhost:$port")
-        connection.bind(branchRef)
-        
-        val rootNode = MPSRepositoryAsNode(ProjectHelper.fromIdeaProject(emptyProject)!!.repository)
-        val allNodes = rootNode.getDescendants(true)
-        assertEquals(183, allNodes.count())
+        val binding = connection.bind(branchRef)
+        binding.flush()
+
+        readAction {
+            assertEquals(4, mpsProject.projectModules.size)
+
+            val allNodes = mpsProject.projectModules.asSequence()
+                .map { MPSModuleAsNode(it) }
+                .flatMap { it.getDescendants(true) }
+            assertEquals(177, allNodes.count())
+        }
     }
 
     private fun runWithModelServer(body: suspend (port: Int) -> Unit) = runBlocking {
@@ -83,5 +89,4 @@ class ProjectSyncTest : MPSTestBase() {
             mps.stop()
         }
     }
-
 }

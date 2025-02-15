@@ -1,12 +1,11 @@
 package org.modelix.mps.sync3
 
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 
-private val LOG = mu.KotlinLogging.logger {  }
+private val LOG = mu.KotlinLogging.logger { }
 
 class ValidatingJob(private val validate: suspend () -> Unit) {
     private val dirty = Channel<Unit>(1, onBufferOverflow = BufferOverflow.DROP_LATEST)

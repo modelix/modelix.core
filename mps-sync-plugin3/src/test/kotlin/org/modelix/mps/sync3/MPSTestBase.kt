@@ -48,6 +48,8 @@ abstract class MPSTestBase : UsefulTestCase() {
             // processing of all events that were queued during project opening
         }
 
+        this.project = project
+
         return project
     }
 

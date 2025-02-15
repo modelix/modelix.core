@@ -27,8 +27,8 @@ class InvalidationTree(sizeLimit: Int = 100_000) : GenericInvalidationTree<Long,
     }
 }
 
-class DefaultInvalidationTree(val root: NodeReference, sizeLimit: Int = 100_000)
-    : GenericInvalidationTree<NodeReference, IModel>(root, sizeLimit = sizeLimit) {
+class DefaultInvalidationTree(val root: NodeReference, sizeLimit: Int = 100_000) :
+    GenericInvalidationTree<NodeReference, IModel>(root, sizeLimit = sizeLimit) {
     override fun ancestorsAndSelf(
         model: IModel,
         nodeId: NodeReference,

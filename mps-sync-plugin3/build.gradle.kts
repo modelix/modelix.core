@@ -27,12 +27,11 @@ dependencies {
         },
     )
 
-    //testImplementation("junit:junit:4.13.2")
+    // testImplementation("junit:junit:4.13.2")
     testImplementation(libs.testcontainers)
     testImplementation(libs.kotlin.coroutines.test)
     testImplementation(libs.logback.classic)
 }
-
 
 tasks {
     patchPluginXml {
@@ -59,6 +58,7 @@ tasks {
             ).contains(mpsMajorVersion)
         }
         jvmArgs("-Dintellij.platform.load.app.info.from.resources=true")
+        jvmArgs("-Xmx1000m")
 
         val arch = System.getProperty("os.arch")
         val jnaDir = mpsHomeDir.get().asFile.resolve("lib/jna/$arch")

@@ -74,7 +74,7 @@ class ModelImporter(
                 ): List<T> {
                     return children.filter { childFilter(it.asLegacyNode()) }
                 }
-            }
+            },
         ).synchronize(sourceNodes, targetNodes)
     }
 }

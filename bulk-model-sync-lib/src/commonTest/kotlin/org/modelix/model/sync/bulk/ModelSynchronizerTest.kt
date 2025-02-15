@@ -3,7 +3,6 @@ package org.modelix.model.sync.bulk
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IChildLinkReference
-import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.getDescendants
 import org.modelix.model.api.getRootNode

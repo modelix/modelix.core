@@ -9,4 +9,3 @@ class ModelSyncStartupActivity : ProjectActivity {
         project.service<ModelSyncService>() // just ensure it's initialized
     }
 }
-

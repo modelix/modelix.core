@@ -53,11 +53,13 @@ class AppLevelModelSyncService() : Disposable {
 
     private val connections = LinkedHashMap<String, ServerConnection>()
     private val coroutinesScope = CoroutineScope(Dispatchers.Default)
-    private val connectionCheckingJob = coroutinesScope.launchLoop(BackoffStrategy(
-        initialDelay = 3.seconds,
-        maxDelay = 10.seconds,
-        factor = 1.2
-    )) {
+    private val connectionCheckingJob = coroutinesScope.launchLoop(
+        BackoffStrategy(
+            initialDelay = 3.seconds,
+            maxDelay = 10.seconds,
+            factor = 1.2,
+        ),
+    ) {
         for (connection in connections.values) {
             connection.checkConnection()
         }
@@ -139,7 +141,7 @@ class ModelSyncService(val project: Project) : IModelSyncService, Disposable {
                 mpsProject = mpsProject,
                 client = { connection.getClient() },
                 branchRef = branchRef,
-                initialVersionHash = null
+                initialVersionHash = null,
             )
             bindings.add(binding)
             binding.activate()
@@ -160,7 +162,7 @@ class Binding(
     val initialVersionHash: String?,
 ) : IBinding {
     companion object {
-        val LOG = mu.KotlinLogging.logger {  }
+        val LOG = mu.KotlinLogging.logger { }
     }
 
     private val activated = AtomicBoolean(false)
@@ -290,7 +292,7 @@ class Binding(
                 targetRoot = targetRoot,
                 nodeAssociation = nodeAssociation,
                 sourceMask = MPSProjectSyncMask(mpsProjects, false),
-                targetMask = MPSProjectSyncMask(mpsProjects, true)
+                targetMask = MPSProjectSyncMask(mpsProjects, true),
             ).synchronize()
 
             // TODO use foreign IDs for nodes not created in MPS?
@@ -301,15 +303,14 @@ class Binding(
     private suspend fun <R> writeToMPS(body: () -> R): R {
         val result = ArrayList<R>()
         withContext(Dispatchers.EDT) {
-            repository.modelAccess.executeCommand {
-                repository.modelAccess.executeUndoTransparentCommand {
+            repository.modelAccess.executeUndoTransparentCommand {
+                ModelixMpsApi.runWithProject(mpsProject) {
                     result += body()
                 }
             }
         }
         return result.single()
     }
-
 
     /**
      * @return null if nothing changed
@@ -324,14 +325,16 @@ class Binding(
         val newVersion = repository.modelAccess.computeReadAction {
             fun sync(invalidationTree: IIncrementalUpdateInformation): IVersion? {
                 return oldVersion.runWrite(client) { branch ->
-                    ModelSynchronizer(
-                        filter = invalidationTree,
-                        sourceRoot = MPSRepositoryAsNode(ModelixMpsApi.getRepository()),
-                        targetRoot = branch.getRootNode().asWritableNode(),
-                        nodeAssociation = NodeAssociationToModelServer(branch),
-                        sourceMask = MPSProjectSyncMask(mpsProjects, true),
-                        targetMask = MPSProjectSyncMask(mpsProjects, false)
-                    ).synchronize()
+                    ModelixMpsApi.runWithProject(mpsProject) {
+                        ModelSynchronizer(
+                            filter = invalidationTree,
+                            sourceRoot = MPSRepositoryAsNode(ModelixMpsApi.getRepository()),
+                            targetRoot = branch.getRootNode().asWritableNode(),
+                            nodeAssociation = NodeAssociationToModelServer(branch),
+                            sourceMask = MPSProjectSyncMask(mpsProjects, true),
+                            targetMask = MPSProjectSyncMask(mpsProjects, false),
+                        ).synchronize()
+                    }
                 }
             }
 
@@ -350,7 +353,7 @@ class Binding(
             }
         }
 
-        LOG.debug { if (newVersion == null) "Nothing changed" else  "New version created: $newVersion" }
+        LOG.debug { if (newVersion == null) "Nothing changed" else "New version created: $newVersion" }
 
         return newVersion
     }

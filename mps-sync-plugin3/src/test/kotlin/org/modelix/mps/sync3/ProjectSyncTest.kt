@@ -4,6 +4,7 @@ import com.badoo.reaktive.observable.toList
 import com.intellij.testFramework.TestApplicationManager
 import jetbrains.mps.smodel.SNodeUtil
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.async.PropertyChangedEvent
 import org.modelix.model.api.async.TreeChangeEvent
@@ -155,19 +156,21 @@ class ProjectSyncTest : MPSTestBase() {
     }
 
     private fun runWithModelServer(body: suspend (port: Int) -> Unit) = runBlocking {
-        val modelServer: GenericContainer<*> = GenericContainer(modelServerImage)
-            .withExposedPorts(28101)
-            .withCommand("-inmemory")
-            .waitingFor(Wait.forListeningPort().withStartupTimeout(3.minutes.toJavaDuration()))
-            .withLogConsumer {
-                println(it.utf8StringWithoutLineEnding)
-            }
+        withTimeout(3.minutes) {
+            val modelServer: GenericContainer<*> = GenericContainer(modelServerImage)
+                .withExposedPorts(28101)
+                .withCommand("-inmemory")
+                .waitingFor(Wait.forListeningPort().withStartupTimeout(3.minutes.toJavaDuration()))
+                .withLogConsumer {
+                    println(it.utf8StringWithoutLineEnding)
+                }
 
-        modelServer.start()
-        try {
-            body(modelServer.firstMappedPort)
-        } finally {
-            modelServer.stop()
+            modelServer.start()
+            try {
+                body(modelServer.firstMappedPort)
+            } finally {
+                modelServer.stop()
+            }
         }
     }
 

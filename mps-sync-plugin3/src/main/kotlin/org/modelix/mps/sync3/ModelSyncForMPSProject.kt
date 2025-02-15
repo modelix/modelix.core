@@ -60,14 +60,14 @@ class AppLevelModelSyncService() : Disposable {
             factor = 1.2,
         ),
     ) {
-        for (connection in connections.values) {
+        for (connection in synchronized(connections) { connections.values.toList() }) {
             connection.checkConnection()
         }
     }
 
     @Synchronized
     fun addConnection(url: String): ServerConnection {
-        return connections.getOrPut(url) { ServerConnection(url) }
+        return synchronized(connections) { connections.getOrPut(url) { ServerConnection(url) } }
     }
 
     override fun dispose() {
@@ -192,10 +192,22 @@ class Binding(
         invalidatingListener = null
     }
 
+    private suspend fun isInSync(): Boolean {
+        check(activated.get()) { "Binding is deactivated" }
+        val version = lastSyncedVersion.flush()?.getOrThrow()
+        if (version == null) return false
+        if (invalidatingListener == null) return false
+        if (invalidatingListener?.hasAnyInvalidations() != false) return false
+        if (client().pullHash(branchRef) != version.getContentHash()) return false
+        return true
+    }
+
     override suspend fun flush(): IVersion {
-        ensureInitialized()
-        syncToServer()
-        return syncToMPS()
+        check(syncJob?.isActive == true) { "Synchronization is not active" }
+        while (!isInSync()) {
+            delay(100.milliseconds)
+        }
+        return lastSyncedVersion.getValue()!!
     }
 
     private suspend fun CoroutineScope.syncJob() {
@@ -318,6 +330,8 @@ class Binding(
                 sourceMask = MPSProjectSyncMask(mpsProjects, false),
                 targetMask = MPSProjectSyncMask(mpsProjects, true),
             ).synchronize()
+
+            if (invalidatingListener == null) initializeListener()
         }
     }
 
@@ -331,6 +345,13 @@ class Binding(
             }
         }
         return result.single()
+    }
+
+    private fun initializeListener() {
+        // Being inside a transaction ensure there are not writes, and we don't lose changes.
+        repository.modelAccess.checkReadAccess()
+        check(invalidatingListener == null)
+        invalidatingListener = MyInvalidatingListener().also { it.start(repository) }
     }
 
     /**
@@ -363,7 +384,7 @@ class Binding(
                 sync(FullSyncFilter()).also {
                     // registering the listener after the sync is sufficient
                     // because we are in a read action that prevents model changes
-                    invalidatingListener = MyInvalidatingListener().also { it.start(repository) }
+                    initializeListener()
                 }
             } else {
                 invalidatingListener!!.runSync { sync(it) }

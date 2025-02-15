@@ -186,35 +186,30 @@ class Binding(
         invalidatingListener = null
     }
 
-    override suspend fun flush() {
-        // This call just blocks if there is any active sync
-        lastSyncedVersion.updateValue { it }
-
-        // initial sync may not have started yet
-        while (lastSyncedVersion.getValue() == null && syncJob?.isActive == true) {
-            println("waiting for initial sync")
+    override suspend fun flush(): IVersion {
+        while (syncJob?.isActive == true) {
+            lastSyncedVersion.flush()?.getOrThrow()?.let { return it }
             delay(100.milliseconds)
-            lastSyncedVersion.updateValue { it }
         }
+
+        throw IllegalStateException("Synchronization job is not running")
     }
 
     private suspend fun CoroutineScope.syncJob() {
-        println("start sync job")
         // initial sync
         lastSyncedVersion.updateValue { oldVersion ->
-            println("initial sync running. oldVersion: $oldVersion")
+            LOG.debug { "Running initial synchronization" }
             if (oldVersion == null) {
                 // binding was never activated before
 
-                println("pullIfExists")
                 val remoteVersion = client().pullIfExists(branchRef)
-                println("remoteVersion: $remoteVersion")
                 if (remoteVersion == null) {
+                    LOG.debug { "Repository don't exist. Will copy the local project to the server." }
                     // repository doesn't exist -> copy the local project to the server
-                    println("will init repo")
                     val emptyVersion = client().initRepository(branchRef.repositoryId)
                     runSyncToServer(emptyVersion) ?: emptyVersion
                 } else {
+                    LOG.debug { "Repository exists. Will checkout version $remoteVersion" }
                     runSyncToMPS(oldVersion, remoteVersion)
                     remoteVersion
                 }
@@ -239,14 +234,15 @@ class Binding(
             }
         }
 
-        println("initial sync done")
-
         // continuous sync to MPS
         launchLoop {
-            client().pollHash(branchRef, lastSyncedVersion.getValue()) // just to suspend until anything changes
-            lastSyncedVersion.updateValue { oldVersion ->
-                client().pull(branchRef, oldVersion).also { newVersion ->
-                    runSyncToMPS(oldVersion, newVersion)
+            val newHash = client().pollHash(branchRef, lastSyncedVersion.getValue())
+            if (newHash != lastSyncedVersion.getValue()?.getContentHash()) {
+                LOG.debug { "New remote version detected: $newHash" }
+                lastSyncedVersion.updateValue { oldVersion ->
+                    client().pull(branchRef, oldVersion).also { newVersion ->
+                        runSyncToMPS(oldVersion, newVersion)
+                    }
                 }
             }
         }
@@ -267,6 +263,8 @@ class Binding(
 
     private suspend fun runSyncToMPS(oldVersion: IVersion?, newVersion: IVersion) {
         if (oldVersion?.getContentHash() == newVersion.getContentHash()) return
+
+        LOG.debug { "Updating MPS project from $oldVersion to $newVersion" }
 
         val mpsProjects = listOf(mpsProject as MPSProject)
         val baseVersion = oldVersion
@@ -319,6 +317,8 @@ class Binding(
     private suspend fun runSyncFromMPS(oldVersion: IVersion): IVersion? {
         check(lastSyncedVersion.isLocked())
 
+        LOG.debug { "Commiting MPS changes" }
+
         val mpsProjects = listOf(mpsProject as MPSProject)
         val client = client()
         val newVersion = repository.modelAccess.computeReadAction {
@@ -349,6 +349,8 @@ class Binding(
                 invalidatingListener!!.runSync { sync(it) }
             }
         }
+
+        LOG.debug { if (newVersion == null) "Nothing changed" else  "New version created: $newVersion" }
 
         return newVersion
     }
@@ -406,13 +408,27 @@ class BackoffStrategy(
 
 class ValueWithMutex<E>(private var value: E) {
     private val mutex = Mutex()
+    private var lastUpdateResult: Result<E>? = null
 
     suspend fun <R : E> updateValue(body: suspend (E) -> R): R {
-        mutex.withLock {
-            val newValue = body(value)
-            value = newValue
-            return newValue
+        return mutex.withLock {
+            val newValue = runCatching {
+                body(value)
+            }
+            lastUpdateResult = newValue
+            newValue.onFailure {
+                LOG.error(it) { "Value update failed. Keeping $value" }
+            }
+            newValue.getOrThrow().also { value = it }
         }
+    }
+
+    /**
+     * Blocks until any active update is done.
+     * @return The result of the most recent update attempt.
+     */
+    suspend fun flush(): Result<E>? {
+        return mutex.withLock { lastUpdateResult }
     }
 
     fun isLocked() = mutex.isLocked

@@ -2,7 +2,9 @@ package org.modelix.mps.sync3
 
 import com.intellij.openapi.components.service
 import jetbrains.mps.ide.project.ProjectHelper
+import org.modelix.model.IVersion
 import org.modelix.model.lazy.BranchReference
+import java.io.Closeable
 
 interface IModelSyncService {
     companion object {
@@ -36,14 +38,18 @@ interface IServerConnection {
     }
 }
 
-interface IBinding {
+interface IBinding : Closeable {
     val mpsProject: org.jetbrains.mps.openapi.project.Project
     val branchRef: BranchReference
     fun activate()
     fun deactivate()
 
+    override fun close() = deactivate()
+
     /**
      * Blocks until both ends are in sync.
+     * @exception Throwable if the last synchronization failed
+     * @return the latest version
      */
-    suspend fun flush()
+    suspend fun flush(): IVersion
 }

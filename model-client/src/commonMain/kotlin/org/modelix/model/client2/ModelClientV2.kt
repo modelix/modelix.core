@@ -507,7 +507,7 @@ abstract class ModelClientV2Builder {
     }
 
     fun url(url: String): ModelClientV2Builder {
-        baseUrl = url
+        baseUrl = url.trimEnd('/').ensureSuffix("/v2")
         return this
     }
 
@@ -697,3 +697,5 @@ fun IVersion.runWrite(idGenerator: IIdGenerator, author: String?, body: (IBranch
         operations = ops.map { it.getOriginalOp() }.toTypedArray(),
     )
 }
+
+private fun String.ensureSuffix(suffix: String) = if (endsWith(suffix)) this else this + suffix

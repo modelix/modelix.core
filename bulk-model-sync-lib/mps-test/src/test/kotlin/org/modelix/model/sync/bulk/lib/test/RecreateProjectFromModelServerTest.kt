@@ -28,6 +28,7 @@ import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.mpsadapters.asReadableNode
 import org.modelix.model.mpsadapters.asWritableNode
 import org.modelix.model.persistent.MapBaseStore
+import org.modelix.model.sync.bulk.FullSyncFilter
 import org.modelix.model.sync.bulk.ModelSynchronizer
 import org.modelix.model.sync.bulk.NodeAssociationFromModelServer
 import org.modelix.model.sync.bulk.NodeAssociationToModelServer
@@ -72,9 +73,11 @@ class RecreateProjectFromModelServerTest : UsefulTestCase() {
                 val mpsRoot = mpsProject.repository.asReadableNode()
                 val modelServerRoot = branch.getRootNode().asWritableNode()
                 ModelSynchronizer(
-                    filter = MPSProjectSyncMask(listOf(mpsProject), toMPS = false),
+                    filter = FullSyncFilter(),
                     sourceRoot = mpsRoot,
                     targetRoot = modelServerRoot,
+                    sourceMask = MPSProjectSyncMask(listOf(mpsProject), isMPSSide = true),
+                    targetMask = MPSProjectSyncMask(listOf(mpsProject), isMPSSide = false),
                     nodeAssociation = NodeAssociationToModelServer(branch),
                 ).synchronize()
                 println(ModelData(root = modelServerRoot.asLegacyNode().asData()).toJson())
@@ -103,9 +106,11 @@ class RecreateProjectFromModelServerTest : UsefulTestCase() {
                 val mpsRoot = mpsProject.repository.asWritableNode()
                 val modelServerRoot = branch.getRootNode().asReadableNode()
                 val modelSynchronizer = ModelSynchronizer(
-                    filter = MPSProjectSyncMask(listOf(mpsProject), toMPS = true),
+                    filter = FullSyncFilter(),
                     sourceRoot = modelServerRoot,
                     targetRoot = mpsRoot,
+                    sourceMask = MPSProjectSyncMask(listOf(mpsProject), isMPSSide = false),
+                    targetMask = MPSProjectSyncMask(listOf(mpsProject), isMPSSide = true),
                     nodeAssociation = NodeAssociationFromModelServer(branch, mpsRoot.getModel()),
                 )
                 ModelixMpsApi.runWithProject(mpsProject) {

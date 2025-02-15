@@ -41,4 +41,9 @@ interface IBinding {
     val branchRef: BranchReference
     fun activate()
     fun deactivate()
+
+    /**
+     * Blocks until both ends are in sync.
+     */
+    suspend fun flush()
 }

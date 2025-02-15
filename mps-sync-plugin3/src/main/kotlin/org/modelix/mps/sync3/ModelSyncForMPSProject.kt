@@ -1,8 +1,10 @@
 package org.modelix.mps.sync3
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.project.MPSProject
@@ -12,7 +14,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -44,6 +45,12 @@ import kotlin.time.Duration.Companion.seconds
 @Service(Service.Level.APP)
 class AppLevelModelSyncService() : Disposable {
 
+    companion object {
+        fun getInstance(): AppLevelModelSyncService {
+            return ApplicationManager.getApplication().service<AppLevelModelSyncService>()
+        }
+    }
+
     private val connections = LinkedHashMap<String, ServerConnection>()
     private val coroutinesScope = CoroutineScope(Dispatchers.Default)
     private val connectionCheckingJob = coroutinesScope.launchLoop(BackoffStrategy(
@@ -56,17 +63,28 @@ class AppLevelModelSyncService() : Disposable {
         }
     }
 
+    @Synchronized
+    fun addConnection(url: String): ServerConnection {
+        return connections.getOrPut(url) { ServerConnection(url) }
+    }
+
     override fun dispose() {
         coroutinesScope.cancel("disposed")
     }
 
     class ServerConnection(val url: String) {
-        val client: IModelClientV2 = ModelClientV2.builder().url(url).build()
-        var connected: Boolean = false
+        private var client: ValueWithMutex<IModelClientV2?> = ValueWithMutex(null)
+        private var connected: Boolean = false
+
+        suspend fun getClient(): IModelClientV2 {
+            return client.getValue() ?: client.updateValue {
+                it ?: ModelClientV2.builder().url(url).build().also { it.init() }
+            }
+        }
 
         suspend fun checkConnection() {
             try {
-                client.getServerId()
+                getClient().getServerId()
                 connected = true
             } catch (ex: Throwable) {
                 connected = false
@@ -79,13 +97,12 @@ class AppLevelModelSyncService() : Disposable {
 class ModelSyncService(val project: Project) : IModelSyncService, Disposable {
     private val mpsProject: MPSProject get() = ProjectHelper.fromIdeaProjectOrFail(project)
 
-    private val client: IModelClientV2 = ModelClientV2.builder().url("").build()
     private val bindings = ArrayList<Binding>()
     private val coroutinesScope = CoroutineScope(Dispatchers.IO)
 
     @Synchronized
     override fun addServer(url: String): IServerConnection {
-        TODO("Not yet implemented")
+        return AppLevelModelSyncService.getInstance().addConnection(url).let { Connection(it) }
     }
 
     @Synchronized
@@ -94,30 +111,51 @@ class ModelSyncService(val project: Project) : IModelSyncService, Disposable {
     }
 
     @Synchronized
-    fun bind(branchRef: BranchReference): Binding {
-        val binding = Binding(
-            coroutinesScope = coroutinesScope,
-            mpsProject = mpsProject,
-            client = client,
-            branchRef = branchRef,
-            initialVersionHash = null
-        )
-        bindings.add(binding)
-        binding.activate()
-        return binding
-    }
-
-    @Synchronized
     override fun dispose() {
         bindings.forEach { it.deactivate() }
         coroutinesScope.cancel("disposed")
+    }
+
+    inner class Connection(val connection: AppLevelModelSyncService.ServerConnection) : IServerConnection {
+        override fun activate() {
+            TODO("Not yet implemented")
+        }
+
+        override fun deactivate() {
+            TODO("Not yet implemented")
+        }
+
+        override fun remove() {
+            TODO("Not yet implemented")
+        }
+
+        override fun getStatus(): IServerConnection.Status {
+            TODO("Not yet implemented")
+        }
+
+        override fun bind(branchRef: BranchReference): IBinding {
+            val binding = Binding(
+                coroutinesScope = coroutinesScope,
+                mpsProject = mpsProject,
+                client = { connection.getClient() },
+                branchRef = branchRef,
+                initialVersionHash = null
+            )
+            bindings.add(binding)
+            binding.activate()
+            return binding
+        }
+
+        override fun getBindings(): List<IBinding> {
+            TODO("Not yet implemented")
+        }
     }
 }
 
 class Binding(
     val coroutinesScope: CoroutineScope,
     override val mpsProject: org.jetbrains.mps.openapi.project.Project,
-    val client: IModelClientV2,
+    val client: suspend () -> IModelClientV2,
     override val branchRef: BranchReference,
     val initialVersionHash: String?,
 ) : IBinding {
@@ -148,16 +186,33 @@ class Binding(
         invalidatingListener = null
     }
 
+    override suspend fun flush() {
+        // This call just blocks if there is any active sync
+        lastSyncedVersion.updateValue { it }
+
+        // initial sync may not have started yet
+        while (lastSyncedVersion.getValue() == null && syncJob?.isActive == true) {
+            println("waiting for initial sync")
+            delay(100.milliseconds)
+            lastSyncedVersion.updateValue { it }
+        }
+    }
+
     private suspend fun CoroutineScope.syncJob() {
+        println("start sync job")
         // initial sync
         lastSyncedVersion.updateValue { oldVersion ->
+            println("initial sync running. oldVersion: $oldVersion")
             if (oldVersion == null) {
                 // binding was never activated before
 
-                val remoteVersion = client.pullIfExists(branchRef)
+                println("pullIfExists")
+                val remoteVersion = client().pullIfExists(branchRef)
+                println("remoteVersion: $remoteVersion")
                 if (remoteVersion == null) {
                     // repository doesn't exist -> copy the local project to the server
-                    val emptyVersion = client.initRepository(branchRef.repositoryId)
+                    println("will init repo")
+                    val emptyVersion = client().initRepository(branchRef.repositoryId)
                     runSyncToServer(emptyVersion) ?: emptyVersion
                 } else {
                     runSyncToMPS(oldVersion, remoteVersion)
@@ -167,13 +222,14 @@ class Binding(
                 // binding is activated again after being deactivated
 
                 // push local changes that happened while the binding was deactivated
+                println("runSyncFromMPS")
                 val localChanges = runSyncFromMPS(oldVersion)
                 val remoteVersion = if (localChanges != null) {
-                    val mergedVersion = client.push(branchRef, localChanges, oldVersion)
+                    val mergedVersion = client().push(branchRef, localChanges, oldVersion)
                     runSyncToMPS(oldVersion, mergedVersion)
                     mergedVersion
                 } else {
-                    client.pull(branchRef, oldVersion)
+                    client().pull(branchRef, oldVersion)
                 }
 
                 // load remote changes into MPS
@@ -183,11 +239,13 @@ class Binding(
             }
         }
 
+        println("initial sync done")
+
         // continuous sync to MPS
         launchLoop {
-            client.pollHash(branchRef, lastSyncedVersion.getValue()) // just to suspend until anything changes
+            client().pollHash(branchRef, lastSyncedVersion.getValue()) // just to suspend until anything changes
             lastSyncedVersion.updateValue { oldVersion ->
-                client.pull(branchRef, oldVersion).also { newVersion ->
+                client().pull(branchRef, oldVersion).also { newVersion ->
                     runSyncToMPS(oldVersion, newVersion)
                 }
             }
@@ -262,6 +320,7 @@ class Binding(
         check(lastSyncedVersion.isLocked())
 
         val mpsProjects = listOf(mpsProject as MPSProject)
+        val client = client()
         val newVersion = repository.modelAccess.computeReadAction {
             fun sync(invalidationTree: IIncrementalUpdateInformation): IVersion? {
                 return oldVersion.runWrite(client) { branch ->
@@ -298,7 +357,7 @@ class Binding(
      * @return null if nothing changed
      */
     private suspend fun runSyncToServer(oldVersion: IVersion): IVersion? {
-        return runSyncFromMPS(oldVersion)?.let { client.push(branchRef, it, oldVersion) }
+        return runSyncFromMPS(oldVersion)?.let { client().push(branchRef, it, oldVersion) }
     }
 }
 
@@ -348,9 +407,11 @@ class BackoffStrategy(
 class ValueWithMutex<E>(private var value: E) {
     private val mutex = Mutex()
 
-    suspend fun updateValue(body: suspend (E) -> E) {
+    suspend fun <R : E> updateValue(body: suspend (E) -> R): R {
         mutex.withLock {
-            value = body(value)
+            val newValue = body(value)
+            value = newValue
+            return newValue
         }
     }
 

@@ -49,25 +49,25 @@ class ModelSynchronizer(
     }
 
     fun synchronize(sourceNodes: List<IReadableNode>, targetNodes: List<IWritableNode>) {
-        logger.info { "Synchronizing nodes..." }
+        logger.debug { "Synchronizing nodes..." }
         for ((sourceNode, targetNode) in sourceNodes.zip(targetNodes)) {
             synchronizeNode(sourceNode, targetNode)
         }
-        logger.info { "Synchronizing pending references..." }
+        logger.debug { "Synchronizing pending references..." }
         pendingReferences.forEach {
             if (!it.trySyncReference()) {
                 it.copyTargetRef()
             }
         }
-        logger.info { "Removing extra nodes..." }
+        logger.debug { "Removing extra nodes..." }
         nodesToRemove.filter { it.isValid() }.forEach { it.remove() }
-        logger.info { "Synchronization finished." }
+        logger.debug { "Synchronization finished." }
     }
 
     private fun synchronizeNode(sourceNode: IReadableNode, targetNode: IWritableNode) {
         nodeAssociation.associate(sourceNode, targetNode)
         if (filter.needsSynchronization(sourceNode)) {
-            logger.info { "Synchronizing changed node. sourceNode = $sourceNode" }
+            logger.trace { "Synchronizing changed node. sourceNode = $sourceNode" }
             synchronizeProperties(sourceNode, targetNode)
             synchronizeReferences(sourceNode, targetNode)
 
@@ -87,7 +87,7 @@ class ModelSynchronizer(
                 synchronizeNode(sourceChild, targetChild)
             }
         } else {
-            logger.info { "Skipping subtree due to filter. root = $sourceNode" }
+            logger.trace { "Skipping subtree due to filter. root = $sourceNode" }
         }
     }
 

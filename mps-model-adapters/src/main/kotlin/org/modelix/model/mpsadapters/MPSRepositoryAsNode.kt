@@ -1,7 +1,9 @@
 package org.modelix.model.mpsadapters
 
+import jetbrains.mps.module.ModuleDeleteHelper
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
+import jetbrains.mps.project.Project
 import jetbrains.mps.project.ProjectBase
 import jetbrains.mps.smodel.Generator
 import jetbrains.mps.smodel.tempmodel.TempModule
@@ -62,16 +64,81 @@ data class MPSRepositoryAsNode(@get:JvmName("getRepository_") val repository: SR
                         else -> throw UnsupportedOperationException("Module type not supported yet: ${sourceNode.getConceptReference()}")
                     }
                 }
+
+                override fun move(
+                    element: SRepository,
+                    index: Int,
+                    child: IWritableNode,
+                ) {
+                    super.move(element, index, child)
+                }
+
+                override fun remove(element: SRepository, child: IWritableNode) {
+                    ModuleDeleteHelper(ModelixMpsApi.getMPSProject() as Project).deleteModules(
+                        /* modules = */
+                        listOf((child as MPSModuleAsNode<*>).module),
+                        /* safeDelete = */
+                        false,
+                        /* deleteFiles = */
+                        true,
+                    )
+                }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Repository.tempModules.toReference() to object : IChildAccessor<SRepository> {
                 override fun read(element: SRepository): List<IWritableNode> {
                     return element.modules.filter { it.isTempModule() }.map { MPSModuleAsNode(it) }
+                }
+
+                override fun addNew(
+                    element: SRepository,
+                    index: Int,
+                    sourceNode: SpecWithResolvedConcept,
+                ): IWritableNode {
+                    return super.addNew(element, index, sourceNode)
+                }
+
+                override fun move(
+                    element: SRepository,
+                    index: Int,
+                    child: IWritableNode,
+                ) {
+                    super.move(element, index, child)
+                }
+
+                override fun remove(
+                    element: SRepository,
+                    child: IWritableNode,
+                ) {
+                    super.remove(element, child)
                 }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Repository.projects.toReference() to object : IChildAccessor<SRepository> {
                 override fun read(element: SRepository): List<IWritableNode> {
                     return ModelixMpsApi.getMPSProjects()
                         .map { MPSProjectAsNode(it as ProjectBase) }
+                }
+
+                override fun addNew(
+                    element: SRepository,
+                    index: Int,
+                    sourceNode: SpecWithResolvedConcept,
+                ): IWritableNode {
+                    return super.addNew(element, index, sourceNode)
+                }
+
+                override fun move(
+                    element: SRepository,
+                    index: Int,
+                    child: IWritableNode,
+                ) {
+                    super.move(element, index, child)
+                }
+
+                override fun remove(
+                    element: SRepository,
+                    child: IWritableNode,
+                ) {
+                    super.remove(element, child)
                 }
             },
         )

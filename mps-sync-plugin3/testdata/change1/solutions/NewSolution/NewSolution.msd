@@ -32,4 +32,3 @@
     <module reference="471b29cb-3253-460b-9743-1e1443884a6b(NewSolution)" version="0" />
   </dependencyVersions>
 </solution>
-

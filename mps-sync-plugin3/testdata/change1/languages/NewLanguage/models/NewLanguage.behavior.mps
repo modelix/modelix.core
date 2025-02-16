@@ -9,4 +9,3 @@
   <imports />
   <registry />
 </model>
-

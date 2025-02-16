@@ -24,10 +24,56 @@ data class MPSProjectAsNode(val project: ProjectBase) : MPSGenericNodeAdapter<Pr
                 override fun read(element: ProjectBase): List<IWritableNode> {
                     return element.projectModules.map { MPSProjectModuleAsNode(element, it) }
                 }
+
+                override fun addNew(
+                    element: ProjectBase,
+                    index: Int,
+                    sourceNode: SpecWithResolvedConcept,
+                ): IWritableNode {
+                    return super.addNew(element, index, sourceNode)
+                }
+
+                override fun move(
+                    element: ProjectBase,
+                    index: Int,
+                    child: IWritableNode,
+                ) {
+                    super.move(element, index, child)
+                }
+
+                override fun remove(
+                    element: ProjectBase,
+                    child: IWritableNode,
+                ) {
+                    element.removeModule((child as MPSProjectModuleAsNode).module)
+                }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Project.modules.toReference() to object : IChildAccessor<ProjectBase> {
                 override fun read(element: ProjectBase): List<IWritableNode> {
                     return return emptyList() // modules child link is deprecated
+                }
+
+                override fun addNew(
+                    element: ProjectBase,
+                    index: Int,
+                    sourceNode: SpecWithResolvedConcept,
+                ): IWritableNode {
+                    return super.addNew(element, index, sourceNode)
+                }
+
+                override fun move(
+                    element: ProjectBase,
+                    index: Int,
+                    child: IWritableNode,
+                ) {
+                    super.move(element, index, child)
+                }
+
+                override fun remove(
+                    element: ProjectBase,
+                    child: IWritableNode,
+                ) {
+                    super.remove(element, child)
                 }
             },
         )

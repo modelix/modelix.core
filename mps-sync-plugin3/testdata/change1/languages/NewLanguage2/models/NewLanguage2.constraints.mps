@@ -16,4 +16,3 @@
   <imports />
   <registry />
 </model>
-

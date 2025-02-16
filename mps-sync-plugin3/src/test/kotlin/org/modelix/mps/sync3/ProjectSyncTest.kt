@@ -5,6 +5,8 @@ import com.intellij.testFramework.TestApplicationManager
 import jetbrains.mps.smodel.SNodeUtil
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import org.junit.Assert
+import org.modelix.model.IVersion
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.async.PropertyChangedEvent
 import org.modelix.model.api.async.TreeChangeEvent
@@ -45,14 +47,20 @@ class ProjectSyncTest : MPSTestBase() {
         super.tearDown()
     }
 
-    private suspend fun syncProjectToServer(testDataName: String, port: Int, branchRef: BranchReference) {
+    private suspend fun syncProjectToServer(
+        testDataName: String,
+        port: Int,
+        branchRef: BranchReference,
+        lastSyncedVersion: String? = null,
+    ): IVersion {
         val project = openTestProject(testDataName)
         val service = IModelSyncService.getInstance(project)
         val connection = service.addServer("http://localhost:$port")
-        val binding = connection.bind(branchRef)
-        binding.flush()
+        val binding = connection.bind(branchRef, lastSyncedVersion)
+        val version = binding.flush()
         binding.close()
         project.close()
+        return version
     }
 
     fun `test initial sync to server`(): Unit = runWithModelServer { port ->
@@ -225,10 +233,20 @@ class ProjectSyncTest : MPSTestBase() {
         }
     }
 
-    fun `test sync after reconnect`(): Unit = runWithModelServer { port ->
+    fun `test sync after reconnect ignoring local`(): Unit = runWithModelServer { port ->
         val branchRef = RepositoryId("sync-test").getBranchReference()
-        syncProjectToServer("initial", port, branchRef)
-        syncProjectToServer("change1", port, branchRef)
+        val version1 = syncProjectToServer("initial", port, branchRef)
+        val version2 = syncProjectToServer("change1", port, branchRef)
+
+        assertEquals(version1.getContentHash(), version2.getContentHash())
+    }
+
+    fun `test sync after reconnect merging local`(): Unit = runWithModelServer { port ->
+        val branchRef = RepositoryId("sync-test").getBranchReference()
+        val version1 = syncProjectToServer("initial", port, branchRef)
+        val version2 = syncProjectToServer("change1", port, branchRef, version1.getContentHash())
+
+        Assert.assertNotEquals(version1.getContentHash(), version2.getContentHash())
     }
 
     private fun runWithModelServer(body: suspend (port: Int) -> Unit) = runBlocking {

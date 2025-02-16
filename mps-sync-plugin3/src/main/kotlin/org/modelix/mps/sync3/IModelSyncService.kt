@@ -32,7 +32,8 @@ interface IServerConnection {
 
     suspend fun pullVersion(branchRef: BranchReference): IVersion
 
-    fun bind(branchRef: BranchReference): IBinding
+    fun bind(branchRef: BranchReference): IBinding = bind(branchRef, null)
+    fun bind(branchRef: BranchReference, lastSyncedVersionHash: String?): IBinding
     fun getBindings(): List<IBinding>
 
     enum class Status {

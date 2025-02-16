@@ -13,6 +13,7 @@ import jetbrains.mps.smodel.MPSModuleRepository
 import jetbrains.mps.smodel.SModelId
 import jetbrains.mps.smodel.adapter.ids.SLanguageId
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
+import jetbrains.mps.workbench.actions.model.DeleteModelHelper
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.FacetsFacade
 import org.jetbrains.mps.openapi.module.SModule
@@ -95,6 +96,21 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                             ?.let { PersistenceFacade.getInstance().createModelId(it) } ?: SModelId.generate(),
                     ).let { MPSModelAsNode(it) }
                 }
+
+                override fun move(
+                    element: SModule,
+                    index: Int,
+                    child: IWritableNode,
+                ) {
+                    super.move(element, index, child)
+                }
+
+                override fun remove(
+                    element: SModule,
+                    child: IWritableNode,
+                ) {
+                    DeleteModelHelper.delete(element, (child as MPSModelAsNode).model, true)
+                }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Module.facets.toReference() to object : IChildAccessor<SModule> {
                 override fun read(element: SModule): List<IWritableNode> {
@@ -130,6 +146,14 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                     val moduleDescriptor = checkNotNull(module.moduleDescriptor) { "Has no moduleDescriptor: $module" }
                     val facet = child as MPSJavaModuleFacetAsNode
                     moduleDescriptor.removeFacetDescriptor(facet.facet)
+                }
+
+                override fun move(
+                    element: SModule,
+                    index: Int,
+                    child: IWritableNode,
+                ) {
+                    super.move(element, index, child)
                 }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies.toReference() to object : IChildAccessor<SModule> {
@@ -173,6 +197,14 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                     val dependency = child as MPSModuleDependencyAsNode
                     moduleDescriptor.dependencyVersions.remove(dependency.moduleReference)
                 }
+
+                override fun move(
+                    element: SModule,
+                    index: Int,
+                    child: IWritableNode,
+                ) {
+                    super.move(element, index, child)
+                }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Module.languageDependencies.toReference() to object : IChildAccessor<SModule> {
                 override fun read(element: SModule): List<IWritableNode> {
@@ -212,6 +244,31 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                             MPSDevKitDependencyAsNode(ref, moduleImporter = element)
                         }
                         else -> error("Unsupported: ${sourceNode.getConceptReference()}")
+                    }
+                }
+
+                override fun move(
+                    element: SModule,
+                    index: Int,
+                    child: IWritableNode,
+                ) {
+                    super.move(element, index, child)
+                }
+
+                override fun remove(
+                    element: SModule,
+                    child: IWritableNode,
+                ) {
+                    val module = element as AbstractModule
+                    val moduleDescriptor = checkNotNull(module.moduleDescriptor) { "No descriptor: $element" }
+                    when (child) {
+                        is MPSSingleLanguageDependencyAsNode -> {
+                            moduleDescriptor.languageVersions.remove(child.moduleReference)
+                        }
+                        is MPSDevKitDependencyAsNode -> {
+                            moduleDescriptor.usedDevkits.remove(child.moduleReference)
+                        }
+                        else -> throw IllegalArgumentException("Unsupported child type: $child")
                     }
                 }
             },
@@ -320,6 +377,21 @@ data class MPSLanguageAsNode(override val module: Language) : MPSModuleAsNode<La
                         sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())!!.let { ModuleId.fromString(it) },
                     ).let { MPSGeneratorAsNode(it) }
                 }
+
+                override fun move(
+                    element: Language,
+                    index: Int,
+                    child: IWritableNode,
+                ) {
+                    super.move(element, index, child)
+                }
+
+                override fun remove(
+                    element: Language,
+                    child: IWritableNode,
+                ) {
+                    super.remove(element, child)
+                }
             },
         )
     }
@@ -367,6 +439,18 @@ data class MPSDevkitAsNode(override val module: DevKit) : MPSModuleAsNode<DevKit
                     element.moduleDescriptor!!.exportedLanguages.add(ref)
                     return MPSModuleReferenceAsNode(MPSModuleAsNode(element), BuiltinLanguages.MPSRepositoryConcepts.DevKit.exportedLanguages.toReference(), ref)
                 }
+
+                override fun move(
+                    element: DevKit,
+                    index: Int,
+                    child: IWritableNode,
+                ) {
+                    super.move(element, index, child)
+                }
+
+                override fun remove(element: DevKit, child: IWritableNode) {
+                    element.moduleDescriptor!!.exportedLanguages.remove((child as MPSModuleReferenceAsNode).target)
+                }
             },
             BuiltinLanguages.MPSRepositoryConcepts.DevKit.exportedSolutions.toReference() to object : IChildAccessor<DevKit> {
                 override fun read(element: DevKit): List<IWritableNode> {
@@ -387,6 +471,18 @@ data class MPSDevkitAsNode(override val module: DevKit) : MPSModuleAsNode<DevKit
                     element.moduleDescriptor!!.exportedSolutions.add(ref)
                     return MPSModuleReferenceAsNode(MPSModuleAsNode(element), BuiltinLanguages.MPSRepositoryConcepts.DevKit.exportedSolutions.toReference(), ref)
                 }
+
+                override fun move(
+                    element: DevKit,
+                    index: Int,
+                    child: IWritableNode,
+                ) {
+                    super.move(element, index, child)
+                }
+
+                override fun remove(element: DevKit, child: IWritableNode) {
+                    super.remove(element, child)
+                }
             },
             BuiltinLanguages.MPSRepositoryConcepts.DevKit.extendedDevkits.toReference() to object : IChildAccessor<DevKit> {
                 override fun read(element: DevKit): List<IWritableNode> {
@@ -406,6 +502,18 @@ data class MPSDevkitAsNode(override val module: DevKit) : MPSModuleAsNode<DevKit
                     val ref = readModuleReference(element, sourceNode.getNode())
                     element.moduleDescriptor!!.extendedDevkits.add(ref)
                     return MPSModuleReferenceAsNode(MPSModuleAsNode(element), BuiltinLanguages.MPSRepositoryConcepts.DevKit.extendedDevkits.toReference(), ref)
+                }
+
+                override fun move(
+                    element: DevKit,
+                    index: Int,
+                    child: IWritableNode,
+                ) {
+                    super.move(element, index, child)
+                }
+
+                override fun remove(element: DevKit, child: IWritableNode) {
+                    super.remove(element, child)
                 }
             },
         )

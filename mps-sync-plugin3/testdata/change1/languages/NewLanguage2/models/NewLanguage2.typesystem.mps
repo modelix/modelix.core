@@ -8,4 +8,3 @@
   <imports />
   <registry />
 </model>
-

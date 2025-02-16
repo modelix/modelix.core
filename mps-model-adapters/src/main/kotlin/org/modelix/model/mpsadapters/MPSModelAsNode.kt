@@ -47,6 +47,21 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
                         .also { element.addRootNode(it) }
                         .let { MPSWritableNode(it) }
                 }
+
+                override fun move(
+                    element: SModel,
+                    index: Int,
+                    child: IWritableNode,
+                ) {
+                    super.move(element, index, child)
+                }
+
+                override fun remove(
+                    element: SModel,
+                    child: IWritableNode,
+                ) {
+                    element.removeRootNode((child as MPSWritableNode).node)
+                }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports.toReference() to object : IChildAccessor<SModel> {
                 override fun read(element: SModel): List<IWritableNode> {
@@ -82,6 +97,21 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
                     )
                     ModelImports(element).addModelImport(modelRef)
                     return MPSModelImportAsNode(modelRef, element)
+                }
+
+                override fun move(
+                    element: SModel,
+                    index: Int,
+                    child: IWritableNode,
+                ) {
+                    super.move(element, index, child)
+                }
+
+                override fun remove(
+                    element: SModel,
+                    child: IWritableNode,
+                ) {
+                    ModelImports(element).removeModelImport((child as MPSModelImportAsNode).importedModel)
                 }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages.toReference() to object : IChildAccessor<SModel> {
@@ -136,6 +166,14 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
                     require(child is MPSSingleLanguageDependencyAsNode) { "Node $child to be removed is not a single language dependency." }
                     val languageToRemove = MetaAdapterFactory.getLanguage(child.moduleReference.sourceModuleReference)
                     element.deleteLanguageId(languageToRemove)
+                }
+
+                override fun move(
+                    element: SModel,
+                    index: Int,
+                    child: IWritableNode,
+                ) {
+                    super.move(element, index, child)
                 }
             },
         )

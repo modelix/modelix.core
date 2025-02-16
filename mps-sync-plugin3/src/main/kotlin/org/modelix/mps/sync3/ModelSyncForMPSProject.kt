@@ -139,13 +139,13 @@ class ModelSyncService(val project: Project) : IModelSyncService, Disposable {
             return connection.getClient().pull(branchRef, null)
         }
 
-        override fun bind(branchRef: BranchReference): IBinding {
+        override fun bind(branchRef: BranchReference, lastSyncedVersionHash: String?): IBinding {
             val binding = Binding(
                 coroutinesScope = coroutinesScope,
                 mpsProject = mpsProject,
                 client = { connection.getClient() },
                 branchRef = branchRef,
-                initialVersionHash = null,
+                initialVersionHash = lastSyncedVersionHash,
             )
             bindings.add(binding)
             binding.activate()

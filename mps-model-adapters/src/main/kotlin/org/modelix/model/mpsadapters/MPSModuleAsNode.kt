@@ -268,14 +268,12 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
         if (module !is AbstractModule) {
             return null
         }
-        val languageDependencies = module.usedLanguages
-        languageDependencies?.forEach { entry ->
-            val sourceModelReference = entry
-            if (sourceModelReference.sourceModuleReference.moduleId == dependencyId) {
-                return MPSSingleLanguageDependencyAsNode(sourceModelReference, moduleImporter = module)
-            }
-        }
-        return null
+
+        return childAccessors
+            .first { it.first == BuiltinLanguages.MPSRepositoryConcepts.Module.languageDependencies.toReference() }
+            .second.read(module)
+            .filterIsInstance<MPSSingleLanguageDependencyAsNode>()
+            .find { it.moduleReference.sourceModuleReference.moduleId == dependencyId }
     }
 
     internal fun findDevKitDependency(dependencyId: SModuleId): MPSDevKitDependencyAsNode? {
@@ -283,12 +281,12 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
         if (module !is AbstractModule) {
             return null
         }
-        module.moduleDescriptor?.usedDevkits?.forEach { devKit ->
-            if (devKit.moduleId == dependencyId) {
-                return MPSDevKitDependencyAsNode(devKit, module)
-            }
-        }
-        return null
+
+        return childAccessors
+            .first { it.first == BuiltinLanguages.MPSRepositoryConcepts.Module.languageDependencies.toReference() }
+            .second.read(module)
+            .filterIsInstance<MPSDevKitDependencyAsNode>()
+            .find { it.moduleReference.moduleId == dependencyId }
     }
 }
 

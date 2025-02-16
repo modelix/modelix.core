@@ -19,6 +19,7 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSModuleAsNode
 import org.modelix.model.mpsadapters.MPSProperty
+import org.modelix.model.mpsadapters.tryDecodeModelixReference
 import org.modelix.streams.getSuspending
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
@@ -184,6 +185,44 @@ class ProjectSyncTest : MPSTestBase() {
         val version2 = binding.flush()
 
         assertEquals("Changed", readAction { mpsNode.getProperty(nameProperty.property) })
+    }
+
+    fun `test new node on model-server`(): Unit = runWithModelServer { port ->
+        val branchRef = RepositoryId("sync-test").getBranchReference()
+        openTestProject("nonTrivialProject")
+        val service = IModelSyncService.getInstance(mpsProject)
+        val connection = service.addServer("http://localhost:$port")
+        val binding = connection.bind(branchRef)
+        val version1 = binding.flush()
+
+        val nameProperty = MPSProperty(SNodeUtil.property_INamedConcept_name)
+        val mpsNode = writeAction {
+            mpsProject.projectModules
+                .first { it.moduleName == "NewSolution" }
+                .models
+                .flatMap { it.rootNodes }
+                .first { it.getProperty(nameProperty.property) == "MyClass" }
+        }
+
+        assertEquals("MyClass", readAction { mpsNode.getProperty(nameProperty.property) })
+
+        val client = ModelClientV2.builder().url("http://localhost:$port").build().also { it.init() }
+        val newNodeIdOnServer = client.runWriteOnBranch(branchRef) { branch ->
+            val node = branch.getRootNode().getDescendants(true)
+                .first { it.getPropertyValue(nameProperty) == "MyClass" }
+                .asWritableNode()
+            val node2 = node.getParent()!!.addNewChild(node.getContainmentLink(), -1, node.getConceptReference())
+            node2.setPropertyValue(nameProperty.toReference(), "NewClass")
+            node2.getNodeReference().serialize()
+        }
+        val version2 = binding.flush()
+
+        readAction {
+            val siblings = mpsNode.model!!.rootNodes
+            val newNode = siblings.first { it.getProperty(nameProperty.property) == "NewClass" }
+            assertEquals("NewClass", newNode.getProperty(nameProperty.property))
+            assertEquals(newNodeIdOnServer, newNode.nodeId.tryDecodeModelixReference()?.serialize())
+        }
     }
 
     private fun runWithModelServer(body: suspend (port: Int) -> Unit) = runBlocking {

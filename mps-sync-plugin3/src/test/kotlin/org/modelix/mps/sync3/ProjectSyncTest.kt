@@ -57,7 +57,7 @@ class ProjectSyncTest : MPSTestBase() {
 
     fun `test initial sync to server`(): Unit = runWithModelServer { port ->
         val branchRef = RepositoryId("sync-test").getBranchReference()
-        syncProjectToServer("nonTrivialProject", port, branchRef)
+        syncProjectToServer("initial", port, branchRef)
 
         val client = ModelClientV2.builder().url("http://localhost:$port").build()
         val version = client.pull(branchRef, null)
@@ -68,7 +68,7 @@ class ProjectSyncTest : MPSTestBase() {
 
     fun `test checkout into empty project`(): Unit = runWithModelServer { port ->
         val branchRef = RepositoryId("sync-test").getBranchReference()
-        syncProjectToServer("nonTrivialProject", port, branchRef)
+        syncProjectToServer("initial", port, branchRef)
 
         val emptyProject = openTestProject(null)
         val service = IModelSyncService.getInstance(emptyProject)
@@ -89,7 +89,7 @@ class ProjectSyncTest : MPSTestBase() {
     fun `test write to new repo after checkout`(): Unit = runWithModelServer { port ->
         val branchRef1 = RepositoryId("sync-test-A").getBranchReference()
         val branchRef2 = RepositoryId("sync-test-B").getBranchReference()
-        syncProjectToServer("nonTrivialProject", port, branchRef1)
+        syncProjectToServer("initial", port, branchRef1)
 
         val emptyProject = openTestProject(null)
         val service = IModelSyncService.getInstance(emptyProject)
@@ -125,7 +125,7 @@ class ProjectSyncTest : MPSTestBase() {
 
     fun `test sync after MPS change`(): Unit = runWithModelServer { port ->
         val branchRef = RepositoryId("sync-test").getBranchReference()
-        openTestProject("nonTrivialProject")
+        openTestProject("initial")
         val service = IModelSyncService.getInstance(mpsProject)
         val connection = service.addServer("http://localhost:$port")
         val binding = connection.bind(branchRef)
@@ -159,7 +159,7 @@ class ProjectSyncTest : MPSTestBase() {
 
     fun `test sync after model-server change`(): Unit = runWithModelServer { port ->
         val branchRef = RepositoryId("sync-test").getBranchReference()
-        openTestProject("nonTrivialProject")
+        openTestProject("initial")
         val service = IModelSyncService.getInstance(mpsProject)
         val connection = service.addServer("http://localhost:$port")
         val binding = connection.bind(branchRef)
@@ -189,7 +189,7 @@ class ProjectSyncTest : MPSTestBase() {
 
     fun `test new node on model-server`(): Unit = runWithModelServer { port ->
         val branchRef = RepositoryId("sync-test").getBranchReference()
-        openTestProject("nonTrivialProject")
+        openTestProject("initial")
         val service = IModelSyncService.getInstance(mpsProject)
         val connection = service.addServer("http://localhost:$port")
         val binding = connection.bind(branchRef)

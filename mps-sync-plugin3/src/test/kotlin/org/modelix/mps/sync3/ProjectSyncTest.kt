@@ -12,6 +12,7 @@ import org.modelix.model.api.getDescendants
 import org.modelix.model.api.getRootNode
 import org.modelix.model.api.key
 import org.modelix.model.client2.ModelClientV2
+import org.modelix.model.client2.runWriteOnBranch
 import org.modelix.model.data.NodeData
 import org.modelix.model.data.asData
 import org.modelix.model.lazy.BranchReference
@@ -28,11 +29,11 @@ import kotlin.io.path.absolute
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.toJavaDuration
 
-class ProjectSyncTest : MPSTestBase() {
+private val modelServerDir = Path.of("../model-server").absolute().normalize()
+private val modelServerImage = ImageFromDockerfile()
+    .withDockerfile(modelServerDir.resolve("Dockerfile"))
 
-    private val modelServerDir = Path.of("../model-server").absolute().normalize()
-    private val modelServerImage = ImageFromDockerfile()
-        .withDockerfile(modelServerDir.resolve("Dockerfile"))
+class ProjectSyncTest : MPSTestBase() {
 
     override fun setUp() {
         super.setUp()
@@ -153,6 +154,36 @@ class ProjectSyncTest : MPSTestBase() {
         assertEquals(MPSProperty(nameProperty).getUID(), change.role.getUID())
         assertEquals("MyClass", version1.getTree().getProperty(change.nodeId, change.role.key(version1.getTree())))
         assertEquals("Changed", version2.getTree().getProperty(change.nodeId, change.role.key(version1.getTree())))
+    }
+
+    fun `test sync after model-server change`(): Unit = runWithModelServer { port ->
+        val branchRef = RepositoryId("sync-test").getBranchReference()
+        openTestProject("nonTrivialProject")
+        val service = IModelSyncService.getInstance(mpsProject)
+        val connection = service.addServer("http://localhost:$port")
+        val binding = connection.bind(branchRef)
+        val version1 = binding.flush()
+
+        val nameProperty = MPSProperty(SNodeUtil.property_INamedConcept_name)
+        val mpsNode = readAction {
+            mpsProject.projectModules
+                .first { it.moduleName == "NewSolution" }
+                .models
+                .flatMap { it.rootNodes }
+                .first { it.getProperty(nameProperty.property) == "MyClass" }
+        }
+
+        assertEquals("MyClass", readAction { mpsNode.getProperty(nameProperty.property) })
+
+        val client = ModelClientV2.builder().url("http://localhost:$port").build().also { it.init() }
+        client.runWriteOnBranch(branchRef) { branch ->
+            val node = branch.getRootNode().getDescendants(true)
+                .first { it.getPropertyValue(nameProperty) == "MyClass" }
+            node.setPropertyValue(nameProperty, "Changed")
+        }
+        val version2 = binding.flush()
+
+        assertEquals("Changed", readAction { mpsNode.getProperty(nameProperty.property) })
     }
 
     private fun runWithModelServer(body: suspend (port: Int) -> Unit) = runBlocking {

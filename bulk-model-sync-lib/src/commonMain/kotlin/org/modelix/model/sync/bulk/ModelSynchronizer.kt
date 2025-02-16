@@ -84,7 +84,7 @@ class ModelSynchronizer(
         } else if (filter.needsDescentIntoSubtree(sourceNode)) {
             for (sourceChild in sourceMask.filterChildren(sourceNode, sourceNode.getAllChildren())) {
                 val targetChild = nodeAssociation.resolveTarget(sourceChild)
-                    ?: error("Expected target node was not found. sourceChild=${sourceChild.getNodeReference()}")
+                    ?: error("Expected target node was not found. sourceChild=${sourceChild.getNodeReference()}, originalId=${sourceChild.getOriginalReference()}")
                 synchronizeNode(sourceChild, targetChild)
             }
         } else {

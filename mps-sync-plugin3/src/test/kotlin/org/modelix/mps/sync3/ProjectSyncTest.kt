@@ -225,6 +225,12 @@ class ProjectSyncTest : MPSTestBase() {
         }
     }
 
+    fun `test sync after reconnect`(): Unit = runWithModelServer { port ->
+        val branchRef = RepositoryId("sync-test").getBranchReference()
+        syncProjectToServer("initial", port, branchRef)
+        syncProjectToServer("change1", port, branchRef)
+    }
+
     private fun runWithModelServer(body: suspend (port: Int) -> Unit) = runBlocking {
         withTimeout(3.minutes) {
             val modelServer: GenericContainer<*> = GenericContainer(modelServerImage)

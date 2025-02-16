@@ -238,8 +238,11 @@ class Binding(
     private suspend fun initialSync() {
         lastSyncedVersion.updateValue { oldVersion ->
             LOG.debug { "Running initial synchronization" }
-            if (oldVersion == null) {
-                // binding was never activated before
+
+            val baseVersion = oldVersion
+                ?: initialVersionHash?.let { client().loadVersion(branchRef.repositoryId, it, null) }
+            if (baseVersion == null) {
+                // Binding was never activated before. Overwrite local changes or do initial upload.
 
                 val remoteVersion = client().pullIfExists(branchRef)
                 if (remoteVersion == null) {
@@ -249,24 +252,24 @@ class Binding(
                     doSyncToServer(emptyVersion) ?: emptyVersion
                 } else {
                     LOG.debug { "Repository exists. Will checkout version $remoteVersion" }
-                    doSyncToMPS(oldVersion, remoteVersion)
+                    doSyncToMPS(null, remoteVersion)
                     remoteVersion
                 }
             } else {
-                // binding is activated again after being deactivated
+                // Binding was activated before. Preserve local changes.
 
                 // push local changes that happened while the binding was deactivated
-                val localChanges = doSyncFromMPS(oldVersion)
+                val localChanges = doSyncFromMPS(baseVersion)
                 val remoteVersion = if (localChanges != null) {
-                    val mergedVersion = client().push(branchRef, localChanges, oldVersion)
-                    doSyncToMPS(oldVersion, mergedVersion)
+                    val mergedVersion = client().push(branchRef, localChanges, baseVersion)
+                    doSyncToMPS(baseVersion, mergedVersion)
                     mergedVersion
                 } else {
-                    client().pull(branchRef, oldVersion)
+                    client().pull(branchRef, baseVersion)
                 }
 
                 // load remote changes into MPS
-                doSyncToMPS(oldVersion, remoteVersion)
+                doSyncToMPS(baseVersion, remoteVersion)
 
                 remoteVersion
             }

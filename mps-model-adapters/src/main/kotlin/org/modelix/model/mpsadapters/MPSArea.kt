@@ -322,7 +322,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
             NodeReference(projectRef)
         }
 
-        val resolvedNodeForProject = resolveNode(projectRef) ?: return null
+        val resolvedNodeForProject = resolveNode(projectRef)?.asWritableNode() ?: return null
         check(resolvedNodeForProject is MPSProjectAsNode) {
             "Resolved node `$resolvedNodeForProject` does not represent a project."
         }

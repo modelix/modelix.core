@@ -18,6 +18,7 @@ import org.modelix.model.client2.runWriteOnBranch
 import org.modelix.model.data.NodeData
 import org.modelix.model.data.asData
 import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSModuleAsNode
 import org.modelix.model.mpsadapters.MPSProperty
@@ -242,11 +243,17 @@ class ProjectSyncTest : MPSTestBase() {
     }
 
     fun `test sync after reconnect merging local`(): Unit = runWithModelServer { port ->
-        val branchRef = RepositoryId("sync-test").getBranchReference()
+        val branchRef = RepositoryId("sync-test-A").getBranchReference()
         val version1 = syncProjectToServer("initial", port, branchRef)
         val version2 = syncProjectToServer("change1", port, branchRef, version1.getContentHash())
 
         Assert.assertNotEquals(version1.getContentHash(), version2.getContentHash())
+        assertEquals(version1.getContentHash(), (version2 as CLVersion).baseVersion?.getContentHash())
+
+        val branchRef2 = RepositoryId("sync-test-B").getBranchReference()
+        val version3 = syncProjectToServer("change1", port, branchRef)
+
+        assertEquals(version3.asNormalizedJson(), version2.asNormalizedJson())
     }
 
     private fun runWithModelServer(body: suspend (port: Int) -> Unit) = runBlocking {
@@ -278,5 +285,14 @@ class ProjectSyncTest : MPSTestBase() {
             children = children.map { it.normalizeIds(idMap, idGenerator) },
             references = references.mapValues { replaceId(it.value) },
         )
+    }
+
+    private fun IVersion.asNormalizedJson(): String {
+        return getTree()
+            .let { TreePointer(it) }
+            .getRootNode()
+            .asData()
+            .normalizeIds()
+            .toJson()
     }
 }

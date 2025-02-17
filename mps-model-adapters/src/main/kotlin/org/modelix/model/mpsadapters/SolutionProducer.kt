@@ -36,6 +36,7 @@ class SolutionProducer(private val myProject: MPSProject) {
 
     private fun createSolutionDescriptor(namespace: String, id: ModuleId, descriptorFile: IFile): SolutionDescriptor {
         val descriptor = SolutionDescriptor()
+        descriptor.outputRoot = "\${module}/source_gen"
         descriptor.namespace = namespace
         descriptor.id = id
         val moduleLocation = descriptorFile.parent
@@ -72,6 +73,7 @@ class LanguageProducer(private val myProject: MPSProject) {
 
     private fun createDescriptor(namespace: String, id: ModuleId, descriptorFile: IFile): LanguageDescriptor {
         val descriptor = LanguageDescriptor()
+        descriptor.outputRoot = "\${module}/source_gen"
         descriptor.namespace = namespace
         descriptor.id = id
         val moduleLocation = descriptorFile.parent
@@ -110,6 +112,7 @@ class GeneratorProducer(private val myProject: MPSProject) {
 
     private fun createDescriptor(namespace: String, id: ModuleId, generatorModuleLocation: IFile, templateModelsLocation: IFile?): GeneratorDescriptor {
         val descriptor = GeneratorDescriptor()
+        descriptor.outputRoot = "\${module}/generator/source_gen"
         descriptor.namespace = namespace
         descriptor.id = id
         descriptor.alias = "main"

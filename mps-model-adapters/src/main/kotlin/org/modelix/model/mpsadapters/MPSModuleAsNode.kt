@@ -66,6 +66,7 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
         private val propertyAccessors = listOf<Pair<IPropertyReference, IPropertyAccessor<SModule>>>(
             BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference() to object : IPropertyAccessor<SModule> {
                 override fun read(element: SModule): String? = element.moduleName
+                override fun write(element: SModule, value: String?) = TODO()
             },
             BuiltinLanguages.jetbrains_mps_lang_core.BaseConcept.virtualPackage.toReference() to object : IPropertyAccessor<SModule> {
                 override fun read(element: SModule): String? {
@@ -78,16 +79,27 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
             },
             BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference() to object : IPropertyAccessor<SModule> {
                 override fun read(element: SModule): String? = element.moduleId.toString()
+                override fun write(element: SModule, value: String?) {
+                    throw UnsupportedOperationException("read only")
+                }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Module.moduleVersion.toReference() to object : IPropertyAccessor<SModule> {
                 override fun read(element: SModule): String? {
                     val version = (element as? AbstractModule)?.moduleDescriptor?.moduleVersion ?: 0
                     return version.toString()
                 }
+                override fun write(element: SModule, value: String?) {
+                    (element as? AbstractModule)?.moduleDescriptor?.moduleVersion = value?.toInt() ?: 0
+                }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Module.compileInMPS.toReference() to object : IPropertyAccessor<SModule> {
                 override fun read(element: SModule): String? {
                     return element.getCompileInMPS().toString()
+                }
+
+                override fun write(element: SModule, value: String?) {
+                    if (element.getCompileInMPS().toString() == value) return
+                    (element as Solution).moduleDescriptor.compileInMPS = value.toBoolean()
                 }
             },
         )
@@ -157,14 +169,6 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                     val facet = child as MPSJavaModuleFacetAsNode
                     moduleDescriptor.removeFacetDescriptor(facet.facet)
                 }
-
-                override fun move(
-                    element: SModule,
-                    index: Int,
-                    child: IWritableNode,
-                ) {
-                    super.move(element, index, child)
-                }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies.toReference() to object : IChildAccessor<SModule> {
                 override fun read(element: SModule): List<IWritableNode> {
@@ -208,14 +212,6 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                     moduleDescriptor.dependencies.removeIf { it.moduleRef == dependency.moduleReference }
                     moduleDescriptor.dependencyVersions.remove(dependency.moduleReference)
                 }
-
-                override fun move(
-                    element: SModule,
-                    index: Int,
-                    child: IWritableNode,
-                ) {
-                    super.move(element, index, child)
-                }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Module.languageDependencies.toReference() to object : IChildAccessor<SModule> {
                 override fun read(element: SModule): List<IWritableNode> {
@@ -251,14 +247,6 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                         }
                         else -> error("Unsupported: ${sourceNode.getConceptReference()}")
                     }
-                }
-
-                override fun move(
-                    element: SModule,
-                    index: Int,
-                    child: IWritableNode,
-                ) {
-                    super.move(element, index, child)
                 }
 
                 override fun remove(
@@ -384,15 +372,8 @@ data class MPSLanguageAsNode(override val module: Language) : MPSModuleAsNode<La
                     ).let { MPSGeneratorAsNode(it) }
                 }
 
-                override fun move(element: Language, index: Int, child: IWritableNode) {
-                    super.move(element, index, child)
-                }
-
-                override fun remove(
-                    element: Language,
-                    child: IWritableNode,
-                ) {
-                    super.remove(element, child)
+                override fun remove(element: Language, child: IWritableNode) {
+                    TODO()
                 }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Language.extendedLanguages.toReference() to object : IChildAccessor<Language> {
@@ -449,10 +430,6 @@ data class MPSDevkitAsNode(override val module: DevKit) : MPSModuleAsNode<DevKit
                     return MPSModuleReferenceAsNode(MPSModuleAsNode(element), BuiltinLanguages.MPSRepositoryConcepts.DevKit.exportedLanguages.toReference(), ref)
                 }
 
-                override fun move(element: DevKit, index: Int, child: IWritableNode) {
-                    super.move(element, index, child)
-                }
-
                 override fun remove(element: DevKit, child: IWritableNode) {
                     element.moduleDescriptor!!.exportedLanguages.remove((child as MPSModuleReferenceAsNode).target)
                 }
@@ -471,10 +448,6 @@ data class MPSDevkitAsNode(override val module: DevKit) : MPSModuleAsNode<DevKit
                     val ref = readModuleReference(sourceNode.getNode())
                     element.moduleDescriptor!!.exportedSolutions.add(ref)
                     return MPSModuleReferenceAsNode(MPSModuleAsNode(element), BuiltinLanguages.MPSRepositoryConcepts.DevKit.exportedSolutions.toReference(), ref)
-                }
-
-                override fun move(element: DevKit, index: Int, child: IWritableNode) {
-                    super.move(element, index, child)
                 }
 
                 override fun remove(element: DevKit, child: IWritableNode) {
@@ -502,7 +475,7 @@ data class MPSDevkitAsNode(override val module: DevKit) : MPSModuleAsNode<DevKit
                 }
 
                 override fun move(element: DevKit, index: Int, child: IWritableNode) {
-                    super.move(element, index, child)
+                    throw UnsupportedOperationException()
                 }
 
                 override fun remove(element: DevKit, child: IWritableNode) {

@@ -138,27 +138,21 @@ abstract class MPSGenericNodeAdapter<E> : IWritableNode, ISyncTargetNode {
 
     interface IPropertyAccessor<in E> {
         fun read(element: E): String?
-        fun write(element: E, value: String?): Unit = throw UnsupportedOperationException("$this, $value")
+        fun write(element: E, value: String?)
     }
 
     interface IReferenceAccessor<in E> {
         fun read(element: E): IWritableNode?
         fun readRef(element: E): INodeReference? = read(element)?.getNodeReference()
-        fun write(element: E, value: IWritableNode?) {
-            throw UnsupportedOperationException()
-        }
-        fun write(element: E, value: INodeReference?): Unit = throw UnsupportedOperationException()
+        fun write(element: E, value: IWritableNode?)
+        fun write(element: E, value: INodeReference?)
     }
 
     interface IChildAccessor<in E> {
         fun read(element: E): List<IWritableNode>
-        fun addNew(element: E, index: Int, sourceNode: SpecWithResolvedConcept): IWritableNode {
-            throw UnsupportedOperationException("$this, $element, $sourceNode")
-        }
-        fun move(element: E, index: Int, child: IWritableNode) {
-            throw UnsupportedOperationException("$this, $element, $child")
-        }
-        fun remove(element: E, child: IWritableNode): Unit = throw UnsupportedOperationException()
+        fun addNew(element: E, index: Int, sourceNode: SpecWithResolvedConcept): IWritableNode
+        fun move(element: E, index: Int, child: IWritableNode): Unit = throw UnsupportedOperationException("unordered")
+        fun remove(element: E, child: IWritableNode)
         fun isOrdered(): Boolean = false
     }
 

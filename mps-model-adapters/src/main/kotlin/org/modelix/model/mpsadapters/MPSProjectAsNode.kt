@@ -17,6 +17,10 @@ data class MPSProjectAsNode(val project: ProjectBase) : MPSGenericNodeAdapter<Pr
                 override fun read(element: ProjectBase): String? {
                     return element.name
                 }
+
+                override fun write(element: ProjectBase, value: String?) {
+                    throw UnsupportedOperationException("read only")
+                }
             },
         )
         private val childAccessors: List<Pair<IChildLinkReference, IChildAccessor<ProjectBase>>> = listOf(
@@ -25,26 +29,11 @@ data class MPSProjectAsNode(val project: ProjectBase) : MPSGenericNodeAdapter<Pr
                     return element.projectModules.map { MPSProjectModuleAsNode(element, it) }
                 }
 
-                override fun addNew(
-                    element: ProjectBase,
-                    index: Int,
-                    sourceNode: SpecWithResolvedConcept,
-                ): IWritableNode {
-                    return super.addNew(element, index, sourceNode)
+                override fun addNew(element: ProjectBase, index: Int, sourceNode: SpecWithResolvedConcept): IWritableNode {
+                    return TODO()
                 }
 
-                override fun move(
-                    element: ProjectBase,
-                    index: Int,
-                    child: IWritableNode,
-                ) {
-                    super.move(element, index, child)
-                }
-
-                override fun remove(
-                    element: ProjectBase,
-                    child: IWritableNode,
-                ) {
+                override fun remove(element: ProjectBase, child: IWritableNode) {
                     element.removeModule((child as MPSProjectModuleAsNode).module)
                 }
             },
@@ -53,27 +42,12 @@ data class MPSProjectAsNode(val project: ProjectBase) : MPSGenericNodeAdapter<Pr
                     return return emptyList() // modules child link is deprecated
                 }
 
-                override fun addNew(
-                    element: ProjectBase,
-                    index: Int,
-                    sourceNode: SpecWithResolvedConcept,
-                ): IWritableNode {
-                    return super.addNew(element, index, sourceNode)
+                override fun addNew(element: ProjectBase, index: Int, sourceNode: SpecWithResolvedConcept): IWritableNode {
+                    throw UnsupportedOperationException("read only")
                 }
 
-                override fun move(
-                    element: ProjectBase,
-                    index: Int,
-                    child: IWritableNode,
-                ) {
-                    super.move(element, index, child)
-                }
-
-                override fun remove(
-                    element: ProjectBase,
-                    child: IWritableNode,
-                ) {
-                    super.remove(element, child)
+                override fun remove(element: ProjectBase, child: IWritableNode) {
+                    throw UnsupportedOperationException("read only")
                 }
             },
         )

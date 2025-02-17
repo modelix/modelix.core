@@ -1,6 +1,5 @@
 package org.modelix.model.mpsadapters
 
-import jetbrains.mps.smodel.MPSModuleRepository
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.jetbrains.mps.openapi.module.SRepository
@@ -12,6 +11,7 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IWritableNode
+import org.modelix.mps.api.ModelixMpsApi
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -37,8 +37,16 @@ data class MPSModuleReferenceAsNode(
         return listOf(
             BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference() to object : IReferenceAccessor<MPSModuleReferenceAsNode> {
                 override fun read(element: MPSModuleReferenceAsNode): IWritableNode? {
-                    val repo = parent.getRepository() ?: MPSModuleRepository.getInstance()
+                    val repo = ModelixMpsApi.getRepository()
                     return target.resolve(repo)?.let { MPSModuleAsNode(it) }
+                }
+
+                override fun write(element: MPSModuleReferenceAsNode, value: IWritableNode?) {
+                    throw UnsupportedOperationException("read only")
+                }
+
+                override fun write(element: MPSModuleReferenceAsNode, value: INodeReference?) {
+                    throw UnsupportedOperationException("read only")
                 }
             },
         )

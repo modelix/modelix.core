@@ -27,6 +27,14 @@ data class MPSModelImportAsNode(val importedModel: SModelReference, val importin
                 override fun readRef(element: MPSModelImportAsNode): INodeReference? {
                     return MPSModelReference(element.importedModel)
                 }
+
+                override fun write(element: MPSModelImportAsNode, value: IWritableNode?) {
+                    throw UnsupportedOperationException("read only")
+                }
+
+                override fun write(element: MPSModelImportAsNode, value: INodeReference?) {
+                    throw UnsupportedOperationException("read only")
+                }
             },
         )
     }

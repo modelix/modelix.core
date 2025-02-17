@@ -1,13 +1,16 @@
 package org.modelix.model.mpsadapters
 
 import jetbrains.mps.extapi.model.SModelDescriptorStub
+import jetbrains.mps.extapi.persistence.FileDataSource
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.smodel.ModelImports
 import jetbrains.mps.smodel.adapter.ids.SLanguageId
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import jetbrains.mps.smodel.adapter.structure.language.SLanguageAdapterById
+import org.jetbrains.mps.openapi.model.EditableSModel
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelId
+import org.jetbrains.mps.openapi.model.SModelName
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
@@ -26,12 +29,23 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
         private val propertyAccessors = listOf<Pair<IPropertyReference, IPropertyAccessor<SModel>>>(
             BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference() to object : IPropertyAccessor<SModel> {
                 override fun read(element: SModel): String? = element.name.value
+                override fun write(element: SModel, value: String?) {
+                    require(value != null) { "Model name cannot be null" }
+                    element.rename(value)
+                }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Model.id.toReference() to object : IPropertyAccessor<SModel> {
                 override fun read(element: SModel): String? = element.modelId.toString()
+                override fun write(element: SModel, value: String?) {
+                    throw UnsupportedOperationException("read only")
+                }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Model.stereotype.toReference() to object : IPropertyAccessor<SModel> {
                 override fun read(element: SModel): String? = element.name.stereotype
+                override fun write(element: SModel, value: String?) {
+                    val oldName = element.name
+                    element.rename(SModelName(oldName.longName, value).value)
+                }
             },
         )
         private val referenceAccessors = listOf<Pair<IReferenceLinkReference, IReferenceAccessor<SModel>>>()
@@ -48,18 +62,7 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
                         .let { MPSWritableNode(it) }
                 }
 
-                override fun move(
-                    element: SModel,
-                    index: Int,
-                    child: IWritableNode,
-                ) {
-                    super.move(element, index, child)
-                }
-
-                override fun remove(
-                    element: SModel,
-                    child: IWritableNode,
-                ) {
+                override fun remove(element: SModel, child: IWritableNode) {
                     element.removeRootNode((child as MPSWritableNode).node)
                 }
             },
@@ -97,14 +100,6 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
                     )
                     ModelImports(element).addModelImport(modelRef)
                     return MPSModelImportAsNode(modelRef, element)
-                }
-
-                override fun move(
-                    element: SModel,
-                    index: Int,
-                    child: IWritableNode,
-                ) {
-                    super.move(element, index, child)
                 }
 
                 override fun remove(
@@ -167,14 +162,6 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
                     val languageToRemove = MetaAdapterFactory.getLanguage(child.moduleReference.sourceModuleReference)
                     element.deleteLanguageId(languageToRemove)
                 }
-
-                override fun move(
-                    element: SModel,
-                    index: Int,
-                    child: IWritableNode,
-                ) {
-                    super.move(element, index, child)
-                }
             },
         )
     }
@@ -233,4 +220,8 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
         }
         return null
     }
+}
+
+private fun SModel.rename(newName: String) {
+    (this as EditableSModel).rename(newName, this.source is FileDataSource)
 }

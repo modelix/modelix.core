@@ -65,14 +65,6 @@ data class MPSRepositoryAsNode(@get:JvmName("getRepository_") val repository: SR
                     }
                 }
 
-                override fun move(
-                    element: SRepository,
-                    index: Int,
-                    child: IWritableNode,
-                ) {
-                    super.move(element, index, child)
-                }
-
                 override fun remove(element: SRepository, child: IWritableNode) {
                     ModuleDeleteHelper(ModelixMpsApi.getMPSProject() as Project).deleteModules(
                         /* modules = */
@@ -89,27 +81,12 @@ data class MPSRepositoryAsNode(@get:JvmName("getRepository_") val repository: SR
                     return element.modules.filter { it.isTempModule() }.map { MPSModuleAsNode(it) }
                 }
 
-                override fun addNew(
-                    element: SRepository,
-                    index: Int,
-                    sourceNode: SpecWithResolvedConcept,
-                ): IWritableNode {
-                    return super.addNew(element, index, sourceNode)
+                override fun addNew(element: SRepository, index: Int, sourceNode: SpecWithResolvedConcept): IWritableNode {
+                    throw UnsupportedOperationException("read only")
                 }
 
-                override fun move(
-                    element: SRepository,
-                    index: Int,
-                    child: IWritableNode,
-                ) {
-                    super.move(element, index, child)
-                }
-
-                override fun remove(
-                    element: SRepository,
-                    child: IWritableNode,
-                ) {
-                    super.remove(element, child)
+                override fun remove(element: SRepository, child: IWritableNode) {
+                    throw UnsupportedOperationException("read only")
                 }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Repository.projects.toReference() to object : IChildAccessor<SRepository> {
@@ -118,27 +95,12 @@ data class MPSRepositoryAsNode(@get:JvmName("getRepository_") val repository: SR
                         .map { MPSProjectAsNode(it as ProjectBase) }
                 }
 
-                override fun addNew(
-                    element: SRepository,
-                    index: Int,
-                    sourceNode: SpecWithResolvedConcept,
-                ): IWritableNode {
-                    return super.addNew(element, index, sourceNode)
+                override fun addNew(element: SRepository, index: Int, sourceNode: SpecWithResolvedConcept): IWritableNode {
+                    throw UnsupportedOperationException("read only")
                 }
 
-                override fun move(
-                    element: SRepository,
-                    index: Int,
-                    child: IWritableNode,
-                ) {
-                    super.move(element, index, child)
-                }
-
-                override fun remove(
-                    element: SRepository,
-                    child: IWritableNode,
-                ) {
-                    super.remove(element, child)
+                override fun remove(element: SRepository, child: IWritableNode) {
+                    throw UnsupportedOperationException("read only")
                 }
             },
         )

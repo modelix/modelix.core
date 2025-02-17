@@ -36,6 +36,8 @@ import org.modelix.model.mpsadapters.asReadableNode
 import org.modelix.model.sync.bulk.DefaultInvalidationTree
 import java.util.concurrent.atomic.AtomicBoolean
 
+private val LOG = mu.KotlinLogging.logger { }
+
 abstract class MPSInvalidatingListener(val repository: SRepository) :
     GlobalModelListener(),
     SNodeChangeListener,
@@ -48,14 +50,20 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
     private val invalidationTree: DefaultInvalidationTree =
         DefaultInvalidationTree(MPSRepositoryAsNode(repository).getNodeReference().toSerialized())
 
-    fun hasAnyInvalidations() = invalidationTree.hasAnyInvalidations()
+    fun hasAnyInvalidations() = synchronized(invalidationTree) { invalidationTree.hasAnyInvalidations() }
 
     fun <R> runSync(body: (DefaultInvalidationTree) -> R): R {
         check(!syncActive.getAndSet(true)) { "Synchronization is already running" }
         try {
-            return body(invalidationTree).also {
-                invalidationTree.reset()
+            synchronized(invalidationTree) {
+                return body(invalidationTree).also {
+                    LOG.trace { "Resetting invalidations" }
+                    invalidationTree.reset()
+                }
             }
+        } catch (ex: Throwable) {
+            LOG.error(ex) { "Sync from MPS failed" }
+            throw ex
         } finally {
             syncActive.set(false)
         }
@@ -63,9 +71,12 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
 
     abstract fun onInvalidation()
 
-    private fun invalidate(node: IReadableNode) {
+    private fun invalidate(node: IReadableNode, includingDescendants: Boolean = false) {
         if (syncActive.get()) return
-        invalidationTree.invalidate(node)
+        synchronized(invalidationTree) {
+            LOG.trace { "Invalidating ${node.getNodeReference()}" }
+            invalidationTree.invalidate(node, includingDescendants)
+        }
         onInvalidation()
     }
 
@@ -172,7 +183,7 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
 
     override fun modelLoaded(model: SModel, partially: Boolean) {}
     override fun modelReplaced(model: SModel) {
-        invalidationTree.invalidate(MPSModelAsNode(model), includingDescendants = true)
+        invalidate(MPSModelAsNode(model), includingDescendants = true)
     }
 
     override fun modelUnloaded(model: SModel) {}

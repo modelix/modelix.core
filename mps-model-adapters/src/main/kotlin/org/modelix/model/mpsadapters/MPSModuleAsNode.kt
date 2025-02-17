@@ -97,12 +97,8 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                     ).let { MPSModelAsNode(it) }
                 }
 
-                override fun move(
-                    element: SModule,
-                    index: Int,
-                    child: IWritableNode,
-                ) {
-                    super.move(element, index, child)
+                override fun move(element: SModule, index: Int, child: IWritableNode) {
+                    throw UnsupportedOperationException()
                 }
 
                 override fun remove(

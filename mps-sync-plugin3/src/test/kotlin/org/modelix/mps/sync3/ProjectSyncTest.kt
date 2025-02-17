@@ -72,7 +72,7 @@ class ProjectSyncTest : MPSTestBase() {
         val version = client.pull(branchRef, null)
         val rootNode = TreePointer(version.getTree()).getRootNode()
         val allNodes = rootNode.getDescendants(true)
-        assertEquals(183, allNodes.count())
+        assertEquals(185, allNodes.count())
     }
 
     fun `test checkout into empty project`(): Unit = runWithModelServer { port ->
@@ -91,7 +91,7 @@ class ProjectSyncTest : MPSTestBase() {
             val allNodes = mpsProject.projectModules.asSequence()
                 .map { MPSModuleAsNode(it) }
                 .flatMap { it.getDescendants(true) }
-            assertEquals(177, allNodes.count())
+            assertEquals(179, allNodes.count())
         }
     }
 
@@ -112,7 +112,7 @@ class ProjectSyncTest : MPSTestBase() {
             val allNodes = mpsProject.projectModules.asSequence()
                 .map { MPSModuleAsNode(it) }
                 .flatMap { it.getDescendants(true) }
-            assertEquals(177, allNodes.count())
+            assertEquals(179, allNodes.count())
         }
 
         binding.close()
@@ -254,6 +254,22 @@ class ProjectSyncTest : MPSTestBase() {
         val version3 = syncProjectToServer("change1", port, branchRef)
 
         assertEquals(version3.asNormalizedJson(), version2.asNormalizedJson())
+    }
+
+    fun `test sync to MPS after non-trivial commit`(): Unit = runWithModelServer { port ->
+        val branchRef = RepositoryId("sync-test").getBranchReference()
+        val version1 = syncProjectToServer("initial", port, branchRef)
+        val version2 = syncProjectToServer("change1", port, branchRef, version1.getContentHash())
+
+        println("initial two versions pushed")
+
+        openTestProject("initial")
+        println("initial project opened")
+        val binding = IModelSyncService.getInstance(mpsProject)
+            .addServer("http://localhost:$port")
+            .bind(branchRef, version1.getContentHash())
+        println("binding created")
+        val version3 = binding.flush()
     }
 
     private fun runWithModelServer(body: suspend (port: Int) -> Unit) = runBlocking {

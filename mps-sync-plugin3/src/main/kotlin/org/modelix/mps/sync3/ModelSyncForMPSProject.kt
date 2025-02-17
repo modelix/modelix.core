@@ -192,20 +192,26 @@ class Binding(
         invalidatingListener = null
     }
 
-    private suspend fun isInSync(): Boolean {
+    private suspend fun checkInSync(): String? {
         check(activated.get()) { "Binding is deactivated" }
         val version = lastSyncedVersion.flush()?.getOrThrow()
-        if (version == null) return false
-        if (invalidatingListener == null) return false
-        if (invalidatingListener?.hasAnyInvalidations() != false) return false
-        if (client().pullHash(branchRef) != version.getContentHash()) return false
-        return true
+        if (version == null) return "Initial sync isn't done yet"
+        if (invalidatingListener == null) return "No change listener registered in MPS"
+        if (invalidatingListener?.hasAnyInvalidations() != false) return "There are pending changes in MPS"
+        val remoteVersion = client().pullHash(branchRef)
+        if (remoteVersion != version.getContentHash()) return "Local version (${version.getContentHash()} differs from remote version ($remoteVersion)"
+        return null
     }
 
     override suspend fun flush(): IVersion {
         check(syncJob?.isActive == true) { "Synchronization is not active" }
-        while (!isInSync()) {
+        var reason = checkInSync()
+        var i = 0
+        while (reason != null) {
+            i++
+            if (i % 10 == 0) LOG.debug { "Still waiting for the synchronization to finish: $reason" }
             delay(100.milliseconds)
+            reason = checkInSync()
         }
         return lastSyncedVersion.getValue()!!
     }
@@ -320,21 +326,22 @@ class Binding(
             if (invalidatingListener?.hasAnyInvalidations() == true) {
                 // Concurrent modification!
                 // Write changes from MPS to a new version first and try again after it is merged.
+                LOG.debug { "Skipping sync to MPS because there are pending changes in MPS" }
                 return@writeToMPS
             }
 
-            val branch = TreePointer(newVersion.getTree())
-            val nodeAssociation = NodeAssociationFromModelServer(branch, targetRoot.getModel())
-            ModelSynchronizer(
-                filter = filter,
-                sourceRoot = branch.getRootNode().asWritableNode(),
-                targetRoot = targetRoot,
-                nodeAssociation = nodeAssociation,
-                sourceMask = MPSProjectSyncMask(mpsProjects, false),
-                targetMask = MPSProjectSyncMask(mpsProjects, true),
-            ).synchronize()
-
-            if (invalidatingListener == null) initializeListener()
+            getMPSListener().runSync {
+                val branch = TreePointer(newVersion.getTree())
+                val nodeAssociation = NodeAssociationFromModelServer(branch, targetRoot.getModel())
+                ModelSynchronizer(
+                    filter = filter,
+                    sourceRoot = branch.getRootNode().asWritableNode(),
+                    targetRoot = targetRoot,
+                    nodeAssociation = nodeAssociation,
+                    sourceMask = MPSProjectSyncMask(mpsProjects, false),
+                    targetMask = MPSProjectSyncMask(mpsProjects, true),
+                ).synchronize()
+            }
         }
     }
 
@@ -350,11 +357,16 @@ class Binding(
         return result.single()
     }
 
-    private fun initializeListener() {
+    private fun getMPSListener() = invalidatingListener ?: initializeListener()
+
+    private fun initializeListener(): MyInvalidatingListener {
         // Being inside a transaction ensure there are not writes, and we don't lose changes.
         repository.modelAccess.checkReadAccess()
         check(invalidatingListener == null)
-        invalidatingListener = MyInvalidatingListener().also { it.start(repository) }
+        return MyInvalidatingListener().also {
+            invalidatingListener = it
+            it.start(repository)
+        }
     }
 
     /**

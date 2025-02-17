@@ -48,8 +48,16 @@ abstract class MPSGenericNodeAdapter<E> : IWritableNode, ISyncTargetNode {
         return tryGetReferenceAccessor(role)?.read(getElement())
     }
 
+    override fun getReferenceTargetRef(role: IReferenceLinkReference): INodeReference? {
+        return tryGetReferenceAccessor(role)?.readRef(getElement())
+    }
+
     override fun getAllReferenceTargets(): List<Pair<IReferenceLinkReference, IWritableNode>> {
         return getReferenceAccessors().mapNotNull { it.first to (it.second.read(getElement()) ?: return@mapNotNull null) }
+    }
+
+    override fun getAllReferenceTargetRefs(): List<Pair<IReferenceLinkReference, INodeReference>> {
+        return getReferenceAccessors().mapNotNull { it.first to (it.second.readRef(getElement()) ?: return@mapNotNull null) }
     }
 
     override fun changeConcept(newConcept: ConceptReference): IWritableNode {
@@ -124,16 +132,8 @@ abstract class MPSGenericNodeAdapter<E> : IWritableNode, ISyncTargetNode {
         return getPropertyAccessors().mapNotNull { it.first to (it.second.read(getElement()) ?: return@mapNotNull null) }
     }
 
-    override fun getReferenceTargetRef(role: IReferenceLinkReference): INodeReference? {
-        return getReferenceTarget(role)?.getNodeReference()
-    }
-
     override fun getReferenceLinks(): List<IReferenceLinkReference> {
         return getReferenceAccessors().map { it.first }
-    }
-
-    override fun getAllReferenceTargetRefs(): List<Pair<IReferenceLinkReference, INodeReference>> {
-        return getAllReferenceTargets().map { it.first to it.second.getNodeReference() }
     }
 
     interface IPropertyAccessor<in E> {
@@ -143,6 +143,7 @@ abstract class MPSGenericNodeAdapter<E> : IWritableNode, ISyncTargetNode {
 
     interface IReferenceAccessor<in E> {
         fun read(element: E): IWritableNode?
+        fun readRef(element: E): INodeReference? = read(element)?.getNodeReference()
         fun write(element: E, value: IWritableNode?) {
             throw UnsupportedOperationException()
         }

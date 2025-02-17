@@ -92,6 +92,10 @@ abstract class MPSGenericNodeAdapter<E> : IWritableNode, ISyncTargetNode {
         }
     }
 
+    override fun isOrdered(role: IChildLinkReference): Boolean {
+        return tryGetChildAccessor(role)?.isOrdered() != false
+    }
+
     override fun setReferenceTarget(role: IReferenceLinkReference, target: IWritableNode?) {
         getReferenceAccessor(role).write(getElement(), target)
     }
@@ -154,6 +158,7 @@ abstract class MPSGenericNodeAdapter<E> : IWritableNode, ISyncTargetNode {
             throw UnsupportedOperationException("$this, $element, $child")
         }
         fun remove(element: E, child: IWritableNode): Unit = throw UnsupportedOperationException()
+        fun isOrdered(): Boolean = false
     }
 
     class SpecWithResolvedConcept(val concept: SConcept, val spec: NewNodeSpec?) {

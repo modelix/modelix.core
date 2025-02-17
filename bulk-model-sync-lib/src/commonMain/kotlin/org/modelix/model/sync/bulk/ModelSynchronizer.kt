@@ -12,12 +12,12 @@ import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.getOriginalOrCurrentReference
 import org.modelix.model.api.getOriginalReference
 import org.modelix.model.api.isChildRoleOrdered
+import org.modelix.model.api.isOrdered
 import org.modelix.model.api.matches
 import org.modelix.model.api.mergeWith
 import org.modelix.model.api.remove
 import org.modelix.model.api.syncNewChild
 import org.modelix.model.api.syncNewChildren
-import org.modelix.model.api.tryResolve
 import org.modelix.model.data.NodeData
 import org.modelix.model.sync.bulk.ModelSynchronizer.IIncrementalUpdateInformation
 
@@ -193,7 +193,7 @@ class ModelSynchronizer(
                         // it is potentially moved to a new parent and role.
                         if (existingNode.getParent() != targetParent ||
                             !existingNode.getContainmentLink().matches(role) ||
-                            role.tryResolve(targetParent.getConceptReference())?.isOrdered != false
+                            targetParent.isOrdered(role)
                         ) {
                             targetParent.moveChild(role, newIndex, existingNode)
                         }

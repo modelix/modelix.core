@@ -67,6 +67,14 @@ interface IWritableNode : IReadableNode {
 
 interface ISyncTargetNode : IWritableNode {
     fun syncNewChildren(role: IChildLinkReference, index: Int, specs: List<NewNodeSpec>): List<IWritableNode>
+    fun isOrdered(role: IChildLinkReference): Boolean = true
+}
+
+fun IReadableNode.isOrdered(role: IChildLinkReference): Boolean {
+    return when (this) {
+        is ISyncTargetNode -> this.isOrdered(role)
+        else -> role.tryResolve(this.getConceptReference())?.isOrdered != false
+    }
 }
 
 fun IWritableNode.syncNewChildren(role: IChildLinkReference, index: Int, sourceNodes: List<NewNodeSpec>): List<IWritableNode> {

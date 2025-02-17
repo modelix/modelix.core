@@ -7,6 +7,7 @@ import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.project.Solution
 import jetbrains.mps.project.facets.JavaModuleFacet
+import jetbrains.mps.project.structure.modules.Dependency
 import jetbrains.mps.smodel.Generator
 import jetbrains.mps.smodel.Language
 import jetbrains.mps.smodel.MPSModuleRepository
@@ -159,9 +160,9 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
 
                     val moduleDescriptor = module.moduleDescriptor ?: return emptyList()
 
-                    return moduleDescriptor.dependencyVersions.map { (ref, version) ->
-                        MPSModuleDependencyAsNode(element, ref)
-                    }
+                    return moduleDescriptor.dependencies.map { it.moduleRef }
+                        .plus(moduleDescriptor.dependencyVersions.map { it.key })
+                        .map { MPSModuleDependencyAsNode(element, it) }
                 }
 
                 override fun addNew(
@@ -178,9 +179,9 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                                 "Has no ID: $sourceNode"
                             }
                             val name = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name.toReference()) ?: ""
-                            val version = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.version.toReference())?.toIntOrNull() ?: 0
                             val ref = PersistenceFacade.getInstance().createModuleReference(ModuleId.fromString(id), name)
-                            moduleDescriptor.dependencyVersions[ref] = version
+                            val reexport = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport.toReference()).toBoolean()
+                            moduleDescriptor.dependencies.add(Dependency(ref, reexport))
                             MPSModuleDependencyAsNode(element, ref)
                         }
                         else -> error("Unsupported dependency type: ${sourceNode.getConceptReference()}")
@@ -191,6 +192,7 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                     val module = element as AbstractModule
                     val moduleDescriptor = checkNotNull(module.moduleDescriptor) { "Has no moduleDescriptor: $module" }
                     val dependency = child as MPSModuleDependencyAsNode
+                    moduleDescriptor.dependencies.removeIf { it.moduleRef == dependency.moduleReference }
                     moduleDescriptor.dependencyVersions.remove(dependency.moduleReference)
                 }
 

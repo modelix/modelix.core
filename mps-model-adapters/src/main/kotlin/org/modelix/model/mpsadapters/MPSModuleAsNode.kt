@@ -506,7 +506,7 @@ data class MPSDevkitAsNode(override val module: DevKit) : MPSModuleAsNode<DevKit
                 }
 
                 override fun remove(element: DevKit, child: IWritableNode) {
-                    super.remove(element, child)
+                    element.moduleDescriptor!!.extendedDevkits.remove((child as MPSModuleReferenceAsNode).target)
                 }
             },
         )

@@ -209,9 +209,10 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                     val moduleDescriptor = module.moduleDescriptor ?: return emptyList()
                     return moduleDescriptor.languageVersions.map { (language, version) ->
                         MPSSingleLanguageDependencyAsNode(language, moduleImporter = module)
-                    } + moduleDescriptor.usedDevkits.map { devKit ->
-                        MPSDevKitDependencyAsNode(devKit, module)
                     }
+                    // moduleDescriptor.usedDevkits is ignored because it is unused in MPS.
+                    // On module level there are only languages, and they are derived from the model dependencies.
+                    // Only models can contain devkit dependencies.
                 }
 
                 override fun addNew(
@@ -231,13 +232,7 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                             MPSSingleLanguageDependencyAsNode(lang, moduleImporter = element)
                         }
                         BuiltinLanguages.MPSRepositoryConcepts.DevkitDependency.getReference() -> {
-                            val id = requireNotNull(sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid.toReference())) {
-                                "Has no ID: $sourceNode"
-                            }
-                            val name = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name.toReference()) ?: ""
-                            val ref = jetbrains.mps.project.structure.modules.ModuleReference(name, ModuleId.fromString(id))
-                            moduleDescriptor.usedDevkits.add(ref)
-                            MPSDevKitDependencyAsNode(ref, moduleImporter = element)
+                            throw IllegalArgumentException("Modules cannot contain devkit dependencies")
                         }
                         else -> error("Unsupported: ${sourceNode.getConceptReference()}")
                     }

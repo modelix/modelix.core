@@ -65,6 +65,9 @@ private fun normalizeXmlFile(content: String): String {
                 node.childElements("ref").sortByRole()
                 node.childElements("node").sortByRole()
             }
+            "dev-kit" -> {
+                node.childElements("exported-language").sortByAttribute("name")
+            }
             "sourceRoot" -> {
                 val location = node.getAttribute("location")
                 val path = node.getAttribute("path")
@@ -79,9 +82,11 @@ private fun normalizeXmlFile(content: String): String {
     return xmlToString(xml).lineSequence().filter { it.isNotBlank() }.joinToString("\n")
 }
 
-private fun List<Element>.sortByRole() {
+private fun List<Element>.sortByRole() = sortByAttribute("role")
+private fun List<Element>.sortByAttribute(name: String) = sortBy { it.getAttribute(name) }
+private fun <T : Comparable<T>> List<Element>.sortBy(selector: (Element) -> T) {
     if (size < 2) return
-    val sorted = sortedBy { it.getAttribute("role") }
+    val sorted = sortedBy { selector(it) }
     for (i in (0..sorted.lastIndex - 1).reversed()) {
         sorted[i].parentNode.insertBefore(sorted[i], sorted[i + 1])
     }

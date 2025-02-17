@@ -1,12 +1,15 @@
 package org.modelix.model.mpsadapters
 
+import jetbrains.mps.module.ModuleDeleteHelper
 import jetbrains.mps.persistence.MementoImpl
 import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
+import jetbrains.mps.project.Project
 import jetbrains.mps.project.Solution
 import jetbrains.mps.project.facets.JavaModuleFacet
+import jetbrains.mps.project.facets.JavaModuleFacetImpl
 import jetbrains.mps.project.structure.modules.Dependency
 import jetbrains.mps.smodel.Generator
 import jetbrains.mps.smodel.Language
@@ -153,10 +156,14 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                         BuiltinLanguages.MPSRepositoryConcepts.JavaModuleFacet.getReference() -> {
                             val module = element as AbstractModule
                             val moduleDescriptor = checkNotNull(module.moduleDescriptor) { "Has no moduleDescriptor: $module" }
-                            val newFacet = FacetsFacade.getInstance().getFacetFactory(JavaModuleFacet.FACET_TYPE)!!.create(element)
+                            val newFacet = FacetsFacade.getInstance().getFacetFactory(JavaModuleFacet.FACET_TYPE)!!.create(element) as JavaModuleFacetImpl
                             newFacet.load(MementoImpl())
+                            val moduleDir = if (element is Generator) element.getGeneratorLocation() else module.moduleSourceDir
+                            if (moduleDir != null) {
+                                newFacet.setGeneratedClassesLocation(moduleDir.findChild(AbstractModule.CLASSES_GEN))
+                            }
                             moduleDescriptor.addFacetDescriptor(newFacet)
-                            module.setModuleDescriptor(moduleDescriptor)
+                            module.setModuleDescriptor(moduleDescriptor) // notify listeners
                             read(element).filterIsInstance<MPSJavaModuleFacetAsNode>().single()
                         }
                         else -> error("Unsupported facets type: ${sourceNode.getConceptReference()}")
@@ -345,6 +352,21 @@ data class MPSUnknownModuleAsNode(override val module: SModule) : MPSModuleAsNod
     override fun getConcept(): IConcept = BuiltinLanguages.MPSRepositoryConcepts.Module
 }
 data class MPSGeneratorAsNode(override val module: Generator) : MPSModuleAsNode<Generator>() {
+    companion object {
+        private val propertyAccessors = listOf<Pair<IPropertyReference, IPropertyAccessor<Generator>>>(
+            BuiltinLanguages.MPSRepositoryConcepts.Generator.alias.toReference() to object : IPropertyAccessor<Generator> {
+                override fun read(element: Generator): String? = element.moduleDescriptor.alias
+                override fun write(element: Generator, value: String?) {
+                    element.moduleDescriptor.alias = value
+                }
+            },
+        )
+    }
+
+    override fun getPropertyAccessors(): List<Pair<IPropertyReference, IPropertyAccessor<Generator>>> {
+        return super.getPropertyAccessors() + propertyAccessors
+    }
+
     override fun getConcept(): IConcept = BuiltinLanguages.MPSRepositoryConcepts.Generator
 
     override fun getContainmentLink(): IChildLinkReference {
@@ -369,11 +391,16 @@ data class MPSLanguageAsNode(override val module: Language) : MPSModuleAsNode<La
                         element,
                         sourceNode.getNode().getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())!!,
                         sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())!!.let { ModuleId.fromString(it) },
+                        sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Generator.alias.toReference()),
                     ).let { MPSGeneratorAsNode(it) }
                 }
 
                 override fun remove(element: Language, child: IWritableNode) {
-                    TODO()
+                    ModuleDeleteHelper(ModelixMpsApi.getMPSProject() as Project).deleteModules(
+                        listOf((child as MPSGeneratorAsNode).module),
+                        false,
+                        true,
+                    )
                 }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Language.extendedLanguages.toReference() to object : IChildAccessor<Language> {

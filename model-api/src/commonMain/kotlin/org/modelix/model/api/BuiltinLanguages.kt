@@ -258,6 +258,11 @@ object BuiltinLanguages {
             directSuperConcepts = listOf(Module),
         ) {
             init { addConcept(this) }
+
+            val alias = SimpleProperty(
+                "alias",
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/5552089503111831268",
+            ).also(this::addProperty)
         }
 
         object Repository : SimpleConcept(

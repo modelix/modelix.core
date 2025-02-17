@@ -77,12 +77,13 @@ class ProjectSyncTest : MPSTestBase() {
         val version = client.pull(branchRef, null)
         val rootNode = TreePointer(version.getTree()).getRootNode()
         val allNodes = rootNode.getDescendants(true)
-        assertEquals(194, allNodes.count())
+        assertEquals(223, allNodes.count())
     }
 
     fun `test checkout into empty project`(): Unit = runWithModelServer { port ->
         val branchRef = RepositoryId("sync-test").getBranchReference()
         syncProjectToServer("initial", port, branchRef)
+        val expectedSnapshot = lastSnapshotBeforeSync
 
         val emptyProject = openTestProject(null)
         val service = IModelSyncService.getInstance(emptyProject)
@@ -90,14 +91,7 @@ class ProjectSyncTest : MPSTestBase() {
         val binding = connection.bind(branchRef)
         binding.flush()
 
-        readAction {
-            assertEquals(5, mpsProject.projectModules.size)
-
-            val allNodes = mpsProject.projectModules.asSequence()
-                .map { MPSModuleAsNode(it) }
-                .flatMap { it.getDescendants(true) }
-            assertEquals(187, allNodes.count())
-        }
+        assertEquals(expectedSnapshot, project.captureSnapshot())
     }
 
     fun `test write to new repo after checkout`(): Unit = runWithModelServer { port ->
@@ -117,7 +111,7 @@ class ProjectSyncTest : MPSTestBase() {
             val allNodes = mpsProject.projectModules.asSequence()
                 .map { MPSModuleAsNode(it) }
                 .flatMap { it.getDescendants(true) }
-            assertEquals(187, allNodes.count())
+            assertEquals(216, allNodes.count())
         }
 
         binding.close()

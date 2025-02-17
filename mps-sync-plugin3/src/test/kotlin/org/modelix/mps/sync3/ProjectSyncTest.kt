@@ -39,6 +39,9 @@ private val modelServerImage = ImageFromDockerfile()
 
 class ProjectSyncTest : MPSTestBase() {
 
+    private var lastSnapshotBeforeSync: String? = null
+    private var lastSnapshotAfterSync: String? = null
+
     override fun setUp() {
         super.setUp()
         TestApplicationManager.getInstance()
@@ -55,11 +58,13 @@ class ProjectSyncTest : MPSTestBase() {
         lastSyncedVersion: String? = null,
     ): IVersion {
         val project = openTestProject(testDataName)
+        lastSnapshotBeforeSync = project.captureSnapshot()
         val service = IModelSyncService.getInstance(project)
         val connection = service.addServer("http://localhost:$port")
         val binding = connection.bind(branchRef, lastSyncedVersion)
         val version = binding.flush()
         binding.close()
+        lastSnapshotAfterSync = project.captureSnapshot()
         project.close()
         return version
     }
@@ -260,6 +265,7 @@ class ProjectSyncTest : MPSTestBase() {
         val branchRef = RepositoryId("sync-test").getBranchReference()
         val version1 = syncProjectToServer("initial", port, branchRef)
         val version2 = syncProjectToServer("change1", port, branchRef, version1.getContentHash())
+        val expectedSnapshot = lastSnapshotBeforeSync
 
         println("initial two versions pushed")
 
@@ -270,6 +276,8 @@ class ProjectSyncTest : MPSTestBase() {
             .bind(branchRef, version1.getContentHash())
         println("binding created")
         val version3 = binding.flush()
+
+        assertEquals(expectedSnapshot, project.captureSnapshot())
     }
 
     private fun runWithModelServer(body: suspend (port: Int) -> Unit) = runBlocking {

@@ -262,7 +262,7 @@ private fun normalizeXmlFile(content: String): String {
             }
         }
     }
-    return xmlToString(xml).lineSequence().map { it.trim() }.filter { it.isEmpty() }.joinToString("\n")
+    return xmlToString(xml).lineSequence().filter { it.isNotBlank() }.joinToString("\n")
 }
 
 private fun List<Element>.sortByRole() {

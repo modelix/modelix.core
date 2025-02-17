@@ -431,7 +431,7 @@ fun CoroutineScope.launchLoop(backoffStrategy: BackoffStrategy, body: suspend ()
 suspend fun jobLoop(body: suspend () -> Unit): Unit = jobLoop(BackoffStrategy(), body)
 
 suspend fun jobLoop(
-    backoffStrategy: BackoffStrategy = BackoffStrategy(),
+    backoffStrategy: BackoffStrategy,
     body: suspend () -> Unit,
 ) {
     while (true) {

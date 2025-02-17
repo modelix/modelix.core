@@ -384,11 +384,7 @@ data class MPSLanguageAsNode(override val module: Language) : MPSModuleAsNode<La
                     ).let { MPSGeneratorAsNode(it) }
                 }
 
-                override fun move(
-                    element: Language,
-                    index: Int,
-                    child: IWritableNode,
-                ) {
+                override fun move(element: Language, index: Int, child: IWritableNode) {
                     super.move(element, index, child)
                 }
 
@@ -447,21 +443,13 @@ data class MPSDevkitAsNode(override val module: DevKit) : MPSModuleAsNode<DevKit
                         )
                     }
                 }
-                override fun addNew(
-                    element: DevKit,
-                    index: Int,
-                    sourceNode: SpecWithResolvedConcept,
-                ): IWritableNode {
+                override fun addNew(element: DevKit, index: Int, sourceNode: SpecWithResolvedConcept): IWritableNode {
                     val ref = readModuleReference(sourceNode.getNode())
                     element.moduleDescriptor!!.exportedLanguages.add(ref)
                     return MPSModuleReferenceAsNode(MPSModuleAsNode(element), BuiltinLanguages.MPSRepositoryConcepts.DevKit.exportedLanguages.toReference(), ref)
                 }
 
-                override fun move(
-                    element: DevKit,
-                    index: Int,
-                    child: IWritableNode,
-                ) {
+                override fun move(element: DevKit, index: Int, child: IWritableNode) {
                     super.move(element, index, child)
                 }
 
@@ -479,21 +467,13 @@ data class MPSDevkitAsNode(override val module: DevKit) : MPSModuleAsNode<DevKit
                         )
                     }
                 }
-                override fun addNew(
-                    element: DevKit,
-                    index: Int,
-                    sourceNode: SpecWithResolvedConcept,
-                ): IWritableNode {
+                override fun addNew(element: DevKit, index: Int, sourceNode: SpecWithResolvedConcept): IWritableNode {
                     val ref = readModuleReference(sourceNode.getNode())
                     element.moduleDescriptor!!.exportedSolutions.add(ref)
                     return MPSModuleReferenceAsNode(MPSModuleAsNode(element), BuiltinLanguages.MPSRepositoryConcepts.DevKit.exportedSolutions.toReference(), ref)
                 }
 
-                override fun move(
-                    element: DevKit,
-                    index: Int,
-                    child: IWritableNode,
-                ) {
+                override fun move(element: DevKit, index: Int, child: IWritableNode) {
                     super.move(element, index, child)
                 }
 
@@ -521,11 +501,7 @@ data class MPSDevkitAsNode(override val module: DevKit) : MPSModuleAsNode<DevKit
                     return MPSModuleReferenceAsNode(MPSModuleAsNode(element), BuiltinLanguages.MPSRepositoryConcepts.DevKit.extendedDevkits.toReference(), ref)
                 }
 
-                override fun move(
-                    element: DevKit,
-                    index: Int,
-                    child: IWritableNode,
-                ) {
+                override fun move(element: DevKit, index: Int, child: IWritableNode) {
                     super.move(element, index, child)
                 }
 

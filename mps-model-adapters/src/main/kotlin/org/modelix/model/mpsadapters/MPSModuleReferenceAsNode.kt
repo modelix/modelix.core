@@ -12,6 +12,9 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IWritableNode
+import java.net.URLDecoder
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 data class MPSModuleReferenceAsNode(
     private val parent: MPSModuleAsNode<*>,
@@ -69,6 +72,9 @@ data class MPSModuleReferenceReference(val parent: SModuleId, val link: ChildLin
     }
 
     override fun serialize(): String {
-        return "$PREFIX:$parent$SEPARATOR${link.getUID()}$SEPARATOR$target"
+        return "$PREFIX:${parent.toString().urlEncode()}$SEPARATOR${link.getUID().urlEncode()}$SEPARATOR$target"
     }
 }
+
+internal fun String.urlEncode() = URLEncoder.encode(this, StandardCharsets.UTF_8)
+internal fun String.urlDecode() = URLDecoder.decode(this, StandardCharsets.UTF_8)

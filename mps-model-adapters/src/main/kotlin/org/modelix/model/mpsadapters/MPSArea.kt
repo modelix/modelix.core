@@ -273,8 +273,8 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
         } else {
             val parts = ref.serialize().substringAfter("${MPSModuleReferenceReference.PREFIX}:").split(MPSModuleReferenceReference.SEPARATOR)
             MPSModuleReferenceReference(
-                PersistenceFacade.getInstance().createModuleId(parts[0]),
-                ChildLinkReferenceByUID(parts[1]),
+                PersistenceFacade.getInstance().createModuleId(parts[0].urlDecode()),
+                ChildLinkReferenceByUID(parts[1].urlDecode()),
                 PersistenceFacade.getInstance().createModuleId(parts[2]),
             )
         }

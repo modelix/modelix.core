@@ -10,7 +10,6 @@ import jetbrains.mps.project.facets.JavaModuleFacet
 import jetbrains.mps.project.structure.modules.Dependency
 import jetbrains.mps.smodel.Generator
 import jetbrains.mps.smodel.Language
-import jetbrains.mps.smodel.MPSModuleRepository
 import jetbrains.mps.smodel.SModelId
 import jetbrains.mps.smodel.adapter.ids.SLanguageId
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
@@ -48,6 +47,20 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                 is DevKit -> MPSDevkitAsNode(module)
                 else -> MPSUnknownModuleAsNode(module)
             } as MPSModuleAsNode<T>
+        }
+
+        internal fun readModuleReference(refNode: IReadableNode): SModuleReference {
+            val moduleNode = refNode.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference()) ?: run {
+                val originalRef = requireNotNull(refNode.getReferenceTargetRef(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference())) {
+                    "Reference to module is not set: ${refNode.asLegacyNode().asData().toJson()}"
+                }
+                @Suppress("removal")
+                MPSArea(ModelixMpsApi.getRepository()).resolveNode(originalRef)?.asWritableNode()
+            }
+            checkNotNull(moduleNode)
+            val moduleId = moduleNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())!!
+            val moduleName = moduleNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference()) ?: ""
+            return PersistenceFacade.getInstance().createModuleReference(ModuleId.fromString(moduleId), moduleName)
         }
 
         private val propertyAccessors = listOf<Pair<IPropertyReference, IPropertyAccessor<SModule>>>(
@@ -386,6 +399,31 @@ data class MPSLanguageAsNode(override val module: Language) : MPSModuleAsNode<La
                     super.remove(element, child)
                 }
             },
+            BuiltinLanguages.MPSRepositoryConcepts.Language.extendedLanguages.toReference() to object : IChildAccessor<Language> {
+                override fun read(element: Language): List<IWritableNode> {
+                    return element.extendedLanguageRefs.map {
+                        MPSModuleReferenceAsNode(
+                            MPSLanguageAsNode(element),
+                            BuiltinLanguages.MPSRepositoryConcepts.Language.extendedLanguages.toReference(),
+                            it,
+                        )
+                    }
+                }
+
+                override fun addNew(element: Language, index: Int, sourceNode: SpecWithResolvedConcept): IWritableNode {
+                    val newRef = readModuleReference(sourceNode.getNode())
+                    element.addExtendedLanguage(newRef)
+                    return MPSModuleReferenceAsNode(
+                        MPSLanguageAsNode(element),
+                        BuiltinLanguages.MPSRepositoryConcepts.Language.extendedLanguages.toReference(),
+                        newRef,
+                    )
+                }
+
+                override fun remove(element: Language, child: IWritableNode) {
+                    element.moduleDescriptor.extendedLanguages.remove((child as MPSModuleReferenceAsNode).target)
+                }
+            },
         )
     }
 
@@ -398,20 +436,6 @@ data class MPSSolutionAsNode(override val module: Solution) : MPSModuleAsNode<So
 }
 data class MPSDevkitAsNode(override val module: DevKit) : MPSModuleAsNode<DevKit>() {
     companion object {
-        private fun readModuleReference(contextModule: DevKit, refNode: IReadableNode): SModuleReference {
-            val moduleNode = refNode.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference()) ?: run {
-                val originalRef = requireNotNull(refNode.getReferenceTargetRef(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference())) {
-                    "Reference to module is not set: ${refNode.asLegacyNode().asData().toJson()}"
-                }
-                @Suppress("removal")
-                MPSArea(contextModule.repository ?: MPSModuleRepository.getInstance()).resolveNode(originalRef)?.asWritableNode()
-            }
-            checkNotNull(moduleNode)
-            val moduleId = moduleNode.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())!!
-            val moduleName = moduleNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference()) ?: ""
-            return PersistenceFacade.getInstance().createModuleReference(ModuleId.fromString(moduleId), moduleName)
-        }
-
         private val childAccessors: List<Pair<IChildLinkReference, IChildAccessor<DevKit>>> = MPSModuleAsNode.childAccessors + listOf<Pair<IChildLinkReference, IChildAccessor<DevKit>>>(
             BuiltinLanguages.MPSRepositoryConcepts.DevKit.exportedLanguages.toReference() to object : IChildAccessor<DevKit> {
                 override fun read(element: DevKit): List<IWritableNode> {
@@ -428,7 +452,7 @@ data class MPSDevkitAsNode(override val module: DevKit) : MPSModuleAsNode<DevKit
                     index: Int,
                     sourceNode: SpecWithResolvedConcept,
                 ): IWritableNode {
-                    val ref = readModuleReference(element, sourceNode.getNode())
+                    val ref = readModuleReference(sourceNode.getNode())
                     element.moduleDescriptor!!.exportedLanguages.add(ref)
                     return MPSModuleReferenceAsNode(MPSModuleAsNode(element), BuiltinLanguages.MPSRepositoryConcepts.DevKit.exportedLanguages.toReference(), ref)
                 }
@@ -460,7 +484,7 @@ data class MPSDevkitAsNode(override val module: DevKit) : MPSModuleAsNode<DevKit
                     index: Int,
                     sourceNode: SpecWithResolvedConcept,
                 ): IWritableNode {
-                    val ref = readModuleReference(element, sourceNode.getNode())
+                    val ref = readModuleReference(sourceNode.getNode())
                     element.moduleDescriptor!!.exportedSolutions.add(ref)
                     return MPSModuleReferenceAsNode(MPSModuleAsNode(element), BuiltinLanguages.MPSRepositoryConcepts.DevKit.exportedSolutions.toReference(), ref)
                 }
@@ -492,7 +516,7 @@ data class MPSDevkitAsNode(override val module: DevKit) : MPSModuleAsNode<DevKit
                     index: Int,
                     sourceNode: SpecWithResolvedConcept,
                 ): IWritableNode {
-                    val ref = readModuleReference(element, sourceNode.getNode())
+                    val ref = readModuleReference(sourceNode.getNode())
                     element.moduleDescriptor!!.extendedDevkits.add(ref)
                     return MPSModuleReferenceAsNode(MPSModuleAsNode(element), BuiltinLanguages.MPSRepositoryConcepts.DevKit.extendedDevkits.toReference(), ref)
                 }

@@ -77,7 +77,7 @@ class ProjectSyncTest : MPSTestBase() {
         val version = client.pull(branchRef, null)
         val rootNode = TreePointer(version.getTree()).getRootNode()
         val allNodes = rootNode.getDescendants(true)
-        assertEquals(189, allNodes.count())
+        assertEquals(194, allNodes.count())
     }
 
     fun `test checkout into empty project`(): Unit = runWithModelServer { port ->
@@ -91,12 +91,12 @@ class ProjectSyncTest : MPSTestBase() {
         binding.flush()
 
         readAction {
-            assertEquals(4, mpsProject.projectModules.size)
+            assertEquals(5, mpsProject.projectModules.size)
 
             val allNodes = mpsProject.projectModules.asSequence()
                 .map { MPSModuleAsNode(it) }
                 .flatMap { it.getDescendants(true) }
-            assertEquals(183, allNodes.count())
+            assertEquals(187, allNodes.count())
         }
     }
 
@@ -112,12 +112,12 @@ class ProjectSyncTest : MPSTestBase() {
         binding.flush()
 
         readAction {
-            assertEquals(4, mpsProject.projectModules.size)
+            assertEquals(5, mpsProject.projectModules.size)
 
             val allNodes = mpsProject.projectModules.asSequence()
                 .map { MPSModuleAsNode(it) }
                 .flatMap { it.getDescendants(true) }
-            assertEquals(183, allNodes.count())
+            assertEquals(187, allNodes.count())
         }
 
         binding.close()

@@ -1,5 +1,6 @@
 package org.modelix.model.mpsadapters
 
+import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.module.ModuleDeleteHelper
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
@@ -66,13 +67,10 @@ data class MPSRepositoryAsNode(@get:JvmName("getRepository_") val repository: SR
                 }
 
                 override fun remove(element: SRepository, child: IWritableNode) {
-                    ModuleDeleteHelper(ModelixMpsApi.getMPSProject() as Project).deleteModules(
-                        /* modules = */
+                    ModuleDeleteHelper(ProjectHelper.getProject(element) ?: ModelixMpsApi.getMPSProject() as Project).deleteModules(
                         listOf((child as MPSModuleAsNode<*>).module),
-                        /* safeDelete = */
-                        false,
-                        /* deleteFiles = */
-                        true,
+                        false, // safeDelete
+                        true, // deleteFiles
                     )
                 }
             },

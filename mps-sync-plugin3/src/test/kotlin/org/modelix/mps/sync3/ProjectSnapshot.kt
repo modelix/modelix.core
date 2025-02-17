@@ -8,7 +8,13 @@ import jetbrains.mps.smodel.Language
 import org.jetbrains.mps.openapi.model.EditableSModel
 import org.modelix.mps.api.ModelixMpsApi
 import org.w3c.dom.Element
-import java.io.File
+import java.nio.file.Path
+import kotlin.io.path.absolute
+import kotlin.io.path.isRegularFile
+import kotlin.io.path.pathString
+import kotlin.io.path.readText
+import kotlin.io.path.relativeTo
+import kotlin.io.path.walk
 
 fun Project.captureSnapshot(): String = captureFileContents().let { filterFiles(it) }.contentsAsString()
 
@@ -19,7 +25,7 @@ private fun Map<String, String>.contentsAsString(): String {
 private fun filterFiles(files: Map<String, String>) = files.filter {
     val name = it.key
     if (name.startsWith(".mps/")) {
-        false // name == ".mps/modules.xml"
+        name == ".mps/modules.xml"
     } else if (name.contains("/source_gen") || name.contains("/classes_gen")) {
         false
     } else {
@@ -43,8 +49,8 @@ private fun Project.captureFileContents(): Map<String, String> {
         ApplicationManager.getApplication().saveAll()
         save()
     }
-    return File(this.basePath).walk().filter { it.isFile }.associate { file ->
-        val name = file.absoluteFile.relativeTo(File(basePath).absoluteFile).path
+    return Path.of(this.basePath).walk().filter { it.isRegularFile() }.associate { file ->
+        val name = file.absolute().relativeTo(Path.of(basePath).absolute()).pathString
         val content = file.readText().trim()
         val xmlEndings = setOf("mps", "devkit", "mpl", "msd")
         val normalizedContent = when {

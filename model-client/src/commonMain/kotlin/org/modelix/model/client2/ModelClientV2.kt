@@ -26,6 +26,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLBuilder
 import io.ktor.http.appendPathSegments
+import io.ktor.http.buildUrl
 import io.ktor.http.contentType
 import io.ktor.http.takeFrom
 import io.ktor.serialization.kotlinx.json.json
@@ -507,7 +508,10 @@ abstract class ModelClientV2Builder {
     }
 
     fun url(url: String): ModelClientV2Builder {
-        baseUrl = url.trimEnd('/').ensureSuffix("/v2")
+        baseUrl = buildUrl {
+            takeFrom(url)
+            if (pathSegments.lastOrNull() != "v2") appendPathSegments("v2")
+        }.toString()
         return this
     }
 

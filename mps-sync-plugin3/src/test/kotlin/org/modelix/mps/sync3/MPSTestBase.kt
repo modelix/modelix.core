@@ -3,7 +3,7 @@ package org.modelix.mps.sync3
 import com.intellij.ide.impl.OpenProjectTask
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.EDT
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.project.ex.ProjectManagerEx
@@ -87,8 +87,10 @@ abstract class MPSTestBase : UsefulTestCase() {
 
     protected suspend fun <R> command(body: () -> R): R {
         var result: R? = null
-        withContext(Dispatchers.EDT) {
-            mpsProject.modelAccess.executeCommand { result = body() }
+        withContext(Dispatchers.Main) {
+            ApplicationManager.getApplication().invokeAndWait({
+                mpsProject.modelAccess.executeCommand { result = body() }
+            }, ModalityState.NON_MODAL)
         }
         return result as R
     }

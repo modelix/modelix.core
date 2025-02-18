@@ -1,7 +1,8 @@
 package org.modelix.model.mpsadapters
 
-import jetbrains.mps.persistence.MementoImpl
 import jetbrains.mps.project.facets.JavaModuleFacet
+import jetbrains.mps.smodel.Generator
+import jetbrains.mps.util.MacroHelper
 import jetbrains.mps.util.MacrosFactory
 import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.Memento
@@ -30,15 +31,24 @@ data class MPSJavaModuleFacetAsNode(val facet: JavaModuleFacet) : MPSGenericNode
             },
             BuiltinLanguages.MPSRepositoryConcepts.JavaModuleFacet.path.toReference() to object : IPropertyAccessor<JavaModuleFacet> {
                 override fun read(facet: JavaModuleFacet): String? {
-                    return facet.classesGen?.let { MacrosFactory().module(facet.module).shrinkPath(it.path) }
+                    // return facet.classesGen?.let { facet.macroHelper().shrinkPath(it.path) }
+                    return null
                 }
 
                 override fun write(element: JavaModuleFacet, value: String?) {
-                    element.classesGen
-                    val memento = MementoImpl()
-                    element.save(memento)
-                    memento.getOrCreateChild("classes").put("path", value?.let { MacrosFactory().module(element.module).expandPath(it) })
-                    element.load(memento)
+//                    val memento = MementoImpl()
+//                    element.save(memento)
+//                    memento.getOrCreateChild("classes").let {
+//                        it.put("generated", "true")
+//                        it.put("path", value.also { println("${element.module} / path = $it") })
+//                    }
+//                    element.load(memento)
+                }
+
+                private fun JavaModuleFacet.macroHelper(): MacroHelper {
+                    return module
+                        .let { if (it is Generator) it.sourceLanguage().sourceModule else it }
+                        .let { MacrosFactory().module(it) }
                 }
             },
         )

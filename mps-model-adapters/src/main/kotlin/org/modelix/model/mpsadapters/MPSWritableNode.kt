@@ -331,7 +331,7 @@ fun org.jetbrains.mps.openapi.model.SNodeId.tryDecodeModelixReference(): NodeRef
 }
 
 fun INodeReference.encodeAsForeignId(): SNodeId {
-    return SNodeId.Foreign.fromIdNoPrefix("mx" + Hex.encodeHexString(serialize().toByteArray()))
+    return SNodeId.Foreign("~mx" + Hex.encodeHexString(serialize().toByteArray()))
 }
 
 /**

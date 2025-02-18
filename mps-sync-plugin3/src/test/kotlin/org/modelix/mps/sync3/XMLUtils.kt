@@ -55,8 +55,7 @@ private fun disableDTD(dbf: DocumentBuilderFactory) {
 
 fun Node.visitAll(visitor: (Node) -> Unit) {
     visitor(this)
-    val childNodes = this.childNodes
-    for (i in 0 until childNodes.length) childNodes.item(i).visitAll(visitor)
+    children().forEach { it.visitAll(visitor) }
 }
 
 fun Node.childElements(): List<Element> = children().filterIsInstance<Element>()

@@ -186,6 +186,7 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
 
                     return moduleDescriptor.dependencies.map { it.moduleRef }
                         .plus(moduleDescriptor.dependencyVersions.map { it.key })
+                        .distinct()
                         .map { MPSModuleDependencyAsNode(element, it) }
                 }
 
@@ -205,7 +206,12 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                             val name = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.name.toReference()) ?: ""
                             val ref = PersistenceFacade.getInstance().createModuleReference(ModuleId.fromString(id), name)
                             val reexport = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport.toReference()).toBoolean()
-                            moduleDescriptor.dependencies.add(Dependency(ref, reexport))
+                            val explicit = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.explicit.toReference()).toBoolean()
+                            val version = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.version.toReference())?.toInt() ?: 0
+                            if (explicit) {
+                                moduleDescriptor.dependencies.add(Dependency(ref, reexport))
+                            }
+                            moduleDescriptor.dependencyVersions[ref] = version
                             MPSModuleDependencyAsNode(element, ref)
                         }
                         else -> error("Unsupported dependency type: ${sourceNode.getConceptReference()}")

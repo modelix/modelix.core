@@ -77,7 +77,7 @@ class ProjectSyncTest : MPSTestBase() {
         val version = client.pull(branchRef, null)
         val rootNode = TreePointer(version.getTree()).getRootNode()
         val allNodes = rootNode.getDescendants(true)
-        assertEquals(223, allNodes.count())
+        assertEquals(221, allNodes.count())
     }
 
     fun `test checkout into empty project`(): Unit = runWithModelServer { port ->
@@ -111,7 +111,7 @@ class ProjectSyncTest : MPSTestBase() {
             val allNodes = mpsProject.projectModules.asSequence()
                 .map { MPSModuleAsNode(it) }
                 .flatMap { it.getDescendants(true) }
-            assertEquals(216, allNodes.count())
+            assertEquals(214, allNodes.count())
         }
 
         binding.close()
@@ -121,12 +121,7 @@ class ProjectSyncTest : MPSTestBase() {
 
         suspend fun pullJson(ref: BranchReference) = connection
             .pullVersion(ref)
-            .getTree()
-            .let { TreePointer(it) }
-            .getRootNode()
-            .asData()
-            .normalizeIds()
-            .toJson()
+            .asNormalizedJson()
 
         assertEquals(pullJson(branchRef1), pullJson(branchRef2))
     }
@@ -250,9 +245,9 @@ class ProjectSyncTest : MPSTestBase() {
         assertEquals(version1.getContentHash(), (version2 as CLVersion).baseVersion?.getContentHash())
 
         val branchRef2 = RepositoryId("sync-test-B").getBranchReference()
-        val version3 = syncProjectToServer("change1", port, branchRef)
+        val expected = syncProjectToServer("change1", port, branchRef2)
 
-        assertEquals(version3.asNormalizedJson(), version2.asNormalizedJson())
+        assertEquals(expected.asNormalizedJson(), version2.asNormalizedJson())
     }
 
     fun `test sync to MPS after non-trivial commit`(): Unit = runWithModelServer { port ->
@@ -293,16 +288,35 @@ class ProjectSyncTest : MPSTestBase() {
         }
     }
 
-    private fun NodeData.normalizeIds() = normalizeIds(HashMap(), AtomicLong())
+    private fun NodeData.normalizeIds(): NodeData {
+        val idMap = HashMap<String, String>()
+        fillIdSubstitutions(idMap, AtomicLong())
+        return replaceIds(idMap)
+    }
 
-    private fun NodeData.normalizeIds(idMap: MutableMap<String, String>, idGenerator: AtomicLong): NodeData {
-        fun replaceId(id: String) = idMap.getOrPut(id) { "normalized:" + idGenerator.incrementAndGet() }
+    private fun NodeData.replaceIds(idMap: MutableMap<String, String>): NodeData {
+        fun replaceId(id: String) = idMap[id] ?: id
 
         return copy(
             id = id?.let { replaceId(it) },
-            children = children.map { it.normalizeIds(idMap, idGenerator) },
+            children = children.map { it.replaceIds(idMap) },
             references = references.mapValues { replaceId(it.value) },
         )
+    }
+
+    private fun NodeData.sortChildren(): NodeData {
+        return copy(
+            children = children.sortedWith(compareBy({ it.role }, { it.id })).map { it.sortChildren() },
+        )
+    }
+
+    private fun NodeData.fillIdSubstitutions(idMap: MutableMap<String, String>, idGenerator: AtomicLong) {
+        id?.let {
+            idMap.getOrPut(it) {
+                properties[NodeData.ID_PROPERTY_KEY] ?: ("normalized:" + idGenerator.incrementAndGet())
+            }
+        }
+        children.forEach { it.fillIdSubstitutions(idMap, idGenerator) }
     }
 
     private fun IVersion.asNormalizedJson(): String {
@@ -311,6 +325,7 @@ class ProjectSyncTest : MPSTestBase() {
             .getRootNode()
             .asData()
             .normalizeIds()
+            .sortChildren()
             .toJson()
     }
 }

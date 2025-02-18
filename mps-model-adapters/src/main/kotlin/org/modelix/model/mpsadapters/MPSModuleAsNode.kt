@@ -156,10 +156,10 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                             val moduleDescriptor = checkNotNull(module.moduleDescriptor) { "Has no moduleDescriptor: $module" }
                             val newFacet = FacetsFacade.getInstance().getFacetFactory(JavaModuleFacet.FACET_TYPE)!!.create(element) as JavaModuleFacetImpl
                             newFacet.load(MementoImpl())
-                            val moduleDir = if (element is Generator) element.getGeneratorLocation() else module.moduleSourceDir
-                            if (moduleDir != null) {
-                                newFacet.setGeneratedClassesLocation(moduleDir.findChild(AbstractModule.CLASSES_GEN))
-                            }
+//                            val moduleDir = if (element is Generator) element.getGeneratorLocation() else module.moduleSourceDir
+//                            if (moduleDir != null) {
+//                                newFacet.setGeneratedClassesLocation(moduleDir.findChild(AbstractModule.CLASSES_GEN))
+//                            }
                             moduleDescriptor.addFacetDescriptor(newFacet)
                             module.setModuleDescriptor(moduleDescriptor) // notify listeners
                             read(element).filterIsInstance<MPSJavaModuleFacetAsNode>().single()

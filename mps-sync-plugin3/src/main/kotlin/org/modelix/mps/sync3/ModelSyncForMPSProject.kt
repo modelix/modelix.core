@@ -1,10 +1,11 @@
+@file:OptIn(ExperimentalTime::class)
+
 package org.modelix.mps.sync3
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.EDT
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.project.MPSProject
@@ -17,7 +18,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.IVersion
 import org.modelix.model.api.TreePointer
@@ -27,6 +27,7 @@ import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.runWrite
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
+import org.modelix.model.mpsadapters.computeRead
 import org.modelix.model.sync.bulk.FullSyncFilter
 import org.modelix.model.sync.bulk.InvalidatingVisitor
 import org.modelix.model.sync.bulk.InvalidationTree
@@ -38,16 +39,15 @@ import org.modelix.mps.api.ModelixMpsApi
 import org.modelix.mps.model.sync.bulk.MPSProjectSyncMask
 import org.modelix.mps.sync3.Binding.Companion.LOG
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
+import kotlin.math.roundToLong
+import kotlin.time.ExperimentalTime
 
 @Service(Service.Level.APP)
 class AppLevelModelSyncService() : Disposable {
 
     companion object {
         fun getInstance(): AppLevelModelSyncService {
-            return ApplicationManager.getApplication().service<AppLevelModelSyncService>()
+            return ApplicationManager.getApplication().getService(AppLevelModelSyncService::class.java)
         }
     }
 
@@ -55,8 +55,8 @@ class AppLevelModelSyncService() : Disposable {
     private val coroutinesScope = CoroutineScope(Dispatchers.Default)
     private val connectionCheckingJob = coroutinesScope.launchLoop(
         BackoffStrategy(
-            initialDelay = 3.seconds,
-            maxDelay = 10.seconds,
+            initialDelay = 3_000,
+            maxDelay = 10_000,
             factor = 1.2,
         ),
     ) {
@@ -97,7 +97,7 @@ class AppLevelModelSyncService() : Disposable {
 
 @Service(Service.Level.PROJECT)
 class ModelSyncService(val project: Project) : IModelSyncService, Disposable {
-    private val mpsProject: MPSProject get() = ProjectHelper.fromIdeaProjectOrFail(project)
+    private val mpsProject: MPSProject get() = ProjectHelper.fromIdeaProject(project)!!
 
     private val bindings = ArrayList<Binding>()
     private val coroutinesScope = CoroutineScope(Dispatchers.IO)
@@ -210,7 +210,7 @@ class Binding(
         while (reason != null) {
             i++
             if (i % 10 == 0) LOG.debug { "Still waiting for the synchronization to finish: $reason" }
-            delay(100.milliseconds)
+            delay(100)
             reason = checkInSync()
         }
         return lastSyncedVersion.getValue()!!
@@ -347,13 +347,17 @@ class Binding(
 
     private suspend fun <R> writeToMPS(body: () -> R): R {
         val result = ArrayList<R>()
-        withContext(Dispatchers.EDT) {
-            repository.modelAccess.executeUndoTransparentCommand {
-                ModelixMpsApi.runWithProject(mpsProject) {
-                    result += body()
+        ApplicationManager.getApplication().invokeAndWait({
+            ApplicationManager.getApplication().runWriteAction {
+                repository.modelAccess.executeUndoTransparentCommand {
+                    ModelixMpsApi.runWithProject(mpsProject) {
+                        result += body()
+                    }
                 }
             }
-        }
+        }, ModalityState.NON_MODAL)
+//        withContext(Dispatchers.Main) {
+//        }
         return result.single()
     }
 
@@ -379,7 +383,7 @@ class Binding(
 
         val mpsProjects = listOf(mpsProject as MPSProject)
         val client = client()
-        val newVersion = repository.modelAccess.computeReadAction {
+        val newVersion = repository.computeRead {
             fun sync(invalidationTree: IIncrementalUpdateInformation): IVersion? {
                 return oldVersion.runWrite(client) { branch ->
                     ModelixMpsApi.runWithProject(mpsProject) {
@@ -449,14 +453,14 @@ suspend fun jobLoop(
 }
 
 class BackoffStrategy(
-    val initialDelay: Duration = 500.milliseconds,
-    val maxDelay: Duration = 10.seconds,
+    val initialDelay: Long = 500,
+    val maxDelay: Long = 10_000,
     val factor: Double = 1.5,
 ) {
-    var currentDelay: Duration = initialDelay
+    var currentDelay: Long = initialDelay
 
     fun failed() {
-        currentDelay = (currentDelay * factor).coerceAtMost(maxDelay)
+        currentDelay = (currentDelay * factor).roundToLong().coerceAtMost(maxDelay)
     }
 
     fun success() {

@@ -1,8 +1,11 @@
+@file:Suppress("removal")
+
 package org.modelix.model.mpsadapters
 
 import jetbrains.mps.extapi.persistence.FileBasedModelRoot
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.persistence.DefaultModelRoot
+import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.MPSExtentions
 import jetbrains.mps.project.MPSProject
@@ -37,7 +40,9 @@ class SolutionProducer(private val myProject: MPSProject) {
 
     private fun createSolutionDescriptor(namespace: String, id: ModuleId, descriptorFile: IFile): SolutionDescriptor {
         val descriptor = SolutionDescriptor()
-        descriptor.outputRoot = "\${module}/source_gen"
+        // using outputPath instead of outputRoot for backwards compatibility
+        // descriptor.outputRoot = "\${module}/source_gen"
+        descriptor.outputPath = descriptorFile.parent!!.findChild("source_gen").path
         descriptor.namespace = namespace
         descriptor.id = id
         val moduleLocation = descriptorFile.parent
@@ -74,7 +79,9 @@ class LanguageProducer(private val myProject: MPSProject) {
 
     private fun createDescriptor(namespace: String, id: ModuleId, descriptorFile: IFile): LanguageDescriptor {
         val descriptor = LanguageDescriptor()
-        descriptor.outputRoot = "\${module}/source_gen"
+        // using genPath instead of outputRoot for backwards compatibility
+        // descriptor.outputRoot = "\${module}/source_gen"
+        descriptor.genPath = descriptorFile.parent!!.findChild("source_gen").path
         descriptor.namespace = namespace
         descriptor.id = id
         val moduleLocation = descriptorFile.parent
@@ -127,7 +134,9 @@ class GeneratorProducer(private val myProject: MPSProject) {
 
     private fun createDescriptor(namespace: String, id: ModuleId, alias: String?, generatorModuleLocation: IFile, templateModelsLocation: IFile?): GeneratorDescriptor {
         val descriptor = GeneratorDescriptor()
-        descriptor.outputRoot = "\${module}/${generatorModuleLocation.name}/source_gen"
+        // using outputPath instead of outputRoot for backwards compatibility
+        // descriptor.outputRoot = "\${module}/${generatorModuleLocation.name}/source_gen"
+        descriptor.outputPath = generatorModuleLocation.findChild(AbstractModule.CLASSES_GEN).path
         descriptor.namespace = namespace
         descriptor.id = id
         descriptor.alias = alias ?: "main"
@@ -142,7 +151,7 @@ class GeneratorProducer(private val myProject: MPSProject) {
 }
 
 fun Generator.getGeneratorLocation(): IFile? {
-    return modelRoots.filterIsInstance<FileBasedModelRoot>().firstNotNullOfOrNull { it.contentDirectory }
+    return modelRoots.filterIsInstance<FileBasedModelRoot>().mapNotNull { it.contentDirectory }.firstOrNull()
 }
 
 class DevkitProducer(private val myProject: MPSProject) {

@@ -1,6 +1,7 @@
 import org.modelix.copyMps
 import org.modelix.mpsHomeDir
 import org.modelix.mpsMajorVersion
+import org.modelix.mpsPlatformVersion
 
 plugins {
     `modelix-kotlin-jvm`
@@ -52,9 +53,6 @@ tasks {
         onlyIf {
             !setOf(
                 "2020.3", // incompatible with the intellij plugin
-                "2021.2", // hangs when executed on CI
-                "2021.3", // hangs when executed on CI
-                "2022.2", // hangs when executed on CI
             ).contains(mpsMajorVersion)
         }
         jvmArgs("-Dintellij.platform.load.app.info.from.resources=true")
@@ -89,5 +87,19 @@ publishing {
                 extension = "zip"
             }
         }
+    }
+}
+
+// disable coroutines agent
+if (mpsPlatformVersion < 241) {
+    afterEvaluate {
+        val testTask = tasks.test.get()
+        val originalProviders = testTask.jvmArgumentProviders.toList()
+        testTask.jvmArgumentProviders.clear()
+        testTask.jvmArgumentProviders.add(object : CommandLineArgumentProvider {
+            override fun asArguments(): Iterable<String> {
+                return originalProviders.flatMap { it.asArguments() }.filterNot { it.contains("coroutines-javaagent.jar") }
+            }
+        })
     }
 }

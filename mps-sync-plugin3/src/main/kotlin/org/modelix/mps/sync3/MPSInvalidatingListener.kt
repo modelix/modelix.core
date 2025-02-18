@@ -25,7 +25,7 @@ import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleListener
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.jetbrains.mps.openapi.module.SRepository
-import org.jetbrains.mps.openapi.module.SRepositoryListener
+import org.jetbrains.mps.openapi.module.SRepositoryListenerBase
 import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.toSerialized
 import org.modelix.model.mpsadapters.GlobalModelListener
@@ -42,7 +42,6 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
     GlobalModelListener(),
     SNodeChangeListener,
     SModuleListener,
-    SRepositoryListener,
     SModelListener,
     org.jetbrains.mps.openapi.model.SModelListener {
 
@@ -117,11 +116,11 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
     }
 
     override fun addListener(repository: SRepository) {
-        repository.addRepositoryListener(this)
+        repository.addRepositoryListener(srepositoryListener)
     }
 
     override fun removeListener(repository: SRepository) {
-        repository.removeRepositoryListener(this)
+        repository.removeRepositoryListener(srepositoryListener)
     }
 
     override fun propertyChanged(e: SPropertyChangeEvent) {
@@ -210,9 +209,16 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
     override fun languageAdded(module: SModule, language: SLanguage) { invalidate(module) }
     override fun languageRemoved(module: SModule, language: SLanguage) { invalidate(module) }
     override fun moduleChanged(module: SModule) { invalidate(module) }
-    override fun moduleAdded(module: SModule) { invalidate(repository) }
-    override fun beforeModuleRemoved(module: SModule) {}
-    override fun moduleRemoved(reference: SModuleReference) { invalidate(repository) }
-    override fun commandStarted(repository: SRepository) {}
-    override fun commandFinished(repository: SRepository) {}
+
+    /**
+     * For compatibility with MPS 2020.3, SRepositoryListenerBase is used because SRepositoryListener had the additional
+     * methods updateStarted and updateFinished in that version.
+     */
+    private val srepositoryListener = object : SRepositoryListenerBase() {
+        override fun moduleAdded(module: SModule) { invalidate(repository) }
+        override fun beforeModuleRemoved(module: SModule) {}
+        override fun moduleRemoved(reference: SModuleReference) { invalidate(repository) }
+        override fun commandStarted(repository: SRepository) {}
+        override fun commandFinished(repository: SRepository) {}
+    }
 }

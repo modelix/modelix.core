@@ -90,11 +90,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
     }
 
     override fun <T> executeRead(f: () -> T): T {
-        var result: T? = null
-        repository.modelAccess.runReadAction {
-            result = f()
-        }
-        return result!!
+        return repository.computeRead(f)
     }
 
     override fun <T> executeWrite(f: () -> T): T {
@@ -364,4 +360,12 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
     private fun resolveMPSRepositoryReference(): INode {
         return repository.asLegacyNode()
     }
+}
+
+fun <R> SRepository.computeRead(body: () -> R): R {
+    var result: R? = null
+    modelAccess.runReadAction {
+        result = body()
+    }
+    return result as R
 }

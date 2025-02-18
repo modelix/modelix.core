@@ -4,12 +4,15 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.project.AbstractModule
+import jetbrains.mps.project.MPSExtentions
 import jetbrains.mps.smodel.Language
 import org.jetbrains.mps.openapi.model.EditableSModel
 import org.modelix.mps.api.ModelixMpsApi
 import org.w3c.dom.Element
+import java.io.File
 import java.nio.file.Path
 import kotlin.io.path.absolute
+import kotlin.io.path.extension
 import kotlin.io.path.isRegularFile
 import kotlin.io.path.pathString
 import kotlin.io.path.readText
@@ -49,16 +52,36 @@ private fun Project.captureFileContents(): Map<String, String> {
         ApplicationManager.getApplication().saveAll()
         save()
     }
-    return Path.of(this.basePath).walk().filter { it.isRegularFile() }.associate { file ->
-        val name = file.absolute().relativeTo(Path.of(basePath).absolute()).pathString
-        val content = file.readText().trim()
-        val xmlEndings = setOf("mps", "devkit", "mpl", "msd")
-        val normalizedContent = when {
-            xmlEndings.contains(name.substringAfterLast(".")) -> normalizeXmlFile(content)
-            else -> content
+
+    // Files sometimes don't get deleted. Ignore them if they are not listed in the modules.xml
+    val visibleModules = HashSet<Path>()
+    File(basePath).resolve(".mps/modules.xml").takeIf { it.isFile }?.let { readXmlFile(it) }?.visitAll {
+        if (it is Element && it.tagName == "modulePath") {
+            visibleModules.add(Path.of(it.getAttribute("path").replace("\$PROJECT_DIR\$", basePath!!)))
         }
-        name to normalizedContent
     }
+
+    val moduleEndings = setOf(MPSExtentions.DEVKIT, MPSExtentions.LANGUAGE, MPSExtentions.SOLUTION)
+    val xmlEndings = moduleEndings + setOf(MPSExtentions.MODEL)
+
+    return Path.of(this.basePath).walk()
+        .filter { it.isRegularFile() }
+        .filter {
+            val isModuleFile = moduleEndings.contains(it.extension)
+            !isModuleFile || visibleModules.contains(it)
+        }
+        .associate { file ->
+            val name = file.absolute().relativeTo(Path.of(basePath).absolute()).pathString
+            val content = file.readText().trim()
+
+            val normalizedContent = when {
+                xmlEndings.contains(name.substringAfterLast(".")) -> {
+                    normalizeXmlFile(content)
+                }
+                else -> content
+            }
+            name to normalizedContent
+        }
 }
 
 private fun normalizeXmlFile(content: String): String {
@@ -82,6 +105,21 @@ private fun normalizeXmlFile(content: String): String {
                     node.removeAttribute("location")
                     node.setAttribute("path", "$contentPath/$location")
                 }
+            }
+            "classes" -> {
+                node.removeAttribute("path")
+            }
+            "language", "solution", "generator" -> {
+                node.removeAttribute("generatorOutputPath")
+            }
+            "registry" -> {
+                // metamodel may not be built yet and the names not available.
+                // Ignore them as they don't have any semantic meaning.
+                node.visitAll { (it as? Element)?.removeAttribute("name") }
+            }
+            "facets" -> {
+                // facets are not synchronized yet
+                node.parentNode.removeChild(node)
             }
         }
     }

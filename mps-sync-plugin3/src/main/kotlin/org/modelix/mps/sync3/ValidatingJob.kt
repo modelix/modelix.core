@@ -1,17 +1,18 @@
 package org.modelix.mps.sync3
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 
 private val LOG = mu.KotlinLogging.logger { }
 
 class ValidatingJob(private val validate: suspend () -> Unit) {
-    private val dirty = Channel<Unit>(1, onBufferOverflow = BufferOverflow.DROP_LATEST)
+    private val dirty = Channel<Unit>(1)
 
     fun invalidate() {
-        dirty.trySend(Unit)
+        // can't use trySend because it doesn't exist in MPS 2020.3
+        @Suppress("DEPRECATION_ERROR")
+        dirty.offer(Unit)
     }
 
     suspend fun run() {

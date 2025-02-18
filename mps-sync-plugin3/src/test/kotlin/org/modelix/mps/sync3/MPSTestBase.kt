@@ -20,6 +20,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.absolute
+import kotlin.io.path.writeText
 
 abstract class MPSTestBase : UsefulTestCase() {
 
@@ -41,7 +42,18 @@ abstract class MPSTestBase : UsefulTestCase() {
             sourceDir.copyRecursively(projectDir.toFile(), overwrite = true)
             ProjectManagerEx.getInstanceEx().openProject(projectDir, options)!!
         } else {
-            ProjectManagerEx.getInstanceEx().newProject(projectDir, options)!!
+            projectDir.resolve(".mps").also { it.toFile().mkdirs() }.resolve("modules.xml").writeText(
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <project version="4">
+                  <component name="MPSProject">
+                    <projectModules>
+                    </projectModules>
+                  </component>
+                </project>
+                """.trimIndent(),
+            )
+            ProjectManagerEx.getInstanceEx().openProject(projectDir, options)!!
         }
 
         disposeOnTearDownInEdt { project.close() }

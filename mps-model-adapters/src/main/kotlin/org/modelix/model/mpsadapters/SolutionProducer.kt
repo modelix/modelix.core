@@ -109,6 +109,8 @@ class GeneratorProducer(private val myProject: MPSProject) {
         language.moduleDescriptor.generators.add(descriptor)
         language.setModuleDescriptor(language.moduleDescriptor) // instantiate generator module
 
+        language.save()
+
         return language.generators.first { it.moduleReference.moduleId == id }
     }
 

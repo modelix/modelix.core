@@ -1,12 +1,10 @@
 package org.modelix.model.mpsadapters
 
-import jetbrains.mps.module.ModuleDeleteHelper
 import jetbrains.mps.persistence.MementoImpl
 import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
-import jetbrains.mps.project.Project
 import jetbrains.mps.project.Solution
 import jetbrains.mps.project.facets.JavaModuleFacet
 import jetbrains.mps.project.facets.JavaModuleFacetImpl
@@ -402,11 +400,7 @@ data class MPSLanguageAsNode(override val module: Language) : MPSModuleAsNode<La
                 }
 
                 override fun remove(element: Language, child: IWritableNode) {
-                    ModuleDeleteHelper(ModelixMpsApi.getMPSProject() as Project).deleteModules(
-                        listOf((child as MPSGeneratorAsNode).module),
-                        false,
-                        true,
-                    )
+                    (child as MPSGeneratorAsNode).module.delete()
                 }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Language.extendedLanguages.toReference() to object : IChildAccessor<Language> {

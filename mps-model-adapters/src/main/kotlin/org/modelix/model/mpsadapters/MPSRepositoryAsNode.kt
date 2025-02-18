@@ -1,14 +1,16 @@
 package org.modelix.model.mpsadapters
 
-import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.module.ModuleDeleteHelper
+import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.project.Project
 import jetbrains.mps.project.ProjectBase
 import jetbrains.mps.smodel.Generator
+import jetbrains.mps.smodel.Language
 import jetbrains.mps.smodel.tempmodel.TempModule
 import jetbrains.mps.smodel.tempmodel.TempModule2
+import org.jetbrains.mps.openapi.model.EditableSModel
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.BuiltinLanguages
@@ -67,11 +69,7 @@ data class MPSRepositoryAsNode(@get:JvmName("getRepository_") val repository: SR
                 }
 
                 override fun remove(element: SRepository, child: IWritableNode) {
-                    ModuleDeleteHelper(ProjectHelper.getProject(element) ?: ModelixMpsApi.getMPSProject() as Project).deleteModules(
-                        listOf((child as MPSModuleAsNode<*>).module),
-                        false, // safeDelete
-                        true, // deleteFiles
-                    )
+                    (child as MPSModuleAsNode<*>).module.delete()
                 }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Repository.tempModules.toReference() to object : IChildAccessor<SRepository> {
@@ -124,3 +122,26 @@ data class MPSRepositoryAsNode(@get:JvmName("getRepository_") val repository: SR
 }
 
 private fun SModule.isTempModule(): Boolean = this is TempModule || this is TempModule2
+
+internal fun SModule.delete() {
+    // Without saving first, MPS might detect a conflict that can result in data loss and prevents it.
+    saveModuleAndModels()
+    if (this is Generator) {
+        val language = this.sourceLanguage().sourceModule as? Language
+        if (language != null) {
+            language.saveModuleAndModels()
+            language.generators.forEach { it.saveModuleAndModels() }
+        }
+    }
+
+    ModuleDeleteHelper(ModelixMpsApi.getMPSProject() as Project).deleteModules(
+        listOf(this),
+        false,
+        true,
+    )
+}
+
+private fun SModule.saveModuleAndModels() {
+    (this as? AbstractModule)?.save()
+    models.filterIsInstance<EditableSModel>().forEach { it.save() }
+}

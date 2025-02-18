@@ -24,10 +24,18 @@ data class MPSDevKitDependencyAsNode(
                 override fun read(element: MPSDevKitDependencyAsNode): String? {
                     return element.moduleReference.moduleName
                 }
+
+                override fun write(element: MPSDevKitDependencyAsNode, value: String?) {
+                    throw UnsupportedOperationException("read only")
+                }
             },
             BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid.toReference() to object : IPropertyAccessor<MPSDevKitDependencyAsNode> {
                 override fun read(element: MPSDevKitDependencyAsNode): String? {
                     return element.moduleReference.moduleId.toString()
+                }
+
+                override fun write(element: MPSDevKitDependencyAsNode, value: String?) {
+                    throw UnsupportedOperationException("read only")
                 }
             },
         )

@@ -46,6 +46,8 @@ fun INodeReference.resolveIn(scope: INodeResolutionScope): INode? {
     }
 }
 
+fun INodeReference.toSerialized(): NodeReference = if (this is NodeReference) this else NodeReference(this.serialize())
+
 class NodeReferenceKSerializer : KSerializer<INodeReference> {
     override fun deserialize(decoder: Decoder): INodeReference {
         val serialized = decoder.decodeString()

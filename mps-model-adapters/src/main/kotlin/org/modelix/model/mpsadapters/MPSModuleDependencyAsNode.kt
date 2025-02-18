@@ -48,6 +48,10 @@ data class MPSModuleDependencyAsNode(
                 override fun read(element: MPSModuleDependencyAsNode): String? {
                     return element.moduleReference.moduleName
                 }
+
+                override fun write(element: MPSModuleDependencyAsNode, value: String?) {
+                    throw UnsupportedOperationException("read only")
+                }
             },
             BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport.toReference() to object : IPropertyAccessor<MPSModuleDependencyAsNode> {
                 override fun read(element: MPSModuleDependencyAsNode): String? {
@@ -77,6 +81,10 @@ data class MPSModuleDependencyAsNode(
             BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.uuid.toReference() to object : IPropertyAccessor<MPSModuleDependencyAsNode> {
                 override fun read(element: MPSModuleDependencyAsNode): String? {
                     return element.moduleReference.moduleId.toString()
+                }
+
+                override fun write(element: MPSModuleDependencyAsNode, value: String?) {
+                    throw UnsupportedOperationException("read only")
                 }
             },
             BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.version.toReference() to object : IPropertyAccessor<MPSModuleDependencyAsNode> {

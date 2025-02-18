@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="MPSProject">
+    <projectModules>
+      <modulePath path="$PROJECT_DIR$/devkits/NewDevkit/NewDevkit.devkit" folder="folderA" />
+      <modulePath path="$PROJECT_DIR$/languages/NewLanguage/NewLanguage.mpl" folder="" />
+      <modulePath path="$PROJECT_DIR$/languages/NewLanguage2/NewLanguage2.mpl" folder="" />
+      <modulePath path="$PROJECT_DIR$/solutions/NewRuntimeSolution/NewRuntimeSolution.msd" folder="" />
+      <modulePath path="$PROJECT_DIR$/solutions/NewSolution/NewSolution.msd" folder="" />
+    </projectModules>
+  </component>
+</project>

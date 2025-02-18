@@ -1,9 +1,7 @@
 package org.modelix.model.mpsadapters
 
 import jetbrains.mps.ide.ThreadUtils
-import jetbrains.mps.project.Project
 import jetbrains.mps.project.ProjectBase
-import jetbrains.mps.project.ProjectManager
 import jetbrains.mps.project.facets.JavaModuleFacet
 import jetbrains.mps.project.structure.modules.ModuleReference
 import jetbrains.mps.smodel.GlobalModelAccess
@@ -22,6 +20,7 @@ import org.modelix.model.api.NodeReference
 import org.modelix.model.area.IArea
 import org.modelix.model.area.IAreaListener
 import org.modelix.model.area.IAreaReference
+import org.modelix.mps.api.ModelixMpsApi
 
 data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
 
@@ -114,7 +113,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
         val inEDT = ThreadUtils.isInEDT()
 
         if (inEDT || enforceCommand) {
-            val projects: Sequence<Project> = Sequence { ProjectManager.getInstance().openedProjects.iterator() }
+            val projects = ModelixMpsApi.getMPSProjects()
             val modelAccessCandidates = sequenceOf(repository.modelAccess) + projects.map { it.modelAccess }
             // GlobalModelAccess throws an Exception when trying to execute a command.
             // Only a ProjectModelAccess can execute a command.
@@ -274,8 +273,8 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
         } else {
             val parts = ref.serialize().substringAfter("${MPSModuleReferenceReference.PREFIX}:").split(MPSModuleReferenceReference.SEPARATOR)
             MPSModuleReferenceReference(
-                PersistenceFacade.getInstance().createModuleId(parts[0]),
-                ChildLinkReferenceByUID(parts[1]),
+                PersistenceFacade.getInstance().createModuleId(parts[0].urlDecode()),
+                ChildLinkReferenceByUID(parts[1].urlDecode()),
                 PersistenceFacade.getInstance().createModuleId(parts[2]),
             )
         }
@@ -292,7 +291,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
             ref.serialize().substringAfter("${MPSProjectReference.PREFIX}:")
         }
 
-        val project = ProjectManager.getInstance().openedProjects
+        val project = ModelixMpsApi.getMPSProjects()
             .filterIsInstance<ProjectBase>()
             .find { it.name == projectName }
 
@@ -322,7 +321,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
             NodeReference(projectRef)
         }
 
-        val resolvedNodeForProject = resolveNode(projectRef) ?: return null
+        val resolvedNodeForProject = resolveNode(projectRef)?.asWritableNode() ?: return null
         check(resolvedNodeForProject is MPSProjectAsNode) {
             "Resolved node `$resolvedNodeForProject` does not represent a project."
         }

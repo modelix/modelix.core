@@ -19,7 +19,7 @@ class InvalidationTreeTest {
         val testTree = getTestTreeData()
         val treePointer = TreePointer(testTree)
 
-        invalidationTree.invalidate(testTree, 32L)
+        invalidationTree.invalidate(treePointer.getNode(32L).asReadableNode())
 
         val invalidatedNode = treePointer.computeRead { treePointer.getNode(32L).asReadableNode() }
         assertTrue { invalidationTree.needsSynchronization(invalidatedNode) }
@@ -31,7 +31,7 @@ class InvalidationTreeTest {
         val testTree = getTestTreeData()
         val treePointer = TreePointer(testTree)
 
-        invalidationTree.invalidate(testTree, 32L)
+        invalidationTree.invalidate(treePointer.getNode(32L).asReadableNode())
 
         val invalidatedNode = treePointer.computeRead { treePointer.getNode(32L) }
         val ancestors = invalidatedNode.getAncestors(includeSelf = false)
@@ -44,7 +44,7 @@ class InvalidationTreeTest {
         val testTree = getTestTreeData()
         val treePointer = TreePointer(testTree)
 
-        invalidationTree.invalidate(testTree, 3L)
+        invalidationTree.invalidate(treePointer.getNode(3L).asReadableNode())
 
         val descendants = treePointer.getNode(3L).getDescendants(false)
         assertTrue { descendants.none { invalidationTree.needsSynchronization(it.asReadableNode()) } }
@@ -57,8 +57,8 @@ class InvalidationTreeTest {
         val testTree = getTestTreeData()
         val treePointer = TreePointer(testTree)
 
-        invalidationTree.invalidate(testTree, 3L)
-        invalidationTree.invalidate(testTree, 311L)
+        invalidationTree.invalidate(treePointer.getNode(3L).asReadableNode())
+        invalidationTree.invalidate(treePointer.getNode(311L).asReadableNode())
 
         val ancestors = treePointer.getNode(3L).getAncestors(false)
 

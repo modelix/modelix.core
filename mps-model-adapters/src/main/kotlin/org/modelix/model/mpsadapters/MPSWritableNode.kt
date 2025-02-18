@@ -2,6 +2,7 @@ package org.modelix.model.mpsadapters
 
 import jetbrains.mps.smodel.MPSModuleRepository
 import jetbrains.mps.smodel.SNodeId
+import jetbrains.mps.smodel.SNodeUtil
 import jetbrains.mps.smodel.adapter.MetaAdapterByDeclaration
 import org.apache.commons.codec.binary.Hex
 import org.jetbrains.mps.openapi.language.SConcept
@@ -184,6 +185,8 @@ data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
                 model.createNode(resolvedConcept, preferredId)
             }
 
+            newChild.copyNameFrom(spec)
+
             if (anchor == null) {
                 node.addChild(link, newChild)
             } else {
@@ -329,4 +332,16 @@ fun org.jetbrains.mps.openapi.model.SNodeId.tryDecodeModelixReference(): NodeRef
 
 fun INodeReference.encodeAsForeignId(): SNodeId {
     return SNodeId.Foreign.fromIdNoPrefix("mx" + Hex.encodeHexString(serialize().toByteArray()))
+}
+
+/**
+ * When a reference is set, the name of the target is stored as resolveInfo.
+ * If the name isn't yet set, the resolveInfo will be empty.
+ * That's why we set the name as early as possible.
+ * And because resolveInfo is something MPS specific it is handled here instead of in ModelSynchronizer.
+ */
+internal fun SNode.copyNameFrom(spec: NewNodeSpec?) {
+    if (spec == null) return
+    val name = spec.node?.getPropertyValue(MPSProperty(SNodeUtil.property_INamedConcept_name).toReference())
+    if (name != null) setProperty(SNodeUtil.property_INamedConcept_name, name)
 }

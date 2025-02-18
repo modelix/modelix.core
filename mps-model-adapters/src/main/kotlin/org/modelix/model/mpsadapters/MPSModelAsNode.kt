@@ -58,7 +58,10 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
                     sourceNode: SpecWithResolvedConcept,
                 ): IWritableNode {
                     return element.createNode(sourceNode.concept, sourceNode.spec?.getPreferredSNodeId())
-                        .also { element.addRootNode(it) }
+                        .also {
+                            it.copyNameFrom(sourceNode.spec)
+                            element.addRootNode(it)
+                        }
                         .let { MPSWritableNode(it) }
                 }
 

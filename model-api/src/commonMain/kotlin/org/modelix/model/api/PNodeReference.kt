@@ -10,7 +10,7 @@ data class PNodeReference(val id: Long, val branchId: String) : INodeReference {
     fun toLocal() = LocalPNodeReference(id)
 
     override fun serialize(): String {
-        return "pnode:${id.toString(16)}@$branchId"
+        return "modelix:$branchId/${id.toString(16)}"
     }
 
     override fun toString(): String {
@@ -24,21 +24,20 @@ data class PNodeReference(val id: Long, val branchId: String) : INodeReference {
             }
         }
         fun tryDeserialize(serialized: String): PNodeReference? {
+            // New format   : modelix:25038f9e-e8ad-470a-9ae8-6978ed172184/1a5003b818f
+            // Legacy format: pnode:1a5003b818f@25038f9e-e8ad-470a-9ae8-6978ed172184
+            //
+            // The 'modelix' prefix is more intuitive for a node stored inside a Modelix repository.
+            // Having the repository ID first also feels more natural.
+
             if (serialized.startsWith("pnode:") && serialized.contains('@')) {
+                // legacy format
                 val withoutPrefix = serialized.substringAfter("pnode:")
                 val parts = withoutPrefix.split('@', limit = 2)
                 if (parts.size != 2) return null
                 val nodeId = parts[0].toLongOrNull(16) ?: return null
                 return PNodeReference(nodeId, parts[1])
             } else if (serialized.startsWith("modelix:") && serialized.contains('/')) {
-                // This would be a nicer serialization format that isn't used yet, but supporting it already will make
-                // future changes easier without breaking old versions of this library.
-                //
-                // Example:    modelix:25038f9e-e8ad-470a-9ae8-6978ed172184/1a5003b818f
-                // Old format: pnode:1a5003b818f@25038f9e-e8ad-470a-9ae8-6978ed172184
-                //
-                // The 'modelix' prefix is more intuitive for a node stored inside a Modelix repository.
-                // Having the repository ID first also feels more natural.
                 val withoutPrefix = serialized.substringAfter("modelix:")
                 val nodeIdStr = withoutPrefix.substringAfterLast('/')
                 val branchId = withoutPrefix.substringBeforeLast('/')

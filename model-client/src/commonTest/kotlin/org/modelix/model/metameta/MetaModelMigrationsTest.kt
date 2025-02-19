@@ -49,17 +49,17 @@ class MetaModelMigrationsTest {
             //language=JSON
             """
        {
-            "id": "pnode:100000001@aRepositoryId",
+            "id": "modelix:aRepositoryId/100000001",
             "concept": "modelix.metameta.Language",
             "role": "languages",
             "children": [
                 {
-                    "id": "pnode:100000002@aRepositoryId",
+                    "id": "modelix:aRepositoryId/100000002",
                     "concept": "modelix.metameta.Concept",
                     "role": "concepts",
                     "children": [
                         {
-                            "id": "pnode:100000003@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000003",
                             "concept": "modelix.metameta.Property",
                             "role": "properties",
                             "properties": {
@@ -68,7 +68,7 @@ class MetaModelMigrationsTest {
                             }
                         },
                         {
-                            "id": "pnode:100000004@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000004",
                             "concept": "modelix.metameta.Property",
                             "role": "properties",
                             "properties": {
@@ -77,7 +77,7 @@ class MetaModelMigrationsTest {
                             }
                         },
                         {
-                            "id": "pnode:100000005@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000005",
                             "concept": "modelix.metameta.Property",
                             "role": "properties",
                             "properties": {
@@ -86,7 +86,7 @@ class MetaModelMigrationsTest {
                             }
                         },
                         {
-                            "id": "pnode:100000006@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000006",
                             "concept": "modelix.metameta.ChildLink",
                             "role": "childLinks",
                             "properties": {
@@ -96,11 +96,11 @@ class MetaModelMigrationsTest {
                                 "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/474657388638618898"
                             },
                             "references": {
-                                "childConcept": "pnode:100000029@aRepositoryId"
+                                "childConcept": "modelix:aRepositoryId/100000029"
                             }
                         },
                         {
-                            "id": "pnode:100000007@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000007",
                             "concept": "modelix.metameta.ChildLink",
                             "role": "childLinks",
                             "properties": {
@@ -110,11 +110,11 @@ class MetaModelMigrationsTest {
                                 "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242412"
                             },
                             "references": {
-                                "childConcept": "pnode:10000000a@aRepositoryId"
+                                "childConcept": "modelix:aRepositoryId/10000000a"
                             }
                         },
                         {
-                            "id": "pnode:100000008@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000008",
                             "concept": "modelix.metameta.ChildLink",
                             "role": "childLinks",
                             "properties": {
@@ -124,11 +124,11 @@ class MetaModelMigrationsTest {
                                 "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242425"
                             },
                             "references": {
-                                "childConcept": "pnode:10000000b@aRepositoryId"
+                                "childConcept": "modelix:aRepositoryId/10000000b"
                             }
                         },
                         {
-                            "id": "pnode:100000009@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000009",
                             "concept": "modelix.metameta.ChildLink",
                             "role": "childLinks",
                             "properties": {
@@ -138,16 +138,16 @@ class MetaModelMigrationsTest {
                                 "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242439"
                             },
                             "references": {
-                                "childConcept": "pnode:100000012@aRepositoryId"
+                                "childConcept": "modelix:aRepositoryId/100000012"
                             }
                         },
                         {
-                            "id": "pnode:10000002f@aRepositoryId",
+                            "id": "modelix:aRepositoryId/10000002f",
                             "concept": "modelix.metameta.ConceptReference",
                             "role": "superConcepts"
                         },
                         {
-                            "id": "pnode:100000030@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000030",
                             "concept": "modelix.metameta.ConceptReference",
                             "role": "superConcepts"
                         }
@@ -159,12 +159,12 @@ class MetaModelMigrationsTest {
                     }
                 },
                 {
-                    "id": "pnode:10000000a@aRepositoryId",
+                    "id": "modelix:aRepositoryId/10000000a",
                     "concept": "modelix.metameta.Concept",
                     "role": "concepts",
                     "children": [
                         {
-                            "id": "pnode:100000031@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000031",
                             "concept": "modelix.metameta.ConceptReference",
                             "role": "superConcepts"
                         }
@@ -176,12 +176,12 @@ class MetaModelMigrationsTest {
                     }
                 },
                 {
-                    "id": "pnode:10000000b@aRepositoryId",
+                    "id": "modelix:aRepositoryId/10000000b",
                     "concept": "modelix.metameta.Concept",
                     "role": "concepts",
                     "children": [
                         {
-                            "id": "pnode:10000000c@aRepositoryId",
+                            "id": "modelix:aRepositoryId/10000000c",
                             "concept": "modelix.metameta.Property",
                             "role": "properties",
                             "properties": {
@@ -190,7 +190,7 @@ class MetaModelMigrationsTest {
                             }
                         },
                         {
-                            "id": "pnode:10000000d@aRepositoryId",
+                            "id": "modelix:aRepositoryId/10000000d",
                             "concept": "modelix.metameta.Property",
                             "role": "properties",
                             "properties": {
@@ -199,7 +199,7 @@ class MetaModelMigrationsTest {
                             }
                         },
                         {
-                            "id": "pnode:10000000e@aRepositoryId",
+                            "id": "modelix:aRepositoryId/10000000e",
                             "concept": "modelix.metameta.Property",
                             "role": "properties",
                             "properties": {
@@ -208,7 +208,7 @@ class MetaModelMigrationsTest {
                             }
                         },
                         {
-                            "id": "pnode:10000000f@aRepositoryId",
+                            "id": "modelix:aRepositoryId/10000000f",
                             "concept": "modelix.metameta.Property",
                             "role": "properties",
                             "properties": {
@@ -217,7 +217,7 @@ class MetaModelMigrationsTest {
                             }
                         },
                         {
-                            "id": "pnode:100000010@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000010",
                             "concept": "modelix.metameta.Property",
                             "role": "properties",
                             "properties": {
@@ -226,7 +226,7 @@ class MetaModelMigrationsTest {
                             }
                         },
                         {
-                            "id": "pnode:100000011@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000011",
                             "concept": "modelix.metameta.Property",
                             "role": "properties",
                             "properties": {
@@ -235,7 +235,7 @@ class MetaModelMigrationsTest {
                             }
                         },
                         {
-                            "id": "pnode:100000032@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000032",
                             "concept": "modelix.metameta.ConceptReference",
                             "role": "superConcepts"
                         }
@@ -247,12 +247,12 @@ class MetaModelMigrationsTest {
                     }
                 },
                 {
-                    "id": "pnode:100000012@aRepositoryId",
+                    "id": "modelix:aRepositoryId/100000012",
                     "concept": "modelix.metameta.Concept",
                     "role": "concepts",
                     "children": [
                         {
-                            "id": "pnode:100000013@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000013",
                             "concept": "modelix.metameta.Property",
                             "role": "properties",
                             "properties": {
@@ -261,7 +261,7 @@ class MetaModelMigrationsTest {
                             }
                         },
                         {
-                            "id": "pnode:100000014@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000014",
                             "concept": "modelix.metameta.Property",
                             "role": "properties",
                             "properties": {
@@ -270,7 +270,7 @@ class MetaModelMigrationsTest {
                             }
                         },
                         {
-                            "id": "pnode:100000033@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000033",
                             "concept": "modelix.metameta.ConceptReference",
                             "role": "superConcepts"
                         }
@@ -282,16 +282,16 @@ class MetaModelMigrationsTest {
                     }
                 },
                 {
-                    "id": "pnode:100000015@aRepositoryId",
+                    "id": "modelix:aRepositoryId/100000015",
                     "concept": "modelix.metameta.Concept",
                     "role": "concepts",
                     "children": [
                         {
-                            "id": "pnode:100000034@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000034",
                             "concept": "modelix.metameta.ConceptReference",
                             "role": "superConcepts",
                             "references": {
-                                "concept": "pnode:100000002@aRepositoryId"
+                                "concept": "modelix:aRepositoryId/100000002"
                             }
                         }
                     ],
@@ -302,16 +302,16 @@ class MetaModelMigrationsTest {
                     }
                 },
                 {
-                    "id": "pnode:100000016@aRepositoryId",
+                    "id": "modelix:aRepositoryId/100000016",
                     "concept": "modelix.metameta.Concept",
                     "role": "concepts",
                     "children": [
                         {
-                            "id": "pnode:100000035@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000035",
                             "concept": "modelix.metameta.ConceptReference",
                             "role": "superConcepts",
                             "references": {
-                                "concept": "pnode:100000002@aRepositoryId"
+                                "concept": "modelix:aRepositoryId/100000002"
                             }
                         }
                     ],
@@ -322,16 +322,16 @@ class MetaModelMigrationsTest {
                     }
                 },
                 {
-                    "id": "pnode:100000017@aRepositoryId",
+                    "id": "modelix:aRepositoryId/100000017",
                     "concept": "modelix.metameta.Concept",
                     "role": "concepts",
                     "children": [
                         {
-                            "id": "pnode:100000036@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000036",
                             "concept": "modelix.metameta.ConceptReference",
                             "role": "superConcepts",
                             "references": {
-                                "concept": "pnode:100000002@aRepositoryId"
+                                "concept": "modelix:aRepositoryId/100000002"
                             }
                         }
                     ],
@@ -342,12 +342,12 @@ class MetaModelMigrationsTest {
                     }
                 },
                 {
-                    "id": "pnode:100000018@aRepositoryId",
+                    "id": "modelix:aRepositoryId/100000018",
                     "concept": "modelix.metameta.Concept",
                     "role": "concepts",
                     "children": [
                         {
-                            "id": "pnode:100000019@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000019",
                             "concept": "modelix.metameta.ChildLink",
                             "role": "childLinks",
                             "properties": {
@@ -357,11 +357,11 @@ class MetaModelMigrationsTest {
                                 "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/474657388638618903"
                             },
                             "references": {
-                                "childConcept": "pnode:100000002@aRepositoryId"
+                                "childConcept": "modelix:aRepositoryId/100000002"
                             }
                         },
                         {
-                            "id": "pnode:10000001a@aRepositoryId",
+                            "id": "modelix:aRepositoryId/10000001a",
                             "concept": "modelix.metameta.ChildLink",
                             "role": "childLinks",
                             "properties": {
@@ -371,11 +371,11 @@ class MetaModelMigrationsTest {
                                 "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/7064605579395546636"
                             },
                             "references": {
-                                "childConcept": "pnode:10000001c@aRepositoryId"
+                                "childConcept": "modelix:aRepositoryId/10000001c"
                             }
                         },
                         {
-                            "id": "pnode:10000001b@aRepositoryId",
+                            "id": "modelix:aRepositoryId/10000001b",
                             "concept": "modelix.metameta.ChildLink",
                             "role": "childLinks",
                             "properties": {
@@ -385,11 +385,11 @@ class MetaModelMigrationsTest {
                                 "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618902/8226136427470548682"
                             },
                             "references": {
-                                "childConcept": "pnode:100000002@aRepositoryId"
+                                "childConcept": "modelix:aRepositoryId/100000002"
                             }
                         },
                         {
-                            "id": "pnode:100000037@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000037",
                             "concept": "modelix.metameta.ConceptReference",
                             "role": "superConcepts"
                         }
@@ -401,12 +401,12 @@ class MetaModelMigrationsTest {
                     }
                 },
                 {
-                    "id": "pnode:10000001c@aRepositoryId",
+                    "id": "modelix:aRepositoryId/10000001c",
                     "concept": "modelix.metameta.Concept",
                     "role": "concepts",
                     "children": [
                         {
-                            "id": "pnode:10000001d@aRepositoryId",
+                            "id": "modelix:aRepositoryId/10000001d",
                             "concept": "modelix.metameta.ChildLink",
                             "role": "childLinks",
                             "properties": {
@@ -416,11 +416,11 @@ class MetaModelMigrationsTest {
                                 "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313/4008363636171860450"
                             },
                             "references": {
-                                "childConcept": "pnode:100000002@aRepositoryId"
+                                "childConcept": "modelix:aRepositoryId/100000002"
                             }
                         },
                         {
-                            "id": "pnode:10000001e@aRepositoryId",
+                            "id": "modelix:aRepositoryId/10000001e",
                             "concept": "modelix.metameta.ChildLink",
                             "role": "childLinks",
                             "properties": {
@@ -430,16 +430,16 @@ class MetaModelMigrationsTest {
                                 "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313/4201834143491306088"
                             },
                             "references": {
-                                "childConcept": "pnode:100000020@aRepositoryId"
+                                "childConcept": "modelix:aRepositoryId/100000020"
                             }
                         },
                         {
-                            "id": "pnode:100000038@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000038",
                             "concept": "modelix.metameta.ConceptReference",
                             "role": "superConcepts"
                         },
                         {
-                            "id": "pnode:100000039@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000039",
                             "concept": "modelix.metameta.ConceptReference",
                             "role": "superConcepts"
                         }
@@ -451,12 +451,12 @@ class MetaModelMigrationsTest {
                     }
                 },
                 {
-                    "id": "pnode:10000001f@aRepositoryId",
+                    "id": "modelix:aRepositoryId/10000001f",
                     "concept": "modelix.metameta.Concept",
                     "role": "concepts",
                     "children": [
                         {
-                            "id": "pnode:10000003a@aRepositoryId",
+                            "id": "modelix:aRepositoryId/10000003a",
                             "concept": "modelix.metameta.ConceptReference",
                             "role": "superConcepts"
                         }
@@ -468,12 +468,12 @@ class MetaModelMigrationsTest {
                     }
                 },
                 {
-                    "id": "pnode:100000020@aRepositoryId",
+                    "id": "modelix:aRepositoryId/100000020",
                     "concept": "modelix.metameta.Concept",
                     "role": "concepts",
                     "children": [
                         {
-                            "id": "pnode:100000021@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000021",
                             "concept": "modelix.metameta.Property",
                             "role": "properties",
                             "properties": {
@@ -482,11 +482,11 @@ class MetaModelMigrationsTest {
                             }
                         },
                         {
-                            "id": "pnode:10000003b@aRepositoryId",
+                            "id": "modelix:aRepositoryId/10000003b",
                             "concept": "modelix.metameta.ConceptReference",
                             "role": "superConcepts",
                             "references": {
-                                "concept": "pnode:10000001f@aRepositoryId"
+                                "concept": "modelix:aRepositoryId/10000001f"
                             }
                         }
                     ],
@@ -497,12 +497,12 @@ class MetaModelMigrationsTest {
                     }
                 },
                 {
-                    "id": "pnode:100000022@aRepositoryId",
+                    "id": "modelix:aRepositoryId/100000022",
                     "concept": "modelix.metameta.Concept",
                     "role": "concepts",
                     "children": [
                         {
-                            "id": "pnode:10000003c@aRepositoryId",
+                            "id": "modelix:aRepositoryId/10000003c",
                             "concept": "modelix.metameta.ConceptReference",
                             "role": "superConcepts"
                         }
@@ -514,12 +514,12 @@ class MetaModelMigrationsTest {
                     }
                 },
                 {
-                    "id": "pnode:100000023@aRepositoryId",
+                    "id": "modelix:aRepositoryId/100000023",
                     "concept": "modelix.metameta.Concept",
                     "role": "concepts",
                     "children": [
                         {
-                            "id": "pnode:100000024@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000024",
                             "concept": "modelix.metameta.Property",
                             "role": "properties",
                             "properties": {
@@ -528,11 +528,11 @@ class MetaModelMigrationsTest {
                             }
                         },
                         {
-                            "id": "pnode:10000003d@aRepositoryId",
+                            "id": "modelix:aRepositoryId/10000003d",
                             "concept": "modelix.metameta.ConceptReference",
                             "role": "superConcepts",
                             "references": {
-                                "concept": "pnode:100000012@aRepositoryId"
+                                "concept": "modelix:aRepositoryId/100000012"
                             }
                         }
                     ],
@@ -543,16 +543,16 @@ class MetaModelMigrationsTest {
                     }
                 },
                 {
-                    "id": "pnode:100000025@aRepositoryId",
+                    "id": "modelix:aRepositoryId/100000025",
                     "concept": "modelix.metameta.Concept",
                     "role": "concepts",
                     "children": [
                         {
-                            "id": "pnode:10000003e@aRepositoryId",
+                            "id": "modelix:aRepositoryId/10000003e",
                             "concept": "modelix.metameta.ConceptReference",
                             "role": "superConcepts",
                             "references": {
-                                "concept": "pnode:100000012@aRepositoryId"
+                                "concept": "modelix:aRepositoryId/100000012"
                             }
                         }
                     ],
@@ -563,12 +563,12 @@ class MetaModelMigrationsTest {
                     }
                 },
                 {
-                    "id": "pnode:100000026@aRepositoryId",
+                    "id": "modelix:aRepositoryId/100000026",
                     "concept": "modelix.metameta.Concept",
                     "role": "concepts",
                     "children": [
                         {
-                            "id": "pnode:100000027@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000027",
                             "concept": "modelix.metameta.Property",
                             "role": "properties",
                             "properties": {
@@ -577,7 +577,7 @@ class MetaModelMigrationsTest {
                             }
                         },
                         {
-                            "id": "pnode:100000028@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000028",
                             "concept": "modelix.metameta.Property",
                             "role": "properties",
                             "properties": {
@@ -586,11 +586,11 @@ class MetaModelMigrationsTest {
                             }
                         },
                         {
-                            "id": "pnode:10000003f@aRepositoryId",
+                            "id": "modelix:aRepositoryId/10000003f",
                             "concept": "modelix.metameta.ConceptReference",
                             "role": "superConcepts",
                             "references": {
-                                "concept": "pnode:10000000a@aRepositoryId"
+                                "concept": "modelix:aRepositoryId/10000000a"
                             }
                         }
                     ],
@@ -601,12 +601,12 @@ class MetaModelMigrationsTest {
                     }
                 },
                 {
-                    "id": "pnode:100000029@aRepositoryId",
+                    "id": "modelix:aRepositoryId/100000029",
                     "concept": "modelix.metameta.Concept",
                     "role": "concepts",
                     "children": [
                         {
-                            "id": "pnode:10000002a@aRepositoryId",
+                            "id": "modelix:aRepositoryId/10000002a",
                             "concept": "modelix.metameta.Property",
                             "role": "properties",
                             "properties": {
@@ -615,7 +615,7 @@ class MetaModelMigrationsTest {
                             }
                         },
                         {
-                            "id": "pnode:10000002b@aRepositoryId",
+                            "id": "modelix:aRepositoryId/10000002b",
                             "concept": "modelix.metameta.Property",
                             "role": "properties",
                             "properties": {
@@ -624,7 +624,7 @@ class MetaModelMigrationsTest {
                             }
                         },
                         {
-                            "id": "pnode:10000002c@aRepositoryId",
+                            "id": "modelix:aRepositoryId/10000002c",
                             "concept": "modelix.metameta.ChildLink",
                             "role": "childLinks",
                             "properties": {
@@ -635,7 +635,7 @@ class MetaModelMigrationsTest {
                             }
                         },
                         {
-                            "id": "pnode:10000002d@aRepositoryId",
+                            "id": "modelix:aRepositoryId/10000002d",
                             "concept": "modelix.metameta.ChildLink",
                             "role": "childLinks",
                             "properties": {
@@ -645,11 +645,11 @@ class MetaModelMigrationsTest {
                                 "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/6402965165736931000"
                             },
                             "references": {
-                                "childConcept": "pnode:100000022@aRepositoryId"
+                                "childConcept": "modelix:aRepositoryId/100000022"
                             }
                         },
                         {
-                            "id": "pnode:10000002e@aRepositoryId",
+                            "id": "modelix:aRepositoryId/10000002e",
                             "concept": "modelix.metameta.ChildLink",
                             "role": "childLinks",
                             "properties": {
@@ -659,16 +659,16 @@ class MetaModelMigrationsTest {
                                 "uid": "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/5381564949800872334"
                             },
                             "references": {
-                                "childConcept": "pnode:100000023@aRepositoryId"
+                                "childConcept": "modelix:aRepositoryId/100000023"
                             }
                         },
                         {
-                            "id": "pnode:100000040@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000040",
                             "concept": "modelix.metameta.ConceptReference",
                             "role": "superConcepts"
                         },
                         {
-                            "id": "pnode:100000041@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000041",
                             "concept": "modelix.metameta.ConceptReference",
                             "role": "superConcepts"
                         }
@@ -692,7 +692,7 @@ class MetaModelMigrationsTest {
             """
             {
                 "root": {
-                    "id": "pnode:1@aRepositoryId",
+                    "id": "modelix:aRepositoryId/1",
                     "children": [
                         $metamodelDataSerialized,
                         $modelDataSerialized
@@ -704,7 +704,7 @@ class MetaModelMigrationsTest {
         val branchOnlyWithMetaData = """
             {
                 "root": {
-                    "id": "pnode:1@aRepositoryId",
+                    "id": "modelix:aRepositoryId/1",
                     "children": [
                         $metamodelDataSerialized
                     ]
@@ -720,18 +720,18 @@ class MetaModelMigrationsTest {
             //language=JSON
             """
             {
-                "id": "pnode:100000042@aRepositoryId",
+                "id": "modelix:aRepositoryId/100000042",
                 "concept": "100000029",
                 "role": "aChild",
                 "properties": {
                   "id": "myId"
                 },
                 "references": {
-                  "someRef": "pnode:100000043@aRepositoryId"
+                  "someRef": "modelix:aRepositoryId/100000043"
                 },
                 "children": [
                   {
-                    "id": "pnode:100000043@aRepositoryId",
+                    "id": "modelix:aRepositoryId/100000043",
                     "concept": "100000029",
                     "role": "aChild"
                   }
@@ -750,22 +750,22 @@ class MetaModelMigrationsTest {
             """
             {
                 "root": {
-                    "id": "pnode:1@aRepositoryId",
+                    "id": "modelix:aRepositoryId/1",
                     "children": [
                         $metamodelDataSerialized,
                         {
-                            "id": "pnode:100000042@aRepositoryId",
+                            "id": "modelix:aRepositoryId/100000042",
                             "concept": "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892",
                             "role": "aChild",
                             "properties": {
                                 "id": "myId"
                             },
                             "references": {
-                                "someRef": "pnode:100000043@aRepositoryId"
+                                "someRef": "modelix:aRepositoryId/100000043"
                             },
                             "children": [
                               {
-                                "id": "pnode:100000043@aRepositoryId",
+                                "id": "modelix:aRepositoryId/100000043",
                                 "concept": "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892",
                                 "role": "aChild"
                               }
@@ -787,18 +787,18 @@ class MetaModelMigrationsTest {
             //language=JSON
             """
             {
-                "id": "pnode:100000042@aRepositoryId",
+                "id": "modelix:aRepositoryId/100000042",
                 "concept": "100000029",
                 "role": "aChild",
                 "properties": {
                   "id": "myId"
                 },
                 "references": {
-                  "someRef": "pnode:100000043@aRepositoryId"
+                  "someRef": "modelix:aRepositoryId/100000043"
                 },
                 "children": [
                   {
-                    "id": "pnode:100000043@aRepositoryId",
+                    "id": "modelix:aRepositoryId/100000043",
                     "concept": "100000029",
                     "role": "aChild"
                   }

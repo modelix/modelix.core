@@ -47,6 +47,10 @@ kotlin {
     }
 }
 
+dockerCompose {
+    dockerExecutable = findExecutableAbsolutePath("docker").also { println("docker: $it") }
+}
+
 // The tasks "jsNodeTest" and "jsBrowserTest" are of this type.
 tasks.withType(KotlinTest::class).all {
     dockerCompose.isRequiredBy(this)
@@ -54,4 +58,13 @@ tasks.withType(KotlinTest::class).all {
 // The task "jvmTest" is of this type.
 tasks.withType(Test::class).all {
     dockerCompose.isRequiredBy(this)
+}
+
+fun findExecutableAbsolutePath(name: String): String {
+    return System.getenv("PATH")
+        ?.split(File.pathSeparatorChar)
+        ?.map { File(it).resolve(name) }
+        ?.firstOrNull { it.isFile && it.exists() }
+        ?.absolutePath
+        ?: name
 }

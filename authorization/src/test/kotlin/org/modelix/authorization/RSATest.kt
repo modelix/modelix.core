@@ -287,7 +287,7 @@ class RSATest {
         privateKeyFile.writeText(privateKeyPem1)
 
         val verifyingUtil = ModelixJWTUtil()
-        verifyingUtil.fileRefreshTime = 50.milliseconds
+        verifyingUtil.fileRefreshTime = 500.milliseconds
         verifyingUtil.loadKeysFromFiles(publicKeyFile)
         run {
             val signingUtil = ModelixJWTUtil()
@@ -314,7 +314,7 @@ class RSATest {
             assertFailsWith<BadJOSEException> {
                 verifyingUtil.verifyToken(tokenString)
             }
-            Thread.sleep(50)
+            Thread.sleep(500)
             verifyingUtil.verifyToken(tokenString)
         }
     }

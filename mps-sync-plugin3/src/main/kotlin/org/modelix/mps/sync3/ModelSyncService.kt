@@ -2,7 +2,6 @@
 
 package org.modelix.mps.sync3
 
-import com.intellij.configurationStore.Property
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.Service
@@ -21,8 +20,9 @@ import org.modelix.model.IVersion
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.mps.sync3.Binding.Companion.LOG
 import kotlin.time.ExperimentalTime
+
+private val LOG = mu.KotlinLogging.logger { }
 
 @Service(Service.Level.PROJECT)
 @State(name = "modelix-sync", storages = [Storage(value = "modelix.xml")])
@@ -32,11 +32,12 @@ class ModelSyncService(val project: Project) :
     PersistentStateComponent<Element> {
     private val mpsProject: MPSProject get() = ProjectHelper.fromIdeaProject(project)!!
 
-    private val bindings = ArrayList<Binding>()
+    private var loadedState: SyncServiceState = SyncServiceState()
+    private val workers = LinkedHashMap<BindingId, BindingWorker>()
     private val coroutinesScope = CoroutineScope(Dispatchers.IO)
 
     @Synchronized
-    override fun addServer(url: String): IServerConnection {
+    override fun addServer(url: String): Connection {
         return AppLevelModelSyncService.getInstance().addConnection(url).let { Connection(it) }
     }
 
@@ -47,22 +48,13 @@ class ModelSyncService(val project: Project) :
 
     @Synchronized
     override fun dispose() {
-        bindings.forEach { it.deactivate() }
+        workers.values.forEach { it.deactivate() }
         coroutinesScope.cancel("disposed")
     }
 
     @Synchronized
     override fun getState(): Element? {
-        return State(
-            bindings = bindings.map {
-                BindingState(
-                    url = it.serverConnection.getUrl(),
-                    repository = it.branchRef.repositoryId.id,
-                    branch = it.branchRef.branchName,
-                    versionHash = it.getCurrentVersionHash(),
-                )
-            },
-        ).toXml()
+        return updateCurrentVersions().toXml()
         // Returning XML seems to be the most reliable way to get the state actually persisted.
         // Letting IntelliJ serialize the state sometimes fails silently.
         // Using kotlin.serialization is difficult because of version conflicts.
@@ -70,84 +62,147 @@ class ModelSyncService(val project: Project) :
 
     @Synchronized
     override fun loadState(state: Element) {
-        val state = State.fromXml(state)
-        val statesById = state.bindings.associateBy { it.getId() }
-        val bindingsById = bindings.associateBy { it.getState().getId() }
-        val allBindingIds = statesById.keys + bindingsById.keys
+        loadState(SyncServiceState.fromXml(state))
+    }
+
+    override fun getBindings(): List<IBinding> {
+        return synchronized(this@ModelSyncService) {
+            loadedState.bindings.keys.map { Binding(it) }
+        }
+    }
+
+    fun loadState(newState: SyncServiceState) {
+        val oldState: SyncServiceState = this.loadedState
+        val allBindingIds = newState.bindings.keys + workers.keys
 
         for (id in allBindingIds) {
-            val state = statesById[id]
-            val binding = bindingsById[id]
-            if (state == null) {
+            val newBindingState: BindingState? = newState.bindings[id]
+            val oldBindingState: BindingState? = oldState.bindings[id]
+            val binding: BindingWorker? = workers[id]
+            if (newBindingState == null) {
                 if (binding == null) {
                     // unreachable
                 } else {
                     binding.deactivate()
-                    bindings.remove(binding)
+                    workers.remove(id)
                 }
             } else {
                 if (binding == null) {
-                    loadBinding(state)
+                    loadBinding(id, newBindingState)
                 } else {
-                    if (binding.initialVersionHash != state.versionHash && binding.getCurrentVersionHash() != state.versionHash) {
+                    if (newBindingState.versionHash != oldBindingState?.versionHash &&
+                        newBindingState.versionHash != binding.initialVersionHash &&
+                        newBindingState.versionHash != binding.getCurrentVersionHash()
+                    ) {
                         binding.deactivate()
-                        bindings.remove(binding)
-                        loadBinding(state)
+                        workers.remove(id)
+                        loadBinding(id, newBindingState)
                     }
                 }
             }
         }
+
+        this.loadedState = newState
     }
 
-    private fun loadBinding(state: BindingState) {
-        addServer(state.url ?: return).bind(
-            branchRef = RepositoryId(state.repository ?: return).getBranchReference(state.branch),
-            lastSyncedVersionHash = state.versionHash,
-        )
+    @Synchronized
+    private fun writeState(updater: (SyncServiceState) -> SyncServiceState): SyncServiceState {
+        val oldState: SyncServiceState = this.loadedState
+        val updatedState = updater(oldState)
+        if (updatedState != oldState) {
+            this.loadedState = updatedState
+        }
+        return this.loadedState
     }
 
-    private fun Binding.getState() = BindingState(
-        url = serverConnection.getUrl(),
-        repository = branchRef.repositoryId.id,
-        branch = branchRef.branchName,
-        versionHash = getCurrentVersionHash(),
-    )
+    @Synchronized
+    private fun updateState(updater: (SyncServiceState) -> SyncServiceState): SyncServiceState {
+        return updater(this.loadedState).also { loadState(it) }
+    }
 
-    data class State(
-        @Property
-        val bindings: List<BindingState> = emptyList(),
+    @Synchronized
+    private fun updateBindingState(id: BindingId, updater: (BindingState) -> BindingState) {
+        updateState { oldState ->
+            val oldBinding = oldState.bindings[id]
+            oldState.copy(
+                bindings = oldState.bindings + (id to updater(oldBinding ?: BindingState())),
+            )
+        }
+    }
+
+    private fun updateCurrentVersions(): SyncServiceState {
+        return writeState { oldState ->
+            oldState.copy(
+                oldState.bindings.mapValues {
+                    it.value.copy(
+                        versionHash = workers[it.key]?.getCurrentVersionHash() ?: it.value.versionHash,
+                    )
+                },
+            )
+        }
+    }
+
+    private fun loadBinding(id: BindingId, state: BindingState) {
+        val binding = getOrCreateWorker(id, state)
+        if (state.enabled) {
+            binding.activate()
+        } else {
+            binding.deactivate()
+        }
+    }
+
+    private fun getOrCreateWorker(id: BindingId, state: BindingState?): BindingWorker {
+        return workers.getOrPut(id) {
+            BindingWorker(
+                coroutinesScope,
+                mpsProject,
+                serverConnection = addServer(id.url),
+                branchRef = id.branchRef,
+                initialVersionHash = state?.versionHash,
+            )
+        }
+    }
+
+    data class SyncServiceState(
+        val bindings: Map<BindingId, BindingState> = emptyMap(),
     ) {
         fun toXml() = Element("model-sync").also {
-            it.children.addAll(bindings.map { it.toXml() })
+            it.children.addAll(
+                bindings.map { bindingEntry ->
+                    Element("binding").also {
+                        it.children.add(Element("enabled").also { it.text = bindingEntry.value.enabled.toString() })
+                        it.children.add(Element("url").also { it.text = bindingEntry.key.url })
+                        it.children.add(Element("repository").also { it.text = bindingEntry.key.branchRef.repositoryId.id })
+                        it.children.add(Element("branch").also { it.text = bindingEntry.key.branchRef.branchName })
+                        it.children.add(Element("versionHash").also { it.text = bindingEntry.value.versionHash })
+                    }
+                },
+            )
         }
         companion object {
-            fun fromXml(element: Element) = State(element.getChildren("binding").map { BindingState.fromXml(it) })
+            fun fromXml(element: Element): SyncServiceState {
+                return SyncServiceState(
+                    element.getChildren("binding").mapNotNull<Element, Pair<BindingId, BindingState>> { element ->
+                        BindingId(
+                            url = element.getChild("url")?.text ?: return@mapNotNull null,
+                            branchRef = BranchReference(
+                                RepositoryId(element.getChild("repository")?.text ?: return@mapNotNull null),
+                                element.getChild("branch")?.text ?: return@mapNotNull null,
+                            ),
+                        ) to BindingState(
+                            versionHash = element.getChild("versionHash")?.text,
+                            enabled = element.getChild("enabled")?.text.toBoolean(),
+                        )
+                    }.toMap(),
+                )
+            }
         }
     }
 
     data class BindingState(
-        val url: String? = null,
-        val repository: String? = null,
-        val branch: String? = null,
         val versionHash: String? = null,
-    ) {
-        fun getId(): Any = copy(versionHash = null)
-        fun toXml() = Element("binding").also {
-            it.children.add(Element("url").also { it.text = url })
-            it.children.add(Element("repository").also { it.text = repository })
-            it.children.add(Element("branch").also { it.text = branch })
-            it.children.add(Element("versionHash").also { it.text = versionHash })
-        }
-        companion object {
-            fun fromXml(element: Element) = BindingState(
-                // separate elements instead of attributes so that each value has its own line in the .xml file
-                element.getChild("url")?.text,
-                element.getChild("repository")?.text,
-                element.getChild("branch")?.text,
-                element.getChild("versionHash")?.text,
-            )
-        }
-    }
+        val enabled: Boolean = false,
+    )
 
     inner class Connection(val connection: AppLevelModelSyncService.ServerConnection) : IServerConnection {
         override fun getUrl(): String {
@@ -179,21 +234,23 @@ class ModelSyncService(val project: Project) :
         }
 
         override fun bind(branchRef: BranchReference, lastSyncedVersionHash: String?): IBinding {
-            val binding = Binding(
-                coroutinesScope = coroutinesScope,
-                mpsProject = mpsProject,
-                serverConnection = this,
-                branchRef = branchRef,
-                initialVersionHash = lastSyncedVersionHash,
-            )
-            bindings.add(binding)
-            binding.activate()
-            return binding
+            val id = BindingId(connection.url, branchRef)
+            updateBindingState(id) { oldBinding ->
+                BindingState(
+                    versionHash = lastSyncedVersionHash ?: oldBinding?.versionHash,
+                    enabled = true,
+                )
+            }
+            return Binding(id)
         }
 
         override fun getBindings(): List<IBinding> {
-            return bindings.filter { it.serverConnection == this }
+            return synchronized(this@ModelSyncService) {
+                loadedState.bindings.keys.map { Binding(it) }.filter { it.id.url == connection.url }
+            }
         }
+
+        private fun getService(): ModelSyncService = this@ModelSyncService
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -201,11 +258,61 @@ class ModelSyncService(val project: Project) :
 
             other as Connection
 
-            return connection == other.connection
+            return connection == other.connection && getService() == other.getService()
         }
 
         override fun hashCode(): Int {
-            return connection.hashCode()
+            return connection.hashCode() + 31 * getService().hashCode()
+        }
+    }
+
+    inner class Binding(val id: BindingId) : IBinding {
+        override fun toString(): String = id.toString()
+
+        override fun getProject(): org.jetbrains.mps.openapi.project.Project {
+            return ProjectHelper.fromIdeaProject(project)!!
+        }
+
+        override fun getBranchRef(): BranchReference {
+            return id.branchRef
+        }
+
+        override fun isEnabled(): Boolean {
+            return synchronized(this@ModelSyncService) { loadedState.bindings[id]?.enabled == true }
+        }
+
+        override fun enable() {
+            updateBindingState(id) { it.copy(enabled = true) }
+        }
+
+        override fun disable() {
+            updateBindingState(id) { it.copy(enabled = false) }
+        }
+
+        override fun delete() {
+            updateState { it.copy(bindings = it.bindings - id) }
+        }
+
+        override suspend fun flush(): IVersion {
+            val worker = synchronized(this@ModelSyncService) {
+                getOrCreateWorker(id, loadedState.bindings[id])
+            }
+            return worker.flush()
+        }
+
+        private fun getService(): ModelSyncService = this@ModelSyncService
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as Binding
+
+            return id == other.id && getService() == other.getService()
+        }
+
+        override fun hashCode(): Int {
+            return id.hashCode() + 31 * getService().hashCode()
         }
     }
 }
@@ -230,5 +337,11 @@ suspend fun jobLoop(
             LOG.warn("Exception during synchronization", ex)
             backoffStrategy.failed()
         }
+    }
+}
+
+data class BindingId(val url: String, val branchRef: BranchReference) {
+    override fun toString(): String {
+        return "BindingId($url, ${branchRef.repositoryId}, ${branchRef.branchName})"
     }
 }

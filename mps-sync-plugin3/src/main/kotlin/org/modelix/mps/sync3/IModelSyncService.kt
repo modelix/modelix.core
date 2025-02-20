@@ -23,6 +23,7 @@ interface IModelSyncService {
 
     fun addServer(url: String): IServerConnection
     fun getServerConnections(): List<IServerConnection>
+    fun getBindings(): List<IBinding>
 }
 
 interface IServerConnection : Closeable {
@@ -49,12 +50,14 @@ interface IServerConnection : Closeable {
 }
 
 interface IBinding : Closeable {
-    val mpsProject: org.jetbrains.mps.openapi.project.Project
-    val branchRef: BranchReference
-    fun activate()
-    fun deactivate()
+    fun getProject(): org.jetbrains.mps.openapi.project.Project
+    fun getBranchRef(): BranchReference
+    fun isEnabled(): Boolean
+    fun enable()
+    fun disable()
+    fun delete()
 
-    override fun close() = deactivate()
+    override fun close() = disable()
 
     /**
      * Blocks until both ends are in sync.

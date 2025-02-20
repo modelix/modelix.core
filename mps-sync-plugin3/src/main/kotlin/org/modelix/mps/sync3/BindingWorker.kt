@@ -27,13 +27,13 @@ import org.modelix.mps.api.ModelixMpsApi
 import org.modelix.mps.model.sync.bulk.MPSProjectSyncMask
 import java.util.concurrent.atomic.AtomicBoolean
 
-class Binding(
+class BindingWorker(
     val coroutinesScope: CoroutineScope,
-    override val mpsProject: Project,
+    val mpsProject: Project,
     val serverConnection: ModelSyncService.Connection,
-    override val branchRef: BranchReference,
+    val branchRef: BranchReference,
     val initialVersionHash: String?,
-) : IBinding {
+) {
     companion object {
         val LOG = KotlinLogging.logger { }
     }
@@ -48,13 +48,14 @@ class Binding(
     private suspend fun client() = serverConnection.getClient()
 
     fun getCurrentVersionHash(): String? = lastSyncedVersion.getValue()?.getContentHash()
+    fun isActive(): Boolean = activated.get()
 
-    override fun activate() {
+    fun activate() {
         if (activated.getAndSet(true)) return
         syncJob = coroutinesScope.launch { syncJob() }
     }
 
-    override fun deactivate() {
+    fun deactivate() {
         if (!activated.getAndSet(false)) return
 
         syncJob?.cancel()
@@ -75,7 +76,7 @@ class Binding(
         return null
     }
 
-    override suspend fun flush(): IVersion {
+    suspend fun flush(): IVersion {
         check(syncJob?.isActive == true) { "Synchronization is not active" }
         var reason = checkInSync()
         var i = 0

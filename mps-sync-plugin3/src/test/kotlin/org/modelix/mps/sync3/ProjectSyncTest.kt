@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicLong
 import kotlin.io.path.absolute
 import kotlin.io.path.readText
 import kotlin.io.path.writeText
+import kotlin.test.assertFailsWith
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.toJavaDuration
 
@@ -302,14 +303,19 @@ class ProjectSyncTest : MPSTestBase() {
         assertEquals(expectedSnapshot, project.captureSnapshot())
     }
 
-    fun `test loading persisted binding`(): Unit = runWithModelServer { port ->
+    fun `test loading enabled persisted binding`(): Unit = runPersistedBindingTest(true)
+    fun `test loading disabled persisted binding`(): Unit = runPersistedBindingTest(false)
+
+    fun runPersistedBindingTest(enabled: Boolean) = runWithModelServer { port ->
         // The client is in sync ...
         val branchRef = RepositoryId("sync-test").getBranchReference()
         val version1 = syncProjectToServer("initial", port, branchRef)
+        val snapshot1 = lastSnapshotBeforeSync
 
         // ... and then closes the project while some other client continues making changes.
         val version2 = syncProjectToServer("change1", port, branchRef, version1.getContentHash())
-        val expectedSnapshot = lastSnapshotBeforeSync
+        val snapshot2 = lastSnapshotBeforeSync
+        val expectedSnapshot = if (enabled) snapshot2 else snapshot1
 
         // Then the client opens the project again and reconnects using the persisted binding information.
         openTestProject("initial") { projectDir ->
@@ -319,6 +325,7 @@ class ProjectSyncTest : MPSTestBase() {
                 <project version="4">
                   <component name="modelix-sync">
                     <binding>
+                      <enabled>$enabled</enabled>
                       <url>http://localhost:$port</url>
                       <repository>${branchRef.repositoryId.id}</repository>
                       <branch>${branchRef.branchName}</branch>
@@ -330,14 +337,22 @@ class ProjectSyncTest : MPSTestBase() {
             )
         }
 
-        val binding = IModelSyncService.getInstance(mpsProject).getServerConnections().flatMap { it.getBindings() }.single()
-        assertEquals(branchRef, binding.branchRef)
-        val version3 = binding.flush()
+        val binding = IModelSyncService.getInstance(mpsProject).getServerConnections()
+            .flatMap { it.getBindings() }
+            .single()
+        assertEquals(branchRef, binding.getBranchRef())
+        if (enabled) {
+            val version3 = binding.flush()
 
-        assertEquals(version2.getContentHash(), version3.getContentHash())
+            assertEquals(version2.getContentHash(), version3.getContentHash())
 
-        // ... applies all the pending changes and is again in sync with the other client
-        assertEquals(expectedSnapshot, project.captureSnapshot())
+            // ... applies all the pending changes and is again in sync with the other client
+            assertEquals(expectedSnapshot, project.captureSnapshot())
+        } else {
+            assertFailsWith<IllegalStateException> {
+                binding.flush()
+            }
+        }
     }
 
     fun `test storing persisted binding`(): Unit = runWithModelServer { port ->
@@ -352,6 +367,7 @@ class ProjectSyncTest : MPSTestBase() {
             <project version="4">
               <component name="modelix-sync">
                 <binding>
+                  <enabled>true</enabled>
                   <url>http://localhost:$port</url>
                   <repository>${branchRef.repositoryId.id}</repository>
                   <branch>${branchRef.branchName}</branch>

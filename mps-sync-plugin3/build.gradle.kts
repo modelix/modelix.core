@@ -32,6 +32,7 @@ dependencies {
     testImplementation(libs.testcontainers)
     testImplementation(libs.kotlin.coroutines.test)
     testImplementation(libs.logback.classic)
+    testImplementation(kotlin("test"))
 }
 
 tasks {

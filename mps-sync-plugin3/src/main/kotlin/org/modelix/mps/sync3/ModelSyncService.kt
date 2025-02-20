@@ -4,7 +4,6 @@ package org.modelix.mps.sync3
 
 import com.intellij.configurationStore.Property
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
@@ -16,75 +15,14 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import org.jdom.Element
 import org.modelix.model.IVersion
 import org.modelix.model.client2.IModelClientV2
-import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.mps.sync3.Binding.Companion.LOG
-import kotlin.math.roundToLong
 import kotlin.time.ExperimentalTime
-
-@Service(Service.Level.APP)
-class AppLevelModelSyncService() : Disposable {
-
-    companion object {
-        fun getInstance(): AppLevelModelSyncService {
-            return ApplicationManager.getApplication().getService(AppLevelModelSyncService::class.java)
-        }
-    }
-
-    private val connections = LinkedHashMap<String, ServerConnection>()
-    private val coroutinesScope = CoroutineScope(Dispatchers.Default)
-    private val connectionCheckingJob = coroutinesScope.launchLoop(
-        BackoffStrategy(
-            initialDelay = 3_000,
-            maxDelay = 10_000,
-            factor = 1.2,
-        ),
-    ) {
-        for (connection in synchronized(connections) { connections.values.toList() }) {
-            connection.checkConnection()
-        }
-    }
-
-    @Synchronized
-    fun getConnections() = synchronized(connections) { connections.values.toList() }
-
-    @Synchronized
-    fun addConnection(url: String): ServerConnection {
-        return synchronized(connections) { connections.getOrPut(url) { ServerConnection(url) } }
-    }
-
-    override fun dispose() {
-        coroutinesScope.cancel("disposed")
-    }
-
-    class ServerConnection(val url: String) {
-        private var client: ValueWithMutex<IModelClientV2?> = ValueWithMutex(null)
-        private var connected: Boolean = false
-
-        suspend fun getClient(): IModelClientV2 {
-            return client.getValue() ?: client.updateValue {
-                it ?: ModelClientV2.builder().url(url).build().also { it.init() }
-            }
-        }
-
-        suspend fun checkConnection() {
-            try {
-                getClient().getServerId()
-                connected = true
-            } catch (ex: Throwable) {
-                connected = false
-            }
-        }
-    }
-}
 
 @Service(Service.Level.PROJECT)
 @State(name = "modelix-sync", storages = [Storage(value = "modelix.xml")])
@@ -293,54 +231,4 @@ suspend fun jobLoop(
             backoffStrategy.failed()
         }
     }
-}
-
-class BackoffStrategy(
-    val initialDelay: Long = 500,
-    val maxDelay: Long = 10_000,
-    val factor: Double = 1.5,
-) {
-    var currentDelay: Long = initialDelay
-
-    fun failed() {
-        currentDelay = (currentDelay * factor).roundToLong().coerceAtMost(maxDelay)
-    }
-
-    fun success() {
-        currentDelay = initialDelay
-    }
-
-    suspend fun wait() {
-        delay(currentDelay)
-    }
-}
-
-class ValueWithMutex<E>(private var value: E) {
-    private val mutex = Mutex()
-    private var lastUpdateResult: Result<E>? = null
-
-    suspend fun <R : E> updateValue(body: suspend (E) -> R): R {
-        return mutex.withLock {
-            val newValue = runCatching {
-                body(value)
-            }
-            lastUpdateResult = newValue
-            newValue.onFailure {
-                LOG.error(it) { "Value update failed. Keeping $value" }
-            }
-            newValue.getOrThrow().also { value = it }
-        }
-    }
-
-    /**
-     * Blocks until any active update is done.
-     * @return The result of the most recent update attempt.
-     */
-    suspend fun flush(): Result<E>? {
-        return mutex.withLock { lastUpdateResult }
-    }
-
-    fun isLocked() = mutex.isLocked
-
-    fun getValue(): E = value
 }

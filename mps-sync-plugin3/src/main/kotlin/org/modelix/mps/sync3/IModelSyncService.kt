@@ -25,11 +25,13 @@ interface IModelSyncService {
     fun getServerConnections(): List<IServerConnection>
 }
 
-interface IServerConnection {
+interface IServerConnection : Closeable {
     fun activate()
     fun deactivate()
     fun remove()
     fun getStatus(): Status
+
+    override fun close() = deactivate()
 
     suspend fun pullVersion(branchRef: BranchReference): IVersion
 

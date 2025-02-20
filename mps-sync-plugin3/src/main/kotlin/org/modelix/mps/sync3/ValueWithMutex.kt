@@ -14,7 +14,7 @@ class ValueWithMutex<E>(private var value: E) {
             }
             lastUpdateResult = newValue
             newValue.onFailure {
-                Binding.Companion.LOG.error(it) { "Value update failed. Keeping $value" }
+                BindingWorker.Companion.LOG.error(it) { "Value update failed. Keeping $value" }
             }
             newValue.getOrThrow().also { value = it }
         }

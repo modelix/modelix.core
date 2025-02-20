@@ -508,11 +508,7 @@ abstract class ModelClientV2Builder {
     }
 
     fun url(url: String): ModelClientV2Builder {
-        baseUrl = buildUrl {
-            takeFrom(url)
-            if (pathSegments.lastOrNull() == "") pathSegments = pathSegments.dropLast(1)
-            if (pathSegments.lastOrNull() != "v2") appendPathSegments("v2")
-        }.toString()
+        baseUrl = normalizeUrl(url)
         return this
     }
 
@@ -586,6 +582,14 @@ abstract class ModelClientV2Builder {
 
     companion object {
         private val LOG = mu.KotlinLogging.logger {}
+
+        fun normalizeUrl(url: String): String {
+            return buildUrl {
+                takeFrom(url)
+                if (pathSegments.lastOrNull() == "") pathSegments = pathSegments.dropLast(1)
+                if (pathSegments.lastOrNull() != "v2") appendPathSegments("v2")
+            }.toString()
+        }
     }
 }
 

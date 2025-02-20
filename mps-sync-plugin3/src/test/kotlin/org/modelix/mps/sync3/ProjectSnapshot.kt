@@ -28,7 +28,10 @@ private fun Map<String, String>.contentsAsString(): String {
 private fun filterFiles(files: Map<String, String>) = files.filter {
     val name = it.key
     if (name.startsWith(".mps/")) {
-        name == ".mps/modules.xml"
+        when (name.substringAfter("/")) {
+            ".gitignore", "migration.xml", "workspace.xml", "modelix.xml" -> false
+            else -> true
+        }
     } else if (name.contains("/source_gen") || name.contains("/classes_gen")) {
         false
     } else {

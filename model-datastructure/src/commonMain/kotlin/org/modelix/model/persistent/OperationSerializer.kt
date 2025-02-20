@@ -98,7 +98,7 @@ class OperationSerializer private constructor() {
 
                     override fun deserialize(serialized: String): AddNewChildrenOp {
                         val parts = serialized.split(SEPARATOR).toTypedArray()
-                        val ids = parts[3].split(Separators.LEVEL4).map { longFromHex(it) }.toLongArray()
+                        val ids = parts[3].split(Separators.LEVEL4).filter { it.isNotEmpty() }.map { longFromHex(it) }.toLongArray()
                         val concepts = parts[4].split(Separators.LEVEL4).map { deserializeConcept(it) }.toTypedArray()
                         return AddNewChildrenOp(PositionInRole(longFromHex(parts[0]), unescape(parts[1]), parts[2].toInt()), ids, concepts)
                     }

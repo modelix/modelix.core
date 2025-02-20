@@ -1,6 +1,7 @@
 package org.modelix.mps.sync3
 
 import com.badoo.reaktive.observable.toList
+import com.intellij.configurationStore.saveSettings
 import com.intellij.testFramework.TestApplicationManager
 import jetbrains.mps.smodel.SNodeUtil
 import kotlinx.coroutines.runBlocking
@@ -30,6 +31,8 @@ import org.testcontainers.images.builder.ImageFromDockerfile
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.io.path.absolute
+import kotlin.io.path.readText
+import kotlin.io.path.writeText
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.toJavaDuration
 
@@ -297,6 +300,67 @@ class ProjectSyncTest : MPSTestBase() {
 
         // ... applies all the pending changes and is again in sync with the other client
         assertEquals(expectedSnapshot, project.captureSnapshot())
+    }
+
+    fun `test loading persisted binding`(): Unit = runWithModelServer { port ->
+        // The client is in sync ...
+        val branchRef = RepositoryId("sync-test").getBranchReference()
+        val version1 = syncProjectToServer("initial", port, branchRef)
+
+        // ... and then closes the project while some other client continues making changes.
+        val version2 = syncProjectToServer("change1", port, branchRef, version1.getContentHash())
+        val expectedSnapshot = lastSnapshotBeforeSync
+
+        // Then the client opens the project again and reconnects using the persisted binding information.
+        openTestProject("initial") { projectDir ->
+            projectDir.resolve(".mps").resolve("modelix.xml").writeText(
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <project version="4">
+                  <component name="modelix-sync">
+                    <binding>
+                      <url>http://localhost:$port</url>
+                      <repository>${branchRef.repositoryId.id}</repository>
+                      <branch>${branchRef.branchName}</branch>
+                      <versionHash>${version1.getContentHash()}</versionHash>
+                    </binding>
+                  </component>
+                </project>
+                """.trimIndent(),
+            )
+        }
+
+        val binding = IModelSyncService.getInstance(mpsProject).getServerConnections().flatMap { it.getBindings() }.single()
+        assertEquals(branchRef, binding.branchRef)
+        val version3 = binding.flush()
+
+        assertEquals(version2.getContentHash(), version3.getContentHash())
+
+        // ... applies all the pending changes and is again in sync with the other client
+        assertEquals(expectedSnapshot, project.captureSnapshot())
+    }
+
+    fun `test storing persisted binding`(): Unit = runWithModelServer { port ->
+        val branchRef = RepositoryId("sync-test").getBranchReference()
+        openTestProject(null)
+        val binding = IModelSyncService.getInstance(project).addServer("http://localhost:$port").bind(branchRef)
+        val version1 = binding.flush()
+        saveSettings(project, true)
+        val actual = Path.of(project.basePath).resolve(".mps").resolve("modelix.xml").readText()
+        val expected = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <project version="4">
+              <component name="modelix-sync">
+                <binding>
+                  <url>http://localhost:$port</url>
+                  <repository>${branchRef.repositoryId.id}</repository>
+                  <branch>${branchRef.branchName}</branch>
+                  <versionHash>${version1.getContentHash()}</versionHash>
+                </binding>
+              </component>
+            </project>
+        """.trimIndent()
+        assertEquals(expected, actual)
     }
 
     private fun runWithModelServer(body: suspend (port: Int) -> Unit) = runBlocking {

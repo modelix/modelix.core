@@ -29,7 +29,7 @@ abstract class MPSTestBase : UsefulTestCase() {
     override fun runInDispatchThread() = false
 
     @OptIn(ExperimentalPathApi::class)
-    fun openTestProject(testDataName: String?): Project {
+    fun openTestProject(testDataName: String?, beforeOpen: (projectDir: Path) -> Unit = {}): Project {
         val projectDirParent = Path.of("build", "test-projects").absolute()
         projectDirParent.toFile().mkdirs()
         val projectDir = Files.createTempDirectory(projectDirParent, "mps-project")
@@ -40,6 +40,7 @@ abstract class MPSTestBase : UsefulTestCase() {
         val project = if (testDataName != null) {
             val sourceDir = File("testdata/$testDataName")
             sourceDir.copyRecursively(projectDir.toFile(), overwrite = true)
+            beforeOpen(projectDir)
             ProjectManagerEx.getInstanceEx().openProject(projectDir, options)!!
         } else {
             projectDir.resolve(".mps").also { it.toFile().mkdirs() }.resolve("modules.xml").writeText(
@@ -53,6 +54,7 @@ abstract class MPSTestBase : UsefulTestCase() {
                 </project>
                 """.trimIndent(),
             )
+            beforeOpen(projectDir)
             ProjectManagerEx.getInstanceEx().openProject(projectDir, options)!!
         }
 

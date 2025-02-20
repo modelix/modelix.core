@@ -4,6 +4,7 @@ import com.intellij.openapi.components.service
 import jetbrains.mps.ide.project.ProjectHelper
 import kotlinx.coroutines.runBlocking
 import org.modelix.model.IVersion
+import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.lazy.BranchReference
 import java.io.Closeable
 
@@ -35,6 +36,9 @@ interface IServerConnection {
     fun bind(branchRef: BranchReference): IBinding = bind(branchRef, null)
     fun bind(branchRef: BranchReference, lastSyncedVersionHash: String?): IBinding
     fun getBindings(): List<IBinding>
+
+    fun getUrl(): String
+    suspend fun getClient(): IModelClientV2
 
     enum class Status {
         CONNECTED,

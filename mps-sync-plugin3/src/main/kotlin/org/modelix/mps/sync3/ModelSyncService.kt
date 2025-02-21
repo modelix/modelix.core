@@ -65,39 +65,42 @@ class ModelSyncService(val project: Project) :
         loadState(SyncServiceState.fromXml(state))
     }
 
+    @Synchronized
     override fun getBindings(): List<IBinding> {
-        return synchronized(this@ModelSyncService) {
-            loadedState.bindings.keys.map { Binding(it) }
-        }
+        return loadedState.bindings.keys.map { Binding(it) }
     }
 
+    @Synchronized
     fun loadState(newState: SyncServiceState) {
         val oldState: SyncServiceState = this.loadedState
-        val allBindingIds = newState.bindings.keys + workers.keys
+        val allBindingIds = newState.bindings.keys + oldState.bindings.keys + workers.keys
 
         for (id in allBindingIds) {
             val newBindingState: BindingState? = newState.bindings[id]
             val oldBindingState: BindingState? = oldState.bindings[id]
-            val binding: BindingWorker? = workers[id]
+            val worker: BindingWorker? = workers[id]
             if (newBindingState == null) {
-                if (binding == null) {
-                    // unreachable
+                if (worker == null) {
+                    // nothing to do
                 } else {
-                    binding.deactivate()
+                    worker.deactivate()
                     workers.remove(id)
                 }
             } else {
-                if (binding == null) {
-                    loadBinding(id, newBindingState)
-                } else {
+                if (worker != null) {
                     if (newBindingState.versionHash != oldBindingState?.versionHash &&
-                        newBindingState.versionHash != binding.initialVersionHash &&
-                        newBindingState.versionHash != binding.getCurrentVersionHash()
+                        newBindingState.versionHash != worker.initialVersionHash &&
+                        newBindingState.versionHash != worker.getCurrentVersionHash()
                     ) {
-                        binding.deactivate()
+                        worker.deactivate()
                         workers.remove(id)
-                        loadBinding(id, newBindingState)
                     }
+                }
+                val newWorker = getOrCreateWorker(id, newBindingState)
+                if (newBindingState.enabled) {
+                    newWorker.activate()
+                } else {
+                    newWorker.deactivate()
                 }
             }
         }
@@ -130,6 +133,7 @@ class ModelSyncService(val project: Project) :
         }
     }
 
+    @Synchronized
     private fun updateCurrentVersions(): SyncServiceState {
         return writeState { oldState ->
             oldState.copy(
@@ -142,7 +146,8 @@ class ModelSyncService(val project: Project) :
         }
     }
 
-    private fun loadBinding(id: BindingId, state: BindingState) {
+    @Synchronized
+    private fun updateWorker(id: BindingId, state: BindingState) {
         val binding = getOrCreateWorker(id, state)
         if (state.enabled) {
             binding.activate()
@@ -151,6 +156,7 @@ class ModelSyncService(val project: Project) :
         }
     }
 
+    @Synchronized
     private fun getOrCreateWorker(id: BindingId, state: BindingState?): BindingWorker {
         return workers.getOrPut(id) {
             BindingWorker(
@@ -295,6 +301,14 @@ class ModelSyncService(val project: Project) :
 
         override suspend fun flush(): IVersion {
             val worker = synchronized(this@ModelSyncService) {
+                getOrCreateWorker(id, loadedState.bindings[id])
+            }
+            return worker.flush()
+        }
+
+        override suspend fun flushIfEnabled(): IVersion? {
+            val worker = synchronized(this@ModelSyncService) {
+                if (!isEnabled()) return null
                 getOrCreateWorker(id, loadedState.bindings[id])
             }
             return worker.flush()

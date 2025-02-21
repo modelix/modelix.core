@@ -6,6 +6,7 @@ import com.intellij.testFramework.TestApplicationManager
 import jetbrains.mps.smodel.SNodeUtil
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.junit.Assert
 import org.modelix.model.IVersion
 import org.modelix.model.api.TreePointer
@@ -35,6 +36,7 @@ import kotlin.io.path.readText
 import kotlin.io.path.writeText
 import kotlin.test.assertFailsWith
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.ExperimentalTime
 import kotlin.time.toJavaDuration
 
 private val modelServerDir = Path.of("../model-server").absolute().normalize()
@@ -355,7 +357,7 @@ class ProjectSyncTest : MPSTestBase() {
         }
     }
 
-    fun `test storing persisted binding`(): Unit = runWithModelServer { port ->
+    fun `test saving binding state`(): Unit = runWithModelServer { port ->
         val branchRef = RepositoryId("sync-test").getBranchReference()
         openTestProject(null)
         val binding = IModelSyncService.getInstance(project).addServer("http://localhost:$port").bind(branchRef)
@@ -379,7 +381,42 @@ class ProjectSyncTest : MPSTestBase() {
         assertEquals(expected, actual)
     }
 
+    fun `test binding can be disabled`(): Unit = runWithModelServer { port ->
+        // An MPS project is connected to a repository ...
+        val branchRef = RepositoryId("sync-test").getBranchReference()
+        openTestProject("initial")
+        val service = IModelSyncService.getInstance(mpsProject)
+        val connection = service.addServer("http://localhost:$port")
+        val binding = connection.bind(branchRef)
+        val version1 = binding.flush()
+
+        // With the binding disabled ...
+        assertTrue(binding.isEnabled())
+        binding.disable()
+        assertFalse(binding.isEnabled())
+
+        // ... the MPS user changes the name of a class ...
+        val nameProperty = SNodeUtil.property_INamedConcept_name
+        command {
+            val node = PersistenceFacade.getInstance()
+                .createNodeReference("r:cd78e6ac-0e34-490a-9b49-e5643f948d6d(NewSolution.a_model)/8281020627045237343")
+                .resolve(mpsProject.repository)!!
+            node.setProperty(nameProperty, "A")
+        }
+
+        binding.flushIfEnabled()
+
+        val version2 = connection.pullVersion(branchRef)
+
+        // ... which should not be synchronized to the server
+        assertEquals(version1.getContentHash(), version2.getContentHash())
+
+        binding.enable()
+        val version3 = binding.flush()
+    }
+
     private fun runWithModelServer(body: suspend (port: Int) -> Unit) = runBlocking {
+        @OptIn(ExperimentalTime::class)
         withTimeout(3.minutes) {
             val modelServer: GenericContainer<*> = GenericContainer(modelServerImage)
                 .withExposedPorts(28101)

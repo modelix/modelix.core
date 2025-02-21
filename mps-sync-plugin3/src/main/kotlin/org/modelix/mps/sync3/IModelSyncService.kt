@@ -66,4 +66,5 @@ interface IBinding : Closeable {
      */
     suspend fun flush(): IVersion
     fun flushBlocking() = runBlocking { flush() }
+    suspend fun flushIfEnabled(): IVersion?
 }

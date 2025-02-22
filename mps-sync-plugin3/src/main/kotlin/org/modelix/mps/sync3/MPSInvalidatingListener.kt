@@ -79,20 +79,20 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
         onInvalidation()
     }
 
-    private fun invalidate(node: SNode) {
-        invalidate(node.asReadableNode())
+    private fun invalidate(node: SNode, includingDescendants: Boolean = false) {
+        invalidate(node.asReadableNode(), includingDescendants)
     }
 
-    private fun invalidate(model: SModel) {
-        invalidate(MPSModelAsNode(model))
+    private fun invalidate(model: SModel, includingDescendants: Boolean = false) {
+        invalidate(MPSModelAsNode(model), includingDescendants)
     }
 
-    private fun invalidate(module: SModule) {
-        invalidate(MPSModuleAsNode(module))
+    private fun invalidate(module: SModule, includingDescendants: Boolean = false) {
+        invalidate(MPSModuleAsNode(module), includingDescendants)
     }
 
-    private fun invalidate(repository: SRepository) {
-        invalidate(MPSRepositoryAsNode(repository))
+    private fun invalidate(repository: SRepository, includingDescendants: Boolean = false) {
+        invalidate(MPSRepositoryAsNode(repository), includingDescendants)
     }
 
     override fun addListener(model: SModel) {
@@ -138,6 +138,7 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
         } else {
             invalidate(e.model)
         }
+        invalidate(e.child, true)
     }
 
     override fun nodeRemoved(e: SNodeRemoveEvent) {
@@ -153,7 +154,10 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
     override fun beforeModelDisposed(model: SModel) {}
     override fun beforeModelRenamed(event: SModelRenamedEvent) {}
     override fun beforeRootRemoved(event: SModelRootEvent) {}
-    override fun childAdded(event: SModelChildEvent) { invalidate(event.parent) }
+    override fun childAdded(event: SModelChildEvent) {
+        invalidate(event.parent)
+        invalidate(event.child, true)
+    }
     override fun childRemoved(event: SModelChildEvent) { invalidate(event.parent) }
     override fun devkitAdded(event: SModelDevKitEvent) { invalidate(event.model) }
     override fun devkitRemoved(event: SModelDevKitEvent) { invalidate(event.model) }
@@ -192,6 +196,7 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
     override fun problemsDetected(model: SModel, problems: Iterable<SModel.Problem>) {}
     override fun modelAdded(module: SModule, model: SModel) {
         invalidate(module)
+        invalidate(model, true)
     }
 
     override fun beforeModelRemoved(module: SModule, model: SModel) {}
@@ -215,7 +220,10 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
      * methods updateStarted and updateFinished in that version.
      */
     private val srepositoryListener = object : SRepositoryListenerBase() {
-        override fun moduleAdded(module: SModule) { invalidate(repository) }
+        override fun moduleAdded(module: SModule) {
+            invalidate(repository)
+            invalidate(module, true)
+        }
         override fun beforeModuleRemoved(module: SModule) {}
         override fun moduleRemoved(reference: SModuleReference) { invalidate(repository) }
         override fun commandStarted(repository: SRepository) {}

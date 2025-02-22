@@ -63,7 +63,7 @@ class ModelSynchronizer(
     fun synchronize(sourceNodes: List<IReadableNode>, targetNodes: List<IWritableNode>) {
         logger.debug { "Synchronizing nodes..." }
         for ((sourceNode, targetNode) in sourceNodes.zip(targetNodes)) {
-            synchronizeNode(sourceNode, targetNode)
+            synchronizeNode(sourceNode, targetNode, false)
         }
         logger.debug { "Synchronizing pending references..." }
         pendingReferences.forEach {
@@ -78,7 +78,7 @@ class ModelSynchronizer(
         logger.debug { "Synchronization finished." }
     }
 
-    private fun synchronizeNode(sourceNode: IReadableNode, targetNode: IWritableNode) {
+    private fun synchronizeNode(sourceNode: IReadableNode, targetNode: IWritableNode, forceSyncDescendants: Boolean) {
         nodeAssociation.associate(sourceNode, targetNode)
         if (filter.needsSynchronization(sourceNode)) {
             logger.trace { "Synchronizing changed node. sourceNode = $sourceNode" }
@@ -97,14 +97,14 @@ class ModelSynchronizer(
             }.getOrDefault(targetNode)
 
             runSafe {
-                syncChildren(sourceNode, conceptCorrectedTargetNode)
+                syncChildren(sourceNode, conceptCorrectedTargetNode, forceSyncDescendants)
             }
         } else if (filter.needsDescentIntoSubtree(sourceNode)) {
             for (sourceChild in sourceMask.filterChildren(sourceNode, sourceNode.getAllChildren())) {
                 runSafe {
                     val targetChild = nodeAssociation.resolveTarget(sourceChild)
                         ?: error("Expected target node was not found. sourceChild=${sourceChild.getNodeReference()}, originalId=${sourceChild.getOriginalReference()}")
-                    synchronizeNode(sourceChild, targetChild)
+                    synchronizeNode(sourceChild, targetChild, forceSyncDescendants)
                 }
             }
         } else {
@@ -152,7 +152,7 @@ class ModelSynchronizer(
         return parent.getChildren(role).let { targetMask.filterChildren(parent, role, it) }
     }
 
-    private fun syncChildren(sourceParent: IReadableNode, targetParent: IWritableNode) {
+    private fun syncChildren(sourceParent: IReadableNode, targetParent: IWritableNode, forceSyncDescendants: Boolean) {
         iterateMergedRoles(
             sourceParent.getAllChildren().map { it.getContainmentLink() }.distinct(),
             targetParent.getAllChildren().map { it.getContainmentLink() }.distinct(),
@@ -173,7 +173,7 @@ class ModelSynchronizer(
                     .zip(sourceNodes)
                     .forEach { (newChild, sourceChild) ->
                         nodeAssociation.associate(sourceChild, newChild)
-                        synchronizeNode(sourceChild, newChild)
+                        synchronizeNode(sourceChild, newChild, forceSyncDescendants)
                     }
                 return@iterateMergedRoles
             }
@@ -181,7 +181,7 @@ class ModelSynchronizer(
             // optimization for when there is no change in the child list
             // size check first to avoid querying the original ID
             if (sourceNodes.size == targetNodes.size && sourceNodes.zip(targetNodes).all { nodeAssociation.matches(it.first, it.second) }) {
-                sourceNodes.zip(targetNodes).forEach { synchronizeNode(it.first, it.second) }
+                sourceNodes.zip(targetNodes).forEach { synchronizeNode(it.first, it.second, forceSyncDescendants) }
                 return@iterateMergedRoles
             }
 
@@ -206,11 +206,13 @@ class ModelSynchronizer(
                 // existingChildren.getOrNull handles `-1` as needed by returning `null`.
                 val nodeAtIndex = existingChildren.getOrNull(newIndex)
                 val expectedConcept = expected.getConceptReference()
+                var isNewChild = false
                 val childNode = if (nodeAtIndex?.getOriginalOrCurrentReference() != expectedId) {
                     val existingNode = nodeAssociation.resolveTarget(expected)
                     if (existingNode == null) {
                         val newChild = targetParent.syncNewChild(role, newIndex, NewNodeSpec(expected))
                         nodeAssociation.associate(expected, newChild)
+                        isNewChild = true
                         newChild
                     } else {
                         // The existing child node is not only moved to a new index,
@@ -234,7 +236,7 @@ class ModelSynchronizer(
                     nodeAtIndex
                 }
 
-                synchronizeNode(expected, childNode)
+                synchronizeNode(expected, childNode, forceSyncDescendants || isNewChild)
             }
 
             // Do not use existingNodes, but call node.getChildren(role) because

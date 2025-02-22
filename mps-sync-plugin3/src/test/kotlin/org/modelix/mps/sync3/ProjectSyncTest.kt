@@ -4,8 +4,13 @@ import com.badoo.reaktive.observable.toList
 import com.intellij.configurationStore.saveSettings
 import com.intellij.testFramework.TestApplicationManager
 import jetbrains.mps.smodel.SNodeUtil
+import jetbrains.mps.smodel.adapter.ids.SConceptId
+import jetbrains.mps.smodel.adapter.ids.SContainmentLinkId
+import jetbrains.mps.smodel.adapter.structure.concept.SConceptAdapterById
+import jetbrains.mps.smodel.adapter.structure.link.SContainmentLinkAdapterById
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.junit.Assert
 import org.modelix.model.IVersion
@@ -171,6 +176,65 @@ class ProjectSyncTest : MPSTestBase() {
         assertEquals(MPSProperty(nameProperty).getUID(), change.role.getUID())
         assertEquals("MyClass", version1.getTree().getProperty(change.nodeId, change.role.key(version1.getTree())))
         assertEquals("Changed", version2.getTree().getProperty(change.nodeId, change.role.key(version1.getTree())))
+    }
+
+    fun `test descendants of new node are synchronized`() = runChangeInMpsTest { classNode ->
+        val memberRole = SContainmentLinkAdapterById(SContainmentLinkId.deserialize("f3061a53-9226-4cc5-a443-f952ceaf5816/1107461130800/5375687026011219971"), "member")
+        val visibilityRole = SContainmentLinkAdapterById(SContainmentLinkId.deserialize("f3061a53-9226-4cc5-a443-f952ceaf5816/1178549954367/1178549979242"), "member")
+        val bodyRole = SContainmentLinkAdapterById(SContainmentLinkId.deserialize("f3061a53-9226-4cc5-a443-f952ceaf5816/1178549954367/1068580123135"), "body")
+        val statementRole = SContainmentLinkAdapterById(SContainmentLinkId.deserialize("f3061a53-9226-4cc5-a443-f952ceaf5816/1178549954367/1068581517665"), "statement")
+        val instanceMethodDeclarationConcept = SConceptAdapterById(SConceptId.deserialize("f3061a53-9226-4cc5-a443-f952ceaf5816/1068580123165"), "InstanceMethodDeclaration")
+        val publicVisibilityConcept = SConceptAdapterById(SConceptId.deserialize("f3061a53-9226-4cc5-a443-f952ceaf5816/1146644602865"), "PublicVisibility")
+        val statementListConcept = SConceptAdapterById(SConceptId.deserialize("f3061a53-9226-4cc5-a443-f952ceaf5816/1068580123136"), "StatementList")
+        val returnStatementConcept = SConceptAdapterById(SConceptId.deserialize("f3061a53-9226-4cc5-a443-f952ceaf5816/1068581242878"), "ReturnStatement")
+
+        val methodNode = jetbrains.mps.smodel.SNode(instanceMethodDeclarationConcept)
+        val visibilityNode = jetbrains.mps.smodel.SNode(publicVisibilityConcept).also { methodNode.addChild(visibilityRole, it) }
+        val statementListNode = jetbrains.mps.smodel.SNode(statementListConcept).also { methodNode.addChild(bodyRole, it) }
+        val returnStatementNode = jetbrains.mps.smodel.SNode(returnStatementConcept).also { statementListNode.addChild(statementRole, it) }
+
+        // adding the new method when it already contains all the descendants will result in a single change event.
+        // There is no event for the other `addChild` calls, which is what this test is about.
+        classNode.addChild(memberRole, methodNode)
+    }
+
+    private fun runChangeInMpsTest(mutator: (SNode) -> Unit): Unit = runWithModelServer { port ->
+        // An MPS project is connected to a repository ...
+        val branchRef = RepositoryId("sync-test").getBranchReference()
+        openTestProject("initial")
+        val binding1 = IModelSyncService.getInstance(mpsProject).addServer("http://localhost:$port").bind(branchRef)
+        val version1 = binding1.flush()
+        val snapshot1 = project.captureSnapshot()
+
+        // ... and then an MPS user changes something in MPS ...
+        command {
+            val nameProperty = SNodeUtil.property_INamedConcept_name
+            val node = mpsProject.projectModules
+                .first { it.moduleName == "NewSolution" }
+                .models
+                .flatMap { it.rootNodes }
+                .first { it.getProperty(nameProperty) == "MyClass" }
+            mutator(node)
+        }
+
+        // ... which is synchronized to the server.
+        val version2 = binding1.flush()
+        val snapshot2 = project.captureSnapshot()
+        project.close()
+
+        // A second MPS client should end up in the same state.
+
+        val branchRef2 = branchRef.repositoryId.getBranchReference("branchB")
+        val client = ModelClientV2.builder().url("http://localhost:$port").build()
+        client.push(branchRef2, version1, null)
+
+        openTestProject("initial")
+        val binding2 = IModelSyncService.getInstance(mpsProject).addServer("http://localhost:$port").bind(branchRef2)
+        binding2.flush()
+        assertEquals(snapshot1, project.captureSnapshot())
+        client.push(branchRef2, version2, version1)
+        binding2.flush()
+        assertEquals(snapshot2, project.captureSnapshot())
     }
 
     fun `test sync after model-server change`(): Unit = runWithModelServer { port ->

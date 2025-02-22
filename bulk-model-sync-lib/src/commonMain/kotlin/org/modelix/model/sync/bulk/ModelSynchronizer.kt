@@ -1,5 +1,6 @@
 package org.modelix.model.sync.bulk
 
+import mu.KLogger
 import mu.KotlinLogging
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INode
@@ -21,6 +22,8 @@ import org.modelix.model.api.syncNewChildren
 import org.modelix.model.data.NodeData
 import org.modelix.model.sync.bulk.ModelSynchronizer.IIncrementalUpdateInformation
 
+private val LOG: KLogger = mu.KotlinLogging.logger { }
+
 /**
  * Similar to [ModelImporter], but the input is two [INode] instances instead of [INode] and [NodeData].
  *
@@ -39,10 +42,19 @@ class ModelSynchronizer(
     val nodeAssociation: INodeAssociation,
     val sourceMask: IModelMask = UnfilteredModelMask(),
     val targetMask: IModelMask = UnfilteredModelMask(),
+    val continueOnError: Boolean = true,
 ) {
     private val nodesToRemove: MutableSet<IWritableNode> = HashSet()
     private val pendingReferences: MutableList<PendingReference> = ArrayList()
     private val logger = KotlinLogging.logger {}
+
+    private fun <R> runSafe(body: () -> R): Result<R> {
+        return if (continueOnError) {
+            runCatching(body).onFailure { LOG.warn(it) { "Ignoring exception during synchronization" } }
+        } else {
+            Result.success(body())
+        }
+    }
 
     fun synchronize() {
         synchronize(listOf(sourceRoot), listOf(targetRoot))
@@ -55,8 +67,10 @@ class ModelSynchronizer(
         }
         logger.debug { "Synchronizing pending references..." }
         pendingReferences.forEach {
-            if (!it.trySyncReference()) {
-                it.copyTargetRef()
+            runSafe {
+                if (!it.trySyncReference()) {
+                    it.copyTargetRef()
+                }
             }
         }
         logger.debug { "Removing extra nodes..." }
@@ -68,24 +82,30 @@ class ModelSynchronizer(
         nodeAssociation.associate(sourceNode, targetNode)
         if (filter.needsSynchronization(sourceNode)) {
             logger.trace { "Synchronizing changed node. sourceNode = $sourceNode" }
-            synchronizeProperties(sourceNode, targetNode)
-            synchronizeReferences(sourceNode, targetNode)
+            runSafe { synchronizeProperties(sourceNode, targetNode) }
+            runSafe { synchronizeReferences(sourceNode, targetNode) }
 
-            val sourceConcept = sourceNode.getConceptReference()
-            val targetConcept = targetNode.getConceptReference()
+            val conceptCorrectedTargetNode = runSafe {
+                val sourceConcept = sourceNode.getConceptReference()
+                val targetConcept = targetNode.getConceptReference()
 
-            val conceptCorrectedTargetNode = if (sourceConcept != targetConcept) {
-                targetNode.changeConcept(sourceConcept)
-            } else {
-                targetNode
+                if (sourceConcept != targetConcept) {
+                    targetNode.changeConcept(sourceConcept)
+                } else {
+                    targetNode
+                }
+            }.getOrDefault(targetNode)
+
+            runSafe {
+                syncChildren(sourceNode, conceptCorrectedTargetNode)
             }
-
-            syncChildren(sourceNode, conceptCorrectedTargetNode)
         } else if (filter.needsDescentIntoSubtree(sourceNode)) {
             for (sourceChild in sourceMask.filterChildren(sourceNode, sourceNode.getAllChildren())) {
-                val targetChild = nodeAssociation.resolveTarget(sourceChild)
-                    ?: error("Expected target node was not found. sourceChild=${sourceChild.getNodeReference()}, originalId=${sourceChild.getOriginalReference()}")
-                synchronizeNode(sourceChild, targetChild)
+                runSafe {
+                    val targetChild = nodeAssociation.resolveTarget(sourceChild)
+                        ?: error("Expected target node was not found. sourceChild=${sourceChild.getNodeReference()}, originalId=${sourceChild.getOriginalReference()}")
+                    synchronizeNode(sourceChild, targetChild)
+                }
             }
         } else {
             logger.trace { "Skipping subtree due to filter. root = $sourceNode" }
@@ -97,12 +117,14 @@ class ModelSynchronizer(
         targetNode: IWritableNode,
     ) {
         iterateMergedRoles(sourceNode.getReferenceLinks(), targetNode.getReferenceLinks()) { role ->
-            val pendingReference = PendingReference(sourceNode, targetNode, role)
+            runSafe {
+                val pendingReference = PendingReference(sourceNode, targetNode, role)
 
-            // If the reference target already exist we can synchronize it immediately and save memory between the
-            // two synchronization phases.
-            if (!pendingReference.trySyncReference()) {
-                pendingReferences += pendingReference
+                // If the reference target already exist we can synchronize it immediately and save memory between the
+                // two synchronization phases.
+                if (!pendingReference.trySyncReference()) {
+                    pendingReferences += pendingReference
+                }
             }
         }
     }
@@ -112,10 +134,12 @@ class ModelSynchronizer(
         targetNode: IWritableNode,
     ) {
         iterateMergedRoles(sourceNode.getPropertyLinks(), targetNode.getPropertyLinks()) { role ->
-            val oldValue = targetNode.getPropertyValue(role)
-            val newValue = sourceNode.getPropertyValue(role)
-            if (oldValue != newValue) {
-                targetNode.setPropertyValue(role, newValue)
+            runSafe {
+                val oldValue = targetNode.getPropertyValue(role)
+                val newValue = sourceNode.getPropertyValue(role)
+                if (oldValue != newValue) {
+                    targetNode.setPropertyValue(role, newValue)
+                }
             }
         }
     }
@@ -255,22 +279,24 @@ class ModelSynchronizer(
         }
 
         fun trySyncReference(): Boolean {
-            val expectedRef = sourceNode.getReferenceTargetRef(role)
-            if (expectedRef == null) {
-                targetNode.setReferenceTargetRef(role, null)
-                return true
-            }
-            val actualRef = targetNode.getReferenceTargetRef(role)
+            return runSafe {
+                val expectedRef = sourceNode.getReferenceTargetRef(role)
+                if (expectedRef == null) {
+                    targetNode.setReferenceTargetRef(role, null)
+                    return@runSafe true
+                }
+                val actualRef = targetNode.getReferenceTargetRef(role)
 
-            val referenceTargetInSource = sourceNode.getReferenceTarget(role) ?: return false
+                val referenceTargetInSource = sourceNode.getReferenceTarget(role) ?: return@runSafe false
 
-            val referenceTargetInTarget = nodeAssociation.resolveTarget(referenceTargetInSource)
-                ?: return false // Target cannot be resolved right now but might become resolvable later.
+                val referenceTargetInTarget = nodeAssociation.resolveTarget(referenceTargetInSource)
+                    ?: return@runSafe false // Target cannot be resolved right now but might become resolvable later.
 
-            if (referenceTargetInTarget.getNodeReference().serialize() != actualRef?.serialize()) {
-                targetNode.setReferenceTarget(role, referenceTargetInTarget)
-            }
-            return true
+                if (referenceTargetInTarget.getNodeReference().serialize() != actualRef?.serialize()) {
+                    targetNode.setReferenceTarget(role, referenceTargetInTarget)
+                }
+                return@runSafe true
+            }.getOrDefault(false)
         }
     }
 

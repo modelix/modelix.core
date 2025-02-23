@@ -35,7 +35,7 @@ open class AddNewChildrenOp(val position: PositionInRole, val childIds: LongArra
     }
 
     override fun toString(): String {
-        return "AddNewChildrenOp ${childIds.map { SerializationUtil.longToHex(it) }}, $position, $concepts"
+        return "AddNewChildrenOp ${childIds.map { SerializationUtil.longToHex(it) }}, $position, ${concepts.map { it?.getUID() }}"
     }
 
     inner class Applied : AbstractOperation.Applied(), IAppliedOperation {

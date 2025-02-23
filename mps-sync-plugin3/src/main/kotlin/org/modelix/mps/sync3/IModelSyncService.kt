@@ -1,0 +1,70 @@
+package org.modelix.mps.sync3
+
+import com.intellij.openapi.components.service
+import jetbrains.mps.ide.project.ProjectHelper
+import kotlinx.coroutines.runBlocking
+import org.modelix.model.IVersion
+import org.modelix.model.client2.IModelClientV2
+import org.modelix.model.lazy.BranchReference
+import java.io.Closeable
+
+interface IModelSyncService {
+    companion object {
+        @JvmStatic
+        fun getInstance(project: com.intellij.openapi.project.Project): IModelSyncService {
+            return project.service<ModelSyncService>()
+        }
+
+        @JvmStatic
+        fun getInstance(project: org.jetbrains.mps.openapi.project.Project): IModelSyncService {
+            return getInstance(ProjectHelper.toIdeaProject(project as jetbrains.mps.project.Project))
+        }
+    }
+
+    fun addServer(url: String): IServerConnection
+    fun getServerConnections(): List<IServerConnection>
+    fun getBindings(): List<IBinding>
+}
+
+interface IServerConnection : Closeable {
+    fun activate()
+    fun deactivate()
+    fun remove()
+    fun getStatus(): Status
+
+    override fun close() = deactivate()
+
+    suspend fun pullVersion(branchRef: BranchReference): IVersion
+
+    fun bind(branchRef: BranchReference): IBinding = bind(branchRef, null)
+    fun bind(branchRef: BranchReference, lastSyncedVersionHash: String?): IBinding
+    fun getBindings(): List<IBinding>
+
+    fun getUrl(): String
+    suspend fun getClient(): IModelClientV2
+
+    enum class Status {
+        CONNECTED,
+        DISCONNECTED,
+    }
+}
+
+interface IBinding : Closeable {
+    fun getProject(): org.jetbrains.mps.openapi.project.Project
+    fun getBranchRef(): BranchReference
+    fun isEnabled(): Boolean
+    fun enable()
+    fun disable()
+    fun delete()
+
+    override fun close() = disable()
+
+    /**
+     * Blocks until both ends are in sync.
+     * @exception Throwable if the last synchronization failed
+     * @return the latest version
+     */
+    suspend fun flush(): IVersion
+    fun flushBlocking() = runBlocking { flush() }
+    suspend fun flushIfEnabled(): IVersion?
+}

@@ -4,13 +4,11 @@ import mu.KotlinLogging
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.IReadableNode
-import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 import org.modelix.model.data.NodeDataAsNode
 import org.modelix.model.data.ensureHasId
-import org.modelix.model.sync.bulk.ModelSynchronizer.IFilter
 import kotlin.jvm.JvmName
 
 private val LOG = KotlinLogging.logger { }
@@ -65,26 +63,18 @@ class ModelImporter(
         val targetNodes = sourceAndTargetNodes.map { it.existingNode.asWritableNode() }
 
         ModelSynchronizer(
-            filter = object : IFilter {
-                override fun needsDescentIntoSubtree(subtreeRoot: IReadableNode): Boolean {
-                    return true
-                }
-
-                override fun needsSynchronization(node: IReadableNode): Boolean {
-                    return true
-                }
-
-                override fun filterTargetChildren(
-                    parent: IWritableNode,
-                    role: IChildLinkReference,
-                    children: List<IWritableNode>,
-                ): List<IWritableNode> {
-                    return children.filter { childFilter(it.asLegacyNode()) }
-                }
-            },
             sourceRoot = sourceNodes.first(),
             targetRoot = targetNodes.first(),
             nodeAssociation = nodeAssociation,
+            targetMask = object : IModelMask {
+                override fun <T : IReadableNode> filterChildren(
+                    parent: IReadableNode,
+                    role: IChildLinkReference,
+                    children: List<T>,
+                ): List<T> {
+                    return children.filter { childFilter(it.asLegacyNode()) }
+                }
+            },
         ).synchronize(sourceNodes, targetNodes)
     }
 }

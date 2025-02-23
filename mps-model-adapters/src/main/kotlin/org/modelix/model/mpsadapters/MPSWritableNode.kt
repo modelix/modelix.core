@@ -1,7 +1,10 @@
 package org.modelix.model.mpsadapters
 
 import jetbrains.mps.smodel.MPSModuleRepository
+import jetbrains.mps.smodel.SNodeId
+import jetbrains.mps.smodel.SNodeUtil
 import jetbrains.mps.smodel.adapter.MetaAdapterByDeclaration
+import org.apache.commons.codec.binary.Hex
 import org.jetbrains.mps.openapi.language.SConcept
 import org.jetbrains.mps.openapi.language.SContainmentLink
 import org.jetbrains.mps.openapi.language.SProperty
@@ -16,14 +19,19 @@ import org.modelix.model.api.IConcept
 import org.modelix.model.api.IMutableModel
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
+import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IRoleReferenceByName
 import org.modelix.model.api.IRoleReferenceByUID
 import org.modelix.model.api.ISyncTargetNode
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.NewNodeSpec
+import org.modelix.model.api.NodeReference
 import org.modelix.model.api.meta.NullConcept
 import org.modelix.mps.api.ModelixMpsApi
+
+fun SNode.asReadableNode(): IReadableNode = MPSWritableNode(this)
+fun SNode.asWritableNode(): IWritableNode = MPSWritableNode(this)
 
 data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
     override fun getModel(): IMutableModel {
@@ -67,7 +75,7 @@ data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
 
     override fun getParent(): IWritableNode? {
         DependencyTracking.accessed((MPSContainmentDependency(node)))
-        return node.parent?.let { MPSWritableNode(it) }
+        return node.parent?.let { MPSWritableNode(it) } ?: node.model?.let { MPSModelAsNode(it) }
     }
 
     override fun changeConcept(newConcept: ConceptReference): IWritableNode {
@@ -106,10 +114,6 @@ data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
         }
 
         return MPSWritableNode(newNode)
-    }
-
-    override fun setPropertyValue(property: IPropertyReference, value: String?) {
-        node.setProperty(resolve(property), value)
     }
 
     override fun moveChild(role: IChildLinkReference, index: Int, child: IWritableNode) {
@@ -151,7 +155,7 @@ data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
     }
 
     override fun syncNewChildren(role: IChildLinkReference, index: Int, specs: List<NewNodeSpec>): List<IWritableNode> {
-        val repo = node.model?.repository ?: MPSModuleRepository.getInstance()
+        val repo = node.model?.repository ?: ModelixMpsApi.getRepository()
         val resolvedConcepts = specs.distinct().associate { spec ->
             spec.conceptRef to repo.resolveConcept(spec.conceptRef)
         }
@@ -165,7 +169,12 @@ data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
 
         return specs.map { spec ->
             val resolvedConcept = checkNotNull(resolvedConcepts[spec.conceptRef])
-            val preferredId = spec.preferredNodeReference?.let { MPSNodeReference.tryConvert(it) }?.ref?.nodeId
+
+            // Either use the original SNodeId that it had before it was synchronized to the model server
+            // or if the node was created outside of MPS, generate an ID based on the ID on the model server.
+            // The goal is to create a node with the same ID on all clients.
+            val preferredId = spec.getPreferredSNodeId()
+
             val newChild = if (model == null) {
                 if (preferredId == null) {
                     jetbrains.mps.smodel.SNode(resolvedConcept)
@@ -175,6 +184,8 @@ data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
             } else {
                 model.createNode(resolvedConcept, preferredId)
             }
+
+            newChild.copyNameFrom(spec)
 
             if (anchor == null) {
                 node.addChild(link, newChild)
@@ -222,9 +233,24 @@ data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
     }
 
     override fun getPropertyValue(property: IPropertyReference): String? {
+//        if (property.matches(NodeData.ID_PROPERTY_REF)) {
+//            // No dependency tracking for read only property necessary
+//            return node.nodeId.tryDecodeModelixReference()?.serialize()
+//        }
+
         DependencyTracking.accessed(MPSProperty.tryFromReference(property)?.let { MPSPropertyDependency(node, it.property) } ?: MPSAllReferencesDependency(node))
         val mpsProperty = node.properties.firstOrNull { MPSProperty(it).toReference().matches(property) } ?: return null
         return node.getProperty(mpsProperty)
+    }
+
+    override fun setPropertyValue(property: IPropertyReference, value: String?) {
+//        if (property.matches(NodeData.ID_PROPERTY_REF)) {
+//            require(node.nodeId.tryDecodeModelixReference()?.serialize() == value) {
+//                "Property is read only: $property"
+//            }
+//            return
+//        }
+        node.setProperty(resolve(property), value)
     }
 
     override fun getPropertyLinks(): List<IPropertyReference> {
@@ -295,4 +321,27 @@ fun SRepository.resolveConcept(concept: ConceptReference): SConcept {
         // A null value for the concept would default to BaseConcept, but then BaseConcept should be used explicitly.
         "MPS concept not found: $concept"
     }
+}
+
+fun org.jetbrains.mps.openapi.model.SNodeId.tryDecodeModelixReference(): NodeReference? {
+    if (this !is SNodeId.Foreign) return null
+    if (id.length < 2 || id.substring(0, 2) != "mx") return null
+    val hex = id.substring(2)
+    return NodeReference(String(Hex.decodeHex(hex)))
+}
+
+fun INodeReference.encodeAsForeignId(): SNodeId {
+    return SNodeId.Foreign("~mx" + Hex.encodeHexString(serialize().toByteArray()))
+}
+
+/**
+ * When a reference is set, the name of the target is stored as resolveInfo.
+ * If the name isn't yet set, the resolveInfo will be empty.
+ * That's why we set the name as early as possible.
+ * And because resolveInfo is something MPS specific it is handled here instead of in ModelSynchronizer.
+ */
+internal fun SNode.copyNameFrom(spec: NewNodeSpec?) {
+    if (spec == null) return
+    val name = spec.node?.getPropertyValue(MPSProperty(SNodeUtil.property_INamedConcept_name).toReference())
+    if (name != null) setProperty(SNodeUtil.property_INamedConcept_name, name)
 }

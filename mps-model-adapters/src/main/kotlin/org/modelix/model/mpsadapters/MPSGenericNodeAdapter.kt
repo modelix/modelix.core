@@ -2,6 +2,7 @@ package org.modelix.model.mpsadapters
 
 import jetbrains.mps.smodel.MPSModuleRepository
 import org.jetbrains.mps.openapi.language.SConcept
+import org.jetbrains.mps.openapi.model.SNodeId
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
@@ -47,8 +48,16 @@ abstract class MPSGenericNodeAdapter<E> : IWritableNode, ISyncTargetNode {
         return tryGetReferenceAccessor(role)?.read(getElement())
     }
 
+    override fun getReferenceTargetRef(role: IReferenceLinkReference): INodeReference? {
+        return tryGetReferenceAccessor(role)?.readRef(getElement())
+    }
+
     override fun getAllReferenceTargets(): List<Pair<IReferenceLinkReference, IWritableNode>> {
         return getReferenceAccessors().mapNotNull { it.first to (it.second.read(getElement()) ?: return@mapNotNull null) }
+    }
+
+    override fun getAllReferenceTargetRefs(): List<Pair<IReferenceLinkReference, INodeReference>> {
+        return getReferenceAccessors().mapNotNull { it.first to (it.second.readRef(getElement()) ?: return@mapNotNull null) }
     }
 
     override fun changeConcept(newConcept: ConceptReference): IWritableNode {
@@ -91,6 +100,10 @@ abstract class MPSGenericNodeAdapter<E> : IWritableNode, ISyncTargetNode {
         }
     }
 
+    override fun isOrdered(role: IChildLinkReference): Boolean {
+        return tryGetChildAccessor(role)?.isOrdered() != false
+    }
+
     override fun setReferenceTarget(role: IReferenceLinkReference, target: IWritableNode?) {
         getReferenceAccessor(role).write(getElement(), target)
     }
@@ -119,40 +132,28 @@ abstract class MPSGenericNodeAdapter<E> : IWritableNode, ISyncTargetNode {
         return getPropertyAccessors().mapNotNull { it.first to (it.second.read(getElement()) ?: return@mapNotNull null) }
     }
 
-    override fun getReferenceTargetRef(role: IReferenceLinkReference): INodeReference? {
-        return getReferenceTarget(role)?.getNodeReference()
-    }
-
     override fun getReferenceLinks(): List<IReferenceLinkReference> {
         return getReferenceAccessors().map { it.first }
     }
 
-    override fun getAllReferenceTargetRefs(): List<Pair<IReferenceLinkReference, INodeReference>> {
-        return getAllReferenceTargets().map { it.first to it.second.getNodeReference() }
-    }
-
     interface IPropertyAccessor<in E> {
         fun read(element: E): String?
-        fun write(element: E, value: String?): Unit = throw UnsupportedOperationException("$this, $value")
+        fun write(element: E, value: String?)
     }
 
     interface IReferenceAccessor<in E> {
         fun read(element: E): IWritableNode?
-        fun write(element: E, value: IWritableNode?) {
-            throw UnsupportedOperationException()
-        }
-        fun write(element: E, value: INodeReference?): Unit = throw UnsupportedOperationException()
+        fun readRef(element: E): INodeReference? = read(element)?.getNodeReference()
+        fun write(element: E, value: IWritableNode?)
+        fun write(element: E, value: INodeReference?)
     }
 
     interface IChildAccessor<in E> {
         fun read(element: E): List<IWritableNode>
-        fun addNew(element: E, index: Int, sourceNode: SpecWithResolvedConcept): IWritableNode {
-            throw UnsupportedOperationException("$this, $element, $sourceNode")
-        }
-        fun move(element: E, index: Int, child: IWritableNode) {
-            throw UnsupportedOperationException("$this, $element, $child")
-        }
-        fun remove(element: E, child: IWritableNode): Unit = throw UnsupportedOperationException()
+        fun addNew(element: E, index: Int, sourceNode: SpecWithResolvedConcept): IWritableNode
+        fun move(element: E, index: Int, child: IWritableNode): Unit = throw UnsupportedOperationException("unordered")
+        fun remove(element: E, child: IWritableNode)
+        fun isOrdered(): Boolean = false
     }
 
     class SpecWithResolvedConcept(val concept: SConcept, val spec: NewNodeSpec?) {
@@ -162,4 +163,12 @@ abstract class MPSGenericNodeAdapter<E> : IWritableNode, ISyncTargetNode {
             return "SourceNodeAndConcept[$concept, $spec]"
         }
     }
+}
+
+fun NewNodeSpec.getPreferredSNodeId(): SNodeId? {
+    // Either use the original SNodeId that it had before it was synchronized to the model server
+    // or if the node was created outside of MPS, generate an ID based on the ID on the model server.
+    // The goal is to create a node with the same ID on all clients.
+    return preferredNodeReference?.let { MPSNodeReference.tryConvert(it) }?.ref?.nodeId
+        ?: node?.getNodeReference()?.encodeAsForeignId()
 }

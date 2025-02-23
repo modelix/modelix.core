@@ -206,6 +206,15 @@ object BuiltinLanguages {
                 targetConcept = Generator,
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313/7018594982789597990",
             ).also(this::addChildLink)
+
+            val extendedLanguages = SimpleChildLink(
+                simpleName = "extendedLanguages",
+                isMultiple = true,
+                isOptional = true,
+                isOrdered = false,
+                targetConcept = ModuleReference,
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/4008363636171860313/7440567989974771396",
+            ).also(this::addChildLink)
         }
 
         object DevKit : SimpleConcept(
@@ -249,6 +258,11 @@ object BuiltinLanguages {
             directSuperConcepts = listOf(Module),
         ) {
             init { addConcept(this) }
+
+            val alias = SimpleProperty(
+                "alias",
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/5552089503111831268",
+            ).also(this::addProperty)
         }
 
         object Repository : SimpleConcept(

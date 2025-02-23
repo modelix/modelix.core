@@ -18,7 +18,22 @@ data class MPSModelImportAsNode(val importedModel: SModelReference, val importin
             BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model.toReference() to object :
                 IReferenceAccessor<MPSModelImportAsNode> {
                 override fun read(element: MPSModelImportAsNode): IWritableNode? {
-                    return MPSModelAsNode(element.importedModel.resolve(element.importingModel.repository))
+                    // Broken references are a common thing and MPS also just returns null.
+                    // readRef can be used to distinguish a broken reference from one that isn't set.
+                    return element.importedModel.resolve(element.importingModel.repository)
+                        ?.let { MPSModelAsNode(it) }
+                }
+
+                override fun readRef(element: MPSModelImportAsNode): INodeReference? {
+                    return MPSModelReference(element.importedModel)
+                }
+
+                override fun write(element: MPSModelImportAsNode, value: IWritableNode?) {
+                    throw UnsupportedOperationException("read only")
+                }
+
+                override fun write(element: MPSModelImportAsNode, value: INodeReference?) {
+                    throw UnsupportedOperationException("read only")
                 }
             },
         )

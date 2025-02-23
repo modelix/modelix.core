@@ -10,7 +10,6 @@ import org.modelix.model.data.ModelData
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.operations.AddNewChildOp
-import org.modelix.model.operations.AddNewChildrenOp
 import org.modelix.model.operations.DeleteNodeOp
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.MoveNodeOp
@@ -581,7 +580,6 @@ abstract class AbstractModelSyncTest {
                 SetReferenceOp::class to 3,
                 MoveNodeOp::class to 6, // could be done in 5, but finding that optimization makes the sync algorithm slower
                 AddNewChildOp::class to 1,
-                AddNewChildrenOp::class to 1,
                 DeleteNodeOp::class to 1,
             )
 

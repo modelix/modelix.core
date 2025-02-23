@@ -1,10 +1,12 @@
 package org.modelix.model.sync.bulk
 
-import gnu.trove.map.TLongObjectMap
-import gnu.trove.map.hash.TLongObjectHashMap
+import org.modelix.model.api.IModel
 import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.ITree
+import org.modelix.model.api.NodeReference
 import org.modelix.model.api.PNodeAdapter
+import org.modelix.model.api.ancestors
+import org.modelix.model.api.toSerialized
 
 /**
  * The purpose of this data structure is to store which nodes changed and need to be synchronized,
@@ -13,15 +15,50 @@ import org.modelix.model.api.PNodeAdapter
  * If there are many changes in one part of the model (changed subtree size > [sizeLimit]),
  * we do not keep track of the individual changes anymore and just synchronize the entire subtree.
  */
-class InvalidationTree(val sizeLimit: Int) : ModelSynchronizer.IFilter {
-    private val rootNode = Node(ITree.ROOT_ID)
+class InvalidationTree(sizeLimit: Int = 100_000) : GenericInvalidationTree<Long, ITree>(ITree.ROOT_ID, sizeLimit) {
+    override fun ancestorsAndSelf(model: ITree, nodeId: Long): List<Long> {
+        return model.ancestorsAndSelf(nodeId).toList()
+    }
+
+    override fun getId(node: IReadableNode): Long {
+        val subtreeRoot = node.asLegacyNode()
+        require(subtreeRoot is PNodeAdapter)
+        return subtreeRoot.nodeId
+    }
+}
+
+class DefaultInvalidationTree(val root: NodeReference, sizeLimit: Int = 100_000) :
+    GenericInvalidationTree<NodeReference, IModel>(root, sizeLimit = sizeLimit) {
+    override fun ancestorsAndSelf(
+        model: IModel,
+        nodeId: NodeReference,
+    ): List<NodeReference> {
+        return model.resolveNode(nodeId)
+            ?.ancestors(includeSelf = true)
+            ?.map { it.getNodeReference().toSerialized() }
+            ?.toList()
+            ?: emptyList()
+    }
+
+    override fun getId(node: IReadableNode): NodeReference {
+        return node.getNodeReference().toSerialized()
+    }
+}
+
+abstract class GenericInvalidationTree<ID, M>(root: ID, val sizeLimit: Int = 100_000) : ModelSynchronizer.IIncrementalUpdateInformation {
+    private val rootNode = Node(root)
+
+    abstract fun ancestorsAndSelf(model: M, nodeId: ID): List<ID>
+    abstract fun getId(node: IReadableNode): ID
+
+    private fun getContainmentPath(node: IReadableNode) = node.ancestors(includeSelf = true).map { getId(it) }.toList().asReversed()
 
     /**
      * Marks the node stored in the given containment path as changed.
      */
-    fun invalidate(containmentPath: LongArray) {
-        require(containmentPath[0] == ITree.ROOT_ID) { "Path must start with the root node" }
-        rootNode.invalidate(containmentPath, 0)
+    fun invalidate(containmentPath: List<ID>, includingDescendants: Boolean = false) {
+        require(containmentPath[0] == rootNode.id) { "Path must start with the root node. Expected: ${rootNode.id}, was: $containmentPath" }
+        rootNode.invalidate(containmentPath, 0, includingDescendants)
         rootNode.rebalance(sizeLimit)
     }
 
@@ -31,38 +68,54 @@ class InvalidationTree(val sizeLimit: Int) : ModelSynchronizer.IFilter {
      * @param tree used internally for the calculation of the containment path
      * @param nodeId the id of the changed node
      */
-    fun invalidate(tree: ITree, nodeId: Long) {
-        val containmentPath = tree.ancestorsAndSelf(nodeId).toList().asReversed().toLongArray()
-        invalidate(containmentPath)
+    fun invalidate(node: IReadableNode, includingDescendants: Boolean = false) {
+        invalidate(getContainmentPath(node), includingDescendants)
     }
 
+    fun reset() {
+        rootNode.reset()
+    }
+
+    fun hasAnyInvalidations(): Boolean = rootNode.hasAnyInvalidations()
+
     override fun needsDescentIntoSubtree(subtreeRoot: IReadableNode): Boolean {
-        val subtreeRoot = subtreeRoot.asLegacyNode()
-        require(subtreeRoot is PNodeAdapter)
-        val path = subtreeRoot.branch.transaction.tree.ancestorsAndSelf(subtreeRoot.nodeId).toList().asReversed()
-        return rootNode.needsDescentIntoSubtree(path, 0)
+        return rootNode.needsDescentIntoSubtree(getContainmentPath(subtreeRoot), 0)
     }
 
     override fun needsSynchronization(node: IReadableNode): Boolean {
-        val node = node.asLegacyNode()
-        require(node is PNodeAdapter)
-        val path = node.branch.transaction.tree.ancestorsAndSelf(node.nodeId).toList().asReversed()
-        return rootNode.nodeNeedsUpdate(path, 0)
+        return rootNode.nodeNeedsUpdate(getContainmentPath(node), 0)
     }
 
-    private class Node(val id: Long) {
+    private class Node<E>(val id: E) {
         private var subtreeSize = 1
         private var nodeNeedsUpdate: Boolean = false
         private var allDescendantsNeedUpdate = false
-        private var invalidChildren: TLongObjectMap<Node> = TLongObjectHashMap()
+        private var invalidChildren: MutableMap<E, Node<E>> = HashMap()
+
+        fun hasAnyInvalidations() = nodeNeedsUpdate || allDescendantsNeedUpdate || invalidChildren.isNotEmpty()
+
+        fun reset() {
+            subtreeSize = 1
+            nodeNeedsUpdate = false
+            allDescendantsNeedUpdate = false
+            invalidChildren = HashMap()
+        }
 
         /**
          * @return number of added nodes
          */
-        fun invalidate(path: LongArray, currentIndex: Int): Int {
+        fun invalidate(path: List<E>, currentIndex: Int, includingDescendants: Boolean): Int {
             var addedNodesCount = 0
             if (currentIndex > path.lastIndex) {
                 nodeNeedsUpdate = true
+                if (includingDescendants) {
+                    addedNodesCount -= subtreeSize - 1
+                    subtreeSize = 1
+                    allDescendantsNeedUpdate = true
+                    if (invalidChildren.isNotEmpty()) {
+                        invalidChildren = HashMap(0)
+                    }
+                }
             } else {
                 if (allDescendantsNeedUpdate) return addedNodesCount
                 val childId = path[currentIndex]
@@ -70,7 +123,7 @@ class InvalidationTree(val sizeLimit: Int) : ModelSynchronizer.IFilter {
                     invalidChildren.put(childId, it)
                     addedNodesCount++
                 }
-                addedNodesCount += child.invalidate(path, currentIndex + 1)
+                addedNodesCount += child.invalidate(path, currentIndex + 1, includingDescendants)
             }
             subtreeSize += addedNodesCount
             return addedNodesCount
@@ -82,17 +135,17 @@ class InvalidationTree(val sizeLimit: Int) : ModelSynchronizer.IFilter {
 
             if (sizeLimit >= subtreeSize) return // limit already fulfilled
 
-            if ((sizeLimit - 1) < invalidChildren.size()) {
+            if ((sizeLimit - 1) < invalidChildren.size) {
                 // rebalancing not possible without removing nodes
                 allDescendantsNeedUpdate = true
-                invalidChildren = TLongObjectHashMap(0)
+                invalidChildren = HashMap(0)
                 subtreeSize = 1
                 return
             }
 
             var remainingNodesToRemove = subtreeSize - sizeLimit
 
-            val sortedChildren: List<Node> = invalidChildren.valueCollection().sortedByDescending { it.subtreeSize }
+            val sortedChildren: List<Node<E>> = invalidChildren.values.sortedByDescending { it.subtreeSize }
             val rebalancedSizes: IntArray = sortedChildren.map { it.subtreeSize }.toIntArray()
             while (remainingNodesToRemove > 0) {
                 for (i in rebalancedSizes.indices) {
@@ -112,20 +165,20 @@ class InvalidationTree(val sizeLimit: Int) : ModelSynchronizer.IFilter {
                 child.rebalance(rebalancedSizes[i])
             }
 
-            subtreeSize = invalidChildren.valueCollection().sumOf { it.subtreeSize } + 1
+            subtreeSize = invalidChildren.values.sumOf { it.subtreeSize } + 1
         }
 
-        fun needsDescentIntoSubtree(path: List<Long>, currentIndex: Int): Boolean {
+        fun needsDescentIntoSubtree(path: List<E>, currentIndex: Int): Boolean {
             if (allDescendantsNeedUpdate) return true
             if (currentIndex < path.size) {
                 val child = invalidChildren[path[currentIndex]] ?: return false
                 return child.needsDescentIntoSubtree(path, currentIndex + 1)
             } else {
-                return invalidChildren.size() > 0
+                return invalidChildren.size > 0
             }
         }
 
-        fun nodeNeedsUpdate(path: List<Long>, currentIndex: Int): Boolean {
+        fun nodeNeedsUpdate(path: List<E>, currentIndex: Int): Boolean {
             if (allDescendantsNeedUpdate) return true
             if (currentIndex < path.size) {
                 val child = invalidChildren[path[currentIndex]] ?: return false

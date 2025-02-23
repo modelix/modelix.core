@@ -26,4 +26,6 @@ dependencies {
     // We just have to call `kotlin("multiplatform")` and `kotlin("jvm")` which just enables the plugins,
     // but uses the plugin code bundled with `build-logic`.
     implementation(libs.kotlin.gradlePlugin)
+
+    implementation(libs.kotlin.serialization.json)
 }

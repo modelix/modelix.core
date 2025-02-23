@@ -413,7 +413,7 @@ fun INode.tryResolveProperty(role: String): IProperty? {
  */
 @Deprecated("provide a IChildLinkReference")
 fun INode.isChildRoleOrdered(role: String?): Boolean {
-    return asReadableNode().isChildRoleOrdered(IChildLinkReference.fromUnclassifiedString(role))
+    return asReadableNode().isOrdered(IChildLinkReference.fromUnclassifiedString(role))
     return if (role == null) {
         true
     } else {
@@ -421,8 +421,9 @@ fun INode.isChildRoleOrdered(role: String?): Boolean {
     }
 }
 
+@Deprecated("Use isOrdered", ReplaceWith("isOrdered(role)"))
 fun IReadableNode.isChildRoleOrdered(role: IChildLinkReference): Boolean {
-    return this.tryResolveChildLink(role)?.isOrdered ?: true
+    return isOrdered(role)
 }
 
 fun INode.resolvePropertyOrFallback(role: String): IProperty {

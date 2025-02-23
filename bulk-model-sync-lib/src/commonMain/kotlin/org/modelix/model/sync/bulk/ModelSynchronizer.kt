@@ -41,17 +41,17 @@ class ModelSynchronizer(
     val nodeAssociation: INodeAssociation,
     val sourceMask: IModelMask = UnfilteredModelMask(),
     val targetMask: IModelMask = UnfilteredModelMask(),
-    val continueOnError: Boolean = true,
+    private val exceptionHandler: ((Throwable) -> Unit)? = { LOG.warn(it) { "Ignoring exception during synchronization" } },
 ) {
     private val nodesToRemove: MutableSet<IWritableNode> = HashSet()
     private val pendingReferences: MutableList<PendingReference> = ArrayList()
     private val logger = KotlinLogging.logger {}
 
     private fun <R> runSafe(body: () -> R): Result<R> {
-        return if (continueOnError) {
-            runCatching(body).onFailure { LOG.warn(it) { "Ignoring exception during synchronization" } }
-        } else {
+        return if (exceptionHandler == null) {
             Result.success(body())
+        } else {
+            runCatching(body).onFailure { exceptionHandler(it) }
         }
     }
 

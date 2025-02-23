@@ -48,16 +48,26 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
     private val syncActive = AtomicBoolean(false)
     private val invalidationTree: DefaultInvalidationTree =
         DefaultInvalidationTree(MPSRepositoryAsNode(repository).getNodeReference().toSerialized())
+    private var synchronizationErrorHappened: Boolean = false
 
     fun hasAnyInvalidations() = synchronized(invalidationTree) { invalidationTree.hasAnyInvalidations() }
+
+    fun synchronizationErrorHappened() {
+        synchronizationErrorHappened = true
+    }
 
     fun <R> runSync(body: (DefaultInvalidationTree) -> R): R {
         check(!syncActive.getAndSet(true)) { "Synchronization is already running" }
         try {
             synchronized(invalidationTree) {
+                synchronizationErrorHappened = false
                 return body(invalidationTree).also {
-                    LOG.trace { "Resetting invalidations" }
-                    invalidationTree.reset()
+                    if (synchronizationErrorHappened) {
+                        LOG.trace { "Synchronization wasn't successful. Preserving invalidations." }
+                    } else {
+                        LOG.trace { "Resetting invalidations" }
+                        invalidationTree.reset()
+                    }
                 }
             }
         } catch (ex: Throwable) {

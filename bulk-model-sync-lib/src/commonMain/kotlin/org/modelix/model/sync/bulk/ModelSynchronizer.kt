@@ -12,7 +12,6 @@ import org.modelix.model.api.NewNodeSpec
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.getOriginalOrCurrentReference
 import org.modelix.model.api.getOriginalReference
-import org.modelix.model.api.isChildRoleOrdered
 import org.modelix.model.api.isOrdered
 import org.modelix.model.api.matches
 import org.modelix.model.api.mergeWith
@@ -185,7 +184,7 @@ class ModelSynchronizer(
                 return@iterateMergedRoles
             }
 
-            val isOrdered = targetParent.isChildRoleOrdered(role)
+            val isOrdered = targetParent.isOrdered(role)
 
             sourceNodes.forEachIndexed { indexInImport, expected ->
                 val existingChildren = getFilteredTargetChildren(targetParent, role)

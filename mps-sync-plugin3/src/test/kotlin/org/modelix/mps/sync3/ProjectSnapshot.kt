@@ -29,7 +29,7 @@ private fun filterFiles(files: Map<String, String>) = files.filter {
     val name = it.key
     if (name.startsWith(".mps/")) {
         when (name.substringAfter("/")) {
-            ".gitignore", "migration.xml", "workspace.xml", "modelix.xml" -> false
+            ".gitignore", "migration.xml", "workspace.xml", "modelix.xml", "vcs.xml" -> false
             else -> true
         }
     } else if (name.contains("/source_gen") || name.contains("/classes_gen")) {

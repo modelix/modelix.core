@@ -2,7 +2,6 @@ package org.modelix.mps.sync3
 
 import com.badoo.reaktive.observable.toList
 import com.intellij.configurationStore.saveSettings
-import com.intellij.testFramework.TestApplicationManager
 import jetbrains.mps.smodel.SNodeUtil
 import jetbrains.mps.smodel.adapter.ids.SConceptId
 import jetbrains.mps.smodel.adapter.ids.SContainmentLinkId
@@ -55,7 +54,6 @@ class ProjectSyncTest : MPSTestBase() {
 
     override fun setUp() {
         super.setUp()
-        TestApplicationManager.getInstance()
     }
 
     override fun tearDown() {

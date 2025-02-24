@@ -8,6 +8,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.project.ex.ProjectManagerEx
 import com.intellij.openapi.util.Disposer
+import com.intellij.testFramework.TestApplicationManager
 import com.intellij.testFramework.UsefulTestCase
 import com.intellij.util.io.delete
 import jetbrains.mps.ide.ThreadUtils
@@ -27,6 +28,10 @@ abstract class MPSTestBase : UsefulTestCase() {
     protected lateinit var project: Project
 
     override fun runInDispatchThread() = false
+    override fun setUp() {
+        super.setUp()
+        TestApplicationManager.getInstance()
+    }
 
     @OptIn(ExperimentalPathApi::class)
     fun openTestProject(testDataName: String?, beforeOpen: (projectDir: Path) -> Unit = {}): Project {

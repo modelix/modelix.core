@@ -1,7 +1,6 @@
 package org.modelix.model.sync.bulk
 
 import mu.KLogger
-import mu.KotlinLogging
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.IReadableNode
@@ -45,7 +44,6 @@ class ModelSynchronizer(
 ) {
     private val nodesToRemove: MutableSet<IWritableNode> = HashSet()
     private val pendingReferences: MutableList<PendingReference> = ArrayList()
-    private val logger = KotlinLogging.logger {}
 
     private fun <R> runSafe(body: () -> R): Result<R> {
         return if (onException == null) {
@@ -62,11 +60,11 @@ class ModelSynchronizer(
     }
 
     fun synchronize(sourceNodes: List<IReadableNode>, targetNodes: List<IWritableNode>) {
-        logger.debug { "Synchronizing nodes..." }
+        LOG.debug { "Synchronizing nodes..." }
         for ((sourceNode, targetNode) in sourceNodes.zip(targetNodes)) {
             synchronizeNode(sourceNode, targetNode, false)
         }
-        logger.debug { "Synchronizing pending references..." }
+        LOG.debug { "Synchronizing pending references..." }
         pendingReferences.forEach {
             runSafe {
                 if (!it.trySyncReference()) {
@@ -74,15 +72,15 @@ class ModelSynchronizer(
                 }
             }
         }
-        logger.debug { "Removing extra nodes..." }
+        LOG.debug { "Removing extra nodes..." }
         nodesToRemove.filter { it.isValid() }.forEach { it.remove() }
-        logger.debug { "Synchronization finished." }
+        LOG.debug { "Synchronization finished." }
     }
 
     private fun synchronizeNode(sourceNode: IReadableNode, targetNode: IWritableNode, forceSyncDescendants: Boolean) {
         nodeAssociation.associate(sourceNode, targetNode)
         if (forceSyncDescendants || filter.needsSynchronization(sourceNode)) {
-            logger.trace { "Synchronizing changed node. sourceNode = $sourceNode" }
+            LOG.trace { "Synchronizing changed node. sourceNode = $sourceNode" }
             runSafe { synchronizeProperties(sourceNode, targetNode) }
             runSafe { synchronizeReferences(sourceNode, targetNode) }
 
@@ -109,7 +107,7 @@ class ModelSynchronizer(
                 }
             }
         } else {
-            logger.trace { "Skipping subtree due to filter. root = $sourceNode" }
+            LOG.trace { "Skipping subtree due to filter. root = $sourceNode" }
         }
     }
 

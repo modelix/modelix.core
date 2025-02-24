@@ -161,9 +161,16 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
 
                 override fun remove(element: SModel, child: IWritableNode) {
                     check(element is SModelDescriptorStub) { "Model '$element' is not a SModelDescriptor." }
-                    require(child is MPSSingleLanguageDependencyAsNode) { "Node $child to be removed is not a single language dependency." }
-                    val languageToRemove = MetaAdapterFactory.getLanguage(child.moduleReference.sourceModuleReference)
-                    element.deleteLanguageId(languageToRemove)
+                    when (child) {
+                        is MPSSingleLanguageDependencyAsNode -> {
+                            val languageToRemove = MetaAdapterFactory.getLanguage(child.moduleReference.sourceModuleReference)
+                            element.deleteLanguageId(languageToRemove)
+                        }
+                        is MPSDevKitDependencyAsNode -> {
+                            element.deleteDevKit(child.moduleReference)
+                        }
+                        else -> throw UnsupportedOperationException("Unsupported type: ${child.getConceptReference()}")
+                    }
                 }
             },
         )

@@ -343,7 +343,7 @@ class ProjectSyncTest : MPSTestBase() {
         assertEquals(expected.asNormalizedJson(), version2.asNormalizedJson())
     }
 
-    fun `test sync to MPS after non-trivial commit`(): Unit = runWithModelServer { port ->
+    fun `test sync to MPS after non-trivial commit at startup`(): Unit = runWithModelServer { port ->
         // Two clients are in sync with the same version ...
         val branchRef = RepositoryId("sync-test").getBranchReference()
         val version1 = syncProjectToServer("initial", port, branchRef)
@@ -362,6 +362,37 @@ class ProjectSyncTest : MPSTestBase() {
             .bind(branchRef, version1.getContentHash())
         println("binding created")
         val version3 = binding.flush()
+
+        // ... applies all the pending changes and is again in sync with the other client
+        assertEquals(expectedSnapshot, project.captureSnapshot())
+    }
+
+    fun `test sync to MPS after non-trivial commit with active binding`(): Unit = runWithModelServer { port ->
+        // Two clients are in sync with the same version ...
+        val branchRef = RepositoryId("sync-test").getBranchReference("branchA")
+        val version1 = syncProjectToServer("initial", port, branchRef)
+
+        // ... and while one client is disconnected, the other client continues making changes.
+        val version2 = syncProjectToServer("change1", port, branchRef, version1.getContentHash())
+        val expectedSnapshot = lastSnapshotBeforeSync
+
+        println("initial two versions pushed")
+
+        val branchRef2 = branchRef.repositoryId.getBranchReference("branchB")
+        val client = ModelClientV2.builder().url("http://localhost:$port").build()
+        client.push(branchRef2, version1, null)
+
+        // The second client then reconnects ...
+        openTestProject("initial")
+        val snap1 = project.captureSnapshot()
+        val binding = IModelSyncService.getInstance(mpsProject)
+            .addServer("http://localhost:$port")
+            .bind(branchRef2, null)
+        binding.flush()
+        assertEquals(snap1, project.captureSnapshot())
+
+        client.push(branchRef2, version2, version1)
+        binding.flush()
 
         // ... applies all the pending changes and is again in sync with the other client
         assertEquals(expectedSnapshot, project.captureSnapshot())

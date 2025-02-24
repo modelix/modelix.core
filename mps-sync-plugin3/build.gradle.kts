@@ -15,12 +15,16 @@ intellij {
 }
 
 dependencies {
-    implementation(project(":bulk-model-sync-lib"))
-    implementation(project(":bulk-model-sync-mps"))
-    implementation(project(":mps-model-adapters"))
-    implementation(project(":model-client"))
-    implementation(libs.modelix.mpsApi)
-    implementation(libs.kotlin.logging)
+    val excludeMPSLibraries: (ModuleDependency).() -> Unit = {
+        exclude("org.slf4j", "slf4j-api")
+    }
+
+    implementation(project(":bulk-model-sync-lib"), excludeMPSLibraries)
+    implementation(project(":bulk-model-sync-mps"), excludeMPSLibraries)
+    implementation(project(":mps-model-adapters"), excludeMPSLibraries)
+    implementation(project(":model-client"), excludeMPSLibraries)
+    implementation(libs.modelix.mpsApi, excludeMPSLibraries)
+    implementation(libs.kotlin.logging, excludeMPSLibraries)
 
     compileOnly(
         fileTree(mpsHomeDir).matching {

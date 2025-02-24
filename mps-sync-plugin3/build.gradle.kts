@@ -72,12 +72,12 @@ tasks {
         }
     }
 
-    val mpsPluginDir = project.findProperty("mps.plugins.dir")?.toString()?.let { file(it) }
+    val mpsPluginDir = project.findProperty("mps$mpsPlatformVersion.plugins.dir")?.toString()?.let { file(it) }
     if (mpsPluginDir != null && mpsPluginDir.isDirectory) {
         create<Sync>("installMpsPlugin") {
             dependsOn(prepareSandbox)
-            from(project.layout.buildDirectory.dir("idea-sandbox/plugins/mps-model-adapters-plugin"))
-            into(mpsPluginDir.resolve("mps-model-adapters-plugin"))
+            from(project.layout.buildDirectory.dir("idea-sandbox/plugins/mps-sync-plugin3"))
+            into(mpsPluginDir.resolve("mps-sync-plugin3"))
         }
     }
 }

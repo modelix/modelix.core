@@ -41,7 +41,7 @@ class ModelSynchronizer(
     val nodeAssociation: INodeAssociation,
     val sourceMask: IModelMask = UnfilteredModelMask(),
     val targetMask: IModelMask = UnfilteredModelMask(),
-    private val exceptionHandler: ((Throwable) -> Unit)? = { LOG.warn(it) { "Ignoring exception during synchronization" } },
+    private val exceptionHandler: ((Throwable) -> Unit)? = {},
 ) {
     private val nodesToRemove: MutableSet<IWritableNode> = HashSet()
     private val pendingReferences: MutableList<PendingReference> = ArrayList()
@@ -51,7 +51,9 @@ class ModelSynchronizer(
         return if (exceptionHandler == null) {
             Result.success(body())
         } else {
-            runCatching(body).onFailure { exceptionHandler(it) }
+            runCatching(body)
+                .onFailure { LOG.error(it) { "Ignoring exception during synchronization" } }
+                .onFailure { exceptionHandler(it) }
         }
     }
 
@@ -156,93 +158,106 @@ class ModelSynchronizer(
             sourceParent.getAllChildren().map { it.getContainmentLink() }.distinct(),
             targetParent.getAllChildren().map { it.getContainmentLink() }.distinct(),
         ) { role ->
-            val sourceNodes = getFilteredSourceChildren(sourceParent, role)
-            val targetNodes = getFilteredTargetChildren(targetParent, role)
-            val unusedTargetChildren = targetNodes.toMutableSet()
-
-            val allExpectedNodesDoNotExist by lazy {
-                sourceNodes.all { sourceNode ->
-                    nodeAssociation.resolveTarget(sourceNode) == null
-                }
+            runSafe {
+                syncChildrenInRole(sourceParent, role, targetParent, forceSyncDescendants)
             }
-
-            // optimization that uses the bulk operation .syncNewChildren
-            if (targetNodes.isEmpty() && allExpectedNodesDoNotExist) {
-                targetParent.syncNewChildren(role, -1, sourceNodes.map { NewNodeSpec(it) })
-                    .zip(sourceNodes)
-                    .forEach { (newChild, sourceChild) ->
-                        nodeAssociation.associate(sourceChild, newChild)
-                        synchronizeNode(sourceChild, newChild, forceSyncDescendants)
-                    }
-                return@iterateMergedRoles
-            }
-
-            // optimization for when there is no change in the child list
-            // size check first to avoid querying the original ID
-            if (sourceNodes.size == targetNodes.size && sourceNodes.zip(targetNodes).all { nodeAssociation.matches(it.first, it.second) }) {
-                sourceNodes.zip(targetNodes).forEach { synchronizeNode(it.first, it.second, forceSyncDescendants) }
-                return@iterateMergedRoles
-            }
-
-            val isOrdered = targetParent.isOrdered(role)
-
-            sourceNodes.forEachIndexed { indexInImport, expected ->
-                val existingChildren = getFilteredTargetChildren(targetParent, role)
-                val expectedId = checkNotNull(expected.originalIdOrFallback()) { "Specified node '$expected' has no id" }
-                // newIndex is the index on which to import the expected child.
-                // It might be -1 if the child does not exist and should be added at the end.
-                val newIndex = if (isOrdered) {
-                    indexInImport
-                } else {
-                    // The `existingChildren` are only searched once for the expected element before changing.
-                    // Therefore, indexing existing children will not be more efficient than iterating once.
-                    // (For the moment, this is fine because as we expect unordered children to be the exception,
-                    // Reusable indexing would be possible if we switch from
-                    // a depth-first import to a breadth-first import.)
-                    existingChildren
-                        .indexOfFirst { existingChild -> existingChild.getOriginalOrCurrentReference() == expectedId }
-                }
-                // existingChildren.getOrNull handles `-1` as needed by returning `null`.
-                val nodeAtIndex = existingChildren.getOrNull(newIndex)
-                val expectedConcept = expected.getConceptReference()
-                var isNewChild = false
-                val childNode = if (nodeAtIndex?.getOriginalOrCurrentReference() != expectedId) {
-                    val existingNode = nodeAssociation.resolveTarget(expected)
-                    if (existingNode == null) {
-                        val newChild = targetParent.syncNewChild(role, newIndex, NewNodeSpec(expected))
-                        nodeAssociation.associate(expected, newChild)
-                        isNewChild = true
-                        newChild
-                    } else {
-                        // The existing child node is not only moved to a new index,
-                        // it is potentially moved to a new parent and role.
-                        if (existingNode.getParent() != targetParent ||
-                            !existingNode.getContainmentLink().matches(role) ||
-                            targetParent.isOrdered(role)
-                        ) {
-                            targetParent.moveChild(role, newIndex, existingNode)
-                        }
-                        // If the old parent and old role synchronized before the move operation,
-                        // the existing child node would have been marked as to be deleted.
-                        // Now that it is used, it should not be deleted.
-                        unusedTargetChildren.remove(existingNode)
-                        nodesToRemove.remove(existingNode)
-                        existingNode
-                    }
-                } else {
-                    unusedTargetChildren.remove(nodeAtIndex)
-                    nodesToRemove.remove(nodeAtIndex)
-                    nodeAtIndex
-                }
-
-                synchronizeNode(expected, childNode, forceSyncDescendants || isNewChild)
-            }
-
-            // Do not use existingNodes, but call node.getChildren(role) because
-            // the recursive synchronization in the meantime already removed some nodes from node.getChildren(role).
-            nodesToRemove += getFilteredTargetChildren(targetParent, role).intersect(unusedTargetChildren)
         }
         // tryFixCrossRoleOrder(sourceParent, targetParent)
+    }
+
+    private fun syncChildrenInRole(
+        sourceParent: IReadableNode,
+        role: IChildLinkReference,
+        targetParent: IWritableNode,
+        forceSyncDescendants: Boolean,
+    ) {
+        val sourceNodes = getFilteredSourceChildren(sourceParent, role)
+        val targetNodes = getFilteredTargetChildren(targetParent, role)
+        val unusedTargetChildren = targetNodes.toMutableSet()
+
+        val allExpectedNodesDoNotExist by lazy {
+            sourceNodes.all { sourceNode ->
+                nodeAssociation.resolveTarget(sourceNode) == null
+            }
+        }
+
+        // optimization that uses the bulk operation .syncNewChildren
+        if (targetNodes.isEmpty() && allExpectedNodesDoNotExist) {
+            targetParent.syncNewChildren(role, -1, sourceNodes.map { NewNodeSpec(it) })
+                .zip(sourceNodes)
+                .forEach { (newChild, sourceChild) ->
+                    nodeAssociation.associate(sourceChild, newChild)
+                    synchronizeNode(sourceChild, newChild, forceSyncDescendants)
+                }
+            return
+        }
+
+        // optimization for when there is no change in the child list
+        // size check first to avoid querying the original ID
+        if (sourceNodes.size == targetNodes.size && sourceNodes.zip(targetNodes)
+                .all { nodeAssociation.matches(it.first, it.second) }
+        ) {
+            sourceNodes.zip(targetNodes).forEach { synchronizeNode(it.first, it.second, forceSyncDescendants) }
+            return
+        }
+
+        val isOrdered = targetParent.isOrdered(role)
+
+        sourceNodes.forEachIndexed { indexInImport, expected ->
+            val existingChildren = getFilteredTargetChildren(targetParent, role)
+            val expectedId = checkNotNull(expected.originalIdOrFallback()) { "Specified node '$expected' has no id" }
+            // newIndex is the index on which to import the expected child.
+            // It might be -1 if the child does not exist and should be added at the end.
+            val newIndex = if (isOrdered) {
+                indexInImport
+            } else {
+                // The `existingChildren` are only searched once for the expected element before changing.
+                // Therefore, indexing existing children will not be more efficient than iterating once.
+                // (For the moment, this is fine because as we expect unordered children to be the exception,
+                // Reusable indexing would be possible if we switch from
+                // a depth-first import to a breadth-first import.)
+                existingChildren
+                    .indexOfFirst { existingChild -> existingChild.getOriginalOrCurrentReference() == expectedId }
+            }
+            // existingChildren.getOrNull handles `-1` as needed by returning `null`.
+            val nodeAtIndex = existingChildren.getOrNull(newIndex)
+            val expectedConcept = expected.getConceptReference()
+            var isNewChild = false
+            val childNode = if (nodeAtIndex?.getOriginalOrCurrentReference() != expectedId) {
+                val existingNode = nodeAssociation.resolveTarget(expected)
+                if (existingNode == null) {
+                    val newChild = targetParent.syncNewChild(role, newIndex, NewNodeSpec(expected))
+                    nodeAssociation.associate(expected, newChild)
+                    isNewChild = true
+                    newChild
+                } else {
+                    // The existing child node is not only moved to a new index,
+                    // it is potentially moved to a new parent and role.
+                    if (existingNode.getParent() != targetParent ||
+                        !existingNode.getContainmentLink().matches(role) ||
+                        targetParent.isOrdered(role)
+                    ) {
+                        targetParent.moveChild(role, newIndex, existingNode)
+                    }
+                    // If the old parent and old role synchronized before the move operation,
+                    // the existing child node would have been marked as to be deleted.
+                    // Now that it is used, it should not be deleted.
+                    unusedTargetChildren.remove(existingNode)
+                    nodesToRemove.remove(existingNode)
+                    existingNode
+                }
+            } else {
+                unusedTargetChildren.remove(nodeAtIndex)
+                nodesToRemove.remove(nodeAtIndex)
+                nodeAtIndex
+            }
+
+            synchronizeNode(expected, childNode, forceSyncDescendants || isNewChild)
+        }
+
+        // Do not use existingNodes, but call node.getChildren(role) because
+        // the recursive synchronization in the meantime already removed some nodes from node.getChildren(role).
+        nodesToRemove += getFilteredTargetChildren(targetParent, role).intersect(unusedTargetChildren)
     }
 
     /**

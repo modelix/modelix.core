@@ -213,7 +213,7 @@ class BindingWorker(
                     nodeAssociation = nodeAssociation,
                     sourceMask = MPSProjectSyncMask(mpsProjects, false),
                     targetMask = MPSProjectSyncMask(mpsProjects, true),
-                    exceptionHandler = { getMPSListener().synchronizationErrorHappened() },
+                    onException = { getMPSListener().synchronizationErrorHappened() },
                 ).synchronize()
             }
         }

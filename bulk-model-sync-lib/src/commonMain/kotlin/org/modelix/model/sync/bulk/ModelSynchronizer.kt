@@ -41,19 +41,19 @@ class ModelSynchronizer(
     val nodeAssociation: INodeAssociation,
     val sourceMask: IModelMask = UnfilteredModelMask(),
     val targetMask: IModelMask = UnfilteredModelMask(),
-    private val exceptionHandler: ((Throwable) -> Unit)? = {},
+    private val onException: ((Throwable) -> Unit)? = {},
 ) {
     private val nodesToRemove: MutableSet<IWritableNode> = HashSet()
     private val pendingReferences: MutableList<PendingReference> = ArrayList()
     private val logger = KotlinLogging.logger {}
 
     private fun <R> runSafe(body: () -> R): Result<R> {
-        return if (exceptionHandler == null) {
+        return if (onException == null) {
             Result.success(body())
         } else {
             runCatching(body)
                 .onFailure { LOG.error(it) { "Ignoring exception during synchronization" } }
-                .onFailure { exceptionHandler(it) }
+                .onFailure { onException(it) }
         }
     }
 
@@ -81,7 +81,7 @@ class ModelSynchronizer(
 
     private fun synchronizeNode(sourceNode: IReadableNode, targetNode: IWritableNode, forceSyncDescendants: Boolean) {
         nodeAssociation.associate(sourceNode, targetNode)
-        if (filter.needsSynchronization(sourceNode)) {
+        if (forceSyncDescendants || filter.needsSynchronization(sourceNode)) {
             logger.trace { "Synchronizing changed node. sourceNode = $sourceNode" }
             runSafe { synchronizeProperties(sourceNode, targetNode) }
             runSafe { synchronizeReferences(sourceNode, targetNode) }
@@ -187,7 +187,7 @@ class ModelSynchronizer(
                 .zip(sourceNodes)
                 .forEach { (newChild, sourceChild) ->
                     nodeAssociation.associate(sourceChild, newChild)
-                    synchronizeNode(sourceChild, newChild, forceSyncDescendants)
+                    synchronizeNode(sourceChild, newChild, forceSyncDescendants = true)
                 }
             return
         }

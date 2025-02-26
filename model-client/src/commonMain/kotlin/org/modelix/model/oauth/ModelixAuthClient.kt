@@ -32,7 +32,12 @@ expect object ModelixAuthClient {
      *                          and to refresh it when the old one expired.
      *                          Returning `null` cause the client to attempt the request without a token.
      */
-    fun installAuth(config: HttpClientConfig<*>, baseUrl: String, authTokenProvider: (suspend () -> String?)? = null)
+    fun installAuth(
+        config: HttpClientConfig<*>,
+        baseUrl: String,
+        authTokenProvider: (suspend () -> String?)? = null,
+        authRequestBrowser: ((url: String) -> Unit)? = null,
+    )
 }
 
 internal fun installAuthWithAuthTokenProvider(config: HttpClientConfig<*>, authTokenProvider: suspend () -> String?) {

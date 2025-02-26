@@ -4,7 +4,6 @@ import com.google.api.client.auth.oauth2.AuthorizationCodeFlow
 import com.google.api.client.auth.oauth2.BearerToken
 import com.google.api.client.auth.oauth2.ClientParametersAuthentication
 import com.google.api.client.auth.oauth2.Credential
-import com.google.api.client.auth.oauth2.StoredCredential
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver
 import com.google.api.client.http.GenericUrl
@@ -30,9 +29,20 @@ actual object ModelixAuthClient {
     private var DATA_STORE_FACTORY: DataStoreFactory = MemoryDataStoreFactory()
     private val HTTP_TRANSPORT: HttpTransport = NetHttpTransport()
     private val JSON_FACTORY: JsonFactory = GsonFactory()
+    private val userId = "modelix-user"
+    private var lastCredentials: Credential? = null
 
-    fun getTokens(): StoredCredential? {
-        return StoredCredential.getDefaultDataStore(DATA_STORE_FACTORY).get("user")
+    fun getTokens(): Credential? {
+        return lastCredentials?.refreshIfExpired()?.takeIf { !it.isExpired() }
+    }
+
+    private fun Credential.isExpired() = (expiresInSeconds ?: 0) < 60
+
+    private fun Credential.refreshIfExpired(): Credential {
+        if (isExpired()) {
+            refreshToken()
+        }
+        return this
     }
 
     suspend fun authorize(modelixServerUrl: String): Credential {
@@ -67,6 +77,10 @@ actual object ModelixAuthClient {
                 .enablePKCE()
                 .setDataStoreFactory(DATA_STORE_FACTORY)
                 .build()
+
+            val existingTokens = flow.loadCredential(userId)?.refreshIfExpired()
+            if (existingTokens?.isExpired() == false) return@withContext existingTokens
+
             val receiver: LocalServerReceiver = LocalServerReceiver.Builder().setHost("127.0.0.1").build()
             val browser = authRequestBrowser?.let {
                 object : AuthorizationCodeInstalledApp.Browser {
@@ -75,7 +89,11 @@ actual object ModelixAuthClient {
                     }
                 }
             } ?: AuthorizationCodeInstalledApp.DefaultBrowser()
-            AuthorizationCodeInstalledApp(flow, receiver, browser).authorize("user")
+            val tokens = AuthorizationCodeInstalledApp(flow, receiver, browser).authorize(userId)
+            if ((tokens.expiresInSeconds ?: 0) < 60) {
+                tokens.refreshToken()
+            }
+            tokens
         }
     }
 
@@ -136,8 +154,6 @@ actual object ModelixAuthClient {
                             authorize(url)
                         }
 
-                        println("Access token: ${tokens.accessToken}")
-                        println("Refresh token: ${tokens.refreshToken}")
                         BearerTokens(tokens.accessToken, tokens.refreshToken)
                     }
                 }

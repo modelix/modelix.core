@@ -188,7 +188,7 @@ class ModelixAuthorizationConfig : IModelixAuthorizationConfig {
      *
      * The fake token is generated so that we always have a username that can be used in the server logic.
      */
-    fun shouldGenerateFakeTokens() = generateFakeTokens ?: !jwtUtil.canVerifyTokens()
+    fun shouldGenerateFakeTokens() = generateFakeTokens ?: !permissionCheckingEnabled()
 
     /**
      * Whether permission checking should be enabled based on the configuration values provided.

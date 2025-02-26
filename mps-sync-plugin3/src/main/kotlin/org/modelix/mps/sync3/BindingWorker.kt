@@ -2,6 +2,7 @@ package org.modelix.mps.sync3
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
+import io.ktor.utils.io.CancellationException
 import jetbrains.mps.project.MPSProject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -91,7 +92,17 @@ class BindingWorker(
 
     private suspend fun CoroutineScope.syncJob() {
         // initial sync
-        initialSync()
+        while (isActive()) {
+            try {
+                initialSync()
+                break
+            } catch (ex: CancellationException) {
+                break
+            } catch (ex: Exception) {
+                LOG.error(ex) { "Initial synchronization failed" }
+                delay(5_000)
+            }
+        }
 
         // continuous sync to MPS
         launchLoop {

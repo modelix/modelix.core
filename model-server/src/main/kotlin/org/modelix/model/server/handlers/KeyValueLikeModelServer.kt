@@ -72,23 +72,23 @@ class KeyValueLikeModelServer(
 
     private fun Application.modelServerModule() {
         routing {
-            requiresLogin {
-                get<Paths.getHeaders> {
-                    val headers = call.request.headers.entries().flatMap { e -> e.value.map { e.key to it } }
-                    call.respondHtmlTemplate(PageWithMenuBar("headers", ".")) {
-                        bodyContent {
-                            h1 { +"HTTP Headers" }
-                            div {
-                                headers.forEach {
-                                    span {
-                                        +"${it.first}: ${it.second}"
-                                    }
-                                    br { }
+            get<Paths.getHeaders> {
+                val headers = call.request.headers.entries().flatMap { e -> e.value.map { e.key to it } }
+                call.respondHtmlTemplate(PageWithMenuBar("headers", ".")) {
+                    bodyContent {
+                        h1 { +"HTTP Headers" }
+                        div {
+                            headers.forEach {
+                                span {
+                                    +"${it.first}: ${it.second}"
                                 }
+                                br { }
                             }
                         }
                     }
                 }
+            }
+            requiresLogin {
                 get<Paths.getKeyGet> {
                     val key = call.parameters["key"]!!
                     checkKeyPermission(key, EPermissionType.READ)

@@ -160,7 +160,7 @@ class AuthorizationTest {
         """
 
         // Reuse on container across all tests. The configuration and state does not change in between.
-        private val keycloak: GenericContainer<*> = GenericContainer("quay.io/keycloak/keycloak:25.0.4")
+        private val keycloak: GenericContainer<*> = GenericContainer("quay.io/keycloak/keycloak:${System.getenv("KEYCLOAK_VERSION")}")
             .withEnv("KEYCLOAK_ADMIN", ADMIN_USER)
             .withEnv("KEYCLOAK_ADMIN_PASSWORD", ADMIN_PASSWORD)
             .withExposedPorts(8080)

@@ -23,10 +23,13 @@ import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.StoreManager
 import org.testcontainers.containers.GenericContainer
+import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.images.builder.Transferable
 import java.net.URI
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.toJavaDuration
 
 private const val ADMIN_USER = "admin"
 private const val ADMIN_PASSWORD = "admin"
@@ -165,6 +168,7 @@ class AuthorizationTest {
             .withEnv("KEYCLOAK_ADMIN_PASSWORD", ADMIN_PASSWORD)
             .withExposedPorts(8080)
             .withCopyToContainer(Transferable.of(REALM_CONFIGURATION), "/opt/keycloak/data/import/realm.json")
+            .waitingFor(Wait.forListeningPort().withStartupTimeout(3.minutes.toJavaDuration()))
             .withCommand("start-dev", "--import-realm", "--verbose")
 
         private var keycloakBaseUrl: String

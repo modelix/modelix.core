@@ -50,7 +50,7 @@ class AppLevelModelSyncService() : Disposable {
 
         suspend fun getClient(): IModelClientV2 {
             return client.getValue() ?: client.updateValue {
-                it ?: ModelClientV2.Companion.builder().url(url).build().also { it.init() }
+                it ?: ModelClientV2.builder().url(url).enableOAuth().build().also { it.init() }
             }
         }
 

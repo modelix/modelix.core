@@ -493,6 +493,7 @@ abstract class ModelClientV2Builder {
     protected var baseUrl: String = "https://localhost/model/v2"
     protected var authTokenProvider: (suspend () -> String?)? = null
     protected var authRequestBrowser: ((url: String) -> Unit)? = null
+    protected var oauthEnabled = false
     protected var userId: String? = null
     protected var connectTimeout: Duration = 1.seconds
     protected var requestTimeout: Duration = 30.seconds
@@ -523,9 +524,13 @@ abstract class ModelClientV2Builder {
         return this
     }
 
-    fun authRequestBrowser(browser: ((url: String) -> Unit)?): ModelClientV2Builder {
+    fun authRequestBrowser(browser: ((url: String) -> Unit)?) = also {
         authRequestBrowser = browser
-        return this
+        enableOAuth()
+    }
+
+    fun enableOAuth() = also {
+        oauthEnabled = true
     }
 
     fun userId(userId: String?): ModelClientV2Builder {
@@ -580,7 +585,9 @@ abstract class ModelClientV2Builder {
                     }
                 }
             }
-            ModelixAuthClient.installAuth(this, baseUrl, authTokenProvider, authRequestBrowser)
+            if (authTokenProvider != null || oauthEnabled) {
+                ModelixAuthClient.installAuth(this, baseUrl, authTokenProvider, authRequestBrowser)
+            }
         }
     }
 

@@ -114,7 +114,7 @@
   "users": [
     {
       "username": "user1",
-      "email": "authorization-test-user@authorization-test-user.com",
+      "email": "user1@example.com",
       "firstName": "authorization-test-user",
       "lastName": "authorization-test-user",
       "enabled": true,

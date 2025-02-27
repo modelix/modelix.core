@@ -14,6 +14,11 @@ services:
     networks:
       - app-network
 
+  redis:
+    image: redis:latest
+    networks:
+      - app-network
+
   oauth2-proxy:
     image: quay.io/oauth2-proxy/oauth2-proxy:latest
     environment:
@@ -35,12 +40,19 @@ services:
       OAUTH2_PROXY_COOKIE_SECURE: "false"
       OAUTH2_PROXY_SET_AUTHORIZATION_HEADER: "true"
       OAUTH2_PROXY_PASS_ACCESS_TOKEN: "true"
+      OAUTH2_PROXY_PASS_AUTHORIZATION_HEADER: "true"
       OAUTH2_PROXY_HTTP_ADDRESS: "0.0.0.0:4180"
       OAUTH2_PROXY_SCOPE: "sync openid"
+      OAUTH2_PROXY_SESSION_STORE_TYPE: redis
+      OAUTH2_PROXY_REDIS_CONNECTION_URL: redis://redis/
+      OAUTH2_PROXY_COOKIE_REFRESH: 60s
+      OAUTH2_PROXY_API_ROUTES: \/v2\/.*
     ports:
       - "4180:4180"
     depends_on:
       - keycloak
+      - model-server
+      - redis
     networks:
       - app-network
 

@@ -1,7 +1,9 @@
 package org.modelix.model.mpsadapters
 
+import jetbrains.mps.project.ModuleId
 import jetbrains.mps.project.ProjectBase
 import org.jetbrains.mps.openapi.module.SRepository
+import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -30,7 +32,17 @@ data class MPSProjectAsNode(val project: ProjectBase) : MPSGenericNodeAdapter<Pr
                 }
 
                 override fun addNew(element: ProjectBase, index: Int, sourceNode: SpecWithResolvedConcept): IWritableNode {
-                    return TODO()
+                    val targetModule = requireNotNull(sourceNode.getNode().getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference())) {
+                        "Reference to module isn't set"
+                    }
+                    val targetName = targetModule.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())
+                    val targetId = requireNotNull(targetModule.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())) {
+                        "Module ID isn't set: $targetModule"
+                    }.let { ModuleId.fromString(it) }
+                    val ref = PersistenceFacade.getInstance().createModuleReference(targetId, targetName)
+                    val resolvedModule = checkNotNull(ref.resolve(element.repository)) { "Module not found: $ref" }
+                    element.addModule(resolvedModule)
+                    return MPSProjectModuleAsNode(element, resolvedModule)
                 }
 
                 override fun remove(element: ProjectBase, child: IWritableNode) {

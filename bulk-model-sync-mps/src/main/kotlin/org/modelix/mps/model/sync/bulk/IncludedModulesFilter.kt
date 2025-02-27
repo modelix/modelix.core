@@ -14,6 +14,7 @@ import org.modelix.model.sync.bulk.isModuleIncluded
  * Note: This is currently not meant to be used standalone.
  * It should be used with other filters in a [CompositeFilter].
  */
+@Deprecated("Use IModelMask")
 class IncludedModulesFilter(
     val includedModules: Collection<String>,
     val includedModulePrefixes: Collection<String>,

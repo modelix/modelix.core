@@ -16,9 +16,9 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.modelix.model.api.ITree
 import org.modelix.model.lazy.RepositoryId
-import org.testcontainers.containers.ComposeContainer
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.Network
+import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.images.builder.ImageFromDockerfile
 import org.testcontainers.utility.MountableFile
 import java.nio.file.Path
@@ -27,6 +27,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.ExperimentalTime
+import kotlin.time.toJavaDuration
 
 private val modelServerDir = Path.of("../model-server").absolute().normalize()
 private val modelServerImage = ImageFromDockerfile()
@@ -80,7 +81,7 @@ class OAuthTest {
 
     private fun runWithModelServer(body: suspend (url: String) -> Unit) = runBlocking {
         @OptIn(ExperimentalTime::class)
-        withTimeout(3.minutes) {
+        withTimeout(5.minutes) {
             val network = Network.newNetwork()
 
             val keycloak: GenericContainer<*> = GenericContainer("quay.io/keycloak/keycloak:${System.getenv("KEYCLOAK_VERSION")}")
@@ -93,6 +94,7 @@ class OAuthTest {
                 .withCopyFileToContainer(MountableFile.forHostPath("../model-server-with-auth/realm.json"), "/opt/keycloak/data/import/realm.json")
                 .withNetwork(network)
                 .withNetworkAliases("keycloak")
+                .waitingFor(Wait.forListeningPort().withStartupTimeout(3.minutes.toJavaDuration()))
                 .withLogConsumer { println("[KEYCLOAK] " + it.utf8StringWithoutLineEnding) }
             keycloak.start()
             val keycloakPort = keycloak.getMappedPort(8080)
@@ -106,6 +108,7 @@ class OAuthTest {
                 .withEnv("MODELIX_JWK_URI_KEYCLOAK", "http://keycloak:8080/realms/modelix/protocol/openid-connect/certs")
                 .withNetwork(network)
                 .withNetworkAliases("model-server")
+                .waitingFor(Wait.forListeningPort().withStartupTimeout(3.minutes.toJavaDuration()))
                 .withLogConsumer { println("[MODEL] " + it.utf8StringWithoutLineEnding) }
             modelServer.start()
 
@@ -117,10 +120,4 @@ class OAuthTest {
             }
         }
     }
-}
-
-private fun ComposeContainer.getServiceUrl(name: String, port: Int): String {
-    val h = getServiceHost(name, port)
-    val p = getServicePort(name, port)
-    return "http://$h:$p/"
 }

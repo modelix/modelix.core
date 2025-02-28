@@ -12,6 +12,7 @@ plugins {
     alias(libs.plugins.detekt)
     alias(libs.plugins.kotlinx.kover)
     alias(libs.plugins.npm.publish) apply false
+    alias(libs.plugins.intellij) apply false
 }
 
 group = "org.modelix"

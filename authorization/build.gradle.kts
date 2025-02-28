@@ -10,6 +10,7 @@ java {
 }
 
 dependencies {
+    implementation(project(":kotlin-utils"))
     implementation(libs.kotlin.serialization.json)
     implementation(libs.kotlin.serialization.yaml)
     implementation(libs.guava)

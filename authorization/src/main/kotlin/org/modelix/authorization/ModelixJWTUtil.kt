@@ -1,6 +1,7 @@
 package org.modelix.authorization
 
 import com.auth0.jwt.interfaces.DecodedJWT
+import com.auth0.jwt.interfaces.Payload
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.JWSObject
@@ -244,12 +245,12 @@ class ModelixJWTUtil {
         return PermissionEvaluator(schema).also { loadGrantedPermissions(token, it) }
     }
 
-    fun extractPermissions(token: DecodedJWT): List<String>? {
+    fun extractPermissions(token: Payload): List<String>? {
         return token.claims[ModelixTokenConstants.PERMISSIONS]?.asList(String::class.java)
     }
 
     @Synchronized
-    fun loadGrantedPermissions(token: DecodedJWT, evaluator: PermissionEvaluator) {
+    fun loadGrantedPermissions(token: Payload, evaluator: PermissionEvaluator) {
         val permissions = extractPermissions(token)
 
         // There is a difference between access tokens and identity tokens.
@@ -271,11 +272,11 @@ class ModelixJWTUtil {
         }
     }
 
-    fun extractUserId(jwt: DecodedJWT): String? {
+    fun extractUserId(jwt: Payload): String? {
         return Companion.extractUserId(jwt)
     }
 
-    fun extractUserRoles(jwt: DecodedJWT): List<String> {
+    fun extractUserRoles(jwt: Payload): List<String> {
         val keycloakRoles = jwt
             .getClaim(KeycloakTokenConstants.REALM_ACCESS)?.asMap()
             ?.get(KeycloakTokenConstants.REALM_ACCESS_ROLES)
@@ -372,7 +373,7 @@ class ModelixJWTUtil {
     }
 
     companion object {
-        fun extractUserId(jwt: DecodedJWT): String? {
+        fun extractUserId(jwt: Payload): String? {
             return jwt.getClaim(KeycloakTokenConstants.EMAIL)?.asString()
                 ?: jwt.getClaim(KeycloakTokenConstants.PREFERRED_USERNAME)?.asString()
         }

@@ -66,6 +66,12 @@ kotlin {
                 implementation(libs.ktor.serialization.json)
             }
         }
+        jvmTest {
+            dependencies {
+                implementation(libs.logback.classic)
+                implementation(libs.testcontainers)
+            }
+        }
         val jsMain by getting {
             languageSettings.optIn("kotlin.js.ExperimentalJsExport")
             dependencies {
@@ -155,4 +161,9 @@ npmPublish {
 
 tasks.withType(NodeExecTask::class) {
     dependsOn(":setupNodeEverywhere")
+}
+
+tasks.jvmTest {
+    dependsOn(":model-server:assemble")
+    environment("KEYCLOAK_VERSION", libs.versions.keycloak.get())
 }

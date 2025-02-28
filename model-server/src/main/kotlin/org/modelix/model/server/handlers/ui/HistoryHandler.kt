@@ -257,37 +257,49 @@ class HistoryHandler(private val repositoriesManager: IRepositoriesManager) {
                 }
             }
             tbody {
-                var version: CLVersion? = headVersion
-                while (version != null) {
-                    if (rowIndex >= skip) {
-                        createTableRow(repositoryAndBranch.repositoryId, version, latestVersion)
+                val versions = sequence<CLVersion> {
+                    var version: CLVersion? = headVersion
+                    while (version != null) {
+                        yield(version)
                         if (version.isMerge()) {
                             for (v in LinearHistory(version.baseVersion!!.getContentHash()).load(version.getMergedVersion1()!!, version.getMergedVersion2()!!)) {
-                                createTableRow(repositoryAndBranch.repositoryId, v, latestVersion)
-                                rowIndex++
-                                if (rowIndex >= skip + limit) {
-                                    break
-                                }
+                                yield(v)
+                                v.baseVersion?.let { yield(it) } // to include merge commits
                             }
                         }
+                        version = version.baseVersion
                     }
-                    rowIndex++
-                    if (rowIndex >= skip + limit) {
-                        break
+                }.distinct().drop(skip).take(limit)
+
+                var previous: CLVersion? = null
+                for (version in versions) {
+                    if (previous != null) {
+                        createTableRow(repositoryAndBranch.repositoryId, previous, version, latestVersion)
                     }
-                    version = version.baseVersion
+                    previous = version
+                }
+                if (previous != null) {
+                    createTableRow(repositoryAndBranch.repositoryId, previous, null, latestVersion)
                 }
             }
         }
         buttons()
     }
 
-    private fun TBODY.createTableRow(repositoryId: RepositoryId, version: CLVersion, latestVersion: CLVersion) {
+    private fun TBODY.createTableRow(repositoryId: RepositoryId, version: CLVersion, nextVersion: CLVersion?, latestVersion: CLVersion) {
         tr {
             td {
                 +version.id.toString(16)
                 br { }
                 span(classes = "hash") { +version.getContentHash() }
+
+                if (nextVersion != null && version.baseVersion?.getContentHash() != nextVersion.getContentHash()) {
+                    br { }
+                    span(classes = "hash") {
+                        +"parent: "
+                        +version.baseVersion?.getContentHash().orEmpty()
+                    }
+                }
             }
             td {
                 style = "white-space: nowrap;"
@@ -299,7 +311,7 @@ class HistoryHandler(private val repositoriesManager: IRepositoriesManager) {
             }
             td {
                 if (version.isMerge()) {
-                    +"merge ${version.getMergedVersion1()!!.id} + ${version.getMergedVersion2()!!.id} (base ${version.baseVersion})"
+                    +"merge ${version.getMergedVersion1()} + ${version.getMergedVersion2()} (base ${version.baseVersion})"
                 } else {
                     if (version.operationsInlined()) {
                         ul {

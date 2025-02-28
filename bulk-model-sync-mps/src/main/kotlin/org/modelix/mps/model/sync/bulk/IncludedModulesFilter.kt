@@ -14,12 +14,13 @@ import org.modelix.model.sync.bulk.isModuleIncluded
  * Note: This is currently not meant to be used standalone.
  * It should be used with other filters in a [CompositeFilter].
  */
+@Deprecated("Use IModelMask")
 class IncludedModulesFilter(
     val includedModules: Collection<String>,
     val includedModulePrefixes: Collection<String>,
     val excludedModules: Collection<String> = emptySet(),
     val excludedModulesPrefixes: Collection<String> = emptySet(),
-) : ModelSynchronizer.IFilter {
+) : ModelSynchronizer.IIncrementalUpdateInformation {
     override fun needsDescentIntoSubtree(subtreeRoot: IReadableNode): Boolean {
         if (subtreeRoot.getConceptReference() != BuiltinLanguages.MPSRepositoryConcepts.Module.getReference()) return true
         val moduleName = subtreeRoot.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference()) ?: return true

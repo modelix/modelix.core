@@ -7,20 +7,23 @@ import com.auth0.jwt.interfaces.DecodedJWT
 import com.auth0.jwt.interfaces.JWTVerifier
 import com.google.common.cache.CacheBuilder
 import com.nimbusds.jose.jwk.JWKSet
+import com.nimbusds.jwt.proc.BadJWTException
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.auth.HttpAuthHeader
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.BaseRouteScopedPlugin
-import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.application.plugin
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.AuthenticationContext
 import io.ktor.server.auth.AuthenticationProvider
+import io.ktor.server.auth.UnauthorizedResponse
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.jwt.jwt
+import io.ktor.server.auth.parseAuthorizationHeader
 import io.ktor.server.auth.principal
 import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import io.ktor.server.plugins.statuspages.StatusPages
@@ -40,6 +43,7 @@ import org.modelix.authorization.permissions.PermissionParts
 import org.modelix.authorization.permissions.SchemaInstance
 import org.modelix.authorization.permissions.recordKnownRoles
 import org.modelix.authorization.permissions.recordKnownUser
+import org.modelix.kotlin.utils.filterNotNullValues
 import java.util.concurrent.TimeUnit
 
 private val LOG = mu.KotlinLogging.logger { }
@@ -79,29 +83,41 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
             } else {
                 // "Authorization: Bearer ..." header is provided in the header by OAuth proxy
                 jwt(MODELIX_JWT_AUTH) {
+                    realm = "modelix"
+                    authHeader { call ->
+                        call.request.parseAuthorizationHeader()
+                            ?: call.request.headers["X-Forwarded-Access-Token"]
+                                ?.let { HttpAuthHeader.Single("Bearer", it) }
+                    }
+
                     verifier(config.getVerifier())
-                    challenge { _, _ ->
-                        call.respond(status = HttpStatusCode.Unauthorized, "No or invalid JWT token provided")
+                    challenge { scheme, realm ->
+                        call.respond(
+                            UnauthorizedResponse(
+                                HttpAuthHeader.Parameterized(
+                                    scheme,
+                                    mapOf(
+                                        HttpAuthHeader.Parameters.Realm to realm,
+                                        "error" to "invalid_token",
+                                        "authorization_uri" to System.getenv("MODELIX_AUTHORIZATION_URI")?.takeIf { it.isNotBlank() },
+                                        "token_uri" to System.getenv("MODELIX_TOKEN_URI")?.takeIf { it.isNotBlank() },
+                                    ).filterNotNullValues(),
+                                ),
+                            ),
+                        )
+
                         // login and token generation is done by OAuth proxy. Only validation is required here.
                     }
-                    validate {
-                        try {
+                    validate { credential ->
+                        val jwt = credential.payload
+                        application.launch(Dispatchers.IO) {
                             val authPlugin = application.plugin(ModelixAuthorization)
                             val authConfig = authPlugin.config
-                            jwtFromHeaders()
-                                ?.let { authConfig.nullIfInvalid(it) }
-                                ?.also { jwt ->
-                                    application.launch(Dispatchers.IO) {
-                                        val accessControlPersistence = authConfig.accessControlPersistence
-                                        accessControlPersistence.recordKnownUser(authConfig.jwtUtil.extractUserId(jwt))
-                                        accessControlPersistence.recordKnownRoles(authConfig.jwtUtil.extractUserRoles(jwt))
-                                    }
-                                }
-                                ?.let(::AccessTokenPrincipal)
-                        } catch (e: Exception) {
-                            LOG.warn(e) { "Failed to read JWT token" }
-                            null
+                            val accessControlPersistence = authConfig.accessControlPersistence
+                            accessControlPersistence.recordKnownUser(authConfig.jwtUtil.extractUserId(jwt))
+                            accessControlPersistence.recordKnownRoles(authConfig.jwtUtil.extractUserRoles(jwt))
                         }
+                        AccessTokenPrincipal(jwt)
                     }
                 }
             }
@@ -135,7 +151,7 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                 (installedIntoRoute ?: this).apply {
                     if (config.debugEndpointsEnabled) {
                         get("/user") {
-                            val jwt = call.principal<AccessTokenPrincipal>()?.jwt ?: call.jwtFromHeaders()
+                            val jwt = call.jwtFromHeaders()
                             if (jwt == null) {
                                 call.respondText("No JWT token available")
                             } else {
@@ -226,9 +242,13 @@ internal fun ModelixAuthorizationConfig.getVerifier() = object : JWTVerifier {
     }
 
     override fun verify(jwt: DecodedJWT?): DecodedJWT {
-        if (jwt == null) {
-            throw JWTVerificationException("No JWT provided.")
+        try {
+            if (jwt == null) {
+                throw JWTVerificationException("No JWT provided.")
+            }
+            return this@getVerifier.nullIfInvalid(jwt)?.also { println("Valid token: ${jwt.token}") } ?: throw JWTVerificationException("JWT invalid.")
+        } catch (ex: BadJWTException) {
+            throw JWTVerificationException("Invalid token: ${jwt?.token}", ex)
         }
-        return this@getVerifier.nullIfInvalid(jwt) ?: throw JWTVerificationException("JWT invalid.")
     }
 }

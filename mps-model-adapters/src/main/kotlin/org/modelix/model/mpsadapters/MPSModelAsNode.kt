@@ -1,12 +1,16 @@
 package org.modelix.model.mpsadapters
 
 import jetbrains.mps.extapi.model.SModelDescriptorStub
+import jetbrains.mps.extapi.persistence.FileDataSource
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.smodel.ModelImports
 import jetbrains.mps.smodel.adapter.ids.SLanguageId
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import jetbrains.mps.smodel.adapter.structure.language.SLanguageAdapterById
+import org.jetbrains.mps.openapi.model.EditableSModel
 import org.jetbrains.mps.openapi.model.SModel
+import org.jetbrains.mps.openapi.model.SModelId
+import org.jetbrains.mps.openapi.model.SModelName
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
@@ -25,12 +29,23 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
         private val propertyAccessors = listOf<Pair<IPropertyReference, IPropertyAccessor<SModel>>>(
             BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference() to object : IPropertyAccessor<SModel> {
                 override fun read(element: SModel): String? = element.name.value
+                override fun write(element: SModel, value: String?) {
+                    require(value != null) { "Model name cannot be null" }
+                    element.rename(value)
+                }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Model.id.toReference() to object : IPropertyAccessor<SModel> {
                 override fun read(element: SModel): String? = element.modelId.toString()
+                override fun write(element: SModel, value: String?) {
+                    throw UnsupportedOperationException("read only")
+                }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Model.stereotype.toReference() to object : IPropertyAccessor<SModel> {
                 override fun read(element: SModel): String? = element.name.stereotype
+                override fun write(element: SModel, value: String?) {
+                    val oldName = element.name
+                    element.rename(SModelName(oldName.longName, value).value)
+                }
             },
         )
         private val referenceAccessors = listOf<Pair<IReferenceLinkReference, IReferenceAccessor<SModel>>>()
@@ -42,11 +57,16 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
                     index: Int,
                     sourceNode: SpecWithResolvedConcept,
                 ): IWritableNode {
-                    val nodeId = sourceNode.spec?.preferredNodeReference
-                        ?.let { MPSNodeReference.tryConvert(it) }?.ref?.nodeId
-                    return element.createNode(sourceNode.concept, nodeId)
-                        .also { element.addRootNode(it) }
+                    return element.createNode(sourceNode.concept, sourceNode.spec?.getPreferredSNodeId())
+                        .also {
+                            it.copyNameFrom(sourceNode.spec)
+                            element.addRootNode(it)
+                        }
                         .let { MPSWritableNode(it) }
+                }
+
+                override fun remove(element: SModel, child: IWritableNode) {
+                    element.removeRootNode((child as MPSWritableNode).node)
                 }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports.toReference() to object : IChildAccessor<SModel> {
@@ -75,9 +95,21 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
                         val moduleName = importedModule.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference()) ?: ""
                         PersistenceFacade.getInstance().createModuleReference(ModuleId.fromString(moduleId), moduleName)
                     }
-                    val modelRef = PersistenceFacade.getInstance().createModelReference(moduleRef, PersistenceFacade.getInstance().createModelId(modelId), modelName)
+                    val smodelId: SModelId = PersistenceFacade.getInstance().createModelId(modelId)
+                    val modelRef = PersistenceFacade.getInstance().createModelReference(
+                        moduleRef.takeIf { !smodelId.isGloballyUnique },
+                        smodelId,
+                        modelName,
+                    )
                     ModelImports(element).addModelImport(modelRef)
                     return MPSModelImportAsNode(modelRef, element)
+                }
+
+                override fun remove(
+                    element: SModel,
+                    child: IWritableNode,
+                ) {
+                    ModelImports(element).removeModelImport((child as MPSModelImportAsNode).importedModel)
                 }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Model.usedLanguages.toReference() to object : IChildAccessor<SModel> {
@@ -129,9 +161,16 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
 
                 override fun remove(element: SModel, child: IWritableNode) {
                     check(element is SModelDescriptorStub) { "Model '$element' is not a SModelDescriptor." }
-                    require(child is MPSSingleLanguageDependencyAsNode) { "Node $child to be removed is not a single language dependency." }
-                    val languageToRemove = MetaAdapterFactory.getLanguage(child.moduleReference.sourceModuleReference)
-                    element.deleteLanguageId(languageToRemove)
+                    when (child) {
+                        is MPSSingleLanguageDependencyAsNode -> {
+                            val languageToRemove = MetaAdapterFactory.getLanguage(child.moduleReference.sourceModuleReference)
+                            element.deleteLanguageId(languageToRemove)
+                        }
+                        is MPSDevKitDependencyAsNode -> {
+                            element.deleteDevKit(child.moduleReference)
+                        }
+                        else -> throw UnsupportedOperationException("Unsupported type: ${child.getConceptReference()}")
+                    }
                 }
             },
         )
@@ -191,4 +230,8 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
         }
         return null
     }
+}
+
+private fun SModel.rename(newName: String) {
+    (this as EditableSModel).rename(newName, this.source is FileDataSource)
 }

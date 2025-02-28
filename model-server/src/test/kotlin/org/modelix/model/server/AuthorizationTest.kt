@@ -23,10 +23,13 @@ import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.StoreManager
 import org.testcontainers.containers.GenericContainer
+import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.images.builder.Transferable
 import java.net.URI
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.toJavaDuration
 
 private const val ADMIN_USER = "admin"
 private const val ADMIN_PASSWORD = "admin"
@@ -160,11 +163,12 @@ class AuthorizationTest {
         """
 
         // Reuse on container across all tests. The configuration and state does not change in between.
-        private val keycloak: GenericContainer<*> = GenericContainer("quay.io/keycloak/keycloak:25.0.4")
+        private val keycloak: GenericContainer<*> = GenericContainer("quay.io/keycloak/keycloak:${System.getenv("KEYCLOAK_VERSION")}")
             .withEnv("KEYCLOAK_ADMIN", ADMIN_USER)
             .withEnv("KEYCLOAK_ADMIN_PASSWORD", ADMIN_PASSWORD)
             .withExposedPorts(8080)
             .withCopyToContainer(Transferable.of(REALM_CONFIGURATION), "/opt/keycloak/data/import/realm.json")
+            .waitingFor(Wait.forListeningPort().withStartupTimeout(3.minutes.toJavaDuration()))
             .withCommand("start-dev", "--import-realm", "--verbose")
 
         private var keycloakBaseUrl: String

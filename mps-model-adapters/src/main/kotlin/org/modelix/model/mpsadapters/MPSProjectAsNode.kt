@@ -1,7 +1,9 @@
 package org.modelix.model.mpsadapters
 
+import jetbrains.mps.project.ModuleId
 import jetbrains.mps.project.ProjectBase
 import org.jetbrains.mps.openapi.module.SRepository
+import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -17,6 +19,10 @@ data class MPSProjectAsNode(val project: ProjectBase) : MPSGenericNodeAdapter<Pr
                 override fun read(element: ProjectBase): String? {
                     return element.name
                 }
+
+                override fun write(element: ProjectBase, value: String?) {
+                    throw UnsupportedOperationException("read only")
+                }
             },
         )
         private val childAccessors: List<Pair<IChildLinkReference, IChildAccessor<ProjectBase>>> = listOf(
@@ -24,10 +30,36 @@ data class MPSProjectAsNode(val project: ProjectBase) : MPSGenericNodeAdapter<Pr
                 override fun read(element: ProjectBase): List<IWritableNode> {
                     return element.projectModules.map { MPSProjectModuleAsNode(element, it) }
                 }
+
+                override fun addNew(element: ProjectBase, index: Int, sourceNode: SpecWithResolvedConcept): IWritableNode {
+                    val targetModule = requireNotNull(sourceNode.getNode().getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference())) {
+                        "Reference to module isn't set"
+                    }
+                    val targetName = targetModule.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())
+                    val targetId = requireNotNull(targetModule.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())) {
+                        "Module ID isn't set: $targetModule"
+                    }.let { ModuleId.fromString(it) }
+                    val ref = PersistenceFacade.getInstance().createModuleReference(targetId, targetName)
+                    val resolvedModule = checkNotNull(ref.resolve(element.repository)) { "Module not found: $ref" }
+                    element.addModule(resolvedModule)
+                    return MPSProjectModuleAsNode(element, resolvedModule)
+                }
+
+                override fun remove(element: ProjectBase, child: IWritableNode) {
+                    element.removeModule((child as MPSProjectModuleAsNode).module)
+                }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Project.modules.toReference() to object : IChildAccessor<ProjectBase> {
                 override fun read(element: ProjectBase): List<IWritableNode> {
                     return return emptyList() // modules child link is deprecated
+                }
+
+                override fun addNew(element: ProjectBase, index: Int, sourceNode: SpecWithResolvedConcept): IWritableNode {
+                    throw UnsupportedOperationException("read only")
+                }
+
+                override fun remove(element: ProjectBase, child: IWritableNode) {
+                    throw UnsupportedOperationException("read only")
                 }
             },
         )

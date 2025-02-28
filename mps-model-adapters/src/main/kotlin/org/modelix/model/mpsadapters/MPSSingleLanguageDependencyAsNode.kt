@@ -55,10 +55,18 @@ data class MPSSingleLanguageDependencyAsNode(
                 override fun read(element: MPSSingleLanguageDependencyAsNode): String? {
                     return element.moduleReference.qualifiedName
                 }
+
+                override fun write(element: MPSSingleLanguageDependencyAsNode, value: String?) {
+                    throw UnsupportedOperationException("read only")
+                }
             },
             BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.uuid.toReference() to object : IPropertyAccessor<MPSSingleLanguageDependencyAsNode> {
                 override fun read(element: MPSSingleLanguageDependencyAsNode): String? {
                     return element.moduleReference.sourceModuleReference.moduleId.toString()
+                }
+
+                override fun write(element: MPSSingleLanguageDependencyAsNode, value: String?) {
+                    throw UnsupportedOperationException("read only")
                 }
             },
 

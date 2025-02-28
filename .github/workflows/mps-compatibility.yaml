@@ -15,6 +15,7 @@ jobs:
     timeout-minutes: 60
 
     strategy:
+      fail-fast: false
       matrix:
         version:
           - "2020.3"
@@ -47,4 +48,13 @@ jobs:
           :metamodel-export:build
           :mps-model-adapters:build
           :mps-model-adapters-plugin:build
+          :mps-sync-plugin3:build
           -Pmps.version.major=${{ matrix.version }}
+      - name: Archive test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-report-${{ matrix.version }}
+          path: |
+            */build/test-results
+            */build/reports

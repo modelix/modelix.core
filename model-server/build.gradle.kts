@@ -113,13 +113,8 @@ val fatJarArtifact = artifacts.add("archives", fatJarFile) {
     builtBy("shadowJar")
 }
 
-task("copyLibs", Sync::class) {
-    into(project.layout.buildDirectory.dir("dependency-libs"))
-    from(configurations.runtimeClasspath)
-}
-
 tasks.named("assemble") {
-    finalizedBy("copyLibs")
+    dependsOn("installDist")
 }
 
 application {

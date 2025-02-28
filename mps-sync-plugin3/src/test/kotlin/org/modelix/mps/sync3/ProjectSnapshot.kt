@@ -100,6 +100,9 @@ private fun normalizeXmlFile(content: String): String {
             "dev-kit" -> {
                 node.childElements("exported-language").sortByAttribute("name")
             }
+            "dependencies" -> {
+                node.childElements("dependency").sortBy { it.textContent }
+            }
             "sourceRoot" -> {
                 val location = node.getAttribute("location")
                 val path = node.getAttribute("path")

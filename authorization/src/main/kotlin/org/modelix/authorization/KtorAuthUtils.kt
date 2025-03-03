@@ -7,13 +7,12 @@ import io.ktor.http.auth.AuthScheme
 import io.ktor.http.auth.HttpAuthHeader
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.application.plugin
 import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.parseAuthorizationHeader
 import io.ktor.server.auth.principal
-import io.ktor.server.request.header
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingContext
 import org.modelix.authorization.permissions.PermissionEvaluator
@@ -41,7 +40,7 @@ fun RoutingContext.checkPermission(permissionParts: PermissionParts) {
 
 fun ApplicationCall.checkPermission(permissionToCheck: PermissionParts) {
     if (!hasPermission(permissionToCheck)) {
-        val principal = principal<AccessTokenPrincipal>()
+        val principal = principal<JWTPrincipal>()
         throw NoPermissionException(principal, null, null, "${principal?.getUserName()} has no permission '$permissionToCheck'")
     }
 }
@@ -76,19 +75,14 @@ fun ApplicationCall.getBearerToken(): String? {
     return tokenString
 }
 
-fun ApplicationCall.jwtFromHeaders(): DecodedJWT? {
-    // OAuth proxy passes the ID token as the bearer token, but we need the access token.
-    return (request.header("X-Forwarded-Access-Token") ?: getBearerToken())?.let { JWT.decode(it) }
-}
-
-fun ApplicationCall.jwt() = principal<AccessTokenPrincipal>()?.jwt ?: jwtFromHeaders()
+fun ApplicationCall.getUnverifiedJwt(): DecodedJWT? = getBearerToken()?.let { JWT.decode(it) }
 
 fun RoutingContext.getUserName(): String? {
     return call.getUserName()
 }
 
 fun ApplicationCall.getUserName(): String? {
-    return principal<AccessTokenPrincipal>()?.getUserName()
+    return principal<JWTPrincipal>()?.getUserName()
 }
 
 @Deprecated("Use ModelixAuthorizationConfig.nullIfInvalid")

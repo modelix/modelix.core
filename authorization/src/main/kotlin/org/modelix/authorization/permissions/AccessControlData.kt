@@ -1,13 +1,11 @@
 package org.modelix.authorization.permissions
 
-import com.auth0.jwt.interfaces.DecodedJWT
+import com.auth0.jwt.interfaces.Payload
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.modelix.authorization.IAccessControlDataProvider
 import org.modelix.authorization.ModelixJWTUtil
 import java.io.File
-import kotlin.collections.get
 
 @Serializable
 data class AccessControlData(
@@ -30,7 +28,7 @@ data class AccessControlData(
      * Identity tokens, unlike access tokens, don't have any permissions encoded in the token.
      * The resource server then is expected to know which permissions the user has.
      */
-    fun load(jwt: DecodedJWT, permissionEvaluator: PermissionEvaluator) {
+    fun load(jwt: Payload, permissionEvaluator: PermissionEvaluator) {
         val util = ModelixJWTUtil()
         if (util.isAccessToken(jwt)) {
             // The purpose of an access token is to restrict the permissions to the ones specified in the token.

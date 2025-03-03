@@ -1,6 +1,5 @@
 package org.modelix.authorization
 
-import com.auth0.jwt.interfaces.DecodedJWT
 import com.auth0.jwt.interfaces.Payload
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
@@ -37,6 +36,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.contentType
+import io.ktor.server.auth.jwt.JWTPrincipal
 import kotlinx.coroutines.runBlocking
 import org.modelix.authorization.permissions.PermissionEvaluator
 import org.modelix.authorization.permissions.Schema
@@ -229,19 +229,19 @@ class ModelixJWTUtil {
         return JWSObject(header, payload).also { it.sign(signer) }.serialize()
     }
 
-    fun isAccessToken(token: DecodedJWT): Boolean {
+    fun isAccessToken(token: Payload): Boolean {
         return extractPermissions(token) != null
     }
 
-    fun isIdentityToken(token: DecodedJWT): Boolean {
+    fun isIdentityToken(token: Payload): Boolean {
         return !isAccessToken(token)
     }
 
-    fun createPermissionEvaluator(token: DecodedJWT, schema: Schema): PermissionEvaluator {
+    fun createPermissionEvaluator(token: Payload, schema: Schema): PermissionEvaluator {
         return createPermissionEvaluator(token, SchemaInstance(schema))
     }
 
-    fun createPermissionEvaluator(token: DecodedJWT, schema: SchemaInstance): PermissionEvaluator {
+    fun createPermissionEvaluator(token: Payload, schema: SchemaInstance): PermissionEvaluator {
         return PermissionEvaluator(schema).also { loadGrantedPermissions(token, it) }
     }
 
@@ -388,3 +388,5 @@ class KtorResourceRetriever(val client: HttpClient) : AbstractRestrictedResource
         }
     }
 }
+
+fun JWTPrincipal.getUserName(): String? = ModelixJWTUtil.extractUserId(payload)

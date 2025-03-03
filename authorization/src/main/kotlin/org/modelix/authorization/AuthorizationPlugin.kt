@@ -27,6 +27,7 @@ import io.ktor.server.auth.parseAuthorizationHeader
 import io.ktor.server.auth.principal
 import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import io.ktor.server.plugins.statuspages.StatusPages
+import io.ktor.server.request.uri
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
@@ -141,6 +142,7 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                     call.respondText(text = "403: ${cause.message}", status = HttpStatusCode.Forbidden)
                 }
                 exception<Throwable> { call, cause ->
+                    LOG.error(cause) { call.request.uri }
                     call.respondText(text = "500: $cause", status = HttpStatusCode.InternalServerError)
                 }
             }
@@ -246,7 +248,7 @@ internal fun ModelixAuthorizationConfig.getVerifier() = object : JWTVerifier {
             if (jwt == null) {
                 throw JWTVerificationException("No JWT provided.")
             }
-            return this@getVerifier.nullIfInvalid(jwt)?.also { println("Valid token: ${jwt.token}") } ?: throw JWTVerificationException("JWT invalid.")
+            return this@getVerifier.nullIfInvalid(jwt) ?: throw JWTVerificationException("JWT invalid.")
         } catch (ex: BadJWTException) {
             throw JWTVerificationException("Invalid token: ${jwt?.token}", ex)
         }

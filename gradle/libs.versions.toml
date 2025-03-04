@@ -95,8 +95,8 @@ kotest-assertions-ktor = { group = "io.kotest.extensions", name = "kotest-assert
 
 guava = { group = "com.google.guava", name = "guava", version = "33.4.0-jre" }
 org-json = { group = "org.json", name = "json", version = "20250107" }
-google-oauth-client = { group = "com.google.oauth-client", name = "google-oauth-client", version = "1.38.0" }
-google-oauth-clientjetty = { group = "com.google.oauth-client", name = "google-oauth-client-jetty", version = "1.38.0" }
+google-oauth-client = { group = "com.google.oauth-client", name = "google-oauth-client", version = "1.39.0" }
+google-oauth-clientjetty = { group = "com.google.oauth-client", name = "google-oauth-client-jetty", version = "1.39.0" }
 
 modelix-incremental = { group = "org.modelix", name = "incremental", version = "0.3.4" }
 kotlinpoet = { group = "com.squareup", name = "kotlinpoet", version = "2.1.0" }

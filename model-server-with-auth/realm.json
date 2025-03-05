@@ -29,7 +29,7 @@
       ]
     },
     {
-      "clientId": "modelix-sync-plugin",
+      "clientId": "external-mps",
       "enabled": true,
       "directAccessGrantsEnabled": false,
       "publicClient": true,

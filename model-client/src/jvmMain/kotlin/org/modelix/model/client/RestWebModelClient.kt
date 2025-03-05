@@ -166,13 +166,7 @@ class RestWebModelClient @JvmOverloads constructor(
                 refreshTokens {
                     val tp = authTokenProvider
                     if (tp == null) {
-                        var url = baseUrl
-                        if (!url.endsWith("/")) url += "/"
-                        // TODO MODELIX-975 See ModelixOAuthClient.installAuthWithPKCEFlow
-                        if (url.endsWith("/model/")) url = url.substringBeforeLast("/model/")
-                        connectionStatus = ConnectionStatus.WAITING_FOR_TOKEN
-                        val tokens = ModelixAuthClient.authorize(url)
-                        BearerTokens(tokens.accessToken, tokens.refreshToken)
+                        null
                     } else {
                         val providedToken = tp()
                         if (providedToken != null && providedToken != this.oldTokens?.accessToken) {

@@ -53,7 +53,13 @@ import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.computeDelta
+import org.modelix.model.oauth.IAuthConfig
+import org.modelix.model.oauth.IAuthRequestHandler
 import org.modelix.model.oauth.ModelixAuthClient
+import org.modelix.model.oauth.OAuthConfig
+import org.modelix.model.oauth.OAuthConfigBuilder
+import org.modelix.model.oauth.TokenProvider
+import org.modelix.model.oauth.TokenProviderAuthConfig
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.MapBasedStore
@@ -491,9 +497,7 @@ class ModelClientV2(
 abstract class ModelClientV2Builder {
     protected var httpClient: HttpClient? = null
     protected var baseUrl: String = "https://localhost/model/v2"
-    protected var authTokenProvider: (suspend () -> String?)? = null
-    protected var authRequestBrowser: ((url: String) -> Unit)? = null
-    protected var oauthEnabled = false
+    protected var authConfig: IAuthConfig? = null
     protected var userId: String? = null
     protected var connectTimeout: Duration = 1.seconds
     protected var requestTimeout: Duration = 30.seconds
@@ -519,18 +523,70 @@ abstract class ModelClientV2Builder {
         return this
     }
 
-    fun authToken(provider: suspend () -> String?): ModelClientV2Builder {
-        authTokenProvider = provider
-        return this
+    fun authToken(provider: TokenProvider) = also {
+        authConfig = TokenProviderAuthConfig(provider)
     }
 
-    fun authRequestBrowser(browser: ((url: String) -> Unit)?) = also {
-        authRequestBrowser = browser
-        enableOAuth()
+    fun authConfig(config: IAuthConfig) = also {
+        this.authConfig = config
     }
 
-    fun enableOAuth() = also {
-        oauthEnabled = true
+    fun authRequestBrowser(browser: ((url: String) -> Unit)?) = oauth {
+        authRequestHandler(
+            if (browser == null) {
+                null
+            } else {
+                object : IAuthRequestHandler {
+                    override fun browse(url: String) {
+                        browser(url)
+                    }
+                }
+            },
+        )
+    }
+
+    fun enableOAuth() = oauth { }
+
+    fun oauth(body: OAuthConfigBuilder.() -> Unit) = also {
+        authConfig = OAuthConfigBuilder(authConfig as? OAuthConfig ?: legacyOAuthConfig()).apply(body).build()
+    }
+
+    /**
+     * Handles the case when the model-server runs inside a kubernetes cluster with keycloak but doesn't provide the
+     * OAuth endpoints in the 401 response headers.
+     */
+    private fun legacyOAuthConfig(): OAuthConfig? {
+        // When the model server is reachable at https://example.org/model/,
+        // Keycloak is expected to be reachable under https://example.org/realms/
+        // See https://github.com/modelix/modelix.kubernetes/blob/60f7db6533c3fb82209b1a6abb6836923f585672/proxy/nginx.conf#L14
+        // and https://github.com/modelix/modelix.kubernetes/blob/60f7db6533c3fb82209b1a6abb6836923f585672/proxy/nginx.conf#L41
+
+        val normalizedModelUrl = buildUrl {
+            takeFrom(baseUrl)
+            if (pathSegments.lastOrNull() == "") pathSegments = pathSegments.dropLast(1)
+            if (pathSegments.lastOrNull() == "v2") pathSegments = pathSegments.dropLast(1)
+        }
+        if (normalizedModelUrl.segments.lastOrNull() != "model") return null
+
+        val oidcUrl = buildUrl {
+            takeFrom(normalizedModelUrl)
+            if (pathSegments.lastOrNull() == "model") pathSegments = pathSegments.dropLast(1)
+            appendPathSegments("realms", "modelix", "protocol", "openid-connect")
+        }
+        val authUrl = buildUrl {
+            takeFrom(oidcUrl)
+            appendPathSegments("auth")
+        }
+        val tokenUrl = buildUrl {
+            takeFrom(oidcUrl)
+            appendPathSegments("token")
+        }
+        return OAuthConfig(
+            clientId = "external-mps",
+            scopes = setOf("email"),
+            authorizationUrl = authUrl.toString(),
+            tokenUrl = tokenUrl.toString(),
+        )
     }
 
     fun userId(userId: String?): ModelClientV2Builder {
@@ -585,9 +641,7 @@ abstract class ModelClientV2Builder {
                     }
                 }
             }
-            if (authTokenProvider != null || oauthEnabled) {
-                ModelixAuthClient.installAuth(this, baseUrl, authTokenProvider, authRequestBrowser)
-            }
+            authConfig?.let { ModelixAuthClient.installAuth(this, it) }
         }
     }
 

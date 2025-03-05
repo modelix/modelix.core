@@ -7,12 +7,11 @@ actual object ModelixAuthClient {
     @Suppress("UndocumentedPublicFunction") // already documented in the expected declaration
     actual fun installAuth(
         config: HttpClientConfig<*>,
-        baseUrl: String,
-        authTokenProvider: (suspend () -> String?)?,
-        authRequestBrowser: ((url: String) -> Unit)?,
+        authConfig: IAuthConfig,
     ) {
-        if (authTokenProvider != null) {
-            installAuthWithAuthTokenProvider(config, authTokenProvider)
+        when (authConfig) {
+            is OAuthConfig -> UnsupportedOperationException("JS client doesn't support OAuth2")
+            is TokenProviderAuthConfig -> installAuthWithAuthTokenProvider(config, authConfig.provider)
         }
     }
 }

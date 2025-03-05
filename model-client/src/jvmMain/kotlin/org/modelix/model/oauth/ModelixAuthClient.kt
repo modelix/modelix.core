@@ -16,11 +16,18 @@ import com.google.api.client.util.store.MemoryDataStoreFactory
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BearerTokens
+import io.ktor.client.plugins.auth.providers.RefreshTokensParams
 import io.ktor.client.plugins.auth.providers.bearer
+import io.ktor.client.statement.request
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMessage
+import io.ktor.http.URLProtocol
+import io.ktor.http.Url
 import io.ktor.http.auth.HttpAuthHeader
 import io.ktor.http.auth.parseAuthorizationHeader
+import io.ktor.http.buildUrl
+import io.ktor.http.isSecure
+import io.ktor.http.takeFrom
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -45,35 +52,18 @@ actual object ModelixAuthClient {
         return this
     }
 
-    suspend fun authorize(modelixServerUrl: String): Credential {
-        val oidcUrl = modelixServerUrl.trimEnd('/') + "/realms/modelix/protocol/openid-connect"
-        return authorize(
-            clientId = "external-mps",
-            scopes = listOf("email"),
-            authUrl = "$oidcUrl/auth",
-            tokenUrl = "$oidcUrl/token",
-            authRequestBrowser = null,
-        )
-    }
-
-    suspend fun authorize(
-        clientId: String,
-        scopes: List<String>,
-        authUrl: String,
-        tokenUrl: String,
-        authRequestBrowser: ((url: String) -> Unit)?,
-    ): Credential {
+    suspend fun authorize(config: OAuthConfig): Credential {
         return withContext(Dispatchers.IO) {
             val flow = AuthorizationCodeFlow.Builder(
                 BearerToken.authorizationHeaderAccessMethod(),
                 HTTP_TRANSPORT,
                 JSON_FACTORY,
-                GenericUrl(tokenUrl),
-                ClientParametersAuthentication(clientId, null),
-                clientId,
-                authUrl,
+                GenericUrl(config.tokenUrl),
+                ClientParametersAuthentication(config.clientId, config.clientSecret),
+                config.clientId,
+                config.authorizationUrl,
             )
-                .setScopes(scopes)
+                .setScopes(config.scopes)
                 .enablePKCE()
                 .setDataStoreFactory(DATA_STORE_FACTORY)
                 .build()
@@ -82,10 +72,10 @@ actual object ModelixAuthClient {
             if (existingTokens?.isExpired() == false) return@withContext existingTokens
 
             val receiver: LocalServerReceiver = LocalServerReceiver.Builder().setHost("127.0.0.1").build()
-            val browser = authRequestBrowser?.let {
+            val browser = config.authRequestHandler?.let {
                 object : AuthorizationCodeInstalledApp.Browser {
                     override fun browse(url: String) {
-                        it(url)
+                        it.browse(url)
                     }
                 }
             } ?: AuthorizationCodeInstalledApp.DefaultBrowser()
@@ -100,21 +90,17 @@ actual object ModelixAuthClient {
     @Suppress("UndocumentedPublicFunction") // already documented in the expected declaration
     actual fun installAuth(
         config: HttpClientConfig<*>,
-        baseUrl: String,
-        authTokenProvider: (suspend () -> String?)?,
-        authRequestBrowser: ((url: String) -> Unit)?,
+        authConfig: IAuthConfig,
     ) {
-        if (authTokenProvider != null) {
-            installAuthWithAuthTokenProvider(config, authTokenProvider)
-        } else {
-            installAuthWithPKCEFlow(config, baseUrl, authRequestBrowser)
+        when (authConfig) {
+            is TokenProviderAuthConfig -> installAuthWithAuthTokenProvider(config, authConfig.provider)
+            is OAuthConfig -> installAuthWithPKCEFlow(config, authConfig)
         }
     }
 
     private fun installAuthWithPKCEFlow(
         config: HttpClientConfig<*>,
-        baseUrl: String,
-        authRequestBrowser: ((url: String) -> Unit)?,
+        authConfig: OAuthConfig,
     ) {
         config.apply {
             install(Auth) {
@@ -127,32 +113,16 @@ actual object ModelixAuthClient {
                             // The model server tells the client where to get a token
 
                             if (wwwAuthenticate.parameter("error") != "invalid_token") return@let null
-                            val authUrl = wwwAuthenticate.parameter("authorization_uri") ?: return@let null
-                            val tokenUrl = wwwAuthenticate.parameter("token_uri") ?: return@let null
+                            val updatedConfig = authConfig.copy(
+                                authorizationUrl = authConfig.authorizationUrl ?: useSameProtocol(wwwAuthenticate.parameter("authorization_uri") ?: return@let null),
+                                tokenUrl = authConfig.tokenUrl ?: useSameProtocol(wwwAuthenticate.parameter("token_uri") ?: return@let null),
+                            )
                             val realm = wwwAuthenticate.parameter("realm")
                             val description = wwwAuthenticate.parameter("error_description")
-                            authorize(
-                                clientId = "modelix-sync-plugin",
-                                scopes = listOf("sync"),
-                                authUrl = authUrl,
-                                tokenUrl = tokenUrl,
-                                authRequestBrowser = authRequestBrowser,
-                            )
-                        } ?: let {
-                            // legacy keycloak specific URLs
+                            authorize(updatedConfig)
+                        } ?: authorize(authConfig)
 
-                            var url = baseUrl
-                            if (!url.endsWith("/")) url += "/"
-                            // XXX Detecting and removing "/model/" is workaround for when the model server
-                            // is used in Modelix workspaces and reachable behind the sub path /model/".
-                            // When the model server is reachable at https://example.org/model/,
-                            // Keycloak is expected to be reachable under https://example.org/realms/
-                            // See https://github.com/modelix/modelix.kubernetes/blob/60f7db6533c3fb82209b1a6abb6836923f585672/proxy/nginx.conf#L14
-                            // and https://github.com/modelix/modelix.kubernetes/blob/60f7db6533c3fb82209b1a6abb6836923f585672/proxy/nginx.conf#L41
-                            // TODO MODELIX-975 remove this check and replace with configuration.
-                            if (url.endsWith("/model/")) url = url.substringBeforeLast("/model/")
-                            authorize(url)
-                        }
+                        println("Access Token: " + tokens.accessToken)
 
                         BearerTokens(tokens.accessToken, tokens.refreshToken)
                     }
@@ -164,5 +134,22 @@ actual object ModelixAuthClient {
     fun HttpMessage.parseWWWAuthenticate(): HttpAuthHeader.Parameterized? {
         return headers[HttpHeaders.WWWAuthenticate]
             ?.let { parseAuthorizationHeader(it) as? HttpAuthHeader.Parameterized }
+    }
+
+    /**
+     * In test environments https often doesn't have a valid certificate.
+     * Use http for authorization, if the original request itself uses http.
+     */
+    private fun RefreshTokensParams.useSameProtocol(url: String): String {
+        val needSecureProtocol = response.request.url.protocol.isSecure()
+        if (Url(url).protocol.isSecure() == needSecureProtocol) return url
+        return buildUrl {
+            takeFrom(url)
+            protocol = when (protocol) {
+                URLProtocol.HTTPS, URLProtocol.HTTP -> if (needSecureProtocol) URLProtocol.HTTPS else URLProtocol.HTTP
+                URLProtocol.WSS, URLProtocol.WS -> if (needSecureProtocol) URLProtocol.WSS else URLProtocol.WS
+                else -> protocol
+            }
+        }.toString()
     }
 }

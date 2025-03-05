@@ -20,6 +20,9 @@ import org.modelix.model.IVersion
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.oauth.IAuthConfig
+import org.modelix.model.oauth.OAuthConfigBuilder
+import org.modelix.model.oauth.TokenProvider
 import kotlin.time.ExperimentalTime
 
 private val LOG = mu.KotlinLogging.logger { }
@@ -211,6 +214,14 @@ class ModelSyncService(val project: Project) :
     )
 
     inner class Connection(val connection: AppLevelModelSyncService.ServerConnection) : IServerConnection {
+        override fun setTokenProvider(tokenProvider: TokenProvider) {
+            connection.setAuthorizationConfig(IAuthConfig.fromTokenProvider(tokenProvider))
+        }
+
+        override fun configureOAuth(body: OAuthConfigBuilder.() -> Unit) {
+            connection.configureOAuth(body)
+        }
+
         override fun getUrl(): String {
             return connection.url
         }

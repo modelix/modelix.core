@@ -167,19 +167,30 @@ class ModelSynchronizer(
         targetParent: IWritableNode,
         forceSyncDescendants: Boolean,
     ) {
-        val sourceNodes = getFilteredSourceChildren(sourceParent, role)
-        val targetNodes = getFilteredTargetChildren(targetParent, role)
-        val associatedChildren = associateChildren(sourceNodes, targetNodes)
+        var forceSyncDescendants = forceSyncDescendants
+        var associatedChildren = associateChildren(sourceParent, targetParent, role)
 
         // optimization that uses the bulk operation .syncNewChildren
         if (associatedChildren.all { it.hasToCreate() }) {
-            targetParent.syncNewChildren(role, -1, sourceNodes.map { NewNodeSpec(it) })
-                .zip(sourceNodes)
-                .forEach { (newChild, sourceChild) ->
-                    nodeAssociation.associate(sourceChild, newChild)
-                    synchronizeNode(sourceChild, newChild, forceSyncDescendants = true)
-                }
-            return
+            forceSyncDescendants = true
+            runSafe {
+                val newChildren = targetParent
+                    .syncNewChildren(role, -1, associatedChildren.map { NewNodeSpec(it.getSource()) })
+                newChildren
+                    .zip(associatedChildren.map { it.getSource() })
+                    .forEach { (newChild, sourceChild) ->
+                        runSafe {
+                            nodeAssociation.associate(sourceChild, newChild)
+                            synchronizeNode(sourceChild, newChild, forceSyncDescendants = forceSyncDescendants)
+                        }
+                    }
+            }.onSuccess {
+                return
+            }.onFailure {
+                // Some children may have been created successfully.
+                associatedChildren = associateChildren(sourceParent, targetParent, role)
+                // Continue with trying to sync the remaining ones individually.
+            }
         }
 
         val isOrdered = targetParent.isOrdered(role)
@@ -187,34 +198,55 @@ class ModelSynchronizer(
         // optimization for when there is no change in the child list
         if (associatedChildren.all { it.alreadyMatches(isOrdered) }) {
             associatedChildren.forEach {
-                synchronizeNode(it.getSource(), it.getTarget(), forceSyncDescendants)
+                runSafe {
+                    synchronizeNode(it.getSource(), it.getTarget(), forceSyncDescendants)
+                }
             }
             return
         }
 
-        val unusedTargetChildren: List<IWritableNode> = associatedChildren
-            .asSequence()
-            .filter { it.hasToDelete() }
-            .map { it.getTarget() }
-            .toList()
-
-        nodesToRemove += unusedTargetChildren
-
+        // Recursive sync is done at the end because they may apply move operations that mutate
+        // the currently iterated list.
         val recursiveSyncTasks = ArrayList<RecursiveSyncTask>()
 
-        for (associatedChild in associatedChildren) {
-            if (associatedChild.hasToCreate()) {
-                val newChild = targetParent.syncNewChild(role, associatedChild.sourceIndex, NewNodeSpec(associatedChild.getSource()))
-                nodeAssociation.associate(associatedChild.getSource(), newChild)
-                recursiveSyncTasks += RecursiveSyncTask(associatedChild.getSource(), newChild, true)
-            } else if (associatedChild.hasToMove(isOrdered)) {
-                targetParent.moveChild(role, associatedChild.sourceIndex, associatedChild.getTarget())
-                nodesToRemove.remove(associatedChild.getTarget())
-                recursiveSyncTasks += RecursiveSyncTask(associatedChild.getSource(), associatedChild.getTarget(), false)
-            } else if (associatedChild.hasToDelete()) {
-                // no sync between child nodes needed
-            } else {
-                recursiveSyncTasks += RecursiveSyncTask(associatedChild.getSource(), associatedChild.getTarget(), false)
+        // Since nodes are removed at the end of the sync, we have to adjust the index for add/move operations.
+        // We could just use `sourceIndex`, but that would result in unnecessary move operations.
+        val orderBeforeRemove = associatedChildren.sortedWith(
+            compareBy({
+                when (it.getOperationType(isOrdered)) {
+                    AssociatedChild.OperationType.REMOVE -> it.targetIndex!!
+                    else -> it.sourceIndex!!
+                }
+            }, {
+                when (it.getOperationType(isOrdered)) {
+                    AssociatedChild.OperationType.REMOVE -> 0
+                    else -> 1
+                }
+            }),
+        )
+
+        for ((targetIndex, associatedChild) in orderBeforeRemove.withIndex()) {
+            when (associatedChild.getOperationType(isOrdered)) {
+                AssociatedChild.OperationType.CREATE -> {
+                    val newChild = targetParent.syncNewChild(role, targetIndex, NewNodeSpec(associatedChild.getSource()))
+                    nodeAssociation.associate(associatedChild.getSource(), newChild)
+                    recursiveSyncTasks += RecursiveSyncTask(associatedChild.getSource(), newChild, isNew = true)
+                }
+                AssociatedChild.OperationType.REMOVE -> {
+                    nodesToRemove += associatedChild.getTarget()
+                }
+                AssociatedChild.OperationType.MOVE_SAME_CONTAINMENT -> {
+                    targetParent.moveChild(role, targetIndex, associatedChild.getTarget())
+                    recursiveSyncTasks += RecursiveSyncTask(associatedChild.getSource(), associatedChild.getTarget(), isNew = false)
+                }
+                AssociatedChild.OperationType.MOVE_DIFFERENT_CONTAINMENT -> {
+                    targetParent.moveChild(role, targetIndex, associatedChild.getTarget())
+                    recursiveSyncTasks += RecursiveSyncTask(associatedChild.getSource(), associatedChild.getTarget(), isNew = false)
+                    nodesToRemove.remove(associatedChild.getTarget())
+                }
+                AssociatedChild.OperationType.ALREADY_MATCHES -> {
+                    recursiveSyncTasks += RecursiveSyncTask(associatedChild.getSource(), associatedChild.getTarget(), isNew = false)
+                }
             }
         }
 
@@ -248,6 +280,12 @@ class ModelSynchronizer(
         }
     }
 
+    private fun associateChildren(sourceParent: IReadableNode, targetParent: IWritableNode, role: IChildLinkReference): List<AssociatedChild> {
+        val sourceNodes = getFilteredSourceChildren(sourceParent, role)
+        val targetNodes = getFilteredTargetChildren(targetParent, role)
+        return associateChildren(sourceNodes, targetNodes)
+    }
+
     private fun associateChildren(sourceChildren: List<IReadableNode>, targetChildren: List<IWritableNode>): List<AssociatedChild> {
         val unassociatedTargetNodes = targetChildren.withIndex().toMutableList()
         return sourceChildren.mapIndexed { sourceIndex, sourceChild ->
@@ -255,31 +293,60 @@ class ModelSynchronizer(
                 nodeAssociation.matches(sourceChild, targetChild.value)
             }
             if (foundAt == -1) {
-                AssociatedChild(sourceIndex, -1, sourceChild, null, nodeAssociation.resolveTarget(sourceChild))
+                AssociatedChild(sourceIndex, null, sourceChild, null, nodeAssociation.resolveTarget(sourceChild))
             } else {
                 val foundTarget = unassociatedTargetNodes.removeAt(foundAt)
                 AssociatedChild(sourceIndex, foundTarget.index, sourceChild, foundTarget.value, null)
             }
-        } + unassociatedTargetNodes.map { AssociatedChild(-1, it.index, null, it.value, null) }
+        } + unassociatedTargetNodes.map { AssociatedChild(null, it.index, null, it.value, null) }
     }
 
     private class AssociatedChild(
-        val sourceIndex: Int,
-        private val targetIndex: Int,
+        val sourceIndex: Int?,
+        val targetIndex: Int?,
         private val source: IReadableNode?,
-        private val existingTarget: IWritableNode?,
-        private val resolvedTarget: IWritableNode?,
+        private val existingTargetInSameContainment: IWritableNode?,
+        private val existingTargetInDifferentContainment: IWritableNode?,
     ) {
-        fun hasToCreate() = existingTarget == null && resolvedTarget == null
-        fun hasToMoveFromDifferentContainment() = source != null && resolvedTarget != null
-        fun hasToMoveWithinSameContainment() = source != null && existingTarget != null
-        fun hasToMove(ordered: Boolean) = hasToMoveFromDifferentContainment() || ordered && hasToMoveWithinSameContainment()
-        fun hasToDelete() = source == null
-        fun alreadyMatchesOrdered() = source != null && existingTarget != null && sourceIndex == targetIndex
-        fun alreadyMatchesUnordered() = source != null && existingTarget != null
+        var currentTargetIndex: Int? = targetIndex
+
+        fun hasToCreate() = getOperationType(true) == OperationType.CREATE
+        fun hasToMoveFromDifferentContainment() = getOperationType(true) == OperationType.MOVE_DIFFERENT_CONTAINMENT
+        fun hasToMoveWithinSameContainment(ordered: Boolean) = getOperationType(ordered) == OperationType.MOVE_SAME_CONTAINMENT
+        fun hasToMove(ordered: Boolean) = hasToMoveFromDifferentContainment() || hasToMoveWithinSameContainment(ordered)
+        fun hasToDelete() = getOperationType(true) == OperationType.REMOVE
+        fun alreadyMatchesOrdered() = alreadyMatchesUnordered() && sourceIndex == targetIndex
+        fun alreadyMatchesUnordered() = source != null && existingTargetInSameContainment != null
         fun alreadyMatches(ordered: Boolean) = if (ordered) alreadyMatchesOrdered() else alreadyMatchesUnordered()
-        fun getTarget() = existingTarget ?: resolvedTarget!!
+
+        fun getTarget() = existingTargetInSameContainment ?: existingTargetInDifferentContainment!!
         fun getSource() = source!!
+
+        fun getOperationType(ordered: Boolean): OperationType {
+            return if (source == null) {
+                OperationType.REMOVE
+            } else {
+                if (existingTargetInSameContainment != null) {
+                    if (ordered) {
+                        OperationType.MOVE_SAME_CONTAINMENT
+                    } else {
+                        OperationType.ALREADY_MATCHES
+                    }
+                } else if (existingTargetInDifferentContainment != null) {
+                    OperationType.MOVE_DIFFERENT_CONTAINMENT
+                } else {
+                    OperationType.CREATE
+                }
+            }
+        }
+
+        enum class OperationType {
+            CREATE,
+            REMOVE,
+            MOVE_SAME_CONTAINMENT,
+            MOVE_DIFFERENT_CONTAINMENT,
+            ALREADY_MATCHES,
+        }
     }
 
     inner class PendingReference(val sourceNode: IReadableNode, val targetNode: IWritableNode, val role: IReferenceLinkReference) {

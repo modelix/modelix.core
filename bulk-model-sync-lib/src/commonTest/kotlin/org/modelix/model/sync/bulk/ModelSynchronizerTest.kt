@@ -14,6 +14,7 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.operations.AddNewChildOp
 import org.modelix.model.operations.AddNewChildrenOp
+import org.modelix.model.operations.DeleteNodeOp
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.test.RandomModelChangeGenerator
@@ -21,6 +22,7 @@ import kotlin.js.JsName
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 open class ModelSynchronizerTest : AbstractModelSyncTest() {
@@ -75,6 +77,39 @@ open class ModelSynchronizerTest : AbstractModelSyncTest() {
         runTest(sourceBranch, targetBranch) {
             assertEquals(2, targetBranch.getRootNode().allChildren.count())
             assertEquals(1, targetBranch.getNumOfUsedOperationsByType()[AddNewChildOp::class])
+        }
+    }
+
+    @Test
+    fun deleting_a_node_creates_a_single_operation() {
+        val sourceBranch = createLocalBranch().apply {
+            runWrite {
+                getRootNode().asWritableNode().apply {
+                    setPropertyValue(NodeData.ID_PROPERTY_REF, "root")
+                    addNewChild(IChildLinkReference.fromName("test"), -1, NullConcept.getReference()).setPropertyValue(NodeData.ID_PROPERTY_REF, "node1")
+                    addNewChild(IChildLinkReference.fromName("test"), -1, NullConcept.getReference()).setPropertyValue(NodeData.ID_PROPERTY_REF, "node3")
+                    addNewChild(IChildLinkReference.fromName("test"), -1, NullConcept.getReference()).setPropertyValue(NodeData.ID_PROPERTY_REF, "node4")
+                }
+            }
+        }.toOTBranch()
+
+        val targetBranch = createLocalBranch().apply {
+            runWrite {
+                getRootNode().asWritableNode().apply {
+                    setPropertyValue(NodeData.ID_PROPERTY_REF, "root")
+                    addNewChild(IChildLinkReference.fromName("test"), -1, NullConcept.getReference()).setPropertyValue(NodeData.ID_PROPERTY_REF, "node1")
+                    addNewChild(IChildLinkReference.fromName("test"), -1, NullConcept.getReference()).setPropertyValue(NodeData.ID_PROPERTY_REF, "node2")
+                    addNewChild(IChildLinkReference.fromName("test"), -1, NullConcept.getReference()).setPropertyValue(NodeData.ID_PROPERTY_REF, "node3")
+                    addNewChild(IChildLinkReference.fromName("test"), -1, NullConcept.getReference()).setPropertyValue(NodeData.ID_PROPERTY_REF, "node4")
+                }
+            }
+        }.toOTBranch()
+
+        runTest(sourceBranch, targetBranch) {
+            assertEquals(3, targetBranch.getRootNode().allChildren.count())
+            val operations = targetBranch.getPendingChanges().first
+            assertEquals(1, operations.size, "Operations: $operations")
+            assertIs<DeleteNodeOp>(operations.single().getOriginalOp())
         }
     }
 

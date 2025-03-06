@@ -2,9 +2,8 @@ package org.modelix.authorization
 
 import io.ktor.http.encodeURLPathPart
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.application.application
-import io.ktor.server.application.call
 import io.ktor.server.application.plugin
+import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
 import io.ktor.server.html.respondHtml
 import io.ktor.server.request.receiveParameters
@@ -12,7 +11,6 @@ import io.ktor.server.response.respond
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingContext
-import io.ktor.server.routing.application
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
@@ -359,7 +357,7 @@ fun ApplicationCall.canManagePermissions(resourceRef: ResourceInstanceReference)
 
 fun ApplicationCall.checkCanGranPermission(id: String) {
     if (!canGrantPermission(id)) {
-        val principal = principal<AccessTokenPrincipal>()
+        val principal = principal<JWTPrincipal>()
         throw NoPermissionException(principal, null, null, "${principal?.getUserName()} has no permission '$id'")
     }
 }

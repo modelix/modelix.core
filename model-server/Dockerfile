@@ -4,7 +4,7 @@ WORKDIR /model-server/
 EXPOSE 28101
 HEALTHCHECK CMD curl --fail http://localhost:28101/health || exit 1
 
+COPY run-model-server.sh /model-server/run-model-server.sh
 COPY build/install/model-server/ /model-server/
 
-ENV MODEL_SERVER_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5071 -XX:MaxRAMPercentage=75 -Djdbc.url=$jdbc_url"
-ENTRYPOINT ["/model-server/bin/model-server"]
+ENTRYPOINT ["/model-server/run-model-server.sh"]

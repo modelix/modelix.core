@@ -16,6 +16,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.modelix.model.api.ITree
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.oauth.IAuthRequestHandler
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.Network
 import org.testcontainers.containers.wait.strategy.Wait
@@ -40,10 +41,15 @@ class OAuthTest {
         val client = ModelClientV2.builder()
             .url(url)
             .retries(1U)
-            .authRequestBrowser { authUrl ->
-                runBlocking {
-                    handleOAuthLogin(authUrl, "user1", "abc")
-                }
+            .oauth {
+                clientId("external-mps")
+                authRequestHandler(object : IAuthRequestHandler {
+                    override fun browse(url: String) {
+                        runBlocking {
+                            handleOAuthLogin(url, "user1", "abc")
+                        }
+                    }
+                })
             }
             .build()
         client.init()
@@ -66,6 +72,7 @@ class OAuthTest {
         }
         val html = httpClient.get(authUrl).also { println(it.headers.entries()) }.bodyAsText()
 
+        println(html)
         val loginUrl = Regex("""[^"]+/login-actions/authenticate[^"]+""").find(html)!!.value
 
         val callbackUrl = httpClient.submitForm(

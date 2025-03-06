@@ -22,11 +22,13 @@ import io.ktor.server.auth.AuthenticationContext
 import io.ktor.server.auth.AuthenticationProvider
 import io.ktor.server.auth.UnauthorizedResponse
 import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.jwt.jwt
 import io.ktor.server.auth.parseAuthorizationHeader
 import io.ktor.server.auth.principal
 import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import io.ktor.server.plugins.statuspages.StatusPages
+import io.ktor.server.request.uri
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
@@ -74,10 +76,8 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                             .withIssuer("modelix")
                             .withAudience("modelix")
                             .withClaim(KeycloakTokenConstants.EMAIL, "unit-tests@example.com")
-                            .sign(Algorithm.HMAC256("unit-tests"))
-                        // The signing algorithm and key isn't relevant because the token is already considered valid
-                        // and the signature is never checked.
-                        context.principal(AccessTokenPrincipal(JWT.decode(token)))
+                            .sign(Algorithm.none())
+                        context.principal(JWTPrincipal(JWT.decode(token)))
                     }
                 })
             } else {
@@ -85,9 +85,9 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                 jwt(MODELIX_JWT_AUTH) {
                     realm = "modelix"
                     authHeader { call ->
-                        call.request.parseAuthorizationHeader()
-                            ?: call.request.headers["X-Forwarded-Access-Token"]
-                                ?.let { HttpAuthHeader.Single("Bearer", it) }
+                        call.request.headers["X-Forwarded-Access-Token"]
+                            ?.let { HttpAuthHeader.Single("Bearer", it) }
+                            ?: call.request.parseAuthorizationHeader()
                     }
 
                     verifier(config.getVerifier())
@@ -117,7 +117,7 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                             accessControlPersistence.recordKnownUser(authConfig.jwtUtil.extractUserId(jwt))
                             accessControlPersistence.recordKnownRoles(authConfig.jwtUtil.extractUserRoles(jwt))
                         }
-                        AccessTokenPrincipal(jwt)
+                        JWTPrincipal(jwt)
                     }
                 }
             }
@@ -141,6 +141,7 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                     call.respondText(text = "403: ${cause.message}", status = HttpStatusCode.Forbidden)
                 }
                 exception<Throwable> { call, cause ->
+                    LOG.error(cause) { call.request.uri }
                     call.respondText(text = "500: $cause", status = HttpStatusCode.InternalServerError)
                 }
             }
@@ -151,7 +152,7 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                 (installedIntoRoute ?: this).apply {
                     if (config.debugEndpointsEnabled) {
                         get("/user") {
-                            val jwt = call.jwtFromHeaders()
+                            val jwt = call.getUnverifiedJwt()
                             if (jwt == null) {
                                 call.respondText("No JWT token available")
                             } else {
@@ -193,7 +194,7 @@ class ModelixAuthorizationPluginInstance(val config: ModelixAuthorizationConfig)
 
     private val permissionCache = CacheBuilder.newBuilder()
         .expireAfterWrite(5, TimeUnit.SECONDS)
-        .build<Pair<AccessTokenPrincipal, PermissionInstanceReference>, Boolean>()
+        .build<Pair<PayloadAsKey, PermissionInstanceReference>, Boolean>()
 
     fun hasPermission(call: ApplicationCall, permissionToCheck: PermissionParts): Boolean {
         return hasPermission(call, PermissionParser(config.permissionSchema).parse(permissionToCheck))
@@ -202,8 +203,8 @@ class ModelixAuthorizationPluginInstance(val config: ModelixAuthorizationConfig)
     fun hasPermission(call: ApplicationCall, permissionToCheck: PermissionInstanceReference): Boolean {
         if (!config.permissionCheckingEnabled()) return true
 
-        val principal = call.principal<AccessTokenPrincipal>() ?: throw NotLoggedInException()
-        return permissionCache.get(principal to permissionToCheck) {
+        val principal = call.principal<JWTPrincipal>() ?: throw NotLoggedInException()
+        return permissionCache.get(PayloadAsKey(principal.payload) to permissionToCheck) {
             getPermissionEvaluator(principal).hasPermission(permissionToCheck)
         }
     }
@@ -212,7 +213,7 @@ class ModelixAuthorizationPluginInstance(val config: ModelixAuthorizationConfig)
         return getPermissionEvaluator(call.principal())
     }
 
-    fun getPermissionEvaluator(principal: AccessTokenPrincipal?): PermissionEvaluator {
+    fun getPermissionEvaluator(principal: JWTPrincipal?): PermissionEvaluator {
         val evaluator = createPermissionEvaluator()
         if (principal != null) {
             loadGrantedPermissions(principal, evaluator)
@@ -226,8 +227,8 @@ class ModelixAuthorizationPluginInstance(val config: ModelixAuthorizationConfig)
 
     fun createSchemaInstance() = SchemaInstance(config.permissionSchema)
 
-    fun loadGrantedPermissions(principal: AccessTokenPrincipal, evaluator: PermissionEvaluator) {
-        config.jwtUtil.loadGrantedPermissions(principal.jwt, evaluator)
+    fun loadGrantedPermissions(principal: JWTPrincipal, evaluator: PermissionEvaluator) {
+        config.jwtUtil.loadGrantedPermissions(principal.payload, evaluator)
     }
 }
 
@@ -246,7 +247,7 @@ internal fun ModelixAuthorizationConfig.getVerifier() = object : JWTVerifier {
             if (jwt == null) {
                 throw JWTVerificationException("No JWT provided.")
             }
-            return this@getVerifier.nullIfInvalid(jwt)?.also { println("Valid token: ${jwt.token}") } ?: throw JWTVerificationException("JWT invalid.")
+            return this@getVerifier.nullIfInvalid(jwt) ?: throw JWTVerificationException("JWT invalid.")
         } catch (ex: BadJWTException) {
             throw JWTVerificationException("Invalid token: ${jwt?.token}", ex)
         }

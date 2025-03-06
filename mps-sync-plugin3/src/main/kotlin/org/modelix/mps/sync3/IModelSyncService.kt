@@ -6,6 +6,7 @@ import kotlinx.coroutines.runBlocking
 import org.modelix.model.IVersion
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.lazy.BranchReference
+import org.modelix.model.oauth.OAuthConfigBuilder
 import java.io.Closeable
 
 interface IModelSyncService {
@@ -27,6 +28,9 @@ interface IModelSyncService {
 }
 
 interface IServerConnection : Closeable {
+    fun setTokenProvider(tokenProvider: (suspend () -> String?))
+    fun configureOAuth(body: OAuthConfigBuilder.() -> Unit)
+
     fun activate()
     fun deactivate()
     fun remove()

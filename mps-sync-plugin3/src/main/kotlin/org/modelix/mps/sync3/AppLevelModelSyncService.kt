@@ -6,8 +6,12 @@ import com.intellij.openapi.components.Service
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.runBlocking
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.client2.ModelClientV2
+import org.modelix.model.oauth.IAuthConfig
+import org.modelix.model.oauth.OAuthConfig
+import org.modelix.model.oauth.OAuthConfigBuilder
 
 @Service(Service.Level.APP)
 class AppLevelModelSyncService() : Disposable {
@@ -47,10 +51,17 @@ class AppLevelModelSyncService() : Disposable {
     class ServerConnection(val url: String) {
         private var client: ValueWithMutex<IModelClientV2?> = ValueWithMutex(null)
         private var connected: Boolean = false
+        private var authConfig: IAuthConfig = IAuthConfig.oauth {
+            clientId("external-mps")
+        }
 
         suspend fun getClient(): IModelClientV2 {
             return client.getValue() ?: client.updateValue {
-                it ?: ModelClientV2.builder().url(url).enableOAuth().build().also { it.init() }
+                it ?: ModelClientV2.builder()
+                    .url(url)
+                    .authConfig(authConfig)
+                    .build()
+                    .also { it.init() }
             }
         }
 
@@ -61,6 +72,16 @@ class AppLevelModelSyncService() : Disposable {
             } catch (ex: Throwable) {
                 connected = false
             }
+        }
+
+        fun setAuthorizationConfig(config: IAuthConfig) {
+            this.authConfig = config
+            runBlocking { client.updateValue { null } }
+        }
+
+        fun configureOAuth(body: OAuthConfigBuilder.() -> Unit) {
+            this.authConfig = OAuthConfigBuilder(this.authConfig as? OAuthConfig).apply(body).build()
+            runBlocking { client.updateValue { null } }
         }
     }
 }

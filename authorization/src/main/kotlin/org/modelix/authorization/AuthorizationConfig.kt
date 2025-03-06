@@ -228,21 +228,21 @@ fun ByteArray.ensureMinSecretLength(algorithm: JWSAlgorithm): ByteArray {
     val secret = this
     when (algorithm) {
         JWSAlgorithm.HS512 -> {
-            if (secret.size < 512) {
+            if (secret.size * 8 < 512) {
                 val digest = MessageDigest.getInstance("SHA-512")
                 digest.update(secret)
                 return digest.digest()
             }
         }
         JWSAlgorithm.HS384 -> {
-            if (secret.size < 384) {
+            if (secret.size * 8 < 384) {
                 val digest = MessageDigest.getInstance("SHA-384")
                 digest.update(secret)
                 return digest.digest()
             }
         }
         JWSAlgorithm.HS256 -> {
-            if (secret.size < 256) {
+            if (secret.size * 8 < 256) {
                 val digest = MessageDigest.getInstance("SHA-256")
                 digest.update(secret)
                 return digest.digest()

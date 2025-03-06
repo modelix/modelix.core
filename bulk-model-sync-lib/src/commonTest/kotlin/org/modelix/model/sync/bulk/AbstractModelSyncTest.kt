@@ -344,7 +344,7 @@ abstract class AbstractModelSyncTest {
             assertNodeChildOrderConformsToSpec(expectedData.root.children[1], parent1)
 
             val expectedOperations: Map<KClass<out IOperation>, Int> = mapOf(
-                MoveNodeOp::class to 5,
+                MoveNodeOp::class to 6,
                 AddNewChildOp::class to 2,
                 SetPropertyOp::class to 2, // original ids for new nodes
                 DeleteNodeOp::class to 1,
@@ -578,7 +578,7 @@ abstract class AbstractModelSyncTest {
             val expectedOperations: Map<KClass<out IOperation>, Int> = mapOf(
                 SetPropertyOp::class to 5,
                 SetReferenceOp::class to 3,
-                MoveNodeOp::class to 6, // could be done in 5, but finding that optimization makes the sync algorithm slower
+                MoveNodeOp::class to 4,
                 AddNewChildOp::class to 1,
                 DeleteNodeOp::class to 1,
             )

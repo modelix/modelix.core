@@ -57,6 +57,7 @@ class BindingWorker(
     private suspend fun client() = serverConnection.getClient()
 
     fun getCurrentVersionHash(): String? = lastSyncedVersion.getValue()?.getContentHash()
+    fun getCurrentVersion(): IVersion? = lastSyncedVersion.getValue()
     fun isActive(): Boolean = activated.get()
 
     fun activate() {

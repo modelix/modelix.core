@@ -243,7 +243,7 @@ class ModelSyncService(val project: Project) :
         }
 
         override fun getStatus(): IServerConnection.Status {
-            TODO("Not yet implemented")
+            return if (connection.isConnected()) IServerConnection.Status.CONNECTED else IServerConnection.Status.DISCONNECTED
         }
 
         override suspend fun pullVersion(branchRef: BranchReference): IVersion {
@@ -323,6 +323,10 @@ class ModelSyncService(val project: Project) :
                 getOrCreateWorker(id, loadedState.bindings[id])
             }
             return worker.flush()
+        }
+
+        override fun getCurrentVersion(): IVersion? {
+            return workers[id]?.getCurrentVersion()
         }
 
         private fun getService(): ModelSyncService = this@ModelSyncService

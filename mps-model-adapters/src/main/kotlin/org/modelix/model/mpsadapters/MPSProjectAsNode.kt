@@ -1,9 +1,12 @@
 package org.modelix.model.mpsadapters
 
+import com.intellij.openapi.project.ex.ProjectEx
+import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.project.ProjectBase
 import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
+import org.jetbrains.mps.openapi.project.Project
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -17,11 +20,11 @@ data class MPSProjectAsNode(val project: ProjectBase) : MPSGenericNodeAdapter<Pr
         private val propertyAccessors: List<Pair<IPropertyReference, IPropertyAccessor<ProjectBase>>> = listOf(
             BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference() to object : IPropertyAccessor<ProjectBase> {
                 override fun read(element: ProjectBase): String? {
-                    return element.name
+                    return element.readName()
                 }
 
                 override fun write(element: ProjectBase, value: String?) {
-                    throw UnsupportedOperationException("read only")
+                    element.writeName(value)
                 }
             },
         )
@@ -90,7 +93,7 @@ data class MPSProjectAsNode(val project: ProjectBase) : MPSGenericNodeAdapter<Pr
     }
 
     override fun getNodeReference(): MPSProjectReference {
-        return MPSProjectReference(project.name)
+        return MPSProjectReference(project)
     }
 
     override fun getConcept(): IConcept {
@@ -100,4 +103,10 @@ data class MPSProjectAsNode(val project: ProjectBase) : MPSGenericNodeAdapter<Pr
     override fun getContainmentLink(): IChildLinkReference {
         return BuiltinLanguages.MPSRepositoryConcepts.Repository.projects.toReference()
     }
+}
+
+fun Project.readName() = ProjectHelper.toIdeaProject(this as ProjectBase).name.takeIf { it.isNotEmpty() } ?: this.name
+
+fun Project.writeName(name: String?) {
+    (ProjectHelper.toIdeaProject(this as ProjectBase) as ProjectEx).setProjectName(name ?: "")
 }

@@ -10,14 +10,22 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.module.SRepository
-import org.jetbrains.mps.openapi.project.Project
 import org.modelix.model.IVersion
+import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.IBranch
+import org.modelix.model.api.IReadableNode
+import org.modelix.model.api.IWritableNode
+import org.modelix.model.api.NodeReference
 import org.modelix.model.api.TreePointer
+import org.modelix.model.api.getOriginalReference
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.runWrite
 import org.modelix.model.lazy.BranchReference
+import org.modelix.model.mpsadapters.MPSProjectAsNode
+import org.modelix.model.mpsadapters.MPSProjectReference
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import org.modelix.model.mpsadapters.computeRead
+import org.modelix.model.mpsadapters.writeName
 import org.modelix.model.sync.bulk.FullSyncFilter
 import org.modelix.model.sync.bulk.InvalidatingVisitor
 import org.modelix.model.sync.bulk.InvalidationTree
@@ -30,7 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class BindingWorker(
     val coroutinesScope: CoroutineScope,
-    val mpsProject: Project,
+    val mpsProject: MPSProject,
     val serverConnection: ModelSyncService.Connection,
     val branchRef: BranchReference,
     val initialVersionHash: String?,
@@ -191,7 +199,6 @@ class BindingWorker(
 
         LOG.debug { "Updating MPS project from $oldVersion to $newVersion" }
 
-        val mpsProjects = listOf(mpsProject as MPSProject)
         val baseVersion = oldVersion
         val filter = if (baseVersion != null) {
             val invalidationTree = InvalidationTree(100_000)
@@ -216,14 +223,23 @@ class BindingWorker(
 
             getMPSListener().runSync {
                 val branch = TreePointer(newVersion.getTree())
-                val nodeAssociation = NodeAssociationFromModelServer(branch, targetRoot.getModel())
+
+                // handle renamed projects
+                val projectNode: IReadableNode? = branch.computeRead { findMatchingProjectNode(branch) }
+                if (projectNode != null) {
+                    val projectId = getProjectId(projectNode)
+                    if (projectId != getProjectId(MPSProjectAsNode(mpsProject))) {
+                        mpsProject.writeName(projectId)
+                    }
+                }
+
                 ModelSynchronizer(
                     filter = filter,
                     sourceRoot = branch.getRootNode().asWritableNode(),
                     targetRoot = targetRoot,
-                    nodeAssociation = nodeAssociation,
-                    sourceMask = MPSProjectSyncMask(mpsProjects, false),
-                    targetMask = MPSProjectSyncMask(mpsProjects, true),
+                    nodeAssociation = NodeAssociationFromModelServer(branch, targetRoot.getModel()),
+                    sourceMask = MPSProjectSyncMask(listOf(mpsProject), false),
+                    targetMask = MPSProjectSyncMask(listOf(mpsProject), true),
                     onException = { getMPSListener().synchronizationErrorHappened() },
                 ).synchronize()
             }
@@ -264,19 +280,27 @@ class BindingWorker(
 
         LOG.debug { "Commiting MPS changes" }
 
-        val mpsProjects = listOf(mpsProject as MPSProject)
         val client = client()
         val newVersion = repository.computeRead {
             fun sync(invalidationTree: ModelSynchronizer.IIncrementalUpdateInformation): IVersion? {
                 return oldVersion.runWrite(client) { branch ->
                     ModelixMpsApi.runWithProject(mpsProject) {
+                        val nodeAssociation = NodeAssociationToModelServer(branch)
+
+                        // handled renamed projects
+                        val targetRoot = branch.getRootNode().asWritableNode()
+                        val projectNode: IWritableNode? = findMatchingProjectNode(branch)
+                        if (projectNode != null && !nodeAssociation.matches(MPSProjectAsNode(mpsProject), projectNode)) {
+                            nodeAssociation.associate(MPSProjectAsNode(mpsProject), projectNode)
+                        }
+
                         ModelSynchronizer(
                             filter = invalidationTree,
                             sourceRoot = MPSRepositoryAsNode(ModelixMpsApi.getRepository()),
-                            targetRoot = branch.getRootNode().asWritableNode(),
-                            nodeAssociation = NodeAssociationToModelServer(branch),
-                            sourceMask = MPSProjectSyncMask(mpsProjects, true),
-                            targetMask = MPSProjectSyncMask(mpsProjects, false),
+                            targetRoot = targetRoot,
+                            nodeAssociation = nodeAssociation,
+                            sourceMask = MPSProjectSyncMask(listOf(mpsProject), true),
+                            targetMask = MPSProjectSyncMask(listOf(mpsProject), false),
                         ).synchronize()
                     }
                 }
@@ -311,5 +335,29 @@ class BindingWorker(
         override fun onInvalidation() {
             syncToServerTask?.invalidate()
         }
+    }
+
+    /**
+     * Projects in MPS don't have an ID. MPSProjectReference uses the name, but that can change.
+     * Try to find the best matching project.
+     */
+    private fun findMatchingProjectNode(branch: IBranch): IWritableNode? {
+        val projectNodes = branch.getRootNode().asWritableNode()
+            .getChildren(BuiltinLanguages.MPSRepositoryConcepts.Repository.projects.toReference())
+        return when (projectNodes.size) {
+            0 -> null
+            1 -> projectNodes.single()
+            else -> projectNodes.find {
+                getProjectId(it) == getProjectId(MPSProjectAsNode(mpsProject))
+            }
+        }
+    }
+
+    private fun getProjectId(node: IReadableNode): String {
+        val ref = node.getOriginalReference()?.let { NodeReference(it) } ?: node.getNodeReference()
+        return MPSProjectReference.tryConvert(ref)
+            ?.projectName
+            ?: node.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())
+            ?: "0"
     }
 }

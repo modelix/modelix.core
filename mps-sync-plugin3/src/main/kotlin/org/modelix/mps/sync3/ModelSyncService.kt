@@ -335,6 +335,12 @@ class ModelSyncService(val project: Project) :
             return worker.flush()
         }
 
+        override fun forceSync(push: Boolean) {
+            coroutinesScope.launch {
+                workers[id]?.forceSync(push)
+            }
+        }
+
         override fun getCurrentVersion(): IVersion? {
             return workers[id]?.getCurrentVersion()
         }

@@ -1,6 +1,11 @@
 package org.modelix.mps.sync3.ui
 
+import com.intellij.openapi.actionSystem.ActionGroup
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.openapi.util.NlsContexts
 import com.intellij.openapi.wm.CustomStatusBarWidget
 import com.intellij.openapi.wm.StatusBar
@@ -8,6 +13,8 @@ import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.ui.ClickListener
 import com.intellij.ui.IconManager
 import com.intellij.ui.JBColor
+import com.intellij.ui.awt.RelativePoint
+import com.intellij.ui.popup.PopupFactoryImpl
 import com.intellij.util.Consumer
 import com.intellij.util.concurrency.EdtExecutorService
 import kotlinx.datetime.TimeZone
@@ -23,6 +30,7 @@ import org.modelix.model.lazy.CLVersion
 import org.modelix.mps.sync3.IModelSyncService
 import org.modelix.mps.sync3.IServerConnection
 import java.awt.Desktop
+import java.awt.Point
 import java.awt.event.MouseEvent
 import java.net.URI
 import java.util.concurrent.TimeUnit
@@ -53,6 +61,21 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
                             desktop.browse(URI.create(url))
                         }
                     }
+                    return true
+                } else {
+                    @Suppress("removal") // alternative methods don't exist in older MPS versions
+                    val dataContext = SimpleDataContext.getSimpleContext(CommonDataKeys.PROJECT.name, project, null)
+                    val group = ActionManager.getInstance().getAction("org.modelix.mps.sync3.ui.StatusWidgetGroup") as ActionGroup
+                    val popup: PopupFactoryImpl.ActionGroupPopup = JBPopupFactory.getInstance().createActionGroupPopup(
+                        "Model Synchronization",
+                        group,
+                        dataContext,
+                        JBPopupFactory.ActionSelectionAid.SPEEDSEARCH,
+                        true,
+                    ) as PopupFactoryImpl.ActionGroupPopup
+                    val dimension = popup.content.preferredSize
+                    val at = Point(0, -dimension.height)
+                    popup.show(RelativePoint(component, at))
                     return true
                 }
                 return false

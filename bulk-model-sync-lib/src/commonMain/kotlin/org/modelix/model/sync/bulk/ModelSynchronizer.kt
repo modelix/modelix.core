@@ -71,7 +71,13 @@ class ModelSynchronizer(
             }
         }
         LOG.debug { "Removing extra nodes..." }
-        nodesToRemove.filter { it.isValid() }.forEach { it.remove() }
+        nodesToRemove.forEach {
+            runSafe {
+                if (it.isValid()) {
+                    it.remove()
+                }
+            }
+        }
         LOG.debug { "Synchronization finished." }
     }
 

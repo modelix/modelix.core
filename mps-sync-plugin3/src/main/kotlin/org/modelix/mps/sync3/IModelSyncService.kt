@@ -35,6 +35,7 @@ interface IServerConnection : Closeable {
     fun deactivate()
     fun remove()
     fun getStatus(): Status
+    fun getPendingAuthRequest(): String?
 
     override fun close() = deactivate()
 
@@ -50,6 +51,7 @@ interface IServerConnection : Closeable {
     enum class Status {
         CONNECTED,
         DISCONNECTED,
+        AUTHORIZATION_REQUIRED,
     }
 }
 

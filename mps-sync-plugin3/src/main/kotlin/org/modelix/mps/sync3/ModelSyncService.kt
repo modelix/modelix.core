@@ -243,7 +243,17 @@ class ModelSyncService(val project: Project) :
         }
 
         override fun getStatus(): IServerConnection.Status {
-            return if (connection.isConnected()) IServerConnection.Status.CONNECTED else IServerConnection.Status.DISCONNECTED
+            return if (connection.isConnected()) {
+                IServerConnection.Status.CONNECTED
+            } else if (connection.getPendingAuthRequest() != null) {
+                IServerConnection.Status.AUTHORIZATION_REQUIRED
+            } else {
+                IServerConnection.Status.DISCONNECTED
+            }
+        }
+
+        override fun getPendingAuthRequest(): String? {
+            return connection.getPendingAuthRequest()
         }
 
         override suspend fun pullVersion(branchRef: BranchReference): IVersion {

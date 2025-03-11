@@ -4,8 +4,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.NlsContexts
 import com.intellij.openapi.wm.CustomStatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidget
+import com.intellij.ui.ClickListener
 import com.intellij.ui.IconManager
-import com.intellij.util.Consumer
+import com.intellij.ui.JBColor
 import com.intellij.util.concurrency.EdtExecutorService
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -20,7 +21,9 @@ import org.jetbrains.annotations.NonNls
 import org.modelix.model.lazy.CLVersion
 import org.modelix.mps.sync3.IModelSyncService
 import org.modelix.mps.sync3.IServerConnection
+import java.awt.Desktop
 import java.awt.event.MouseEvent
+import java.net.URI
 import java.util.concurrent.TimeUnit
 import javax.swing.JComponent
 import javax.swing.JLabel
@@ -33,8 +36,28 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
 
     private val component: JLabel = JLabel("", ICON, JLabel.LEFT)
     private val timer = EdtExecutorService.getScheduledExecutorInstance()
-        .scheduleWithFixedDelay({ updateComponent() }, 1, 1, TimeUnit.SECONDS)
+        .scheduleWithFixedDelay({ updateComponent() }, 1000, 500, TimeUnit.MILLISECONDS)
     private var disposed = false
+    private var highlighted = false
+
+    init {
+        object : ClickListener() {
+            override fun onClick(e: MouseEvent, clickCount: Int): Boolean {
+                val urls = IModelSyncService.getInstance(project).getServerConnections()
+                    .mapNotNull { it.getPendingAuthRequest() }.toSet()
+                if (urls.isNotEmpty()) {
+                    val desktop = Desktop.getDesktop()
+                    if (desktop.isSupported(Desktop.Action.BROWSE)) {
+                        for (url in urls) {
+                            desktop.browse(URI.create(url))
+                        }
+                    }
+                    return true
+                }
+                return false
+            }
+        }.installOn(component, true)
+    }
 
     override fun ID(): @NonNls String = ID
 
@@ -52,6 +75,20 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
     private fun updateComponent() {
         component.setText(getText())
         component.toolTipText = getTooltipText()
+
+        // blink if authorization is required to get the users attention
+        highlighted = authorizationRequired() && !highlighted
+        if (highlighted) {
+            component.background = JBColor.YELLOW
+            component.isOpaque = true
+        } else {
+            component.background = null
+            component.isOpaque = false
+        }
+    }
+
+    private fun authorizationRequired(): Boolean {
+        return IModelSyncService.getInstance(project).getServerConnections().any { it.getPendingAuthRequest() != null }
     }
 
     override fun getPresentation(): StatusBarWidget.WidgetPresentation? {
@@ -87,6 +124,17 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
                                 }
                                 td {
                                     +connection.getStatus().toString()
+                                }
+                            }
+                            connection.getPendingAuthRequest()?.let { url ->
+                                tr {
+                                    td {
+                                        style = "font-weight: bold"
+                                        +"Authorization URL: "
+                                    }
+                                    td {
+                                        +url
+                                    }
                                 }
                             }
                         }
@@ -155,22 +203,22 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
     }
 
     private fun getText(): @NlsContexts.Label String {
-        val service = IModelSyncService.Companion.getInstance(project)
+        val service = IModelSyncService.getInstance(project)
         var result: String? = null
         for (connection in service.getServerConnections()) {
             for (binding in connection.getBindings()) {
                 if (binding.isEnabled()) {
-                    if (connection.getStatus() != IServerConnection.Status.CONNECTED) {
-                        return "Disconnected"
+                    when (connection.getStatus()) {
+                        IServerConnection.Status.CONNECTED -> {}
+                        IServerConnection.Status.DISCONNECTED -> return "Disconnected"
+                        IServerConnection.Status.AUTHORIZATION_REQUIRED -> {
+                            return "Click to log in"
+                        }
                     }
                     result = binding.getCurrentVersion()?.getContentHash()?.let { "Synchronized: ${it.take(5)}" } ?: result
                 }
             }
         }
         return result ?: "Not Synchronized"
-    }
-
-    override fun getClickConsumer(): Consumer<MouseEvent>? {
-        return null
     }
 }

@@ -26,6 +26,7 @@ dependencies {
     implementation(libs.modelix.mpsApi, excludeMPSLibraries)
     implementation(libs.kotlin.logging, excludeMPSLibraries)
     implementation(libs.kotlin.html, excludeMPSLibraries)
+    implementation(libs.kotlin.datetime, excludeMPSLibraries)
 
     compileOnly(
         fileTree(mpsHomeDir).matching {

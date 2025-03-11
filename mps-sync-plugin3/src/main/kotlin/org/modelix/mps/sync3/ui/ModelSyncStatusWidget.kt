@@ -3,10 +3,12 @@ package org.modelix.mps.sync3.ui
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.NlsContexts
 import com.intellij.openapi.wm.CustomStatusBarWidget
+import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.ui.ClickListener
 import com.intellij.ui.IconManager
 import com.intellij.ui.JBColor
+import com.intellij.util.Consumer
 import com.intellij.util.concurrency.EdtExecutorService
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -17,7 +19,6 @@ import kotlinx.html.style
 import kotlinx.html.table
 import kotlinx.html.td
 import kotlinx.html.tr
-import org.jetbrains.annotations.NonNls
 import org.modelix.model.lazy.CLVersion
 import org.modelix.mps.sync3.IModelSyncService
 import org.modelix.mps.sync3.IServerConnection
@@ -31,7 +32,7 @@ import javax.swing.JLabel
 class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, StatusBarWidget.WidgetPresentation {
     companion object {
         const val ID = "ModelixSyncStatus"
-        val ICON = IconManager.Companion.getInstance().getIcon("org/modelix/mps/sync3/modelix16.svg", this::class.java.classLoader)
+        val ICON = IconManager.getInstance().getIcon("org/modelix/mps/sync3/modelix16.svg", this::class.java)
     }
 
     private val component: JLabel = JLabel("", ICON, JLabel.LEFT)
@@ -59,12 +60,15 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
         }.installOn(component, true)
     }
 
-    override fun ID(): @NonNls String = ID
+    override fun ID(): String = ID
+
+    override fun install(statusBar: StatusBar) {}
+
+    override fun getClickConsumer(): Consumer<MouseEvent>? = null
 
     override fun dispose() {
         disposed = true
         timer.cancel(true)
-        super.dispose()
     }
 
     override fun getComponent(): JComponent? {
@@ -185,7 +189,7 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
                                                 br()
                                                 +(version as? CLVersion)
                                                     ?.getTimestamp()
-                                                    ?.toLocalDateTime(TimeZone.Companion.currentSystemDefault())
+                                                    ?.toLocalDateTime(TimeZone.currentSystemDefault())
                                                     ?.toString()
                                                     .orEmpty()
                                                 br()

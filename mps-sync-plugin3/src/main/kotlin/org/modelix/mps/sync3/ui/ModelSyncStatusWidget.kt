@@ -242,7 +242,9 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
                             return "Click to log in"
                         }
                     }
-                    result = binding.getCurrentVersion()?.getContentHash()?.let { "Synchronized: ${it.take(5)}" } ?: result
+                    result = binding.getSyncProgress()?.let { "Synchronizing: $it" }
+                        ?: binding.getCurrentVersion()?.getContentHash()?.let { "Synchronized: ${it.take(5)}" }
+                        ?: result
                 }
             }
         }

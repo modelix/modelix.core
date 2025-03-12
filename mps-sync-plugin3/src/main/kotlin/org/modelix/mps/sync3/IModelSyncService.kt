@@ -75,4 +75,6 @@ interface IBinding : Closeable {
     suspend fun flushIfEnabled(): IVersion?
     fun forceSync(push: Boolean)
     fun getCurrentVersion(): IVersion?
+
+    fun getSyncProgress(): String?
 }

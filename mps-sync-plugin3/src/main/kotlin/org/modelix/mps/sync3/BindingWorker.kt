@@ -17,6 +17,7 @@ import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.NodeReference
 import org.modelix.model.api.TreePointer
+import org.modelix.model.api.getName
 import org.modelix.model.api.getOriginalReference
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.runWrite
@@ -52,6 +53,8 @@ class BindingWorker(
     private var syncJob: Job? = null
     private var syncToServerTask: ValidatingJob? = null
     private var invalidatingListener: MyInvalidatingListener? = null
+    private var activeSynchronizer: ModelSynchronizer? = null
+    private var previousSyncStack: List<IReadableNode> = emptyList()
 
     private val repository: SRepository get() = mpsProject.repository
     private suspend fun client() = serverConnection.getClient()
@@ -73,6 +76,28 @@ class BindingWorker(
         syncToServerTask = null
         invalidatingListener?.stop()
         invalidatingListener = null
+    }
+
+    private fun ModelSynchronizer.executeSync() {
+        try {
+            activeSynchronizer = this
+            synchronize()
+        } finally {
+            activeSynchronizer = null
+            previousSyncStack = emptyList()
+        }
+    }
+
+    fun getSyncProgress(): String? {
+        val synchronizer = activeSynchronizer ?: return null
+        val current = synchronizer.getCurrentSyncStack()
+        val previous = previousSyncStack
+        previousSyncStack = current
+        val firstChange = current.zip(previous).indexOfFirst { it.first != it.second }
+        val busyPath = current.take(firstChange + 1)
+        return busyPath.joinToString(" > ") {
+            it.getName() ?: it.tryGetConcept()?.getShortName() ?: it.getNodeReference().serialize()
+        }
     }
 
     private suspend fun checkInSync(): String? {
@@ -250,7 +275,7 @@ class BindingWorker(
                     sourceMask = MPSProjectSyncMask(listOf(mpsProject), false),
                     targetMask = MPSProjectSyncMask(listOf(mpsProject), true),
                     onException = { getMPSListener().synchronizationErrorHappened() },
-                ).synchronize()
+                ).executeSync()
             }
         }
     }
@@ -310,7 +335,7 @@ class BindingWorker(
                             nodeAssociation = nodeAssociation,
                             sourceMask = MPSProjectSyncMask(listOf(mpsProject), true),
                             targetMask = MPSProjectSyncMask(listOf(mpsProject), false),
-                        ).synchronize()
+                        ).executeSync()
                     }
                 }
             }

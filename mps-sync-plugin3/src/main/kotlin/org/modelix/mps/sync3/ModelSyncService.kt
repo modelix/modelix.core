@@ -345,6 +345,10 @@ class ModelSyncService(val project: Project) :
             return workers[id]?.getCurrentVersion()
         }
 
+        override fun getSyncProgress(): String? {
+            return workers[id]?.getSyncProgress()
+        }
+
         private fun getService(): ModelSyncService = this@ModelSyncService
 
         override fun equals(other: Any?): Boolean {

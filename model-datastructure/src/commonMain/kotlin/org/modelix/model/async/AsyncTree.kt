@@ -2,6 +2,7 @@ package org.modelix.model.async
 
 import com.badoo.reaktive.completable.andThen
 import com.badoo.reaktive.maybe.Maybe
+import com.badoo.reaktive.maybe.asSingle
 import com.badoo.reaktive.maybe.asSingleOrError
 import com.badoo.reaktive.maybe.defaultIfEmpty
 import com.badoo.reaktive.maybe.map
@@ -21,6 +22,7 @@ import com.badoo.reaktive.single.filter
 import com.badoo.reaktive.single.flatMap
 import com.badoo.reaktive.single.flatMapIterable
 import com.badoo.reaktive.single.flatMapMaybe
+import com.badoo.reaktive.single.flatMapObservable
 import com.badoo.reaktive.single.flatten
 import com.badoo.reaktive.single.map
 import com.badoo.reaktive.single.notNull
@@ -57,6 +59,7 @@ import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.IPrefetchGoal
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.NodeNotFoundException
+import org.modelix.model.persistent.CPHamtInternal
 import org.modelix.model.persistent.CPHamtNode
 import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPNodeRef
@@ -83,6 +86,21 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
     fun getNode(id: Long): Single<CPNode> = tryGetNodeRef(id)
         .asSingleOrError { NodeNotFoundException(id) }
         .flatMap { it.query() }
+
+    fun getNodes(ids: LongArray): Observable<CPNode> {
+        return nodesMap.query().flatMap {
+            it.getAll(ids, 0, store).toList().map {
+                val entries = it.associateBy { it.first }
+                ids.map { id ->
+                    val value = entries[id]?.second
+                    if (value == null) throw NodeNotFoundException(id)
+                    value
+                }
+            }
+        }.flatMapObservable {
+            it.asObservable().flatMapSingle { it.query() }
+        }
+    }
 
     private fun tryGetNodeRef(id: Long): Maybe<KVEntryReference<CPNode>> = nodesMap.query().flatMapMaybe { it.get(id, store) }
 
@@ -287,7 +305,11 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
 
     override fun getChildren(parentId: Long, role: IChildLinkReference): Observable<Long> {
         val roleString = role.key()
-        return getAllChildren(parentId).flatMapSingle { getNode(it) }.filter { it.roleInParent == roleString }.map { it.id }.loadPrefetch()
+        return getNode(parentId)
+            .flatMapObservable { getNodes(it.childrenIdArray) }
+            .filter { it.roleInParent == roleString }
+            .map { it.id }
+            .loadPrefetch()
     }
 
     private fun IRoleReference.key() = getRoleKey(this)
@@ -348,29 +370,29 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
         newIds: LongArray,
         concepts: Array<ConceptReference>,
     ): Single<IAsyncMutableTree> {
-        val mapIncludingNewNodes = newIds.zip(concepts).asObservable().fold(nodesMap.query()) { nodesMap, (childId, concept) ->
-            val childData = CPNode.create(
-                childId,
-                concept.getUID().takeIf { it != NullConcept.getUID() },
-                parentId,
-                getRoleKey(role),
-                LongArray(0),
-                arrayOf(),
-                arrayOf(),
-                arrayOf(),
-                arrayOf(),
+        val newNodes = newIds.zip(concepts).map { (childId, concept) ->
+            childId to KVEntryReference(
+                CPNode.create(
+                    childId,
+                    concept.getUID().takeIf { it != NullConcept.getUID() },
+                    parentId,
+                    getRoleKey(role),
+                    LongArray(0),
+                    arrayOf(),
+                    arrayOf(),
+                    arrayOf(),
+                    arrayOf(),
+                ),
             )
-            nodesMap.flatMap {
-                it.get(childId, store)
-                    .assertEmpty { "Node with ID ${childId.toString(16)} already exists" }
-                    .andThen(it.put(childData, store))
-            }
-        }.flatten()
+        }
 
-        val newParentData = insertChildrenIntoParentData(parentId, index, newIds, role)
-
-        return mapIncludingNewNodes.zipWith(newParentData) { map, parentData ->
-            map.put(parentData, store)
+        val newParentData: Single<CPNode> = insertChildrenIntoParentData(parentId, index, newIds, role)
+        return nodesMap.query().zipWith(newParentData) { nodesMap, newParentData ->
+            nodesMap
+                .getAll(newIds, 0, store)
+                .assertEmpty { "Node with ID ${it.first.toString(16)} already exists" }
+                .andThen(nodesMap.putAll(newNodes + (parentId to KVEntryReference(newParentData)), 0, store))
+                .asSingle { CPHamtInternal.createEmpty() }
         }.flatten().newTree()
     }
 

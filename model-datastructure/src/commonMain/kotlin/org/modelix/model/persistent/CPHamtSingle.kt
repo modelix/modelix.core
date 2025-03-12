@@ -52,22 +52,38 @@ class CPHamtSingle(
         }
     }
 
+    override fun getAll(
+        keys: LongArray,
+        shift: Int,
+        store: IAsyncObjectStore,
+    ): Observable<Pair<Long, KVEntryReference<CPNode>?>> {
+        if (keys.any { maskBits(it, shift) == bits }) {
+            return child.getValue(store).flatMapObservable {
+                it.getAll(keys, shift + numLevels * BITS_PER_LEVEL, store)
+            }
+        } else {
+            return observableOfEmpty()
+        }
+    }
+
     override fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
-        require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
-        if (maskBits(key, shift) == bits) {
-            return getChild(store).flatMapMaybe { it.put(key, value, shift + CPHamtNode.BITS_PER_LEVEL * numLevels, store) }.map { withNewChild(it) }
+        return putAll(listOf(key to value), shift, store)
+    }
+
+    override fun putAll(
+        entries: List<Pair<Long, KVEntryReference<CPNode>?>>,
+        shift: Int,
+        store: IAsyncObjectStore,
+    ): Maybe<CPHamtNode> {
+        if (entries.all { maskBits(it.first, shift) == bits }) {
+            return getChild(store)
+                .flatMapMaybe { it.putAll(entries, shift + BITS_PER_LEVEL * numLevels, store) }
+                .map { withNewChild(it) }
         } else {
             if (numLevels > 1) {
-                return splitOneLevel().put(key, value, shift, store)
-//                val nextLevel = CPHamtSingle(CPHamtSingle(numLevels - 1, bits and maskForLevels(numLevels - 1), child), store)
-//                if (nextLevel.maskBits(key, shift + BITS_PER_LEVEL) == nextLevel.bits) {
-//                    val newNextLevel = nextLevel.put(key, value, shift + BITS_PER_LEVEL)
-//                    if (newNextLevel == null) return null
-//                    return CPHamtSingle(CPHamtSingle(1, bits ushr (BITS_PER_LEVEL * (numLevels - 1)), KVEntryReference(newNextLevel.getData())), store)
-//                } else {
-//                }
+                return splitOneLevel().putAll(entries, shift, store)
             } else {
-                return CPHamtInternal.replace(this).put(key, value, shift, store)
+                return CPHamtInternal.replace(this).putAll(entries, shift, store)
             }
         }
     }

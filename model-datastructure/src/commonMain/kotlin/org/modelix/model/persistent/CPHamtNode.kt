@@ -2,12 +2,10 @@ package org.modelix.model.persistent
 
 import com.badoo.reaktive.maybe.Maybe
 import com.badoo.reaktive.maybe.asSingleOrError
-import com.badoo.reaktive.maybe.defaultIfEmpty
 import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.asObservable
-import com.badoo.reaktive.observable.flatMapSingle
 import com.badoo.reaktive.observable.toList
 import com.badoo.reaktive.single.Single
+import com.badoo.reaktive.single.map
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.persistent.SerializationUtil.intFromHex
@@ -28,8 +26,11 @@ abstract class CPHamtNode : IKVValue {
         return CPHamtInternal(0, arrayOf())
     }
 
-    fun getAll(keys: Iterable<Long>, store: IAsyncObjectStore): Single<List<KVEntryReference<CPNode>?>> {
-        return keys.asObservable().flatMapSingle { get(it, 0, store).defaultIfEmpty(null) }.toList()
+    fun getAll(keys: LongArray, store: IAsyncObjectStore): Single<List<KVEntryReference<CPNode>?>> {
+        return getAll(keys, 0, store).toList().map {
+            val entries = it.associateBy { it.first }
+            keys.map { entries[it]?.second }
+        }
     }
 
     fun put(key: Long, value: KVEntryReference<CPNode>?, store: IAsyncObjectStore): Maybe<CPHamtNode> {
@@ -53,6 +54,8 @@ abstract class CPHamtNode : IKVValue {
 
     abstract fun get(key: Long, shift: Int, store: IAsyncObjectStore): Maybe<KVEntryReference<CPNode>>
     abstract fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode>
+    abstract fun putAll(entries: List<Pair<Long, KVEntryReference<CPNode>?>>, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode>
+    abstract fun getAll(keys: LongArray, shift: Int, store: IAsyncObjectStore): Observable<Pair<Long, KVEntryReference<CPNode>?>>
     abstract fun remove(key: Long, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode>
     abstract fun getEntries(store: IAsyncObjectStore): Observable<Pair<Long, KVEntryReference<CPNode>>>
     abstract fun getChanges(oldNode: CPHamtNode?, shift: Int, store: IAsyncObjectStore, changesOnly: Boolean): Observable<MapChangeEvent>

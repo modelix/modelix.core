@@ -4,6 +4,7 @@ import com.badoo.reaktive.maybe.Maybe
 import com.badoo.reaktive.maybe.asObservable
 import com.badoo.reaktive.maybe.filter
 import com.badoo.reaktive.maybe.flatMap
+import com.badoo.reaktive.maybe.flatMapObservable
 import com.badoo.reaktive.maybe.map
 import com.badoo.reaktive.maybe.maybeOf
 import com.badoo.reaktive.maybe.maybeOfEmpty
@@ -12,16 +13,19 @@ import com.badoo.reaktive.observable.Observable
 import com.badoo.reaktive.observable.asObservable
 import com.badoo.reaktive.observable.filter
 import com.badoo.reaktive.observable.flatMap
-import com.badoo.reaktive.observable.flatMapMaybe
 import com.badoo.reaktive.observable.flatMapSingle
 import com.badoo.reaktive.observable.flatten
 import com.badoo.reaktive.observable.map
 import com.badoo.reaktive.observable.observableOf
 import com.badoo.reaktive.observable.observableOfEmpty
+import com.badoo.reaktive.observable.toList
 import com.badoo.reaktive.single.Single
 import com.badoo.reaktive.single.asMaybe
 import com.badoo.reaktive.single.flatMapMaybe
+import com.badoo.reaktive.single.flatMapObservable
 import com.badoo.reaktive.single.flatten
+import com.badoo.reaktive.single.singleOf
+import com.badoo.reaktive.single.toSingle
 import com.badoo.reaktive.single.zipWith
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.bitCount
@@ -81,6 +85,39 @@ class CPHamtInternal(
         }
     }
 
+    override fun putAll(entries: List<Pair<Long, KVEntryReference<CPNode>?>>, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
+        val groups = entries.groupBy { indexFromKey(it.first, shift) }
+        val logicalIndices = groups.keys.toIntArray()
+        val newChildrenLists = groups.values.toList()
+        return getChildren(logicalIndices, store).flatMapObservable { children: List<CPHamtNode?> ->
+            children.withIndex().asObservable().flatMapSingle { (i, oldChild) ->
+                val newChildren = newChildrenLists[i]
+                if (oldChild == null) {
+                    val nonNullChildren = newChildren.filter { it.second != null }
+                    when (nonNullChildren.size) {
+                        0 -> null.toSingle()
+                        1 -> {
+                            val singleChild = nonNullChildren.single()
+                            CPHamtLeaf.create(singleChild.first, singleChild.second).toSingle()
+                        }
+                        else -> {
+                            createEmpty().putAll(nonNullChildren, shift + BITS_PER_LEVEL, store).orNull()
+                        }
+                    }
+                } else {
+                    oldChild.putAll(newChildren, shift + BITS_PER_LEVEL, store).orNull()
+                }
+            }
+        }.toList().flatMapMaybe { updatedChildren ->
+            setChildren(
+                logicalIndices,
+                updatedChildren.map { it?.let { KVEntryReference(it) } },
+                shift,
+                store,
+            )
+        }
+    }
+
     override fun remove(key: Long, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         val childIndex = CPHamtNode.indexFromKey(key, shift)
@@ -103,6 +140,19 @@ class CPHamtInternal(
         }
     }
 
+    override fun getAll(
+        keys: LongArray,
+        shift: Int,
+        store: IAsyncObjectStore,
+    ): Observable<Pair<Long, KVEntryReference<CPNode>?>> {
+        val groups = keys.groupBy { indexFromKey(it, shift) }
+        return groups.entries.asObservable().flatMap { group ->
+            getChild(group.key, store).flatMapObservable { child ->
+                child.getAll(group.value.toLongArray(), shift + BITS_PER_LEVEL, store)
+            }
+        }
+    }
+
     protected fun getChild(logicalIndex: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
         if (isBitNotSet(data.bitmap, logicalIndex)) {
             return maybeOfEmpty()
@@ -113,8 +163,58 @@ class CPHamtInternal(
         return getChild(childHash, store).asMaybe()
     }
 
+    private fun getChildren(logicalIndices: IntArray, store: IAsyncObjectStore): Single<List<CPHamtNode?>> {
+        val childHashes = logicalIndices.map { logicalIndex ->
+            if (isBitNotSet(data.bitmap, logicalIndex)) {
+                null
+            } else {
+                val physicalIndex = logicalToPhysicalIndex(data.bitmap, logicalIndex)
+                data.children[physicalIndex]
+            }
+        }
+        return childHashes.asObservable().flatMapSingle { it?.getValue(store) ?: singleOf(null) }.toList()
+    }
+
     protected fun getChild(childHash: KVEntryReference<CPHamtNode>, store: IAsyncObjectStore): Single<CPHamtNode> {
         return childHash.getValue(store)
+    }
+
+    fun setChildren(logicalIndices: IntArray, children: List<KVEntryReference<CPHamtNode>?>, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
+        var oldBitmap = data.bitmap
+        var newBitmap = data.bitmap
+        val oldChildren = data.children
+        var newChildren = data.children
+        for (i in logicalIndices.indices) {
+            val logicalIndex = logicalIndices[i]
+            val newChild = children[i]
+            val oldChild = if (isBitNotSet(oldBitmap, logicalIndex)) {
+                null
+            } else {
+                oldChildren[logicalToPhysicalIndex(oldBitmap, logicalIndex)]
+            }
+            if (newChild == null) {
+                if (oldChild == null) {
+                    // nothing changed
+                } else {
+                    newChildren = COWArrays.removeAt(newChildren, logicalToPhysicalIndex(newBitmap, logicalIndex))
+                    newBitmap = newBitmap and (1 shl logicalIndex).inv() // clear bit
+                }
+            } else {
+                if (oldChild == null) {
+                    newChildren = COWArrays.insert(newChildren, logicalToPhysicalIndex(newBitmap, logicalIndex), newChild)
+                    newBitmap = newBitmap or (1 shl logicalIndex) // set bit
+                } else {
+                    newChildren = COWArrays.set(newChildren, logicalToPhysicalIndex(newBitmap, logicalIndex), newChild)
+                }
+            }
+        }
+
+        val newNode = create(newBitmap, newChildren)
+        return if (shift < MAX_BITS - BITS_PER_LEVEL) {
+            CPHamtSingle.replaceIfSingleChild(newNode, store).asMaybe()
+        } else {
+            newNode.toMaybe()
+        }
     }
 
     fun setChild(logicalIndex: Int, child: CPHamtNode?, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {

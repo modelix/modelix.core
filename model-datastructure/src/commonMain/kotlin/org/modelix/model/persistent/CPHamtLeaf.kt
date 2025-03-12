@@ -32,7 +32,7 @@ class CPHamtLeaf(
     override fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
         require(shift <= CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL) { "$shift > ${CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL}" }
         return if (key == this.key) {
-            if (value?.getHash() == this.value?.getHash()) {
+            if (value?.getHash() == this.value.getHash()) {
                 this.toMaybe()
             } else {
                 create(key, value).toMaybeNotNull()
@@ -42,6 +42,16 @@ class CPHamtLeaf(
                 .put(this.key, this.value, shift, store)
                 .asSingle { createEmptyNode() }
                 .flatMapMaybe { it.put(key, value, shift, store) }
+        }
+    }
+
+    override fun putAll(entries: List<Pair<Long, KVEntryReference<CPNode>?>>, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
+        return if (entries.size == 1) {
+            val entry = entries.single()
+            put(entry.first, entry.second, shift, store)
+        } else {
+            val newEntries = if (entries.any { it.first == this.key }) entries else entries + (this.key to this.value)
+            createEmptyNode().putAll(newEntries, shift, store)
         }
     }
 
@@ -57,6 +67,14 @@ class CPHamtLeaf(
     override fun get(key: Long, shift: Int, store: IAsyncObjectStore): Maybe<KVEntryReference<CPNode>> {
         require(shift <= CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL) { "$shift > ${CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL}" }
         return if (key == this.key) maybeOf(value) else maybeOfEmpty()
+    }
+
+    override fun getAll(
+        keys: LongArray,
+        shift: Int,
+        store: IAsyncObjectStore,
+    ): Observable<Pair<Long, KVEntryReference<CPNode>?>> {
+        return if (keys.contains(this.key)) observableOf(key to value) else observableOfEmpty()
     }
 
     override fun getEntries(store: IAsyncObjectStore): Observable<Pair<Long, KVEntryReference<CPNode>>> {

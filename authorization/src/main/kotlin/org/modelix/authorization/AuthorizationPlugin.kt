@@ -169,6 +169,10 @@ object ModelixAuthorization : BaseRouteScopedPlugin<IModelixAuthorizationConfig,
                                 |
                                 |Validation result: $validationError
                                 |
+                                |User ID: ${config.jwtUtil.extractUserId(jwt)}
+                                |Roles: ${config.jwtUtil.extractUserRoles(jwt).joinToString(", ")}
+                                |Permissions: ${config.jwtUtil.extractPermissions(jwt)?.joinToString(", ")}
+                                |
                                 |$claims
                                 |
                                     """.trimMargin(),

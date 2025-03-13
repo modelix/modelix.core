@@ -3,6 +3,7 @@ package org.modelix.model.lazy
 import com.badoo.reaktive.maybe.Maybe
 import com.badoo.reaktive.maybe.map
 import com.badoo.reaktive.observable.flatMapSingle
+import com.badoo.reaktive.observable.toList
 import com.badoo.reaktive.single.map
 import com.badoo.reaktive.single.notNull
 import com.badoo.reaktive.single.singleOf
@@ -29,12 +30,13 @@ import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.SetReferenceOp
 import org.modelix.model.persistent.CPNode
-import org.modelix.model.persistent.CPOperationsList
 import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.CPVersion
 import org.modelix.model.persistent.EntryAddedEvent
 import org.modelix.model.persistent.EntryChangedEvent
 import org.modelix.model.persistent.EntryRemovedEvent
+import org.modelix.model.persistent.OperationsList
+import org.modelix.streams.getSynchronous
 import org.modelix.streams.iterateSynchronous
 import kotlin.jvm.JvmName
 
@@ -61,7 +63,7 @@ class CLVersion : IVersion {
         this.asyncStore = store
         this.store = store.getLegacyObjectStore()
         this.treeHash = KVEntryReference(treeData)
-        val localizedOps = localizeOps(operations.asList()).toTypedArray()
+        val localizedOps = localizeOps(operations.asList())
         if (localizedOps.size <= INLINED_OPS_LIMIT) {
             data = CPVersion(
                 id = id,
@@ -73,12 +75,12 @@ class CLVersion : IVersion {
                 baseVersion = baseVersion?.let { KVEntryReference(it.data!!) },
                 mergedVersion1 = mergedVersion1?.let { KVEntryReference(it.data!!) },
                 mergedVersion2 = mergedVersion2?.let { KVEntryReference(it.data!!) },
-                operations = localizedOps,
+                operations = localizedOps.toTypedArray(),
                 operationsHash = null,
                 numberOfOperations = localizedOps.size,
             )
         } else {
-            val opsList = CPOperationsList(localizedOps)
+            val opsList = OperationsList.of(localizedOps.toList())
             data = CPVersion(
                 id = id,
                 time = time,
@@ -157,8 +159,10 @@ class CLVersion : IVersion {
     val operations: Iterable<IOperation>
         get() {
             val operationsHash = data!!.operationsHash
-            val ops = operationsHash?.getValue(store)?.operations ?: data!!.operations
-            return globalizeOps((ops ?: arrayOf()).toList())
+            val ops = operationsHash?.getValue(store)?.getOperations(asyncStore)?.toList()?.getSynchronous()
+                ?: data!!.operations?.toList()
+                ?: emptyList()
+            return globalizeOps(ops)
         }
 
     val numberOfOperations: Int

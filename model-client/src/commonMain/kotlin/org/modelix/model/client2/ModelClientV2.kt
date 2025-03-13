@@ -322,22 +322,33 @@ class ModelClientV2(
 
     override suspend fun pushObjects(repository: RepositoryId, objects: Sequence<ObjectHashAndSerializedObject>) {
         LOG.debug { "${clientId.toString(16)}.pushObjects($repository)" }
-        objects.chunked(100_000).forEach { unsortedChunk ->
-            // Entries are sorted to avoid deadlocks on the server side between transactions.
-            // Since ignite locks individual entries, this is equivalent to a lock ordering.
-            // This is also fixed on the server side, but there might an old version of the server running that doesn't
-            // contain this fix. This client-side sorting could be removed in a future version when all servers
-            // are upgraded.
-            val chunk = unsortedChunk.sortedBy { it.first }
+        val maxBodySize = 16 * 1024 * 1024
+        val chunkContent = StringBuilder(1024 * 1024)
+
+        suspend fun sendChunk() {
             httpClient.put {
                 url {
                     takeFrom(baseUrl)
                     appendPathSegmentsEncodingSlash("repositories", repository.id, "objects")
                 }
                 contentType(ContentType.Text.Plain)
-                setBody(chunk.flatMap { it.toList() }.joinToString("\n"))
+                setBody(chunkContent.toString())
+            }
+            chunkContent.clear()
+        }
+
+        val itr = objects.iterator()
+        while (itr.hasNext()) {
+            val entry = itr.next()
+            val entrySize = (if (chunkContent.isEmpty()) 0 else 1) + entry.first.length + 1 + entry.second.length
+            if (chunkContent.length + entrySize > maxBodySize) {
+                sendChunk()
+            } else {
+                if (chunkContent.isNotEmpty()) chunkContent.append('\n')
+                chunkContent.append(entry.first).append('\n').append(entry.second)
             }
         }
+        if (chunkContent.isNotEmpty()) sendChunk()
     }
 
     override suspend fun pull(branch: BranchReference, lastKnownVersion: IVersion?): IVersion {

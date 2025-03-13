@@ -13,12 +13,22 @@ import org.modelix.model.api.getRootNode
 import org.modelix.model.area.PArea
 import org.modelix.model.data.NodeData
 
+private val LOG = mu.KotlinLogging.logger { }
+
 class NodeAssociationToModelServer(val branch: IBranch) : INodeAssociation {
 
     private val associations: MutableMap<String, IWritableNode> by lazy {
         val map = HashMap<String, IWritableNode>()
-        for (node in branch.getRootNode().getDescendants(true).map { it.asWritableNode() }) {
-            map[node.getPropertyValue(NodeData.ID_PROPERTY_REF) ?: continue] = node
+        try {
+            for (node in branch.getRootNode().getDescendants(true).map { it.asWritableNode() }) {
+                try {
+                    map[node.getPropertyValue(NodeData.ID_PROPERTY_REF) ?: continue] = node
+                } catch (ex: Exception) {
+                    LOG.error(ex) { "Reading associations from $node failed" }
+                }
+            }
+        } catch (ex: Exception) {
+            LOG.error(ex) { "Reading associations from $branch failed" }
         }
         map
     }

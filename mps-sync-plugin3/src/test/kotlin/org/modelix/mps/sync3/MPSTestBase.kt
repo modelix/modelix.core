@@ -31,6 +31,7 @@ abstract class MPSTestBase : UsefulTestCase() {
     override fun setUp() {
         super.setUp()
         TestApplicationManager.getInstance()
+        IModelSyncService.continueOnError = false
     }
 
     @OptIn(ExperimentalPathApi::class)

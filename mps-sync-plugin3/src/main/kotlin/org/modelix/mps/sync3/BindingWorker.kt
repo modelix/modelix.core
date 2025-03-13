@@ -43,6 +43,7 @@ class BindingWorker(
     val serverConnection: ModelSyncService.Connection,
     val branchRef: BranchReference,
     val initialVersionHash: String?,
+    val continueOnError: () -> Boolean,
 ) {
     companion object {
         val LOG = KotlinLogging.logger { }
@@ -274,7 +275,10 @@ class BindingWorker(
                     nodeAssociation = NodeAssociationFromModelServer(branch, targetRoot.getModel()),
                     sourceMask = MPSProjectSyncMask(listOf(mpsProject), false),
                     targetMask = MPSProjectSyncMask(listOf(mpsProject), true),
-                    onException = { getMPSListener().synchronizationErrorHappened() },
+                    onException = {
+                        if (!continueOnError()) throw it
+                        getMPSListener().synchronizationErrorHappened()
+                    },
                 ).executeSync()
             }
         }
@@ -335,6 +339,7 @@ class BindingWorker(
                             nodeAssociation = nodeAssociation,
                             sourceMask = MPSProjectSyncMask(listOf(mpsProject), true),
                             targetMask = MPSProjectSyncMask(listOf(mpsProject), false),
+                            onException = { if (!continueOnError()) throw it },
                         ).executeSync()
                     }
                 }

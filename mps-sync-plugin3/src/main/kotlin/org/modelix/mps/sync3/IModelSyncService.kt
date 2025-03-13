@@ -11,6 +11,8 @@ import java.io.Closeable
 
 interface IModelSyncService {
     companion object {
+        var continueOnError: Boolean? = null
+
         @JvmStatic
         fun getInstance(project: com.intellij.openapi.project.Project): IModelSyncService {
             return project.service<ModelSyncService>()

@@ -168,6 +168,7 @@ class ModelSyncService(val project: Project) :
                 serverConnection = addServer(id.url),
                 branchRef = id.branchRef,
                 initialVersionHash = state?.versionHash,
+                continueOnError = { IModelSyncService.continueOnError ?: true },
             )
         }
     }

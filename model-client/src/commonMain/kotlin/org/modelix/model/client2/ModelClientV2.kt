@@ -1,5 +1,9 @@
 package org.modelix.model.client2
 
+import com.badoo.reaktive.coroutinesinterop.asFlow
+import com.badoo.reaktive.observable.Observable
+import com.badoo.reaktive.observable.map
+import com.badoo.reaktive.observable.toMap
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.body
@@ -52,7 +56,7 @@ import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.lazy.computeDelta
+import org.modelix.model.lazy.fullDiff
 import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.oauth.IAuthRequestHandler
 import org.modelix.model.oauth.ModelixAuthClient
@@ -73,6 +77,8 @@ import org.modelix.model.server.api.v2.VersionDeltaStreamV2
 import org.modelix.model.server.api.v2.asStream
 import org.modelix.modelql.client.ModelQLClient
 import org.modelix.modelql.core.IMonoStep
+import org.modelix.streams.asObservable
+import org.modelix.streams.getSuspending
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -298,14 +304,13 @@ class ModelClientV2(
         require(version is CLVersion)
         require(baseVersion is CLVersion?)
         version.write()
-        val objects = version.computeDelta(baseVersion)
-        HashUtil.checkObjectHashes(objects)
-        val delta = if (objects.size > 1000) {
+        val objects = version.fullDiff(baseVersion)
+        val delta = if (true /* objects.size > 1000 */) {
             // large HTTP requests and large Json objects don't scale well
-            pushObjects(branch.repositoryId, objects.asSequence().map { it.key to it.value })
+            pushObjects(branch.repositoryId, objects.map { it.hash to it.serialize() })
             VersionDelta(version.getContentHash(), null)
         } else {
-            VersionDelta(version.getContentHash(), null, objectsMap = objects)
+            VersionDelta(version.getContentHash(), null, objectsMap = objects.toMap({ it.hash }, { it.serialize() }).getSuspending())
         }
         return httpClient.preparePost {
             url {
@@ -321,9 +326,13 @@ class ModelClientV2(
     }
 
     override suspend fun pushObjects(repository: RepositoryId, objects: Sequence<ObjectHashAndSerializedObject>) {
+        pushObjects(repository, objects.asObservable())
+    }
+
+    private suspend fun pushObjects(repository: RepositoryId, objects: Observable<ObjectHashAndSerializedObject>) {
         LOG.debug { "${clientId.toString(16)}.pushObjects($repository)" }
-        val maxBodySize = 16 * 1024 * 1024
-        val chunkContent = StringBuilder(1024 * 1024)
+        val maxBodySize = 2 * 1024 * 1024
+        val chunkContent = StringBuilder()
 
         suspend fun sendChunk() {
             httpClient.put {
@@ -337,9 +346,7 @@ class ModelClientV2(
             chunkContent.clear()
         }
 
-        val itr = objects.iterator()
-        while (itr.hasNext()) {
-            val entry = itr.next()
+        objects.asFlow().collect { entry ->
             val entrySize = (if (chunkContent.isEmpty()) 0 else 1) + entry.first.length + 1 + entry.second.length
             if (chunkContent.length + entrySize > maxBodySize) {
                 sendChunk()

@@ -11,6 +11,7 @@ import com.badoo.reaktive.maybe.maybeOfEmpty
 import com.badoo.reaktive.maybe.toMaybe
 import com.badoo.reaktive.observable.Observable
 import com.badoo.reaktive.observable.asObservable
+import com.badoo.reaktive.observable.concatWith
 import com.badoo.reaktive.observable.filter
 import com.badoo.reaktive.observable.flatMap
 import com.badoo.reaktive.observable.flatMapSingle
@@ -64,7 +65,7 @@ class CPHamtInternal(
         }
 
         fun replace(single: CPHamtSingle): CPHamtInternal {
-            if (single.numLevels != 1) throw RuntimeException("Can only replace single level nodes")
+            if (single.numLevels != 1) return replace(single.splitOneLevel())
             val data: CPHamtSingle = single
             val logicalIndex: Int = data.bits.toInt()
             return create(1 shl logicalIndex, arrayOf(data.child))
@@ -153,14 +154,17 @@ class CPHamtInternal(
         }
     }
 
-    protected fun getChild(logicalIndex: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
+    fun getChild(logicalIndex: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
+        val childHash = getChildHash(logicalIndex) ?: return maybeOfEmpty()
+        return getChild(childHash, store).asMaybe()
+    }
+
+    private fun getChildHash(logicalIndex: Int): KVEntryReference<CPHamtNode>? {
         if (isBitNotSet(data.bitmap, logicalIndex)) {
-            return maybeOfEmpty()
+            return null
         }
         val physicalIndex = logicalToPhysicalIndex(data.bitmap, logicalIndex)
-        require(physicalIndex < data.children.size) { "Invalid physical index ($physicalIndex). N. children: ${data.children.size}. Logical index: $logicalIndex" }
-        val childHash = data.children[physicalIndex]
-        return getChild(childHash, store).asMaybe()
+        return data.children[physicalIndex]
     }
 
     private fun getChildren(logicalIndices: IntArray, store: IAsyncObjectStore): Single<List<CPHamtNode?>> {
@@ -338,14 +342,45 @@ class CPHamtInternal(
                 }
             }
             is CPHamtSingle -> {
-                if (oldNode.numLevels == 1) {
-                    getChanges(CPHamtInternal.replace(oldNode), shift, store, changesOnly)
-                } else {
-                    getChanges(CPHamtInternal.replace(oldNode.splitOneLevel()), shift, store, changesOnly)
-                }
+                getChanges(replace(oldNode), shift, store, changesOnly)
             }
             else -> {
                 throw RuntimeException("Unknown type: " + oldNode!!::class.simpleName)
+            }
+        }
+    }
+
+    override fun objectDiff(oldObject: IKVValue?, shift: Int, store: IAsyncObjectStore): Observable<IKVValue> {
+        return when (oldObject) {
+            is CPHamtInternal -> {
+                if (oldObject.hash == this.hash) return observableOfEmpty()
+                observableOf(this).concatWith(diffChildren(oldObject, shift, store))
+            }
+            is CPHamtSingle -> {
+                observableOf(this).concatWith(diffChildren(replace(oldObject), shift, store))
+            }
+            is CPHamtLeaf -> {
+                getAllObjects(store).filter { it.hash != oldObject.hash }
+            }
+            else -> getAllObjects(store)
+        }
+    }
+
+    fun diffChildren(oldObject: CPHamtInternal, shift: Int, store: IAsyncObjectStore): Observable<IKVValue> {
+        val changedChildren = (0 until ENTRIES_PER_LEVEL)
+            .mapNotNull { logicalIndex ->
+                (getChildHash(logicalIndex) ?: return@mapNotNull null) to oldObject.getChildHash(logicalIndex)
+            }
+            .filter { it.first.getHash() != it.second?.getHash() }
+        return changedChildren.asObservable().flatMap {
+            val newChild = it.first
+            val oldChild = it.second
+            if (oldChild == null) {
+                newChild.getValue(store).flatMapObservable { it.getAllObjects(store) }
+            } else {
+                newChild.getValue(store).zipWith(oldChild.getValue(store)) { n, o ->
+                    n.objectDiff(o, shift + BITS_PER_LEVEL, store)
+                }.flatten()
             }
         }
     }

@@ -1,5 +1,12 @@
 package org.modelix.model.persistent
 
+import com.badoo.reaktive.observable.Observable
+import com.badoo.reaktive.observable.concatWith
+import com.badoo.reaktive.observable.observableOf
+import com.badoo.reaktive.observable.observableOfEmpty
+import com.badoo.reaktive.single.flatten
+import com.badoo.reaktive.single.zipWith
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.KVEntryReference
 import kotlin.jvm.JvmStatic
 
@@ -21,6 +28,23 @@ class CPTree(
     override fun getDeserializer(): (String) -> IKVValue = DESERIALIZER
 
     override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = listOf(idToHash)
+
+    override fun objectDiff(oldObject: IKVValue?, store: IAsyncObjectStore): Observable<IKVValue> {
+        return when (oldObject) {
+            is CPTree -> {
+                if (oldObject.hash == hash) {
+                    observableOfEmpty()
+                } else {
+                    observableOf(this).concatWith(
+                        idToHash.getValue(store).zipWith(oldObject.idToHash.getValue(store)) { n, o ->
+                            n.objectDiff(o, store)
+                        }.flatten(),
+                    )
+                }
+            }
+            else -> getAllObjects(store)
+        }
+    }
 
     companion object {
         /**

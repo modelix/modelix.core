@@ -16,6 +16,7 @@ import org.modelix.model.client2.runWriteOnBranch
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
+import org.modelix.model.lazy.MissingEntryException
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
@@ -264,11 +265,15 @@ class ModelClientV2Test {
 
         // Assert
         fun checkAllReferencedEntriesExistInStore(referencingEntry: IKVValue) {
-            for (entryReference in referencingEntry.getReferencedEntries()) {
-                // Check that the store also provides each referenced KVEntry.
-                // `getValue` would fail if this is not the case.
-                val referencedEntry = entryReference.getValue(versionPulled.store)
-                checkAllReferencedEntriesExistInStore(referencedEntry)
+            try {
+                for (entryReference in referencingEntry.getReferencedEntries()) {
+                    // Check that the store also provides each referenced KVEntry.
+                    // `getValue` would fail if this is not the case.
+                    val referencedEntry = entryReference.getValue(versionPulled.store)
+                    checkAllReferencedEntriesExistInStore(referencedEntry)
+                }
+            } catch (ex: MissingEntryException) {
+                throw RuntimeException("Referenced by ${referencingEntry.serialize()}", ex)
             }
         }
         checkAllReferencedEntriesExistInStore(versionPulled.data!!)

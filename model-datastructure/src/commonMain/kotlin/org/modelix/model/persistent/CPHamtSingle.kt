@@ -2,8 +2,12 @@ package org.modelix.model.persistent
 
 import com.badoo.reaktive.maybe.Maybe
 import com.badoo.reaktive.maybe.map
+import com.badoo.reaktive.maybe.maybeOf
 import com.badoo.reaktive.maybe.maybeOfEmpty
 import com.badoo.reaktive.observable.Observable
+import com.badoo.reaktive.observable.concatWith
+import com.badoo.reaktive.observable.filter
+import com.badoo.reaktive.observable.observableOf
 import com.badoo.reaktive.observable.observableOfEmpty
 import com.badoo.reaktive.single.Single
 import com.badoo.reaktive.single.flatMapMaybe
@@ -16,7 +20,12 @@ import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.bitCount
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.persistent.SerializationUtil.longToHex
+import org.modelix.streams.orNull
 
+/**
+ * Replacement for a chain of CPHamtInternals with a single child.
+ * Helps to reduce the depth of the tree and therefor the number of requests necessary to access an entry.
+ */
 class CPHamtSingle(
     val numLevels: Int,
     val bits: Long,
@@ -129,6 +138,54 @@ class CPHamtSingle(
             CPHamtInternal.replace(this).getChanges(oldNode, shift, store, changesOnly)
         } else {
             splitOneLevel().getChanges(oldNode, shift, store, changesOnly)
+        }
+    }
+
+    fun logicalIndexOfChild(relativeLevel: Int): Int {
+        return ((bits ushr (MAX_BITS - BITS_PER_LEVEL * relativeLevel)) and LEVEL_MASK).toInt()
+    }
+
+    override fun objectDiff(oldObject: IKVValue?, shift: Int, store: IAsyncObjectStore): Observable<IKVValue> {
+        return when (oldObject) {
+            is CPHamtSingle -> {
+                if (oldObject.hash == this.hash) {
+                    observableOfEmpty()
+                } else {
+                    if (oldObject.numLevels == this.numLevels && oldObject.mask == this.mask) {
+                        val childDiff = this.child.getValue(store)
+                            .zipWith(oldObject.child.getValue(store)) { newChild, oldChild ->
+                                newChild.objectDiff(oldChild, shift + numLevels * BITS_PER_LEVEL, store)
+                            }.flatten()
+                        observableOf(this).concatWith(childDiff)
+                    } else {
+                        var oldChild: Maybe<CPHamtNode> = maybeOf(oldObject)
+                        repeat(numLevels) { relativeLevel ->
+                            oldChild.map { oldChild ->
+                                when (oldChild) {
+                                    is CPHamtSingle -> CPHamtInternal.replace(oldChild)
+                                    is CPHamtInternal -> oldChild
+                                    is CPHamtLeaf -> null
+                                    else -> null
+                                }?.getChild(logicalIndexOfChild(relativeLevel), store)
+                                    ?: maybeOfEmpty()
+                            }
+                        }
+                        val childDiff = child.getValue(store).zipWith(oldChild.orNull()) { n, o ->
+                            if (o == null) observableOfEmpty() else n.objectDiff(o, shift + BITS_PER_LEVEL + numLevels, store)
+                        }.flatten()
+                        observableOf(this).concatWith(childDiff)
+                    }
+                }
+            }
+            is CPHamtInternal -> {
+                // TODO using CPHamtInternal.replace may result in some of these replacements being returned,
+                //      which isn't totally wrong, but inefficient.
+                observableOf(this).concatWith(CPHamtInternal.replace(this).diffChildren(oldObject, shift, store))
+            }
+            is CPHamtLeaf -> {
+                getAllObjects(store).filter { it.hash != oldObject.hash }
+            }
+            else -> getAllObjects(store)
         }
     }
 

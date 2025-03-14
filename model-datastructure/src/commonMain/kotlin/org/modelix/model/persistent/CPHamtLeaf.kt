@@ -13,6 +13,7 @@ import com.badoo.reaktive.observable.flatMapMaybe
 import com.badoo.reaktive.observable.observableDefer
 import com.badoo.reaktive.observable.observableOf
 import com.badoo.reaktive.observable.observableOfEmpty
+import com.badoo.reaktive.single.asObservable
 import com.badoo.reaktive.single.flatMapMaybe
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.KVEntryReference
@@ -114,6 +115,28 @@ class CPHamtLeaf(
                     }
                 },
             )
+        }
+    }
+
+    override fun objectDiff(oldObject: IKVValue?, shift: Int, store: IAsyncObjectStore): Observable<IKVValue> {
+        return when (oldObject) {
+            is CPHamtLeaf -> {
+                if (this.hash == oldObject.hash) {
+                    observableOfEmpty()
+                } else {
+                    observableOf(this).concatWith(value.getValue(store).asObservable())
+                }
+            }
+            is CPHamtInternal, is CPHamtSingle -> {
+                oldObject.get(key, shift, store).orNull().flatMapMaybe { oldValue ->
+                    if (oldValue?.getHash() == value.getHash()) {
+                        maybeOfEmpty()
+                    } else {
+                        maybeOf(this)
+                    }
+                }.asObservable()
+            }
+            else -> observableOf(this)
         }
     }
 

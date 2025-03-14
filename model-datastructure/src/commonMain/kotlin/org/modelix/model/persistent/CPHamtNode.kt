@@ -61,6 +61,15 @@ abstract class CPHamtNode : IKVValue {
     abstract fun getChanges(oldNode: CPHamtNode?, shift: Int, store: IAsyncObjectStore, changesOnly: Boolean): Observable<MapChangeEvent>
     fun getChanges(oldNode: CPHamtNode?, store: IAsyncObjectStore, changesOnly: Boolean) = getChanges(oldNode, 0, store, changesOnly)
 
+    abstract fun objectDiff(oldObject: IKVValue?, shift: Int, store: IAsyncObjectStore): Observable<IKVValue>
+    final override fun objectDiff(oldObject: IKVValue?, store: IAsyncObjectStore): Observable<IKVValue> {
+        return objectDiff(oldObject, 0, store)
+    }
+
+    override fun toString(): String {
+        return "$hash -> ${serialize()}"
+    }
+
     companion object {
         const val BITS_PER_LEVEL = 5
         const val ENTRIES_PER_LEVEL = 1 shl BITS_PER_LEVEL

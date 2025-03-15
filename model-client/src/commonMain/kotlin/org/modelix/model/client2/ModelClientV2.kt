@@ -301,13 +301,9 @@ class ModelClientV2(
         return IStream.useSequencesSuspending {
             version.write()
             val objects = version.fullDiff(baseVersion)
-            val delta = if (true /* objects.size > 1000 */) {
-                // large HTTP requests and large Json objects don't scale well
-                pushObjects(branch.repositoryId, objects.map { it.hash to it.serialize() })
-                VersionDelta(version.getContentHash(), null)
-            } else {
-                VersionDelta(version.getContentHash(), null, objectsMap = objects.toMap({ it.hash }, { it.serialize() }).getSuspending())
-            }
+            // large HTTP requests and large Json objects don't scale well
+            val lastChunk = pushObjects(branch.repositoryId, objects.map { it.hash to it.serialize() }, returnLastChunk = true)
+            val delta = VersionDelta(version.getContentHash(), null, objectsMap = lastChunk.toMap())
             httpClient.preparePost {
                 url {
                     takeFrom(baseUrl)
@@ -323,13 +319,18 @@ class ModelClientV2(
     }
 
     override suspend fun pushObjects(repository: RepositoryId, objects: Sequence<ObjectHashAndSerializedObject>) {
-        pushObjects(repository, IStream.many(objects))
+        pushObjects(repository, IStream.many(objects), false)
     }
 
-    private suspend fun pushObjects(repository: RepositoryId, objects: IStream.Many<ObjectHashAndSerializedObject>) {
+    /**
+     * If the last chunk is smaller than #minBodySize, then the remaining objects are returned for inlining in the
+     * main request.
+     */
+    private suspend fun pushObjects(repository: RepositoryId, objects: IStream.Many<ObjectHashAndSerializedObject>, returnLastChunk: Boolean): List<ObjectHashAndSerializedObject> {
         LOG.debug { "${clientId.toString(16)}.pushObjects($repository)" }
         val maxBodySize = 2 * 1024 * 1024
         val chunkContent = StringBuilder()
+        val chunkEntries = ArrayList<ObjectHashAndSerializedObject>()
 
         suspend fun sendChunk() {
             httpClient.put {
@@ -341,6 +342,7 @@ class ModelClientV2(
                 setBody(chunkContent.toString())
             }
             chunkContent.clear()
+            chunkEntries.clear()
         }
 
         objects.asSequence().forEach { entry ->
@@ -350,8 +352,12 @@ class ModelClientV2(
             }
             if (chunkContent.isNotEmpty()) chunkContent.append('\n')
             chunkContent.append(entry.first).append('\n').append(entry.second)
+            chunkEntries.add(entry)
         }
-        if (chunkContent.isNotEmpty()) sendChunk()
+        if (chunkContent.isNotEmpty() && !returnLastChunk) {
+            sendChunk()
+        }
+        return chunkEntries
     }
 
     override suspend fun pull(branch: BranchReference, lastKnownVersion: IVersion?): IVersion {

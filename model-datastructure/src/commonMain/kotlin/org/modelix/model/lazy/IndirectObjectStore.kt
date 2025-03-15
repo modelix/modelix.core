@@ -22,15 +22,11 @@ abstract class IndirectObjectStore : IDeserializingKeyValueStore {
         return getStore().getAll(hash, deserializer)
     }
 
-    override fun <T : IKVValue> getAll(regular: List<IKVEntryReference<T>>, prefetch: List<IKVEntryReference<T>>): Map<String, T?> {
-        return getStore().getAll(regular, prefetch)
+    override fun <T : IKVValue> getAll(regular: List<IKVEntryReference<T>>): Map<String, T?> {
+        return getStore().getAll(regular)
     }
 
     override fun put(hash: String, deserialized: Any, serialized: String) {
         getStore().put(hash, deserialized, serialized)
-    }
-
-    override fun prefetch(hash: String) {
-        getStore().prefetch(hash)
     }
 }

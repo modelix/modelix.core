@@ -38,12 +38,7 @@ class AsyncStoreAsLegacyDeserializingStore(val store: IAsyncObjectStore) : IDese
 
     override fun <T : IKVValue> getAll(
         regular: List<IKVEntryReference<T>>,
-        prefetch: List<IKVEntryReference<T>>,
     ): Map<String, T?> {
-        return store.getAllAsMap((regular + prefetch).map { it.toObjectHash() }).getSynchronous().entries.associate { it.key.hash to it.value as T? }
-    }
-
-    override fun prefetch(hash: String) {
-        throw UnsupportedOperationException("prefetch is deprecated")
+        return store.getAllAsMap(regular.map { it.toObjectHash() }).getSynchronous().entries.associate { it.key.hash to it.value as T? }
     }
 }

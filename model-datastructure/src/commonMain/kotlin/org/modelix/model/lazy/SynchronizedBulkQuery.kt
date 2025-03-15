@@ -7,11 +7,6 @@ import kotlin.jvm.Synchronized
 @Deprecated("use IAsyncStore")
 class SynchronizedBulkQuery(val nonThreadSafeQuery: IBulkQuery) : IBulkQuery {
     @Synchronized
-    override fun offerPrefetch(key: IPrefetchGoal) {
-        return nonThreadSafeQuery.offerPrefetch(key)
-    }
-
-    @Synchronized
     override fun executeQuery() {
         return nonThreadSafeQuery.executeQuery()
     }

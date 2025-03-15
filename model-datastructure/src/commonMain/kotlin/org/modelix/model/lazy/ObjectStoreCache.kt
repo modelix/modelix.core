@@ -76,10 +76,9 @@ class ObjectStoreCache @JvmOverloads constructor(
 
     override fun <T : IKVValue> getAll(
         regular: List<IKVEntryReference<T>>,
-        prefetch: List<IKVEntryReference<T>>,
     ): Map<String, T?> {
         val regularHashes = regular.asSequence().map { it.getHash() }.toSet()
-        val allRequests = regular.asSequence().plus(prefetch.asSequence())
+        val allRequests = regular.asSequence()
         val deserializers = allRequests.associate { it.getHash() to it.getDeserializer() }
         val hashes = allRequests.map { it.getHash() }.toList()
         val result: MutableMap<String, T?> = LinkedHashMap()
@@ -145,10 +144,6 @@ class ObjectStoreCache @JvmOverloads constructor(
     fun clearCache() {
         regularCache.clear()
         prefetchCache.clear()
-    }
-
-    override fun prefetch(hash: String) {
-        keyValueStore.prefetch(hash)
     }
 
     companion object {

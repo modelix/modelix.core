@@ -16,9 +16,8 @@ class NonCachingObjectStore(override val keyValueStore: IKeyValueStore) : IDeser
 
     override fun <T : IKVValue> getAll(
         regular: List<IKVEntryReference<T>>,
-        prefetch: List<IKVEntryReference<T>>,
     ): Map<String, T?> {
-        val allRequests = regular.asSequence() + prefetch.asSequence()
+        val allRequests = regular.asSequence()
         val hashes = allRequests.map { it.getHash() }
         val deserializers = allRequests.associate { it.getHash() to it.getDeserializer() }
         val serialized: Map<String, String?> = keyValueStore.getAll(hashes.asIterable())
@@ -38,9 +37,5 @@ class NonCachingObjectStore(override val keyValueStore: IKeyValueStore) : IDeser
 
     override fun put(hash: String, deserialized: Any, serialized: String) {
         keyValueStore.put(hash, serialized)
-    }
-
-    override fun prefetch(hash: String) {
-        keyValueStore.prefetch(hash)
     }
 }

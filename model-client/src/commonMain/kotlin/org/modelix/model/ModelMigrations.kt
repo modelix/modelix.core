@@ -5,8 +5,6 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.area.IArea
 import org.modelix.model.area.PArea
-import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.PrefetchCache
 import org.modelix.model.lazy.unwrap
 import org.modelix.model.metameta.MetaModelMigration
 
@@ -15,10 +13,7 @@ object ModelMigrations {
     fun useCanonicalReferences(branch: IBranch) {
         branch.runWriteT { t ->
             val tree = t.tree.unwrap()
-            PrefetchCache.with(tree) {
-                (tree as? CLTree)?.prefetchAll()
-                useCanonicalReferences(t, PArea(branch), ITree.ROOT_ID)
-            }
+            useCanonicalReferences(t, PArea(branch), ITree.ROOT_ID)
         }
     }
 

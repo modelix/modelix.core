@@ -46,7 +46,6 @@ import org.modelix.model.KeyValueStoreCache
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.ObjectStoreCache
-import org.modelix.model.lazy.PrefetchCache
 import org.modelix.model.oauth.ModelixAuthClient
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.sleep
@@ -209,7 +208,7 @@ class RestWebModelClient @JvmOverloads constructor(
     }
     private val listeners: MutableList<PollingListener> = ArrayList()
     override val asyncStore: IKeyValueStore = AsyncStore(this)
-    private val cache = PrefetchCache.contextIndirectCache(ObjectStoreCache(KeyValueStoreCache(asyncStore)))
+    private val cache = ObjectStoreCache(KeyValueStoreCache(asyncStore))
     private val pendingWrites = AtomicInteger(0)
     var connectionStatus: ConnectionStatus = ConnectionStatus.NEW
         private set(value) {

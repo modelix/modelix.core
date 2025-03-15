@@ -27,8 +27,6 @@ import org.modelix.model.api.async.getDescendantsAndSelf
 import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.COWArrays.insert
-import org.modelix.model.lazy.IBulkQuery
-import org.modelix.model.lazy.IPrefetchGoal
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.NodeNotFoundException
 import org.modelix.model.persistent.CPHamtInternal
@@ -75,34 +73,6 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
     }
 
     private fun tryGetNodeRef(id: Long): IStream.ZeroOrOne<KVEntryReference<CPNode>> = nodesMap.query().flatMapZeroOrOne { it.get(id, store) }
-
-    @Deprecated("Prefetching will be replaced by usages of IAsyncNode")
-    private fun loadPrefetch(node: CPNode) {
-        val bulkQuery = (store as? BulkQueryAsAsyncStore)?.bulkQuery
-        if (bulkQuery != null) {
-            val children: LongArray = node.childrenIdArray
-            if (children.isNotEmpty()) {
-                children.reversedArray().forEach {
-                    bulkQuery.offerPrefetch(PrefetchNodeGoal(this, it))
-                }
-            }
-            if (node.parentId != 0L) {
-                bulkQuery.offerPrefetch(PrefetchNodeGoal(this, node.parentId))
-            }
-            node.referenceTargets.asSequence().filter { it.isLocal }.forEach { target ->
-                bulkQuery.offerPrefetch(PrefetchNodeGoal(this, target.elementId))
-            }
-        }
-    }
-
-    @Deprecated("Prefetching will be replaced by usages of IAsyncNode")
-    private fun IStream.Many<Long>.loadPrefetch(): IStream.Many<Long> {
-        val bulkQuery = (store as? BulkQueryAsAsyncStore)?.bulkQuery ?: return this
-        return map {
-            bulkQuery.offerPrefetch(PrefetchNodeGoal(this@AsyncTree, it))
-            it
-        }
-    }
 
     override fun asSynchronousTree(): ITree {
         return CLTree(treeData, store)
@@ -260,7 +230,7 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
     }
 
     override fun getAllChildren(parentId: Long): IStream.Many<Long> {
-        return getNode(parentId).flatMapIterable { it.childrenIdArray.toList() }.loadPrefetch()
+        return getNode(parentId).flatMapIterable { it.childrenIdArray.toList() }
     }
 
     override fun getAllReferenceTargetRefs(sourceId: Long): IStream.Many<Pair<IReferenceLinkReference, INodeReference>> {
@@ -283,7 +253,6 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
             .flatMap { getNodes(it.childrenIdArray) }
             .filter { it.roleInParent == roleString }
             .map { it.id }
-            .loadPrefetch()
     }
 
     private fun IRoleReference.key() = getRoleKey(this)
@@ -506,17 +475,6 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
         return parent.flatMapOne { parentId ->
             updateNodeInMap(mapWithoutRemovedNodes, parentId) { IStream.of(it.withChildRemoved(nodeId)) }
         }.newTree()
-    }
-}
-
-@Deprecated("Prefetching will be replaced by usages of IAsyncNode")
-private data class PrefetchNodeGoal(val tree: AsyncTree, val nodeId: Long) : IPrefetchGoal {
-    override fun loadRequest(bulkQuery: IBulkQuery): IStream.Many<Any?> {
-        return tree.getAllChildren(nodeId).flatMap { tree.getNode(it) }
-    }
-
-    override fun toString(): String {
-        return nodeId.toString(16)
     }
 }
 

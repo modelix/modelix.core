@@ -24,12 +24,12 @@ class LegacyDeserializingStoreAsAsyncStore(val store: IDeserializingKeyValueStor
     }
 
     override fun getAllAsStream(keys: IStream.Many<ObjectHash<*>>): IStream.Many<Pair<ObjectHash<*>, Any?>> {
-        val entries = store.getAll(keys.map { it.toKVEntryReference<IKVValue>() }.toList().getSynchronous(), emptyList())
+        val entries = store.getAll(keys.map { it.toKVEntryReference<IKVValue>() }.toList().getSynchronous())
         return keys.map { it to entries[it.hash] }
     }
 
     override fun getAllAsMap(keys: List<ObjectHash<*>>): IStream.One<Map<ObjectHash<*>, Any?>> {
-        val entries = store.getAll(keys.map { it.toKVEntryReference() }, emptyList())
+        val entries = store.getAll(keys.map { it.toKVEntryReference() })
         return IStream.of(keys.associate { it to entries[it.hash] })
     }
 

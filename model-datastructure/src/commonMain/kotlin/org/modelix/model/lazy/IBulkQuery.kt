@@ -6,8 +6,6 @@ import org.modelix.streams.IStream
 
 @Deprecated("use IAsyncStore")
 interface IBulkQuery {
-    @Deprecated("Prefetching will be replaced by usages of IAsyncNode")
-    fun offerPrefetch(key: IPrefetchGoal)
     fun executeQuery()
     fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IStream.Many<O>): IStream.Many<O> = IStream.many(input).flatMap { f(it) }
     fun <T> constant(value: T): IStream.One<T> = IStream.of(value)

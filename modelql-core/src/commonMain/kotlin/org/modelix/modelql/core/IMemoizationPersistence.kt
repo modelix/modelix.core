@@ -1,8 +1,6 @@
 package org.modelix.modelql.core
 
 import org.modelix.kotlin.utils.ContextValue
-import org.modelix.streams.exactlyOne
-import org.modelix.streams.getSynchronous
 
 interface IMemoizationPersistence {
     fun <In, Out> getMemoizer(query: MonoUnboundQuery<In, Out>): Memoizer<In, Out>

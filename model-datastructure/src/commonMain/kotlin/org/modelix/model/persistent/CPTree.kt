@@ -1,13 +1,10 @@
 package org.modelix.model.persistent
 
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.concatWith
-import com.badoo.reaktive.observable.observableOf
-import com.badoo.reaktive.observable.observableOfEmpty
-import com.badoo.reaktive.single.flatten
-import com.badoo.reaktive.single.zipWith
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.KVEntryReference
+import org.modelix.streams.IStream
+import org.modelix.streams.flatten
+import org.modelix.streams.plus
 import kotlin.jvm.JvmStatic
 
 class CPTree(
@@ -29,13 +26,13 @@ class CPTree(
 
     override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = listOf(idToHash)
 
-    override fun objectDiff(oldObject: IKVValue?, store: IAsyncObjectStore): Observable<IKVValue> {
+    override fun objectDiff(oldObject: IKVValue?, store: IAsyncObjectStore): IStream.Many<IKVValue> {
         return when (oldObject) {
             is CPTree -> {
                 if (oldObject.hash == hash) {
-                    observableOfEmpty()
+                    IStream.empty()
                 } else {
-                    observableOf(this).concatWith(
+                    IStream.of(this).plus(
                         idToHash.getValue(store).zipWith(oldObject.idToHash.getValue(store)) { n, o ->
                             n.objectDiff(o, store)
                         }.flatten(),

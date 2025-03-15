@@ -3,7 +3,6 @@ package org.modelix.modelql.core
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
 
 class IsNullPredicateStep<In>() : SimpleMonoTransformingStep<In, Boolean>() {
 

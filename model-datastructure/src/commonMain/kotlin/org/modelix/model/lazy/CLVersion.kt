@@ -1,19 +1,5 @@
 package org.modelix.model.lazy
 
-import com.badoo.reaktive.maybe.Maybe
-import com.badoo.reaktive.maybe.map
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.asObservable
-import com.badoo.reaktive.observable.concatWith
-import com.badoo.reaktive.observable.flatMap
-import com.badoo.reaktive.observable.flatMapSingle
-import com.badoo.reaktive.observable.toList
-import com.badoo.reaktive.single.flatMapObservable
-import com.badoo.reaktive.single.flatten
-import com.badoo.reaktive.single.map
-import com.badoo.reaktive.single.notNull
-import com.badoo.reaktive.single.singleOf
-import com.badoo.reaktive.single.zipWith
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -46,8 +32,10 @@ import org.modelix.model.persistent.EntryRemovedEvent
 import org.modelix.model.persistent.IKVValue
 import org.modelix.model.persistent.OperationsList
 import org.modelix.model.persistent.getAllObjects
-import org.modelix.streams.getSynchronous
-import org.modelix.streams.iterateSynchronous
+import org.modelix.streams.IStream
+import org.modelix.streams.flatten
+import org.modelix.streams.notNull
+import org.modelix.streams.plus
 import kotlin.jvm.JvmName
 
 class CLVersion : IVersion {
@@ -288,7 +276,7 @@ class CLVersion : IVersion {
             return CLVersion(data, store)
         }
 
-        fun tryLoadFromHash(hash: String, store: IAsyncObjectStore): Maybe<CLVersion> {
+        fun tryLoadFromHash(hash: String, store: IAsyncObjectStore): IStream.ZeroOrOne<CLVersion> {
             return KVEntryReference(hash, CPVersion.DESERIALIZER).getValue(store).notNull().map { CLVersion(it, store) }
         }
     }
@@ -347,18 +335,18 @@ class CLVersion : IVersion {
     }
 }
 
-fun CLVersion.fullDiff(baseVersion: CLVersion?): Observable<IKVValue> {
+fun CLVersion.fullDiff(baseVersion: CLVersion?): IStream.Many<IKVValue> {
     val history = historyDiff(baseVersion)
-    return history.concatWith(
+    return history.plus(
         history.flatMap { version ->
-            val baseVersion = version.baseVersion?.getValue(asyncStore) ?: singleOf(null)
+            val baseVersion = version.baseVersion?.getValue(asyncStore) ?: IStream.of(null)
             val currentVersion = version.treeHash.getValue(asyncStore)
             val treeDiff = currentVersion.zipWith(baseVersion) { v, b ->
                 if (b == null) v.getAllObjects(asyncStore) else v.objectDiff(b, asyncStore)
             }.flatten()
             if (version.operationsHash != null) {
-                val operations = version.operationsHash.getValue(asyncStore).flatMapObservable { it.getAllObjects(asyncStore) }
-                treeDiff.concatWith(operations)
+                val operations = version.operationsHash.getValue(asyncStore).flatMap { it.getAllObjects(asyncStore) }
+                treeDiff.plus(operations)
             } else {
                 treeDiff
             }
@@ -366,10 +354,10 @@ fun CLVersion.fullDiff(baseVersion: CLVersion?): Observable<IKVValue> {
     )
 }
 
-fun CLVersion.historyDiff(baseVersion: CLVersion?): Observable<CPVersion> {
+fun CLVersion.historyDiff(baseVersion: CLVersion?): IStream.Many<CPVersion> {
     val commonBase = VersionMerger.commonBaseVersion(this, baseVersion)
     val history = getAncestors(true, commonBase).map { it.data }
-    return history.asObservable()
+    return IStream.many(history)
 }
 
 fun CLVersion.computeDelta(baseVersion: CLVersion?): Map<String, String> {
@@ -422,12 +410,12 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
             }
 
             val oldTree = v1.getTree()
-            v2.getTree().nodesMap!!.getChanges(oldTree.nodesMap, store.getAsyncStore(), false).flatMapSingle { event ->
+            v2.getTree().nodesMap!!.getChanges(oldTree.nodesMap, store.getAsyncStore(), false).flatMap { event ->
                 // querying the value is necessary to record a read access on it
                 when (event) {
                     is EntryAddedEvent -> event.value.getValue(asyncStore).map { event.key }
                     is EntryChangedEvent -> event.newValue.getValue(asyncStore).map { event.key }
-                    is EntryRemovedEvent -> singleOf(event.key)
+                    is EntryRemovedEvent -> IStream.of(event.key)
                 }
             }.iterateSynchronous { changedNodeIds += it }
             v1 = v2

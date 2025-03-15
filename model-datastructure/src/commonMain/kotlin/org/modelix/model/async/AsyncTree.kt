@@ -1,33 +1,5 @@
 package org.modelix.model.async
 
-import com.badoo.reaktive.completable.andThen
-import com.badoo.reaktive.maybe.Maybe
-import com.badoo.reaktive.maybe.asSingle
-import com.badoo.reaktive.maybe.asSingleOrError
-import com.badoo.reaktive.maybe.defaultIfEmpty
-import com.badoo.reaktive.maybe.map
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.asObservable
-import com.badoo.reaktive.observable.concatWith
-import com.badoo.reaktive.observable.filter
-import com.badoo.reaktive.observable.flatMap
-import com.badoo.reaktive.observable.flatMapSingle
-import com.badoo.reaktive.observable.map
-import com.badoo.reaktive.observable.observableOf
-import com.badoo.reaktive.observable.observableOfEmpty
-import com.badoo.reaktive.observable.toList
-import com.badoo.reaktive.single.Single
-import com.badoo.reaktive.single.asCompletable
-import com.badoo.reaktive.single.filter
-import com.badoo.reaktive.single.flatMap
-import com.badoo.reaktive.single.flatMapIterable
-import com.badoo.reaktive.single.flatMapMaybe
-import com.badoo.reaktive.single.flatMapObservable
-import com.badoo.reaktive.single.flatten
-import com.badoo.reaktive.single.map
-import com.badoo.reaktive.single.notNull
-import com.badoo.reaktive.single.singleOf
-import com.badoo.reaktive.single.zipWith
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INodeReference
@@ -71,23 +43,23 @@ import org.modelix.model.persistent.EntryAddedEvent
 import org.modelix.model.persistent.EntryChangedEvent
 import org.modelix.model.persistent.EntryRemovedEvent
 import org.modelix.model.persistent.IKVValue
-import org.modelix.streams.asObservable
-import org.modelix.streams.assertEmpty
-import org.modelix.streams.distinct
+import org.modelix.streams.IStream
 import org.modelix.streams.flatten
-import org.modelix.streams.fold
+import org.modelix.streams.ifEmpty
+import org.modelix.streams.notNull
+import org.modelix.streams.plus
 
 open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyncMutableTree {
 
     private val nodesMap: KVEntryReference<CPHamtNode> = treeData.idToHash
 
-    private fun <T : IKVValue> KVEntryReference<T>.query(): Single<T> = this.getValue(store)
+    private fun <T : IKVValue> KVEntryReference<T>.query(): IStream.One<T> = this.getValue(store)
 
-    fun getNode(id: Long): Single<CPNode> = tryGetNodeRef(id)
-        .asSingleOrError { NodeNotFoundException(id) }
-        .flatMap { it.query() }
+    fun getNode(id: Long): IStream.One<CPNode> = tryGetNodeRef(id)
+        .exceptionIfEmpty { NodeNotFoundException(id) }
+        .flatMapOne { it.query() }
 
-    fun getNodes(ids: LongArray): Observable<CPNode> {
+    fun getNodes(ids: LongArray): IStream.Many<CPNode> {
         return nodesMap.query().flatMap {
             it.getAll(ids, 0, store).toList().map {
                 val entries = it.associateBy { it.first }
@@ -97,12 +69,12 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
                     value
                 }
             }
-        }.flatMapObservable {
-            it.asObservable().flatMapSingle { it.query() }
+        }.flatMap {
+            IStream.many(it).flatMap { it.query() }
         }
     }
 
-    private fun tryGetNodeRef(id: Long): Maybe<KVEntryReference<CPNode>> = nodesMap.query().flatMapMaybe { it.get(id, store) }
+    private fun tryGetNodeRef(id: Long): IStream.ZeroOrOne<KVEntryReference<CPNode>> = nodesMap.query().flatMapZeroOrOne { it.get(id, store) }
 
     @Deprecated("Prefetching will be replaced by usages of IAsyncNode")
     private fun loadPrefetch(node: CPNode) {
@@ -124,7 +96,7 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
     }
 
     @Deprecated("Prefetching will be replaced by usages of IAsyncNode")
-    private fun Observable<Long>.loadPrefetch(): Observable<Long> {
+    private fun IStream.Many<Long>.loadPrefetch(): IStream.Many<Long> {
         val bulkQuery = (store as? BulkQueryAsAsyncStore)?.bulkQuery ?: return this
         return map {
             bulkQuery.offerPrefetch(PrefetchNodeGoal(this@AsyncTree, it))
@@ -137,33 +109,33 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
         // return AsyncAsSynchronousTree(this)
     }
 
-    override fun containsNode(nodeId: Long): Single<Boolean> {
-        return tryGetNodeRef(nodeId).map { true }.defaultIfEmpty(false)
+    override fun containsNode(nodeId: Long): IStream.One<Boolean> {
+        return tryGetNodeRef(nodeId).map { true }.ifEmpty { false }
     }
 
-    override fun getChanges(oldVersion: IAsyncTree, changesOnly: Boolean): Observable<TreeChangeEvent> {
+    override fun getChanges(oldVersion: IAsyncTree, changesOnly: Boolean): IStream.Many<TreeChangeEvent> {
         require(oldVersion is AsyncTree)
-        if (nodesMap == oldVersion.nodesMap) return observableOfEmpty()
+        if (nodesMap == oldVersion.nodesMap) return IStream.empty()
         return nodesMap.query().zipWith(oldVersion.nodesMap.query()) { newMap, oldMap ->
             getChanges(oldVersion, newMap, oldMap, changesOnly)
         }.flatten()
     }
 
-    private fun getChanges(oldTree: AsyncTree, newNodesMap: CPHamtNode, oldNodesMap: CPHamtNode, changesOnly: Boolean): Observable<TreeChangeEvent> {
+    private fun getChanges(oldTree: AsyncTree, newNodesMap: CPHamtNode, oldNodesMap: CPHamtNode, changesOnly: Boolean): IStream.Many<TreeChangeEvent> {
         return newNodesMap.getChanges(oldNodesMap, 0, store, changesOnly).flatMap { mapEvent ->
             when (mapEvent) {
                 is EntryAddedEvent -> {
                     if (changesOnly) {
-                        observableOfEmpty<TreeChangeEvent>()
+                        IStream.empty()
                     } else {
-                        observableOf(NodeAddedEvent(mapEvent.key))
+                        IStream.of(NodeAddedEvent(mapEvent.key))
                     }
                 }
                 is EntryRemovedEvent -> {
                     if (changesOnly) {
-                        observableOfEmpty<TreeChangeEvent>()
+                        IStream.empty()
                     } else {
-                        observableOf(NodeRemovedEvent(mapEvent.key))
+                        IStream.of(NodeRemovedEvent(mapEvent.key))
                     }
                 }
                 is EntryChangedEvent -> {
@@ -175,7 +147,7 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
         }.distinct()
     }
 
-    private fun getChanges(oldTree: AsyncTree, oldNode: CPNode, newNode: CPNode, mapEvent: EntryChangedEvent): Observable<TreeChangeEvent> {
+    private fun getChanges(oldTree: AsyncTree, oldNode: CPNode, newNode: CPNode, mapEvent: EntryChangedEvent): IStream.Many<TreeChangeEvent> {
         val changes = ArrayList<TreeChangeEvent>()
 
         if (oldNode.parentId != newNode.parentId) {
@@ -208,8 +180,8 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
                 }
             }
 
-        val newChildren = newNode.childrenIdArray.asObservable().flatMapSingle { getNode(it) }.toList()
-        val oldChildren = oldNode.childrenIdArray.asObservable().flatMapSingle { oldTree.getNode(it) }.toList()
+        val newChildren = IStream.many(newNode.childrenIdArray).flatMap { getNode(it) }.toList()
+        val oldChildren = IStream.many(oldNode.childrenIdArray).flatMap { oldTree.getNode(it) }.toList()
         val childrenChanges = newChildren.zipWith(oldChildren) { newChildrenList, oldChildrenList ->
             val oldChildren: MutableMap<String?, MutableList<CPNode>> = HashMap()
             val newChildren: MutableMap<String?, MutableList<CPNode>> = HashMap()
@@ -219,35 +191,37 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
             val roles: MutableSet<String?> = HashSet()
             roles.addAll(oldChildren.keys)
             roles.addAll(newChildren.keys)
-            roles.mapNotNull { role ->
-                val oldChildrenInRole = oldChildren[role]
-                val newChildrenInRole = newChildren[role]
-                val oldValues = oldChildrenInRole?.map { it.id }
-                val newValues = newChildrenInRole?.map { it.id }
-                if (oldValues != newValues) {
-                    ChildrenChangedEvent(newNode.id, getChildLinkFromString(role))
-                } else {
-                    null
-                }
-            }.asObservable()
+            IStream.many(
+                roles.mapNotNull { role ->
+                    val oldChildrenInRole = oldChildren[role]
+                    val newChildrenInRole = newChildren[role]
+                    val oldValues = oldChildrenInRole?.map { it.id }
+                    val newValues = newChildrenInRole?.map { it.id }
+                    if (oldValues != newValues) {
+                        ChildrenChangedEvent(newNode.id, getChildLinkFromString(role))
+                    } else {
+                        null
+                    }
+                },
+            )
         }.flatten()
 
-        return changes.asObservable().concatWith(childrenChanges)
+        return IStream.many(changes) + childrenChanges
     }
 
-    override fun getConceptReference(nodeId: Long): Single<ConceptReference> {
+    override fun getConceptReference(nodeId: Long): IStream.One<ConceptReference> {
         return getNode(nodeId).map { ConceptReference(it.concept ?: NullConcept.getUID()) }
     }
 
-    override fun getParent(nodeId: Long): Maybe<Long> {
+    override fun getParent(nodeId: Long): IStream.ZeroOrOne<Long> {
         return getNode(nodeId).map { it.parentId }.filter { it != 0L }
     }
 
-    override fun getRole(nodeId: Long): Single<IChildLinkReference> {
+    override fun getRole(nodeId: Long): IStream.One<IChildLinkReference> {
         return getNode(nodeId).map { getChildLinkFromString(it.roleInParent) }
     }
 
-    override fun getReferenceTarget(sourceId: Long, role: IReferenceLinkReference): Maybe<INodeReference> {
+    override fun getReferenceTarget(sourceId: Long, role: IReferenceLinkReference): IStream.ZeroOrOne<INodeReference> {
         return getNode(sourceId).map { node ->
             node.getReferenceTarget(role.key())?.convertReference()
         }.notNull()
@@ -263,15 +237,15 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
         }
     }
 
-    override fun getReferenceRoles(sourceId: Long): Observable<IReferenceLinkReference> {
+    override fun getReferenceRoles(sourceId: Long): IStream.Many<IReferenceLinkReference> {
         return getNode(sourceId).flatMapIterable { it.referenceRoles.map { getReferenceLinkFromString(it) } }
     }
 
-    override fun getPropertyRoles(sourceId: Long): Observable<IPropertyReference> {
+    override fun getPropertyRoles(sourceId: Long): IStream.Many<IPropertyReference> {
         return getNode(sourceId).flatMapIterable { it.propertyRoles.map { getPropertyFromString(it) } }
     }
 
-    override fun getAllPropertyValues(sourceId: Long): Observable<Pair<IPropertyReference, String>> {
+    override fun getAllPropertyValues(sourceId: Long): IStream.Many<Pair<IPropertyReference, String>> {
         return getNode(sourceId).flatMapIterable { data ->
             data.propertyRoles.mapIndexed { index, role ->
                 getPropertyFromString(role) to data.propertyValues[index]
@@ -279,17 +253,17 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
         }
     }
 
-    override fun getChildRoles(sourceId: Long): Observable<IChildLinkReference> {
-        return getAllChildren(sourceId).flatMapSingle {
+    override fun getChildRoles(sourceId: Long): IStream.Many<IChildLinkReference> {
+        return getAllChildren(sourceId).flatMap {
             getNode(it).map { getChildLinkFromString(it.roleInParent) }
         }.distinct()
     }
 
-    override fun getAllChildren(parentId: Long): Observable<Long> {
+    override fun getAllChildren(parentId: Long): IStream.Many<Long> {
         return getNode(parentId).flatMapIterable { it.childrenIdArray.toList() }.loadPrefetch()
     }
 
-    override fun getAllReferenceTargetRefs(sourceId: Long): Observable<Pair<IReferenceLinkReference, INodeReference>> {
+    override fun getAllReferenceTargetRefs(sourceId: Long): IStream.Many<Pair<IReferenceLinkReference, INodeReference>> {
         return getNode(sourceId).flatMapIterable { data ->
             data.referenceRoles.mapIndexed { index, role ->
                 getReferenceLinkFromString(role) to data.referenceTargets[index].convertReference()
@@ -297,16 +271,16 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
         }
     }
 
-    override fun getPropertyValue(nodeId: Long, role: IPropertyReference): Maybe<String> {
+    override fun getPropertyValue(nodeId: Long, role: IPropertyReference): IStream.ZeroOrOne<String> {
         return getNode(nodeId).map { node ->
             node.getPropertyValue(role.key())
         }.notNull()
     }
 
-    override fun getChildren(parentId: Long, role: IChildLinkReference): Observable<Long> {
+    override fun getChildren(parentId: Long, role: IChildLinkReference): IStream.Many<Long> {
         val roleString = role.key()
         return getNode(parentId)
-            .flatMapObservable { getNodes(it.childrenIdArray) }
+            .flatMap { getNodes(it.childrenIdArray) }
             .filter { it.roleInParent == roleString }
             .map { it.id }
             .loadPrefetch()
@@ -337,11 +311,11 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
         }
     }
 
-    private fun Maybe<CPHamtNode>.assertNotEmpty(): Single<CPHamtNode> = asSingleOrError { IllegalStateException("Tree is empty. It should contain at least the root node.") }
-    private fun Maybe<CPHamtNode>.newTree() = withNewNodesMap(assertNotEmpty())
-    private fun Single<CPHamtNode>.newTree() = withNewNodesMap(this)
+    private fun IStream.ZeroOrOne<CPHamtNode>.assertNotEmpty(): IStream.One<CPHamtNode> = exceptionIfEmpty { IllegalStateException("Tree is empty. It should contain at least the root node.") }
+    private fun IStream.ZeroOrOne<CPHamtNode>.newTree() = withNewNodesMap(assertNotEmpty())
+    private fun IStream.One<CPHamtNode>.newTree() = withNewNodesMap(this)
 
-    private fun withNewNodesMap(newMap: Single<CPHamtNode>): Single<AsyncTree> {
+    private fun withNewNodesMap(newMap: IStream.One<CPHamtNode>): IStream.One<AsyncTree> {
         return newMap.map {
             val newIdToHash = KVEntryReference(it)
             if (newIdToHash == treeData.idToHash) return@map this
@@ -349,17 +323,17 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
         }
     }
 
-    private fun updateNode(nodeId: Long, transform: (CPNode) -> Single<CPNode>): Single<AsyncTree> {
+    private fun updateNode(nodeId: Long, transform: (CPNode) -> IStream.One<CPNode>): IStream.One<AsyncTree> {
         return updateNodeInMap(nodesMap.query(), nodeId, transform).newTree()
     }
 
-    private fun updateNodeInMap(nodesMap: Single<CPHamtNode>, nodeId: Long, transform: (CPNode) -> Single<CPNode>): Single<CPHamtNode> {
-        return nodesMap.flatMap { oldMap ->
+    private fun updateNodeInMap(nodesMap: IStream.One<CPHamtNode>, nodeId: Long, transform: (CPNode) -> IStream.One<CPNode>): IStream.One<CPHamtNode> {
+        return nodesMap.flatMapOne { oldMap ->
             oldMap.get(nodeId, store)
-                .asSingleOrError { throw IllegalArgumentException("Node not found: ${nodeId.toString(16)}") }
-                .flatMap { it.query() }
+                .exceptionIfEmpty { throw IllegalArgumentException("Node not found: ${nodeId.toString(16)}") }
+                .flatMapOne { it.query() }
                 .map { oldMap to it }
-                .flatMap { (oldMap, nodeData) -> transform(nodeData).flatMap { newData -> oldMap.put(newData, store) } }
+                .flatMapOne { (oldMap, nodeData) -> transform(nodeData).flatMapOne { newData -> oldMap.put(newData, store) } }
         }
     }
 
@@ -369,7 +343,7 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
         index: Int,
         newIds: LongArray,
         concepts: Array<ConceptReference>,
-    ): Single<IAsyncMutableTree> {
+    ): IStream.One<IAsyncMutableTree> {
         val newNodes = newIds.zip(concepts).map { (childId, concept) ->
             childId to KVEntryReference(
                 CPNode.create(
@@ -386,25 +360,25 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
             )
         }
 
-        val newParentData: Single<CPNode> = insertChildrenIntoParentData(parentId, index, newIds, role)
+        val newParentData: IStream.One<CPNode> = insertChildrenIntoParentData(parentId, index, newIds, role)
         return nodesMap.query().zipWith(newParentData) { nodesMap, newParentData ->
             nodesMap
                 .getAll(newIds, 0, store)
                 .assertEmpty { "Node with ID ${it.first.toString(16)} already exists" }
-                .andThen(nodesMap.putAll(newNodes + (parentId to KVEntryReference(newParentData)), 0, store))
-                .asSingle { CPHamtInternal.createEmpty() }
+                .plus(nodesMap.putAll(newNodes + (parentId to KVEntryReference(newParentData)), 0, store))
+                .ifEmpty { CPHamtInternal.createEmpty() }
         }.flatten().newTree()
     }
 
-    private fun insertChildrenIntoParentData(parentId: Long, index: Int, newIds: LongArray, role: IChildLinkReference): Single<CPNode> {
-        return getNode(parentId).flatMap { parentData ->
+    private fun insertChildrenIntoParentData(parentId: Long, index: Int, newIds: LongArray, role: IChildLinkReference): IStream.One<CPNode> {
+        return getNode(parentId).flatMapOne { parentData ->
             insertChildrenIntoParentData(parentData, index, newIds, role)
         }
     }
 
-    private fun insertChildrenIntoParentData(parentData: CPNode, index: Int, newIds: LongArray, role: IChildLinkReference): Single<CPNode> {
+    private fun insertChildrenIntoParentData(parentData: CPNode, index: Int, newIds: LongArray, role: IChildLinkReference): IStream.One<CPNode> {
         return if (index == -1) {
-            singleOf(parentData.childrenIdArray + newIds)
+            IStream.of(parentData.childrenIdArray + newIds)
         } else {
             getChildren(parentData.id, role).toList().map { childrenInRole ->
                 if (index > childrenInRole.size) throw RuntimeException("Invalid index $index. There are only ${childrenInRole.size} nodes in ${parentData.id.toString(16)}.$role")
@@ -439,24 +413,24 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
         newRole: IChildLinkReference,
         newIndex: Int,
         childId: Long,
-    ): Single<IAsyncMutableTree> {
+    ): IStream.One<IAsyncMutableTree> {
         require(childId != ITree.ROOT_ID) { "Moving the root node is not allowed" }
         val checkCycle = getAncestors(newParentId, true).toList().map { ancestors ->
             if (ancestors.contains(childId)) {
                 throw ContainmentCycleException(newParentId, childId)
             }
-        }.asCompletable()
+        }.drainAll()
 
-        val oldParent = getParent(childId).asSingleOrError {
+        val oldParent = getParent(childId).exceptionIfEmpty() {
             IllegalArgumentException("Cannot move node without parent: ${childId.toString(16)}")
         }
-        val adjustedIndex = oldParent.flatMap { oldParentId ->
+        val adjustedIndex: IStream.One<Int> = oldParent.flatMapOne { oldParentId ->
             if (oldParentId != newParentId) {
-                singleOf(newIndex)
+                IStream.of(newIndex)
             } else {
-                getRole(childId).flatMap { oldRole ->
+                getRole(childId).flatMapOne { oldRole ->
                     if (getRoleKey(oldRole) != getRoleKey(newRole)) {
-                        singleOf(newIndex)
+                        IStream.of(newIndex)
                     } else {
                         getChildren(oldParentId, oldRole).toList().map { oldSiblings ->
                             val oldIndex = oldSiblings.indexOf(childId)
@@ -467,34 +441,34 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
             }
         }
 
-        val newTree = oldParent.zipWith(adjustedIndex) { oldParentId, adjustedIndex ->
+        val newTree: IStream.One<IAsyncMutableTree> = oldParent.zipWith(adjustedIndex) { oldParentId, adjustedIndex ->
             val withChildRemoved = updateNode(oldParentId) {
-                singleOf(it.withChildRemoved(childId))
+                IStream.of(it.withChildRemoved(childId))
             }
-            val withChildAdded = withChildRemoved.flatMap { tree ->
+            val withChildAdded = withChildRemoved.flatMapOne { tree ->
                 tree.updateNode(newParentId) {
                     tree.insertChildrenIntoParentData(it, adjustedIndex, longArrayOf(childId), newRole)
                 }
             }
-            val withUpdatedRole = withChildAdded.flatMap { tree ->
+            val withUpdatedRole = withChildAdded.flatMapOne { tree ->
                 tree.updateNode(childId) {
-                    singleOf(it.withContainment(newParentId, getRoleKey(newRole)))
+                    IStream.of(it.withContainment(newParentId, getRoleKey(newRole)))
                 }
             }
             withUpdatedRole
         }.flatten()
-        return checkCycle.andThen(newTree)
+        return checkCycle.plus(newTree)
     }
 
-    override fun setConcept(nodeId: Long, concept: ConceptReference): Single<IAsyncMutableTree> {
-        return updateNode(nodeId) { singleOf(it.withConcept(concept.getUID().takeIf { it != NullConcept.getUID() })) }
+    override fun setConcept(nodeId: Long, concept: ConceptReference): IStream.One<IAsyncMutableTree> {
+        return updateNode(nodeId) { IStream.of(it.withConcept(concept.getUID().takeIf { it != NullConcept.getUID() })) }
     }
 
-    override fun setPropertyValue(nodeId: Long, role: IPropertyReference, value: String?): Single<IAsyncMutableTree> {
-        return updateNode(nodeId) { singleOf(it.withPropertyValue(getRoleKey(role), value)) }
+    override fun setPropertyValue(nodeId: Long, role: IPropertyReference, value: String?): IStream.One<IAsyncMutableTree> {
+        return updateNode(nodeId) { IStream.of(it.withPropertyValue(getRoleKey(role), value)) }
     }
 
-    override fun setReferenceTarget(sourceId: Long, role: IReferenceLinkReference, target: INodeReference?): Single<IAsyncMutableTree> {
+    override fun setReferenceTarget(sourceId: Long, role: IReferenceLinkReference, target: INodeReference?): IStream.One<IAsyncMutableTree> {
         val refData: CPNodeRef? = when (target) {
             null -> null
             is LocalPNodeReference -> {
@@ -509,32 +483,36 @@ open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyn
             }
             else -> foreign(INodeReferenceSerializer.serialize(target))
         }
-        return updateNode(sourceId) { singleOf(it.withReferenceTarget(getRoleKey(role), refData)) }
+        return updateNode(sourceId) { IStream.of(it.withReferenceTarget(getRoleKey(role), refData)) }
     }
 
-    override fun setReferenceTarget(sourceId: Long, role: IReferenceLinkReference, targetId: Long): Single<IAsyncMutableTree> {
-        return updateNode(sourceId) { singleOf(it.withReferenceTarget(getRoleKey(role), local(targetId))) }
+    override fun setReferenceTarget(sourceId: Long, role: IReferenceLinkReference, targetId: Long): IStream.One<IAsyncMutableTree> {
+        return updateNode(sourceId) { IStream.of(it.withReferenceTarget(getRoleKey(role), local(targetId))) }
     }
 
-    override fun deleteNodes(nodeIds: LongArray): Single<IAsyncMutableTree> {
+    override fun deleteNodes(nodeIds: LongArray): IStream.One<IAsyncMutableTree> {
         if (nodeIds.size == 1) return deleteNodeRecursive(nodeIds[0])
-        return nodeIds.asObservable().fold(singleOf(this)) { acc, nodeId -> acc.flatMap { it.deleteNodeRecursive(nodeId) } }.flatten()
+        return IStream.many(nodeIds).fold(IStream.of(this)) { acc, nodeId ->
+            acc.flatMapOne { it.deleteNodeRecursive(nodeId) }
+        }.flatten()
     }
 
-    private fun deleteNodeRecursive(nodeId: Long): Single<AsyncTree> {
-        val mapWithoutRemovedNodes: Single<CPHamtNode> = getDescendantsAndSelf(nodeId).fold(nodesMap.query()) { map, node -> map.flatMap { it.remove(node, store).assertNotEmpty() } }.flatten()
-        val parent = getParent(nodeId).asSingleOrError { IllegalArgumentException("Cannot delete node without parent: ${nodeId.toString(16)}") }
+    private fun deleteNodeRecursive(nodeId: Long): IStream.One<AsyncTree> {
+        val mapWithoutRemovedNodes: IStream.One<CPHamtNode> = getDescendantsAndSelf(nodeId)
+            .fold(nodesMap.query()) { map, node -> map.flatMapOne { it.remove(node, store).assertNotEmpty() } }
+            .flatten()
+        val parent = getParent(nodeId).exceptionIfEmpty { IllegalArgumentException("Cannot delete node without parent: ${nodeId.toString(16)}") }
 
-        return parent.flatMap { parentId ->
-            updateNodeInMap(mapWithoutRemovedNodes, parentId) { singleOf(it.withChildRemoved(nodeId)) }
+        return parent.flatMapOne { parentId ->
+            updateNodeInMap(mapWithoutRemovedNodes, parentId) { IStream.of(it.withChildRemoved(nodeId)) }
         }.newTree()
     }
 }
 
 @Deprecated("Prefetching will be replaced by usages of IAsyncNode")
 private data class PrefetchNodeGoal(val tree: AsyncTree, val nodeId: Long) : IPrefetchGoal {
-    override fun loadRequest(bulkQuery: IBulkQuery): Observable<Any?> {
-        return tree.getAllChildren(nodeId).flatMapSingle { tree.getNode(it) }
+    override fun loadRequest(bulkQuery: IBulkQuery): IStream.Many<Any?> {
+        return tree.getAllChildren(nodeId).flatMap { tree.getNode(it) }
     }
 
     override fun toString(): String {

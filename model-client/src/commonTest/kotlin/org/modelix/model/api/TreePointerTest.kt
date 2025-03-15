@@ -3,7 +3,6 @@ package org.modelix.model.api
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.async.asAsyncNode
 import org.modelix.model.client.IdGenerator
-import org.modelix.streams.getSynchronous
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

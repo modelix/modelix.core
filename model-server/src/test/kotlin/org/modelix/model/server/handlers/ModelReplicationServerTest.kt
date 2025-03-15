@@ -53,6 +53,7 @@ import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.runWithNettyServer
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.RequiresTransaction
+import org.modelix.streams.FlowStreamBuilder
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -271,15 +272,19 @@ class ModelReplicationServerTest {
         val faultyRepositoriesManager = object :
             IRepositoriesManager by repositoriesManager {
             override suspend fun computeDelta(repository: RepositoryId?, versionHash: String, baseVersionHash: String?): ObjectData {
-                val originalFlow = repositoriesManager.computeDelta(repository, versionHash, baseVersionHash).asFlow()
+                val originalFlow = repositoriesManager.computeDelta(repository, versionHash, baseVersionHash).asStream()
                 val brokenFlow = channelFlow<Pair<String, String>> {
                     error("Unexpected error.")
                 }
                 return ObjectDataFlow(
-                    flow {
-                        emitAll(originalFlow)
-                        emitAll(brokenFlow)
-                    },
+                    FlowStreamBuilder.Wrapper(
+                        flow {
+                            originalFlow.iterateSuspending {
+                                emit(it)
+                            }
+                            emitAll(brokenFlow)
+                        },
+                    ),
                 )
             }
         }

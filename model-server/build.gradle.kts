@@ -27,6 +27,7 @@ dependencies {
     implementation(libs.kotlin.serialization.json)
     implementation(libs.kotlin.coroutines.core)
 
+    implementation(project(":streams"))
     implementation(project(":model-api"))
     implementation(project(":model-server-api"))
     implementation(project(":model-client", configuration = "jvmRuntimeElements"))

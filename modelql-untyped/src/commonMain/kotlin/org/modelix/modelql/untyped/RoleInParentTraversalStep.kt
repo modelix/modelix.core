@@ -17,7 +17,6 @@ import org.modelix.modelql.core.SerializationContext
 import org.modelix.modelql.core.SimpleMonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.stepOutputSerializer
-import org.modelix.modelql.untyped.AllReferencesTraversalStep.Descriptor
 
 class RoleInParentTraversalStep() : SimpleMonoTransformingStep<INode, String?>() {
     override fun transform(evaluationContext: QueryEvaluationContext, input: INode): String? {

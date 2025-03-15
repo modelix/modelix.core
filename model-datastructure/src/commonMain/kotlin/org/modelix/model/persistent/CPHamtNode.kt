@@ -1,15 +1,10 @@
 package org.modelix.model.persistent
 
-import com.badoo.reaktive.maybe.Maybe
-import com.badoo.reaktive.maybe.asSingleOrError
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.toList
-import com.badoo.reaktive.single.Single
-import com.badoo.reaktive.single.map
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.persistent.SerializationUtil.intFromHex
 import org.modelix.model.persistent.SerializationUtil.longFromHex
+import org.modelix.streams.IStream
 import kotlin.jvm.JvmStatic
 
 /**
@@ -26,43 +21,43 @@ abstract class CPHamtNode : IKVValue {
         return CPHamtInternal(0, arrayOf())
     }
 
-    fun getAll(keys: LongArray, store: IAsyncObjectStore): Single<List<KVEntryReference<CPNode>?>> {
+    fun getAll(keys: LongArray, store: IAsyncObjectStore): IStream.One<List<KVEntryReference<CPNode>?>> {
         return getAll(keys, 0, store).toList().map {
             val entries = it.associateBy { it.first }
             keys.map { entries[it]?.second }
         }
     }
 
-    fun put(key: Long, value: KVEntryReference<CPNode>?, store: IAsyncObjectStore): Maybe<CPHamtNode> {
+    fun put(key: Long, value: KVEntryReference<CPNode>?, store: IAsyncObjectStore): IStream.ZeroOrOne<CPHamtNode> {
         return put(key, value, 0, store)
     }
 
-    fun put(data: CPNode, store: IAsyncObjectStore): Single<CPHamtNode> {
+    fun put(data: CPNode, store: IAsyncObjectStore): IStream.One<CPHamtNode> {
         return put(data.id, KVEntryReference(data), store)
-            .asSingleOrError { RuntimeException("Map should not be empty after putting a non-null value") }
+            .exceptionIfEmpty { RuntimeException("Map should not be empty after putting a non-null value") }
     }
 
-    fun remove(key: Long, store: IAsyncObjectStore): Maybe<CPHamtNode> {
+    fun remove(key: Long, store: IAsyncObjectStore): IStream.ZeroOrOne<CPHamtNode> {
         return remove(key, 0, store)
     }
 
-    fun remove(element: CPNode, store: IAsyncObjectStore): Maybe<CPHamtNode> {
+    fun remove(element: CPNode, store: IAsyncObjectStore): IStream.ZeroOrOne<CPHamtNode> {
         return remove(element.id, store)
     }
 
-    fun get(key: Long, store: IAsyncObjectStore): Maybe<KVEntryReference<CPNode>> = get(key, 0, store)
+    fun get(key: Long, store: IAsyncObjectStore): IStream.ZeroOrOne<KVEntryReference<CPNode>> = get(key, 0, store)
 
-    abstract fun get(key: Long, shift: Int, store: IAsyncObjectStore): Maybe<KVEntryReference<CPNode>>
-    abstract fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode>
-    abstract fun putAll(entries: List<Pair<Long, KVEntryReference<CPNode>?>>, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode>
-    abstract fun getAll(keys: LongArray, shift: Int, store: IAsyncObjectStore): Observable<Pair<Long, KVEntryReference<CPNode>?>>
-    abstract fun remove(key: Long, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode>
-    abstract fun getEntries(store: IAsyncObjectStore): Observable<Pair<Long, KVEntryReference<CPNode>>>
-    abstract fun getChanges(oldNode: CPHamtNode?, shift: Int, store: IAsyncObjectStore, changesOnly: Boolean): Observable<MapChangeEvent>
+    abstract fun get(key: Long, shift: Int, store: IAsyncObjectStore): IStream.ZeroOrOne<KVEntryReference<CPNode>>
+    abstract fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IAsyncObjectStore): IStream.ZeroOrOne<CPHamtNode>
+    abstract fun putAll(entries: List<Pair<Long, KVEntryReference<CPNode>?>>, shift: Int, store: IAsyncObjectStore): IStream.ZeroOrOne<CPHamtNode>
+    abstract fun getAll(keys: LongArray, shift: Int, store: IAsyncObjectStore): IStream.Many<Pair<Long, KVEntryReference<CPNode>?>>
+    abstract fun remove(key: Long, shift: Int, store: IAsyncObjectStore): IStream.ZeroOrOne<CPHamtNode>
+    abstract fun getEntries(store: IAsyncObjectStore): IStream.Many<Pair<Long, KVEntryReference<CPNode>>>
+    abstract fun getChanges(oldNode: CPHamtNode?, shift: Int, store: IAsyncObjectStore, changesOnly: Boolean): IStream.Many<MapChangeEvent>
     fun getChanges(oldNode: CPHamtNode?, store: IAsyncObjectStore, changesOnly: Boolean) = getChanges(oldNode, 0, store, changesOnly)
 
-    abstract fun objectDiff(oldObject: IKVValue?, shift: Int, store: IAsyncObjectStore): Observable<IKVValue>
-    final override fun objectDiff(oldObject: IKVValue?, store: IAsyncObjectStore): Observable<IKVValue> {
+    abstract fun objectDiff(oldObject: IKVValue?, shift: Int, store: IAsyncObjectStore): IStream.Many<IKVValue>
+    final override fun objectDiff(oldObject: IKVValue?, store: IAsyncObjectStore): IStream.Many<IKVValue> {
         return objectDiff(oldObject, 0, store)
     }
 

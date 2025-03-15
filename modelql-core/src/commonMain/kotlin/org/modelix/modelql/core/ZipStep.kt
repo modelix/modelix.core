@@ -1,13 +1,5 @@
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.asObservable
-import com.badoo.reaktive.observable.flatMap
-import com.badoo.reaktive.observable.map
-import com.badoo.reaktive.observable.toList
-import com.badoo.reaktive.observable.zip
-import com.badoo.reaktive.single.asObservable
-import com.badoo.reaktive.single.map
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -21,7 +13,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeCollection
-import org.modelix.streams.assertNotEmpty
+import org.modelix.streams.IStream
 
 open class ZipStep<CommonIn, Out : ZipNOutputC<CommonIn>>() : ProducingStep<Out>(), IConsumingStep<CommonIn>, IMonoStep<Out>, IFluxStep<Out> {
     private val producers = ArrayList<IProducingStep<CommonIn>>()
@@ -80,8 +72,8 @@ open class ZipStep<CommonIn, Out : ZipNOutputC<CommonIn>>() : ProducingStep<Out>
 
     private fun ZipNOutputC<CommonIn>.upcast(): Out = this as Out
 
-    override fun createStream(context: IStreamInstantiationContext): Observable<ZipStepOutput<Out, CommonIn>> {
-        val inputStreams: List<Observable<IStepOutput<CommonIn>>> = producers.map {
+    override fun createStream(context: IStreamInstantiationContext): IStream.Many<ZipStepOutput<Out, CommonIn>> {
+        val inputStreams: List<IStream.Many<IStepOutput<CommonIn>>> = producers.map {
             val possiblyEmptyStreams = context.getOrCreateStream(it)
             if (it is AllowEmptyStep) {
                 possiblyEmptyStreams
@@ -151,11 +143,11 @@ fun <T> IMonoStep<T>.assertNotEmpty(): IMonoStep<T> = AssertNotEmptyStep<T>().al
 typealias ZipNOutput = ZipOutput<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?>
 typealias ZipNOutputC<Common> = ZipOutput<Common, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?>
 
-fun <Common> Iterable<Observable<Common>>.zipRepeating(): Observable<List<Common>> {
+fun <Common> Iterable<IStream.Many<Common>>.zipRepeating(): IStream.Many<List<Common>> {
     // TODO Performance could be improved by emitting zip elements earlier without first collecting each stream into a list
-    return zip(*this.map { it.toList().map { it.asSequence() }.asObservable() }.toTypedArray()) {
+    return IStream.zip(this.map { it.toList().map { it.asSequence() } }) {
         CombiningSequence(it.toTypedArray())
-    }.flatMap { it.asIterable().asObservable() }
+    }.flatMapIterable { it.asIterable() }
 }
 
 class CombiningSequence<Common>(private val sequences: Array<Sequence<Common>>) : Sequence<List<Common>> {

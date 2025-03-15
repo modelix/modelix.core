@@ -1,13 +1,10 @@
 package org.modelix.model.async
 
-import com.badoo.reaktive.completable.Completable
-import com.badoo.reaktive.maybe.Maybe
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.single.Single
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.persistent.IKVValue
+import org.modelix.streams.IStream
 
 @Deprecated("Use BulkAsyncStore")
 class BulkQueryAsAsyncStore(val store: IDeserializingKeyValueStore, val bulkQuery: IBulkQuery) : IAsyncObjectStore {
@@ -19,19 +16,19 @@ class BulkQueryAsAsyncStore(val store: IDeserializingKeyValueStore, val bulkQuer
         return store
     }
 
-    override fun <T : Any> get(key: ObjectHash<T>): Maybe<T> {
+    override fun <T : Any> get(key: ObjectHash<T>): IStream.ZeroOrOne<T> {
         return bulkQuery.query(key.toKVEntryReference())
     }
 
-    override fun getAllAsMap(keys: List<ObjectHash<*>>): Single<Map<ObjectHash<*>, Any?>> {
+    override fun getAllAsMap(keys: List<ObjectHash<*>>): IStream.One<Map<ObjectHash<*>, Any?>> {
         throw UnsupportedOperationException()
     }
 
-    override fun getAllAsStream(keys: Observable<ObjectHash<*>>): Observable<Pair<ObjectHash<*>, Any?>> {
+    override fun getAllAsStream(keys: IStream.Many<ObjectHash<*>>): IStream.Many<Pair<ObjectHash<*>, Any?>> {
         throw UnsupportedOperationException()
     }
 
-    override fun putAll(entries: Map<ObjectHash<*>, IKVValue>): Completable {
+    override fun putAll(entries: Map<ObjectHash<*>, IKVValue>): IStream.Zero {
         throw UnsupportedOperationException()
     }
 

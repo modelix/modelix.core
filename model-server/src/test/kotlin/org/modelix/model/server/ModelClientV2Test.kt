@@ -64,7 +64,7 @@ class ModelClientV2Test {
 
         val repositoryId = RepositoryId("repo1")
         val initialVersion = client.initRepository(repositoryId)
-        assertEquals(0, initialVersion.getTree().getAllChildren(ITree.ROOT_ID).count())
+        assertEquals(0, initialVersion.getTree().asAsyncTree().getAllChildren(ITree.ROOT_ID).count().getSuspending())
 
         val branch = OTBranch(PBranch(initialVersion.getTree(), client.getIdGenerator()), client.getIdGenerator(), (initialVersion as CLVersion).store)
         branch.runWriteT { t ->

@@ -1,10 +1,9 @@
 package org.modelix.model.lazy
 
-import com.badoo.reaktive.maybe.asSingleOrError
-import com.badoo.reaktive.single.Single
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.async.toObjectHash
 import org.modelix.model.persistent.IKVValue
+import org.modelix.streams.IStream
 
 class WrittenEntry<E : IKVValue>(
     private val hash: String,
@@ -17,8 +16,8 @@ class WrittenEntry<E : IKVValue>(
             ?: throw MissingEntryException("Entry $hash not found")
     }
 
-    override fun getValue(store: IAsyncObjectStore): Single<E> {
-        return store.get(toObjectHash()).asSingleOrError { MissingEntryException("Entry not found: $this") }
+    override fun getValue(store: IAsyncObjectStore): IStream.One<E> {
+        return store.get(toObjectHash()).exceptionIfEmpty { MissingEntryException("Entry not found: $this") }
     }
 
     override fun getUnwrittenValue(): E {

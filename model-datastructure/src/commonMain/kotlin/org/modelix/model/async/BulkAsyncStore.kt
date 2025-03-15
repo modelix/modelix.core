@@ -1,25 +1,17 @@
 package org.modelix.model.async
 
-import com.badoo.reaktive.completable.Completable
-import com.badoo.reaktive.maybe.Maybe
 import com.badoo.reaktive.maybe.doOnAfterSubscribe
-import com.badoo.reaktive.maybe.toMaybe
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.asObservable
-import com.badoo.reaktive.observable.flatMapSingle
-import com.badoo.reaktive.observable.toMap
 import com.badoo.reaktive.single.Single
-import com.badoo.reaktive.single.map
 import com.badoo.reaktive.single.notNull
-import com.badoo.reaktive.single.subscribe
 import org.modelix.kotlin.utils.ThreadLocal
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.persistent.IKVValue
 import org.modelix.streams.CompletableObservable
+import org.modelix.streams.IStream
+import org.modelix.streams.ReaktiveStreamBuilder
 import org.modelix.streams.SynchronousPipeline
-import org.modelix.streams.orNull
 
 class BulkAsyncStore(val store: IAsyncObjectStore) : IAsyncObjectStore {
     private val threadLocalData: ThreadLocal<ThreadLocalData> = ThreadLocal { ThreadLocalData() }
@@ -46,24 +38,26 @@ class BulkAsyncStore(val store: IAsyncObjectStore) : IAsyncObjectStore {
             }
             if (requests.isEmpty()) return
             val currentRequest = store.getAllAsMap(requests.map { it.first })
-            currentRequest.subscribe(onSubscribe = {
-            }, onError = { ex ->
-                for ((_, queueElement) in requests) {
-                    queueElement.requestResult.failed(ex)
-                }
-            }, onSuccess = { map ->
-                for ((_, queueElement) in requests) {
-                    queueElement as QueueElement<Any>
-                    val value = map[queueElement.hash]
-                    queueElement.requestResult.complete(value)
-                }
-            })
+            currentRequest.getAsync(
+                onError = { ex ->
+                    for ((_, queueElement) in requests) {
+                        queueElement.requestResult.failed(ex)
+                    }
+                },
+                onSuccess = { map ->
+                    for ((_, queueElement) in requests) {
+                        queueElement as QueueElement<Any>
+                        val value = map[queueElement.hash]
+                        queueElement.requestResult.complete(value)
+                    }
+                },
+            )
         }
 
-        fun <T : Any> query(hash: ObjectHash<T>): Maybe<T> {
+        fun <T : Any> query(hash: ObjectHash<T>): IStream.ZeroOrOne<T> {
             val cachedValue = store.getIfCached(hash)
             if (cachedValue != null) {
-                return cachedValue.toMaybe()
+                return IStream.of(cachedValue)
             }
 
             return (queue.getOrPut(hash) { QueueElement(hash, queue.size) } as QueueElement<T>).value.notNull().doOnAfterSubscribe {
@@ -75,7 +69,7 @@ class BulkAsyncStore(val store: IAsyncObjectStore) : IAsyncObjectStore {
                         pipeline.afterRootSubscribed.add(triggerFunction)
                     }
                 }
-            }
+            }.let { ReaktiveStreamBuilder.WrapperMaybe(it) }
         }
     }
 
@@ -92,7 +86,7 @@ class BulkAsyncStore(val store: IAsyncObjectStore) : IAsyncObjectStore {
         val value: Single<E?> = requestResult.single
     }
 
-    override fun <T : Any> get(key: ObjectHash<T>): Maybe<T> {
+    override fun <T : Any> get(key: ObjectHash<T>): IStream.ZeroOrOne<T> {
         return threadLocalData.get().query(key)
     }
 
@@ -100,15 +94,15 @@ class BulkAsyncStore(val store: IAsyncObjectStore) : IAsyncObjectStore {
         return store.getIfCached(key)
     }
 
-    override fun getAllAsStream(keys: Observable<ObjectHash<*>>): Observable<Pair<ObjectHash<*>, Any?>> {
-        return keys.flatMapSingle { key -> get(key).orNull().map { key to it } }
+    override fun getAllAsStream(keys: IStream.Many<ObjectHash<*>>): IStream.Many<Pair<ObjectHash<*>, Any?>> {
+        return keys.flatMap { key -> get(key).orNull().map { key to it } }
     }
 
-    override fun getAllAsMap(keys: List<ObjectHash<*>>): Single<Map<ObjectHash<*>, Any?>> {
-        return getAllAsStream(keys.asObservable()).toMap({ it.first }, { it.second })
+    override fun getAllAsMap(keys: List<ObjectHash<*>>): IStream.One<Map<ObjectHash<*>, Any?>> {
+        return getAllAsStream(IStream.many(keys)).toMap({ it.first }, { it.second })
     }
 
-    override fun putAll(entries: Map<ObjectHash<*>, IKVValue>): Completable {
+    override fun putAll(entries: Map<ObjectHash<*>, IKVValue>): IStream.Zero {
         return store.putAll(entries)
     }
 }

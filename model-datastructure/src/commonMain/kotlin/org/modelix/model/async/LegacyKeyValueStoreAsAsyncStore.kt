@@ -1,19 +1,9 @@
 package org.modelix.model.async
 
-import com.badoo.reaktive.completable.Completable
-import com.badoo.reaktive.completable.completableOfEmpty
-import com.badoo.reaktive.maybe.Maybe
-import com.badoo.reaktive.maybe.maybeOfEmpty
-import com.badoo.reaktive.maybe.toMaybe
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.asObservable
-import com.badoo.reaktive.observable.toList
-import com.badoo.reaktive.single.Single
-import com.badoo.reaktive.single.toSingle
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.persistent.IKVValue
-import org.modelix.streams.getSynchronous
+import org.modelix.streams.IStream
 
 class LegacyKeyValueStoreAsAsyncStore(val store: IKeyValueStore) : IAsyncObjectStore {
     override fun getLegacyKeyValueStore(): IKeyValueStore {
@@ -24,36 +14,40 @@ class LegacyKeyValueStoreAsAsyncStore(val store: IKeyValueStore) : IAsyncObjectS
         return AsyncStoreAsLegacyDeserializingStore(this)
     }
 
-    override fun <T : Any> get(key: ObjectHash<T>): Maybe<T> {
-        val value = store.get(key.hash) ?: return maybeOfEmpty()
-        return key.deserializer(value).toMaybe()
+    override fun <T : Any> get(key: ObjectHash<T>): IStream.ZeroOrOne<T> {
+        val value = store.get(key.hash) ?: return IStream.empty()
+        return IStream.of(key.deserializer(value))
     }
 
     override fun <T : Any> getIfCached(key: ObjectHash<T>): T? {
         return null
     }
 
-    override fun getAllAsStream(keys: Observable<ObjectHash<*>>): Observable<Pair<ObjectHash<*>, Any?>> {
+    override fun getAllAsStream(keys: IStream.Many<ObjectHash<*>>): IStream.Many<Pair<ObjectHash<*>, Any?>> {
         val keysList = keys.toList().getSynchronous()
         val keysMap = keysList.associateBy { it.hash }
         val serializedValues = store.getAll(keysMap.keys)
-        return serializedValues.map {
-            val ref = keysMap[it.key]!!
-            ref to it.value?.let { ref.deserializer(it) }
-        }.asObservable()
+        return IStream.many(
+            serializedValues.map {
+                val ref = keysMap[it.key]!!
+                ref to it.value?.let { ref.deserializer(it) }
+            },
+        )
     }
 
-    override fun getAllAsMap(keys: List<ObjectHash<*>>): Single<Map<ObjectHash<*>, Any?>> {
+    override fun getAllAsMap(keys: List<ObjectHash<*>>): IStream.One<Map<ObjectHash<*>, Any?>> {
         val keysMap = keys.associateBy { it.hash }
         val serializedValues = store.getAll(keysMap.keys)
-        return serializedValues.map {
-            val ref = keysMap[it.key]!!
-            ref to it.value?.let { ref.deserializer(it) }
-        }.toMap().toSingle()
+        return IStream.of(
+            serializedValues.map {
+                val ref = keysMap[it.key]!!
+                ref to it.value?.let { ref.deserializer(it) }
+            }.toMap(),
+        )
     }
 
-    override fun putAll(entries: Map<ObjectHash<*>, IKVValue>): Completable {
+    override fun putAll(entries: Map<ObjectHash<*>, IKVValue>): IStream.Zero {
         store.putAll(entries.entries.associate { it.key.hash to it.value.serialize() })
-        return completableOfEmpty()
+        return IStream.zero()
     }
 }

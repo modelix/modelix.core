@@ -5,7 +5,6 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.application.call
 import io.ktor.server.request.acceptItems
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveChannel
@@ -23,8 +22,6 @@ import io.ktor.utils.io.writeStringUtf8
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.onEmpty
-import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.withContext
 import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
@@ -59,8 +56,8 @@ import org.modelix.modelql.core.QueryEvaluationContext
 import org.modelix.modelql.core.QueryGraphDescriptor
 import org.modelix.modelql.core.upcast
 import org.modelix.modelql.server.ModelQLServer
-import org.modelix.streams.exactlyOne
-import org.modelix.streams.getSynchronous
+import org.modelix.streams.IStream
+import org.modelix.streams.ifEmpty
 import org.slf4j.LoggerFactory
 
 /**
@@ -420,12 +417,12 @@ class ModelReplicationServer(
         val contentType = if (plainText) ContentType.Text.Plain else VersionDeltaStream.CONTENT_TYPE
         respondBytesWriter(contentType) {
             this.useClosingWithoutCause {
-                objectData.asFlow()
-                    .flatten()
+                objectData.asStream()
+                    .flatMapIterable { it.toList() }
                     .withSeparator("\n")
-                    .onEmpty { emit(versionHash) }
+                    .ifEmpty(versionHash)
                     .withIndex()
-                    .collect {
+                    .iterateSuspending {
                         if (it.index == 0) check(it.value == versionHash) { "First object should be the version" }
                         writeStringUtf8(it.value)
                     }
@@ -437,7 +434,7 @@ class ModelReplicationServer(
         val objectData = repositoriesManager.computeDelta(repositoryId, versionHash, baseVersionHash)
         respondBytesWriter(VersionDeltaStreamV2.CONTENT_TYPE) {
             this.useClosingWithoutCause {
-                VersionDeltaStreamV2.encodeVersionDeltaStreamV2(this, versionHash, objectData.asFlow())
+                VersionDeltaStreamV2.encodeVersionDeltaStreamV2(this, versionHash, objectData.asStream())
             }
         }
     }
@@ -473,6 +470,8 @@ private fun <T> Flow<Pair<T, T>>.flatten() = flow<T> {
         emit(it.second)
     }
 }
+
+private fun IStream.Many<String>.withSeparator(separator: String) = flatMapIterable { listOf(separator, it) }.skip(1)
 
 private fun Flow<String>.withSeparator(separator: String) = flow {
     var first = true

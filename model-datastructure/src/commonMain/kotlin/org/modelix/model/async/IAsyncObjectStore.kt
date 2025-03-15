@@ -1,20 +1,12 @@
 package org.modelix.model.async
 
-import com.badoo.reaktive.completable.Completable
-import com.badoo.reaktive.maybe.Maybe
-import com.badoo.reaktive.maybe.asObservable
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.asObservable
-import com.badoo.reaktive.observable.concatWith
-import com.badoo.reaktive.observable.flatMap
-import com.badoo.reaktive.observable.observableOf
-import com.badoo.reaktive.observable.observableOfEmpty
-import com.badoo.reaktive.single.Single
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.IKVEntryReference
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.persistent.IKVValue
+import org.modelix.streams.IStream
+import org.modelix.streams.plus
 
 interface IAsyncObjectStore {
     @Deprecated("Use IAsyncObjectStore")
@@ -24,11 +16,11 @@ interface IAsyncObjectStore {
     fun getLegacyObjectStore(): IDeserializingKeyValueStore
 
     fun <T : Any> getIfCached(key: ObjectHash<T>): T?
-    fun <T : Any> get(key: ObjectHash<T>): Maybe<T>
+    fun <T : Any> get(key: ObjectHash<T>): IStream.ZeroOrOne<T>
 
-    fun getAllAsStream(keys: Observable<ObjectHash<*>>): Observable<Pair<ObjectHash<*>, Any?>>
-    fun getAllAsMap(keys: List<ObjectHash<*>>): Single<Map<ObjectHash<*>, Any?>>
-    fun putAll(entries: Map<ObjectHash<*>, IKVValue>): Completable
+    fun getAllAsStream(keys: IStream.Many<ObjectHash<*>>): IStream.Many<Pair<ObjectHash<*>, Any?>>
+    fun getAllAsMap(keys: List<ObjectHash<*>>): IStream.One<Map<ObjectHash<*>, Any?>>
+    fun putAll(entries: Map<ObjectHash<*>, IKVValue>): IStream.Zero
 }
 
 class ObjectHash<E : Any>(val hash: String, val deserializer: (String) -> E) {
@@ -53,13 +45,13 @@ fun <T : IKVValue> IKVEntryReference<T>.toObjectHash(): ObjectHash<T> {
 
 fun <T : IKVValue> ObjectHash<*>.toKVEntryReference(): IKVEntryReference<T> = KVEntryReference(hash, deserializer as ((String) -> T))
 
-fun IAsyncObjectStore.getRecursively(key: IKVEntryReference<IKVValue>, seenHashes: MutableSet<String> = HashSet()): Observable<Pair<IKVEntryReference<*>, IKVValue>> {
+fun IAsyncObjectStore.getRecursively(key: IKVEntryReference<IKVValue>, seenHashes: MutableSet<String> = HashSet()): IStream.Many<Pair<IKVEntryReference<*>, IKVValue>> {
     return if (seenHashes.contains(key.getHash())) {
-        observableOfEmpty()
+        IStream.empty()
     } else {
         seenHashes.add(key.getHash())
-        get(key.toObjectHash()).asObservable().flatMap {
-            observableOf(key to it).concatWith(it.getReferencedEntries().asObservable().flatMap { getRecursively(it, seenHashes) })
+        get(key.toObjectHash()).flatMap {
+            IStream.of(key to it).plus(IStream.many(it.getReferencedEntries()).flatMap { getRecursively(it, seenHashes) })
         }
     }
 }

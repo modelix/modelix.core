@@ -1,15 +1,10 @@
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.observable.asObservable
-import com.badoo.reaktive.observable.firstOrDefault
-import com.badoo.reaktive.observable.flatMap
-import com.badoo.reaktive.observable.map
-import com.badoo.reaktive.observable.observableOfEmpty
-import com.badoo.reaktive.single.flatten
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.modelix.streams.filterBySingle
+import org.modelix.streams.IStream
+import org.modelix.streams.flatten
 import kotlin.experimental.ExperimentalTypeInference
 
 class WhenStep<In, Out>(
@@ -83,14 +78,14 @@ class WhenStep<In, Out>(
 
     override fun createStream(input: StepStream<In>, context: IStreamInstantiationContext): StepStream<Out> {
         return input.flatMap { inputElement ->
-            cases.withIndex().asObservable().filterBySingle { (index, case) ->
+            IStream.many(cases.withIndex()).filterBySingle { (index, case) ->
                 case.first.asStream(context.evaluationContext, inputElement).map { it.value == true }.firstOrDefault(false)
             }.map { (index, case) ->
                 case.second.asStream(context.evaluationContext, inputElement).map { MultiplexedOutput(index, it) }
             }.firstOrDefault {
                 val elseCaseIndex = cases.size
                 elseCase?.asStream(context.evaluationContext, inputElement)?.map { MultiplexedOutput(elseCaseIndex, it) }
-                    ?: observableOfEmpty()
+                    ?: IStream.empty()
             }.flatten()
         }
     }

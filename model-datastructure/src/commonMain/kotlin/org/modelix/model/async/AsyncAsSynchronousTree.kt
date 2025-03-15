@@ -1,9 +1,5 @@
 package org.modelix.model.async
 
-import com.badoo.reaktive.observable.map
-import com.badoo.reaktive.observable.toList
-import com.badoo.reaktive.single.Single
-import com.badoo.reaktive.single.map
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -24,12 +20,11 @@ import org.modelix.model.api.async.PropertyChangedEvent
 import org.modelix.model.api.async.ReferenceChangedEvent
 import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.api.resolve
-import org.modelix.streams.getSynchronous
-import org.modelix.streams.iterateSynchronous
+import org.modelix.streams.IStream
 
 internal class AsyncAsSynchronousTree(val asyncTree: IAsyncMutableTree) : ITree {
 
-    private fun Single<IAsyncMutableTree>.getTree() = getSynchronous().asSynchronousTree()
+    private fun IStream.One<IAsyncMutableTree>.getTree() = getSynchronous().asSynchronousTree()
 
     override fun asAsyncTree(): IAsyncMutableTree {
         return asyncTree
@@ -76,7 +71,7 @@ internal class AsyncAsSynchronousTree(val asyncTree: IAsyncMutableTree) : ITree 
     }
 
     override fun getProperty(nodeId: Long, role: String): String? {
-        return asyncTree.getPropertyValue(nodeId, IPropertyReference.fromUnclassifiedString(role)).getSynchronous()
+        return asyncTree.getPropertyValue(nodeId, IPropertyReference.fromUnclassifiedString(role)).orNull().getSynchronous()
     }
 
     override fun getChildren(parentId: Long, role: String?): Iterable<Long> {
@@ -92,7 +87,7 @@ internal class AsyncAsSynchronousTree(val asyncTree: IAsyncMutableTree) : ITree 
     }
 
     override fun getParent(nodeId: Long): Long {
-        return asyncTree.getParent(nodeId).getSynchronous() ?: 0L
+        return asyncTree.getParent(nodeId).orNull().getSynchronous() ?: 0L
     }
 
     override fun getRole(nodeId: Long): String? {
@@ -104,7 +99,7 @@ internal class AsyncAsSynchronousTree(val asyncTree: IAsyncMutableTree) : ITree 
     }
 
     override fun getReferenceTarget(sourceId: Long, role: String): INodeReference? {
-        return asyncTree.getReferenceTarget(sourceId, IReferenceLinkReference.fromUnclassifiedString(role)).getSynchronous()
+        return asyncTree.getReferenceTarget(sourceId, IReferenceLinkReference.fromUnclassifiedString(role)).orNull().getSynchronous()
     }
 
     override fun setReferenceTarget(sourceId: Long, role: String, target: INodeReference?): ITree {

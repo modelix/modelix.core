@@ -1,8 +1,6 @@
 package org.modelix.model.server.handlers
 
-import com.badoo.reaktive.observable.map
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.datetime.Clock
 import org.modelix.model.ModelMigrations
@@ -19,7 +17,6 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.fullDiff
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.SerializationUtil
-import org.modelix.model.server.api.v2.toMap
 import org.modelix.model.server.store.IRepositoryAwareStore
 import org.modelix.model.server.store.ITransactionManager
 import org.modelix.model.server.store.ObjectInRepository
@@ -240,23 +237,32 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
     @RequiresTransaction
     override fun mergeChanges(branch: BranchReference, newVersionHash: String): String {
         val headHash = getVersionHash(branch)
+        if (headHash == newVersionHash) return headHash
+        val legacyObjectStore = getLegacyObjectStore(branch.repositoryId)
+        val newVersion = CLVersion(newVersionHash, legacyObjectStore)
         val mergedHash = if (headHash == null) {
+            validateVersion(newVersion, null)
             newVersionHash
         } else {
             val legacyObjectStore = getLegacyObjectStore(branch.repositoryId)
             val headVersion = CLVersion(headHash, legacyObjectStore)
-            val newVersion = CLVersion(newVersionHash, legacyObjectStore)
             require(headVersion.getTree().getId() == newVersion.getTree().getId()) {
                 "Attempt to merge a model with ID '${newVersion.getTree().getId()}'" +
                     " into one with ID '${headVersion.getTree().getId()}'"
             }
             val mergedVersion = VersionMerger(legacyObjectStore, stores.idGenerator)
                 .mergeChange(headVersion, newVersion)
+            validateVersion(newVersion, headVersion)
             mergedVersion.getContentHash()
         }
         ensureBranchInList(branch)
         putVersionHash(branch, mergedHash)
         return mergedHash
+    }
+
+    private fun validateVersion(newVersion: CLVersion, oldVersion: CLVersion?) {
+        // ensure there are no missing objects
+        newVersion.fullDiff(oldVersion).iterateSynchronous { }
     }
 
     @RequiresTransaction

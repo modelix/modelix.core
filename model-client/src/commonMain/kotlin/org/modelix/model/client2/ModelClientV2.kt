@@ -347,10 +347,9 @@ class ModelClientV2(
             val entrySize = (if (chunkContent.isEmpty()) 0 else 1) + entry.first.length + 1 + entry.second.length
             if (chunkContent.length + entrySize > maxBodySize) {
                 sendChunk()
-            } else {
-                if (chunkContent.isNotEmpty()) chunkContent.append('\n')
-                chunkContent.append(entry.first).append('\n').append(entry.second)
             }
+            if (chunkContent.isNotEmpty()) chunkContent.append('\n')
+            chunkContent.append(entry.first).append('\n').append(entry.second)
         }
         if (chunkContent.isNotEmpty()) sendChunk()
     }

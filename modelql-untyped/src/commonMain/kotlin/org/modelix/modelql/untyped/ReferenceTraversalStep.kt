@@ -1,7 +1,5 @@
 package org.modelix.modelql.untyped
 
-import com.badoo.reaktive.maybe.map
-import com.badoo.reaktive.observable.flatMapMaybe
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -27,7 +25,7 @@ import org.modelix.modelql.core.stepOutputSerializer
 
 class ReferenceTraversalStep(val link: IReferenceLinkReference) : MonoTransformingStep<INode, INode>(), IMonoStep<INode> {
     override fun createStream(input: StepStream<INode>, context: IStreamInstantiationContext): StepStream<INode> {
-        return input.flatMapMaybe {
+        return input.flatMap {
             it.value.asAsyncNode().getReferenceTarget(link).map { it.asRegularNode() }
         }.asStepStream(this)
     }

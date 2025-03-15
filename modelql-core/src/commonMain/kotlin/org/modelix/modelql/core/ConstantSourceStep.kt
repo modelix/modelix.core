@@ -1,6 +1,5 @@
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.observable.observableOf
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -15,6 +14,7 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeStructure
 import kotlinx.serialization.serializer
+import org.modelix.streams.IStream
 import kotlin.jvm.JvmName
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
@@ -46,7 +46,7 @@ open class ConstantSourceStep<E>(val element: E, val type: KType) : ProducingSte
     }
 
     override fun createStream(context: IStreamInstantiationContext): StepStream<E> {
-        return observableOf(element.asStepOutput(this))
+        return IStream.of(element.asStepOutput(this))
     }
 
     override fun toString(): String {

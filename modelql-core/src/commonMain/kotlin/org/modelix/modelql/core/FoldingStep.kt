@@ -1,12 +1,9 @@
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.single.Single
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.modelix.streams.exactlyOne
-import org.modelix.streams.fold
-import org.modelix.streams.getSynchronous
+import org.modelix.streams.IStream
 
 class FoldingStep<In : CommonIn, Out : CommonIn, CommonIn>(private val operation: MonoUnboundQuery<IZip2Output<CommonIn, Out, In>, Out>) : AggregationStep<CommonIn, Out>() {
 
@@ -32,7 +29,7 @@ class FoldingStep<In : CommonIn, Out : CommonIn, CommonIn>(private val operation
         }
     }
 
-    override fun aggregate(input: StepStream<CommonIn>, context: IStreamInstantiationContext): Single<IStepOutput<Out>> {
+    override fun aggregate(input: StepStream<CommonIn>, context: IStreamInstantiationContext): IStream.One<IStepOutput<Out>> {
         val initialValue: IStepOutput<Out> = context.getOrCreateStream<Out>(getInitialValueProducer()).exactlyOne().getSynchronous()
         return input.fold(initialValue) { acc, value -> fold(acc, value) }
     }

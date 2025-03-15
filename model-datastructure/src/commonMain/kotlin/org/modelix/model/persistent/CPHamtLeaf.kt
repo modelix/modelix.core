@@ -1,24 +1,11 @@
 package org.modelix.model.persistent
 
-import com.badoo.reaktive.maybe.Maybe
-import com.badoo.reaktive.maybe.asObservable
-import com.badoo.reaktive.maybe.asSingle
-import com.badoo.reaktive.maybe.maybeOf
-import com.badoo.reaktive.maybe.maybeOfEmpty
-import com.badoo.reaktive.maybe.toMaybe
-import com.badoo.reaktive.maybe.toMaybeNotNull
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.concatWith
-import com.badoo.reaktive.observable.flatMapMaybe
-import com.badoo.reaktive.observable.observableDefer
-import com.badoo.reaktive.observable.observableOf
-import com.badoo.reaktive.observable.observableOfEmpty
-import com.badoo.reaktive.single.asObservable
-import com.badoo.reaktive.single.flatMapMaybe
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.persistent.SerializationUtil.longToHex
-import org.modelix.streams.orNull
+import org.modelix.streams.IStream
+import org.modelix.streams.ifEmpty
+import org.modelix.streams.plus
 
 class CPHamtLeaf(
     val key: Long,
@@ -30,23 +17,23 @@ class CPHamtLeaf(
         return """L/${longToHex(key)}/${value.getHash()}"""
     }
 
-    override fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
+    override fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IAsyncObjectStore): IStream.ZeroOrOne<CPHamtNode> {
         require(shift <= CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL) { "$shift > ${CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL}" }
         return if (key == this.key) {
             if (value?.getHash() == this.value.getHash()) {
-                this.toMaybe()
+                IStream.of(this)
             } else {
-                create(key, value).toMaybeNotNull()
+                IStream.ofNotNull(create(key, value))
             }
         } else {
             createEmptyNode()
                 .put(this.key, this.value, shift, store)
-                .asSingle { createEmptyNode() }
-                .flatMapMaybe { it.put(key, value, shift, store) }
+                .ifEmpty { createEmptyNode() }
+                .flatMapZeroOrOne { it.put(key, value, shift, store) }
         }
     }
 
-    override fun putAll(entries: List<Pair<Long, KVEntryReference<CPNode>?>>, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
+    override fun putAll(entries: List<Pair<Long, KVEntryReference<CPNode>?>>, shift: Int, store: IAsyncObjectStore): IStream.ZeroOrOne<CPHamtNode> {
         return if (entries.size == 1) {
             val entry = entries.single()
             put(entry.first, entry.second, shift, store)
@@ -56,87 +43,91 @@ class CPHamtLeaf(
         }
     }
 
-    override fun remove(key: Long, shift: Int, store: IAsyncObjectStore): Maybe<CPHamtNode> {
+    override fun remove(key: Long, shift: Int, store: IAsyncObjectStore): IStream.ZeroOrOne<CPHamtNode> {
         require(shift <= CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL) { "$shift > ${CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL}" }
         return if (key == this.key) {
-            maybeOfEmpty()
+            IStream.empty()
         } else {
-            this.toMaybe()
+            IStream.of(this)
         }
     }
 
-    override fun get(key: Long, shift: Int, store: IAsyncObjectStore): Maybe<KVEntryReference<CPNode>> {
+    override fun get(key: Long, shift: Int, store: IAsyncObjectStore): IStream.ZeroOrOne<KVEntryReference<CPNode>> {
         require(shift <= CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL) { "$shift > ${CPHamtNode.MAX_SHIFT + CPHamtNode.BITS_PER_LEVEL}" }
-        return if (key == this.key) maybeOf(value) else maybeOfEmpty()
+        return if (key == this.key) IStream.of(value) else IStream.empty()
     }
 
     override fun getAll(
         keys: LongArray,
         shift: Int,
         store: IAsyncObjectStore,
-    ): Observable<Pair<Long, KVEntryReference<CPNode>?>> {
-        return if (keys.contains(this.key)) observableOf(key to value) else observableOfEmpty()
+    ): IStream.Many<Pair<Long, KVEntryReference<CPNode>?>> {
+        return if (keys.contains(this.key)) IStream.of(key to value) else IStream.empty()
     }
 
-    override fun getEntries(store: IAsyncObjectStore): Observable<Pair<Long, KVEntryReference<CPNode>>> {
-        return observableOf(key to value)
+    override fun getEntries(store: IAsyncObjectStore): IStream.Many<Pair<Long, KVEntryReference<CPNode>>> {
+        return IStream.of(key to value)
     }
 
-    override fun getChanges(oldNode: CPHamtNode?, shift: Int, store: IAsyncObjectStore, changesOnly: Boolean): Observable<MapChangeEvent> {
+    override fun getChanges(oldNode: CPHamtNode?, shift: Int, store: IAsyncObjectStore, changesOnly: Boolean): IStream.Many<MapChangeEvent> {
         return if (oldNode === this || hash == oldNode?.hash) {
-            observableOfEmpty()
+            IStream.empty()
         } else if (changesOnly) {
             if (oldNode != null) {
-                oldNode.get(key, shift, store).orNull().flatMapMaybe { oldValue ->
-                    if (oldValue != null && value != oldValue) maybeOf(EntryChangedEvent(key, oldValue, value)) else maybeOfEmpty()
-                }.asObservable()
+                oldNode.get(key, shift, store).orNull().flatMapZeroOrOne { oldValue ->
+                    if (oldValue != null && value != oldValue) {
+                        IStream.of(EntryChangedEvent(key, oldValue, value))
+                    } else {
+                        IStream.empty()
+                    }
+                }
             } else {
-                observableOfEmpty()
+                IStream.empty()
             }
         } else {
             var oldValue: KVEntryReference<CPNode>? = null
 
-            oldNode!!.getEntries(store).flatMapMaybe { (k: Long, v: KVEntryReference<CPNode>) ->
+            oldNode!!.getEntries(store).flatMap { (k: Long, v: KVEntryReference<CPNode>) ->
                 if (k == key) {
                     oldValue = v
-                    maybeOfEmpty<EntryRemovedEvent>()
+                    IStream.empty<EntryRemovedEvent>()
                 } else {
-                    maybeOf(EntryRemovedEvent(k, v))
+                    IStream.of(EntryRemovedEvent(k, v))
                 }
-            }.concatWith(
-                observableDefer {
+            }.plus(
+                IStream.deferZeroOrOne {
                     val oldValue = oldValue
                     if (oldValue == null) {
-                        observableOf(EntryAddedEvent(key, value))
+                        IStream.of(EntryAddedEvent(key, value))
                     } else if (oldValue != value) {
-                        observableOf(EntryChangedEvent(key, oldValue, value))
+                        IStream.of(EntryChangedEvent(key, oldValue, value))
                     } else {
-                        observableOfEmpty()
+                        IStream.empty()
                     }
                 },
             )
         }
     }
 
-    override fun objectDiff(oldObject: IKVValue?, shift: Int, store: IAsyncObjectStore): Observable<IKVValue> {
+    override fun objectDiff(oldObject: IKVValue?, shift: Int, store: IAsyncObjectStore): IStream.Many<IKVValue> {
         return when (oldObject) {
             is CPHamtLeaf -> {
                 if (this.hash == oldObject.hash) {
-                    observableOfEmpty()
+                    IStream.empty()
                 } else {
-                    observableOf(this).concatWith(value.getValue(store).asObservable())
+                    IStream.of(this) + value.getValue(store)
                 }
             }
             is CPHamtInternal, is CPHamtSingle -> {
-                oldObject.get(key, shift, store).orNull().flatMapMaybe { oldValue ->
+                oldObject.get(key, shift, store).orNull().flatMapZeroOrOne { oldValue ->
                     if (oldValue?.getHash() == value.getHash()) {
-                        maybeOfEmpty()
+                        IStream.empty()
                     } else {
-                        maybeOf(this)
+                        IStream.of(this)
                     }
-                }.asObservable()
+                }
             }
-            else -> observableOf(this)
+            else -> IStream.of(this)
         }
     }
 

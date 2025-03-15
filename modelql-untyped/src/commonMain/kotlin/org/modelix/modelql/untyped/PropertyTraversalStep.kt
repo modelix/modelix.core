@@ -1,6 +1,5 @@
 package org.modelix.modelql.untyped
 
-import com.badoo.reaktive.observable.flatMapSingle
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -21,11 +20,10 @@ import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.StepStream
 import org.modelix.modelql.core.asStepStream
 import org.modelix.modelql.core.stepOutputSerializer
-import org.modelix.streams.orNull
 
 class PropertyTraversalStep(val property: IPropertyReference) : MonoTransformingStep<INode, String?>(), IMonoStep<String?> {
     override fun createStream(input: StepStream<INode>, context: IStreamInstantiationContext): StepStream<String?> {
-        return input.flatMapSingle {
+        return input.flatMap {
             it.value.asAsyncNode().getPropertyValue(property).orNull()
         }.asStepStream(this)
     }

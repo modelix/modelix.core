@@ -1,11 +1,10 @@
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.observable.asObservable
-import com.badoo.reaktive.observable.flatten
-import com.badoo.reaktive.observable.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.modelix.streams.IStream
+import org.modelix.streams.flatten
 
 class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
     override fun canBeEmpty(): Boolean = getProducers().all { it.canBeEmpty() }
@@ -37,7 +36,7 @@ class JoinStep<E>() : ProducingStep<E>(), IConsumingStep<E>, IFluxStep<E> {
     }
 
     override fun createStream(context: IStreamInstantiationContext): StepStream<E> {
-        return producers.mapIndexed { prodIndex, it -> context.getOrCreateStream(it).map { MultiplexedOutput(prodIndex, it) } }.asObservable().flatten()
+        return IStream.many(producers.mapIndexed { prodIndex, it -> context.getOrCreateStream(it).map { MultiplexedOutput(prodIndex, it) } }).flatten()
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<E>> {

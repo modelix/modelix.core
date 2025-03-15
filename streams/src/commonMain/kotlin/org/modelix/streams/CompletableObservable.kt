@@ -4,6 +4,10 @@ import com.badoo.reaktive.single.SingleEmitter
 import com.badoo.reaktive.single.single
 import org.modelix.kotlin.utils.runSynchronized
 
+/**
+ * Similar to a CompletableFuture, observers can wait for a value that is provided in the future by some
+ * asynchronous process.
+ */
 class CompletableObservable<E>(val afterSubscribe: () -> Unit = {}) {
     val single = single<E> {
         runSynchronized(this) {

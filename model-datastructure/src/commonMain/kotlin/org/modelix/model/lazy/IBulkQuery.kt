@@ -1,22 +1,17 @@
 package org.modelix.model.lazy
 
-import com.badoo.reaktive.maybe.Maybe
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.asObservable
-import com.badoo.reaktive.observable.flatMap
-import com.badoo.reaktive.single.Single
-import com.badoo.reaktive.single.singleOf
 import org.modelix.kotlin.utils.ContextValue
 import org.modelix.model.persistent.IKVValue
+import org.modelix.streams.IStream
 
 @Deprecated("use IAsyncStore")
 interface IBulkQuery {
     @Deprecated("Prefetching will be replaced by usages of IAsyncNode")
     fun offerPrefetch(key: IPrefetchGoal)
     fun executeQuery()
-    fun <I, O> flatMap(input: Iterable<I>, f: (I) -> Observable<O>): Observable<O> = input.asObservable().flatMap { f(it) }
-    fun <T> constant(value: T): Single<T> = singleOf(value)
-    fun <T : IKVValue> query(hash: IKVEntryReference<T>): Maybe<T>
+    fun <I, O> flatMap(input: Iterable<I>, f: (I) -> IStream.Many<O>): IStream.Many<O> = IStream.many(input).flatMap { f(it) }
+    fun <T> constant(value: T): IStream.One<T> = IStream.of(value)
+    fun <T : IKVValue> query(hash: IKVEntryReference<T>): IStream.ZeroOrOne<T>
 
     companion object {
         val CONTEXT_QUERY = ContextValue<IBulkQuery>()

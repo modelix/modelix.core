@@ -1,16 +1,13 @@
 package org.modelix.model.lazy
 
-import com.badoo.reaktive.maybe.Maybe
-import com.badoo.reaktive.maybe.maybeOfEmpty
-import com.badoo.reaktive.maybe.toMaybe
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.subscribe
 import com.badoo.reaktive.single.notNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.modelix.kotlin.utils.AtomicBoolean
 import org.modelix.model.persistent.IKVValue
 import org.modelix.streams.CompletableObservable
+import org.modelix.streams.IStream
+import org.modelix.streams.ReaktiveStreamBuilder
 
 /**
  * Not thread safe
@@ -40,20 +37,20 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
         return store.getAll(regular, prefetch)
     }
 
-    override fun <T : IKVValue> query(hash: IKVEntryReference<T>): Maybe<T> {
-        if (!hash.isWritten()) return hash.getValue(store).toMaybe()
+    override fun <T : IKVValue> query(hash: IKVEntryReference<T>): IStream.ZeroOrOne<T> {
+        if (!hash.isWritten()) return IStream.of(hash.getValue(store))
 
         val cachedValue = store.getIfCached(hash.getHash(), hash.getDeserializer(), prefetchQueue.isLoadingGoal())
         if (cachedValue != null) {
-            return cachedValue.toMaybe()
+            return IStream.of(cachedValue)
         }
 
         val existingValue = getValueInstance(hash)
-        if (existingValue != null && existingValue.isDone()) return existingValue.single.notNull()
+        if (existingValue != null && existingValue.isDone()) return ReaktiveStreamBuilder.WrapperMaybe(existingValue.single.notNull())
 
         if (prefetchQueue.isLoadingGoal()) {
             prefetchQueue.addRequest(hash, getValueInstance(hash) ?: CompletableObservable(::executeQuery))
-            return maybeOfEmpty() // transitive objects are loaded when the prefetch queue is processed the next time
+            return IStream.empty() // transitive objects are loaded when the prefetch queue is processed the next time
         } else {
             if (queue.size >= batchSize && !processing.get()) executeQuery()
 
@@ -65,7 +62,7 @@ class BulkQuery(private val store: IDeserializingKeyValueStore, config: BulkQuer
                 queue.put(hash.getHash(), QueueElement<T>(hash, result))
                 result
             }
-            return result.single.notNull()
+            return ReaktiveStreamBuilder.WrapperMaybe(result.single.notNull())
         }
     }
 
@@ -131,7 +128,7 @@ private fun <T> Collection<T>.tailSequence(tailSize: Int): Sequence<T> {
 
 @Deprecated("Prefetching will be replaced by usages of IAsyncNode")
 interface IPrefetchGoal {
-    fun loadRequest(bulkQuery: IBulkQuery): Observable<Any?>
+    fun loadRequest(bulkQuery: IBulkQuery): IStream.Many<Any?>
 }
 
 @Deprecated("Prefetching will be replaced by usages of IAsyncNode")
@@ -206,7 +203,7 @@ private class PrefetchQueue(val bulkQuery: IBulkQuery, val queueSizeLimit: Int) 
         try {
             currentGoal = goal
             anyEntryRequested = false
-            goal.goal.loadRequest(bulkQuery).subscribe(onSubscribe = {}, onNext = {}, onError = {}, onComplete = {})
+            goal.goal.loadRequest(bulkQuery).iterateSynchronous { }
             if (!anyEntryRequested) {
                 goals.remove(goal.goal)
             }

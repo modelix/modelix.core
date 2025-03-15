@@ -1,13 +1,12 @@
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.single.Single
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.modelix.streams.fold
+import org.modelix.streams.IStream
 
 class IntSumAggregationStep : AggregationStep<Int, Int>() {
-    override fun aggregate(input: StepStream<Int>, context: IStreamInstantiationContext): Single<IStepOutput<Int>> {
+    override fun aggregate(input: StepStream<Int>, context: IStreamInstantiationContext): IStream.One<IStepOutput<Int>> {
         return input.fold(0) { acc, it -> acc + it.value }.asStepStream(this)
     }
 

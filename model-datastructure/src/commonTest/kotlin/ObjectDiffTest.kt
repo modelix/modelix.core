@@ -1,6 +1,3 @@
-import com.badoo.reaktive.observable.concatWith
-import com.badoo.reaktive.observable.map
-import com.badoo.reaktive.observable.toList
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.ITree
@@ -14,7 +11,7 @@ import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.persistent.getAllObjects
-import org.modelix.streams.getSynchronous
+import org.modelix.streams.plus
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -35,13 +32,13 @@ class ObjectDiffTest {
             as CLTree
 
         val diff = tree2.data.objectDiff(tree1.data, tree1.asyncStore)
-        val diffString = diff.map { it.hash + " -> " + it.serialize() }.toList().getSynchronous().joinToString("\n")
+        val diffString = diff.map { it.hash + " -> " + it.serialize() }.asSequence().joinToString("\n")
 
-        val allObjects = tree1.data.getAllObjects(store).concatWith(diff).toList().getSynchronous()
+        val allObjects = tree1.data.getAllObjects(store).plus(diff).asSequence()
         val store2 = ObjectStoreCache(MapBasedStore().also { it.putAll(allObjects.associate { it.hash to it.serialize() }) }).getAsyncStore()
         val tree3 = KVEntryReference(tree2.hash, CPTree.DESERIALIZER).getValue(store2).getSynchronous().let { CLTree(it, store2) }
 
-        tree3.asAsyncTree().getDescendantsAndSelf(ITree.ROOT_ID).toList().getSynchronous()
+        tree3.asAsyncTree().getDescendantsAndSelf(ITree.ROOT_ID).asSequence()
 
         val expected = """
             MJFEu*_hdxrmyX2F8pWUh8pHO5Meoivd5BsZCOd04OmE -> test/3/BRS9r*d8eT0RP6Uadz--7yzhhyOO14NiQB0uykMibl_E

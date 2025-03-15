@@ -1,13 +1,10 @@
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.map
-import com.badoo.reaktive.single.Single
-import com.badoo.reaktive.single.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import org.modelix.streams.IStream
 
 /**
  * Can carry some additional data required for processing the result on the client side.
@@ -18,11 +15,11 @@ interface IStepOutput<out E> {
 
 fun <T> IStepOutput<*>.upcast(): IStepOutput<T> = this as IStepOutput<T>
 
-typealias StepStream<E> = Observable<IStepOutput<E>>
-typealias MonoStepStream<E> = Single<IStepOutput<E>>
-val <T> Observable<IStepOutput<T>>.value: Observable<T> get() = map { it.value }
-fun <T> Observable<T>.asStepStream(owner: IProducingStep<T>?): StepStream<T> = map { it.asStepOutput(owner) }
-fun <T> Single<T>.asStepStream(owner: IProducingStep<T>?): MonoStepStream<T> = map { it.asStepOutput(owner) }
+typealias StepStream<E> = IStream.Many<IStepOutput<E>>
+typealias MonoStepStream<E> = IStream.One<IStepOutput<E>>
+val <T> IStream.Many<IStepOutput<T>>.value: IStream.Many<T> get() = map { it.value }
+fun <T> IStream.Many<T>.asStepStream(owner: IProducingStep<T>?): StepStream<T> = map { it.asStepOutput(owner) }
+fun <T> IStream.One<T>.asStepStream(owner: IProducingStep<T>?): MonoStepStream<T> = map { it.asStepOutput(owner) }
 fun <T> StepStream<*>.upcast(): StepStream<T> = this as StepStream<T>
 
 class SimpleStepOutput<out E>(override val value: E, val owner: IProducingStep<E>?) : IStepOutput<E> {

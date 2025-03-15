@@ -1,13 +1,9 @@
 package org.modelix.model.persistent
 
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.flatMap
-import com.badoo.reaktive.single.flatMap
-import com.badoo.reaktive.single.flatMapObservable
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.operations.IOperation
-import org.modelix.streams.asObservable
+import org.modelix.streams.IStream
 
 abstract class OperationsList() : IKVValue {
     companion object {
@@ -44,7 +40,7 @@ abstract class OperationsList() : IKVValue {
         }
     }
 
-    abstract fun getOperations(store: IAsyncObjectStore): Observable<IOperation>
+    abstract fun getOperations(store: IAsyncObjectStore): IStream.Many<IOperation>
 }
 
 class LargeOperationsList(val subLists: Array<out KVEntryReference<OperationsList>>) : OperationsList() {
@@ -62,9 +58,9 @@ class LargeOperationsList(val subLists: Array<out KVEntryReference<OperationsLis
         return subLists.toList()
     }
 
-    override fun getOperations(store: IAsyncObjectStore): Observable<IOperation> {
-        return subLists.asObservable().flatMap {
-            it.getValue(store).flatMapObservable { it.getOperations(store) }
+    override fun getOperations(store: IAsyncObjectStore): IStream.Many<IOperation> {
+        return IStream.many(subLists).flatMap {
+            it.getValue(store).flatMap { it.getOperations(store) }
         }
     }
 }
@@ -89,7 +85,7 @@ class SmallOperationsList(val operations: Array<out IOperation>) : OperationsLis
         return operations.map { it.getReferencedEntries() }.flatten()
     }
 
-    override fun getOperations(store: IAsyncObjectStore): Observable<IOperation> {
-        return operations.asObservable()
+    override fun getOperations(store: IAsyncObjectStore): IStream.Many<IOperation> {
+        return IStream.many(operations)
     }
 }

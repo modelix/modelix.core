@@ -1,22 +1,12 @@
 package org.modelix.model.async
 
-import com.badoo.reaktive.completable.Completable
-import com.badoo.reaktive.maybe.Maybe
-import com.badoo.reaktive.maybe.map
-import com.badoo.reaktive.maybe.maybeOf
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.autoConnect
-import com.badoo.reaktive.observable.concatWith
-import com.badoo.reaktive.observable.filter
-import com.badoo.reaktive.observable.map
-import com.badoo.reaktive.observable.publish
-import com.badoo.reaktive.single.Single
-import com.badoo.reaktive.single.map
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.LRUCache
 import org.modelix.model.persistent.IKVValue
+import org.modelix.streams.IStream
+import org.modelix.streams.plus
 
 class CachingAsyncStore(val store: IAsyncObjectStore, cacheSize: Int = 100_000) : IAsyncObjectStore {
     private val cache = LRUCache<ObjectHash<*>, Any>(cacheSize)
@@ -30,9 +20,9 @@ class CachingAsyncStore(val store: IAsyncObjectStore, cacheSize: Int = 100_000) 
         return AsyncStoreAsLegacyDeserializingStore(this)
     }
 
-    override fun <T : Any> get(key: ObjectHash<T>): Maybe<T> {
+    override fun <T : Any> get(key: ObjectHash<T>): IStream.ZeroOrOne<T> {
         val cached = runSynchronized(cache) { cache.get(key) }
-        if (cached != null) return maybeOf(cached as T)
+        if (cached != null) return IStream.of(cached as T)
         return store.get(key).map { value ->
             runSynchronized(cache) {
                 cache.set(key, value)
@@ -45,23 +35,23 @@ class CachingAsyncStore(val store: IAsyncObjectStore, cacheSize: Int = 100_000) 
         return runSynchronized(cache) { cache.get(key) as T? } ?: store.getIfCached(key)
     }
 
-    override fun getAllAsStream(keys: Observable<ObjectHash<*>>): Observable<Pair<ObjectHash<*>, Any?>> {
-        val fromCache = keys.map { key ->
+    override fun getAllAsStream(keys: IStream.Many<ObjectHash<*>>): IStream.Many<Pair<ObjectHash<*>, Any?>> {
+        val fromCache: IStream.Many<Pair<ObjectHash<*>, Any?>> = keys.map { key ->
             runSynchronized(cache) { key to cache.get(key) }
-        }.publish().autoConnect(2)
-
-        val cached = fromCache.filter { it.second != null }
-        val nonCached = fromCache.filter { it.second == null }.map { it.first }
-        val fromStore = store.getAllAsStream(nonCached).map { entry ->
-            runSynchronized(cache) {
-                entry.second?.let { value -> cache[entry.first] = value }
-            }
-            entry
         }
-        return cached.concatWith(fromStore)
+
+        return fromCache.splitMerge({ it.second != null }) { cached, nonCached ->
+            val fromStore = store.getAllAsStream(nonCached.map { it.first }).map { entry ->
+                runSynchronized(cache) {
+                    entry.second?.let { value -> cache[entry.first] = value }
+                }
+                entry
+            }
+            cached + fromStore
+        }
     }
 
-    override fun getAllAsMap(keys: List<ObjectHash<*>>): Single<Map<ObjectHash<*>, Any?>> {
+    override fun getAllAsMap(keys: List<ObjectHash<*>>): IStream.One<Map<ObjectHash<*>, Any?>> {
         val fromCache = LinkedHashMap<ObjectHash<*>, Any?>()
         val missingKeys = ArrayList<ObjectHash<*>>()
         runSynchronized(cache) {
@@ -84,7 +74,7 @@ class CachingAsyncStore(val store: IAsyncObjectStore, cacheSize: Int = 100_000) 
         }
     }
 
-    override fun putAll(entries: Map<ObjectHash<*>, IKVValue>): Completable {
+    override fun putAll(entries: Map<ObjectHash<*>, IKVValue>): IStream.Zero {
         runSynchronized(cache) {
             for (entry in entries) {
                 cache.set(entry.key, entry.value)

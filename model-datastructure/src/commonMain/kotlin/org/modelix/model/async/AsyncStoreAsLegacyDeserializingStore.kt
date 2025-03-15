@@ -1,15 +1,10 @@
 package org.modelix.model.async
 
-import com.badoo.reaktive.observable.asObservable
-import com.badoo.reaktive.observable.map
-import com.badoo.reaktive.observable.toList
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.IKVEntryReference
 import org.modelix.model.persistent.IKVValue
-import org.modelix.streams.executeSynchronous
-import org.modelix.streams.getSynchronous
-import org.modelix.streams.orNull
+import org.modelix.streams.IStream
 
 private val ILLEGAL_DESERIALIZER: (String) -> Any = { error("deserialization not expected") }
 
@@ -33,7 +28,7 @@ class AsyncStoreAsLegacyDeserializingStore(val store: IAsyncObjectStore) : IDese
     }
 
     override fun <T> getAll(hash: Iterable<String>, deserializer: (String, String) -> T): Iterable<T> {
-        return store.getAllAsStream(hash.asObservable().map { hash -> ObjectHash(hash, { deserializer(hash, it) as Any }) })
+        return store.getAllAsStream(IStream.many(hash).map { hash -> ObjectHash(hash, { deserializer(hash, it) as Any }) })
             .map { it.second as T }.toList().getSynchronous()
     }
 

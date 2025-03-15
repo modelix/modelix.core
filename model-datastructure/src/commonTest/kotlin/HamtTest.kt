@@ -1,12 +1,10 @@
-import com.badoo.reaktive.maybe.Maybe
-import com.badoo.reaktive.maybe.map
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.persistent.CPHamtInternal
 import org.modelix.model.persistent.CPHamtNode
 import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.MapBaseStore
-import org.modelix.streams.getSynchronous
+import org.modelix.streams.IStream
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -66,7 +64,7 @@ class HamtTest {
         val store = MapBaseStore()
         val storeCache = ObjectStoreCache(store)
         var hamt: CPHamtNode? = CPHamtInternal.createEmpty()
-        var getId = { e: Maybe<KVEntryReference<CPNode>> -> e.map { it.getValue(storeCache) }.getSynchronous()!!.id }
+        var getId = { e: IStream.ZeroOrOne<KVEntryReference<CPNode>> -> e.map { it.getValue(storeCache) }.getSynchronous()!!.id }
 
         hamt = hamt!!.put(965L, createEntry(-6579471327666419615), storeCache.getAsyncStore()).getSynchronous()
         hamt = hamt!!.put(949L, createEntry(4912341421267007347), storeCache.getAsyncStore()).getSynchronous()

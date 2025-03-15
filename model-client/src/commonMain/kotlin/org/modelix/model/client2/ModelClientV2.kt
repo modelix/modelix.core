@@ -1,9 +1,5 @@
 package org.modelix.model.client2
 
-import com.badoo.reaktive.coroutinesinterop.asFlow
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.map
-import com.badoo.reaktive.observable.toMap
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.body
@@ -77,8 +73,7 @@ import org.modelix.model.server.api.v2.VersionDeltaStreamV2
 import org.modelix.model.server.api.v2.asStream
 import org.modelix.modelql.client.ModelQLClient
 import org.modelix.modelql.core.IMonoStep
-import org.modelix.streams.asObservable
-import org.modelix.streams.getSuspending
+import org.modelix.streams.IStream
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -303,33 +298,35 @@ class ModelClientV2(
         LOG.debug { "${clientId.toString(16)}.push($branch, $version, $baseVersion)" }
         require(version is CLVersion)
         require(baseVersion is CLVersion?)
-        version.write()
-        val objects = version.fullDiff(baseVersion)
-        val delta = if (true /* objects.size > 1000 */) {
-            // large HTTP requests and large Json objects don't scale well
-            pushObjects(branch.repositoryId, objects.map { it.hash to it.serialize() })
-            VersionDelta(version.getContentHash(), null)
-        } else {
-            VersionDelta(version.getContentHash(), null, objectsMap = objects.toMap({ it.hash }, { it.serialize() }).getSuspending())
-        }
-        return httpClient.preparePost {
-            url {
-                takeFrom(baseUrl)
-                appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
+        return IStream.useSequencesSuspending {
+            version.write()
+            val objects = version.fullDiff(baseVersion)
+            val delta = if (true /* objects.size > 1000 */) {
+                // large HTTP requests and large Json objects don't scale well
+                pushObjects(branch.repositoryId, objects.map { it.hash to it.serialize() })
+                VersionDelta(version.getContentHash(), null)
+            } else {
+                VersionDelta(version.getContentHash(), null, objectsMap = objects.toMap({ it.hash }, { it.serialize() }).getSuspending())
             }
-            useVersionStreamFormat()
-            contentType(ContentType.Application.Json)
-            setBody(delta)
-        }.execute { response ->
-            createVersion(getStore(branch.repositoryId), version, response.readVersionDelta())
+            httpClient.preparePost {
+                url {
+                    takeFrom(baseUrl)
+                    appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
+                }
+                useVersionStreamFormat()
+                contentType(ContentType.Application.Json)
+                setBody(delta)
+            }.execute { response ->
+                createVersion(getStore(branch.repositoryId), version, response.readVersionDelta())
+            }
         }
     }
 
     override suspend fun pushObjects(repository: RepositoryId, objects: Sequence<ObjectHashAndSerializedObject>) {
-        pushObjects(repository, objects.asObservable())
+        pushObjects(repository, IStream.many(objects))
     }
 
-    private suspend fun pushObjects(repository: RepositoryId, objects: Observable<ObjectHashAndSerializedObject>) {
+    private suspend fun pushObjects(repository: RepositoryId, objects: IStream.Many<ObjectHashAndSerializedObject>) {
         LOG.debug { "${clientId.toString(16)}.pushObjects($repository)" }
         val maxBodySize = 2 * 1024 * 1024
         val chunkContent = StringBuilder()
@@ -346,7 +343,7 @@ class ModelClientV2(
             chunkContent.clear()
         }
 
-        objects.asFlow().collect { entry ->
+        objects.asSequence().forEach { entry ->
             val entrySize = (if (chunkContent.isEmpty()) 0 else 1) + entry.first.length + 1 + entry.second.length
             if (chunkContent.length + entrySize > maxBodySize) {
                 sendChunk()

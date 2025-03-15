@@ -1,7 +1,5 @@
 package org.modelix.modelql.untyped
 
-import com.badoo.reaktive.observable.map
-import com.badoo.reaktive.single.Single
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -22,7 +20,7 @@ import org.modelix.modelql.core.StepStream
 import org.modelix.modelql.core.asStepStream
 import org.modelix.modelql.core.connect
 import org.modelix.modelql.core.stepOutputSerializer
-import org.modelix.streams.count
+import org.modelix.streams.IStream
 
 class RemoveNodeStep() : AggregationStep<INode, Int>() {
 
@@ -30,7 +28,7 @@ class RemoveNodeStep() : AggregationStep<INode, Int>() {
         return serializationContext.serializer<Int>().stepOutputSerializer(this)
     }
 
-    override fun aggregate(input: StepStream<INode>, context: IStreamInstantiationContext): Single<IStepOutput<Int>> {
+    override fun aggregate(input: StepStream<INode>, context: IStreamInstantiationContext): IStream.One<IStepOutput<Int>> {
         return input.map { it.value.remove() }.count().asStepStream(this)
     }
 

@@ -1,11 +1,5 @@
 package org.modelix.model.lazy
 
-import com.badoo.reaktive.maybe.Maybe
-import com.badoo.reaktive.maybe.map
-import com.badoo.reaktive.observable.flatMapSingle
-import com.badoo.reaktive.single.map
-import com.badoo.reaktive.single.notNull
-import com.badoo.reaktive.single.singleOf
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -13,6 +7,7 @@ import kotlinx.datetime.toInstant
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.IVersion
 import org.modelix.model.LinearHistory
+import org.modelix.model.VersionMerger
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITree
@@ -29,20 +24,24 @@ import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.SetReferenceOp
 import org.modelix.model.persistent.CPNode
-import org.modelix.model.persistent.CPOperationsList
 import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.CPVersion
 import org.modelix.model.persistent.EntryAddedEvent
 import org.modelix.model.persistent.EntryChangedEvent
 import org.modelix.model.persistent.EntryRemovedEvent
-import org.modelix.streams.iterateSynchronous
+import org.modelix.model.persistent.IKVValue
+import org.modelix.model.persistent.OperationsList
+import org.modelix.model.persistent.getAllObjects
+import org.modelix.streams.IStream
+import org.modelix.streams.flatten
+import org.modelix.streams.notNull
+import org.modelix.streams.plus
 import kotlin.jvm.JvmName
 
 class CLVersion : IVersion {
     val asyncStore: IAsyncObjectStore
     var store: IDeserializingKeyValueStore
-    var data: CPVersion? = null
-        private set
+    val data: CPVersion
     val treeHash: KVEntryReference<CPTree>
 
     private constructor(
@@ -61,34 +60,34 @@ class CLVersion : IVersion {
         this.asyncStore = store
         this.store = store.getLegacyObjectStore()
         this.treeHash = KVEntryReference(treeData)
-        val localizedOps = localizeOps(operations.asList()).toTypedArray()
+        val localizedOps = localizeOps(operations.asList())
         if (localizedOps.size <= INLINED_OPS_LIMIT) {
             data = CPVersion(
                 id = id,
                 time = time,
                 author = author,
                 treeHash = this.treeHash,
-                previousVersion = previousVersion?.let { KVEntryReference(it.data!!) },
-                originalVersion = originalVersion?.let { KVEntryReference(it.data!!) },
-                baseVersion = baseVersion?.let { KVEntryReference(it.data!!) },
-                mergedVersion1 = mergedVersion1?.let { KVEntryReference(it.data!!) },
-                mergedVersion2 = mergedVersion2?.let { KVEntryReference(it.data!!) },
-                operations = localizedOps,
+                previousVersion = previousVersion?.let { KVEntryReference(it.data) },
+                originalVersion = originalVersion?.let { KVEntryReference(it.data) },
+                baseVersion = baseVersion?.let { KVEntryReference(it.data) },
+                mergedVersion1 = mergedVersion1?.let { KVEntryReference(it.data) },
+                mergedVersion2 = mergedVersion2?.let { KVEntryReference(it.data) },
+                operations = localizedOps.toTypedArray(),
                 operationsHash = null,
                 numberOfOperations = localizedOps.size,
             )
         } else {
-            val opsList = CPOperationsList(localizedOps)
+            val opsList = OperationsList.of(localizedOps.toList())
             data = CPVersion(
                 id = id,
                 time = time,
                 author = author,
                 treeHash = this.treeHash,
-                previousVersion = previousVersion?.let { KVEntryReference(it.data!!) },
-                originalVersion = originalVersion?.let { KVEntryReference(it.data!!) },
-                baseVersion = baseVersion?.let { KVEntryReference(it.data!!) },
-                mergedVersion1 = mergedVersion1?.let { KVEntryReference(it.data!!) },
-                mergedVersion2 = mergedVersion2?.let { KVEntryReference(it.data!!) },
+                previousVersion = previousVersion?.let { KVEntryReference(it.data) },
+                originalVersion = originalVersion?.let { KVEntryReference(it.data) },
+                baseVersion = baseVersion?.let { KVEntryReference(it.data) },
+                mergedVersion1 = mergedVersion1?.let { KVEntryReference(it.data) },
+                mergedVersion2 = mergedVersion2?.let { KVEntryReference(it.data) },
                 operations = null,
                 operationsHash = KVEntryReference(opsList),
                 numberOfOperations = localizedOps.size,
@@ -114,17 +113,17 @@ class CLVersion : IVersion {
     }
 
     val author: String?
-        get() = data!!.author
+        get() = data.author
 
     val id: Long
-        get() = data!!.id
+        get() = data.id
 
     @Deprecated("Use getTimestamp()")
     val time: String?
-        get() = data!!.time
+        get() = data.time
 
     fun getTimestamp(): Instant? {
-        val dateTimeStr = data!!.time ?: return null
+        val dateTimeStr = data.time ?: return null
         try {
             return Instant.fromEpochSeconds(dateTimeStr.toLong())
         } catch (ex: Exception) {}
@@ -136,45 +135,47 @@ class CLVersion : IVersion {
 
     @Deprecated("Use getContentHash()", ReplaceWith("getContentHash()"))
     val hash: String
-        get() = data!!.hash
+        get() = data.hash
 
-    override fun getContentHash(): String = data!!.hash
+    override fun getContentHash(): String = data.hash
 
     @Deprecated("Use getTree()", ReplaceWith("getTree()"))
     @get:JvmName("getTree_()")
     val tree: CLTree
-        get() = CLTree(treeHash!!.getValue(store), store)
+        get() = CLTree(treeHash.getValue(store), store)
 
     override fun getTree(): CLTree = tree
 
     val baseVersion: CLVersion?
         get() {
-            val previousVersionHash = data!!.baseVersion ?: data!!.previousVersion ?: return null
+            val previousVersionHash = data.baseVersion ?: data.previousVersion ?: return null
             val previousVersion = previousVersionHash.getValue(store)
             return CLVersion(previousVersion, store)
         }
 
     val operations: Iterable<IOperation>
         get() {
-            val operationsHash = data!!.operationsHash
-            val ops = operationsHash?.getValue(store)?.operations ?: data!!.operations
-            return globalizeOps((ops ?: arrayOf()).toList())
+            val operationsHash = data.operationsHash
+            val ops = operationsHash?.getValue(store)?.getOperations(asyncStore)?.toList()?.getSynchronous()
+                ?: data.operations?.toList()
+                ?: emptyList()
+            return globalizeOps(ops)
         }
 
     val numberOfOperations: Int
-        get() = data!!.numberOfOperations
+        get() = data.numberOfOperations
 
     fun operationsInlined(): Boolean {
-        return data!!.operations != null
+        return data.operations != null
     }
 
-    fun isMerge() = this.data!!.mergedVersion1 != null
+    fun isMerge() = this.data.mergedVersion1 != null
 
-    fun getMergedVersion1() = this.data!!.mergedVersion1?.let { CLVersion(it.getValue(store), store) }
-    fun getMergedVersion2() = this.data!!.mergedVersion2?.let { CLVersion(it.getValue(store), store) }
+    fun getMergedVersion1() = this.data.mergedVersion1?.let { CLVersion(it.getValue(store), store) }
+    fun getMergedVersion2() = this.data.mergedVersion2?.let { CLVersion(it.getValue(store), store) }
 
     fun write(): String {
-        KVEntryReference(data!!).write(store)
+        KVEntryReference(data).write(store)
         return hash
     }
 
@@ -184,13 +185,13 @@ class CLVersion : IVersion {
 
         other as CLVersion
 
-        if (data?.id != other.data?.id) return false
+        if (data.id != other.data.id) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        return data?.id?.hashCode() ?: 0
+        return data.id.hashCode()
     }
 
     override fun toString(): String {
@@ -275,7 +276,7 @@ class CLVersion : IVersion {
             return CLVersion(data, store)
         }
 
-        fun tryLoadFromHash(hash: String, store: IAsyncObjectStore): Maybe<CLVersion> {
+        fun tryLoadFromHash(hash: String, store: IAsyncObjectStore): IStream.ZeroOrOne<CLVersion> {
             return KVEntryReference(hash, CPVersion.DESERIALIZER).getValue(store).notNull().map { CLVersion(it, store) }
         }
     }
@@ -309,6 +310,54 @@ class CLVersion : IVersion {
             }
         }
     }
+
+    fun getParents(stopAt: CLVersion?): List<CLVersion> {
+        if (stopAt != null && this.getContentHash() == stopAt.getContentHash()) {
+            return emptyList()
+        }
+        val ancestors = if (isMerge()) {
+            listOf(getMergedVersion1()!!, getMergedVersion2()!!)
+        } else {
+            listOfNotNull(baseVersion)
+        }
+        return ancestors.filter { stopAt == null || it.getContentHash() != stopAt.getContentHash() }
+    }
+
+    fun getAncestors(includeSelf: Boolean, stopAt: CLVersion?): List<CLVersion> {
+        if (stopAt != null && this.getContentHash() == stopAt.getContentHash()) {
+            return emptyList()
+        }
+        return if (includeSelf) {
+            listOf(this) + getAncestors(false, stopAt)
+        } else {
+            getParents(stopAt).flatMap { it.getAncestors(true, stopAt) }
+        }
+    }
+}
+
+fun CLVersion.fullDiff(baseVersion: CLVersion?): IStream.Many<IKVValue> {
+    val history = historyDiff(baseVersion)
+    return history.plus(
+        history.flatMap { version ->
+            val baseVersion = version.baseVersion?.getValue(asyncStore) ?: IStream.of(null)
+            val currentVersion = version.treeHash.getValue(asyncStore)
+            val treeDiff = currentVersion.zipWith(baseVersion) { v, b ->
+                if (b == null) v.getAllObjects(asyncStore) else v.objectDiff(b, asyncStore)
+            }.flatten()
+            if (version.operationsHash != null) {
+                val operations = version.operationsHash.getValue(asyncStore).flatMap { it.getAllObjects(asyncStore) }
+                treeDiff.plus(operations)
+            } else {
+                treeDiff
+            }
+        },
+    )
+}
+
+fun CLVersion.historyDiff(baseVersion: CLVersion?): IStream.Many<CPVersion> {
+    val commonBase = VersionMerger.commonBaseVersion(this, baseVersion)
+    val history = getAncestors(true, commonBase).map { it.data }
+    return IStream.many(history)
 }
 
 fun CLVersion.computeDelta(baseVersion: CLVersion?): Map<String, String> {
@@ -361,12 +410,12 @@ private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, bas
             }
 
             val oldTree = v1.getTree()
-            v2.getTree().nodesMap!!.getChanges(oldTree.nodesMap, store.getAsyncStore(), false).flatMapSingle { event ->
+            v2.getTree().nodesMap!!.getChanges(oldTree.nodesMap, store.getAsyncStore(), false).flatMap { event ->
                 // querying the value is necessary to record a read access on it
                 when (event) {
                     is EntryAddedEvent -> event.value.getValue(asyncStore).map { event.key }
                     is EntryChangedEvent -> event.newValue.getValue(asyncStore).map { event.key }
-                    is EntryRemovedEvent -> singleOf(event.key)
+                    is EntryRemovedEvent -> IStream.of(event.key)
                 }
             }.iterateSynchronous { changedNodeIds += it }
             v1 = v2

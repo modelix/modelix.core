@@ -1,9 +1,8 @@
 package org.modelix.model.lazy
 
-import com.badoo.reaktive.single.Single
-import com.badoo.reaktive.single.singleOf
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.persistent.IKVValue
+import org.modelix.streams.IStream
 
 class NonWrittenEntry<E : IKVValue> : IKVEntryReference<E> {
     private val hash: String
@@ -21,7 +20,7 @@ class NonWrittenEntry<E : IKVValue> : IKVEntryReference<E> {
     override fun getHash(): String = hash
 
     override fun getValue(store: IDeserializingKeyValueStore): E = getDeserialized()
-    override fun getValue(store: IAsyncObjectStore): Single<E> = singleOf(getDeserialized())
+    override fun getValue(store: IAsyncObjectStore): IStream.One<E> = IStream.of(getDeserialized())
     override fun getUnwrittenValue(): E = getDeserialized()
 
     fun getSerialized(): String = getDeserialized().serialize()

@@ -25,7 +25,15 @@
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
+        <statusBarWidgetFactory id="ModelixSyncStatus" implementation="org.modelix.mps.sync3.ui.ModelSyncStatusWidgetFactory"/>
         <backgroundPostStartupActivity implementation="org.modelix.mps.sync3.ModelSyncStartupActivity" />
 <!--        <mps.LanguageLibrary dir="/languages" />-->
     </extensions>
+
+    <actions>
+        <group id="org.modelix.mps.sync3.ui.StatusWidgetGroup">
+            <action id="org.modelix.mps.sync3.ui.ForceSyncToMPSAction" class="org.modelix.mps.sync3.ui.ForceSyncToMPSAction" icon="AllIcons.Vcs.Fetch"/>
+            <action id="org.modelix.mps.sync3.ui.ForceSyncToServerAction" class="org.modelix.mps.sync3.ui.ForceSyncToServerAction" icon="AllIcons.Vcs.Push"/>
+        </group>
+    </actions>
 </idea-plugin>

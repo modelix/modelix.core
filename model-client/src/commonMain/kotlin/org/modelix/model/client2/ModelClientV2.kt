@@ -52,7 +52,7 @@ import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.lazy.computeDelta
+import org.modelix.model.lazy.fullDiff
 import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.oauth.IAuthRequestHandler
 import org.modelix.model.oauth.ModelixAuthClient
@@ -73,6 +73,7 @@ import org.modelix.model.server.api.v2.VersionDeltaStreamV2
 import org.modelix.model.server.api.v2.asStream
 import org.modelix.modelql.client.ModelQLClient
 import org.modelix.modelql.core.IMonoStep
+import org.modelix.streams.IStream
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -297,47 +298,66 @@ class ModelClientV2(
         LOG.debug { "${clientId.toString(16)}.push($branch, $version, $baseVersion)" }
         require(version is CLVersion)
         require(baseVersion is CLVersion?)
-        version.write()
-        val objects = version.computeDelta(baseVersion)
-        HashUtil.checkObjectHashes(objects)
-        val delta = if (objects.size > 1000) {
+        return IStream.useSequencesSuspending {
+            version.write()
+            val objects = version.fullDiff(baseVersion)
             // large HTTP requests and large Json objects don't scale well
-            pushObjects(branch.repositoryId, objects.asSequence().map { it.key to it.value })
-            VersionDelta(version.getContentHash(), null)
-        } else {
-            VersionDelta(version.getContentHash(), null, objectsMap = objects)
-        }
-        return httpClient.preparePost {
-            url {
-                takeFrom(baseUrl)
-                appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
+            val lastChunk = pushObjects(branch.repositoryId, objects.map { it.hash to it.serialize() }, returnLastChunk = true)
+            val delta = VersionDelta(version.getContentHash(), null, objectsMap = lastChunk.toMap())
+            httpClient.preparePost {
+                url {
+                    takeFrom(baseUrl)
+                    appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
+                }
+                useVersionStreamFormat()
+                contentType(ContentType.Application.Json)
+                setBody(delta)
+            }.execute { response ->
+                createVersion(getStore(branch.repositoryId), version, response.readVersionDelta())
             }
-            useVersionStreamFormat()
-            contentType(ContentType.Application.Json)
-            setBody(delta)
-        }.execute { response ->
-            createVersion(getStore(branch.repositoryId), version, response.readVersionDelta())
         }
     }
 
     override suspend fun pushObjects(repository: RepositoryId, objects: Sequence<ObjectHashAndSerializedObject>) {
+        pushObjects(repository, IStream.many(objects), false)
+    }
+
+    /**
+     * If the last chunk is smaller than #minBodySize, then the remaining objects are returned for inlining in the
+     * main request.
+     */
+    private suspend fun pushObjects(repository: RepositoryId, objects: IStream.Many<ObjectHashAndSerializedObject>, returnLastChunk: Boolean): List<ObjectHashAndSerializedObject> {
         LOG.debug { "${clientId.toString(16)}.pushObjects($repository)" }
-        objects.chunked(100_000).forEach { unsortedChunk ->
-            // Entries are sorted to avoid deadlocks on the server side between transactions.
-            // Since ignite locks individual entries, this is equivalent to a lock ordering.
-            // This is also fixed on the server side, but there might an old version of the server running that doesn't
-            // contain this fix. This client-side sorting could be removed in a future version when all servers
-            // are upgraded.
-            val chunk = unsortedChunk.sortedBy { it.first }
+        val maxBodySize = 2 * 1024 * 1024
+        val chunkContent = StringBuilder()
+        val chunkEntries = ArrayList<ObjectHashAndSerializedObject>()
+
+        suspend fun sendChunk() {
             httpClient.put {
                 url {
                     takeFrom(baseUrl)
                     appendPathSegmentsEncodingSlash("repositories", repository.id, "objects")
                 }
                 contentType(ContentType.Text.Plain)
-                setBody(chunk.flatMap { it.toList() }.joinToString("\n"))
+                setBody(chunkContent.toString())
             }
+            chunkContent.clear()
+            chunkEntries.clear()
         }
+
+        objects.asSequence().forEach { entry ->
+            val entrySize = (if (chunkContent.isEmpty()) 0 else 1) + entry.first.length + 1 + entry.second.length
+            if (chunkContent.length + entrySize > maxBodySize) {
+                sendChunk()
+            }
+            if (chunkContent.isNotEmpty()) chunkContent.append('\n')
+            chunkContent.append(entry.first).append('\n').append(entry.second)
+            chunkEntries.add(entry)
+        }
+        if (chunkContent.isNotEmpty() && !returnLastChunk) {
+            sendChunk()
+        }
+        return chunkEntries
     }
 
     override suspend fun pull(branch: BranchReference, lastKnownVersion: IVersion?): IVersion {

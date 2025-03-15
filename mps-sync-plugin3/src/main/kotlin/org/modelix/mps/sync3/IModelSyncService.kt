@@ -11,6 +11,8 @@ import java.io.Closeable
 
 interface IModelSyncService {
     companion object {
+        var continueOnError: Boolean? = null
+
         @JvmStatic
         fun getInstance(project: com.intellij.openapi.project.Project): IModelSyncService {
             return project.service<ModelSyncService>()
@@ -35,6 +37,7 @@ interface IServerConnection : Closeable {
     fun deactivate()
     fun remove()
     fun getStatus(): Status
+    fun getPendingAuthRequest(): String?
 
     override fun close() = deactivate()
 
@@ -50,6 +53,7 @@ interface IServerConnection : Closeable {
     enum class Status {
         CONNECTED,
         DISCONNECTED,
+        AUTHORIZATION_REQUIRED,
     }
 }
 
@@ -71,4 +75,8 @@ interface IBinding : Closeable {
     suspend fun flush(): IVersion
     fun flushBlocking() = runBlocking { flush() }
     suspend fun flushIfEnabled(): IVersion?
+    fun forceSync(push: Boolean)
+    fun getCurrentVersion(): IVersion?
+
+    fun getSyncProgress(): String?
 }

@@ -1,13 +1,5 @@
 package org.modelix.model.lazy
 
-import com.badoo.reaktive.maybe.Maybe
-import com.badoo.reaktive.maybe.flatMapSingle
-import com.badoo.reaktive.maybe.maybeOfEmpty
-import com.badoo.reaktive.observable.asObservable
-import com.badoo.reaktive.observable.flatMap
-import com.badoo.reaktive.observable.flatMapSingle
-import com.badoo.reaktive.observable.map
-import com.badoo.reaktive.observable.toList
 import org.modelix.model.api.ITree
 import org.modelix.model.api.async.getAncestors
 import org.modelix.model.api.async.getDescendants
@@ -18,8 +10,7 @@ import org.modelix.model.persistent.CPHamtInternal
 import org.modelix.model.persistent.CPHamtNode
 import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPTree
-import org.modelix.streams.getSynchronous
-import org.modelix.streams.iterateSynchronous
+import org.modelix.streams.IStream
 
 fun createNewTreeData(
     store: IAsyncObjectStore,
@@ -39,7 +30,12 @@ fun createNewTreeData(
     )
     return CPTree(
         repositoryId.id,
-        KVEntryReference<CPHamtNode>(CPHamtInternal.createEmpty().put(root.id, KVEntryReference<CPNode>(root), store).getSynchronous()!!),
+        KVEntryReference<CPHamtNode>(
+            CPHamtInternal.createEmpty()
+                .put(root.id, KVEntryReference<CPNode>(root), store)
+                .orNull()
+                .getSynchronous()!!,
+        ),
         useRoleIds,
     )
 }
@@ -77,18 +73,18 @@ class CLTree(val data: CPTree, val asyncStore: IAsyncObjectStore) : ITree by Asy
         get() = data.idToHash.getValue(asyncStore).getSynchronous()
 
     val root: CPNode?
-        get() = resolveElement(ITree.ROOT_ID).getSynchronous()
+        get() = resolveElement(ITree.ROOT_ID).orNull().getSynchronous()
 
     override fun getDescendants(root: Long, includeSelf: Boolean): Iterable<CLNode> {
         return asAsyncTree().getDescendants(root, includeSelf)
-            .flatMapSingle { (asAsyncTree() as AsyncTree).getNode(it) }.map { CLNode(this, it) }.toList().getSynchronous()
+            .flatMap { (asAsyncTree() as AsyncTree).getNode(it) }.map { CLNode(this, it) }.toList().getSynchronous()
     }
 
     override fun getDescendants(rootIds: Iterable<Long>, includeSelf: Boolean): Iterable<CLNode> {
         val asyncTree = asAsyncTree() as AsyncTree
-        return rootIds.asObservable()
+        return IStream.many(rootIds)
             .flatMap { asyncTree.getDescendants(it, includeSelf) }
-            .flatMapSingle { asyncTree.getNode(it) }
+            .flatMap { asyncTree.getNode(it) }
             .map { CLNode(this, it) }
             .toList()
             .getSynchronous()
@@ -96,19 +92,19 @@ class CLTree(val data: CPTree, val asyncStore: IAsyncObjectStore) : ITree by Asy
 
     override fun getAncestors(nodeIds: Iterable<Long>, includeSelf: Boolean): Set<Long> {
         val asyncTree = asAsyncTree() as AsyncTree
-        return nodeIds.asObservable()
+        return IStream.many(nodeIds)
             .flatMap { asyncTree.getAncestors(it, includeSelf) }
             .toList()
             .getSynchronous()
             .toSet()
     }
 
-    fun resolveElement(id: Long): Maybe<CPNode> {
+    fun resolveElement(id: Long): IStream.ZeroOrOne<CPNode> {
         if (id == 0L) {
-            return maybeOfEmpty()
+            return IStream.empty()
         }
         val hash = nodesMap.get(id, asyncStore)
-        return hash.flatMapSingle {
+        return hash.flatMapZeroOrOne {
             it.getValue(asyncStore)
         }
     }

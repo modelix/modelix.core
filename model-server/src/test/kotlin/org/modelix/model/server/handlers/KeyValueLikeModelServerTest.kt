@@ -17,7 +17,6 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.createModelClient
 import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.store.InMemoryStoreClient
-import org.modelix.streams.getSynchronous
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull

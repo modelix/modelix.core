@@ -12,7 +12,6 @@ import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.RoleInNode
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.persistent.SerializationUtil
-import org.modelix.streams.getSynchronous
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -5,6 +5,7 @@ import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.model.SNodeReference
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleReference
+import org.jetbrains.mps.openapi.project.Project
 import org.modelix.model.api.INodeReference
 
 data class MPSModuleReference(val moduleReference: SModuleReference) : INodeReference {
@@ -112,12 +113,24 @@ data class MPSModuleDependencyReference(
     }
 }
 
-// FIXME projectName is not guaranteed to be unique and not suitable to identify a project
 data class MPSProjectReference(val projectName: String) : INodeReference {
 
     companion object {
         internal const val PREFIX = "mps-project"
+        internal const val PREFIX_COLON = "$PREFIX:"
+
+        fun tryConvert(ref: INodeReference): MPSProjectReference? {
+            if (ref is MPSProjectReference) return ref
+            val serialized = ref.serialize()
+            return if (serialized.startsWith(PREFIX_COLON)) {
+                MPSProjectReference(serialized.substringAfter(PREFIX_COLON))
+            } else {
+                null
+            }
+        }
     }
+
+    constructor(project: Project) : this(project.readName())
 
     override fun serialize(): String {
         return "$PREFIX:$projectName"

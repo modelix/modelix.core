@@ -508,6 +508,23 @@ class ProjectSyncTest : MPSTestBase() {
         val version3 = binding.flush()
     }
 
+    fun `test sync projects with different name`(): Unit = runWithModelServer { port ->
+        val branchRef = RepositoryId("sync-test").getBranchReference()
+        syncProjectToServer("initial", port, branchRef)
+        val expectedSnapshot = lastSnapshotBeforeSync
+
+        openTestProject(null, projectName = "project-with-different-name")
+        assertEquals("project-with-different-name", project.name)
+
+        val binding = IModelSyncService.getInstance(mpsProject)
+            .addServer("http://localhost:$port")
+            .bind(branchRef)
+        binding.flush()
+
+        assertEquals("test-project", project.name)
+        assertEquals(expectedSnapshot, project.captureSnapshot())
+    }
+
     private fun runWithModelServer(body: suspend (port: Int) -> Unit) = runBlocking {
         @OptIn(ExperimentalTime::class)
         withTimeout(3.minutes) {

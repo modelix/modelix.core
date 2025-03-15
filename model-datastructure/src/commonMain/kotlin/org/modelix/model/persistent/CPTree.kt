@@ -1,6 +1,10 @@
 package org.modelix.model.persistent
 
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.KVEntryReference
+import org.modelix.streams.IStream
+import org.modelix.streams.flatten
+import org.modelix.streams.plus
 import kotlin.jvm.JvmStatic
 
 class CPTree(
@@ -21,6 +25,23 @@ class CPTree(
     override fun getDeserializer(): (String) -> IKVValue = DESERIALIZER
 
     override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = listOf(idToHash)
+
+    override fun objectDiff(oldObject: IKVValue?, store: IAsyncObjectStore): IStream.Many<IKVValue> {
+        return when (oldObject) {
+            is CPTree -> {
+                if (oldObject.hash == hash) {
+                    IStream.empty()
+                } else {
+                    IStream.of(this).plus(
+                        idToHash.getValue(store).zipWith(oldObject.idToHash.getValue(store)) { n, o ->
+                            n.objectDiff(o, store)
+                        }.flatten(),
+                    )
+                }
+            }
+            else -> getAllObjects(store)
+        }
+    }
 
     companion object {
         /**

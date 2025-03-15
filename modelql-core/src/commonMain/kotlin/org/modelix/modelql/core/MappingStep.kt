@@ -1,10 +1,9 @@
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.observable.flatMap
-import com.badoo.reaktive.observable.observableOf
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.modelix.streams.IStream
 
 class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : MonoTransformingStep<In, Out>() {
 
@@ -26,7 +25,7 @@ class MappingStep<In, Out>(val query: MonoUnboundQuery<In, Out>) : MonoTransform
     }
 
     override fun createStream(input: StepStream<In>, context: IStreamInstantiationContext): StepStream<Out> {
-        return input.flatMap { query.asStream(context.evaluationContext, observableOf(it)) }
+        return input.flatMap { query.asStream(context.evaluationContext, IStream.of(it)) }
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Out>> {

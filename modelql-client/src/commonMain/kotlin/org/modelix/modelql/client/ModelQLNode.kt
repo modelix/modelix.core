@@ -1,7 +1,5 @@
 package org.modelix.modelql.client
 
-import com.badoo.reaktive.coroutinesinterop.singleFromCoroutine
-import com.badoo.reaktive.single.flatMapIterable
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
@@ -51,6 +49,7 @@ import org.modelix.modelql.untyped.resolve
 import org.modelix.modelql.untyped.roleInParent
 import org.modelix.modelql.untyped.setProperty
 import org.modelix.modelql.untyped.setReference
+import org.modelix.streams.IStream
 
 abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL, IQueryExecutor<INode> {
     override fun usesRoleIds(): Boolean = true
@@ -60,7 +59,7 @@ abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL,
     }
 
     override fun <Out> createStream(query: IUnboundQuery<INode, *, Out>): StepStream<Out> {
-        return singleFromCoroutine {
+        return IStream.singleFromCoroutine {
             val result = when (query) {
                 is IMonoUnboundQuery<*, *> -> {
                     val castedQuery = query as IMonoUnboundQuery<INode, Out>

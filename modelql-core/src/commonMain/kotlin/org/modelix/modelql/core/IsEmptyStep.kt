@@ -1,13 +1,12 @@
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.single.Single
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.modelix.streams.isEmpty
+import org.modelix.streams.IStream
 
 class IsEmptyStep() : AggregationStep<Any?, Boolean>() {
-    override fun aggregate(input: StepStream<Any?>, context: IStreamInstantiationContext): Single<IStepOutput<Boolean>> {
+    override fun aggregate(input: StepStream<Any?>, context: IStreamInstantiationContext): IStream.One<IStepOutput<Boolean>> {
         return input.isEmpty().asStepStream(this)
     }
 

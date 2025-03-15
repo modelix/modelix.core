@@ -19,7 +19,7 @@ class CPVersion(
     mergedVersion1: KVEntryReference<CPVersion>?, // null if this is not a merge
     mergedVersion2: KVEntryReference<CPVersion>?, // null if this is not a merge
     operations: Array<IOperation>?,
-    operationsHash: KVEntryReference<CPOperationsList>?,
+    operationsHash: KVEntryReference<OperationsList>?,
     numberOfOperations: Int,
 ) : IKVValue {
     private val logger = mu.KotlinLogging.logger {}
@@ -42,7 +42,7 @@ class CPVersion(
     val mergedVersion2: KVEntryReference<CPVersion>?
 
     val operations: Array<IOperation>?
-    val operationsHash: KVEntryReference<CPOperationsList>?
+    val operationsHash: KVEntryReference<OperationsList>?
     val numberOfOperations: Int
     override fun serialize(): String {
         val opsPart: String = operationsHash?.getHash()
@@ -107,7 +107,7 @@ class CPVersion(
                         mergedVersion1 = emptyStringAsNull(parts[5])?.let { KVEntryReference(it, DESERIALIZER) },
                         mergedVersion2 = emptyStringAsNull(parts[6])?.let { KVEntryReference(it, DESERIALIZER) },
                         operations = ops,
-                        operationsHash = opsHash?.let { KVEntryReference(it, CPOperationsList.DESERIALIZER) },
+                        operationsHash = opsHash?.let { KVEntryReference(it, OperationsList.DESERIALIZER) },
                         numberOfOperations = parts[7].toInt(),
                     )
                     data.isWritten = true
@@ -135,7 +135,7 @@ class CPVersion(
                         mergedVersion1 = null,
                         mergedVersion2 = null,
                         ops,
-                        opsHash?.let { KVEntryReference(it, CPOperationsList.DESERIALIZER) },
+                        opsHash?.let { KVEntryReference(it, OperationsList.DESERIALIZER) },
                         numOps,
                     )
                     data.isWritten = true

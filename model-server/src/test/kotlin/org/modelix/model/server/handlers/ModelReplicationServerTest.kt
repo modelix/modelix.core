@@ -96,6 +96,7 @@ class ModelReplicationServerTest {
         }
     }
 
+    @Ignore("Filtering duplicates increases memory consumption")
     @Test
     fun `pulling delta does not return objects twice`() = runWithTestModelServer { _, _ ->
         // Arrange

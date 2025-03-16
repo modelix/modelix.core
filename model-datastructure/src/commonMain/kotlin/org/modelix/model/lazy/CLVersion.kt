@@ -315,14 +315,12 @@ class CLVersion : IVersion {
         return ancestors.filter { stopAt == null || it.getContentHash() != stopAt.getContentHash() }
     }
 
-    fun getAncestors(includeSelf: Boolean, stopAt: CLVersion?): List<CLVersion> {
-        if (stopAt != null && this.getContentHash() == stopAt.getContentHash()) {
-            return emptyList()
-        }
-        return if (includeSelf) {
-            listOf(this) + getAncestors(false, stopAt)
-        } else {
-            getParents(stopAt).flatMap { it.getAncestors(true, stopAt) }
+    fun collectAncestors(stopAt: CLVersion?, result: MutableMap<String, CLVersion>) {
+        if (stopAt != null && this.getContentHash() == stopAt.getContentHash()) return
+        if (result.contains(getContentHash())) return
+        result[getContentHash()] = this
+        for (parent in getParents(stopAt)) {
+            parent.collectAncestors(stopAt, result)
         }
     }
 }
@@ -348,8 +346,9 @@ fun CLVersion.fullDiff(baseVersion: CLVersion?): IStream.Many<IKVValue> {
 
 fun CLVersion.historyDiff(baseVersion: CLVersion?): IStream.Many<CPVersion> {
     val commonBase = VersionMerger.commonBaseVersion(this, baseVersion)
-    val history = getAncestors(true, commonBase).map { it.data }
-    return IStream.many(history)
+    val history = LinkedHashMap<String, CLVersion>()
+    collectAncestors(commonBase, history)
+    return IStream.many(history.values.map { it.data })
 }
 
 @Suppress("UNCHECKED_CAST")

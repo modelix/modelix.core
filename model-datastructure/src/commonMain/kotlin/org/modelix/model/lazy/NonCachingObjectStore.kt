@@ -2,8 +2,9 @@ package org.modelix.model.lazy
 
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.persistent.IKVValue
+import org.modelix.streams.IStreamExecutorProvider
 
-class NonCachingObjectStore(override val keyValueStore: IKeyValueStore) : IDeserializingKeyValueStore {
+class NonCachingObjectStore(override val keyValueStore: IKeyValueStore) : IDeserializingKeyValueStore, IStreamExecutorProvider by keyValueStore {
 
     override fun <T> getAll(hashes_: Iterable<String>, deserializer: (String, String) -> T): Iterable<T> {
         val hashes = hashes_.toList()

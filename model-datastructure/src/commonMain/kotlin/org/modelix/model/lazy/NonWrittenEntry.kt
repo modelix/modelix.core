@@ -21,6 +21,7 @@ class NonWrittenEntry<E : IKVValue> : IKVEntryReference<E> {
 
     override fun getValue(store: IDeserializingKeyValueStore): E = getDeserialized()
     override fun getValue(store: IAsyncObjectStore): IStream.One<E> = IStream.of(getDeserialized())
+    override fun tryGetValue(store: IAsyncObjectStore): IStream.One<E> = IStream.of(getDeserialized())
     override fun getUnwrittenValue(): E = getDeserialized()
 
     fun getSerialized(): String = getDeserialized().serialize()

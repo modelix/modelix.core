@@ -8,6 +8,7 @@ interface IKVEntryReference<out E : IKVValue> {
     fun getHash(): String
     fun getValue(store: IDeserializingKeyValueStore): E
     fun getValue(store: IAsyncObjectStore): IStream.One<E>
+    fun tryGetValue(store: IAsyncObjectStore): IStream.ZeroOrOne<E>
     fun isWritten(): Boolean
     fun getUnwrittenValue(): E
     fun getDeserializer(): (String) -> E

@@ -6,7 +6,6 @@ import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.persistent.MapBasedStore
-import org.modelix.streams.getSynchronous
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -62,5 +61,8 @@ class AddNewChildrenTest {
         }
     }
 
-    private fun ITree.getAllNodes() = asAsyncTree().getDescendants(ITree.ROOT_ID, true).toList().getSynchronous()
+    private fun ITree.getAllNodes(): List<Long> {
+        val asyncTree = asAsyncTree()
+        return asyncTree.getStreamExecutor().query { asyncTree.getDescendants(ITree.ROOT_ID, true).toList() }
+    }
 }

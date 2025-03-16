@@ -7,8 +7,13 @@ import org.modelix.model.async.ObjectHash
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.persistent.IKVValue
 import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutor
+import org.modelix.streams.SimpleStreamExecutor
+import org.modelix.streams.withSequences
 
 class StoreClientAsAsyncStore(val store: IStoreClient) : IAsyncObjectStore {
+    override fun getStreamExecutor(): IStreamExecutor = SimpleStreamExecutor().withSequences()
+
     override fun getLegacyKeyValueStore(): IKeyValueStore {
         return StoreClientAsKeyValueStore(store)
     }
@@ -29,17 +34,18 @@ class StoreClientAsAsyncStore(val store: IStoreClient) : IAsyncObjectStore {
     }
 
     override fun getAllAsStream(keys: IStream.Many<ObjectHash<*>>): IStream.Many<Pair<ObjectHash<*>, Any?>> {
-        val keysList = keys.toList().getSynchronous()
-        val keysMap = keysList.associateBy { it.hash }
+        return keys.toList().flatMap { keysList ->
+            val keysMap = keysList.associateBy { it.hash }
 
-        @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
-        val serializedValues = store.getAll(keysMap.keys)
-        return IStream.many(
-            serializedValues.map {
-                val ref = keysMap[it.key]!!
-                ref to it.value?.let { ref.deserializer(it) }
-            },
-        )
+            @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
+            val serializedValues = store.getAll(keysMap.keys)
+            IStream.many(
+                serializedValues.map {
+                    val ref = keysMap[it.key]!!
+                    ref to it.value?.let { ref.deserializer(it) }
+                },
+            )
+        }
     }
 
     override fun getAllAsMap(keys: List<ObjectHash<*>>): IStream.One<Map<ObjectHash<*>, Any?>> {

@@ -13,7 +13,6 @@ import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.IKVValue
 import org.modelix.model.persistent.SerializationUtil
-import org.modelix.streams.getSynchronous
 
 class AddNewChildSubtreeOp(val resultTreeHash: KVEntryReference<CPTree>, val position: PositionInRole, val childId: Long, val concept: IConceptReference?) : AbstractOperation() {
 
@@ -67,11 +66,12 @@ class AddNewChildSubtreeOp(val resultTreeHash: KVEntryReference<CPTree>, val pos
 
         override fun invert(): List<IOperation> {
             val resultTree = getResultTree(store)
-            return resultTree.asAsyncTree()
-                .getDescendants(childId, true).map { DeleteNodeOp(it) }
-                .toList()
-                .getSynchronous()
-                .asReversed()
+            val asyncTree = resultTree.asAsyncTree()
+            return asyncTree.getStreamExecutor().query {
+                asyncTree
+                    .getDescendants(childId, true).map { DeleteNodeOp(it) }
+                    .toList()
+            }.asReversed()
         }
     }
 

@@ -5,11 +5,12 @@ import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.IKVEntryReference
 import org.modelix.model.persistent.IKVValue
 import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutorProvider
 
 private val ILLEGAL_DESERIALIZER: (String) -> Any = { error("deserialization not expected") }
 
 @Deprecated("use IAsyncStore")
-class AsyncStoreAsLegacyDeserializingStore(val store: IAsyncObjectStore) : IDeserializingKeyValueStore {
+class AsyncStoreAsLegacyDeserializingStore(val store: IAsyncObjectStore) : IDeserializingKeyValueStore, IStreamExecutorProvider by store {
 
     override fun getAsyncStore(): IAsyncObjectStore {
         return store
@@ -17,7 +18,7 @@ class AsyncStoreAsLegacyDeserializingStore(val store: IAsyncObjectStore) : IDese
 
     override fun <T> get(hash: String, deserializer: (String) -> T): T? {
         val ref = ObjectHash(hash, deserializer as ((String) -> IKVValue))
-        return store.get(ref).orNull().getSynchronous() as T?
+        return getStreamExecutor().query { store.get(ref).orNull() } as T?
     }
 
     override val keyValueStore: IKeyValueStore
@@ -28,17 +29,19 @@ class AsyncStoreAsLegacyDeserializingStore(val store: IAsyncObjectStore) : IDese
     }
 
     override fun <T> getAll(hash: Iterable<String>, deserializer: (String, String) -> T): Iterable<T> {
-        return store.getAllAsStream(IStream.many(hash).map { hash -> ObjectHash(hash, { deserializer(hash, it) as Any }) })
-            .map { it.second as T }.toList().getSynchronous()
+        return getStreamExecutor().query {
+            store.getAllAsStream(IStream.many(hash).map { hash -> ObjectHash(hash, { deserializer(hash, it) as Any }) })
+                .map { it.second as T }.toList()
+        }
     }
 
     override fun put(hash: String, deserialized: Any, serialized: String) {
-        store.putAll(mapOf(ObjectHash(hash, ILLEGAL_DESERIALIZER) to deserialized as IKVValue)).executeSynchronous()
+        getStreamExecutor().query { store.putAll(mapOf(ObjectHash(hash, ILLEGAL_DESERIALIZER) to deserialized as IKVValue)).asOne() }
     }
 
     override fun <T : IKVValue> getAll(
         regular: List<IKVEntryReference<T>>,
     ): Map<String, T?> {
-        return store.getAllAsMap(regular.map { it.toObjectHash() }).getSynchronous().entries.associate { it.key.hash to it.value as T? }
+        return getStreamExecutor().query { store.getAllAsMap(regular.map { it.toObjectHash() }) }.entries.associate { it.key.hash to it.value as T? }
     }
 }

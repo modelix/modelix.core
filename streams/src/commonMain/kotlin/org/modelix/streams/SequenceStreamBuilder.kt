@@ -4,11 +4,16 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 
-class SequenceStreamBuilder : IStreamBuilder {
+class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
+    IStreamBuilder, IStreamExecutorProvider by executor {
     override fun <T> of(element: T): IStream.One<T> = Wrapper(sequenceOf(element))
     override fun <T> many(elements: Sequence<T>): IStream.Many<T> = Wrapper(elements)
     override fun <T> of(vararg elements: T): IStream.Many<T> = Wrapper(elements.asSequence())
     override fun <T> empty(): IStream.ZeroOrOne<T> = Wrapper(emptySequence())
+
+    override fun <T> fromFlow(flow: Flow<T>): IStream.Many<T> {
+        throw UnsupportedOperationException("Use FlowStreamBuilder")
+    }
 
     override fun <T> singleFromCoroutine(block: suspend CoroutineScope.() -> T): IStream.One<T> {
         return throw UnsupportedOperationException("Use Reaktive based streams")
@@ -20,13 +25,6 @@ class SequenceStreamBuilder : IStreamBuilder {
 
     override fun zero(): IStream.Zero {
         return Zero(emptySequence())
-    }
-
-    override fun <T, R> zip(
-        input: Iterable<IStream.One<T>>,
-        mapper: (List<T>) -> R,
-    ): IStream.One<R> {
-        TODO("Not yet implemented")
     }
 
     override fun <T1, T2, R> zip(
@@ -44,11 +42,26 @@ class SequenceStreamBuilder : IStreamBuilder {
     override fun <T, R> zip(
         input: Iterable<IStream.Many<T>>,
         mapper: (List<T>) -> R,
-    ): IStream.Many<R> {
-        TODO("Not yet implemented")
+    ): Wrapper<R> {
+        val input = input.toList()
+        val sequences = input.map { (it as Wrapper<T>).wrapped }
+        return Wrapper(
+            when (sequences.size) {
+                0 -> emptySequence()
+                1 -> sequences.single().map { mapper(listOf(it)) }
+                else -> sequences.map { it.map { listOf(it) } }.reduce { a, b -> a.zip(b) { a, b -> a + b } }.map(mapper)
+            },
+        )
     }
 
-    abstract class WrapperBase<E>(val wrapped: Sequence<E>) : IStream<E> {
+    override fun <T, R> zip(
+        input: Iterable<IStream.One<T>>,
+        mapper: (List<T>) -> R,
+    ): IStream.One<R> {
+        return zip(input.map { it.assertNotEmpty { "Empty" } } as Iterable<IStream.Many<T>>, mapper)
+    }
+
+    abstract inner class WrapperBase<E>(val wrapped: Sequence<E>) : IStream<E> {
         override fun asFlow(): Flow<E> = wrapped.asFlow()
         override fun toList(): IStream.One<List<E>> = Wrapper(sequence { yield(wrapped.toList()) })
         override fun asSequence(): Sequence<E> = wrapped
@@ -62,7 +75,7 @@ class SequenceStreamBuilder : IStreamBuilder {
         }
     }
 
-    class Zero(wrapped: Sequence<Any?>) : WrapperBase<Any?>(wrapped), IStream.Zero {
+    inner class Zero(wrapped: Sequence<Any?>) : WrapperBase<Any?>(wrapped), IStream.Zero, IStreamExecutorProvider by this {
         override fun onAfterSubscribe(action: () -> Unit): IStream<Any?> {
             return Zero(
                 sequence {
@@ -110,7 +123,7 @@ class SequenceStreamBuilder : IStreamBuilder {
         }
     }
 
-    class Wrapper<E>(wrapped: Sequence<E>) : WrapperBase<E>(wrapped), IStream.One<E> {
+    inner class Wrapper<E>(wrapped: Sequence<E>) : WrapperBase<E>(wrapped), IStream.One<E>, IStreamExecutorProvider by this {
         override fun getAsync(onError: ((Throwable) -> Unit)?, onSuccess: ((E) -> Unit)?) {
             try {
                 for (element in wrapped) {
@@ -229,8 +242,8 @@ class SequenceStreamBuilder : IStreamBuilder {
             return Wrapper(sequence { yield(wrapped.single()) })
         }
 
-        override fun assertNotEmpty(message: () -> String): IStream.OneOrMany<E> {
-            return Wrapper(wrapped.ifEmpty { throw NoSuchElementException(message()) })
+        override fun assertNotEmpty(message: () -> String): IStream.One<E> {
+            return Wrapper(wrapped.ifEmpty { throw StreamAssertionError(message()) })
         }
 
         override fun count(): IStream.One<Int> {
@@ -290,4 +303,12 @@ class SequenceStreamBuilder : IStreamBuilder {
             )
         }
     }
+}
+
+fun IStreamExecutor.withSequences(): IStreamExecutor = withBuilder(SequenceStreamBuilder(this.asProvider()))
+fun <R> IStream.Companion.useSequences(body: () -> R): R {
+    return useBuilder(SequenceStreamBuilder(SimpleStreamExecutor().asProvider()), body)
+}
+suspend fun <R> IStream.Companion.useSequencesSuspending(body: suspend () -> R): R {
+    return useBuilderSuspending(SequenceStreamBuilder(SimpleStreamExecutor().asProvider()), body)
 }

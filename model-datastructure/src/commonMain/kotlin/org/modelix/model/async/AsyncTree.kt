@@ -42,12 +42,13 @@ import org.modelix.model.persistent.EntryChangedEvent
 import org.modelix.model.persistent.EntryRemovedEvent
 import org.modelix.model.persistent.IKVValue
 import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutorProvider
 import org.modelix.streams.flatten
 import org.modelix.streams.ifEmpty
 import org.modelix.streams.notNull
 import org.modelix.streams.plus
 
-open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyncMutableTree {
+open class AsyncTree(val treeData: CPTree, val store: IAsyncObjectStore) : IAsyncMutableTree, IStreamExecutorProvider by store {
 
     private val nodesMap: KVEntryReference<CPHamtNode> = treeData.idToHash
 

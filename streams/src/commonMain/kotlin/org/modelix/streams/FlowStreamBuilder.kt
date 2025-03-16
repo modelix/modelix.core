@@ -1,6 +1,7 @@
 package org.modelix.streams
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.fold
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
@@ -25,19 +27,27 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.flow.zip
+import kotlin.coroutines.coroutineContext
 
-class FlowStreamBuilder : IStreamBuilder {
+class FlowStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder, IStreamExecutorProvider by executor {
     override fun <T> of(element: T): IStream.One<T> = Wrapper(flowOf(element))
     override fun <T> many(elements: Sequence<T>): IStream.Many<T> = Wrapper(elements.asFlow())
     override fun <T> of(vararg elements: T): IStream.Many<T> = Wrapper(elements.asFlow())
     override fun <T> empty(): IStream.ZeroOrOne<T> = Wrapper(emptyFlow())
+    override fun <T> fromFlow(flow: Flow<T>): IStream.Many<T> = Wrapper(flow)
 
     override fun <T> singleFromCoroutine(block: suspend CoroutineScope.() -> T): IStream.One<T> {
         return Wrapper(
             flow {
-                coroutineScope {
-                    emit(block())
-                }
+                val contextWithFlowBuilder = IStream.useBuilderSuspending(this@FlowStreamBuilder) { coroutineContext }
+                    .minusKey(Job)
+                emitAll(
+                    flow {
+                        coroutineScope {
+                            emit(block())
+                        }
+                    }.flowOn(contextWithFlowBuilder),
+                )
             },
         )
     }
@@ -76,7 +86,7 @@ class FlowStreamBuilder : IStreamBuilder {
         TODO("Not yet implemented")
     }
 
-    abstract class WrapperBase<E>(val wrapped: Flow<E>) : IStream<E> {
+    abstract inner class WrapperBase<E>(val wrapped: Flow<E>) : IStream<E>, IStreamExecutorProvider by this {
         override fun asFlow(): Flow<E> = wrapped
         override fun toList(): IStream.One<List<E>> = Wrapper(flow { emit(wrapped.toList()) })
         override fun asSequence(): Sequence<E> = throw UnsupportedOperationException()
@@ -87,7 +97,7 @@ class FlowStreamBuilder : IStreamBuilder {
         }
     }
 
-    class Zero(wrapped: Flow<Any?>) : WrapperBase<Any?>(wrapped), IStream.Zero {
+    inner class Zero(wrapped: Flow<Any?>) : WrapperBase<Any?>(wrapped), IStream.Zero {
         override fun onAfterSubscribe(action: () -> Unit): IStream<Any?> {
             return Zero(
                 flow {
@@ -135,7 +145,7 @@ class FlowStreamBuilder : IStreamBuilder {
         }
     }
 
-    class Wrapper<E>(wrapped: Flow<E>) : WrapperBase<E>(wrapped), IStream.One<E> {
+    inner class Wrapper<E>(wrapped: Flow<E>) : WrapperBase<E>(wrapped), IStream.One<E> {
         override fun getAsync(onError: ((Throwable) -> Unit)?, onSuccess: ((E) -> Unit)?) {
             throw UnsupportedOperationException()
         }
@@ -247,7 +257,7 @@ class FlowStreamBuilder : IStreamBuilder {
             return Wrapper(flow { emit(wrapped.single()) })
         }
 
-        override fun assertNotEmpty(message: () -> String): IStream.OneOrMany<E> {
+        override fun assertNotEmpty(message: () -> String): IStream.One<E> {
             return Wrapper(wrapped.onEmpty { throw NoSuchElementException(message()) })
         }
 
@@ -299,3 +309,11 @@ class FlowStreamBuilder : IStreamBuilder {
 }
 
 private operator fun <R> Flow<R>.plus(other: Flow<R>) = onCompletion { if (it == null) emitAll(other) }
+
+fun IStreamExecutor.withFlows(): IStreamExecutor = withBuilder(FlowStreamBuilder(this.asProvider()))
+fun <R> IStream.Companion.useFlows(body: () -> R): R {
+    return useBuilder(FlowStreamBuilder(SimpleStreamExecutor().asProvider()), body)
+}
+suspend fun <R> IStream.Companion.useFlowsSuspending(body: suspend () -> R): R {
+    return useBuilderSuspending(FlowStreamBuilder(SimpleStreamExecutor().asProvider()), body)
+}

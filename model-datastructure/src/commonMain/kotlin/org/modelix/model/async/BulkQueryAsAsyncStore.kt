@@ -5,9 +5,11 @@ import org.modelix.model.lazy.IBulkQuery
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.persistent.IKVValue
 import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutorProvider
 
 @Deprecated("Use BulkAsyncStore")
-class BulkQueryAsAsyncStore(val store: IDeserializingKeyValueStore, val bulkQuery: IBulkQuery) : IAsyncObjectStore {
+class BulkQueryAsAsyncStore(val store: IDeserializingKeyValueStore, val bulkQuery: IBulkQuery) :
+    IAsyncObjectStore, IStreamExecutorProvider by bulkQuery {
     override fun getLegacyKeyValueStore(): IKeyValueStore {
         return store.keyValueStore
     }

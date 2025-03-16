@@ -6,9 +6,11 @@ import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.LRUCache
 import org.modelix.model.persistent.IKVValue
 import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutorProvider
 import org.modelix.streams.plus
 
-class CachingAsyncStore(val store: IAsyncObjectStore, cacheSize: Int = 100_000) : IAsyncObjectStore {
+class CachingAsyncStore(val store: IAsyncObjectStore, cacheSize: Int = 100_000) :
+    IAsyncObjectStore, IStreamExecutorProvider by store {
     private val cache = LRUCache<ObjectHash<*>, Any>(cacheSize)
 
     override fun getLegacyKeyValueStore(): IKeyValueStore {

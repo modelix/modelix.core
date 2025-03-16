@@ -4,10 +4,9 @@ import org.modelix.model.IKeyValueStore
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.async.LegacyDeserializingStoreAsAsyncStore
 import org.modelix.model.persistent.IKVValue
+import org.modelix.streams.IStreamExecutorProvider
 
-interface IDeserializingKeyValueStore {
-    fun newBulkQuery(): IBulkQuery = newBulkQuery(this)
-    fun newBulkQuery(wrapper: IDeserializingKeyValueStore = this, config: BulkQueryConfiguration? = null): IBulkQuery = keyValueStore.newBulkQuery(wrapper, config ?: BulkQueryConfiguration())
+interface IDeserializingKeyValueStore : IStreamExecutorProvider {
     val keyValueStore: IKeyValueStore
     operator fun <T> get(hash: String, deserializer: (String) -> T): T?
     fun <T> getIfCached(hash: String, deserializer: (String) -> T, isPrefetch: Boolean): T?

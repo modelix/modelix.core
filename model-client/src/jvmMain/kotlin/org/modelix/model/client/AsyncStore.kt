@@ -3,10 +3,11 @@ package org.modelix.model.client
 import org.modelix.model.IKeyListener
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.IKeyValueStoreWrapper
+import org.modelix.streams.IStreamExecutorProvider
 import java.util.Objects
 import java.util.concurrent.atomic.AtomicBoolean
 
-class AsyncStore(private val store: IKeyValueStore) : IKeyValueStoreWrapper {
+class AsyncStore(private val store: IKeyValueStore) : IKeyValueStoreWrapper, IStreamExecutorProvider by store {
     private val consumerActive = AtomicBoolean()
     private val pendingWrites: MutableMap<String, String?> = LinkedHashMap()
     override fun get(key: String): String? {

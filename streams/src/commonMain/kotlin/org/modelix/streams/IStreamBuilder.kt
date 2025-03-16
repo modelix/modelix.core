@@ -1,9 +1,10 @@
 package org.modelix.streams
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 import org.modelix.kotlin.utils.ContextValue
 
-interface IStreamBuilder {
+interface IStreamBuilder : IStreamExecutorProvider {
     fun zero(): IStream.Zero
     fun <T> empty(): IStream.ZeroOrOne<T>
     fun <T> of(element: T): IStream.One<T>
@@ -16,6 +17,8 @@ interface IStreamBuilder {
     fun <T> many(elements: Array<T>): IStream.Many<T> = many(elements.asSequence())
     fun many(elements: LongArray): IStream.Many<Long> = many(elements.asSequence())
     fun <T> many(elements: Sequence<T>): IStream.Many<T>
+
+    fun <T> fromFlow(flow: Flow<T>): IStream.Many<T>
 
     fun <T, R> zip(input: Iterable<IStream.Many<T>>, mapper: (List<T>) -> R): IStream.Many<R>
     fun <T, R> zip(input: Iterable<IStream.One<T>>, mapper: (List<T>) -> R): IStream.One<R>
@@ -32,6 +35,7 @@ interface IStreamBuilder {
 }
 
 open class IndirectStreamBuilder(private val provider: () -> IStreamBuilder) : IStreamBuilder {
+    override fun getStreamExecutor(): IStreamExecutor = provider().getStreamExecutor()
     override fun zero(): IStream.Zero = provider().zero()
     override fun <T> empty(): IStream.ZeroOrOne<T> = provider().empty()
     override fun <T> of(element: T): IStream.One<T> = provider().of(element)
@@ -53,11 +57,14 @@ open class IndirectStreamBuilder(private val provider: () -> IStreamBuilder) : I
         mapper: (T1, T2) -> R,
     ): IStream.One<R> = provider().zip(source1, source2, mapper)
     override fun <T : Any> ofNotNull(element: T?): IStream.ZeroOrOne<T> = provider().ofNotNull(element)
+    override fun <T> fromFlow(flow: Flow<T>): IStream.Many<T> = provider().fromFlow(flow)
 }
 
 class ContextStreamBuilder(
-    val contextValue: ContextValue<IStreamBuilder> = ContextValue(ReaktiveStreamBuilder()),
-) : IndirectStreamBuilder({ contextValue.getValue() }) {
+    val contextValue: ContextValue<IStreamBuilder> = ContextValue(),
+) : IndirectStreamBuilder({
+    checkNotNull(contextValue.getValueOrNull()) { "No stream builder available in the current context" }
+}) {
     companion object {
         val globalInstance = ContextStreamBuilder()
     }

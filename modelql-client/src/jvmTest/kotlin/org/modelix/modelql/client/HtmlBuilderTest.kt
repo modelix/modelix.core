@@ -16,6 +16,7 @@ import kotlinx.html.ul
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.PBranch
+import org.modelix.model.api.async.asAsyncNode
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
@@ -170,5 +171,5 @@ class HtmlBuilderTest {
 typealias HtmlBuilder<In> = IFragmentBuilder<In, HTML>
 
 suspend fun INode.queryAndBuildHtml(body: IFragmentBuilder<INode, HTML>.() -> Unit): String {
-    return buildHtmlQuery { body() }.bind(createQueryExecutor()).execute().value
+    return buildHtmlQuery { body() }.bind(createQueryExecutor()).execute(asAsyncNode().getStreamExecutor()).value
 }

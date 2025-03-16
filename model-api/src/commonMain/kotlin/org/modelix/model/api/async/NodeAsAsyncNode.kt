@@ -17,8 +17,14 @@ import org.modelix.model.api.getDescendants
 import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.api.toReference
 import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutor
+import org.modelix.streams.SimpleStreamExecutor
+import org.modelix.streams.withSequences
 
-class NodeAsAsyncNode(val node: INode) : IAsyncNode {
+open class NodeAsAsyncNode(val node: INode) : IAsyncNode {
+    override fun getStreamExecutor(): IStreamExecutor {
+        return SimpleStreamExecutor().withSequences()
+    }
 
     private fun <T : Any> T?.asOptionalMono(): Maybe<T> = if (this != null) maybeOf(this) else maybeOfEmpty()
     private fun <T> T.asMono(): Single<T> = singleOf(this)

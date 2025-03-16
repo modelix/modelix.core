@@ -24,7 +24,10 @@ import org.modelix.model.server.store.RequiresTransaction
 import org.modelix.model.server.store.StoreManager
 import org.modelix.model.server.store.assertWrite
 import org.modelix.model.server.store.pollEntry
+import org.modelix.streams.IExecutableStream
 import org.modelix.streams.IStream
+import org.modelix.streams.SimpleStreamExecutor
+import org.modelix.streams.withSequences
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
@@ -262,7 +265,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
 
     private fun validateVersion(newVersion: CLVersion, oldVersion: CLVersion?) {
         // ensure there are no missing objects
-        newVersion.fullDiff(oldVersion).iterateSynchronous { }
+        newVersion.asyncStore.getStreamExecutor().iterate({ newVersion.fullDiff(oldVersion) }) { }
     }
 
     @RequiresTransaction
@@ -307,9 +310,11 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         if (versionHash == baseVersionHash) return ObjectData.empty
 
         val legacyObjectStore = stores.getLegacyObjectStore(repository?.takeIf { isIsolated(it) ?: false })
-        val version = CLVersion(versionHash, legacyObjectStore)
-        val baseVersion = baseVersionHash?.let { CLVersion(it, legacyObjectStore) }
-        return ObjectDataFlow(version.fullDiff(baseVersion).map { it.hash to it.serialize() })
+        return legacyObjectStore.getStreamExecutor().queryManyLater {
+            val version = CLVersion(versionHash, legacyObjectStore)
+            val baseVersion = baseVersionHash?.let { CLVersion(it, legacyObjectStore) }
+            version.fullDiff(baseVersion).map { it.hash to it.serialize() }
+        }.let { ObjectDataFlow(it) }
     }
 
     private fun branchKey(branch: BranchReference, isolated: Boolean = isIsolated(branch.repositoryId) ?: true): ObjectInRepository {
@@ -369,7 +374,7 @@ class RepositoryAlreadyExistsException(val name: String) : IllegalStateException
 
 sealed interface ObjectData {
     suspend fun asMap(): Map<String, String>
-    fun asStream(): IStream.Many<Pair<String, String>>
+    fun asStream(): IExecutableStream.Many<Pair<String, String>>
 
     companion object {
         val empty = ObjectDataMap(emptyMap())
@@ -382,12 +387,16 @@ class ObjectDataMap(private val byHashObjects: Map<String, String>) : ObjectData
     }
 
     override suspend fun asMap(): Map<String, String> = byHashObjects
-    override fun asStream(): IStream.Many<Pair<String, String>> = IStream.many(byHashObjects.entries).map { it.key to it.value }
+    override fun asStream(): IExecutableStream.Many<Pair<String, String>> {
+        return SimpleStreamExecutor().withSequences().queryManyLater {
+            IStream.many(byHashObjects.entries).map { it.key to it.value }
+        }
+    }
 }
 
-class ObjectDataFlow(private val hashObjectFlow: IStream.Many<Pair<String, String>>) : ObjectData {
-    override suspend fun asMap(): Map<String, String> = hashObjectFlow.toMap({ it.first }, { it.second }).getSuspending()
-    override fun asStream(): IStream.Many<Pair<String, String>> = hashObjectFlow
+class ObjectDataFlow(private val hashObjectFlow: IExecutableStream.Many<Pair<String, String>>) : ObjectData {
+    override suspend fun asMap(): Map<String, String> = hashObjectFlow.mapOne { it.toMap({ it.first }, { it.second }) }.querySuspending()
+    override fun asStream(): IExecutableStream.Many<Pair<String, String>> = hashObjectFlow
 }
 
 private fun Flow<Pair<String, String>>.checkObjectHashes(): Flow<Pair<String, String>> {

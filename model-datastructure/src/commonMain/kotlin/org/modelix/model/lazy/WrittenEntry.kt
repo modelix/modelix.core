@@ -13,11 +13,15 @@ class WrittenEntry<E : IKVValue>(
 
     override fun getValue(store: IDeserializingKeyValueStore): E {
         return store.get(hash, deserializer)
-            ?: throw MissingEntryException("Entry $hash not found")
+            ?: throw MissingEntryException(hash)
     }
 
     override fun getValue(store: IAsyncObjectStore): IStream.One<E> {
-        return store.get(toObjectHash()).exceptionIfEmpty { MissingEntryException("Entry not found: $this") }
+        return tryGetValue(store).exceptionIfEmpty { MissingEntryException(hash) }
+    }
+
+    override fun tryGetValue(store: IAsyncObjectStore): IStream.ZeroOrOne<E> {
+        return store.get(toObjectHash())
     }
 
     override fun getUnwrittenValue(): E {

@@ -7,7 +7,7 @@ import io.ktor.utils.io.readUTF8Line
 import io.ktor.utils.io.writeStringUtf8
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import org.modelix.streams.IStream
+import org.modelix.streams.IExecutableStream
 
 /**
  * In comparison to the previous format for version deltas,
@@ -54,7 +54,7 @@ class VersionDeltaStreamV2(
         suspend fun encodeVersionDeltaStreamV2(
             output: ByteWriteChannel,
             versionHash: String,
-            hashesWithDeltaObject: IStream.Many<Pair<String, String>>,
+            hashesWithDeltaObject: IExecutableStream.Many<Pair<String, String>>,
         ) {
             encodeLine(output, versionHash)
             hashesWithDeltaObject.iterateSuspending { (hash, deltaObject) ->

@@ -12,6 +12,8 @@ import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.RoleInNode
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.persistent.SerializationUtil
+import org.modelix.streams.IStream
+import org.modelix.streams.useSequences
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -49,7 +51,7 @@ class TreeDiffTest {
         test(569L, 50, 10)
     }
 
-    fun test(seed: Long, initialSize: Int, numModifications: Int) {
+    fun test(seed: Long, initialSize: Int, numModifications: Int) = IStream.useSequences {
         val rand = Random(seed)
         val store = MapBaseStore()
         val storeCache = ObjectStoreCache(store)
@@ -78,8 +80,8 @@ class TreeDiffTest {
 
     private fun logicalDiff(oldTree: CLTree, newTree: CLTree): DiffData {
         val diffData: DiffData = DiffData()
-        val newNodes = TreePointer(newTree).getRootNode().getDescendants(true).map { newTree.resolveElement((it as PNodeAdapter).nodeId).getSynchronous()!! }.associateBy { it.id }
-        val oldNodes = TreePointer(oldTree).getRootNode().getDescendants(true).map { oldTree.resolveElement((it as PNodeAdapter).nodeId).getSynchronous()!! }.associateBy { it.id }
+        val newNodes = TreePointer(newTree).getRootNode().getDescendants(true).map { newTree.resolveElementSynchronous((it as PNodeAdapter).nodeId) }.associateBy { it.id }
+        val oldNodes = TreePointer(oldTree).getRootNode().getDescendants(true).map { oldTree.resolveElementSynchronous((it as PNodeAdapter).nodeId) }.associateBy { it.id }
 
         for (newNode in newNodes.values) {
             val oldNode = oldNodes[newNode.id]

@@ -4,8 +4,9 @@ import org.modelix.model.IKeyValueStore
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.persistent.IKVValue
 import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutorProvider
 
-class LegacyKeyValueStoreAsAsyncStore(val store: IKeyValueStore) : IAsyncObjectStore {
+class LegacyKeyValueStoreAsAsyncStore(val store: IKeyValueStore) : IAsyncObjectStore, IStreamExecutorProvider by store {
     override fun getLegacyKeyValueStore(): IKeyValueStore {
         return store
     }
@@ -24,15 +25,16 @@ class LegacyKeyValueStoreAsAsyncStore(val store: IKeyValueStore) : IAsyncObjectS
     }
 
     override fun getAllAsStream(keys: IStream.Many<ObjectHash<*>>): IStream.Many<Pair<ObjectHash<*>, Any?>> {
-        val keysList = keys.toList().getSynchronous()
-        val keysMap = keysList.associateBy { it.hash }
-        val serializedValues = store.getAll(keysMap.keys)
-        return IStream.many(
-            serializedValues.map {
-                val ref = keysMap[it.key]!!
-                ref to it.value?.let { ref.deserializer(it) }
-            },
-        )
+        return keys.toList().flatMap { keysList ->
+            val keysMap = keysList.associateBy { it.hash }
+            val serializedValues = store.getAll(keysMap.keys)
+            IStream.many(
+                serializedValues.map {
+                    val ref = keysMap[it.key]!!
+                    ref to it.value?.let { ref.deserializer(it) }
+                },
+            )
+        }
     }
 
     override fun getAllAsMap(keys: List<ObjectHash<*>>): IStream.One<Map<ObjectHash<*>, Any?>> {

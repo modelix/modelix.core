@@ -2,6 +2,7 @@ package org.modelix.model.server
 
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
+import org.modelix.model.async.BulkAsyncStore
 import org.modelix.model.client.RestWebModelClient
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
@@ -39,7 +40,7 @@ class RepositoryStorageBackwardsCompatiblityTest {
                 assertEquals(listOf(), clientv2.listRepositories())
                 assertFails { clientv2.pullHash(branchReference) }
 
-                val store = NonCachingObjectStore(clientv1)
+                val store = BulkAsyncStore(NonCachingObjectStore(clientv1).getAsyncStore())
                 val idGenerator = clientv1.idGenerator
                 val initialVersion = CLVersion.createRegularVersion(
                     id = idGenerator.generate(),

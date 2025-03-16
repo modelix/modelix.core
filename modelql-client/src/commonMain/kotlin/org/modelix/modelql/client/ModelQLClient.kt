@@ -6,7 +6,6 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import org.modelix.model.api.INode
@@ -40,7 +39,9 @@ class ModelQLClient(val url: String, val client: HttpClient, includedSerializers
 
     fun getArea(): IArea = ModelQLArea(this)
 
-    suspend fun <R> query(body: (IMonoStep<INode>) -> IMonoStep<R>): R = rootNode.query(body)
+    suspend fun <R> query(body: (IMonoStep<INode>) -> IMonoStep<R>): R {
+        return rootNode.query(body)
+    }
 
     suspend fun <T> runQuery(query: IUnboundQuery<INode, T, *>): T {
         return deserialize(queryAsJson(query.castToInstance()), query)

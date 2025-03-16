@@ -10,6 +10,8 @@ import org.modelix.model.lazy.CacheConfiguration
 import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.persistent.HashUtil
+import org.modelix.streams.FailingStreamExecutor
+import org.modelix.streams.IStreamExecutor
 
 /**
  * This function loads parts of the model lazily while it is iterated and limits the amount of data that is cached on
@@ -37,8 +39,11 @@ suspend fun IModelClientV2.lazyLoadVersion(branchRef: BranchReference, config: C
     return lazyLoadVersion(branchRef.repositoryId, pullHash(branchRef), config)
 }
 
-private class ModelClientAsStore(client: IModelClientV2, val repositoryId: RepositoryId) : IKeyValueStore {
+private class ModelClientAsStore(client: IModelClientV2, val repositoryId: RepositoryId) :
+    IKeyValueStore {
     private val client: IModelClientV2Internal = client as IModelClientV2Internal
+
+    override fun getStreamExecutor(): IStreamExecutor = FailingStreamExecutor
 
     override fun get(key: String): String? {
         return getAll(listOf(key))[key]

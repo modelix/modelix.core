@@ -59,12 +59,16 @@ class ModelClientV2Test {
     }
 
     @Test
-    fun test_t1() = runTest {
+    fun `can create and write repository`() = runTest {
         val client = createModelClient()
 
         val repositoryId = RepositoryId("repo1")
         val initialVersion = client.initRepository(repositoryId)
-        assertEquals(0, initialVersion.getTree().asAsyncTree().getAllChildren(ITree.ROOT_ID).count().getSuspending())
+        assertEquals(
+            0,
+            initialVersion.getTree().asAsyncTree()
+                .let { it.getStreamExecutor().querySuspending { it.getAllChildren(ITree.ROOT_ID).count() } },
+        )
 
         val branch = OTBranch(PBranch(initialVersion.getTree(), client.getIdGenerator()), client.getIdGenerator(), (initialVersion as CLVersion).store)
         branch.runWriteT { t ->

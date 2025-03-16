@@ -64,12 +64,16 @@ fun INode.createQueryExecutor(): IQueryExecutor<INode> {
 
 suspend fun <R> INode.query(body: (IMonoStep<INode>) -> IMonoStep<R>): R {
     return this.getArea().runWithAdditionalScopeInCoroutine {
-        buildQuery(body).execute().value
+        asAsyncNode().getStreamExecutor().querySuspending {
+            buildQuery(body).asAggregationStream()
+        }.value
     }
 }
 
 suspend fun <R> INode.queryFlux(body: (IMonoStep<INode>) -> IFluxStep<R>): List<R> {
-    return buildFluxQuery(body).execute().value.map { it.value }
+    return asAsyncNode().getStreamExecutor().querySuspending {
+        buildFluxQuery(body).asAggregationStream()
+    }.value.map { it.value }
 }
 
 fun <R> INode.buildQuery(body: (IMonoStep<INode>) -> IMonoStep<R>): IMonoQuery<R> {

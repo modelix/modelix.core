@@ -11,6 +11,7 @@ import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.resolve
 import org.modelix.model.api.resolveInCurrentContext
 import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutor
 import org.modelix.streams.flatten
 
 class AsyncNode(
@@ -19,6 +20,10 @@ class AsyncNode(
     private val tree: () -> IAsyncTree,
     private val createNodeAdapter: (Long) -> IAsyncNode,
 ) : IAsyncNode {
+
+    override fun getStreamExecutor(): IStreamExecutor {
+        return tree().getStreamExecutor()
+    }
 
     override fun asRegularNode(): INode = regularNode
 

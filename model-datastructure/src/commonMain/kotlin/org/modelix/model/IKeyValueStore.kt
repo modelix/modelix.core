@@ -1,12 +1,8 @@
 package org.modelix.model
 
-import org.modelix.model.lazy.BulkQuery
-import org.modelix.model.lazy.BulkQueryConfiguration
-import org.modelix.model.lazy.IBulkQuery
-import org.modelix.model.lazy.IDeserializingKeyValueStore
+import org.modelix.streams.IStreamExecutorProvider
 
-interface IKeyValueStore {
-    fun newBulkQuery(deserializingCache: IDeserializingKeyValueStore, config: BulkQueryConfiguration): IBulkQuery = BulkQuery(deserializingCache, config)
+interface IKeyValueStore : IStreamExecutorProvider {
     operator fun get(key: String): String?
     fun getIfCached(key: String): String?
     suspend fun getA(key: String): String? = get(key)

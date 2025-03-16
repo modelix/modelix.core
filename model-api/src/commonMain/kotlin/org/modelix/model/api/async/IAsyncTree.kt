@@ -7,10 +7,13 @@ import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.ITree
 import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutor
 import org.modelix.streams.plus
 
 interface IAsyncTree {
     fun asSynchronousTree(): ITree
+    fun getStreamExecutor(): IStreamExecutor
+
     fun getChanges(oldVersion: IAsyncTree, changesOnly: Boolean): IStream.Many<TreeChangeEvent>
 
     fun getConceptReference(nodeId: Long): IStream.One<ConceptReference>

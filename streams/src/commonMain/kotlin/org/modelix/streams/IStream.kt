@@ -5,21 +5,27 @@ import org.modelix.streams.IStream.Many
 import org.modelix.streams.IStream.One
 import org.modelix.streams.IStream.OneOrMany
 
-interface IStream<out E> {
+interface IStream<out E> : IStreamExecutorProvider {
     fun asFlow(): Flow<E>
     fun asSequence(): Sequence<E>
     fun toList(): One<List<E>>
+
+    @Deprecated("Use IStreamExecutor.iterate. It's valid to be used in implementations of IStreamExecutor.")
     fun iterateSynchronous(visitor: (E) -> Unit)
+
+    @Deprecated("Use IStreamExecutor.iterateSuspending. It's valid to be used in implementations of IStreamExecutor.")
     suspend fun iterateSuspending(visitor: suspend (E) -> Unit)
     fun onAfterSubscribe(action: () -> Unit): IStream<E>
 
     interface Zero : IStream<Any?> {
+        @Deprecated("Use IStreamExecutor.query. It's valid to be used in implementations of IStreamExecutor.")
         fun executeSynchronous()
         fun andThen(other: Zero): Zero
         operator fun <R> plus(other: Many<R>): Many<R>
         operator fun <R> plus(other: ZeroOrOne<R>): ZeroOrOne<R>
         operator fun <R> plus(other: One<R>): One<R>
         operator fun <R> plus(other: OneOrMany<R>): OneOrMany<R>
+        fun asOne(): One<Unit> = plus(IStream.of(Unit))
     }
 
     interface Many<out E> : IStream<E> {
@@ -73,16 +79,23 @@ interface IStream<out E> {
         fun orNull(): One<E?>
         fun <R> flatMapZeroOrOne(mapper: (E) -> ZeroOrOne<R>): ZeroOrOne<R>
         override fun onAfterSubscribe(action: () -> Unit): ZeroOrOne<E>
+
+        @Deprecated("Use IStreamExecutor.query. It's valid to be used in implementations of IStreamExecutor.")
         fun getSynchronous(): E? = orNull().getSynchronous()
         override fun onErrorReturn(valueSupplier: (Throwable) -> @UnsafeVariance E): ZeroOrOne<E>
         override fun doOnBeforeError(consumer: (Throwable) -> Unit): ZeroOrOne<E>
+        override fun assertNotEmpty(message: () -> String): One<E>
     }
 
     interface One<out E> : IStream<E>, ZeroOrOne<E>, OneOrMany<E> {
         override fun <R> flatMapOne(mapper: (E) -> One<R>): One<R>
         override fun <R> map(mapper: (E) -> R): One<R>
         fun <T, R> zipWith(other: One<T>, mapper: (E, T) -> R): One<R> = IStream.zip(this, other, mapper)
+
+        @Deprecated("Use IStreamExecutor.query. It's valid to be used in implementations of IStreamExecutor.")
         override fun getSynchronous(): E
+
+        @Deprecated("Use IStreamExecutor.querySuspending. It's valid to be used in implementations of IStreamExecutor.")
         suspend fun getSuspending(): E
         override fun onAfterSubscribe(action: () -> Unit): One<E>
         fun cached(): One<E>
@@ -95,14 +108,12 @@ interface IStream<out E> {
     }
 
     companion object : IStreamBuilder by ContextStreamBuilder.globalInstance {
-        fun <R> useSequences(body: () -> R): R {
-            return ContextStreamBuilder.globalInstance.contextValue.computeWith(SequenceStreamBuilder(), body)
+        fun <R> useBuilder(builder: IStreamBuilder, body: () -> R): R {
+            return ContextStreamBuilder.globalInstance.contextValue.computeWith(builder, body)
         }
-        suspend fun <R> useSequencesSuspending(body: suspend () -> R): R {
-            return ContextStreamBuilder.globalInstance.contextValue.runInCoroutine(SequenceStreamBuilder(), body)
-        }
-        suspend fun <R> useFlows(body: suspend () -> R): R {
-            return ContextStreamBuilder.globalInstance.contextValue.runInCoroutine(FlowStreamBuilder(), body)
+
+        suspend fun <R> useBuilderSuspending(builder: IStreamBuilder, body: suspend () -> R): R {
+            return ContextStreamBuilder.globalInstance.contextValue.runInCoroutine(builder, body)
         }
     }
 }

@@ -6,9 +6,10 @@ import org.modelix.model.lazy.IKVEntryReference
 import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.persistent.IKVValue
 import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutorProvider
 import org.modelix.streams.plus
 
-interface IAsyncObjectStore {
+interface IAsyncObjectStore : IStreamExecutorProvider {
     @Deprecated("Use IAsyncObjectStore")
     fun getLegacyKeyValueStore(): IKeyValueStore
 

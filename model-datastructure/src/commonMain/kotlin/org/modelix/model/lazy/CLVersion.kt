@@ -4,9 +4,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
-import org.modelix.model.IKeyValueStore
 import org.modelix.model.IVersion
-import org.modelix.model.LinearHistory
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INodeReference
@@ -15,20 +13,14 @@ import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.TreePointer
-import org.modelix.model.api.async.getDescendants
 import org.modelix.model.async.AsyncAsSynchronousTree
 import org.modelix.model.async.AsyncTree
-import org.modelix.model.async.BulkQueryAsAsyncStore
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.SetReferenceOp
-import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.CPVersion
-import org.modelix.model.persistent.EntryAddedEvent
-import org.modelix.model.persistent.EntryChangedEvent
-import org.modelix.model.persistent.EntryRemovedEvent
 import org.modelix.model.persistent.IKVValue
 import org.modelix.model.persistent.OperationsList
 import org.modelix.model.persistent.getAllObjects
@@ -156,7 +148,7 @@ class CLVersion : IVersion {
     val operations: Iterable<IOperation>
         get() {
             val operationsHash = data.operationsHash
-            val ops = operationsHash?.getValue(store)?.getOperations(asyncStore)?.toList()?.getSynchronous()
+            val ops = operationsHash?.let { h -> store.getStreamExecutor().query { h.getValue(store).getOperations(asyncStore).toList() } }
                 ?: data.operations?.toList()
                 ?: emptyList()
             return globalizeOps(ops)
@@ -277,7 +269,7 @@ class CLVersion : IVersion {
         }
 
         fun tryLoadFromHash(hash: String, store: IAsyncObjectStore): IStream.ZeroOrOne<CLVersion> {
-            return KVEntryReference(hash, CPVersion.DESERIALIZER).getValue(store).notNull().map { CLVersion(it, store) }
+            return KVEntryReference(hash, CPVersion.DESERIALIZER).tryGetValue(store).map { CLVersion(it, store) }
         }
     }
 
@@ -360,98 +352,8 @@ fun CLVersion.historyDiff(baseVersion: CLVersion?): IStream.Many<CPVersion> {
     return IStream.many(history)
 }
 
-fun CLVersion.computeDelta(baseVersion: CLVersion?): Map<String, String> {
-    return computeDelta(store.keyValueStore, this.getContentHash(), baseVersion?.getContentHash()).filterNotNullValues()
-}
-
 @Suppress("UNCHECKED_CAST")
 fun <K, V> Map<K, V?>.filterNotNullValues(): Map<K, V> = filterValues { it != null } as Map<K, V>
-
-private fun computeDelta(keyValueStore: IKeyValueStore, versionHash: String, baseVersionHash: String?): Map<String, String?> {
-    val changedNodeIds = HashSet<Long>()
-    val oldAndNewEntries: Map<String, String?> = trackAccessedEntries(keyValueStore) { store ->
-        val version = CLVersion(versionHash, store)
-//        generateSequence(version) { it.baseVersion }.map { it.getTree() }.count()
-
-        val visitedVersions = HashSet<String>()
-        if (baseVersionHash != null) visitedVersions += baseVersionHash
-        fun iterateHistory(v: CLVersion?) {
-            if (v == null) return
-            if (v.getContentHash() == baseVersionHash) return
-            if (visitedVersions.contains(v.getContentHash())) return
-            visitedVersions += v.getContentHash()
-            val tree = v.getTree()
-            v.operations.forEach {
-                // we only need to record the required entries
-                runCatching {
-                    it.captureIntend(tree, store)
-                }
-            }
-            iterateHistory(v.baseVersion)
-            iterateHistory(v.getMergedVersion1())
-            iterateHistory(v.getMergedVersion2())
-        }
-        iterateHistory(version)
-
-        val baseVersion = baseVersionHash?.let { CLVersion(it, store) }
-//        if (baseVersion != null) {
-//            VersionMerger(store, IdGenerator.newInstance(0)).mergeChange(version, baseVersion)
-//        }
-
-        val history = LinearHistory(baseVersionHash).load(version)
-        val asyncStore = store.getAsyncStore()
-        var v1 = baseVersion
-        for (v2 in history) {
-            v2.operations // include them in the result
-
-            if (v1 == null) {
-                v2.getTree().asAsyncTree().getDescendants(ITree.ROOT_ID, true).iterateSynchronous { }
-                continue
-            }
-
-            val oldTree = v1.getTree()
-            v2.getTree().nodesMap!!.getChanges(oldTree.nodesMap, store.getAsyncStore(), false).flatMap { event ->
-                // querying the value is necessary to record a read access on it
-                when (event) {
-                    is EntryAddedEvent -> event.value.getValue(asyncStore).map { event.key }
-                    is EntryChangedEvent -> event.newValue.getValue(asyncStore).map { event.key }
-                    is EntryRemovedEvent -> IStream.of(event.key)
-                }
-            }.iterateSynchronous { changedNodeIds += it }
-            v1 = v2
-        }
-    }
-    val oldEntries: Map<String, String?> = trackAccessedEntries(keyValueStore) { store ->
-        if (baseVersionHash == null) return@trackAccessedEntries
-
-        // record read access on the version data itself
-        val baseVersion = CLVersion(baseVersionHash, store)
-
-        // The operations may not be available on the client, but then they don't need to be part of the delta anyway.
-        // Ignoring that case should be safe.
-        runCatching { baseVersion.operations }
-
-        val oldTree = baseVersion.getTree()
-        val bulkQuery = store.newBulkQuery()
-
-        val nodesMap = oldTree.nodesMap
-        changedNodeIds.forEach { changedNodeId ->
-            nodesMap.get(changedNodeId, 0, BulkQueryAsAsyncStore(store, bulkQuery)).iterateSynchronous { nodeRef: KVEntryReference<CPNode>? ->
-                if (nodeRef != null) bulkQuery.query(nodeRef)
-            }
-        }
-
-        bulkQuery.executeQuery()
-    }
-    return oldAndNewEntries - oldEntries.keys
-}
-
-private fun trackAccessedEntries(store: IKeyValueStore, body: (IDeserializingKeyValueStore) -> Unit): Map<String, String?> {
-    val accessTrackingStore = AccessTrackingStore(store)
-    val objectStore = ObjectStoreCache(accessTrackingStore)
-    body(objectStore)
-    return accessTrackingStore.accessedEntries
-}
 
 fun CLVersion.runWrite(idGenerator: IIdGenerator, author: String?, body: (IWriteTransaction) -> Unit): CLVersion {
     val branch = OTBranch(TreePointer(getTree(), idGenerator), idGenerator, store)

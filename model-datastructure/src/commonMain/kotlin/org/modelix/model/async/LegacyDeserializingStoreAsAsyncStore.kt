@@ -4,8 +4,10 @@ import org.modelix.model.IKeyValueStore
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.persistent.IKVValue
 import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutorProvider
 
-class LegacyDeserializingStoreAsAsyncStore(val store: IDeserializingKeyValueStore) : IAsyncObjectStore {
+class LegacyDeserializingStoreAsAsyncStore(val store: IDeserializingKeyValueStore) :
+    IAsyncObjectStore, IStreamExecutorProvider by store {
 
     override fun getLegacyKeyValueStore(): IKeyValueStore {
         return store.keyValueStore
@@ -24,8 +26,10 @@ class LegacyDeserializingStoreAsAsyncStore(val store: IDeserializingKeyValueStor
     }
 
     override fun getAllAsStream(keys: IStream.Many<ObjectHash<*>>): IStream.Many<Pair<ObjectHash<*>, Any?>> {
-        val entries = store.getAll(keys.map { it.toKVEntryReference<IKVValue>() }.toList().getSynchronous())
-        return keys.map { it to entries[it.hash] }
+        return keys.map { it.toKVEntryReference<IKVValue>() }.toList().flatMap { keysAsList ->
+            val entries = store.getAll(keysAsList)
+            keys.map { it to entries[it.hash] }
+        }
     }
 
     override fun getAllAsMap(keys: List<ObjectHash<*>>): IStream.One<Map<ObjectHash<*>, Any?>> {

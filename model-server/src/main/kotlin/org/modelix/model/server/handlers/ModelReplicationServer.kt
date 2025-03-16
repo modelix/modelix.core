@@ -57,6 +57,7 @@ import org.modelix.modelql.core.QueryGraphDescriptor
 import org.modelix.modelql.core.upcast
 import org.modelix.modelql.server.ModelQLServer
 import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutor
 import org.modelix.streams.ifEmpty
 import org.slf4j.LoggerFactory
 
@@ -74,7 +75,7 @@ class ModelReplicationServer(
     }
 
     private val stores: StoreManager get() = repositoriesManager.getStoreManager()
-    private val indexPersistence: IMemoizationPersistence = InMemoryMemoizationPersistence()
+    private val indexPersistence = CacheBuilder.newBuilder().softValues().build<RepositoryId?, InMemoryMemoizationPersistence>()
 
     fun init(application: Application) {
         application.routing {
@@ -295,7 +296,10 @@ class ModelReplicationServer(
         LOG.trace("Running query on {} @ {}", branchRef, version)
         val initialTree = version.getTree()
 
-        IMemoizationPersistence.CONTEXT_INSTANCE.runInCoroutine(indexPersistence) {
+        val persistence = indexPersistence.get(branchRef.repositoryId) {
+            InMemoryMemoizationPersistence(stores.getAsyncStore(branchRef.repositoryId).getStreamExecutor())
+        }
+        IMemoizationPersistence.CONTEXT_INSTANCE.runInCoroutine(persistence) {
             lateinit var branch: IBranch
             ModelQLServer.handleCall(call, { writeAccess ->
                 branch = if (writeAccess) {
@@ -417,15 +421,15 @@ class ModelReplicationServer(
         val contentType = if (plainText) ContentType.Text.Plain else VersionDeltaStream.CONTENT_TYPE
         respondBytesWriter(contentType) {
             this.useClosingWithoutCause {
-                objectData.asStream()
-                    .flatMapIterable { it.toList() }
-                    .withSeparator("\n")
-                    .ifEmpty(versionHash)
-                    .withIndex()
-                    .iterateSuspending {
-                        if (it.index == 0) check(it.value == versionHash) { "First object should be the version" }
-                        writeStringUtf8(it.value)
-                    }
+                objectData.asStream().mapMany {
+                    it.flatMapIterable { it.toList() }
+                        .withSeparator("\n")
+                        .ifEmpty(versionHash)
+                        .withIndex()
+                }.iterateSuspending {
+                    if (it.index == 0) check(it.value == versionHash) { "First object should be the version" }
+                    writeStringUtf8(it.value)
+                }
             }
         }
     }
@@ -500,7 +504,7 @@ private fun ApplicationCall.parameter(name: String): String {
     return requireNotNull(parameters[name]) { "Unknown parameter '$name'" }
 }
 
-class InMemoryMemoizationPersistence : IMemoizationPersistence {
+class InMemoryMemoizationPersistence(private val streamExecutor: IStreamExecutor) : IMemoizationPersistence {
 
     private val cache = CacheBuilder.newBuilder().softValues().build<IndexCacheKey, IStepOutput<*>>()
 
@@ -517,7 +521,7 @@ class InMemoryMemoizationPersistence : IMemoizationPersistence {
         override fun memoize(input: IStepOutput<In>): IStepOutput<Out> {
             runSynchronized(cache) {
                 return cache.get(IndexCacheKey(normalizedQueryDescriptor, input)) {
-                    query.asStream(QueryEvaluationContext.EMPTY, input).exactlyOne().getSynchronous()
+                    streamExecutor.query { query.asStream(QueryEvaluationContext.EMPTY, input).exactlyOne() }
                 }.upcast()
             }
         }

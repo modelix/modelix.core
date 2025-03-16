@@ -3,11 +3,12 @@ package org.modelix.model
 import org.apache.commons.collections4.map.LRUMap
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.util.StreamUtils.toStream
+import org.modelix.streams.IStreamExecutorProvider
 import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.stream.Collectors
 
-class KeyValueStoreCache(private val store: IKeyValueStore) : IKeyValueStoreWrapper {
+class KeyValueStoreCache(private val store: IKeyValueStore) : IKeyValueStoreWrapper, IStreamExecutorProvider by store {
     private val cache = Collections.synchronizedMap(LRUMap<String, String?>(300000))
     private val pendingPrefetches: MutableSet<String> = HashSet()
     private val activeRequests: MutableList<GetRequest> = ArrayList()

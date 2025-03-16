@@ -73,7 +73,10 @@ import org.modelix.model.server.api.v2.VersionDeltaStreamV2
 import org.modelix.model.server.api.v2.asStream
 import org.modelix.modelql.client.ModelQLClient
 import org.modelix.modelql.core.IMonoStep
+import org.modelix.streams.IExecutableStream
 import org.modelix.streams.IStream
+import org.modelix.streams.SimpleStreamExecutor
+import org.modelix.streams.withSequences
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -298,35 +301,43 @@ class ModelClientV2(
         LOG.debug { "${clientId.toString(16)}.push($branch, $version, $baseVersion)" }
         require(version is CLVersion)
         require(baseVersion is CLVersion?)
-        return IStream.useSequencesSuspending {
-            version.write()
-            val objects = version.fullDiff(baseVersion)
-            // large HTTP requests and large Json objects don't scale well
-            val lastChunk = pushObjects(branch.repositoryId, objects.map { it.hash to it.serialize() }, returnLastChunk = true)
-            val delta = VersionDelta(version.getContentHash(), null, objectsMap = lastChunk.toMap())
-            httpClient.preparePost {
-                url {
-                    takeFrom(baseUrl)
-                    appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
-                }
-                useVersionStreamFormat()
-                contentType(ContentType.Application.Json)
-                setBody(delta)
-            }.execute { response ->
-                createVersion(getStore(branch.repositoryId), version, response.readVersionDelta())
+        version.write()
+        val objects = version.asyncStore.getStreamExecutor().queryManyLater {
+            version.fullDiff(baseVersion).map { it.hash to it.serialize() }
+        }
+        // large HTTP requests and large Json objects don't scale well
+        val lastChunk = pushObjects(branch.repositoryId, objects, returnLastChunk = true)
+        val delta = VersionDelta(version.getContentHash(), null, objectsMap = lastChunk.toMap())
+        return httpClient.preparePost {
+            url {
+                takeFrom(baseUrl)
+                appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
             }
+            useVersionStreamFormat()
+            contentType(ContentType.Application.Json)
+            setBody(delta)
+        }.execute { response ->
+            createVersion(getStore(branch.repositoryId), version, response.readVersionDelta())
         }
     }
 
     override suspend fun pushObjects(repository: RepositoryId, objects: Sequence<ObjectHashAndSerializedObject>) {
-        pushObjects(repository, IStream.many(objects), false)
+        pushObjects(
+            repository,
+            SimpleStreamExecutor().withSequences().queryManyLater { IStream.many(objects) },
+            false,
+        )
     }
 
     /**
      * If the last chunk is smaller than #minBodySize, then the remaining objects are returned for inlining in the
      * main request.
      */
-    private suspend fun pushObjects(repository: RepositoryId, objects: IStream.Many<ObjectHashAndSerializedObject>, returnLastChunk: Boolean): List<ObjectHashAndSerializedObject> {
+    private suspend fun pushObjects(
+        repository: RepositoryId,
+        objects: IExecutableStream.Many<ObjectHashAndSerializedObject>,
+        returnLastChunk: Boolean,
+    ): List<ObjectHashAndSerializedObject> {
         LOG.debug { "${clientId.toString(16)}.pushObjects($repository)" }
         val maxBodySize = 2 * 1024 * 1024
         val chunkContent = StringBuilder()
@@ -345,7 +356,7 @@ class ModelClientV2(
             chunkEntries.clear()
         }
 
-        objects.asSequence().forEach { entry ->
+        objects.iterateSuspending { entry ->
             val entrySize = (if (chunkContent.isEmpty()) 0 else 1) + entry.first.length + 1 + entry.second.length
             if (chunkContent.length + entrySize > maxBodySize) {
                 sendChunk()

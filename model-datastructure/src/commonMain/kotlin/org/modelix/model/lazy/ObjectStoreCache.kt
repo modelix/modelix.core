@@ -2,9 +2,8 @@ package org.modelix.model.lazy
 
 import org.modelix.kotlin.utils.runSynchronized
 import org.modelix.model.IKeyValueStore
-import org.modelix.model.async.BulkQueryAsAsyncStore
-import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.persistent.IKVValue
+import org.modelix.streams.IStreamExecutorProvider
 import kotlin.jvm.JvmOverloads
 import kotlin.jvm.Synchronized
 
@@ -32,21 +31,9 @@ class CacheConfiguration : BulkQueryConfiguration() {
 class ObjectStoreCache @JvmOverloads constructor(
     override val keyValueStore: IKeyValueStore,
     val config: CacheConfiguration = CacheConfiguration(),
-) : IDeserializingKeyValueStore {
-    private val asyncStore_: IAsyncObjectStore by lazy { BulkQueryAsAsyncStore(this, newBulkQuery()) }
+) : IDeserializingKeyValueStore, IStreamExecutorProvider by keyValueStore {
     private val regularCache = LRUCache<String, Any>(config.cacheSize)
     private val prefetchCache = LRUCache<String, Any>(config.getPrefetchCacheSize())
-    private var bulkQuery: Pair<IBulkQuery, IDeserializingKeyValueStore>? = null
-
-    override fun getAsyncStore(): IAsyncObjectStore = asyncStore_
-
-    @Synchronized
-    override fun newBulkQuery(wrapper: IDeserializingKeyValueStore, config: BulkQueryConfiguration?): IBulkQuery {
-        if (bulkQuery?.takeIf { it.second == wrapper } == null) {
-            bulkQuery = keyValueStore.newBulkQuery(wrapper, config ?: this.config).asSynchronized() to wrapper
-        }
-        return bulkQuery!!.first
-    }
 
     override fun <T> getAll(hashes_: Iterable<String>, deserializer: (String, String) -> T): Iterable<T> {
         val hashes = hashes_.toList()

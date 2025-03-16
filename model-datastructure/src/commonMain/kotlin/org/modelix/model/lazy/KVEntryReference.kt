@@ -31,6 +31,7 @@ class KVEntryReference<out E : IKVValue>(private var writtenOrUnwrittenReference
     override fun getHash(): String = writtenOrUnwrittenReference.getHash()
     override fun getValue(store: IDeserializingKeyValueStore): E = writtenOrUnwrittenReference.getValue(store)
     override fun getValue(store: IAsyncObjectStore): IStream.One<E> = writtenOrUnwrittenReference.getValue(store)
+    override fun tryGetValue(store: IAsyncObjectStore): IStream.ZeroOrOne<E> = writtenOrUnwrittenReference.tryGetValue(store)
     override fun getUnwrittenValue(): E = writtenOrUnwrittenReference.getUnwrittenValue()
     override fun getDeserializer(): (String) -> E = writtenOrUnwrittenReference.getDeserializer()
 

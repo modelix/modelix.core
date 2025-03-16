@@ -11,6 +11,7 @@ import org.modelix.model.persistent.CPHamtNode
 import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPTree
 import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutorProvider
 
 fun createNewTreeData(
     store: IAsyncObjectStore,
@@ -31,16 +32,18 @@ fun createNewTreeData(
     return CPTree(
         repositoryId.id,
         KVEntryReference<CPHamtNode>(
-            CPHamtInternal.createEmpty()
-                .put(root.id, KVEntryReference<CPNode>(root), store)
-                .orNull()
-                .getSynchronous()!!,
+            store.getStreamExecutor().query {
+                CPHamtInternal.createEmpty()
+                    .put(root.id, KVEntryReference<CPNode>(root), store)
+                    .orNull()
+            }!!,
         ),
         useRoleIds,
     )
 }
 
-class CLTree(val data: CPTree, val asyncStore: IAsyncObjectStore) : ITree by AsyncAsSynchronousTree(AsyncTree(data, asyncStore)), IBulkTree {
+class CLTree(val data: CPTree, val asyncStore: IAsyncObjectStore) :
+    ITree by AsyncAsSynchronousTree(AsyncTree(data, asyncStore)), IBulkTree, IStreamExecutorProvider by asyncStore {
 
     constructor(store: IAsyncObjectStore, useRoleIds: Boolean = true) : this(createNewTreeData(store, useRoleIds = useRoleIds), store)
     constructor(store: IDeserializingKeyValueStore, useRoleIds: Boolean = true) : this(store.getAsyncStore(), useRoleIds)
@@ -63,40 +66,44 @@ class CLTree(val data: CPTree, val asyncStore: IAsyncObjectStore) : ITree by Asy
 
     @Deprecated("BulkQuery is now responsible for prefetching")
     fun prefetchAll() {
-        asAsyncTree().getDescendants(ITree.ROOT_ID).iterateSynchronous { }
+        getStreamExecutor().iterate({ asAsyncTree().getDescendants(ITree.ROOT_ID) }) { }
     }
 
     val hash: String
         get() = data.hash
 
     val nodesMap: CPHamtNode
-        get() = data.idToHash.getValue(asyncStore).getSynchronous()
+        get() = getStreamExecutor().query { data.idToHash.getValue(asyncStore) }
 
     val root: CPNode?
-        get() = resolveElement(ITree.ROOT_ID).orNull().getSynchronous()
+        get() = getStreamExecutor().query { resolveElement(ITree.ROOT_ID).orNull() }
 
     override fun getDescendants(root: Long, includeSelf: Boolean): Iterable<CLNode> {
-        return asAsyncTree().getDescendants(root, includeSelf)
-            .flatMap { (asAsyncTree() as AsyncTree).getNode(it) }.map { CLNode(this, it) }.toList().getSynchronous()
+        val asyncTree = asAsyncTree()
+        return getStreamExecutor().query {
+            asyncTree.getDescendants(root, includeSelf)
+                .flatMap { (asyncTree as AsyncTree).getNode(it) }.map { CLNode(this, it) }.toList()
+        }
     }
 
     override fun getDescendants(rootIds: Iterable<Long>, includeSelf: Boolean): Iterable<CLNode> {
         val asyncTree = asAsyncTree() as AsyncTree
-        return IStream.many(rootIds)
-            .flatMap { asyncTree.getDescendants(it, includeSelf) }
-            .flatMap { asyncTree.getNode(it) }
-            .map { CLNode(this, it) }
-            .toList()
-            .getSynchronous()
+        return getStreamExecutor().query {
+            IStream.many(rootIds)
+                .flatMap { asyncTree.getDescendants(it, includeSelf) }
+                .flatMap { asyncTree.getNode(it) }
+                .map { CLNode(this, it) }
+                .toList()
+        }
     }
 
     override fun getAncestors(nodeIds: Iterable<Long>, includeSelf: Boolean): Set<Long> {
         val asyncTree = asAsyncTree() as AsyncTree
-        return IStream.many(nodeIds)
-            .flatMap { asyncTree.getAncestors(it, includeSelf) }
-            .toList()
-            .getSynchronous()
-            .toSet()
+        return getStreamExecutor().query {
+            IStream.many(nodeIds)
+                .flatMap { asyncTree.getAncestors(it, includeSelf) }
+                .toList()
+        }.toSet()
     }
 
     fun resolveElement(id: Long): IStream.ZeroOrOne<CPNode> {
@@ -107,6 +114,10 @@ class CLTree(val data: CPTree, val asyncStore: IAsyncObjectStore) : ITree by Asy
         return hash.flatMapZeroOrOne {
             it.getValue(asyncStore)
         }
+    }
+
+    fun resolveElementSynchronous(id: Long): CPNode {
+        return getStreamExecutor().query { resolveElement(id).assertNotEmpty { "Not found: $id" } }
     }
 
     override fun toString(): String {

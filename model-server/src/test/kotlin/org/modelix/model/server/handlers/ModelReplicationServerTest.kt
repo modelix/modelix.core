@@ -53,7 +53,9 @@ import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.runWithNettyServer
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.RequiresTransaction
-import org.modelix.streams.FlowStreamBuilder
+import org.modelix.streams.IStream
+import org.modelix.streams.plus
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -277,14 +279,16 @@ class ModelReplicationServerTest {
                     error("Unexpected error.")
                 }
                 return ObjectDataFlow(
-                    FlowStreamBuilder.Wrapper(
-                        flow {
-                            originalFlow.iterateSuspending {
-                                emit(it)
-                            }
-                            emitAll(brokenFlow)
-                        },
-                    ),
+                    originalFlow.mapMany {
+                        it + IStream.fromFlow(
+                            flow {
+                                originalFlow.iterateSuspending {
+                                    emit(it)
+                                }
+                                emitAll(brokenFlow)
+                            },
+                        )
+                    },
                 )
             }
         }

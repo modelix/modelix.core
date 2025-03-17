@@ -15,9 +15,8 @@ interface IBulkExecutor<K, V> {
     suspend fun executeSuspending(keys: List<K>): Map<K, V>
 }
 
-class BulkRequestStreamExecutor<K, V>(private val bulkExecutor: IBulkExecutor<K, V>) : IStreamExecutor, IStreamExecutorProvider {
+class BulkRequestStreamExecutor<K, V>(private val bulkExecutor: IBulkExecutor<K, V>, val batchSize: Int = 5000) : IStreamExecutor, IStreamExecutorProvider {
     private val requestQueue = ContextValue<RequestQueue>()
-    private val batchSize: Int = 5000
     private val streamBuilder = ReaktiveStreamBuilder(this)
 
     private inner class RequestQueue {

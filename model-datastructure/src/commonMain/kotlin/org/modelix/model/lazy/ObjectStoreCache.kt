@@ -2,6 +2,8 @@ package org.modelix.model.lazy
 
 import org.modelix.kotlin.utils.runSynchronized
 import org.modelix.model.IKeyValueStore
+import org.modelix.model.async.CachingAsyncStore
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.persistent.IKVValue
 import org.modelix.streams.IStreamExecutorProvider
 import kotlin.jvm.JvmOverloads
@@ -13,34 +15,39 @@ class CacheConfiguration : BulkQueryConfiguration() {
      */
     var cacheSize: Int = defaultCacheSize
 
-    /**
-     * Size of the separate cache for prefetched objects.
-     * Objects are prefetched based on a prediction of what data might be needed next, but they may not be actually
-     * used at all. To avoid eviction of regular objects, there are two separate caches.
-     */
-    var prefetchCacheSize: Int? = defaultPrefetchCacheSize
-    fun getPrefetchCacheSize() = prefetchCacheSize ?: cacheSize
-
     companion object {
         var defaultCacheSize: Int = 100_000
-        var defaultPrefetchCacheSize: Int? = null
     }
 }
 
-@Deprecated("Use AsyncStoreAsLegacyDeserializingStore")
-class ObjectStoreCache @JvmOverloads constructor(
+fun createObjectStoreCache(keyValueStore: IKeyValueStore, cacheSize: Int = 100_000): CachingAsyncStore {
+    return CachingAsyncStore(NonCachingObjectStore(keyValueStore).getAsyncStore(), cacheSize)
+}
+
+@Deprecated("Use NonCachingObjectStore in combination with CachingAsyncStore")
+class ObjectStoreCache
+@JvmOverloads
+@Deprecated("Use createObjectStoreCache", ReplaceWith("createObjectStoreCache(keyValueStore, cacheSize)"))
+constructor(
     override val keyValueStore: IKeyValueStore,
-    val config: CacheConfiguration = CacheConfiguration(),
+    val cacheSize: Int,
 ) : IDeserializingKeyValueStore, IStreamExecutorProvider by keyValueStore {
-    private val regularCache = LRUCache<String, Any>(config.cacheSize)
-    private val prefetchCache = LRUCache<String, Any>(config.getPrefetchCacheSize())
+
+    @Deprecated("Use createObjectStoreCache", ReplaceWith("createObjectStoreCache(keyValueStore)"))
+    constructor(keyValueStore: IKeyValueStore) : this(keyValueStore, 100_000)
+
+    private val cache = LRUCache<String, Any>(cacheSize)
+
+    override fun getAsyncStore(): IAsyncObjectStore {
+        return CachingAsyncStore(NonCachingObjectStore(keyValueStore).getAsyncStore(), cacheSize = cacheSize)
+    }
 
     override fun <T> getAll(hashes_: Iterable<String>, deserializer: (String, String) -> T): Iterable<T> {
         val hashes = hashes_.toList()
         val result: MutableMap<String?, T?> = LinkedHashMap()
         val nonCachedHashes: MutableList<String> = ArrayList(hashes.size)
         for (hash in hashes) {
-            val deserialized = (regularCache[hash] ?: prefetchCache[hash]) as T?
+            val deserialized = (cache[hash]) as T?
             if (deserialized == null) {
                 nonCachedHashes.add(hash)
             } else {
@@ -53,7 +60,7 @@ class ObjectStoreCache @JvmOverloads constructor(
                     result[hash] = null
                 } else {
                     val deserialized: T? = deserializer(hash, serialized)
-                    regularCache[hash] = deserialized ?: NULL
+                    cache[hash] = deserialized ?: NULL
                     result[hash] = deserialized
                 }
             }
@@ -72,7 +79,7 @@ class ObjectStoreCache @JvmOverloads constructor(
         val nonCachedHashes: MutableList<String> = ArrayList(hashes.size)
         runSynchronized(this) {
             for (hash in hashes) {
-                val deserialized = regularCache.get(hash, updatePosition = regularHashes.contains(hash)) ?: prefetchCache.get(hash)
+                val deserialized = cache.get(hash, updatePosition = regularHashes.contains(hash))
                 if (deserialized == null) {
                     nonCachedHashes.add(hash)
                 } else {
@@ -88,7 +95,7 @@ class ObjectStoreCache @JvmOverloads constructor(
                         result[hash] = null
                     } else {
                         val deserialized = deserializers[hash]!!(serialized)
-                        (if (regularHashes.contains(hash)) regularCache else prefetchCache)[hash] = deserialized ?: NULL
+                        cache[hash] = deserialized ?: NULL
                         result[hash] = deserialized
                     }
                 }
@@ -103,13 +110,13 @@ class ObjectStoreCache @JvmOverloads constructor(
 
     private fun <T> get(hash: String, deserializer: (String) -> T, ifCached: Boolean, isPrefetch: Boolean): T? {
         var deserialized = runSynchronized(this) {
-            (regularCache.get(hash, updatePosition = !isPrefetch) ?: prefetchCache.get(hash)) as T?
+            (cache.get(hash, updatePosition = !isPrefetch)) as T?
         }
         if (deserialized == null) {
             val serialized = (if (ifCached) keyValueStore.getIfCached(hash) else keyValueStore[hash]) ?: return null
             deserialized = deserializer(serialized)
             runSynchronized(this) {
-                (if (isPrefetch) prefetchCache else regularCache)[hash] = deserialized ?: NULL
+                cache[hash] = deserialized ?: NULL
             }
         }
         return if (deserialized === NULL) null else deserialized
@@ -122,15 +129,13 @@ class ObjectStoreCache @JvmOverloads constructor(
     override fun put(hash: String, deserialized: Any, serialized: String) {
         keyValueStore.put(hash, serialized)
         runSynchronized(this) {
-            regularCache[hash] = deserialized ?: NULL
-            prefetchCache.remove(hash)
+            cache[hash] = deserialized ?: NULL
         }
     }
 
     @Synchronized
     fun clearCache() {
-        regularCache.clear()
-        prefetchCache.clear()
+        cache.clear()
     }
 
     companion object {

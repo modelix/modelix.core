@@ -1,5 +1,7 @@
 package org.modelix.modelql.typed
 
+import io.ktor.server.testing.ApplicationTestBuilder
+import io.ktor.server.testing.testApplication
 import jetbrains.mps.baseLanguage.C_ClassConcept
 import jetbrains.mps.baseLanguage.C_IntegerType
 import jetbrains.mps.baseLanguage.C_MinusExpression
@@ -17,12 +19,12 @@ import jetbrains.mps.core.xml.C_XmlDocument
 import jetbrains.mps.core.xml.C_XmlFile
 import jetbrains.mps.lang.editor.imageGen.C_ImageGenerator
 import jetbrains.mps.lang.editor.imageGen.ImageGenerator
-import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.TestInstance
 import org.modelix.apigen.test.ApigenTestLanguages
 import org.modelix.metamodel.instanceOf
 import org.modelix.metamodel.typed
 import org.modelix.metamodel.untyped
+import org.modelix.metamodel.untypedConcept
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.INode
 import org.modelix.model.api.remove
@@ -30,6 +32,11 @@ import org.modelix.model.api.resolve
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.runWrite
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.server.handlers.IdsApiImpl
+import org.modelix.model.server.handlers.ModelReplicationServer
+import org.modelix.model.server.handlers.RepositoriesManager
+import org.modelix.model.server.installDefaultServerPlugins
+import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.modelql.client.ModelQLClient
 import org.modelix.modelql.core.asMono
 import org.modelix.modelql.core.count
@@ -60,7 +67,6 @@ import org.modelix.modelql.gen.jetbrains.mps.lang.editor.imageGen.setNode
 import org.modelix.modelql.untyped.children
 import org.modelix.modelql.untyped.conceptReference
 import org.modelix.modelql.untyped.descendants
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -71,31 +77,38 @@ import kotlin.test.assertTrue
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TypedModelQLTest {
 
-    private var testRun = 0
-    private val modelClient = ModelClientV2.builder().url("http://localhost:28102/v2/").build().also { runBlocking { it.init() } }
     private val branchRef
-        get() = ModelFacade.createBranchReference(RepositoryId("modelql-test$testRun"), "master")
+        get() = ModelFacade.createBranchReference(RepositoryId("modelql-test"), "master")
 
-    private fun runTest(block: suspend (ModelQLClient) -> Unit) {
-        val modelQlClient = ModelQLClient.builder()
-            .url("http://localhost:28102/v2/repositories/${branchRef.repositoryId.id}/branches/${branchRef.branchName}/query")
+    private fun runTest(block: suspend ApplicationTestBuilder.(ModelQLClient) -> Unit) = testApplication {
+        application {
+            try {
+                installDefaultServerPlugins()
+                val repoManager = RepositoriesManager(InMemoryStoreClient())
+                ModelReplicationServer(repoManager).init(this)
+                IdsApiImpl(repoManager).init(this)
+            } catch (ex: Throwable) {
+                ex.printStackTrace()
+            }
+        }
+
+        val modelClient = ModelClientV2.builder()
+            .client(client)
+            .url("http://localhost/v2/")
             .build()
-
-        runBlocking { block(modelQlClient) }
+            .also { it.init() }
+        modelClient.runWrite(branchRef) {
+            createTestData(it)
+        }
+        val modelQlClient = ModelQLClient.builder()
+            .httpClient(client)
+            .url("http://localhost/v2/repositories/${branchRef.repositoryId.id}/branches/${branchRef.branchName}/query")
+            .build()
+        block(modelQlClient)
     }
 
     init {
         ApigenTestLanguages.registerAll()
-    }
-
-    @BeforeTest
-    fun setup() {
-        testRun++
-        runBlocking {
-            modelClient.runWrite(branchRef) {
-                createTestData(it)
-            }
-        }
     }
 
     protected fun createTestData(rootNode: INode) {
@@ -362,7 +375,7 @@ class TypedModelQLTest {
             root.descendants().ofConcept(C_ReturnStatement).first().expression
         }
         assertNotNull(actual)
-        assertTrue(actual.instanceOf(C_MinusExpression))
+        assertTrue(actual.instanceOf(C_MinusExpression), actual.untypedConcept().getLongName())
     }
 
     @Test

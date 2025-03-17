@@ -9,6 +9,7 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.install
+import io.ktor.server.application.pluginOrNull
 import io.ktor.server.engine.connector
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.http.content.staticResources
@@ -31,13 +32,13 @@ import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.pingPeriod
 import io.ktor.server.websocket.timeout
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.apache.commons.io.FileUtils
 import org.apache.ignite.Ignition
 import org.modelix.authorization.ModelixAuthorization
 import org.modelix.authorization.NoPermissionException
 import org.modelix.authorization.NotLoggedInException
+import org.modelix.model.server.Main.installStatusPages
 import org.modelix.model.server.handlers.AboutApiImpl
 import org.modelix.model.server.handlers.HealthApiImpl
 import org.modelix.model.server.handlers.HttpException
@@ -344,4 +345,21 @@ object Main {
                 }
             },
         )
+}
+
+fun Application.installDefaultServerPlugins(unitTestMode: Boolean = true) {
+    install(WebSockets)
+    install(ContentNegotiation) {
+        json()
+        registerJsonTypes()
+    }
+    install(Resources)
+    install(IgnoreTrailingSlash)
+    installStatusPages()
+    if (pluginOrNull(ModelixAuthorization) == null) {
+        install(ModelixAuthorization) {
+            if (unitTestMode) configureForUnitTests()
+            permissionSchema = ModelServerPermissionSchema.SCHEMA
+        }
+    }
 }

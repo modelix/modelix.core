@@ -26,6 +26,7 @@ dependencies {
     testImplementation(libs.ktor.server.websockets)
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.logback.classic)
+    testImplementation("org.modelix:model-server")
 }
 
 tasks.test {

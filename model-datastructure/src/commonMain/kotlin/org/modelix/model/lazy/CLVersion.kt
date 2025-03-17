@@ -5,6 +5,7 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import org.modelix.model.IVersion
+import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INodeReference
@@ -26,7 +27,6 @@ import org.modelix.model.persistent.OperationsList
 import org.modelix.model.persistent.getAllObjects
 import org.modelix.streams.IStream
 import org.modelix.streams.flatten
-import org.modelix.streams.notNull
 import org.modelix.streams.plus
 import kotlin.jvm.JvmName
 
@@ -303,52 +303,51 @@ class CLVersion : IVersion {
         }
     }
 
-    fun getParents(stopAt: CLVersion?): List<CLVersion> {
-        if (stopAt != null && this.getContentHash() == stopAt.getContentHash()) {
-            return emptyList()
-        }
-        val ancestors = if (isMerge()) {
-            listOf(getMergedVersion1()!!, getMergedVersion2()!!)
-        } else {
-            listOfNotNull(baseVersion)
-        }
-        return ancestors.filter { stopAt == null || it.getContentHash() != stopAt.getContentHash() }
-    }
-
-    fun collectAncestors(stopAt: CLVersion?, result: MutableMap<String, CLVersion>) {
-        if (stopAt != null && this.getContentHash() == stopAt.getContentHash()) return
+    fun collectAncestors(stopAt: Set<String>, result: MutableMap<String, CLVersion>) {
+        if (stopAt.contains(this.getContentHash())) return
         if (result.contains(getContentHash())) return
         result[getContentHash()] = this
-        for (parent in getParents(stopAt)) {
+        for (parent in listOfNotNull(baseVersion, getMergedVersion1(), getMergedVersion2())) {
             parent.collectAncestors(stopAt, result)
         }
     }
 }
 
 fun CLVersion.fullDiff(baseVersion: CLVersion?): IStream.Many<IKVValue> {
-    val history = historyDiff(baseVersion)
-    return history.plus(
-        history.flatMap { version ->
-            val baseVersion = version.baseVersion?.getValue(asyncStore) ?: IStream.of(null)
-            val currentVersion = version.treeHash.getValue(asyncStore)
-            val treeDiff = currentVersion.zipWith(baseVersion) { v, b ->
-                if (b == null) v.getAllObjects(asyncStore) else v.objectDiff(b, asyncStore)
-            }.flatten()
-            if (version.operationsHash != null) {
-                val operations = version.operationsHash.getValue(asyncStore).flatMap { it.getAllObjects(asyncStore) }
-                treeDiff.plus(operations)
-            } else {
-                treeDiff
-            }
-        },
-    )
+    return diff(ObjectDeltaFilter(knownVersions = setOfNotNull(baseVersion?.getContentHash())))
 }
 
-fun CLVersion.historyDiff(baseVersion: CLVersion?): IStream.Many<CPVersion> {
-    val commonBase = VersionMerger.commonBaseVersion(this, baseVersion)
-    val history = LinkedHashMap<String, CLVersion>()
-    collectAncestors(commonBase, history)
-    return IStream.many(history.values.map { it.data })
+fun CLVersion.diff(filter: ObjectDeltaFilter): IStream.Many<IKVValue> {
+    val history = historyDiff(filter)
+    return history.flatMap { version ->
+        var result: IStream.Many<IKVValue> = IStream.of(version)
+        if (filter.includeTrees) {
+            val baseVersion = version.baseVersion?.getValue(asyncStore) ?: IStream.of(null)
+            val currentVersion = version.treeHash.getValue(asyncStore)
+            result += currentVersion.zipWith(baseVersion) { v, b ->
+                if (b == null) v.getAllObjects(asyncStore) else v.objectDiff(b, asyncStore)
+            }.flatten()
+        }
+        if (filter.includeOperations && version.operationsHash != null) {
+            result += version.operationsHash.getValue(asyncStore).flatMap { it.getAllObjects(asyncStore) }
+        }
+        result
+    }
+}
+
+fun CLVersion.historyDiff(filter: ObjectDeltaFilter): IStream.Many<CPVersion> {
+    if (filter.includeHistory) {
+        val knownVersions = asyncStore.getStreamExecutor().query {
+            IStream.many(filter.knownVersions).flatMap { CLVersion.tryLoadFromHash(it, asyncStore) }.toList()
+        }
+        val commonBases = knownVersions.mapNotNull { VersionMerger.commonBaseVersion(this, it) }
+            .map { it.getContentHash() }.toSet()
+        val history = LinkedHashMap<String, CLVersion>()
+        collectAncestors(stopAt = commonBases, result = history)
+        return IStream.many(history.values.map { it.data })
+    } else {
+        return IStream.of(this.data)
+    }
 }
 
 @Suppress("UNCHECKED_CAST")

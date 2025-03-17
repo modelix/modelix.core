@@ -41,6 +41,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
+import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.readVersionDelta
@@ -232,7 +233,7 @@ class ModelReplicationServerTest {
         val repositoriesManager = RepositoriesManager(storeClient)
         val faultyRepositoriesManager = object :
             IRepositoriesManager by repositoriesManager {
-            override suspend fun computeDelta(repository: RepositoryId?, versionHash: String, baseVersionHash: String?): ObjectData {
+            override suspend fun computeDelta(repository: RepositoryId?, versionHash: String, filter: ObjectDeltaFilter): ObjectData {
                 error("Unexpected error.")
             }
         }
@@ -274,8 +275,8 @@ class ModelReplicationServerTest {
         val repositoriesManager = RepositoriesManager(storeClient)
         val faultyRepositoriesManager = object :
             IRepositoriesManager by repositoriesManager {
-            override suspend fun computeDelta(repository: RepositoryId?, versionHash: String, baseVersionHash: String?): ObjectData {
-                val originalFlow = repositoriesManager.computeDelta(repository, versionHash, baseVersionHash).asStream()
+            override suspend fun computeDelta(repository: RepositoryId?, versionHash: String, filter: ObjectDeltaFilter): ObjectData {
+                val originalFlow = repositoriesManager.computeDelta(repository, versionHash, filter).asStream()
                 val brokenFlow = channelFlow<Pair<String, String>> {
                     error("Unexpected error.")
                 }

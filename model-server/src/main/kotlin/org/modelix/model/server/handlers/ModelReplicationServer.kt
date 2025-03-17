@@ -27,6 +27,7 @@ import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.hasPermission
 import org.modelix.authorization.requiresLogin
+import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.TreeAsBranch
@@ -110,6 +111,7 @@ class ModelReplicationServer(
         repository: String,
         branch: String,
         lastKnown: String?,
+        filter: String?,
     ) {
         checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
         val branchRef = repositoryId(repository).getBranchReference(branch)
@@ -118,13 +120,20 @@ class ModelReplicationServer(
         val versionHash = runRead {
             repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
         }
-        call.respondDelta(RepositoryId(repository), versionHash, lastKnown)
+        call.respondDelta(RepositoryId(repository), versionHash, parseFilter(filter, lastKnown))
+    }
+
+    private fun parseFilter(filterAsJson: String?, lastKnown: String?): ObjectDeltaFilter {
+        return (filterAsJson?.let { ObjectDeltaFilter.fromJson(it) } ?: ObjectDeltaFilter()).let {
+            if (lastKnown == null) it else it.copy(knownVersions = it.knownVersions + lastKnown)
+        }
     }
 
     override suspend fun RoutingContext.getRepositoryBranchV1(
         repository: String,
         branch: String,
         lastKnown: String?,
+        filter: String?,
     ) {
         checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
         val branchRef = repositoryId(repository).getBranchReference(branch)
@@ -189,7 +198,7 @@ class ModelReplicationServer(
                 legacyGlobalStorage ?: false,
             )
         }
-        call.respondDelta(RepositoryId(repository), initialVersion.getContentHash(), null)
+        call.respondDelta(RepositoryId(repository), initialVersion.getContentHash(), ObjectDeltaFilter())
     }
 
     override suspend fun RoutingContext.deleteRepository(repository: String) {
@@ -223,7 +232,7 @@ class ModelReplicationServer(
         val mergedHash = runWrite {
             repositoriesManager.mergeChanges(branchRef, deltaFromClient.versionHash)
         }
-        call.respondDelta(RepositoryId(repository), mergedHash, deltaFromClient.versionHash)
+        call.respondDelta(RepositoryId(repository), mergedHash, ObjectDeltaFilter(deltaFromClient.versionHash))
     }
 
     override suspend fun RoutingContext.pollRepositoryBranch(
@@ -234,7 +243,7 @@ class ModelReplicationServer(
         checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
         val branchRef = repositoryId(repository).getBranchReference(branch)
         val newVersionHash = repositoriesManager.pollVersionHash(branchRef, lastKnown)
-        call.respondDelta(RepositoryId(repository), newVersionHash, lastKnown)
+        call.respondDelta(RepositoryId(repository), newVersionHash, ObjectDeltaFilter(lastKnown))
     }
 
     override suspend fun RoutingContext.postRepositoryObjectsGetAll(repository: String) {
@@ -282,7 +291,7 @@ class ModelReplicationServer(
         if (repositoriesManager.getVersion(repositoryId(repository), versionHash) == null) {
             throw VersionNotFoundException(versionHash)
         }
-        call.respondDelta(RepositoryId(repository), versionHash, lastKnown)
+        call.respondDelta(RepositoryId(repository), versionHash, ObjectDeltaFilter(lastKnown))
     }
 
     override suspend fun RoutingContext.postRepositoryBranchQuery(
@@ -384,27 +393,27 @@ class ModelReplicationServer(
         if (runRead { stores.getGlobalStoreClient()[versionHash] } == null) {
             throw VersionNotFoundException(versionHash)
         }
-        call.respondDelta(null, versionHash, lastKnown)
+        call.respondDelta(null, versionHash, ObjectDeltaFilter(lastKnown))
     }
 
-    private suspend fun ApplicationCall.respondDelta(repositoryId: RepositoryId?, versionHash: String, baseVersionHash: String?) {
+    private suspend fun ApplicationCall.respondDelta(repositoryId: RepositoryId?, versionHash: String, filter: ObjectDeltaFilter) {
         val expectedTypes = request.acceptItems().map { ContentType.parse(it.value) }
         return if (expectedTypes.any { it.match(VersionDeltaStreamV2.CONTENT_TYPE) }) {
-            respondDeltaAsObjectStreamV2(repositoryId, versionHash, baseVersionHash)
+            respondDeltaAsObjectStreamV2(repositoryId, versionHash, filter)
         } else if (expectedTypes.any { it.match(VersionDeltaStream.CONTENT_TYPE) }) {
-            respondDeltaAsObjectStreamV1(repositoryId, versionHash, baseVersionHash, false)
+            respondDeltaAsObjectStreamV1(repositoryId, versionHash, filter, false)
         } else if (expectedTypes.any { it.match(ContentType.Application.Json) }) {
-            respondDeltaAsJson(repositoryId, versionHash, baseVersionHash)
+            respondDeltaAsJson(repositoryId, versionHash, filter)
         } else {
-            respondDeltaAsObjectStreamV1(repositoryId, versionHash, baseVersionHash, true)
+            respondDeltaAsObjectStreamV1(repositoryId, versionHash, filter, true)
         }
     }
 
-    private suspend fun ApplicationCall.respondDeltaAsJson(repositoryId: RepositoryId?, versionHash: String, baseVersionHash: String?) {
+    private suspend fun ApplicationCall.respondDeltaAsJson(repositoryId: RepositoryId?, versionHash: String, filter: ObjectDeltaFilter) {
         val delta = VersionDelta(
             versionHash,
-            baseVersionHash,
-            objectsMap = repositoriesManager.computeDelta(repositoryId, versionHash, baseVersionHash).asMap(),
+            filter.knownVersions.firstOrNull(),
+            objectsMap = repositoriesManager.computeDelta(repositoryId, versionHash, filter).asMap(),
         )
         respond(delta)
     }
@@ -412,12 +421,12 @@ class ModelReplicationServer(
     private suspend fun ApplicationCall.respondDeltaAsObjectStreamV1(
         repositoryId: RepositoryId?,
         versionHash: String,
-        baseVersionHash: String?,
+        filter: ObjectDeltaFilter,
         plainText: Boolean,
     ) {
         // Call `computeDelta` before starting to respond.
         // It could already throw an exception, and in that case we do not want a successful response status.
-        val objectData = repositoriesManager.computeDelta(repositoryId, versionHash, baseVersionHash)
+        val objectData = repositoriesManager.computeDelta(repositoryId, versionHash, filter)
         val contentType = if (plainText) ContentType.Text.Plain else VersionDeltaStream.CONTENT_TYPE
         respondBytesWriter(contentType) {
             this.useClosingWithoutCause {
@@ -434,8 +443,8 @@ class ModelReplicationServer(
         }
     }
 
-    private suspend fun ApplicationCall.respondDeltaAsObjectStreamV2(repositoryId: RepositoryId?, versionHash: String, baseVersionHash: String?) {
-        val objectData = repositoriesManager.computeDelta(repositoryId, versionHash, baseVersionHash)
+    private suspend fun ApplicationCall.respondDeltaAsObjectStreamV2(repositoryId: RepositoryId?, versionHash: String, filter: ObjectDeltaFilter) {
+        val objectData = repositoriesManager.computeDelta(repositoryId, versionHash, filter)
         respondBytesWriter(VersionDeltaStreamV2.CONTENT_TYPE) {
             this.useClosingWithoutCause {
                 VersionDeltaStreamV2.encodeVersionDeltaStreamV2(this, versionHash, objectData.asStream())

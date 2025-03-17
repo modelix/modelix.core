@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.model.IVersion
+import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INode
@@ -371,7 +372,7 @@ class ModelClientV2(
         return chunkEntries
     }
 
-    override suspend fun pull(branch: BranchReference, lastKnownVersion: IVersion?): IVersion {
+    override suspend fun pull(branch: BranchReference, lastKnownVersion: IVersion?, filter: ObjectDeltaFilter): IVersion {
         require(lastKnownVersion is CLVersion?)
         return httpClient.prepareGet {
             url {
@@ -379,6 +380,9 @@ class ModelClientV2(
                 appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
                 if (lastKnownVersion != null) {
                     parameters["lastKnown"] = lastKnownVersion.getContentHash()
+                }
+                if (filter != ObjectDeltaFilter()) {
+                    parameters["filter"] = filter.toJson()
                 }
             }
             useVersionStreamFormat()

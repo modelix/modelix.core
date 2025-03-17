@@ -2,6 +2,7 @@ package org.modelix.model.client2
 
 import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.model.IVersion
+import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INode
 import org.modelix.model.lazy.BranchReference
@@ -55,7 +56,11 @@ interface IModelClientV2 {
      */
     suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?): IVersion
 
-    suspend fun pull(branch: BranchReference, lastKnownVersion: IVersion?): IVersion
+    suspend fun pull(
+        branch: BranchReference,
+        lastKnownVersion: IVersion?,
+        filter: ObjectDeltaFilter = ObjectDeltaFilter(),
+    ): IVersion
 
     suspend fun pullIfExists(branch: BranchReference): IVersion?
 

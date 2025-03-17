@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.datetime.Clock
 import org.modelix.model.ModelMigrations
+import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IReadTransaction
@@ -14,6 +15,7 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.lazy.diff
 import org.modelix.model.lazy.fullDiff
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.SerializationUtil
@@ -253,9 +255,9 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
                 "Attempt to merge a model with ID '${newVersion.getTree().getId()}'" +
                     " into one with ID '${headVersion.getTree().getId()}'"
             }
+            validateVersion(newVersion, headVersion)
             val mergedVersion = VersionMerger(legacyObjectStore, stores.idGenerator)
                 .mergeChange(headVersion, newVersion)
-            validateVersion(newVersion, headVersion)
             mergedVersion.getContentHash()
         }
         ensureBranchInList(branch)
@@ -274,8 +276,8 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
     }
 
     override fun getVersion(repository: RepositoryId, versionHash: String): CLVersion? {
-        val legacyObjectStore = getLegacyObjectStore(repository.takeIf { isIsolated(repository) == true })
-        return CLVersion.tryLoadFromHash(versionHash, legacyObjectStore)
+        val store = getAsyncStore(repository.takeIf { isIsolated(repository) == true })
+        return store.getStreamExecutor().query { CLVersion.tryLoadFromHash(versionHash, store).orNull() }
     }
 
     @RequiresTransaction
@@ -306,14 +308,13 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
             ?: throw IllegalStateException("No version found for branch '${branch.branchName}' in repository '${branch.repositoryId}'")
     }
 
-    override suspend fun computeDelta(repository: RepositoryId?, versionHash: String, baseVersionHash: String?): ObjectData {
-        if (versionHash == baseVersionHash) return ObjectData.empty
+    override suspend fun computeDelta(repository: RepositoryId?, versionHash: String, filter: ObjectDeltaFilter): ObjectData {
+        if (filter.knownVersions.contains(versionHash)) return ObjectData.empty
 
         val legacyObjectStore = stores.getLegacyObjectStore(repository?.takeIf { isIsolated(it) ?: false })
         return legacyObjectStore.getStreamExecutor().queryManyLater {
             val version = CLVersion(versionHash, legacyObjectStore)
-            val baseVersion = baseVersionHash?.let { CLVersion(it, legacyObjectStore) }
-            version.fullDiff(baseVersion).map { it.hash to it.serialize() }
+            version.diff(filter).map { it.hash to it.serialize() }
         }.let { ObjectDataFlow(it) }
     }
 

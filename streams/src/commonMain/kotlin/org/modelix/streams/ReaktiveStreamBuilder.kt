@@ -13,7 +13,6 @@ import com.badoo.reaktive.maybe.asCompletable
 import com.badoo.reaktive.maybe.asObservable
 import com.badoo.reaktive.maybe.asSingle
 import com.badoo.reaktive.maybe.asSingleOrError
-import com.badoo.reaktive.maybe.defaultIfEmpty
 import com.badoo.reaktive.maybe.doOnAfterSubscribe
 import com.badoo.reaktive.maybe.doOnBeforeError
 import com.badoo.reaktive.maybe.filter
@@ -121,13 +120,38 @@ class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder,
         abstract fun wrappedAsObservable(): Observable<E>
     }
 
-    abstract inner class ReaktiveWrapper<E> : Wrapper<E>(), IStream<E> {
+    abstract inner class ReaktiveWrapper<E> : Wrapper<E>(), IStream.Many<E> {
         abstract val wrapped: Source<*>
         override fun iterateSynchronous(visitor: (E) -> Unit) {
             throw UnsupportedOperationException("Use IStreamExecutor.iterate")
         }
         override suspend fun iterateSuspending(visitor: suspend (E) -> Unit) {
             throw UnsupportedOperationException("Use IStreamExecutor.iterateSuspending")
+        }
+
+        override fun skip(count: Long): IStream.Many<E> {
+            require(count >= 0L)
+            return WrapperMany(wrappedAsObservable().skip(count))
+        }
+
+        override fun count(): IStream.One<Int> {
+            return WrapperSingle(wrappedAsObservable().count())
+        }
+
+        override fun take(n: Int): IStream.Many<E> {
+            return WrapperMany(wrappedAsObservable().take(n))
+        }
+
+        override fun toList(): IStream.One<List<E>> {
+            return WrapperSingle(wrappedAsObservable().toList())
+        }
+
+        override fun isEmpty(): IStream.One<Boolean> {
+            return WrapperSingle(wrappedAsObservable().isEmpty())
+        }
+
+        override fun exactlyOne(): IStream.One<E> {
+            return WrapperSingle(wrappedAsSingle())
         }
     }
 
@@ -219,10 +243,6 @@ class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder,
             throw UnsupportedOperationException("Use IStreamExecutor.iterate")
         }
 
-        override fun toList(): IStream.One<List<E>> {
-            return WrapperSingle(wrapped.toList())
-        }
-
         override fun iterateSynchronous(visitor: (E) -> Unit) {
             throw UnsupportedOperationException("Use IStreamExecutor.iterate")
         }
@@ -269,28 +289,12 @@ class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder,
             return merger(WrapperMany(a), WrapperMany(b))
         }
 
-        override fun skip(count: Long): IStream.Many<E> {
-            return WrapperMany(wrapped.skip(count))
-        }
-
-        override fun exactlyOne(): IStream.One<E> {
-            return WrapperSingle(wrappedAsSingle())
-        }
-
-        override fun count(): IStream.One<Int> {
-            return WrapperSingle(wrapped.count())
-        }
-
         override fun filterBySingle(condition: (E) -> IStream.One<Boolean>): IStream.Many<E> {
             return WrapperMany(wrapped.filterBySingle { condition(it).toReaktive() })
         }
 
         override fun firstOrDefault(defaultValue: () -> E): IStream.One<E> {
             return WrapperSingle(wrapped.firstOrDefault(defaultValue))
-        }
-
-        override fun take(n: Int): IStream.Many<E> {
-            return WrapperMany(wrapped.take(n))
         }
 
         override fun firstOrEmpty(): IStream.ZeroOrOne<E> {
@@ -469,17 +473,8 @@ class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder,
             TODO("Not yet implemented")
         }
 
-        override fun skip(count: Long): IStream.Many<E> {
-            require(count >= 0L)
-            return if (count == 0L) this else IStream.empty()
-        }
-
         override fun exactlyOne(): IStream.One<E> {
             return this
-        }
-
-        override fun count(): IStream.One<Int> {
-            return IStream.of(1)
         }
 
         override fun filterBySingle(condition: (E) -> IStream.One<Boolean>): IStream.Many<E> {
@@ -488,10 +483,6 @@ class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder,
 
         override fun firstOrDefault(defaultValue: () -> E): IStream.One<E> {
             return this // there is always a first element
-        }
-
-        override fun take(n: Int): IStream.Many<E> {
-            return if (n > 0) this else IStream.empty()
         }
 
         override fun firstOrEmpty(): IStream.ZeroOrOne<E> {
@@ -503,7 +494,7 @@ class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder,
         }
 
         override fun isEmpty(): IStream.One<Boolean> {
-            return IStream.of(false)
+            return WrapperSingle(wrapped.asObservable().isEmpty())
         }
 
         override fun withIndex(): IStream.Many<IndexedValue<E>> {
@@ -561,10 +552,6 @@ class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder,
             throw UnsupportedOperationException("Use IStreamExecutor.iterate")
         }
 
-        override fun toList(): IStream.One<List<E>> {
-            return WrapperSingle(wrapped.asObservable().toList())
-        }
-
         override fun iterateSynchronous(visitor: (E) -> Unit) {
             throw UnsupportedOperationException("Use IStreamExecutor.iterate")
         }
@@ -615,18 +602,6 @@ class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder,
             TODO("Not yet implemented")
         }
 
-        override fun skip(count: Long): IStream.Many<E> {
-            return if (count > 0) IStream.empty() else this
-        }
-
-        override fun exactlyOne(): IStream.One<E> {
-            return WrapperSingle(wrappedAsSingle())
-        }
-
-        override fun count(): IStream.One<Int> {
-            return WrapperSingle(wrapped.asObservable().count())
-        }
-
         override fun filterBySingle(condition: (E) -> IStream.One<Boolean>): IStream.Many<E> {
             return WrapperMany(wrapped.asObservable().filterBySingle { condition(it).toReaktive() })
         }
@@ -635,20 +610,12 @@ class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder,
             return WrapperSingle(wrapped.asSingle(defaultValue))
         }
 
-        override fun take(n: Int): IStream.Many<E> {
-            return if (n > 0) this else IStream.empty()
-        }
-
         override fun firstOrEmpty(): IStream.ZeroOrOne<E> {
             return this
         }
 
         override fun switchIfEmpty_(alternative: () -> IStream.Many<E>): IStream.Many<E> {
             return WrapperMany(wrapped.asObservable().switchIfEmpty { alternative().toReaktive() })
-        }
-
-        override fun isEmpty(): IStream.One<Boolean> {
-            return WrapperSingle(wrapped.map { false }.defaultIfEmpty(true))
         }
 
         override fun withIndex(): IStream.Many<IndexedValue<E>> {

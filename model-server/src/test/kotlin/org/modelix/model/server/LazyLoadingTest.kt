@@ -81,7 +81,7 @@ class LazyLoadingTest {
     @Ignore @Test fun compare_cache_size_3200() = compare_cache_size(100_000, 22, 48, 0, 212, 1859, 0)
     private fun compare_cache_size(cacheSize: Int, vararg expected: Int) = runLazyLoadingTest(DepthFirstSearchPattern, 1_000, cacheSize, 50, 50, *expected)
 
-    @Ignore @Test fun compare_prefetch_size_0() = compare_prefetch_size(0, 22, 2055, 2073, 22, 2055, 2073)
+    @Test fun compare_prefetch_size_0() = compare_prefetch_size(0, 22, 2055, 2073, 22, 2055, 2073)
     @Ignore @Test fun compare_prefetch_size_2() = compare_prefetch_size(2, 22, 1028, 1046, 38, 2056, 2092)
     @Ignore @Test fun compare_prefetch_size_4() = compare_prefetch_size(3, 22, 707, 717, 53, 2121, 2151)
     @Ignore @Test fun compare_prefetch_size_10() = compare_prefetch_size(10, 22, 379, 406, 115, 3773, 4013)

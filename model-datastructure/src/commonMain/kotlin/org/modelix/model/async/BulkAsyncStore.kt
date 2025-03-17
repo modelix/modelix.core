@@ -7,8 +7,6 @@ import org.modelix.streams.BulkRequestStreamExecutor
 import org.modelix.streams.IBulkExecutor
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
-import org.modelix.streams.SimpleStreamExecutor
-import org.modelix.streams.withSequences
 
 class BulkAsyncStore(
     val store: IAsyncObjectStore,
@@ -18,13 +16,11 @@ class BulkAsyncStore(
     private val bulkExecutor = BulkRequestStreamExecutor<ObjectHash<*>, Any?>(
         object : IBulkExecutor<ObjectHash<*>, Any?> {
             override fun execute(keys: List<ObjectHash<*>>): Map<ObjectHash<*>, Any?> {
-                @Suppress("DEPRECATION")
-                return SimpleStreamExecutor().withSequences().query { store.getAllAsMap(keys) }
+                return store.getStreamExecutor().query { store.getAllAsMap(keys) }
             }
 
             override suspend fun executeSuspending(keys: List<ObjectHash<*>>): Map<ObjectHash<*>, Any?> {
-                @Suppress("DEPRECATION")
-                return SimpleStreamExecutor().withSequences().querySuspending { store.getAllAsMap(keys) }
+                return store.getStreamExecutor().querySuspending { store.getAllAsMap(keys) }
             }
         },
         batchSize = batchSize,

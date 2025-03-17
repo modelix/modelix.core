@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.flow.zip
+import org.modelix.kotlin.utils.runBlockingIfJvm
 import kotlin.coroutines.coroutineContext
 
 class FlowStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder, IStreamExecutorProvider by executor {
@@ -91,7 +92,11 @@ class FlowStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder, ISt
         override fun toList(): IStream.One<List<E>> = Wrapper(flow { emit(wrapped.toList()) })
         override fun asSequence(): Sequence<E> = throw UnsupportedOperationException()
 
-        override fun iterateSynchronous(visitor: (E) -> Unit) = throw UnsupportedOperationException()
+        override fun iterateSynchronous(visitor: (E) -> Unit) {
+            runBlockingIfJvm {
+                wrapped.collect { visitor(it) }
+            }
+        }
         override suspend fun iterateSuspending(visitor: suspend (E) -> Unit) {
             wrapped.collect(visitor)
         }
@@ -107,7 +112,7 @@ class FlowStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder, ISt
             )
         }
         override fun executeSynchronous() {
-            throw UnsupportedOperationException()
+            runBlockingIfJvm { wrapped.collect() }
         }
 
         override fun andThen(other: IStream.Zero): IStream.Zero {
@@ -147,7 +152,15 @@ class FlowStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder, ISt
 
     inner class Wrapper<E>(wrapped: Flow<E>) : WrapperBase<E>(wrapped), IStream.One<E> {
         override fun getAsync(onError: ((Throwable) -> Unit)?, onSuccess: ((E) -> Unit)?) {
-            throw UnsupportedOperationException()
+            runBlockingIfJvm {
+                try {
+                    wrapped.collect {
+                        onSuccess?.invoke(it)
+                    }
+                } catch (ex: Throwable) {
+                    onError?.invoke(ex)
+                }
+            }
         }
 
         override fun <R> flatMapOne(mapper: (E) -> IStream.One<R>): IStream.One<R> {
@@ -191,7 +204,7 @@ class FlowStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder, ISt
         }
 
         override fun getSynchronous(): E {
-            return throw UnsupportedOperationException()
+            return runBlockingIfJvm { wrapped.toList().single() }
         }
 
         override suspend fun getSuspending(): E {

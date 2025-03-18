@@ -6,6 +6,11 @@ import org.modelix.model.api.async.getDescendants
 import org.modelix.model.async.AsyncAsSynchronousTree
 import org.modelix.model.async.AsyncTree
 import org.modelix.model.async.IAsyncObjectStore
+import org.modelix.model.async.asObjectLoader
+import org.modelix.model.objects.Object
+import org.modelix.model.objects.ObjectReference
+import org.modelix.model.objects.asObject
+import org.modelix.model.objects.getHashString
 import org.modelix.model.persistent.CPHamtInternal
 import org.modelix.model.persistent.CPHamtNode
 import org.modelix.model.persistent.CPNode
@@ -13,11 +18,11 @@ import org.modelix.model.persistent.CPTree
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutorProvider
 
-fun createNewTreeData(
+private fun createNewTreeData(
     store: IAsyncObjectStore,
-    repositoryId: RepositoryId = RepositoryId.random(),
+    repositoryId: RepositoryId = RepositoryId.random(), // TODO This should be a separate TreeId
     useRoleIds: Boolean = true,
-): CPTree {
+): Object<CPTree> {
     val root = CPNode.create(
         1,
         null,
@@ -31,31 +36,46 @@ fun createNewTreeData(
     )
     return CPTree(
         repositoryId.id,
-        KVEntryReference<CPHamtNode>(
+        ObjectReference<CPHamtNode>(
             store.getStreamExecutor().query {
                 CPHamtInternal.createEmpty()
-                    .put(root.id, KVEntryReference<CPNode>(root), store)
+                    .put(root.id, ObjectReference<CPNode>(root), store.asObjectLoader())
                     .orNull()
             }!!,
         ),
         useRoleIds,
-    )
+    ).asObject()
 }
 
-class CLTree(val data: CPTree, val asyncStore: IAsyncObjectStore) :
-    ITree by AsyncAsSynchronousTree(AsyncTree(data, asyncStore)), IBulkTree, IStreamExecutorProvider by asyncStore {
+class CLTree(val resolvedData: Object<CPTree>, val asyncStore: IAsyncObjectStore) :
+    ITree by AsyncAsSynchronousTree(AsyncTree(resolvedData, asyncStore)), IBulkTree, IStreamExecutorProvider by asyncStore {
 
+    constructor(data: Object<CPTree>, store: IDeserializingKeyValueStore) : this(data, store.getAsyncStore())
+
+    @Deprecated("Provide an Object<CPTree>")
+    constructor(data: CPTree, store: IAsyncObjectStore) : this(data.asObject(), store)
+
+    @Deprecated("Use CLTree.builder")
     constructor(store: IAsyncObjectStore, useRoleIds: Boolean = true) : this(createNewTreeData(store, useRoleIds = useRoleIds), store)
-    constructor(store: IDeserializingKeyValueStore, useRoleIds: Boolean = true) : this(store.getAsyncStore(), useRoleIds)
-    constructor(data: CPTree, store: IDeserializingKeyValueStore) : this(data, store.getAsyncStore())
 
+    @Deprecated("Use CLTree.builder")
+    constructor(store: IDeserializingKeyValueStore, useRoleIds: Boolean = true) : this(store.getAsyncStore(), useRoleIds)
+
+    @Deprecated("Provide an Object<CPTree>")
+    constructor(data: CPTree, store: IDeserializingKeyValueStore) : this(data.asObject(), store.getAsyncStore())
+
+    @Deprecated("Provide an Object<CPTree>")
     constructor(data: CPTree?, repositoryId_: RepositoryId?, store_: IDeserializingKeyValueStore, useRoleIds: Boolean = true) : this(data, repositoryId_, store_.getAsyncStore(), useRoleIds)
 
+    @Deprecated("Provide an Object<CPTree>")
     constructor(data: CPTree?, repositoryId: RepositoryId?, store: IAsyncObjectStore, useRoleIds: Boolean = true) : this(
-        data ?: createNewTreeData(store, repositoryId ?: RepositoryId.random(), useRoleIds),
+        data?.asObject() ?: createNewTreeData(store, repositoryId ?: RepositoryId.random(), useRoleIds),
         store,
     )
 
+    val data: CPTree get() = resolvedData.data
+
+    @Deprecated("Use asyncStore")
     val store: IDeserializingKeyValueStore = asyncStore.getLegacyObjectStore()
 
     override fun getId(): String = data.id
@@ -70,10 +90,10 @@ class CLTree(val data: CPTree, val asyncStore: IAsyncObjectStore) :
     }
 
     val hash: String
-        get() = data.hash
+        get() = resolvedData.ref.getHashString()
 
     val nodesMap: CPHamtNode
-        get() = getStreamExecutor().query { data.idToHash.getValue(asyncStore) }
+        get() = getStreamExecutor().query { data.idToHash.requestData(asyncStore.asObjectLoader()) }
 
     val root: CPNode?
         get() = getStreamExecutor().query { resolveElement(ITree.ROOT_ID).orNull() }
@@ -110,9 +130,8 @@ class CLTree(val data: CPTree, val asyncStore: IAsyncObjectStore) :
         if (id == 0L) {
             return IStream.empty()
         }
-        val hash = nodesMap.get(id, asyncStore)
-        return hash.flatMapZeroOrOne {
-            it.getValue(asyncStore)
+        return nodesMap.get(id, asyncStore.asObjectLoader()).flatMapZeroOrOne {
+            it.requestData(asyncStore.asObjectLoader())
         }
     }
 
@@ -121,7 +140,7 @@ class CLTree(val data: CPTree, val asyncStore: IAsyncObjectStore) :
     }
 
     override fun toString(): String {
-        return "CLTree[${data.hash}]"
+        return "CLTree[${resolvedData.ref.getHash()}]"
     }
 
     override fun equals(other: Any?): Boolean {

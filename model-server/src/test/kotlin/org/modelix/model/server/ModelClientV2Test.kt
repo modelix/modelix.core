@@ -18,9 +18,10 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.MissingEntryException
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.lazy.getObject
+import org.modelix.model.objects.IObjectData
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
-import org.modelix.model.persistent.IKVValue
 import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
@@ -268,13 +269,13 @@ class ModelClientV2Test {
         val versionPulled = modelClientForAssert.pullIfExists(branchId)!! as CLVersion
 
         // Assert
-        fun checkAllReferencedEntriesExistInStore(referencingEntry: IKVValue) {
+        fun checkAllReferencedEntriesExistInStore(referencingEntry: IObjectData) {
             try {
-                for (entryReference in referencingEntry.getReferencedEntries()) {
+                for (entryReference in referencingEntry.getAllReferences()) {
                     // Check that the store also provides each referenced KVEntry.
                     // `getValue` would fail if this is not the case.
-                    val referencedEntry = entryReference.getValue(versionPulled.store)
-                    checkAllReferencedEntriesExistInStore(referencedEntry)
+                    val referencedEntry = entryReference.getObject(versionPulled.store)
+                    checkAllReferencedEntriesExistInStore(referencedEntry.data)
                 }
             } catch (ex: MissingEntryException) {
                 throw RuntimeException("Referenced by ${referencingEntry.serialize()}", ex)
@@ -353,6 +354,8 @@ class ModelClientV2Test {
         for (i in 0..4) {
             println("repo$i")
             val expectedHash = initialVersions[i].getContentHash()
+
+            @Suppress("DEPRECATION") // calling this deprecated method is the purpose of this test
             val loadedVersion = modelClient.loadVersion(expectedHash, null)
             assertEquals(expectedHash, loadedVersion.getContentHash())
         }

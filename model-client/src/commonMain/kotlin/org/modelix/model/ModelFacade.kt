@@ -14,18 +14,21 @@ import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
-import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.lazy.createObjectStoreCache
+import org.modelix.model.objects.Object
+import org.modelix.model.objects.ObjectHash
+import org.modelix.model.objects.ObjectReference
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.CPVersion
-import org.modelix.model.persistent.MapBaseStore
+import org.modelix.model.persistent.MapBasedStore
 import kotlin.jvm.JvmOverloads
 
 object ModelFacade {
 
     @JvmOverloads
     fun newLocalTree(useRoleIds: Boolean = true): ITree {
-        return CLTree(ObjectStoreCache(MapBaseStore()), useRoleIds = useRoleIds)
+        return CLTree.builder(createObjectStoreCache(MapBasedStore())).useRoleIds(useRoleIds).build()
     }
 
     fun getRootNode(branch: IBranch): INode {
@@ -95,7 +98,10 @@ object ModelFacade {
             ?: throw RuntimeException("$branch doesn't exist")
         val baseVersionData: CPVersion = client.storeCache.get(actualBaseVersionHash) { CPVersion.deserialize(it) }
             ?: throw RuntimeException("version not found: $actualBaseVersionHash")
-        val baseVersion = CLVersion(baseVersionData, client.storeCache)
+        val baseVersion = CLVersion(
+            Object(baseVersionData, ObjectReference(ObjectHash(actualBaseVersionHash), baseVersionData)),
+            client.storeCache.getAsyncStore(),
+        )
         return applyUpdate(client, baseVersion, branch, userName, body)
     }
 

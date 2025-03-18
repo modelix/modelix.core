@@ -5,7 +5,8 @@ import org.modelix.model.lazy.COWArrays.insert
 import org.modelix.model.lazy.COWArrays.remove
 import org.modelix.model.lazy.COWArrays.removeAt
 import org.modelix.model.lazy.COWArrays.set
-import org.modelix.model.lazy.KVEntryReference
+import org.modelix.model.objects.IObjectData
+import org.modelix.model.objects.ObjectReference
 import org.modelix.model.persistent.CPNodeRef.Companion.fromString
 import org.modelix.model.persistent.SerializationUtil.escape
 import org.modelix.model.persistent.SerializationUtil.longFromHex
@@ -23,9 +24,7 @@ class CPNode private constructor(
     val propertyValues: Array<String>,
     val referenceRoles: Array<String>,
     val referenceTargets: Array<CPNodeRef>,
-) : IKVValue {
-
-    override var isWritten: Boolean = false
+) : IObjectData {
 
     override fun serialize(): String {
         val sb = StringBuilder()
@@ -60,8 +59,6 @@ class CPNode private constructor(
 
     val childrenSize: Int
         get() = childrenIds.size
-
-    override val hash: String by lazy(LazyThreadSafetyMode.PUBLICATION) { HashUtil.sha256(serialize()) }
 
     fun getChildId(index: Int): Long {
         return childrenIds[index]
@@ -211,8 +208,8 @@ class CPNode private constructor(
         )
     }
 
-    override fun getDeserializer(): (String) -> IKVValue = DESERIALIZER
-    override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = listOf()
+    override fun getDeserializer(): (String) -> CPNode = DESERIALIZER
+    override fun getContainmentReferences(): List<ObjectReference<IObjectData>> = emptyList()
 
     companion object {
         val DESERIALIZER = { s: String -> deserialize(s) }
@@ -279,7 +276,6 @@ class CPNode private constructor(
                     references.map { unescape(it[0])!! }.toTypedArray(),
                     references.map { fromString(unescape(it[1])!!) }.toTypedArray(),
                 )
-                data.isWritten = true
                 data
             } catch (ex: Exception) {
                 throw RuntimeException("Failed to deserialize $input", ex)

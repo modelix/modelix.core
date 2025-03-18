@@ -6,8 +6,7 @@ import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.KVEntryReference
-import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.operations.IAppliedOperation
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.OTWriteTransaction
@@ -22,7 +21,7 @@ class RevertTest {
     fun revert_random() {
         val idGenerator = IdGenerator.newInstance(7)
         val versionIdGenerator = IdGenerator.newInstance(0)
-        val store = ObjectStoreCache(MapBaseStore())
+        val store = createObjectStoreCache(MapBaseStore()).getLegacyObjectStore()
         val baseBranch = OTBranch(PBranch(CLTree(store), idGenerator), idGenerator, store)
         val rand = Random(916306)
 
@@ -58,7 +57,7 @@ class RevertTest {
     }
 
     fun revert(latestKnownVersion: CLVersion, versionToRevertTo: CLVersion, idGenerator: IIdGenerator): CLVersion {
-        val revertOp = RevertToOp(KVEntryReference(latestKnownVersion.data!!), KVEntryReference(versionToRevertTo.data!!))
+        val revertOp = RevertToOp(latestKnownVersion.resolvedData.ref, versionToRevertTo.resolvedData.ref)
         val branch = OTBranch(PBranch(latestKnownVersion.tree, idGenerator), idGenerator, latestKnownVersion.store)
         branch.runWriteT { t ->
             (t as OTWriteTransaction).apply(revertOp)

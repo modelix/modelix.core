@@ -2,19 +2,29 @@ package org.modelix.model
 
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IIdGenerator
-import org.modelix.model.api.ITree
 import org.modelix.model.api.TreePointer
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.IOperationIntend
 import org.modelix.model.operations.UndoOp
-import org.modelix.model.persistent.CPVersion
 
-class VersionMerger(private val storeCache: IDeserializingKeyValueStore, private val idGenerator: IIdGenerator) {
+class VersionMerger(private val idGenerator: IIdGenerator) {
+    @Deprecated("store is required anymore")
+    constructor(store: IDeserializingKeyValueStore, idGenerator: IIdGenerator) :
+        this(idGenerator)
+
+    @Deprecated("store is required anymore")
+    constructor(store: IAsyncObjectStore, idGenerator: IIdGenerator) :
+        this(idGenerator)
+
     private val logger = mu.KotlinLogging.logger {}
     fun mergeChange(lastMergedVersion: CLVersion, newVersion: CLVersion): CLVersion {
+        require(lastMergedVersion.asyncStore == newVersion.asyncStore) {
+            "Versions are backed by different stores: $lastMergedVersion, $newVersion"
+        }
         if (newVersion.hash == lastMergedVersion.hash) {
             return lastMergedVersion
         }
@@ -44,9 +54,11 @@ class VersionMerger(private val storeCache: IDeserializingKeyValueStore, private
 
     protected fun mergeHistory(leftVersion: CLVersion, rightVersion: CLVersion): CLVersion {
         if (leftVersion.hash == rightVersion.hash) return leftVersion
-        val commonBase = Companion.commonBaseVersion(leftVersion, rightVersion)
-        if (commonBase?.hash == leftVersion.hash) return rightVersion
-        if (commonBase?.hash == rightVersion.hash) return leftVersion
+        val commonBase = requireNotNull(commonBaseVersion(leftVersion, rightVersion)) {
+            "Cannot merge versions without a common base: $leftVersion, $rightVersion"
+        }
+        if (commonBase.getContentHash() == leftVersion.getContentHash()) return rightVersion
+        if (commonBase.getContentHash() == rightVersion.getContentHash()) return leftVersion
 
         val leftNonMerges = HashSet<Long>().also { collectLatestNonMerges(leftVersion, HashSet(), it) }
         val rightNonMerges = HashSet<Long>().also { collectLatestNonMerges(rightVersion, HashSet(), it) }
@@ -56,11 +68,11 @@ class VersionMerger(private val storeCache: IDeserializingKeyValueStore, private
             return if (leftVersion.id < rightVersion.id) leftVersion else rightVersion
         }
 
-        val versionsToApply = filterUndo(LinearHistory(commonBase?.hash).load(leftVersion, rightVersion))
+        val versionsToApply = filterUndo(LinearHistory(commonBase.getContentHash()).load(leftVersion, rightVersion))
 
         val operationsToApply = versionsToApply.flatMap { captureIntend(it) }
         var mergedVersion: CLVersion? = null
-        var baseTree = commonBase?.tree ?: CLTree(storeCache)
+        var baseTree = commonBase.getTree()
         val branch: IBranch = TreePointer(baseTree)
         branch.runWrite {
             val t = branch.writeTransaction
@@ -89,17 +101,17 @@ class VersionMerger(private val storeCache: IDeserializingKeyValueStore, private
             mergedVersion = CLVersion.createAutoMerge(
                 idGenerator.generate(),
                 t.tree as CLTree,
-                commonBase!!,
+                commonBase,
                 leftVersion,
                 rightVersion,
                 appliedOps.map { it.getOriginalOp() }.toTypedArray(),
-                storeCache,
+                rightVersion.asyncStore.getLegacyObjectStore(),
             )
         }
         if (mergedVersion == null) {
             throw RuntimeException("Failed to merge ${leftVersion.hash} and ${rightVersion.hash}")
         }
-        return mergedVersion!!
+        return mergedVersion
     }
 
     /**
@@ -112,7 +124,7 @@ class VersionMerger(private val storeCache: IDeserializingKeyValueStore, private
             val v0 = filtered[i]
             val v1 = filtered.getOrNull(i + 1) ?: continue
 
-            if (v1.numberOfOperations == 1 && (v1.operations.single() as? UndoOp)?.versionHash?.getHash() == v0.getContentHash()) {
+            if (v1.numberOfOperations == 1 && (v1.operations.single() as? UndoOp)?.versionHash?.getHash() == v0.getObjectHash()) {
                 filtered.removeAt(i)
                 filtered.removeAt(i)
             }
@@ -129,19 +141,11 @@ class VersionMerger(private val storeCache: IDeserializingKeyValueStore, private
         val branch = TreePointer(tree)
         return branch.computeWrite {
             operations.map {
-                val intend = it.captureIntend(branch.transaction.tree, storeCache)
-                it.apply(branch.writeTransaction, storeCache)
+                val intend = it.captureIntend(branch.transaction.tree, version.asyncStore.getLegacyObjectStore())
+                it.apply(branch.writeTransaction, version.asyncStore.getLegacyObjectStore())
                 intend
             }
         }
-    }
-
-    private fun getVersion(hash: String): CLVersion {
-        return CLVersion.loadFromHash(hash, storeCache)
-    }
-
-    protected fun getTree(version: CPVersion): ITree {
-        return CLTree(version.treeHash!!.getValue(storeCache), storeCache)
     }
 
     companion object {

@@ -9,6 +9,7 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITransaction
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.DuplicateNodeId
 import org.modelix.model.lazy.IDeserializingKeyValueStore
@@ -18,10 +19,18 @@ class OTWriteTransaction(
     private val transaction: IWriteTransaction,
     private val otBranch: OTBranch,
     private var idGenerator: IIdGenerator,
-    private val store: IDeserializingKeyValueStore,
+    private val store: IAsyncObjectStore,
 ) : IWriteTransaction, ITransactionWrapper {
     private val logger = mu.KotlinLogging.logger {}
     override fun unwrap(): ITransaction = transaction
+
+    constructor(
+        transaction: IWriteTransaction,
+        otBranch: OTBranch,
+        idGenerator: IIdGenerator,
+        store: IDeserializingKeyValueStore,
+    ) :
+        this(transaction, otBranch, idGenerator, store.getAsyncStore())
 
     fun apply(op: IOperation) {
         logger.trace { op.toString() }
@@ -31,7 +40,7 @@ class OTWriteTransaction(
 
     fun getStore(): IDeserializingKeyValueStore {
         val tree = this.tree
-        return if (tree is CLTree) tree.store else store
+        return (if (tree is CLTree) tree.asyncStore else store).getLegacyObjectStore()
     }
 
     override fun moveChild(newParentId: Long, newRole: String?, newIndex_: Int, childId: Long) {

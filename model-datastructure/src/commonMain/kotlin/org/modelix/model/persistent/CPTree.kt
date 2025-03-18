@@ -1,45 +1,33 @@
 package org.modelix.model.persistent
 
-import org.modelix.model.async.IAsyncObjectStore
-import org.modelix.model.lazy.KVEntryReference
+import org.modelix.model.objects.IObjectData
+import org.modelix.model.objects.IObjectLoader
+import org.modelix.model.objects.Object
+import org.modelix.model.objects.ObjectReference
+import org.modelix.model.objects.getDescendantsAndSelf
 import org.modelix.streams.IStream
-import org.modelix.streams.flatten
 import org.modelix.streams.plus
 import kotlin.jvm.JvmStatic
 
 class CPTree(
     val id: String,
-    var idToHash: KVEntryReference<CPHamtNode>,
+    var idToHash: ObjectReference<CPHamtNode>,
     val usesRoleIds: Boolean,
-) : IKVValue {
-    override var isWritten: Boolean = false
-
+) : IObjectData {
     override fun serialize(): String {
         // TODO version bump required for the new operations BulkUpdateOp and AddNewChildrenOp
         val pv = if (usesRoleIds) PERSISTENCE_VERSION else NAMED_BASED_PERSISTENCE_VERSION
         return "$id/$pv/${idToHash.getHash()}"
     }
 
-    override val hash: String by lazy(LazyThreadSafetyMode.PUBLICATION) { HashUtil.sha256(serialize()) }
+    override fun getDeserializer(): (String) -> CPTree = DESERIALIZER
 
-    override fun getDeserializer(): (String) -> IKVValue = DESERIALIZER
+    override fun getContainmentReferences(): List<ObjectReference<IObjectData>> = listOf(idToHash)
 
-    override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = listOf(idToHash)
-
-    override fun objectDiff(oldObject: IKVValue?, store: IAsyncObjectStore): IStream.Many<IKVValue> {
-        return when (oldObject) {
-            is CPTree -> {
-                if (oldObject.hash == hash) {
-                    IStream.empty()
-                } else {
-                    IStream.of(this).plus(
-                        idToHash.getValue(store).zipWith(oldObject.idToHash.getValue(store)) { n, o ->
-                            n.objectDiff(o, store)
-                        }.flatten(),
-                    )
-                }
-            }
-            else -> getAllObjects(store)
+    override fun objectDiff(self: Object<*>, oldObject: Object<*>?, loader: IObjectLoader): IStream.Many<Object<*>> {
+        return when (oldObject?.data) {
+            is CPTree -> IStream.of(self) + idToHash.diff(oldObject.data.idToHash, loader)
+            else -> self.getDescendantsAndSelf(loader)
         }
     }
 
@@ -63,8 +51,7 @@ class CPTree(
                 )
             }
             val usesRoleIds = persistenceVersion == PERSISTENCE_VERSION
-            val data = CPTree(treeId, KVEntryReference(parts[2], CPHamtNode.DESERIALIZER), usesRoleIds)
-            data.isWritten = true
+            val data = CPTree(treeId, ObjectReference(parts[2], CPHamtNode.DESERIALIZER), usesRoleIds)
             return data
         }
     }

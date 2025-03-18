@@ -4,9 +4,10 @@ import org.modelix.model.api.IConcept
 import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.persistent.MapBaseStore
 import kotlin.random.Random
 import kotlin.test.BeforeTest
@@ -16,7 +17,7 @@ import kotlin.test.assertEquals
 class AreaWithMountsTests {
     protected lateinit var rand: Random
     protected lateinit var store: MapBaseStore
-    protected lateinit var storeCache: ObjectStoreCache
+    protected lateinit var storeCache: IAsyncObjectStore
     protected lateinit var idGenerator: IdGenerator
     protected lateinit var emptyTree: CLTree
 
@@ -24,7 +25,7 @@ class AreaWithMountsTests {
     fun setUp() {
         rand = Random(83569)
         store = MapBaseStore()
-        storeCache = ObjectStoreCache(store)
+        storeCache = createObjectStoreCache(store)
         idGenerator = IdGenerator.newInstance(255)
         emptyTree = CLTree(storeCache)
     }

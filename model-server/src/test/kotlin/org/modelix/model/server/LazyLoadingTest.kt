@@ -17,9 +17,7 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.CacheConfiguration
-import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.server.api.v2.ObjectHash
 import org.modelix.model.server.api.v2.SerializedObject
 import org.modelix.model.server.handlers.IdsApiImpl
@@ -144,7 +142,7 @@ class LazyLoadingTest {
      * This ensures that exactly the same data is created for each test run which avoids non-deterministic test results.
      */
     private suspend fun createModel(client: IModelClientV2, branchRef: BranchReference, numberOfNodes: Int) {
-        val initialTree = CLTree.builder(ObjectStoreCache(MapBasedStore())).repositoryId(RepositoryId("xxx")).build()
+        val initialTree = CLTree.builder(client.getStore(branchRef.repositoryId)).repositoryId(RepositoryId("xxx")).build()
         val branch = PBranch(initialTree, IdGenerator.newInstance(100))
         val rootNode = branch.getRootNode()
         branch.runWrite {

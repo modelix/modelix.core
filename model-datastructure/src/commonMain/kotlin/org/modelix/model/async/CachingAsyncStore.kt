@@ -4,14 +4,18 @@ import org.modelix.model.IKeyValueStore
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.LRUCache
-import org.modelix.model.persistent.IKVValue
+import org.modelix.model.objects.IObjectData
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutorProvider
 import org.modelix.streams.plus
 
 class CachingAsyncStore(val store: IAsyncObjectStore, cacheSize: Int = 100_000) :
     IAsyncObjectStore, IStreamExecutorProvider by store {
-    private val cache = LRUCache<ObjectHash<*>, Any>(cacheSize)
+    private val cache = LRUCache<ObjectRequest<*>, Any>(cacheSize)
+
+    override fun clearCache() {
+        cache.clear()
+    }
 
     override fun getLegacyKeyValueStore(): IKeyValueStore {
         return store.getLegacyKeyValueStore()
@@ -22,7 +26,7 @@ class CachingAsyncStore(val store: IAsyncObjectStore, cacheSize: Int = 100_000) 
         return AsyncStoreAsLegacyDeserializingStore(this)
     }
 
-    override fun <T : Any> get(key: ObjectHash<T>): IStream.ZeroOrOne<T> {
+    override fun <T : Any> get(key: ObjectRequest<T>): IStream.ZeroOrOne<T> {
         val cached = runSynchronized(cache) { cache.get(key) }
         if (cached != null) return IStream.of(cached as T)
         return store.get(key).map { value ->
@@ -33,12 +37,12 @@ class CachingAsyncStore(val store: IAsyncObjectStore, cacheSize: Int = 100_000) 
         }
     }
 
-    override fun <T : Any> getIfCached(key: ObjectHash<T>): T? {
+    override fun <T : Any> getIfCached(key: ObjectRequest<T>): T? {
         return runSynchronized(cache) { cache.get(key) as T? } ?: store.getIfCached(key)
     }
 
-    override fun getAllAsStream(keys: IStream.Many<ObjectHash<*>>): IStream.Many<Pair<ObjectHash<*>, Any?>> {
-        val fromCache: IStream.Many<Pair<ObjectHash<*>, Any?>> = keys.map { key ->
+    override fun getAllAsStream(keys: IStream.Many<ObjectRequest<*>>): IStream.Many<Pair<ObjectRequest<*>, Any?>> {
+        val fromCache: IStream.Many<Pair<ObjectRequest<*>, Any?>> = keys.map { key ->
             runSynchronized(cache) { key to cache.get(key) }
         }
 
@@ -53,9 +57,9 @@ class CachingAsyncStore(val store: IAsyncObjectStore, cacheSize: Int = 100_000) 
         }
     }
 
-    override fun getAllAsMap(keys: List<ObjectHash<*>>): IStream.One<Map<ObjectHash<*>, Any?>> {
-        val fromCache = LinkedHashMap<ObjectHash<*>, Any?>()
-        val missingKeys = ArrayList<ObjectHash<*>>()
+    override fun getAllAsMap(keys: List<ObjectRequest<*>>): IStream.One<Map<ObjectRequest<*>, Any?>> {
+        val fromCache = LinkedHashMap<ObjectRequest<*>, Any?>()
+        val missingKeys = ArrayList<ObjectRequest<*>>()
         runSynchronized(cache) {
             for (key in keys) {
                 val value = cache.get(key)
@@ -76,7 +80,7 @@ class CachingAsyncStore(val store: IAsyncObjectStore, cacheSize: Int = 100_000) 
         }
     }
 
-    override fun putAll(entries: Map<ObjectHash<*>, IKVValue>): IStream.Zero {
+    override fun putAll(entries: Map<ObjectRequest<*>, IObjectData>): IStream.Zero {
         runSynchronized(cache) {
             for (entry in entries) {
                 cache.set(entry.key, entry.value)

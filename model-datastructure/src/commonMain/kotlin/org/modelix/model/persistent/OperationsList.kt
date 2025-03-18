@@ -1,11 +1,13 @@
 package org.modelix.model.persistent
 
-import org.modelix.model.async.IAsyncObjectStore
-import org.modelix.model.lazy.KVEntryReference
+import org.modelix.model.objects.IObjectData
+import org.modelix.model.objects.IObjectLoader
+import org.modelix.model.objects.ObjectReference
+import org.modelix.model.objects.getHashString
 import org.modelix.model.operations.IOperation
 import org.modelix.streams.IStream
 
-abstract class OperationsList() : IKVValue {
+abstract class OperationsList() : IObjectData {
     companion object {
         val DESERIALIZER: (String) -> OperationsList = { deserialize(it) }
         private const val MAX_LIST_SIZE = 20
@@ -14,7 +16,7 @@ abstract class OperationsList() : IKVValue {
             val data = if (input.startsWith(LARGE_LIST_PREFIX)) {
                 val subLists = input.substring(LARGE_LIST_PREFIX.length)
                     .split(Separators.LEVEL2)
-                    .map { KVEntryReference(it, DESERIALIZER) }
+                    .map { ObjectReference(it, DESERIALIZER) }
                     .toTypedArray()
                 LargeOperationsList(subLists)
             } else {
@@ -25,7 +27,6 @@ abstract class OperationsList() : IKVValue {
                         .toTypedArray(),
                 )
             }
-            data.isWritten = true
             return data
         }
 
@@ -35,39 +36,33 @@ abstract class OperationsList() : IKVValue {
             } else {
                 // split the operations into at most MAX_LIST_SIZE sub lists
                 val sublistSizes = ((operations.size + MAX_LIST_SIZE - 1) / MAX_LIST_SIZE).coerceAtLeast(MAX_LIST_SIZE)
-                LargeOperationsList(operations.chunked(sublistSizes) { KVEntryReference(of(it)) }.toTypedArray())
+                LargeOperationsList(operations.chunked(sublistSizes) { ObjectReference(of(it)) }.toTypedArray())
             }
         }
     }
 
-    abstract fun getOperations(store: IAsyncObjectStore): IStream.Many<IOperation>
+    abstract fun getOperations(loader: IObjectLoader): IStream.Many<IOperation>
 }
 
-class LargeOperationsList(val subLists: Array<out KVEntryReference<OperationsList>>) : OperationsList() {
-    override var isWritten: Boolean = false
-
+class LargeOperationsList(val subLists: Array<out ObjectReference<OperationsList>>) : OperationsList() {
     override fun serialize(): String {
-        return "OL" + Separators.LEVEL1 + subLists.joinToString(Separators.LEVEL2) { it.getHash() }
+        return "OL" + Separators.LEVEL1 + subLists.joinToString(Separators.LEVEL2) { it.getHashString() }
     }
 
-    override val hash: String by lazy(LazyThreadSafetyMode.PUBLICATION) { HashUtil.sha256(serialize()) }
+    override fun getDeserializer(): (String) -> OperationsList = DESERIALIZER
 
-    override fun getDeserializer(): (String) -> IKVValue = DESERIALIZER
-
-    override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> {
+    override fun getContainmentReferences(): List<ObjectReference<IObjectData>> {
         return subLists.toList()
     }
 
-    override fun getOperations(store: IAsyncObjectStore): IStream.Many<IOperation> {
+    override fun getOperations(loader: IObjectLoader): IStream.Many<IOperation> {
         return IStream.many(subLists).flatMap {
-            it.getValue(store).flatMap { it.getOperations(store) }
+            it.requestData(loader).flatMap { it.getOperations(loader) }
         }
     }
 }
 
 class SmallOperationsList(val operations: Array<out IOperation>) : OperationsList() {
-    override var isWritten: Boolean = false
-
     override fun serialize(): String {
         return if (operations.isEmpty()) {
             ""
@@ -77,15 +72,13 @@ class SmallOperationsList(val operations: Array<out IOperation>) : OperationsLis
         }
     }
 
-    override val hash: String by lazy(LazyThreadSafetyMode.PUBLICATION) { HashUtil.sha256(serialize()) }
+    override fun getDeserializer(): (String) -> OperationsList = DESERIALIZER
 
-    override fun getDeserializer(): (String) -> IKVValue = DESERIALIZER
-
-    override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> {
-        return operations.map { it.getReferencedEntries() }.flatten()
+    override fun getContainmentReferences(): List<ObjectReference<IObjectData>> {
+        return operations.map { it.getObjectReferences() }.flatten()
     }
 
-    override fun getOperations(store: IAsyncObjectStore): IStream.Many<IOperation> {
+    override fun getOperations(loader: IObjectLoader): IStream.Many<IOperation> {
         return IStream.many(operations)
     }
 }

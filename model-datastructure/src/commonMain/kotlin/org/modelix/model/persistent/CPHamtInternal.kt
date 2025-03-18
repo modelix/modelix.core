@@ -1,9 +1,17 @@
 package org.modelix.model.persistent
 
-import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.bitCount
 import org.modelix.model.lazy.COWArrays
-import org.modelix.model.lazy.KVEntryReference
+import org.modelix.model.objects.IObjectData
+import org.modelix.model.objects.IObjectLoader
+import org.modelix.model.objects.Object
+import org.modelix.model.objects.ObjectReference
+import org.modelix.model.objects.customDiff
+import org.modelix.model.objects.getDescendantRefs
+import org.modelix.model.objects.getDescendantsAndSelf
+import org.modelix.model.objects.getHashString
+import org.modelix.model.objects.requestBoth
+import org.modelix.model.objects.requireDifferentHash
 import org.modelix.model.persistent.SerializationUtil.intToHex
 import org.modelix.streams.IStream
 import org.modelix.streams.flatten
@@ -11,28 +19,28 @@ import org.modelix.streams.plus
 
 class CPHamtInternal(
     val bitmap: Int,
-    val children: Array<KVEntryReference<CPHamtNode>>,
+    val children: Array<ObjectReference<CPHamtNode>>,
 ) : CPHamtNode() {
     val data get() = this
 
-    override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = children.asList()
+    override fun getContainmentReferences(): List<ObjectReference<IObjectData>> = children.asList()
 
     override fun serialize(): String {
         return "I" +
             Separators.LEVEL1 +
             intToHex(bitmap) +
             Separators.LEVEL1 +
-            (if (children.isEmpty()) "" else children.joinToString(Separators.LEVEL2) { it.getHash() })
+            (if (children.isEmpty()) "" else children.joinToString(Separators.LEVEL2) { it.getHashString() })
     }
 
     companion object {
         fun createEmpty() = create(0, arrayOf())
 
-        fun create(bitmap: Int, childHashes: Array<KVEntryReference<CPHamtNode>>): CPHamtInternal {
+        fun create(bitmap: Int, childHashes: Array<ObjectReference<CPHamtNode>>): CPHamtInternal {
             return CPHamtInternal(bitmap, childHashes)
         }
 
-        fun create(key: Long, childHash: KVEntryReference<CPNode>, shift: Int, store: IAsyncObjectStore): IStream.ZeroOrOne<CPHamtNode> {
+        fun create(key: Long, childHash: ObjectReference<CPNode>, shift: Int, store: IObjectLoader): IStream.ZeroOrOne<CPHamtNode> {
             return createEmpty().put(key, childHash, shift, store)
         }
 
@@ -44,21 +52,21 @@ class CPHamtInternal(
         }
     }
 
-    override fun put(key: Long, value: KVEntryReference<CPNode>?, shift: Int, store: IAsyncObjectStore): IStream.ZeroOrOne<CPHamtNode> {
+    override fun put(key: Long, value: ObjectReference<CPNode>?, shift: Int, loader: IObjectLoader): IStream.ZeroOrOne<CPHamtNode> {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         val childIndex = CPHamtNode.indexFromKey(key, shift)
-        return getChild(childIndex, store).orNull().flatMapZeroOrOne { child ->
+        return getChild(childIndex, loader).orNull().flatMapZeroOrOne { child ->
             if (child == null) {
-                setChild(childIndex, CPHamtLeaf.create(key, value), shift, store)
+                setChild(childIndex, CPHamtLeaf.create(key, value), shift, loader)
             } else {
-                child.put(key, value, shift + CPHamtNode.BITS_PER_LEVEL, store).orNull().flatMapZeroOrOne {
-                    setChild(childIndex, it, shift, store)
+                child.put(key, value, shift + CPHamtNode.BITS_PER_LEVEL, loader).orNull().flatMapZeroOrOne {
+                    setChild(childIndex, it, shift, loader)
                 }
             }
         }
     }
 
-    override fun putAll(entries: List<Pair<Long, KVEntryReference<CPNode>?>>, shift: Int, store: IAsyncObjectStore): IStream.ZeroOrOne<CPHamtNode> {
+    override fun putAll(entries: List<Pair<Long, ObjectReference<CPNode>?>>, shift: Int, store: IObjectLoader): IStream.ZeroOrOne<CPHamtNode> {
         val groups = entries.groupBy { indexFromKey(it.first, shift) }
         val logicalIndices = groups.keys.toIntArray()
         val newChildrenLists = groups.values.toList()
@@ -84,14 +92,14 @@ class CPHamtInternal(
         }.toList().flatMapZeroOrOne { updatedChildren ->
             setChildren(
                 logicalIndices,
-                updatedChildren.map { it?.let { KVEntryReference(it) } },
+                updatedChildren.map { it?.let { ObjectReference(it) } },
                 shift,
                 store,
             )
         }
     }
 
-    override fun remove(key: Long, shift: Int, store: IAsyncObjectStore): IStream.ZeroOrOne<CPHamtNode> {
+    override fun remove(key: Long, shift: Int, store: IObjectLoader): IStream.ZeroOrOne<CPHamtNode> {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         val childIndex = CPHamtNode.indexFromKey(key, shift)
         return getChild(childIndex, store).orNull().flatMapZeroOrOne { child ->
@@ -105,7 +113,7 @@ class CPHamtInternal(
         }
     }
 
-    override fun get(key: Long, shift: Int, store: IAsyncObjectStore): IStream.ZeroOrOne<KVEntryReference<CPNode>> {
+    override fun get(key: Long, shift: Int, store: IObjectLoader): IStream.ZeroOrOne<ObjectReference<CPNode>> {
         require(shift <= CPHamtNode.MAX_SHIFT) { "$shift > ${CPHamtNode.MAX_SHIFT}" }
         val childIndex = CPHamtNode.indexFromKey(key, shift)
         return getChild(childIndex, store).flatMapZeroOrOne { child ->
@@ -116,8 +124,8 @@ class CPHamtInternal(
     override fun getAll(
         keys: LongArray,
         shift: Int,
-        store: IAsyncObjectStore,
-    ): IStream.Many<Pair<Long, KVEntryReference<CPNode>?>> {
+        store: IObjectLoader,
+    ): IStream.Many<Pair<Long, ObjectReference<CPNode>?>> {
         val groups = keys.groupBy { indexFromKey(it, shift) }
         return IStream.many(groups.entries).flatMap { group ->
             getChild(group.key, store).flatMap { child ->
@@ -126,12 +134,12 @@ class CPHamtInternal(
         }
     }
 
-    fun getChild(logicalIndex: Int, store: IAsyncObjectStore): IStream.ZeroOrOne<CPHamtNode> {
-        val childHash = getChildHash(logicalIndex) ?: return IStream.empty()
+    fun getChild(logicalIndex: Int, store: IObjectLoader): IStream.ZeroOrOne<CPHamtNode> {
+        val childHash = getChildRef(logicalIndex) ?: return IStream.empty()
         return getChild(childHash, store)
     }
 
-    private fun getChildHash(logicalIndex: Int): KVEntryReference<CPHamtNode>? {
+    fun getChildRef(logicalIndex: Int): ObjectReference<CPHamtNode>? {
         if (isBitNotSet(data.bitmap, logicalIndex)) {
             return null
         }
@@ -139,7 +147,7 @@ class CPHamtInternal(
         return data.children[physicalIndex]
     }
 
-    private fun getChildren(logicalIndices: IntArray, store: IAsyncObjectStore): IStream.One<List<CPHamtNode?>> {
+    private fun getChildren(logicalIndices: IntArray, store: IObjectLoader): IStream.One<List<CPHamtNode?>> {
         val childHashes = logicalIndices.map { logicalIndex ->
             if (isBitNotSet(data.bitmap, logicalIndex)) {
                 null
@@ -148,14 +156,14 @@ class CPHamtInternal(
                 data.children[physicalIndex]
             }
         }
-        return IStream.many(childHashes).flatMap { it?.getValue(store) ?: IStream.of(null) }.toList()
+        return IStream.many(childHashes).flatMap { it?.requestData(store) ?: IStream.of(null) }.toList()
     }
 
-    protected fun getChild(childHash: KVEntryReference<CPHamtNode>, store: IAsyncObjectStore): IStream.One<CPHamtNode> {
-        return childHash.getValue(store)
+    protected fun getChild(childHash: ObjectReference<CPHamtNode>, store: IObjectLoader): IStream.One<CPHamtNode> {
+        return childHash.requestData(store)
     }
 
-    fun setChildren(logicalIndices: IntArray, children: List<KVEntryReference<CPHamtNode>?>, shift: Int, store: IAsyncObjectStore): IStream.ZeroOrOne<CPHamtNode> {
+    fun setChildren(logicalIndices: IntArray, children: List<ObjectReference<CPHamtNode>?>, shift: Int, store: IObjectLoader): IStream.ZeroOrOne<CPHamtNode> {
         var oldBitmap = data.bitmap
         var newBitmap = data.bitmap
         val oldChildren = data.children
@@ -193,11 +201,11 @@ class CPHamtInternal(
         }
     }
 
-    fun setChild(logicalIndex: Int, child: CPHamtNode?, shift: Int, store: IAsyncObjectStore): IStream.ZeroOrOne<CPHamtNode> {
+    fun setChild(logicalIndex: Int, child: CPHamtNode?, shift: Int, store: IObjectLoader): IStream.ZeroOrOne<CPHamtNode> {
         if (child == null) {
             return deleteChild(logicalIndex, store)
         }
-        val childHash = KVEntryReference(child)
+        val childHash = ObjectReference(child)
         val physicalIndex = logicalToPhysicalIndex(data.bitmap, logicalIndex)
         val newNode = if (isBitNotSet(data.bitmap, logicalIndex)) {
             create(
@@ -217,7 +225,7 @@ class CPHamtInternal(
         }
     }
 
-    fun deleteChild(logicalIndex: Int, store: IAsyncObjectStore): IStream.ZeroOrOne<CPHamtNode> {
+    fun deleteChild(logicalIndex: Int, store: IObjectLoader): IStream.ZeroOrOne<CPHamtNode> {
         if (isBitNotSet(data.bitmap, logicalIndex)) {
             return IStream.of(this)
         }
@@ -240,74 +248,85 @@ class CPHamtInternal(
         }
     }
 
-    override fun getEntries(store: IAsyncObjectStore): IStream.Many<Pair<Long, KVEntryReference<CPNode>>> {
-        return IStream.many(data.children).flatMap { it.getValue(store) }.flatMap { it.getEntries(store) }
+    override fun getEntries(store: IObjectLoader): IStream.Many<Pair<Long, ObjectReference<CPNode>>> {
+        return IStream.many(data.children).flatMap { it.requestData(store) }.flatMap { it.getEntries(store) }
     }
 
-    override fun getChanges(oldNode: CPHamtNode?, shift: Int, store: IAsyncObjectStore, changesOnly: Boolean): IStream.Many<MapChangeEvent> {
-        if (oldNode === this || data.hash == oldNode?.hash) {
+    override fun getChanges(oldNode: CPHamtNode?, shift: Int, loader: IObjectLoader, changesOnly: Boolean): IStream.Many<MapChangeEvent> {
+        if (oldNode === this) {
             return IStream.empty()
         }
+        requireDifferentHash(oldNode)
         return when (oldNode) {
             is CPHamtInternal -> {
                 val oldInternalNode: CPHamtInternal = oldNode
                 if (data.bitmap == oldInternalNode.data.bitmap) {
                     IStream.many(data.children.indices).flatMap { i ->
-                        val oldChildHash = oldInternalNode.data.children[i]
-                        val newChildHash = data.children[i]
-                        if (oldChildHash != newChildHash) {
-                            getChild(newChildHash, store).zipWith(oldInternalNode.getChild(oldChildHash, store)) { child, oldChild ->
-                                child.getChanges(oldChild, shift + CPHamtNode.BITS_PER_LEVEL, store, changesOnly)
+                        val oldChildRef = oldInternalNode.data.children[i]
+                        val newChildRef = data.children[i]
+                        if (oldChildRef.getHash() != newChildRef.getHash()) {
+                            getChild(newChildRef, loader).zipWith(oldInternalNode.getChild(oldChildRef, loader)) { child, oldChild ->
+                                child.getChanges(oldChild, shift + BITS_PER_LEVEL, loader, changesOnly)
                             }.flatten()
                         } else {
                             IStream.empty<MapChangeEvent>()
                         }
                     }
                 } else {
-                    IStream.many(0 until CPHamtNode.ENTRIES_PER_LEVEL).flatMap { logicalIndex ->
-                        getChild(logicalIndex, store).orNull().zipWith(oldInternalNode.getChild(logicalIndex, store).orNull()) { child, oldChild ->
-                            if (child == null) {
-                                if (oldChild == null) {
-                                    // no change
-                                    IStream.empty<MapChangeEvent>()
-                                } else {
-                                    if (!changesOnly) {
-                                        oldChild.getEntries(store).map { (key, value) ->
+                    IStream.many(0 until ENTRIES_PER_LEVEL).flatMap { logicalIndex ->
+                        val newChildRef = getChildRef(logicalIndex)
+                        val oldChildRef = oldInternalNode.getChildRef(logicalIndex)
+                        if (newChildRef == null) {
+                            if (oldChildRef == null) {
+                                // no change
+                                IStream.empty<MapChangeEvent>()
+                            } else {
+                                if (!changesOnly) {
+                                    oldChildRef.resolve(loader).flatMap { oldChild ->
+                                        oldChild.data.getEntries(loader).map { (key, value) ->
                                             EntryRemovedEvent(key, value)
                                         }
-                                    } else {
-                                        IStream.empty<MapChangeEvent>()
-                                    }
-                                }
-                            } else {
-                                if (oldChild == null) {
-                                    if (!changesOnly) {
-                                        child.getEntries(store).map { (key, value) ->
-                                            EntryAddedEvent(key, value)
-                                        }
-                                    } else {
-                                        IStream.empty<MapChangeEvent>()
                                     }
                                 } else {
-                                    child.getChanges(oldChild, shift + CPHamtNode.BITS_PER_LEVEL, store, changesOnly)
+                                    IStream.empty<MapChangeEvent>()
                                 }
                             }
-                        }.flatten()
+                        } else {
+                            if (oldChildRef == null) {
+                                if (!changesOnly) {
+                                    newChildRef.requestData(loader).flatMap { newChild ->
+                                        newChild.getEntries(loader).map { (key, value) ->
+                                            EntryAddedEvent(key, value)
+                                        }
+                                    }
+                                } else {
+                                    IStream.empty<MapChangeEvent>()
+                                }
+                            } else {
+                                if (newChildRef.getHash() == oldChildRef.getHash()) {
+                                    IStream.empty()
+                                } else {
+                                    newChildRef.requestBoth(oldChildRef, loader) { newChild, oldChild ->
+                                        newChild.data.getChanges(oldChild.data, shift + BITS_PER_LEVEL, loader, changesOnly)
+                                    }.flatten()
+                                }
+                            }
+                        }
                     }
                 }
             }
             is CPHamtLeaf -> {
                 if (changesOnly) {
-                    get(oldNode.key, shift, store).filter { it != oldNode.value }.map { newValue ->
+                    get(oldNode.key, shift, loader).filter { it.getHash() != oldNode.value.getHash() }.map { newValue ->
                         EntryChangedEvent(oldNode.key, oldNode.value, newValue)
                     }
                 } else {
-                    val entries = getEntries(store)
-                    val newEntry = get(oldNode.key, shift, store)
+                    val entries = getEntries(loader)
+                    val newEntry = get(oldNode.key, shift, loader)
                     val changeOrRemoveEvent = newEntry.orNull().flatMapZeroOrOne { newValue ->
                         if (newValue == null) {
                             IStream.of(EntryRemovedEvent(oldNode.key, oldNode.value))
-                        } else if (newValue != oldNode.value) {
+                        } else if (newValue.getHash() != oldNode.value.getHash()) {
                             IStream.of(EntryChangedEvent(oldNode.key, oldNode.value, newValue))
                         } else {
                             IStream.empty()
@@ -318,7 +337,7 @@ class CPHamtInternal(
                 }
             }
             is CPHamtSingle -> {
-                getChanges(replace(oldNode), shift, store, changesOnly)
+                getChanges(replace(oldNode), shift, loader, changesOnly)
             }
             else -> {
                 throw RuntimeException("Unknown type: " + oldNode!!::class.simpleName)
@@ -326,37 +345,45 @@ class CPHamtInternal(
         }
     }
 
-    override fun objectDiff(oldObject: IKVValue?, shift: Int, store: IAsyncObjectStore): IStream.Many<IKVValue> {
-        return when (oldObject) {
+    override fun objectDiff(
+        self: Object<*>,
+        oldObject: Object<*>?,
+        shift: Int,
+        loader: IObjectLoader,
+    ): IStream.Many<Object<*>> {
+        return when (oldObject?.data) {
             is CPHamtInternal -> {
-                if (oldObject.hash == this.hash) return IStream.empty()
-                IStream.of(this) + diffChildren(oldObject, shift, store)
+                requireDifferentHash(oldObject)
+                IStream.of(self) + diffChildren(oldObject.data, shift, loader)
             }
             is CPHamtSingle -> {
-                IStream.of(this) + diffChildren(replace(oldObject), shift, store)
+                IStream.of(self) + diffChildren(replace(oldObject.data), shift, loader)
             }
             is CPHamtLeaf -> {
-                getAllObjects(store).filter { it.hash != oldObject.hash }
+                IStream.of(self) +
+                    getDescendantRefs(loader)
+                        .filter { it.getHash() != oldObject.ref.getHash() }
+                        .flatMap { it.resolve(loader) }
             }
-            else -> getAllObjects(store)
+            else -> self.getDescendantsAndSelf(loader)
         }
     }
 
-    fun diffChildren(oldObject: CPHamtInternal, shift: Int, store: IAsyncObjectStore): IStream.Many<IKVValue> {
+    fun diffChildren(oldObject: CPHamtInternal, shift: Int, loader: IObjectLoader): IStream.Many<Object<*>> {
         val changedChildren = (0 until ENTRIES_PER_LEVEL)
             .mapNotNull { logicalIndex ->
-                (getChildHash(logicalIndex) ?: return@mapNotNull null) to oldObject.getChildHash(logicalIndex)
+                (getChildRef(logicalIndex) ?: return@mapNotNull null) to oldObject.getChildRef(logicalIndex)
             }
             .filter { it.first.getHash() != it.second?.getHash() }
         return IStream.many(changedChildren).flatMap {
             val newChild = it.first
             val oldChild = it.second
             if (oldChild == null) {
-                newChild.getValue(store).flatMap { it.getAllObjects(store) }
+                newChild.resolve(loader).flatMap { it.getDescendantsAndSelf(loader) }
             } else {
-                newChild.getValue(store).zipWith(oldChild.getValue(store)) { n, o ->
-                    n.objectDiff(o, shift + BITS_PER_LEVEL, store)
-                }.flatten()
+                newChild.customDiff(oldChild, loader) { n, o ->
+                    n.data.objectDiff(n, o, shift + BITS_PER_LEVEL, loader)
+                }
             }
         }
     }

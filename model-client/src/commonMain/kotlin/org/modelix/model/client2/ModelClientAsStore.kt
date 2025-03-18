@@ -4,11 +4,11 @@ import kotlinx.coroutines.flow.flow
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.async.AsyncStoreAsLegacyDeserializingStore
 import org.modelix.model.async.IAsyncObjectStore
-import org.modelix.model.async.ObjectHash
+import org.modelix.model.async.ObjectRequest
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.objects.IObjectData
 import org.modelix.model.persistent.HashUtil
-import org.modelix.model.persistent.IKVValue
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
 import org.modelix.streams.SimpleStreamExecutor
@@ -25,23 +25,25 @@ class ModelClientAsStore(client: IModelClientV2, val repositoryId: RepositoryId)
         return AsyncStoreAsLegacyDeserializingStore(this)
     }
 
-    override fun <T : Any> getIfCached(key: ObjectHash<T>): T? {
+    override fun clearCache() {}
+
+    override fun <T : Any> getIfCached(key: ObjectRequest<T>): T? {
         return null
     }
 
-    override fun <T : Any> get(key: ObjectHash<T>): IStream.ZeroOrOne<T> {
+    override fun <T : Any> get(key: ObjectRequest<T>): IStream.ZeroOrOne<T> {
         return getAllAsStream(IStream.of(key)).map {
             checkNotNull(it.second) { "Entry not found: ${key.hash}" } as T
         }.exactlyOne()
     }
 
-    override fun getAllAsStream(keys: IStream.Many<ObjectHash<*>>): IStream.Many<Pair<ObjectHash<*>, Any?>> {
+    override fun getAllAsStream(keys: IStream.Many<ObjectRequest<*>>): IStream.Many<Pair<ObjectRequest<*>, Any?>> {
         return keys.toList().flatMap { keysAsList ->
             getAllAsMap(keysAsList).flatMapIterable { it.entries }.map { it.key to it.value }
         }
     }
 
-    override fun getAllAsMap(keys: List<ObjectHash<*>>): IStream.One<Map<ObjectHash<*>, Any?>> {
+    override fun getAllAsMap(keys: List<ObjectRequest<*>>): IStream.One<Map<ObjectRequest<*>, Any?>> {
         return IStream.fromFlow(
             flow {
                 val serializedObjects = client.getObjects(repositoryId, keys.asSequence().map { it.hash })
@@ -53,7 +55,7 @@ class ModelClientAsStore(client: IModelClientV2, val repositoryId: RepositoryId)
         ).exactlyOne()
     }
 
-    override fun putAll(entries: Map<ObjectHash<*>, IKVValue>): IStream.Zero {
+    override fun putAll(entries: Map<ObjectRequest<*>, IObjectData>): IStream.Zero {
         return IStream.fromFlow<Nothing>(
             flow {
                 client.pushObjects(

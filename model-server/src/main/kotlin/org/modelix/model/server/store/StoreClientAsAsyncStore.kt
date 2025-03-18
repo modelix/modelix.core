@@ -3,9 +3,9 @@ package org.modelix.model.server.store
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.async.AsyncStoreAsLegacyDeserializingStore
 import org.modelix.model.async.IAsyncObjectStore
-import org.modelix.model.async.ObjectHash
+import org.modelix.model.async.ObjectRequest
 import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.persistent.IKVValue
+import org.modelix.model.objects.IObjectData
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
 import org.modelix.streams.SimpleStreamExecutor
@@ -22,18 +22,20 @@ class StoreClientAsAsyncStore(val store: IStoreClient) : IAsyncObjectStore {
         return AsyncStoreAsLegacyDeserializingStore(this)
     }
 
-    override fun <T : Any> getIfCached(key: ObjectHash<T>): T? {
+    override fun clearCache() {}
+
+    override fun <T : Any> getIfCached(key: ObjectRequest<T>): T? {
         @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
         return store.getIfCached(key.hash)?.let { key.deserializer(it) }
     }
 
-    override fun <T : Any> get(key: ObjectHash<T>): IStream.ZeroOrOne<T> {
+    override fun <T : Any> get(key: ObjectRequest<T>): IStream.ZeroOrOne<T> {
         @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
         val value = store.get(key.hash) ?: return IStream.empty()
         return IStream.of(key.deserializer(value))
     }
 
-    override fun getAllAsStream(keys: IStream.Many<ObjectHash<*>>): IStream.Many<Pair<ObjectHash<*>, Any?>> {
+    override fun getAllAsStream(keys: IStream.Many<ObjectRequest<*>>): IStream.Many<Pair<ObjectRequest<*>, Any?>> {
         return keys.toList().flatMap { keysList ->
             val keysMap = keysList.associateBy { it.hash }
 
@@ -48,7 +50,7 @@ class StoreClientAsAsyncStore(val store: IStoreClient) : IAsyncObjectStore {
         }
     }
 
-    override fun getAllAsMap(keys: List<ObjectHash<*>>): IStream.One<Map<ObjectHash<*>, Any?>> {
+    override fun getAllAsMap(keys: List<ObjectRequest<*>>): IStream.One<Map<ObjectRequest<*>, Any?>> {
         val keysMap = keys.associateBy { it.hash }
 
         @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
@@ -61,7 +63,7 @@ class StoreClientAsAsyncStore(val store: IStoreClient) : IAsyncObjectStore {
         )
     }
 
-    override fun putAll(entries: Map<ObjectHash<*>, IKVValue>): IStream.Zero {
+    override fun putAll(entries: Map<ObjectRequest<*>, IObjectData>): IStream.Zero {
         @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
         store.putAll(entries.entries.associate { it.key.hash to it.value.serialize() })
         return IStream.zero()

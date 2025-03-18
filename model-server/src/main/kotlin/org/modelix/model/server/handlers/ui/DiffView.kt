@@ -539,6 +539,7 @@ internal fun calculateDiff(oldVersion: CLVersion, newVersion: CLVersion, sizeLim
 
     @Suppress("SwallowedException") // we don't need the exception
     try {
+        // TODO re-implement using streams
         newTree.visitChanges(
             oldTree,
             object : ITreeChangeVisitorEx {

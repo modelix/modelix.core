@@ -4,13 +4,15 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.async.getDescendantsAndSelf
 import org.modelix.model.api.getRootNode
+import org.modelix.model.async.asObjectLoader
+import org.modelix.model.async.getObject
 import org.modelix.model.data.asData
 import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.KVEntryReference
-import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.lazy.createObjectStoreCache
+import org.modelix.model.objects.ObjectReference
+import org.modelix.model.objects.getDescendantsAndSelf
 import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.MapBasedStore
-import org.modelix.model.persistent.getAllObjects
 import org.modelix.streams.IStream
 import org.modelix.streams.plus
 import org.modelix.streams.useSequences
@@ -22,7 +24,7 @@ class ObjectDiffTest {
 
     @Test
     fun treeDiff() = IStream.useSequences {
-        val store = ObjectStoreCache(MapBasedStore()).getAsyncStore()
+        val store = createObjectStoreCache(MapBasedStore())
         val tree1 = CLTree.builder(store).repositoryId("test").build()
             .addNewChild(ITree.ROOT_ID, "childrenA", 0, 100, null as IConceptReference?)
             .addNewChild(ITree.ROOT_ID, "childrenA", 1, 101, null as IConceptReference?)
@@ -33,12 +35,12 @@ class ObjectDiffTest {
             .setProperty(102, "name", "b")
             as CLTree
 
-        val diff = tree2.data.objectDiff(tree1.data, tree1.asyncStore)
-        val diffString = diff.map { it.hash + " -> " + it.serialize() }.asSequence().joinToString("\n")
+        val diff = tree2.resolvedData.objectDiff(tree1.resolvedData, tree1.asyncStore.asObjectLoader())
+        val diffString = diff.map { it.getHashString() + " -> " + it.data.serialize() }.asSequence().joinToString("\n")
 
-        val allObjects = tree1.data.getAllObjects(store).plus(diff).asSequence()
-        val store2 = ObjectStoreCache(MapBasedStore().also { it.putAll(allObjects.associate { it.hash to it.serialize() }) }).getAsyncStore()
-        val tree3 = KVEntryReference(tree2.hash, CPTree.DESERIALIZER).getValue(store2).getSynchronous().let { CLTree(it, store2) }
+        val allObjects = tree1.resolvedData.getDescendantsAndSelf(store.asObjectLoader()).plus(diff).asSequence()
+        val store2 = createObjectStoreCache(MapBasedStore().also { it.putAll(allObjects.associate { it.getHashString() to it.data.serialize() }) })
+        val tree3 = ObjectReference(tree2.hash, CPTree.DESERIALIZER).getObject(store2).let { CLTree(it, store2) }
 
         tree3.asAsyncTree().getDescendantsAndSelf(ITree.ROOT_ID).asSequence()
 
@@ -65,7 +67,7 @@ class ObjectDiffTest {
     }
 
     fun runRandomChange(rand: Random) {
-        val store1 = ObjectStoreCache(MapBasedStore()).getAsyncStore()
+        val store1 = createObjectStoreCache(MapBasedStore())
         val idGenerator = object : IIdGenerator {
             private val usedIds = HashSet<Long>().also { it.add(ITree.ROOT_ID) }
             override fun generate(): Long {
@@ -89,21 +91,21 @@ class ObjectDiffTest {
             newTree = changeGenerator2.applyRandomChange(newTree, null) as CLTree
         }
 
-        val diff = newTree.data.objectDiff(initialTree.data, initialTree.asyncStore).toList().getSynchronous()
-        val initialObjects = initialTree.data.getAllObjects(store1).toList().getSynchronous()
-        val newObjects = newTree.data.getAllObjects(store1).toList().getSynchronous()
-        val unnecessaryObjects = (diff.associateBy { it.hash } - newObjects.map { it.hash }.toSet()).values.toSet()
+        val diff = newTree.resolvedData.objectDiff(initialTree.resolvedData, initialTree.asyncStore.asObjectLoader()).toList().getSynchronous()
+        val initialObjects = initialTree.resolvedData.getDescendantsAndSelf(store1.asObjectLoader()).toList().getSynchronous()
+        val newObjects = newTree.resolvedData.getDescendantsAndSelf(store1.asObjectLoader()).toList().getSynchronous()
+        val unnecessaryObjects = (diff.associateBy { it.getHashString() } - newObjects.map { it.getHashString() }.toSet()).values.toSet()
 
         assertEquals(emptySet(), unnecessaryObjects)
 
         val allObjects = initialObjects + diff
 
-        val store2 = ObjectStoreCache(
+        val store2 = createObjectStoreCache(
             MapBasedStore().also {
-                it.putAll(allObjects.associate { it.hash to it.serialize() })
+                it.putAll(allObjects.associate { it.getHashString() to it.data.serialize() })
             },
-        ).getAsyncStore()
-        val restoredTree = KVEntryReference(newTree.hash, CPTree.DESERIALIZER).getValue(store2).getSynchronous().let { CLTree(it, store2) }
+        )
+        val restoredTree = ObjectReference(newTree.hash, CPTree.DESERIALIZER).getObject(store2).let { CLTree(it, store2) }
 
         val expectedNodes = TreePointer(newTree).getRootNode().asData()
         val restoredNodes = TreePointer(restoredTree).getRootNode().asData()

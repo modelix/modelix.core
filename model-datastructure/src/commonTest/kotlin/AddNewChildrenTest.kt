@@ -1,10 +1,9 @@
-import com.badoo.reaktive.observable.toList
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.async.getDescendants
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.persistent.MapBasedStore
 import kotlin.random.Random
 import kotlin.test.Test
@@ -18,7 +17,7 @@ class AddNewChildrenTest {
         // one by one using a fold operation that created a long observable chain.
         // Now, there is a new putAll operation that updates the subtrees of the persistent map in parallel.
 
-        val store = ObjectStoreCache(MapBasedStore())
+        val store = createObjectStoreCache(MapBasedStore())
         val tree = CLTree(store)
         val childIds = (1_000L..11_000L).toList()
         val newTree = tree.addNewChildren(
@@ -33,7 +32,7 @@ class AddNewChildrenTest {
 
     @Test
     fun addManyDescendants() {
-        val store = ObjectStoreCache(MapBasedStore())
+        val store = createObjectStoreCache(MapBasedStore())
         var tree: ITree = CLTree(store)
         val rand = Random(56643)
         val roles = listOf("a", "b", "c")

@@ -4,17 +4,18 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.KVEntryReference
+import org.modelix.model.lazy.getObject
+import org.modelix.model.objects.IObjectData
+import org.modelix.model.objects.ObjectReference
 import org.modelix.model.persistent.CPTree
-import org.modelix.model.persistent.IKVValue
 import org.modelix.model.persistent.SerializationUtil
 
 class BulkUpdateOp(
-    val resultTreeHash: KVEntryReference<CPTree>,
+    val resultTreeHash: ObjectReference<CPTree>,
     val subtreeRootId: Long,
 ) : AbstractOperation() {
 
-    override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = listOf(resultTreeHash)
+    override fun getObjectReferences(): List<ObjectReference<IObjectData>> = listOf(resultTreeHash)
 
     /**
      * Since this operation is recorded at the end of a bulk update we need to create an IAppliedOperation without
@@ -29,7 +30,7 @@ class BulkUpdateOp(
         return Applied(baseTree)
     }
 
-    private fun getResultTree(store: IDeserializingKeyValueStore): CLTree = CLTree(resultTreeHash.getValue(store), store)
+    private fun getResultTree(store: IDeserializingKeyValueStore): CLTree = CLTree(resultTreeHash.getObject(store), store)
 
     override fun toString(): String {
         return "BulkUpdateOp ${resultTreeHash.getHash()}, ${SerializationUtil.longToHex(subtreeRootId)}"
@@ -39,7 +40,7 @@ class BulkUpdateOp(
         override fun getOriginalOp() = this@BulkUpdateOp
 
         override fun invert(): List<IOperation> {
-            return listOf(BulkUpdateOp(KVEntryReference(baseTree.data), subtreeRootId))
+            return listOf(BulkUpdateOp(baseTree.resolvedData.ref, subtreeRootId))
         }
     }
 

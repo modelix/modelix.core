@@ -2,9 +2,14 @@ package org.modelix.model.async
 
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.IKVEntryReference
-import org.modelix.model.lazy.KVEntryReference
-import org.modelix.model.persistent.IKVValue
+import org.modelix.model.lazy.MissingEntryException
+import org.modelix.model.objects.IObjectData
+import org.modelix.model.objects.IObjectLoader
+import org.modelix.model.objects.IObjectWriter
+import org.modelix.model.objects.Object
+import org.modelix.model.objects.ObjectHash
+import org.modelix.model.objects.ObjectReference
+import org.modelix.model.objects.getHashString
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutorProvider
 import org.modelix.streams.plus
@@ -16,20 +21,45 @@ interface IAsyncObjectStore : IStreamExecutorProvider {
     @Deprecated("Use IAsyncObjectStore")
     fun getLegacyObjectStore(): IDeserializingKeyValueStore
 
-    fun <T : Any> getIfCached(key: ObjectHash<T>): T?
-    fun <T : Any> get(key: ObjectHash<T>): IStream.ZeroOrOne<T>
+    fun <T : Any> getIfCached(key: ObjectRequest<T>): T?
+    fun <T : Any> get(key: ObjectRequest<T>): IStream.ZeroOrOne<T>
 
-    fun getAllAsStream(keys: IStream.Many<ObjectHash<*>>): IStream.Many<Pair<ObjectHash<*>, Any?>>
-    fun getAllAsMap(keys: List<ObjectHash<*>>): IStream.One<Map<ObjectHash<*>, Any?>>
-    fun putAll(entries: Map<ObjectHash<*>, IKVValue>): IStream.Zero
+    fun getAllAsStream(keys: IStream.Many<ObjectRequest<*>>): IStream.Many<Pair<ObjectRequest<*>, Any?>>
+    fun getAllAsMap(keys: List<ObjectRequest<*>>): IStream.One<Map<ObjectRequest<*>, Any?>>
+    fun putAll(entries: Map<ObjectRequest<*>, IObjectData>): IStream.Zero
+
+    fun clearCache()
 }
 
-class ObjectHash<E : Any>(val hash: String, val deserializer: (String) -> E) {
+fun IAsyncObjectStore.asObjectLoader(): IObjectLoader = AsyncStoreAsObjectLoader(this)
+fun IAsyncObjectStore.asObjectWriter(): IObjectWriter = AsyncStoreAsObjectWriter(this)
+
+class AsyncStoreAsObjectLoader(val store: IAsyncObjectStore) : IObjectLoader {
+    override fun <T : IObjectData> request(ref: ObjectReference<T>): IStream.One<T> {
+        return store.get(ObjectRequest(ref.getHashString(), ref.getDeserializer()))
+            .exceptionIfEmpty { MissingEntryException(ref.getHashString()) }
+    }
+}
+
+class AsyncStoreAsObjectWriter(val store: IAsyncObjectStore) : IObjectWriter {
+    override fun write(hash: ObjectHash, obj: IObjectData) {
+        store.getStreamExecutor().execute {
+            store.putAll(mapOf(ObjectRequest(hash.toString(), obj.getDeserializer()) to obj))
+        }
+    }
+}
+
+// TODO rename to resolveData
+fun <T : IObjectData> ObjectReference<T>.getObject(store: IAsyncObjectStore): Object<T> {
+    return store.getStreamExecutor().query { resolve(store.asObjectLoader()) }
+}
+
+class ObjectRequest<E : Any>(val hash: String, val deserializer: (String) -> E) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
 
-        other as ObjectHash<*>
+        other as ObjectRequest<*>
 
         return hash == other.hash
     }
@@ -39,20 +69,21 @@ class ObjectHash<E : Any>(val hash: String, val deserializer: (String) -> E) {
     }
 }
 
-fun <T : IKVValue> IKVEntryReference<T>.toObjectHash(): ObjectHash<T> {
-    require(this.isWritten()) { "use IKVEntryReference.getValue instead" }
-    return ObjectHash(this.getHash(), this.getDeserializer())
+fun <T : IObjectData> ObjectReference<T>.toObjectRequest(): ObjectRequest<T> {
+    return ObjectRequest(this.getHashString(), this.getDeserializer())
 }
 
-fun <T : IKVValue> ObjectHash<*>.toKVEntryReference(): IKVEntryReference<T> = KVEntryReference(hash, deserializer as ((String) -> T))
-
-fun IAsyncObjectStore.getRecursively(key: IKVEntryReference<IKVValue>, seenHashes: MutableSet<String> = HashSet()): IStream.Many<Pair<IKVEntryReference<*>, IKVValue>> {
+@Deprecated("Use IObject.getDescendantsAndSelf")
+fun IAsyncObjectStore.getRecursively(
+    key: ObjectReference<IObjectData>,
+    seenHashes: MutableSet<ObjectHash> = HashSet(),
+): IStream.Many<Pair<ObjectReference<*>, IObjectData>> {
     return if (seenHashes.contains(key.getHash())) {
         IStream.empty()
     } else {
         seenHashes.add(key.getHash())
-        get(key.toObjectHash()).flatMap {
-            IStream.of(key to it).plus(IStream.many(it.getReferencedEntries()).flatMap { getRecursively(it, seenHashes) })
+        get(key.toObjectRequest()).flatMap {
+            IStream.of(key to it).plus(IStream.many(it.getAllReferences()).flatMap { getRecursively(it, seenHashes) })
         }
     }
 }

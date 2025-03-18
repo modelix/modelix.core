@@ -4,6 +4,11 @@ interface IStreamExecutor {
     fun <T> query(body: () -> IStream.One<T>): T
     suspend fun <T> querySuspending(body: suspend () -> IStream.One<T>): T
 
+    fun execute(streamProvider: () -> IStream.Zero) =
+        query { streamProvider().asOne() }
+    suspend fun executeSuspending(streamProvider: () -> IStream.Zero) =
+        querySuspending { streamProvider().asOne() }
+
     fun <T> iterate(streamProvider: () -> IStream.Many<T>, visitor: (T) -> Unit)
     suspend fun <T> iterateSuspending(streamProvider: suspend () -> IStream.Many<T>, visitor: suspend (T) -> Unit)
 

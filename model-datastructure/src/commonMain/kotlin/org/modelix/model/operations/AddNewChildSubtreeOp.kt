@@ -1,22 +1,21 @@
 package org.modelix.model.operations
 
-import com.badoo.reaktive.observable.map
-import com.badoo.reaktive.observable.toList
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.async.getDescendants
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.KVEntryReference
+import org.modelix.model.lazy.getObject
+import org.modelix.model.objects.IObjectData
+import org.modelix.model.objects.ObjectReference
 import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPTree
-import org.modelix.model.persistent.IKVValue
 import org.modelix.model.persistent.SerializationUtil
 
-class AddNewChildSubtreeOp(val resultTreeHash: KVEntryReference<CPTree>, val position: PositionInRole, val childId: Long, val concept: IConceptReference?) : AbstractOperation() {
+class AddNewChildSubtreeOp(val resultTreeHash: ObjectReference<CPTree>, val position: PositionInRole, val childId: Long, val concept: IConceptReference?) : AbstractOperation() {
 
-    override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = listOf(resultTreeHash)
+    override fun getObjectReferences(): List<ObjectReference<IObjectData>> = listOf(resultTreeHash)
 
     fun withPosition(newPos: PositionInRole): AddNewChildSubtreeOp {
         return if (newPos == position) this else AddNewChildSubtreeOp(resultTreeHash, newPos, childId, concept)
@@ -42,7 +41,7 @@ class AddNewChildSubtreeOp(val resultTreeHash: KVEntryReference<CPTree>, val pos
         }
     }
 
-    private fun getResultTree(store: IDeserializingKeyValueStore): CLTree = CLTree(resultTreeHash.getValue(store), store)
+    private fun getResultTree(store: IDeserializingKeyValueStore): CLTree = CLTree(resultTreeHash.getObject(store), store)
 
     private fun decompressNode(tree: ITree, node: CPNode, position: PositionInRole?, references: Boolean, opsVisitor: (IOperation) -> Unit) {
         if (references) {

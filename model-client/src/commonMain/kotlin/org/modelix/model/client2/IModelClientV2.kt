@@ -5,6 +5,7 @@ import org.modelix.model.IVersion
 import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INode
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.modelql.core.IMonoStep
@@ -27,6 +28,8 @@ interface IModelClientV2 {
     fun getClientId(): Int
     fun getIdGenerator(): IIdGenerator
     fun getUserId(): String?
+
+    fun getStore(repository: RepositoryId): IAsyncObjectStore
 
     suspend fun initRepository(repository: RepositoryId, useRoleIds: Boolean = true): IVersion
     suspend fun initRepositoryWithLegacyStorage(repository: RepositoryId): IVersion

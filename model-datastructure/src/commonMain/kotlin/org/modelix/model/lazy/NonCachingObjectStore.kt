@@ -1,7 +1,8 @@
 package org.modelix.model.lazy
 
 import org.modelix.model.IKeyValueStore
-import org.modelix.model.persistent.IKVValue
+import org.modelix.model.async.ObjectRequest
+import org.modelix.model.objects.IObjectData
 import org.modelix.streams.IStreamExecutorProvider
 
 class NonCachingObjectStore(override val keyValueStore: IKeyValueStore) : IDeserializingKeyValueStore, IStreamExecutorProvider by keyValueStore {
@@ -15,13 +16,13 @@ class NonCachingObjectStore(override val keyValueStore: IKeyValueStore) : IDeser
         }
     }
 
-    override fun <T : IKVValue> getAll(
-        regular: List<IKVEntryReference<T>>,
+    override fun <T : IObjectData> getAll(
+        regular: List<ObjectRequest<T>>,
     ): Map<String, T?> {
         val allRequests = regular.asSequence()
-        val hashes = allRequests.map { it.getHash() }
-        val deserializers = allRequests.associate { it.getHash() to it.getDeserializer() }
-        val serialized: Map<String, String?> = keyValueStore.getAll(hashes.asIterable())
+        val hashes = allRequests.map { it.hash }
+        val deserializers = allRequests.associate { it.hash to it.deserializer }
+        val serialized: Map<String, String?> = keyValueStore.getAll(hashes.map { it.toString() }.asIterable())
         return serialized.mapValues { (hash, serializedValue) ->
             val value = checkNotNull(serializedValue) { "Entry not found: $hash" }
             deserializers[hash]!!(value)

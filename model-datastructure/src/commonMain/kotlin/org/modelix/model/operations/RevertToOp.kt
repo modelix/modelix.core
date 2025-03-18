@@ -6,12 +6,13 @@ import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.TreePointer
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.KVEntryReference
+import org.modelix.model.lazy.getObject
+import org.modelix.model.objects.IObjectData
+import org.modelix.model.objects.ObjectReference
 import org.modelix.model.persistent.CPVersion
-import org.modelix.model.persistent.IKVValue
 
-class RevertToOp(val latestKnownVersionRef: KVEntryReference<CPVersion>, val versionToRevertToRef: KVEntryReference<CPVersion>) : AbstractOperation() {
-    override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = listOf(latestKnownVersionRef, versionToRevertToRef)
+class RevertToOp(val latestKnownVersionRef: ObjectReference<CPVersion>, val versionToRevertToRef: ObjectReference<CPVersion>) : AbstractOperation() {
+    override fun getObjectReferences(): List<ObjectReference<IObjectData>> = listOf(latestKnownVersionRef, versionToRevertToRef)
 
     override fun apply(transaction: IWriteTransaction, store: IDeserializingKeyValueStore): IAppliedOperation {
         return Applied(
@@ -48,11 +49,11 @@ class RevertToOp(val latestKnownVersionRef: KVEntryReference<CPVersion>, val ver
     }
 
     private fun collectUndoOps(store: IDeserializingKeyValueStore): List<IOperation> {
-        val latestKnownVersion = CLVersion(latestKnownVersionRef.getValue(store), store)
-        val versionToRevertTo = CLVersion(versionToRevertToRef.getValue(store), store)
+        val latestKnownVersion = CLVersion(latestKnownVersionRef.getObject(store), store.getAsyncStore())
+        val versionToRevertTo = CLVersion(versionToRevertToRef.getObject(store), store.getAsyncStore())
         val result = mutableListOf<IOperation>()
         val commonBase = VersionMerger.commonBaseVersion(latestKnownVersion, versionToRevertTo)
-        result += getPath(latestKnownVersion, commonBase).map { UndoOp(KVEntryReference(it.data!!)) }
+        result += getPath(latestKnownVersion, commonBase).map { UndoOp(it.resolvedData.ref) }
         if (commonBase == null || commonBase.hash != versionToRevertTo.hash) {
             // redo operations on a branch
             result += getPath(versionToRevertTo, commonBase).reversed().flatMap { it.operations }

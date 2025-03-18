@@ -16,6 +16,7 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.CLVersion.Companion.loadFromHash
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.lazy.getObject
 import org.modelix.model.operations.IAppliedOperation
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.OTBranch
@@ -239,7 +240,7 @@ actual open class ReplicatedRepository actual constructor(
             initialVersion = createVersion(initialTree.value, arrayOf(), null)
             client.asyncStore.put(branchReference.getKey(), initialVersion.getContentHash())
         } else {
-            initialTree.setValue(CLTree(initialVersion.treeHash.getValue(store), store))
+            initialTree.setValue(CLTree(initialVersion.treeRef.getObject(store), store))
         }
 
         // prefetch to avoid HTTP request in command listener

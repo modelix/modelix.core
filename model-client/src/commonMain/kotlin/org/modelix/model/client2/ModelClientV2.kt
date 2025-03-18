@@ -32,7 +32,6 @@ import io.ktor.http.takeFrom
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.readUTF8Line
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
@@ -46,13 +45,13 @@ import org.modelix.model.api.IdGeneratorDummy
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.getRootNode
 import org.modelix.model.api.runSynchronized
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
-import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.lazy.fullDiff
 import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.oauth.IAuthRequestHandler
@@ -93,16 +92,24 @@ class ModelClientV2(
     private var serverProvidedUserId: String? = null
 
     // TODO the store will accumulate garbage
-    private val storeForRepository: MutableMap<RepositoryId?, IDeserializingKeyValueStore> = HashMap()
+    private val storeForRepository: MutableMap<RepositoryId?, IAsyncObjectStore> = HashMap()
 
     suspend fun init() {
         updateClientId()
         updateUserId()
     }
 
-    private fun getStore(repository: RepositoryId?) = runSynchronized(storeForRepository) { storeForRepository.getOrPut(repository) { ObjectStoreCache(MapBasedStore()) } }
-    private fun getRepository(store: IDeserializingKeyValueStore): RepositoryId? {
-        return storeForRepository.asSequence().first { it.value.keyValueStore == store.keyValueStore }.key
+    override fun getStore(repository: RepositoryId): IAsyncObjectStore {
+        return doGetStore(repository)
+    }
+
+    private fun doGetStore(repository: RepositoryId?) = runSynchronized(storeForRepository) {
+        storeForRepository.getOrPut(repository) {
+            createObjectStoreCache(MapBasedStore())
+        }
+    }
+    private fun getRepository(store: IAsyncObjectStore): RepositoryId? {
+        return storeForRepository.asSequence().first { it.value == store }.key
     }
 
     override suspend fun getServerId(): String {
@@ -234,7 +241,8 @@ class ModelClientV2(
     @Deprecated("repository ID is required for permission checks")
     @DeprecationInfo("3.7.0", "May be removed with the next major release. Also remove the endpoint from the model-server.")
     override suspend fun loadVersion(versionHash: String, baseVersion: IVersion?): IVersion {
-        val repositoryIdFromBaseVersion = (baseVersion as? CLVersion)?.let { getRepository(it.store) }
+        checkCreatedByThisClient(baseVersion, null)
+        val repositoryIdFromBaseVersion = (baseVersion as? CLVersion)?.let { getRepository(it.asyncStore) }
         if (repositoryIdFromBaseVersion != null) {
             return doLoadVersion(repositoryIdFromBaseVersion, versionHash, baseVersion)
         } else {
@@ -268,6 +276,7 @@ class ModelClientV2(
         versionHash: String,
         baseVersion: IVersion?,
     ): IVersion {
+        checkCreatedByThisClient(baseVersion, repositoryId)
         return httpClient.prepareGet {
             url {
                 takeFrom(baseUrl)
@@ -282,7 +291,7 @@ class ModelClientV2(
             }
             useVersionStreamFormat()
         }.execute { response ->
-            createVersion(getStore(repositoryId), baseVersion as CLVersion?, response.readVersionDelta())
+            createVersion(doGetStore(repositoryId), baseVersion as CLVersion?, response.readVersionDelta())
         }
     }
 
@@ -301,14 +310,21 @@ class ModelClientV2(
     override suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?): IVersion {
         LOG.debug { "${clientId.toString(16)}.push($branch, $version, $baseVersion)" }
         require(version is CLVersion)
-        require(baseVersion is CLVersion?)
-        version.write()
-        val objects = version.asyncStore.getStreamExecutor().queryManyLater {
-            version.fullDiff(baseVersion).map { it.hash to it.serialize() }
+        val delta = if (version.getContentHash() == baseVersion?.getContentHash()) {
+            VersionDelta(version.getContentHash(), null)
+        } else {
+            require(baseVersion is CLVersion?)
+            checkCreatedByThisClient(version, branch.repositoryId)
+            checkCreatedByThisClient(baseVersion, branch.repositoryId)
+            version.write() // required for the returned version to find the local objects
+            val objects = version.asyncStore.getStreamExecutor().queryManyLater {
+                version.fullDiff(baseVersion).map { it.getHashString() to it.data.serialize() }
+            }
+            // large HTTP requests and large Json objects don't scale well
+            val lastChunk = pushObjects(branch.repositoryId, objects, returnLastChunk = true)
+            VersionDelta(version.getContentHash(), null, objectsMap = lastChunk.toMap())
         }
-        // large HTTP requests and large Json objects don't scale well
-        val lastChunk = pushObjects(branch.repositoryId, objects, returnLastChunk = true)
-        val delta = VersionDelta(version.getContentHash(), null, objectsMap = lastChunk.toMap())
+
         return httpClient.preparePost {
             url {
                 takeFrom(baseUrl)
@@ -374,6 +390,7 @@ class ModelClientV2(
 
     override suspend fun pull(branch: BranchReference, lastKnownVersion: IVersion?, filter: ObjectDeltaFilter): IVersion {
         require(lastKnownVersion is CLVersion?)
+        checkCreatedByThisClient(lastKnownVersion, branch.repositoryId)
         return httpClient.prepareGet {
             url {
                 takeFrom(baseUrl)
@@ -424,6 +441,7 @@ class ModelClientV2(
     }
 
     override suspend fun pollHash(branch: BranchReference, lastKnownVersion: IVersion?): String {
+        checkCreatedByThisClient(lastKnownVersion, branch.repositoryId)
         return pollHash(branch, lastKnownVersion?.getContentHash())
     }
 
@@ -443,6 +461,7 @@ class ModelClientV2(
 
     override suspend fun poll(branch: BranchReference, lastKnownVersion: IVersion?): IVersion {
         require(lastKnownVersion is CLVersion?)
+        checkCreatedByThisClient(lastKnownVersion, branch.repositoryId)
         LOG.debug { "${clientId.toString(16)}.poll($branch, $lastKnownVersion)" }
         return httpClient.prepareGet {
             url {
@@ -480,46 +499,34 @@ class ModelClientV2(
         httpClient.close()
     }
 
-    private suspend fun createVersion(store: IDeserializingKeyValueStore, baseVersion: CLVersion?, delta: VersionDeltaStream): CLVersion {
+    private suspend fun createVersion(store: IAsyncObjectStore, baseVersion: CLVersion?, delta: VersionDeltaStream): CLVersion {
+        if (delta.versionHash == baseVersion?.getContentHash()) {
+            return baseVersion
+        }
+        val kvstore = store.getLegacyKeyValueStore()
         delta.getObjectsAsFlow().collect {
             HashUtil.checkObjectHash(it.first, it.second)
-            store.keyValueStore.put(it.first, it.second)
+            kvstore.put(it.first, it.second)
         }
         return if (baseVersion == null) {
-            CLVersion(delta.versionHash, store)
+            CLVersion.loadFromHash(delta.versionHash, store)
         } else if (delta.versionHash == baseVersion.getContentHash()) {
             baseVersion
         } else {
-            require(baseVersion.store.keyValueStore == store.keyValueStore) { "baseVersion was not created by this client" }
-            CLVersion(delta.versionHash, store)
+            CLVersion.loadFromHash(delta.versionHash, store)
         }
     }
 
-    private suspend fun createVersion(store: IDeserializingKeyValueStore, baseVersion: CLVersion?, delta: Flow<String>): CLVersion {
-        var firstHash: String? = null
-        var isHash = true
-        var lastHash: String? = null
-        delta.collect {
-            if (isHash) {
-                lastHash = it
-                if (firstHash == null) {
-                    firstHash = it
-                }
-            } else {
-                val value = it
-                store.keyValueStore.put(lastHash!!, value)
-            }
-            isHash = !isHash
+    private fun checkCreatedByThisClient(version: IVersion?, repositoryId: RepositoryId?) {
+        if (version == null) return
+        version as CLVersion
+        require(storeForRepository.values.contains(version.asyncStore)) {
+            "Version was not created by this client. Use IModelClientV2.getStore. [version=$version]"
         }
-        val versionHash = checkNotNull(firstHash) { "No objects received" }
-
-        return if (baseVersion == null) {
-            CLVersion(versionHash, store)
-        } else if (versionHash == baseVersion.getContentHash()) {
-            baseVersion
-        } else {
-            require(baseVersion.store == store) { "baseVersion was not created by this client" }
-            CLVersion(versionHash, store)
+        if (repositoryId != null) {
+            require(version.asyncStore == getStore(repositoryId)) {
+                "Version belongs to a different repository: $version"
+            }
         }
     }
 

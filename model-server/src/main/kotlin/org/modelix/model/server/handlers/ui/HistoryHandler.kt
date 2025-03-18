@@ -1,7 +1,6 @@
 package org.modelix.model.server.handlers.ui
 
 import io.ktor.server.application.Application
-import io.ktor.server.application.call
 import io.ktor.server.html.respondHtmlTemplate
 import io.ktor.server.request.receiveParameters
 import io.ktor.server.response.respondRedirect
@@ -43,8 +42,8 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.CLVersion.Companion.createRegularVersion
-import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.objects.ObjectReference
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.RevertToOp
 import org.modelix.model.operations.applyOperation
@@ -133,7 +132,7 @@ class HistoryHandler(private val repositoriesManager: IRepositoriesManager) {
         val version = repositoriesManager.getVersion(repositoryAndBranch) ?: throw BranchNotFoundException(repositoryAndBranch)
         val branch = OTBranch(PBranch(version.getTree(), stores.idGenerator), stores.idGenerator, repositoriesManager.getLegacyObjectStore(repositoryAndBranch.repositoryId))
         branch.runWriteT { t ->
-            t.applyOperation(RevertToOp(KVEntryReference(from!!, DESERIALIZER), KVEntryReference(to!!, DESERIALIZER)))
+            t.applyOperation(RevertToOp(ObjectReference(from!!, DESERIALIZER), ObjectReference(to!!, DESERIALIZER)))
         }
         val (ops, tree) = branch.getPendingChanges()
         val newVersion = createRegularVersion(
@@ -198,7 +197,7 @@ class HistoryHandler(private val repositoriesManager: IRepositoriesManager) {
         val headVersion = if (headHash.isNullOrEmpty()) {
             latestVersion
         } else {
-            CLVersion(
+            CLVersion.loadFromHash(
                 headHash,
                 repositoriesManager.getLegacyObjectStore(repositoryAndBranch.repositoryId),
             )

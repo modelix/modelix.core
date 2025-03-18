@@ -1,8 +1,8 @@
 package org.modelix.model.operations
 
 import org.modelix.model.api.ITree
-import org.modelix.model.lazy.KVEntryReference
-import org.modelix.model.persistent.IKVValue
+import org.modelix.model.objects.IObjectData
+import org.modelix.model.objects.ObjectReference
 
 sealed class AbstractOperation : IOperation {
 
@@ -12,7 +12,7 @@ sealed class AbstractOperation : IOperation {
         }
     }
 
-    override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = listOf()
+    override fun getObjectReferences(): List<ObjectReference<IObjectData>> = listOf()
 
     protected fun getNodePosition(tree: ITree, nodeId: Long): PositionInRole {
         val parent = tree.getParent(nodeId)

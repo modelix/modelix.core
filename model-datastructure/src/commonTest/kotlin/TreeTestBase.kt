@@ -1,10 +1,11 @@
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.ObjectStoreCache
-import org.modelix.model.persistent.MapBaseStore
+import org.modelix.model.lazy.createObjectStoreCache
+import org.modelix.model.persistent.MapBasedStore
 import kotlin.random.Random
 import kotlin.test.BeforeTest
 
@@ -12,16 +13,16 @@ open class TreeTestBase {
     protected val DEBUG = false
     protected val roles: List<String> = listOf("role1", "role2", "role3")
     protected var rand: Random = Random(83569)
-    protected var store: MapBaseStore = MapBaseStore()
-    protected var storeCache: ObjectStoreCache = ObjectStoreCache(store)
+    protected var store: MapBasedStore = MapBasedStore()
+    protected var storeCache: IAsyncObjectStore = createObjectStoreCache(store)
     protected var idGenerator: IdGenerator = IdGenerator.newInstance(3)
     protected var initialTree: CLTree = CLTree(storeCache)
 
     @BeforeTest
     fun setUp() {
         rand = Random(83569)
-        store = MapBaseStore()
-        storeCache = ObjectStoreCache(store)
+        store = MapBasedStore()
+        storeCache = createObjectStoreCache(store)
         idGenerator = IdGenerator.newInstance(255)
         initialTree = CLTree(storeCache)
     }

@@ -7,10 +7,10 @@ import org.modelix.model.api.getDescendants
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.RoleInNode
-import org.modelix.model.persistent.MapBaseStore
+import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.persistent.SerializationUtil
 import org.modelix.streams.IStream
 import org.modelix.streams.useSequences
@@ -53,8 +53,8 @@ class TreeDiffTest {
 
     fun test(seed: Long, initialSize: Int, numModifications: Int) = IStream.useSequences {
         val rand = Random(seed)
-        val store = MapBaseStore()
-        val storeCache = ObjectStoreCache(store)
+        val store = MapBasedStore()
+        val storeCache = createObjectStoreCache(store)
         val idGenerator = IdGenerator.newInstance(255)
         val initialTree = CLTree(storeCache)
 

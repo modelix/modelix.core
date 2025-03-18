@@ -7,7 +7,9 @@ import org.modelix.model.api.PNodeReference
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
-import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.lazy.IDeserializingKeyValueStore
+import org.modelix.model.lazy.NonCachingObjectStore
+import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.MapBaseStore
 import kotlin.test.Test
@@ -63,7 +65,7 @@ class TreeSerializationTest {
     fun serializeAndDeserialize(moreThan10ops: Boolean, expectedVersionHash: String) {
         val mapStore = MapBaseStore()
         var store = mapStore
-        var objectStore = ObjectStoreCache(store)
+        var objectStore: IDeserializingKeyValueStore = NonCachingObjectStore(mapStore)
         val initialTree = CLTree.builder(objectStore).repositoryId("tree01").useRoleIds(true).build()
         val initialVersion = CLVersion.createRegularVersion(
             id = 1,
@@ -92,8 +94,8 @@ class TreeSerializationTest {
         assertEquals(expectedVersionHash, versionHash) // ensures that JVM and JS targets produce the same serialized data
 
         store = mapStore
-        objectStore = ObjectStoreCache(store)
-        val deserializedVersion = CLVersion(version.hash, objectStore)
+        objectStore = NonCachingObjectStore(store)
+        val deserializedVersion = CLVersion.loadFromHash(version.hash, objectStore)
         assertTree(deserializedVersion.tree)
     }
 
@@ -316,11 +318,11 @@ class TreeSerializationTest {
     }
 
     fun assertStore(store: IKeyValueStore) {
-        val deserializedVersion = CLVersion(store["branch_master"]!!, ObjectStoreCache(store))
+        val deserializedVersion = CLVersion.loadFromHash(store["branch_master"]!!, createObjectStoreCache(store))
         val deserializedTree = deserializedVersion.tree
         assertTree(deserializedTree)
 
-        val branch = PBranch(CLTree.builder(ObjectStoreCache(MapBaseStore())).repositoryId("tree01").useRoleIds(true).build(), IdGenerator.newInstance(2))
+        val branch = PBranch(CLTree.builder(createObjectStoreCache(MapBaseStore())).repositoryId("tree01").useRoleIds(true).build(), IdGenerator.newInstance(2))
         branch.runWrite {
             for (operation in deserializedVersion.operations) {
                 operation.apply(branch.writeTransaction, deserializedVersion.store)

@@ -268,12 +268,6 @@ class KeyValueLikeModelServer(
                 }
             }
         }
-        val referencedEntries = stores.genericStore.getAll(referencedKeys.map { ObjectInRepository.global(it) }.toSet()).mapKeys { it.key.key }
-        for (key in referencedKeys) {
-            if (referencedEntries[key] == null) {
-                throw NotFoundException("Referenced key $key not found")
-            }
-        }
 
         // Entries were previously written directly to the store.
         // Now we use the RepositoriesManager to merge changes instead of just overwriting a branch.

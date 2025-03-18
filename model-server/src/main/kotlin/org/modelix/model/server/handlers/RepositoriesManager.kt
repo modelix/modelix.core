@@ -56,7 +56,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
                 val repositoryId = RepositoryId("info")
                 val v1BranchKey = repositoryId.getBranchReference().getKey()
                 val infoVersionHash = stores.getGlobalStoreClient().get(v1BranchKey) ?: return@runWrite
-                val infoVersion = CLVersion(infoVersionHash, getLegacyObjectStore(repositoryId))
+                val infoVersion = CLVersion.loadFromHash(infoVersionHash, getLegacyObjectStore(repositoryId))
                 val infoBranch: IBranch = PBranch(infoVersion.getTree(), IdGeneratorDummy())
 
                 ModelMigrations.useResolvedConceptsFromMetaModel(infoBranch)
@@ -244,13 +244,13 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         val headHash = getVersionHash(branch)
         if (headHash == newVersionHash) return headHash
         val legacyObjectStore = getLegacyObjectStore(branch.repositoryId)
-        val newVersion = CLVersion(newVersionHash, legacyObjectStore)
+        val newVersion = CLVersion.loadFromHash(newVersionHash, legacyObjectStore)
         val mergedHash = if (headHash == null) {
             validateVersion(newVersion, null)
             newVersionHash
         } else {
             val legacyObjectStore = getLegacyObjectStore(branch.repositoryId)
-            val headVersion = CLVersion(headHash, legacyObjectStore)
+            val headVersion = CLVersion.loadFromHash(headHash, legacyObjectStore)
             require(headVersion.getTree().getId() == newVersion.getTree().getId()) {
                 "Attempt to merge a model with ID '${newVersion.getTree().getId()}'" +
                     " into one with ID '${headVersion.getTree().getId()}'"
@@ -313,8 +313,9 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
 
         val legacyObjectStore = stores.getLegacyObjectStore(repository?.takeIf { isIsolated(it) ?: false })
         return legacyObjectStore.getStreamExecutor().queryManyLater {
-            val version = CLVersion(versionHash, legacyObjectStore)
-            version.diff(filter).map { it.hash to it.serialize() }
+            val version = CLVersion.loadFromHash(versionHash, legacyObjectStore)
+            // diff should return ResolvedObject
+            version.diff(filter).map { it.getHashString() to it.data.serialize() }
         }.let { ObjectDataFlow(it) }
     }
 

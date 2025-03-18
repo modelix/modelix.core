@@ -6,12 +6,13 @@ import org.modelix.model.api.TreePointer
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.KVEntryReference
+import org.modelix.model.lazy.getObject
+import org.modelix.model.objects.IObjectData
+import org.modelix.model.objects.ObjectReference
 import org.modelix.model.persistent.CPVersion
-import org.modelix.model.persistent.IKVValue
 
-class UndoOp(val versionHash: KVEntryReference<CPVersion>) : AbstractOperation() {
-    override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> = listOf(versionHash)
+class UndoOp(val versionHash: ObjectReference<CPVersion>) : AbstractOperation() {
+    override fun getObjectReferences(): List<ObjectReference<IObjectData>> = listOf(versionHash)
 
     override fun apply(transaction: IWriteTransaction, store: IDeserializingKeyValueStore): IAppliedOperation {
         return Applied(
@@ -23,15 +24,15 @@ class UndoOp(val versionHash: KVEntryReference<CPVersion>) : AbstractOperation()
 
     override fun captureIntend(tree: ITree, store_: IDeserializingKeyValueStore): IOperationIntend {
         val store = (tree as CLTree).store
-        val versionToUndo = CLVersion(versionHash.getValue(store), store)
+        val versionToUndo = CLVersion(versionHash.getObject(store), store.getAsyncStore())
         val originalAppliedOps = getAppliedOps(versionToUndo, store)
         val invertedOps = originalAppliedOps.reversed().flatMap { it.invert() }
-        val invertedOpIntends = captureIntend(versionToUndo.tree, invertedOps, store)
+        val invertedOpIntends = captureIntend(versionToUndo.getTree(), invertedOps, store)
         return Intend(invertedOpIntends, store)
     }
 
     private fun getAppliedOps(version: CLVersion, store: IDeserializingKeyValueStore): List<IAppliedOperation> {
-        val tree = version.baseVersion!!.tree
+        val tree = version.baseVersion!!.getTree()
         val branch = TreePointer(tree)
         return branch.computeWrite {
             version.operations.map { it.apply(branch.writeTransaction, store) }

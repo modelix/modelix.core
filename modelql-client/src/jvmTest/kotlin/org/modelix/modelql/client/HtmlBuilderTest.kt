@@ -20,8 +20,8 @@ import org.modelix.model.api.async.asAsyncNode
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.ObjectStoreCache
-import org.modelix.model.persistent.MapBaseStore
+import org.modelix.model.lazy.createObjectStoreCache
+import org.modelix.model.persistent.MapBasedStore
 import org.modelix.modelql.core.IFragmentBuilder
 import org.modelix.modelql.core.IRecursiveFragmentBuilder
 import org.modelix.modelql.core.buildModelQLFragment
@@ -40,7 +40,7 @@ class HtmlBuilderTest {
     private fun runTest(block: suspend (HttpClient) -> Unit) = testApplication {
         withTimeout(20.seconds) {
             application {
-                val tree = CLTree(ObjectStoreCache(MapBaseStore()))
+                val tree = CLTree(createObjectStoreCache(MapBasedStore()))
                 val branch = PBranch(tree, IdGenerator.getInstance(1))
                 val rootNode = branch.getRootNode()
                 branch.runWrite {

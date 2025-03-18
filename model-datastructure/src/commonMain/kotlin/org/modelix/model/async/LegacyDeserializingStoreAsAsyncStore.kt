@@ -2,7 +2,7 @@ package org.modelix.model.async
 
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.persistent.IKVValue
+import org.modelix.model.objects.IObjectData
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutorProvider
 
@@ -17,27 +17,29 @@ class LegacyDeserializingStoreAsAsyncStore(val store: IDeserializingKeyValueStor
         return store
     }
 
-    override fun <T : Any> getIfCached(key: ObjectHash<T>): T? {
+    override fun clearCache() {}
+
+    override fun <T : Any> getIfCached(key: ObjectRequest<T>): T? {
         return store.getIfCached(key.hash, key.deserializer, false)
     }
 
-    override fun <T : Any> get(key: ObjectHash<T>): IStream.ZeroOrOne<T> {
+    override fun <T : Any> get(key: ObjectRequest<T>): IStream.ZeroOrOne<T> {
         return IStream.ofNotNull(store.get(key.hash, key.deserializer))
     }
 
-    override fun getAllAsStream(keys: IStream.Many<ObjectHash<*>>): IStream.Many<Pair<ObjectHash<*>, Any?>> {
-        return keys.map { it.toKVEntryReference<IKVValue>() }.toList().flatMap { keysAsList ->
-            val entries = store.getAll(keysAsList)
+    override fun getAllAsStream(keys: IStream.Many<ObjectRequest<*>>): IStream.Many<Pair<ObjectRequest<*>, Any?>> {
+        return keys.toList().flatMap { keysAsList ->
+            val entries = store.getAll(keysAsList as List<ObjectRequest<IObjectData>>)
             keys.map { it to entries[it.hash] }
         }
     }
 
-    override fun getAllAsMap(keys: List<ObjectHash<*>>): IStream.One<Map<ObjectHash<*>, Any?>> {
-        val entries = store.getAll(keys.map { it.toKVEntryReference() })
+    override fun getAllAsMap(keys: List<ObjectRequest<*>>): IStream.One<Map<ObjectRequest<*>, Any?>> {
+        val entries = store.getAll(keys as List<ObjectRequest<IObjectData>>)
         return IStream.of(keys.associate { it to entries[it.hash] })
     }
 
-    override fun putAll(entries: Map<ObjectHash<*>, IKVValue>): IStream.Zero {
+    override fun putAll(entries: Map<ObjectRequest<*>, IObjectData>): IStream.Zero {
         entries.forEach { store.put(it.key.hash, it.value, it.value.serialize()) }
         return IStream.zero()
     }

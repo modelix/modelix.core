@@ -1,5 +1,8 @@
-import org.modelix.model.lazy.KVEntryReference
-import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.async.asObjectLoader
+import org.modelix.model.async.getObject
+import org.modelix.model.lazy.createObjectStoreCache
+import org.modelix.model.objects.ObjectReference
+import org.modelix.model.objects.hash
 import org.modelix.model.persistent.CPHamtInternal
 import org.modelix.model.persistent.CPHamtNode
 import org.modelix.model.persistent.CPNode
@@ -16,37 +19,37 @@ class HamtTest {
         val rand = Random(1)
         val expectedMap: MutableMap<Long, Long> = HashMap()
         val store = MapBaseStore()
-        val storeCache = ObjectStoreCache(store)
+        val storeCache = createObjectStoreCache(store)
         var hamt: CPHamtNode? = CPHamtInternal.createEmpty()
         for (i in 0..999) {
             if (expectedMap.isEmpty() || rand.nextBoolean()) {
                 // add entry
                 val key = rand.nextInt(1000).toLong()
                 val value = rand.nextLong()
-                hamt = hamt!!.put(key, createEntry(value), storeCache.getAsyncStore()).getSynchronous()
+                hamt = hamt!!.put(key, createEntry(value), storeCache.asObjectLoader()).getSynchronous()
                 expectedMap[key] = value
             } else {
                 val keys: List<Long> = ArrayList(expectedMap.keys)
                 val key = keys[rand.nextInt(keys.size)]
                 if (rand.nextBoolean()) {
                     // remove entry
-                    hamt = hamt!!.remove(key, storeCache.getAsyncStore()).getSynchronous()
+                    hamt = hamt!!.remove(key, storeCache.asObjectLoader()).getSynchronous()
                     expectedMap.remove(key)
                 } else {
                     // replace entry
                     val value = rand.nextLong()
-                    hamt = hamt!!.put(key, createEntry(value), storeCache.getAsyncStore()).getSynchronous()
+                    hamt = hamt!!.put(key, createEntry(value), storeCache.asObjectLoader()).getSynchronous()
                     expectedMap[key] = value
                 }
             }
             storeCache.clearCache()
             for ((key, value) in expectedMap) {
-                assertEquals(value, hamt!!.get(key, storeCache.getAsyncStore()).map { it.getValue(storeCache) }.getSynchronous()!!.id)
+                assertEquals(value, hamt!!.get(key, storeCache.asObjectLoader()).map { it.getObject(storeCache) }.getSynchronous()!!.data.id)
             }
         }
     }
 
-    private fun createEntry(id: Long) = KVEntryReference(createNode(id))
+    private fun createEntry(id: Long) = ObjectReference(createNode(id))
 
     private fun createNode(id: Long) = CPNode.create(
         id,
@@ -63,23 +66,23 @@ class HamtTest {
     @Test
     fun test_random_case_causing_outofbounds_on_js() = IStream.useSequences {
         val store = MapBaseStore()
-        val storeCache = ObjectStoreCache(store)
+        val storeCache = createObjectStoreCache(store)
         var hamt: CPHamtNode? = CPHamtInternal.createEmpty()
-        var getId = { e: IStream.ZeroOrOne<KVEntryReference<CPNode>> -> e.map { it.getValue(storeCache) }.getSynchronous()!!.id }
+        var getId = { e: IStream.ZeroOrOne<ObjectReference<CPNode>> -> e.map { it.getObject(storeCache) }.getSynchronous()!!.data.id }
 
-        hamt = hamt!!.put(965L, createEntry(-6579471327666419615), storeCache.getAsyncStore()).getSynchronous()
-        hamt = hamt!!.put(949L, createEntry(4912341421267007347), storeCache.getAsyncStore()).getSynchronous()
-        assertEquals(4912341421267007347, getId(hamt!!.get(949L, storeCache.getAsyncStore())))
-        hamt = hamt!!.put(260L, createEntry(4166750678024106842), storeCache.getAsyncStore()).getSynchronous()
-        assertEquals(4166750678024106842, getId(hamt!!.get(260L, storeCache.getAsyncStore())))
-        hamt = hamt!!.put(794L, createEntry(5492533034562136353), storeCache.getAsyncStore()).getSynchronous()
-        hamt = hamt!!.put(104L, createEntry(-6505928823483070382), storeCache.getAsyncStore()).getSynchronous()
-        hamt = hamt!!.put(47L, createEntry(3122507882718949737), storeCache.getAsyncStore()).getSynchronous()
-        hamt = hamt!!.put(693L, createEntry(-2086105010854963537), storeCache.getAsyncStore()).getSynchronous()
+        hamt = hamt!!.put(965L, createEntry(-6579471327666419615), storeCache.asObjectLoader()).getSynchronous()
+        hamt = hamt!!.put(949L, createEntry(4912341421267007347), storeCache.asObjectLoader()).getSynchronous()
+        assertEquals(4912341421267007347, getId(hamt!!.get(949L, storeCache.asObjectLoader())))
+        hamt = hamt!!.put(260L, createEntry(4166750678024106842), storeCache.asObjectLoader()).getSynchronous()
+        assertEquals(4166750678024106842, getId(hamt!!.get(260L, storeCache.asObjectLoader())))
+        hamt = hamt!!.put(794L, createEntry(5492533034562136353), storeCache.asObjectLoader()).getSynchronous()
+        hamt = hamt!!.put(104L, createEntry(-6505928823483070382), storeCache.asObjectLoader()).getSynchronous()
+        hamt = hamt!!.put(47L, createEntry(3122507882718949737), storeCache.asObjectLoader()).getSynchronous()
+        hamt = hamt!!.put(693L, createEntry(-2086105010854963537), storeCache.asObjectLoader()).getSynchronous()
         storeCache.clearCache()
         // assertEquals(69239088, (hamt!!.getData() as CPHamtInternal).bitmap)
         // assertEquals(6, (hamt!!.getData() as CPHamtInternal).children.count())
-        assertEquals(-2086105010854963537, getId(hamt!!.get(693L, storeCache.getAsyncStore())))
+        assertEquals(-2086105010854963537, getId(hamt!!.get(693L, storeCache.asObjectLoader())))
     }
 
     /**
@@ -89,11 +92,11 @@ class HamtTest {
      */
     @Test
     fun insertionOrderTest() = IStream.useSequences {
-        val store = ObjectStoreCache(MapBaseStore())
+        val store = createObjectStoreCache(MapBaseStore())
         val emptyMap = CPHamtInternal.createEmpty()
 
         val rand = Random(123456789L)
-        val entries = HashMap<Long, KVEntryReference<CPNode>>()
+        val entries = HashMap<Long, ObjectReference<CPNode>>()
         for (i in 1..10) {
             for (k in 1..500) {
                 val id = i * 1_000_000L + k
@@ -106,9 +109,9 @@ class HamtTest {
 
         for (i in 1..10) {
             var map: CPHamtNode = emptyMap
-            entries.entries.shuffled(rand).forEach { map = map.put(it.key, it.value, store.getAsyncStore()).getSynchronous()!! }
-            keysToRemove.forEach { map = map.remove(it, store.getAsyncStore()).getSynchronous()!! }
-            val hash = map.hash
+            entries.entries.shuffled(rand).forEach { map = map.put(it.key, it.value, store.asObjectLoader()).getSynchronous()!! }
+            keysToRemove.forEach { map = map.remove(it, store.asObjectLoader()).getSynchronous()!! }
+            val hash = map.hash.toString()
             if (i == 1) {
                 expectedHash = hash
             } else {

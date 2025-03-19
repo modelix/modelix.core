@@ -17,35 +17,35 @@ class LegacyKeyValueStoreAsAsyncStore(val store: IKeyValueStore) : IAsyncObjectS
 
     override fun clearCache() {}
 
-    override fun <T : Any> get(key: ObjectRequest<T>): IStream.ZeroOrOne<T> {
+    override fun <T : IObjectData> get(key: ObjectRequest<T>): IStream.ZeroOrOne<T> {
         val value = store.get(key.hash) ?: return IStream.empty()
-        return IStream.of(key.deserializer(value))
+        return IStream.of(key.deserializer.deserialize(value, key.referenceFactory))
     }
 
-    override fun <T : Any> getIfCached(key: ObjectRequest<T>): T? {
+    override fun <T : IObjectData> getIfCached(key: ObjectRequest<T>): T? {
         return null
     }
 
-    override fun getAllAsStream(keys: IStream.Many<ObjectRequest<*>>): IStream.Many<Pair<ObjectRequest<*>, Any?>> {
-        return keys.toList().flatMap { keysList ->
-            val keysMap = keysList.associateBy { it.hash }
-            val serializedValues = store.getAll(keysMap.keys)
+    override fun getAllAsStream(requests: IStream.Many<ObjectRequest<*>>): IStream.Many<Pair<ObjectRequest<*>, IObjectData?>> {
+        return requests.toList().flatMap { requestsList ->
+            val requestsMap = requestsList.associateBy { it.hash }
+            val serializedValues = store.getAll(requestsMap.keys)
             IStream.many(
-                serializedValues.map {
-                    val ref = keysMap[it.key]!!
-                    ref to it.value?.let { ref.deserializer(it) }
+                serializedValues.map { (hashString, serializedValue) ->
+                    val request = requestsMap[hashString]!!
+                    request to serializedValue?.let { request.deserializer.deserialize(it, request.referenceFactory) }
                 },
             )
         }
     }
 
-    override fun getAllAsMap(keys: List<ObjectRequest<*>>): IStream.One<Map<ObjectRequest<*>, Any?>> {
-        val keysMap = keys.associateBy { it.hash }
-        val serializedValues = store.getAll(keysMap.keys)
+    override fun getAllAsMap(requestsList: List<ObjectRequest<*>>): IStream.One<Map<ObjectRequest<*>, IObjectData?>> {
+        val requestsMap = requestsList.associateBy { it.hash }
+        val serializedValues = store.getAll(requestsMap.keys)
         return IStream.of(
-            serializedValues.map {
-                val ref = keysMap[it.key]!!
-                ref to it.value?.let { ref.deserializer(it) }
+            serializedValues.map { (hashString, serializedValue) ->
+                val request = requestsMap[hashString]!!
+                request to serializedValue?.let { request.deserializer.deserialize(it, request.referenceFactory) }
             }.toMap(),
         )
     }

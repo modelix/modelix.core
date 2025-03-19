@@ -3,7 +3,6 @@ package org.modelix.model.operations
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
-import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.persistent.SerializationUtil
 
 /**
@@ -13,7 +12,7 @@ import org.modelix.model.persistent.SerializationUtil
  * @param concept reference to the new concept, or null to remove the concept
  */
 class SetConceptOp(val nodeId: Long, val concept: IConceptReference?) : AbstractOperation(), IOperationIntend {
-    override fun apply(transaction: IWriteTransaction, store: IDeserializingKeyValueStore): IAppliedOperation {
+    override fun apply(transaction: IWriteTransaction): IAppliedOperation {
         val originalConcept = transaction.getConceptReference(nodeId)
         transaction.setConcept(nodeId, concept)
         return Applied(originalConcept)
@@ -29,7 +28,7 @@ class SetConceptOp(val nodeId: Long, val concept: IConceptReference?) : Abstract
         return if (tree.containsNode(nodeId)) listOf(this) else listOf(NoOp())
     }
 
-    override fun captureIntend(tree: ITree, store: IDeserializingKeyValueStore) = this
+    override fun captureIntend(tree: ITree) = this
 
     inner class Applied(private val originalConcept: IConceptReference?) : AbstractOperation.Applied(), IAppliedOperation {
         override fun getOriginalOp(): IOperation = this@SetConceptOp

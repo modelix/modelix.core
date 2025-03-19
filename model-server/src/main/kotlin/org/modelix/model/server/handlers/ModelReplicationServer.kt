@@ -320,7 +320,6 @@ class ModelReplicationServer(
                     OTBranch(
                         PBranch(initialTree, stores.idGenerator),
                         stores.idGenerator,
-                        repositoriesManager.getLegacyObjectStore(RepositoryId(repository)),
                     )
                 } else {
                     TreeAsBranch(initialTree)

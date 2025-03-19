@@ -11,7 +11,7 @@ import org.modelix.streams.plus
 
 class CachingAsyncStore(val store: IAsyncObjectStore, cacheSize: Int = 100_000) :
     IAsyncObjectStore, IStreamExecutorProvider by store {
-    private val cache = LRUCache<ObjectRequest<*>, Any>(cacheSize)
+    private val cache = LRUCache<ObjectRequest<*>, IObjectData>(cacheSize)
 
     override fun clearCache() {
         cache.clear()
@@ -26,7 +26,7 @@ class CachingAsyncStore(val store: IAsyncObjectStore, cacheSize: Int = 100_000) 
         return AsyncStoreAsLegacyDeserializingStore(this)
     }
 
-    override fun <T : Any> get(key: ObjectRequest<T>): IStream.ZeroOrOne<T> {
+    override fun <T : IObjectData> get(key: ObjectRequest<T>): IStream.ZeroOrOne<T> {
         val cached = runSynchronized(cache) { cache.get(key) }
         if (cached != null) return IStream.of(cached as T)
         return store.get(key).map { value ->
@@ -37,12 +37,12 @@ class CachingAsyncStore(val store: IAsyncObjectStore, cacheSize: Int = 100_000) 
         }
     }
 
-    override fun <T : Any> getIfCached(key: ObjectRequest<T>): T? {
+    override fun <T : IObjectData> getIfCached(key: ObjectRequest<T>): T? {
         return runSynchronized(cache) { cache.get(key) as T? } ?: store.getIfCached(key)
     }
 
-    override fun getAllAsStream(keys: IStream.Many<ObjectRequest<*>>): IStream.Many<Pair<ObjectRequest<*>, Any?>> {
-        val fromCache: IStream.Many<Pair<ObjectRequest<*>, Any?>> = keys.map { key ->
+    override fun getAllAsStream(keys: IStream.Many<ObjectRequest<*>>): IStream.Many<Pair<ObjectRequest<*>, IObjectData?>> {
+        val fromCache: IStream.Many<Pair<ObjectRequest<*>, IObjectData?>> = keys.map { key ->
             runSynchronized(cache) { key to cache.get(key) }
         }
 
@@ -57,8 +57,8 @@ class CachingAsyncStore(val store: IAsyncObjectStore, cacheSize: Int = 100_000) 
         }
     }
 
-    override fun getAllAsMap(keys: List<ObjectRequest<*>>): IStream.One<Map<ObjectRequest<*>, Any?>> {
-        val fromCache = LinkedHashMap<ObjectRequest<*>, Any?>()
+    override fun getAllAsMap(keys: List<ObjectRequest<*>>): IStream.One<Map<ObjectRequest<*>, IObjectData?>> {
+        val fromCache = LinkedHashMap<ObjectRequest<*>, IObjectData?>()
         val missingKeys = ArrayList<ObjectRequest<*>>()
         runSynchronized(cache) {
             for (key in keys) {

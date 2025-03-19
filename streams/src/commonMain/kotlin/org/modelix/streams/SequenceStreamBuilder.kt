@@ -3,6 +3,7 @@ package org.modelix.streams
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import org.modelix.kotlin.utils.DelicateModelixApi
 
 class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
     IStreamBuilder, IStreamExecutorProvider by executor {
@@ -80,10 +81,13 @@ class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
             return Zero(
                 sequence {
                     action()
+                    @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
                     executeSynchronous()
                 },
             )
         }
+
+        @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
         override fun executeSynchronous() {
             wrapped.forEach { }
         }
@@ -92,6 +96,7 @@ class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
             return Zero(
                 sequence {
                     executeSynchronous()
+                    @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
                     other.executeSynchronous()
                 },
             )
@@ -116,6 +121,7 @@ class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
         fun <R> plusSequence(other: WrapperBase<R>): Wrapper<R> {
             return Wrapper(
                 sequence {
+                    @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
                     executeSynchronous()
                     yieldAll(other.asSequence())
                 },

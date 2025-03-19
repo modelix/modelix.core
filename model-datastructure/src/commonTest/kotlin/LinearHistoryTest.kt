@@ -154,7 +154,6 @@ class LinearHistoryTest {
             v1,
             v2,
             emptyArray<IOperation>(),
-            initialTree.store,
         )
     }
 }

@@ -34,8 +34,11 @@ import io.ktor.utils.io.readUTF8Line
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.modelix.kotlin.utils.DeprecationInfo
+import org.modelix.kotlin.utils.WeakValueMap
+import org.modelix.kotlin.utils.getOrPut
 import org.modelix.model.IVersion
 import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.api.IBranch
@@ -46,12 +49,13 @@ import org.modelix.model.api.TreePointer
 import org.modelix.model.api.getRootNode
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.async.IAsyncObjectStore
+import org.modelix.model.async.LazyLoadingObjectGraph
+import org.modelix.model.async.getAsyncStore
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.lazy.fullDiff
 import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.oauth.IAuthRequestHandler
@@ -60,17 +64,18 @@ import org.modelix.model.oauth.OAuthConfig
 import org.modelix.model.oauth.OAuthConfigBuilder
 import org.modelix.model.oauth.TokenProvider
 import org.modelix.model.oauth.TokenProviderAuthConfig
+import org.modelix.model.objects.IObjectGraph
+import org.modelix.model.objects.ObjectHash
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
-import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.server.api.v2.ImmutableObjectsStream
-import org.modelix.model.server.api.v2.ObjectHash
 import org.modelix.model.server.api.v2.ObjectHashAndSerializedObject
 import org.modelix.model.server.api.v2.SerializedObject
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.api.v2.VersionDeltaStream
 import org.modelix.model.server.api.v2.VersionDeltaStreamV2
 import org.modelix.model.server.api.v2.asStream
+import org.modelix.model.server.api.v2.toMap
 import org.modelix.modelql.client.ModelQLClient
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.streams.IExecutableStream
@@ -91,25 +96,38 @@ class ModelClientV2(
     private var idGenerator: IIdGenerator = IdGeneratorDummy()
     private var serverProvidedUserId: String? = null
 
-    // TODO the store will accumulate garbage
-    private val storeForRepository: MutableMap<RepositoryId?, IAsyncObjectStore> = HashMap()
+    private val objectGraphs = WeakValueMap<RepositoryId, ModelClientGraph>()
 
     suspend fun init() {
         updateClientId()
         updateUserId()
     }
 
-    override fun getStore(repository: RepositoryId): IAsyncObjectStore {
-        return doGetStore(repository)
-    }
-
-    private fun doGetStore(repository: RepositoryId?) = runSynchronized(storeForRepository) {
-        storeForRepository.getOrPut(repository) {
-            createObjectStoreCache(MapBasedStore())
+    private fun getObjectGraph(repository: RepositoryId?): ModelClientGraph {
+        return runSynchronized(objectGraphs) {
+            val repositoryId = repository ?: RepositoryId("")
+            objectGraphs.getOrPut(repositoryId) {
+                ModelClientGraph(this, repositoryId)
+            }
         }
     }
-    private fun getRepository(store: IAsyncObjectStore): RepositoryId? {
-        return storeForRepository.asSequence().first { it.value == store }.key
+
+    override fun getStore(repository: RepositoryId): IAsyncObjectStore {
+        return ModelClientAsStore(this, repository)
+    }
+
+    private fun getRepository(graph: IObjectGraph): RepositoryId? {
+        return when (graph) {
+            is LazyLoadingObjectGraph -> {
+                val store = graph.getAsyncStore()
+                when (store) {
+                    is ModelClientAsStore -> store.repositoryId
+                    else -> error("Unknown store type: $graph")
+                }
+            }
+            is ModelClientGraph -> graph.repositoryId
+            else -> error("Unknown graph type: $graph")
+        }
     }
 
     override suspend fun getServerId(): String {
@@ -183,7 +201,7 @@ class ModelClientV2(
             }
             useVersionStreamFormat()
         }.execute { response ->
-            createVersion(getStore(repository), null, response.readVersionDelta())
+            createVersion(repository, null, response.readVersionDelta())
         }
     }
 
@@ -242,7 +260,7 @@ class ModelClientV2(
     @DeprecationInfo("3.7.0", "May be removed with the next major release. Also remove the endpoint from the model-server.")
     override suspend fun loadVersion(versionHash: String, baseVersion: IVersion?): IVersion {
         checkCreatedByThisClient(baseVersion, null)
-        val repositoryIdFromBaseVersion = (baseVersion as? CLVersion)?.let { getRepository(it.asyncStore) }
+        val repositoryIdFromBaseVersion = (baseVersion as? CLVersion)?.let { getRepository(it.graph) }
         if (repositoryIdFromBaseVersion != null) {
             return doLoadVersion(repositoryIdFromBaseVersion, versionHash, baseVersion)
         } else {
@@ -291,11 +309,12 @@ class ModelClientV2(
             }
             useVersionStreamFormat()
         }.execute { response ->
-            createVersion(doGetStore(repositoryId), baseVersion as CLVersion?, response.readVersionDelta())
+            createVersion(repositoryId ?: RepositoryId(""), baseVersion as CLVersion?, response.readVersionDelta())
         }
     }
 
-    override suspend fun getObjects(repository: RepositoryId, keys: Sequence<ObjectHash>): Map<ObjectHash, SerializedObject> {
+    override suspend fun getObjects(repository: RepositoryId, keys: Sequence<org.modelix.model.server.api.v2.ObjectHash>): Map<org.modelix.model.server.api.v2.ObjectHash, SerializedObject> {
+        LOG.debug { "${clientId.toString(16)}.getObjects($repository)" }
         return httpClient.preparePost {
             url {
                 takeFrom(baseUrl)
@@ -316,8 +335,7 @@ class ModelClientV2(
             require(baseVersion is CLVersion?)
             checkCreatedByThisClient(version, branch.repositoryId)
             checkCreatedByThisClient(baseVersion, branch.repositoryId)
-            version.write() // required for the returned version to find the local objects
-            val objects = version.asyncStore.getStreamExecutor().queryManyLater {
+            val objects = version.graph.getStreamExecutor().queryManyLater {
                 version.fullDiff(baseVersion).map { it.getHashString() to it.data.serialize() }
             }
             // large HTTP requests and large Json objects don't scale well
@@ -334,7 +352,7 @@ class ModelClientV2(
             contentType(ContentType.Application.Json)
             setBody(delta)
         }.execute { response ->
-            createVersion(getStore(branch.repositoryId), version, response.readVersionDelta())
+            createVersion(branch.repositoryId, version, response.readVersionDelta())
         }
     }
 
@@ -404,7 +422,7 @@ class ModelClientV2(
             }
             useVersionStreamFormat()
         }.execute { response ->
-            val receivedVersion = createVersion(getStore(branch.repositoryId), lastKnownVersion, response.readVersionDelta())
+            val receivedVersion = createVersion(branch.repositoryId, lastKnownVersion, response.readVersionDelta())
             LOG.debug { "${clientId.toString(16)}.pull($branch, $lastKnownVersion) -> $receivedVersion" }
             receivedVersion
         }
@@ -421,7 +439,7 @@ class ModelClientV2(
         }.execute { response ->
             val receivedVersion = when (response.status) {
                 HttpStatusCode.NotFound -> null
-                HttpStatusCode.OK -> createVersion(getStore(branch.repositoryId), null, response.readVersionDelta())
+                HttpStatusCode.OK -> createVersion(branch.repositoryId, null, response.readVersionDelta())
                 else -> throw ResponseException(response, response.bodyAsText())
             }
             LOG.debug { "${clientId.toString(16)}.pullIfExists($branch) -> $receivedVersion" }
@@ -473,7 +491,11 @@ class ModelClientV2(
             }
             useVersionStreamFormat()
         }.execute { response ->
-            val receivedVersion = createVersion(getStore(branch.repositoryId), lastKnownVersion, response.readVersionDelta())
+            val receivedVersion = createVersion(
+                branch.repositoryId,
+                lastKnownVersion,
+                response.readVersionDelta(),
+            )
             LOG.debug { "${clientId.toString(16)}.poll($branch, $lastKnownVersion) -> $receivedVersion" }
             receivedVersion
         }
@@ -499,35 +521,29 @@ class ModelClientV2(
         httpClient.close()
     }
 
-    private suspend fun createVersion(store: IAsyncObjectStore, baseVersion: CLVersion?, delta: VersionDeltaStream): CLVersion {
-        if (delta.versionHash == baseVersion?.getContentHash()) {
-            return baseVersion
-        }
-        val kvstore = store.getLegacyKeyValueStore()
-        delta.getObjectsAsFlow().collect {
-            HashUtil.checkObjectHash(it.first, it.second)
-            kvstore.put(it.first, it.second)
-        }
-        return if (baseVersion == null) {
-            CLVersion.loadFromHash(delta.versionHash, store)
-        } else if (delta.versionHash == baseVersion.getContentHash()) {
-            baseVersion
+    private suspend fun createVersion(repository: RepositoryId, baseVersion: CLVersion?, delta: VersionDeltaStream): CLVersion {
+        val graph = getObjectGraph(repository)
+        return if (baseVersion != null && delta.versionHash == baseVersion.getContentHash()) {
+            CLVersion(graph.withUnloadedHistory(baseVersion.obj))
         } else {
-            CLVersion.loadFromHash(delta.versionHash, store)
+            val receivedObjects = delta.getObjectsAsFlow()
+                .map { ObjectHash(it.first) to it.second }.toMap()
+            val graph = getObjectGraph(repository)
+            CLVersion(graph.loadVersion(ObjectHash(delta.versionHash), receivedObjects))
         }
     }
 
     private fun checkCreatedByThisClient(version: IVersion?, repositoryId: RepositoryId?) {
-        if (version == null) return
-        version as CLVersion
-        require(storeForRepository.values.contains(version.asyncStore)) {
-            "Version was not created by this client. Use IModelClientV2.getStore. [version=$version]"
-        }
-        if (repositoryId != null) {
-            require(version.asyncStore == getStore(repositoryId)) {
-                "Version belongs to a different repository: $version"
-            }
-        }
+//        if (version == null) return
+//        version as CLVersion
+//        require(storeForRepository.values.contains(version.asyncStore)) {
+//            "Version was not created by this client. Use IModelClientV2.getStore. [version=$version]"
+//        }
+//        if (repositoryId != null) {
+//            require(version.asyncStore == getStore(repositoryId)) {
+//                "Version belongs to a different repository: $version"
+//            }
+//        }
     }
 
     companion object {
@@ -799,7 +815,7 @@ fun IVersion.runWrite(client: IModelClientV2, body: (IBranch) -> Unit): IVersion
 
 fun IVersion.runWrite(idGenerator: IIdGenerator, author: String?, body: (IBranch) -> Unit): IVersion? {
     val baseVersion = this
-    val branch = OTBranch(TreePointer(baseVersion.getTree(), idGenerator), idGenerator, (baseVersion as CLVersion).store)
+    val branch = OTBranch(TreePointer(baseVersion.getTree(), idGenerator), idGenerator)
     branch.computeWrite {
         body(branch)
     }

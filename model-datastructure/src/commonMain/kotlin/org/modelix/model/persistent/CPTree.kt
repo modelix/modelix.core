@@ -1,46 +1,48 @@
 package org.modelix.model.persistent
 
 import org.modelix.model.objects.IObjectData
-import org.modelix.model.objects.IObjectLoader
+import org.modelix.model.objects.IObjectDeserializer
+import org.modelix.model.objects.IObjectReferenceFactory
 import org.modelix.model.objects.Object
 import org.modelix.model.objects.ObjectReference
 import org.modelix.model.objects.getDescendantsAndSelf
 import org.modelix.streams.IStream
 import org.modelix.streams.plus
-import kotlin.jvm.JvmStatic
+
+sealed interface ITreeData : IObjectData
+sealed interface ITreeRelatedDeserializer<E : ITreeData> : IObjectDeserializer<E>
 
 class CPTree(
     val id: String,
     var idToHash: ObjectReference<CPHamtNode>,
     val usesRoleIds: Boolean,
-) : IObjectData {
+) : ITreeData {
     override fun serialize(): String {
         // TODO version bump required for the new operations BulkUpdateOp and AddNewChildrenOp
         val pv = if (usesRoleIds) PERSISTENCE_VERSION else NAMED_BASED_PERSISTENCE_VERSION
         return "$id/$pv/${idToHash.getHash()}"
     }
 
-    override fun getDeserializer(): (String) -> CPTree = DESERIALIZER
+    override fun getDeserializer(): IObjectDeserializer<CPTree> = DESERIALIZER
 
     override fun getContainmentReferences(): List<ObjectReference<IObjectData>> = listOf(idToHash)
 
-    override fun objectDiff(self: Object<*>, oldObject: Object<*>?, loader: IObjectLoader): IStream.Many<Object<*>> {
+    override fun objectDiff(self: Object<*>, oldObject: Object<*>?): IStream.Many<Object<*>> {
         return when (oldObject?.data) {
-            is CPTree -> IStream.of(self) + idToHash.diff(oldObject.data.idToHash, loader)
-            else -> self.getDescendantsAndSelf(loader)
+            is CPTree -> IStream.of(self) + idToHash.diff(oldObject.data.idToHash)
+            else -> self.getDescendantsAndSelf()
         }
     }
 
-    companion object {
+    companion object : ITreeRelatedDeserializer<CPTree> {
         /**
          * Since version 3 the UID of concept members is stored instead of the name
          */
         val PERSISTENCE_VERSION: Int = 3
         val NAMED_BASED_PERSISTENCE_VERSION: Int = 2
-        val DESERIALIZER: (String) -> CPTree = { deserialize(it) }
+        val DESERIALIZER: IObjectDeserializer<CPTree> = this
 
-        @JvmStatic
-        fun deserialize(input: String): CPTree {
+        override fun deserialize(input: String, referenceFactory: IObjectReferenceFactory): CPTree {
             val parts = input.split(Separators.LEVEL1)
             val treeId = parts[0]
             val persistenceVersion = parts[1].toInt()
@@ -51,7 +53,7 @@ class CPTree(
                 )
             }
             val usesRoleIds = persistenceVersion == PERSISTENCE_VERSION
-            val data = CPTree(treeId, ObjectReference(parts[2], CPHamtNode.DESERIALIZER), usesRoleIds)
+            val data = CPTree(treeId, referenceFactory(parts[2], CPHamtNode), usesRoleIds)
             return data
         }
     }

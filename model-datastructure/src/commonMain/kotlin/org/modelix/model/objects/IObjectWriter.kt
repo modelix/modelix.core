@@ -1,5 +1,12 @@
 package org.modelix.model.objects
 
 interface IObjectWriter {
-    fun write(hash: ObjectHash, obj: IObjectData)
+    fun write(obj: Object<*>)
+}
+
+/**
+ * The /dev/null equivalent of an IObjectWriter
+ */
+class NullObjectWriter : IObjectWriter {
+    override fun write(obj: Object<*>) {}
 }

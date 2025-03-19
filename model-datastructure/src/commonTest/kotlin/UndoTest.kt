@@ -47,21 +47,21 @@ class UndoTest {
         val versionIdGenerator = IdGenerator.newInstance(0)
         val store = createObjectStoreCache(MapBaseStore())
         val merger = VersionMerger(store, idGenerator)
-        val baseBranch = OTBranch(PBranch(CLTree(store), idGenerator), idGenerator, store)
+        val baseBranch = OTBranch(PBranch(CLTree(store), idGenerator), idGenerator)
         val rand = Random(347663)
 
         randomChanges(baseBranch, 50, idGenerator, rand)
-        val baseVersion = createVersion(baseBranch.operationsAndTree, null, versionIdGenerator, store)
+        val baseVersion = createVersion(baseBranch.operationsAndTree, null, versionIdGenerator)
 
         val maxIndex = 2
-        val branches = (0..maxIndex).map { OTBranch(PBranch(baseVersion.tree, idGenerator), idGenerator, store) }.toList()
+        val branches = (0..maxIndex).map { OTBranch(PBranch(baseVersion.tree, idGenerator), idGenerator) }.toList()
         for (i in 0..maxIndex) {
             branches[i].runWrite {
                 randomChanges(branches[i], 50, idGenerator, rand)
             }
         }
         val versions = branches.map { branch ->
-            createVersion(branch.operationsAndTree, baseVersion, versionIdGenerator, store)
+            createVersion(branch.operationsAndTree, baseVersion, versionIdGenerator)
         }.toList()
 
         val mergedVersions = ArrayList(versions)
@@ -88,21 +88,21 @@ class UndoTest {
         val versionIdGenerator = IdGenerator.newInstance(0)
         val store = createObjectStoreCache(MapBaseStore())
         val merger = VersionMerger(store, idGenerator)
-        val baseBranch = OTBranch(PBranch(CLTree(store), idGenerator), idGenerator, store)
+        val baseBranch = OTBranch(PBranch(CLTree(store), idGenerator), idGenerator)
         val rand = Random(347663)
 
         randomChanges(baseBranch, 50, idGenerator, rand)
-        val baseVersion = createVersion(baseBranch.operationsAndTree, null, versionIdGenerator, store)
+        val baseVersion = createVersion(baseBranch.operationsAndTree, null, versionIdGenerator)
 
         val maxIndex = 2
-        val branches = (0..maxIndex).map { OTBranch(PBranch(baseVersion.tree, idGenerator), idGenerator, store) }.toList()
+        val branches = (0..maxIndex).map { OTBranch(PBranch(baseVersion.tree, idGenerator), idGenerator) }.toList()
         for (i in 0..maxIndex) {
             branches[i].runWrite {
                 randomChanges(branches[i], 50, idGenerator, rand)
             }
         }
         val versions = branches.map { branch ->
-            createVersion(branch.operationsAndTree, baseVersion, versionIdGenerator, store)
+            createVersion(branch.operationsAndTree, baseVersion, versionIdGenerator)
         }.toList()
 
         val mergedVersions = ArrayList(versions)
@@ -159,7 +159,6 @@ class UndoTest {
         opsAndTree: Pair<List<IAppliedOperation>, ITree>,
         previousVersion: CLVersion?,
         idGenerator: IIdGenerator,
-        storeCache: IAsyncObjectStore,
     ): CLVersion {
         return CLVersion.createRegularVersion(
             id = idGenerator.generate(),

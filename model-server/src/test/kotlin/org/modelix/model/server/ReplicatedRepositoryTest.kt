@@ -222,7 +222,7 @@ class ReplicatedRepositoryTest {
                 override suspend fun apply() {
                     // Change local version
                     val baseVersion = localVersions[client]
-                    val branch = OTBranch(PBranch(baseVersion.getTree(), client.getIdGenerator()), client.getIdGenerator(), baseVersion.store)
+                    val branch = OTBranch(PBranch(baseVersion.getTree(), client.getIdGenerator()), client.getIdGenerator())
                     branch.runWriteT { t ->
                         createdNodes += t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?).toString(16)
                     }
@@ -245,7 +245,7 @@ class ReplicatedRepositoryTest {
 
                 override suspend fun apply() {
                     // Merge local into remote
-                    remoteVersions[client] = VersionMerger(localVersions[client].asyncStore, client.getIdGenerator())
+                    remoteVersions[client] = VersionMerger(client.getIdGenerator())
                         .mergeChange(remoteVersions[client], localVersions[client])
                 }
             },
@@ -430,7 +430,7 @@ class ReplicatedRepositoryTest {
 
         repeat(100) {
             val baseVersion = versions[rand.nextInt(versions.size)]
-            val branch = OTBranch(PBranch(baseVersion.getTree(), idGenerator), idGenerator, initialTree.store)
+            val branch = OTBranch(PBranch(baseVersion.getTree(), idGenerator), idGenerator)
             branch.runWriteT { t ->
                 createdNodes += t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?).toString(16)
             }

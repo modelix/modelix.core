@@ -3,8 +3,6 @@ package org.modelix.model.operations
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.getObject
 import org.modelix.model.objects.IObjectData
 import org.modelix.model.objects.ObjectReference
 import org.modelix.model.persistent.CPTree
@@ -23,14 +21,14 @@ class BulkUpdateOp(
      */
     fun afterApply(baseTree: CLTree) = Applied(baseTree)
 
-    override fun apply(transaction: IWriteTransaction, store: IDeserializingKeyValueStore): IAppliedOperation {
+    override fun apply(transaction: IWriteTransaction): IAppliedOperation {
         val baseTree = transaction.tree as CLTree
-        val resultTree = getResultTree(store)
+        val resultTree = getResultTree()
         TODO("Change the (sub)tree so that it is identical to the resultTree")
         return Applied(baseTree)
     }
 
-    private fun getResultTree(store: IDeserializingKeyValueStore): CLTree = CLTree(resultTreeHash.getObject(store), store)
+    private fun getResultTree(): CLTree = CLTree(resultTreeHash.resolveLater().query())
 
     override fun toString(): String {
         return "BulkUpdateOp ${resultTreeHash.getHash()}, ${SerializationUtil.longToHex(subtreeRootId)}"
@@ -44,7 +42,7 @@ class BulkUpdateOp(
         }
     }
 
-    override fun captureIntend(tree: ITree, store: IDeserializingKeyValueStore): IOperationIntend {
+    override fun captureIntend(tree: ITree): IOperationIntend {
         return Intend()
     }
 

@@ -27,28 +27,28 @@ class ModelClientAsStore(client: IModelClientV2, val repositoryId: RepositoryId)
 
     override fun clearCache() {}
 
-    override fun <T : Any> getIfCached(key: ObjectRequest<T>): T? {
+    override fun <T : IObjectData> getIfCached(key: ObjectRequest<T>): T? {
         return null
     }
 
-    override fun <T : Any> get(key: ObjectRequest<T>): IStream.ZeroOrOne<T> {
+    override fun <T : IObjectData> get(key: ObjectRequest<T>): IStream.ZeroOrOne<T> {
         return getAllAsStream(IStream.of(key)).map {
             checkNotNull(it.second) { "Entry not found: ${key.hash}" } as T
         }.exactlyOne()
     }
 
-    override fun getAllAsStream(keys: IStream.Many<ObjectRequest<*>>): IStream.Many<Pair<ObjectRequest<*>, Any?>> {
+    override fun getAllAsStream(keys: IStream.Many<ObjectRequest<*>>): IStream.Many<Pair<ObjectRequest<*>, IObjectData?>> {
         return keys.toList().flatMap { keysAsList ->
             getAllAsMap(keysAsList).flatMapIterable { it.entries }.map { it.key to it.value }
         }
     }
 
-    override fun getAllAsMap(keys: List<ObjectRequest<*>>): IStream.One<Map<ObjectRequest<*>, Any?>> {
+    override fun getAllAsMap(keys: List<ObjectRequest<*>>): IStream.One<Map<ObjectRequest<*>, IObjectData?>> {
         return IStream.fromFlow(
             flow {
                 val serializedObjects = client.getObjects(repositoryId, keys.asSequence().map { it.hash })
                 val deserializedObjects = keys.associateWith {
-                    serializedObjects[it.hash]?.let { p1 -> it.deserializer(p1) }
+                    serializedObjects[it.hash]?.let { p1 -> it.deserializer.deserialize(p1, it.referenceFactory) }
                 }
                 emit(deserializedObjects)
             },

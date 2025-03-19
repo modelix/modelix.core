@@ -8,23 +8,17 @@ import org.modelix.model.api.ITransaction
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.runSynchronized
-import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.IDeserializingKeyValueStore
 
 class OTBranch(
     private val branch: IBranch,
     private val idGenerator: IIdGenerator,
-    private val store: IAsyncObjectStore,
 ) : IBranch {
     private var bulkUpdateMode: Boolean = false
     private var currentOperations: MutableList<IAppliedOperation> = ArrayList()
     private val completedChanges: MutableList<OpsAndTree> = ArrayList()
     private val id: String = branch.getId()
     private var inWriteTransaction = false
-
-    constructor(branch: IBranch, idGenerator: IIdGenerator, store: IDeserializingKeyValueStore) :
-        this(branch, idGenerator, store.getAsyncStore())
 
     /**
      * This records all changes as a single operation instead of a long list of fine-grained changes.
@@ -144,7 +138,7 @@ class OTBranch(
     }
 
     fun wrap(t: IWriteTransaction): IWriteTransaction {
-        return OTWriteTransaction(t, this, idGenerator, store)
+        return OTWriteTransaction(t, this, idGenerator)
     }
 
     protected fun checkNotEDT() {}

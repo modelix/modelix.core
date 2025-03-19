@@ -1,18 +1,20 @@
 package org.modelix.streams
 
+import org.modelix.kotlin.utils.DelicateModelixApi
+
 class SimpleStreamExecutor : IStreamExecutor {
     override fun <T> query(body: () -> IStream.One<T>): T {
-        @Suppress("DEPRECATION")
+        @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
         return body().getSynchronous()
     }
 
     override suspend fun <T> querySuspending(body: suspend () -> IStream.One<T>): T {
-        @Suppress("DEPRECATION")
+        @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
         return body().getSuspending()
     }
 
     override fun <T> iterate(streamProvider: () -> IStream.Many<T>, visitor: (T) -> Unit) {
-        @Suppress("DEPRECATION")
+        @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
         streamProvider().iterateSynchronous(visitor)
     }
 
@@ -20,7 +22,7 @@ class SimpleStreamExecutor : IStreamExecutor {
         streamProvider: suspend () -> IStream.Many<T>,
         visitor: suspend (T) -> Unit,
     ) {
-        @Suppress("DEPRECATION")
+        @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
         streamProvider().iterateSuspending(visitor)
     }
 }

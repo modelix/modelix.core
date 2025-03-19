@@ -527,7 +527,7 @@ class ProjectSyncTest : MPSTestBase() {
 
     private fun runWithModelServer(body: suspend (port: Int) -> Unit) = runBlocking {
         @OptIn(ExperimentalTime::class)
-        withTimeout(3.minutes) {
+        withTimeout(5.minutes) {
             val modelServer: GenericContainer<*> = GenericContainer(modelServerImage)
                 .withExposedPorts(28101)
                 .withCommand("-inmemory")

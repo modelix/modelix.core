@@ -16,15 +16,15 @@ package org.modelix.modelql.untyped
 import kotlinx.coroutines.test.runTest
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.getRootNode
+import org.modelix.model.async.LegacyKeyValueStoreAsAsyncStore
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.NonCachingObjectStore
 import org.modelix.model.persistent.MapBaseStore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class UntypedModelQLTest {
-    private val tree = CLTree(NonCachingObjectStore(MapBaseStore()))
+    private val tree = CLTree.builder(LegacyKeyValueStoreAsAsyncStore(MapBaseStore())).build()
     private val branch = TreePointer(tree, IdGenerator.getInstance(1))
     private val rootNode = branch.getRootNode()
 

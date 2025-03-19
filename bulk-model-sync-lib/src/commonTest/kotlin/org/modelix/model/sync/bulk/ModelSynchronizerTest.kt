@@ -173,7 +173,7 @@ open class ModelSynchronizerTest : AbstractModelSyncTest() {
                 importer.import(ModelData(root = sourceBranch.getRootNode().asExported()))
             }
         }
-        val otBranch = OTBranch(targetBranch, idGenerator, store)
+        val otBranch = OTBranch(targetBranch, idGenerator)
 
         otBranch.runWrite {
             ModelSynchronizer(
@@ -196,5 +196,5 @@ open class ModelSynchronizerTest : AbstractModelSyncTest() {
 }
 
 private fun IBranch.toOTBranch(): OTBranch {
-    return OTBranch(this, IdGenerator.getInstance(1), createObjectStoreCache(MapBasedStore()))
+    return OTBranch(this, IdGenerator.getInstance(1))
 }

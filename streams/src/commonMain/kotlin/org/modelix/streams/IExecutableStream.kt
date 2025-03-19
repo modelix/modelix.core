@@ -42,6 +42,7 @@ class ExecutableStreamOne<T>(
     override suspend fun querySuspending(): T = executor.querySuspending { streamBuilder() }
 }
 
+@Deprecated("Use IStreamExecutor.queryLater")
 fun <T> IStream.One<T>.asExecutable(executor: IStreamExecutor) = ExecutableStreamOne(executor) { this }
 
 class ExecutableStreamOneSuspending<T>(

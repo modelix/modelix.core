@@ -18,7 +18,6 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.MissingEntryException
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.lazy.getObject
 import org.modelix.model.objects.IObjectData
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
@@ -71,7 +70,7 @@ class ModelClientV2Test {
                 .let { it.getStreamExecutor().querySuspending { it.getAllChildren(ITree.ROOT_ID).count() } },
         )
 
-        val branch = OTBranch(PBranch(initialVersion.getTree(), client.getIdGenerator()), client.getIdGenerator(), (initialVersion as CLVersion).store)
+        val branch = OTBranch(PBranch(initialVersion.getTree(), client.getIdGenerator()), client.getIdGenerator())
         branch.runWriteT { t ->
             t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?)
         }
@@ -274,7 +273,7 @@ class ModelClientV2Test {
                 for (entryReference in referencingEntry.getAllReferences()) {
                     // Check that the store also provides each referenced KVEntry.
                     // `getValue` would fail if this is not the case.
-                    val referencedEntry = entryReference.getObject(versionPulled.store)
+                    val referencedEntry = entryReference.resolveLater().query()
                     checkAllReferencedEntriesExistInStore(referencedEntry.data)
                 }
             } catch (ex: MissingEntryException) {

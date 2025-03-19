@@ -6,6 +6,8 @@ import org.modelix.model.lazy.COWArrays.remove
 import org.modelix.model.lazy.COWArrays.removeAt
 import org.modelix.model.lazy.COWArrays.set
 import org.modelix.model.objects.IObjectData
+import org.modelix.model.objects.IObjectDeserializer
+import org.modelix.model.objects.IObjectReferenceFactory
 import org.modelix.model.objects.ObjectReference
 import org.modelix.model.persistent.CPNodeRef.Companion.fromString
 import org.modelix.model.persistent.SerializationUtil.escape
@@ -24,7 +26,7 @@ class CPNode private constructor(
     val propertyValues: Array<String>,
     val referenceRoles: Array<String>,
     val referenceTargets: Array<CPNodeRef>,
-) : IObjectData {
+) : ITreeData {
 
     override fun serialize(): String {
         val sb = StringBuilder()
@@ -208,11 +210,11 @@ class CPNode private constructor(
         )
     }
 
-    override fun getDeserializer(): (String) -> CPNode = DESERIALIZER
+    override fun getDeserializer() = DESERIALIZER
     override fun getContainmentReferences(): List<ObjectReference<IObjectData>> = emptyList()
 
-    companion object {
-        val DESERIALIZER = { s: String -> deserialize(s) }
+    companion object : ITreeRelatedDeserializer<CPNode> {
+        val DESERIALIZER: IObjectDeserializer<CPNode> = this
 
         @JvmStatic
         fun create(
@@ -252,8 +254,7 @@ class CPNode private constructor(
             }
         }
 
-        @JvmStatic
-        fun deserialize(input: String): CPNode {
+        override fun deserialize(input: String, referenceFactory: IObjectReferenceFactory): CPNode {
             return try {
                 val parts = input.split(Separators.LEVEL1)
                 val properties = parts[5].split(Separators.LEVEL2)

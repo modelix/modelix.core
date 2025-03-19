@@ -43,14 +43,14 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.CLVersion.Companion.createRegularVersion
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.objects.ObjectReference
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.RevertToOp
 import org.modelix.model.operations.applyOperation
-import org.modelix.model.persistent.CPVersion.Companion.DESERIALIZER
+import org.modelix.model.persistent.CPVersion
 import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.model.server.handlers.BranchNotFoundException
 import org.modelix.model.server.handlers.IRepositoriesManager
+import org.modelix.model.server.handlers.getAsyncStore
 import org.modelix.model.server.handlers.getLegacyObjectStore
 import org.modelix.model.server.store.RequiresTransaction
 import org.modelix.model.server.store.StoreManager
@@ -130,9 +130,10 @@ class HistoryHandler(private val repositoriesManager: IRepositoriesManager) {
     @RequiresTransaction
     private fun revert(repositoryAndBranch: BranchReference, from: String?, to: String?, author: String?) {
         val version = repositoriesManager.getVersion(repositoryAndBranch) ?: throw BranchNotFoundException(repositoryAndBranch)
-        val branch = OTBranch(PBranch(version.getTree(), stores.idGenerator), stores.idGenerator, repositoriesManager.getLegacyObjectStore(repositoryAndBranch.repositoryId))
+        val branch = OTBranch(PBranch(version.getTree(), stores.idGenerator), stores.idGenerator)
         branch.runWriteT { t ->
-            t.applyOperation(RevertToOp(ObjectReference(from!!, DESERIALIZER), ObjectReference(to!!, DESERIALIZER)))
+            val graph = repositoriesManager.getAsyncStore(repositoryAndBranch.repositoryId).asObjectGraph()
+            t.applyOperation(RevertToOp(graph(from!!, CPVersion), graph(to!!, CPVersion)))
         }
         val (ops, tree) = branch.getPendingChanges()
         val newVersion = createRegularVersion(

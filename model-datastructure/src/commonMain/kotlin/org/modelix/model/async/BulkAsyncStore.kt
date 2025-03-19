@@ -7,19 +7,20 @@ import org.modelix.streams.BulkRequestStreamExecutor
 import org.modelix.streams.IBulkExecutor
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
+import org.modelix.streams.filterNotNull
 
 class BulkAsyncStore(
     val store: IAsyncObjectStore,
     batchSize: Int = 5000,
 ) : IAsyncObjectStore {
 
-    private val bulkExecutor = BulkRequestStreamExecutor<ObjectRequest<*>, Any?>(
-        object : IBulkExecutor<ObjectRequest<*>, Any?> {
-            override fun execute(keys: List<ObjectRequest<*>>): Map<ObjectRequest<*>, Any?> {
+    private val bulkExecutor = BulkRequestStreamExecutor<ObjectRequest<*>, IObjectData?>(
+        object : IBulkExecutor<ObjectRequest<*>, IObjectData?> {
+            override fun execute(keys: List<ObjectRequest<*>>): Map<ObjectRequest<*>, IObjectData?> {
                 return store.getStreamExecutor().query { store.getAllAsMap(keys) }
             }
 
-            override suspend fun executeSuspending(keys: List<ObjectRequest<*>>): Map<ObjectRequest<*>, Any?> {
+            override suspend fun executeSuspending(keys: List<ObjectRequest<*>>): Map<ObjectRequest<*>, IObjectData?> {
                 return store.getStreamExecutor().querySuspending { store.getAllAsMap(keys) }
             }
         },
@@ -40,19 +41,20 @@ class BulkAsyncStore(
         return AsyncStoreAsLegacyDeserializingStore(this)
     }
 
-    override fun <T : Any> get(key: ObjectRequest<T>): IStream.ZeroOrOne<T> {
-        return getIfCached(key)?.let { IStream.of(it) } ?: bulkExecutor.enqueue(key)
+    override fun <T : IObjectData> get(key: ObjectRequest<T>): IStream.ZeroOrOne<T> {
+        return getIfCached(key)?.let { IStream.of(it) }
+            ?: bulkExecutor.enqueue(key).filterNotNull().upcast<T>()
     }
 
-    override fun <T : Any> getIfCached(key: ObjectRequest<T>): T? {
+    override fun <T : IObjectData> getIfCached(key: ObjectRequest<T>): T? {
         return store.getIfCached(key)
     }
 
-    override fun getAllAsStream(keys: IStream.Many<ObjectRequest<*>>): IStream.Many<Pair<ObjectRequest<*>, Any?>> {
+    override fun getAllAsStream(keys: IStream.Many<ObjectRequest<*>>): IStream.Many<Pair<ObjectRequest<*>, IObjectData?>> {
         return keys.flatMap { key -> get(key).orNull().map { key to it } }
     }
 
-    override fun getAllAsMap(keys: List<ObjectRequest<*>>): IStream.One<Map<ObjectRequest<*>, Any?>> {
+    override fun getAllAsMap(keys: List<ObjectRequest<*>>): IStream.One<Map<ObjectRequest<*>, IObjectData?>> {
         return getAllAsStream(IStream.many(keys)).toMap({ it.first }, { it.second })
     }
 
@@ -60,3 +62,5 @@ class BulkAsyncStore(
         return store.putAll(entries)
     }
 }
+
+fun <T : IObjectData> IStream.ZeroOrOne<IObjectData>.upcast(): IStream.ZeroOrOne<T> = this as IStream.ZeroOrOne<T>

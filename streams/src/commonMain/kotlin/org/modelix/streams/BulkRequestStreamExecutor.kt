@@ -20,7 +20,7 @@ class BulkRequestStreamExecutor<K, V>(private val bulkExecutor: IBulkExecutor<K,
     private val streamBuilder = ReaktiveStreamBuilder(this)
 
     private inner class RequestQueue {
-        val queue: MutableMap<K, QueueElement<out Any>> = LinkedHashMap()
+        val queue: MutableMap<K, QueueElement> = LinkedHashMap()
 
         fun process() {
             while (queue.isNotEmpty()) {
@@ -50,7 +50,7 @@ class BulkRequestStreamExecutor<K, V>(private val bulkExecutor: IBulkExecutor<K,
             try {
                 val map = executor(requests.map { it.first })
                 for ((_, queueElement) in requests) {
-                    queueElement as QueueElement<Any>
+                    queueElement
                     val value = map[queueElement.hash]
                     queueElement.requestResult.complete(value)
                 }
@@ -61,20 +61,20 @@ class BulkRequestStreamExecutor<K, V>(private val bulkExecutor: IBulkExecutor<K,
             }
         }
 
-        fun <T : Any> query(hash: K): IStream.ZeroOrOne<T> {
-            return (queue.getOrPut(hash) { QueueElement(hash, queue.size) } as QueueElement<T>).value.notNull()
+        fun query(hash: K): IStream.ZeroOrOne<V> {
+            return (queue.getOrPut(hash) { QueueElement(hash, queue.size) }).value.notNull()
                 .let { streamBuilder.WrapperMaybe(it) }
         }
     }
 
-    private inner class QueueElement<E : Any>(val hash: K, val position: Int) {
-        val requestResult = CompletableObservable<E?>()
-        val value: Single<E?> = requestResult.single
+    private inner class QueueElement(val hash: K, val position: Int) {
+        val requestResult = CompletableObservable<V?>()
+        val value: Single<V?> = requestResult.single
     }
 
     override fun getStreamExecutor(): IStreamExecutor = this
 
-    fun <T : Any> enqueue(key: K): IStream.ZeroOrOne<T> {
+    fun enqueue(key: K): IStream.ZeroOrOne<V> {
         return requestQueue.getValue().query(key)
     }
 

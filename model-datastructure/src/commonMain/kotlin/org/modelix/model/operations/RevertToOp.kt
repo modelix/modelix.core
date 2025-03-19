@@ -5,8 +5,6 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.TreePointer
 import org.modelix.model.lazy.CLVersion
-import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.getObject
 import org.modelix.model.objects.IObjectData
 import org.modelix.model.objects.ObjectReference
 import org.modelix.model.persistent.CPVersion
@@ -14,43 +12,43 @@ import org.modelix.model.persistent.CPVersion
 class RevertToOp(val latestKnownVersionRef: ObjectReference<CPVersion>, val versionToRevertToRef: ObjectReference<CPVersion>) : AbstractOperation() {
     override fun getObjectReferences(): List<ObjectReference<IObjectData>> = listOf(latestKnownVersionRef, versionToRevertToRef)
 
-    override fun apply(transaction: IWriteTransaction, store: IDeserializingKeyValueStore): IAppliedOperation {
+    override fun apply(transaction: IWriteTransaction): IAppliedOperation {
         return Applied(
-            captureIntend(transaction.tree, store)
+            captureIntend(transaction.tree)
                 .restoreIntend(transaction.tree)
-                .map { it.apply(transaction, store) },
+                .map { it.apply(transaction) },
         )
     }
 
-    override fun captureIntend(tree: ITree, store_: IDeserializingKeyValueStore): IOperationIntend {
-        return Intend(captureIntend(tree, collectUndoOps(store_), store_), store_)
+    override fun captureIntend(tree: ITree): IOperationIntend {
+        return Intend(captureIntend(tree, collectUndoOps()))
     }
 
-    private fun captureIntend(tree: ITree, ops: List<IOperation>, store: IDeserializingKeyValueStore): List<IOperationIntend> {
+    private fun captureIntend(tree: ITree, ops: List<IOperation>): List<IOperationIntend> {
         val branch = TreePointer(tree)
         return branch.computeWrite {
             ops.map {
-                val intend = it.captureIntend(branch.transaction.tree, store)
-                it.apply(branch.writeTransaction, store)
+                val intend = it.captureIntend(branch.transaction.tree)
+                it.apply(branch.writeTransaction)
                 intend
             }
         }
     }
 
-    private fun restoreIntend(tree: ITree, opIntends: List<IOperationIntend>, store: IDeserializingKeyValueStore): List<IOperation> {
+    private fun restoreIntend(tree: ITree, opIntends: List<IOperationIntend>): List<IOperation> {
         val branch = TreePointer(tree)
         return branch.computeWrite {
             opIntends.flatMap {
                 val restoredOps = it.restoreIntend(branch.transaction.tree)
-                restoredOps.forEach { restoredOp -> restoredOp.apply(branch.writeTransaction, store) }
+                restoredOps.forEach { restoredOp -> restoredOp.apply(branch.writeTransaction) }
                 restoredOps
             }
         }
     }
 
-    private fun collectUndoOps(store: IDeserializingKeyValueStore): List<IOperation> {
-        val latestKnownVersion = CLVersion(latestKnownVersionRef.getObject(store), store.getAsyncStore())
-        val versionToRevertTo = CLVersion(versionToRevertToRef.getObject(store), store.getAsyncStore())
+    private fun collectUndoOps(): List<IOperation> {
+        val latestKnownVersion = CLVersion(latestKnownVersionRef.resolveLater().query())
+        val versionToRevertTo = CLVersion(versionToRevertToRef.resolveLater().query())
         val result = mutableListOf<IOperation>()
         val commonBase = VersionMerger.commonBaseVersion(latestKnownVersion, versionToRevertTo)
         result += getPath(latestKnownVersion, commonBase).map { UndoOp(it.resolvedData.ref) }
@@ -75,13 +73,13 @@ class RevertToOp(val latestKnownVersionRef: ObjectReference<CPVersion>, val vers
         return "RevertToOp $latestKnownVersionRef -> $versionToRevertToRef"
     }
 
-    inner class Intend(val intends: List<IOperationIntend>, val store: IDeserializingKeyValueStore) : IOperationIntend {
+    inner class Intend(val intends: List<IOperationIntend>) : IOperationIntend {
         override fun getOriginalOp(): IOperation {
             return this@RevertToOp
         }
 
         override fun restoreIntend(tree: ITree): List<IOperation> {
-            return restoreIntend(tree, intends, store)
+            return restoreIntend(tree, intends)
         }
     }
 

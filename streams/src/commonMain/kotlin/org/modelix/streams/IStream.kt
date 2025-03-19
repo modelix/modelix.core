@@ -1,6 +1,7 @@
 package org.modelix.streams
 
 import kotlinx.coroutines.flow.Flow
+import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.streams.IStream.Many
 import org.modelix.streams.IStream.One
 import org.modelix.streams.IStream.OneOrMany
@@ -10,15 +11,32 @@ interface IStream<out E> : IStreamExecutorProvider {
     fun asSequence(): Sequence<E>
     fun toList(): One<List<E>>
 
-    @Deprecated("Use IStreamExecutor.iterate. It's valid to be used in implementations of IStreamExecutor.")
+    /**
+     * Should only be used inside implementations of [IStreamExecutor].
+     * Use [IStreamExecutor] instead.
+     *
+     * Will only succeed if all the input data is available locally and there isn't any asynchronous request necessary.
+     *
+     */
+    @DelicateModelixApi
     fun iterateSynchronous(visitor: (E) -> Unit)
 
-    @Deprecated("Use IStreamExecutor.iterateSuspending. It's valid to be used in implementations of IStreamExecutor.")
+    /**
+     * Should only be used inside implementations of [IStreamExecutor].
+     * Use [IStreamExecutor] instead.
+     *
+     * If called directly it may bypass performance optimizations of the [IStreamExecutor] (bulk requests).
+     */
+    @DelicateModelixApi
     suspend fun iterateSuspending(visitor: suspend (E) -> Unit)
+
     fun onAfterSubscribe(action: () -> Unit): IStream<E>
 
     interface Zero : IStream<Any?> {
-        @Deprecated("Use IStreamExecutor.query. It's valid to be used in implementations of IStreamExecutor.")
+        /**
+         * See documentation of [iterateSynchronous].
+         */
+        @DelicateModelixApi
         fun executeSynchronous()
         fun andThen(other: Zero): Zero
         operator fun <R> plus(other: Many<R>): Many<R>
@@ -35,6 +53,7 @@ interface IStream<out E> : IStreamExecutorProvider {
         fun <R> flatMap(mapper: (E) -> Many<R>): Many<R>
         fun <R> flatMapIterable(mapper: (E) -> Iterable<R>): Many<R> = flatMap { IStream.many(mapper(it)) }
         fun concat(other: Many<@UnsafeVariance E>): Many<E>
+        fun concat(other: OneOrMany<@UnsafeVariance E>): OneOrMany<E>
         fun distinct(): Many<E>
         fun assertEmpty(message: (E) -> String): Zero
         fun assertNotEmpty(message: () -> String): OneOrMany<E>
@@ -63,7 +82,6 @@ interface IStream<out E> : IStreamExecutorProvider {
     interface OneOrMany<out E> : IStream<E>, Many<E> {
         override fun <R> map(mapper: (E) -> R): OneOrMany<R>
         fun <R> flatMapOne(mapper: (E) -> One<R>): OneOrMany<R>
-        fun concat(other: OneOrMany<@UnsafeVariance E>): OneOrMany<E>
         override fun distinct(): OneOrMany<E>
         override fun onAfterSubscribe(action: () -> Unit): OneOrMany<E>
         override fun onErrorReturn(valueSupplier: (Throwable) -> @UnsafeVariance E): OneOrMany<E>
@@ -80,7 +98,10 @@ interface IStream<out E> : IStreamExecutorProvider {
         fun <R> flatMapZeroOrOne(mapper: (E) -> ZeroOrOne<R>): ZeroOrOne<R>
         override fun onAfterSubscribe(action: () -> Unit): ZeroOrOne<E>
 
-        @Deprecated("Use IStreamExecutor.query. It's valid to be used in implementations of IStreamExecutor.")
+        /**
+         * See documentation of [iterateSynchronous].
+         */
+        @DelicateModelixApi
         fun getSynchronous(): E? = orNull().getSynchronous()
         override fun onErrorReturn(valueSupplier: (Throwable) -> @UnsafeVariance E): ZeroOrOne<E>
         override fun doOnBeforeError(consumer: (Throwable) -> Unit): ZeroOrOne<E>
@@ -92,10 +113,16 @@ interface IStream<out E> : IStreamExecutorProvider {
         override fun <R> map(mapper: (E) -> R): One<R>
         fun <T, R> zipWith(other: One<T>, mapper: (E, T) -> R): One<R> = IStream.zip(this, other, mapper)
 
-        @Deprecated("Use IStreamExecutor.query. It's valid to be used in implementations of IStreamExecutor.")
+        /**
+         * See documentation of [iterateSynchronous].
+         */
+        @DelicateModelixApi
         override fun getSynchronous(): E
 
-        @Deprecated("Use IStreamExecutor.querySuspending. It's valid to be used in implementations of IStreamExecutor.")
+        /**
+         * See documentation of [iterateSuspending].
+         */
+        @DelicateModelixApi
         suspend fun getSuspending(): E
         override fun onAfterSubscribe(action: () -> Unit): One<E>
         fun cached(): One<E>
@@ -122,7 +149,7 @@ operator fun <R> IStream.Many<R>.plus(other: IStream.Many<R>): IStream.Many<R> {
     return this.concat(other)
 }
 
-operator fun <R> IStream.OneOrMany<R>.plus(other: IStream.OneOrMany<R>): IStream.OneOrMany<R> {
+operator fun <R> IStream.Many<R>.plus(other: IStream.OneOrMany<R>): IStream.OneOrMany<R> {
     return this.concat(other)
 }
 

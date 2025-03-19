@@ -58,7 +58,7 @@ class ModelImporterTest : AbstractModelSyncTest() {
             val importer = ModelImporter(branch1.getRootNode())
             importer.import(ModelData(root = initialState))
         }
-        val otBranch = OTBranch(branch1, idGenerator, store)
+        val otBranch = OTBranch(branch1, idGenerator)
 
         otBranch.runWrite {
             val importer = ModelImporter(otBranch.getRootNode())

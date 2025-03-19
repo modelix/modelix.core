@@ -5,8 +5,6 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.async.getDescendants
 import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.getObject
 import org.modelix.model.objects.IObjectData
 import org.modelix.model.objects.ObjectReference
 import org.modelix.model.persistent.CPNode
@@ -21,13 +19,13 @@ class AddNewChildSubtreeOp(val resultTreeHash: ObjectReference<CPTree>, val posi
         return if (newPos == position) this else AddNewChildSubtreeOp(resultTreeHash, newPos, childId, concept)
     }
 
-    override fun apply(transaction: IWriteTransaction, store: IDeserializingKeyValueStore): IAppliedOperation {
-        decompress(store) { it.apply(transaction, store) }
-        return Applied(store)
+    override fun apply(transaction: IWriteTransaction): IAppliedOperation {
+        decompress() { it.apply(transaction) }
+        return Applied()
     }
 
-    fun decompress(store: IDeserializingKeyValueStore, opsVisitor: (IOperation) -> Unit) {
-        val resultTree = getResultTree(store)
+    fun decompress(opsVisitor: (IOperation) -> Unit) {
+        val resultTree = getResultTree()
         for (node in resultTree.getDescendants(childId, true)) {
             val pos = PositionInRole(
                 node.parentId,
@@ -41,7 +39,7 @@ class AddNewChildSubtreeOp(val resultTreeHash: ObjectReference<CPTree>, val posi
         }
     }
 
-    private fun getResultTree(store: IDeserializingKeyValueStore): CLTree = CLTree(resultTreeHash.getObject(store), store)
+    private fun getResultTree(): CLTree = CLTree(resultTreeHash.resolveLater().query())
 
     private fun decompressNode(tree: ITree, node: CPNode, position: PositionInRole?, references: Boolean, opsVisitor: (IOperation) -> Unit) {
         if (references) {
@@ -60,11 +58,11 @@ class AddNewChildSubtreeOp(val resultTreeHash: ObjectReference<CPTree>, val posi
         return "AddNewChildSubtreeOp ${resultTreeHash.getHash()}, ${SerializationUtil.longToHex(childId)}, $position, $concept"
     }
 
-    inner class Applied(val store: IDeserializingKeyValueStore) : AbstractOperation.Applied(), IAppliedOperation {
+    inner class Applied() : AbstractOperation.Applied(), IAppliedOperation {
         override fun getOriginalOp() = this@AddNewChildSubtreeOp
 
         override fun invert(): List<IOperation> {
-            val resultTree = getResultTree(store)
+            val resultTree = getResultTree()
             val asyncTree = resultTree.asAsyncTree()
             return asyncTree.getStreamExecutor().query {
                 asyncTree
@@ -74,7 +72,7 @@ class AddNewChildSubtreeOp(val resultTreeHash: ObjectReference<CPTree>, val posi
         }
     }
 
-    override fun captureIntend(tree: ITree, store: IDeserializingKeyValueStore): IOperationIntend {
+    override fun captureIntend(tree: ITree): IOperationIntend {
         val children = tree.getChildren(position.nodeId, position.role)
         return Intend(
             CapturedInsertPosition(position.index, children.toList().toLongArray()),

@@ -58,7 +58,7 @@ class TreeDiffTest {
         val idGenerator = IdGenerator.newInstance(255)
         val initialTree = CLTree(storeCache)
 
-        val branch = OTBranch(PBranch(initialTree, idGenerator), idGenerator, storeCache)
+        val branch = OTBranch(PBranch(initialTree, idGenerator), idGenerator)
         for (i in 1..initialSize) RandomTreeChangeGenerator(idGenerator, rand).growingOperationsOnly().applyRandomChange(branch, null)
         val (_, tree1) = branch.operationsAndTree
         for (i in 1..numModifications) RandomTreeChangeGenerator(idGenerator, rand).withoutMove().applyRandomChange(branch, null)

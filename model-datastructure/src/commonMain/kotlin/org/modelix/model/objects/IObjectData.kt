@@ -1,6 +1,5 @@
 package org.modelix.model.objects
 
-import org.modelix.model.persistent.HashUtil
 import org.modelix.streams.IStream
 import org.modelix.streams.plus
 
@@ -9,7 +8,7 @@ import org.modelix.streams.plus
  */
 interface IObjectData {
     fun serialize(): String
-    fun getDeserializer(): (String) -> IObjectData
+    fun getDeserializer(): IObjectDeserializer<*>
     fun getAllReferences(): List<ObjectReference<IObjectData>> = getContainmentReferences() + getNonContainmentReferences()
     fun getContainmentReferences(): List<ObjectReference<IObjectData>>
     fun getNonContainmentReferences(): List<ObjectReference<IObjectData>> = emptyList()
@@ -20,9 +19,9 @@ interface IObjectData {
      * Callers should compare the hashes of the old and new object before calling this method.
      * It assumes that the [oldObject] is different from this one and calling it anyway will result in a bigger diff.
      */
-    fun objectDiff(self: Object<*>, oldObject: Object<*>?, loader: IObjectLoader): IStream.Many<Object<*>> {
+    fun objectDiff(self: Object<*>, oldObject: Object<*>?): IStream.Many<Object<*>> {
         requireDifferentHash(oldObject?.data)
-        return self.getDescendantsAndSelf(loader)
+        return self.getDescendantsAndSelf()
     }
 }
 
@@ -44,27 +43,21 @@ fun IObjectData.requireDifferentHash(other: ObjectHash?) {
 }
 
 @Deprecated("To avoid unnecessary expensive hash computation, hashes should be retrieved from ObjectReference")
-val IObjectData.hash: ObjectHash get() = ObjectHash(HashUtil.sha256(serialize()))
+val IObjectData.hash: ObjectHash get() = ObjectHash.computeHash(serialize())
 
 @Deprecated("To avoid unnecessary expensive hash computation, hashes should be retrieved from ObjectReference")
 val IObjectData.hashString: String get() = hash.toString()
 
-fun Object<*>.getDescendants(loader: IObjectLoader): IStream.Many<Object<*>> {
-    return IStream.many(data.getContainmentReferences())
-        .flatMap {
-            it.resolve(loader).flatMap { it.getDescendantsAndSelf(loader) }
-        }
-}
-
-fun Object<*>.getDescendantsAndSelf(loader: IObjectLoader): IStream.Many<Object<*>> {
-    return IStream.of(this) + getDescendants(loader)
-}
-
-fun IObjectData.getDescendantRefs(loader: IObjectLoader): IStream.Many<ObjectReference<*>> {
+fun IObjectData.getDescendantRefs(): IStream.Many<ObjectReference<*>> {
     return IStream.many(getContainmentReferences())
-        .flatMap { it.getDescendantRefsAndSelf(loader) }
+        .flatMap { it.getDescendantRefsAndSelf() }
 }
 
-fun ObjectReference<*>.getDescendantRefsAndSelf(loader: IObjectLoader): IStream.Many<ObjectReference<*>> {
-    return IStream.of(this) + this.requestData(loader).flatMap { it.getDescendantRefs(loader) }
+fun ObjectReference<*>.getDescendantRefsAndSelf(): IStream.Many<ObjectReference<*>> {
+    return IStream.of(this) + this.resolveData().flatMap { it.getDescendantRefs() }
+}
+
+fun <T : IObjectData> IObjectData.upcast(): T {
+    @Suppress("UNCHECKED_CAST")
+    return this as T
 }

@@ -1,5 +1,6 @@
 package org.modelix.model.async
 
+import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INodeReference
@@ -28,7 +29,7 @@ import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.COWArrays.insert
 import org.modelix.model.lazy.NodeNotFoundException
-import org.modelix.model.objects.IObjectData
+import org.modelix.model.objects.IObjectGraph
 import org.modelix.model.objects.Object
 import org.modelix.model.objects.ObjectReference
 import org.modelix.model.objects.asObject
@@ -45,27 +46,32 @@ import org.modelix.model.persistent.EntryAddedEvent
 import org.modelix.model.persistent.EntryChangedEvent
 import org.modelix.model.persistent.EntryRemovedEvent
 import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutor
 import org.modelix.streams.IStreamExecutorProvider
 import org.modelix.streams.flatten
 import org.modelix.streams.ifEmpty
 import org.modelix.streams.notNull
 import org.modelix.streams.plus
 
-open class AsyncTree(val resolvedTreeData: Object<CPTree>, val store: IAsyncObjectStore) : IAsyncMutableTree, IStreamExecutorProvider by store {
+open class AsyncTree(val resolvedTreeData: Object<CPTree>) : IAsyncMutableTree, IStreamExecutorProvider {
+
+    val store: IAsyncObjectStore get() = resolvedTreeData.graph.getAsyncStore()
 
     val treeData: CPTree get() = resolvedTreeData.data
-    private val loader = store.asObjectLoader()
+    private val objectGraph: IObjectGraph get() = resolvedTreeData.graph
     private val nodesMap: ObjectReference<CPHamtNode> = treeData.idToHash
 
-    private fun <T : IObjectData> ObjectReference<T>.query(): IStream.One<T> = this.requestData(loader)
+    override fun getStreamExecutor(): IStreamExecutor {
+        return resolvedTreeData.graph.getStreamExecutor()
+    }
 
     fun getNode(id: Long): IStream.One<CPNode> = tryGetNodeRef(id)
         .exceptionIfEmpty { NodeNotFoundException(id) }
-        .flatMapOne { it.query() }
+        .flatMapOne { it.resolveData() }
 
     fun getNodes(ids: LongArray): IStream.Many<CPNode> {
-        return nodesMap.query().flatMap {
-            it.getAll(ids, 0, loader).toList().map {
+        return nodesMap.resolveData().flatMap {
+            it.getAll(ids, 0).toList().map {
                 val entries = it.associateBy { it.first }
                 ids.map { id ->
                     val value = entries[id]?.second
@@ -74,15 +80,15 @@ open class AsyncTree(val resolvedTreeData: Object<CPTree>, val store: IAsyncObje
                 }
             }
         }.flatMap {
-            IStream.many(it).flatMap { it.query() }
+            IStream.many(it).flatMap { it.resolveData() }
         }
     }
 
     private fun tryGetNodeRef(id: Long): IStream.ZeroOrOne<ObjectReference<CPNode>> =
-        nodesMap.query().flatMapZeroOrOne { it.get(id, loader) }
+        nodesMap.resolveData().flatMapZeroOrOne { it.get(id) }
 
     override fun asSynchronousTree(): ITree {
-        return CLTree(resolvedTreeData, store)
+        return CLTree(resolvedTreeData)
         // return AsyncAsSynchronousTree(this)
     }
 
@@ -93,13 +99,13 @@ open class AsyncTree(val resolvedTreeData: Object<CPTree>, val store: IAsyncObje
     override fun getChanges(oldVersion: IAsyncTree, changesOnly: Boolean): IStream.Many<TreeChangeEvent> {
         require(oldVersion is AsyncTree)
         if (nodesMap.getHash() == oldVersion.nodesMap.getHash()) return IStream.empty()
-        return nodesMap.query().zipWith(oldVersion.nodesMap.query()) { newMap, oldMap ->
+        return nodesMap.resolveData().zipWith(oldVersion.nodesMap.resolveData()) { newMap, oldMap ->
             getChanges(oldVersion, newMap, oldMap, changesOnly)
         }.flatten()
     }
 
     private fun getChanges(oldTree: AsyncTree, newNodesMap: CPHamtNode, oldNodesMap: CPHamtNode, changesOnly: Boolean): IStream.Many<TreeChangeEvent> {
-        return newNodesMap.getChanges(oldNodesMap, 0, loader, changesOnly).flatMap { mapEvent ->
+        return newNodesMap.getChanges(oldNodesMap, 0, changesOnly).flatMap { mapEvent ->
             when (mapEvent) {
                 is EntryAddedEvent -> {
                     if (changesOnly) {
@@ -116,7 +122,7 @@ open class AsyncTree(val resolvedTreeData: Object<CPTree>, val store: IAsyncObje
                     }
                 }
                 is EntryChangedEvent -> {
-                    mapEvent.newValue.requestBoth(mapEvent.oldValue, loader) { newNode, oldNode ->
+                    mapEvent.newValue.requestBoth(mapEvent.oldValue) { newNode, oldNode ->
                         getChanges(oldTree, oldNode.data, newNode.data, mapEvent)
                     }.flatten()
                 }
@@ -293,23 +299,23 @@ open class AsyncTree(val resolvedTreeData: Object<CPTree>, val store: IAsyncObje
 
     private fun withNewNodesMap(newMap: IStream.One<CPHamtNode>): IStream.One<AsyncTree> {
         return newMap.map {
-            val newIdToHash = ObjectReference(it)
-            if (newIdToHash.getHash() == treeData.idToHash.getHash()) return@map this
-            AsyncTree(CPTree(treeData.id, newIdToHash, treeData.usesRoleIds).asObject(), store)
+            val newIdToHash = resolvedTreeData.referenceFactory(it)
+            @OptIn(DelicateModelixApi::class) // this is a new object
+            AsyncTree(CPTree(treeData.id, newIdToHash, treeData.usesRoleIds).asObject(objectGraph))
         }
     }
 
     private fun updateNode(nodeId: Long, transform: (CPNode) -> IStream.One<CPNode>): IStream.One<AsyncTree> {
-        return updateNodeInMap(nodesMap.query(), nodeId, transform).newTree()
+        return updateNodeInMap(nodesMap.resolveData(), nodeId, transform).newTree()
     }
 
     private fun updateNodeInMap(nodesMap: IStream.One<CPHamtNode>, nodeId: Long, transform: (CPNode) -> IStream.One<CPNode>): IStream.One<CPHamtNode> {
         return nodesMap.flatMapOne { oldMap ->
-            oldMap.get(nodeId, loader)
+            oldMap.get(nodeId)
                 .exceptionIfEmpty { throw IllegalArgumentException("Node not found: ${nodeId.toString(16)}") }
-                .flatMapOne { it.query() }
+                .flatMapOne { it.resolveData() }
                 .map { oldMap to it }
-                .flatMapOne { (oldMap, nodeData) -> transform(nodeData).flatMapOne { newData -> oldMap.put(newData, loader) } }
+                .flatMapOne { (oldMap, nodeData) -> transform(nodeData).flatMapOne { newData -> oldMap.put(newData, objectGraph) } }
         }
     }
 
@@ -321,7 +327,7 @@ open class AsyncTree(val resolvedTreeData: Object<CPTree>, val store: IAsyncObje
         concepts: Array<ConceptReference>,
     ): IStream.One<IAsyncMutableTree> {
         val newNodes = newIds.zip(concepts).map { (childId, concept) ->
-            childId to ObjectReference(
+            childId to resolvedTreeData.referenceFactory(
                 CPNode.create(
                     childId,
                     concept.getUID().takeIf { it != NullConcept.getUID() },
@@ -337,11 +343,11 @@ open class AsyncTree(val resolvedTreeData: Object<CPTree>, val store: IAsyncObje
         }
 
         val newParentData: IStream.One<CPNode> = insertChildrenIntoParentData(parentId, index, newIds, role)
-        return nodesMap.query().zipWith(newParentData) { nodesMap, newParentData ->
+        return nodesMap.resolveData().zipWith(newParentData) { nodesMap, newParentData ->
             nodesMap
-                .getAll(newIds, 0, loader)
+                .getAll(newIds, 0)
                 .assertEmpty { "Node with ID ${it.first.toString(16)} already exists" }
-                .plus(nodesMap.putAll(newNodes + (parentId to ObjectReference(newParentData)), 0, loader))
+                .plus(nodesMap.putAll(newNodes + (parentId to objectGraph(newParentData)), 0, objectGraph))
                 .ifEmpty { CPHamtInternal.createEmpty() }
         }.flatten().newTree()
     }
@@ -475,7 +481,7 @@ open class AsyncTree(val resolvedTreeData: Object<CPTree>, val store: IAsyncObje
 
     private fun deleteNodeRecursive(nodeId: Long): IStream.One<AsyncTree> {
         val mapWithoutRemovedNodes: IStream.One<CPHamtNode> = getDescendantsAndSelf(nodeId)
-            .fold(nodesMap.query()) { map, node -> map.flatMapOne { it.remove(node, loader).assertNotEmpty() } }
+            .fold(nodesMap.resolveData()) { map, node -> map.flatMapOne { it.remove(node, objectGraph).assertNotEmpty() } }
             .flatten()
         val parent = getParent(nodeId).exceptionIfEmpty { IllegalArgumentException("Cannot delete node without parent: ${nodeId.toString(16)}") }
 

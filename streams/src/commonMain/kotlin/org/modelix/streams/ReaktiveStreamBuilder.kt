@@ -153,6 +153,10 @@ class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder,
         override fun exactlyOne(): IStream.One<E> {
             return WrapperSingle(wrappedAsSingle())
         }
+
+        override fun concat(other: OneOrMany<E>): OneOrMany<E> {
+            return WrapperOneOrMany(wrappedAsObservable().concatWith(other.toReaktive()))
+        }
     }
 
     inner class WrapperCompletable(val wrapped: Completable) :
@@ -336,10 +340,6 @@ class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder,
             return WrapperOneOrMany(wrapped.doOnAfterSubscribe { action() })
         }
 
-        override fun concat(other: OneOrMany<E>): OneOrMany<E> {
-            return WrapperOneOrMany(wrapped.concatWith(other.toReaktive()))
-        }
-
         override fun distinct(): OneOrMany<E> {
             return WrapperOneOrMany(wrapped.distinct())
         }
@@ -433,10 +433,6 @@ class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder,
 
         override fun concat(other: IStream.Many<E>): IStream.Many<E> {
             return WrapperMany(wrapped.asObservable().concatWith(other.toReaktive()))
-        }
-
-        override fun concat(other: OneOrMany<E>): OneOrMany<E> {
-            return WrapperOneOrMany(wrapped.asObservable().concatWith(other.toReaktive()))
         }
 
         override fun distinct(): OneOrMany<E> {

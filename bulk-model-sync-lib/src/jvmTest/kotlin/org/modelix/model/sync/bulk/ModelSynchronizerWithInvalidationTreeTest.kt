@@ -83,7 +83,7 @@ class ModelSynchronizerWithInvalidationTreeTest : ModelSynchronizerTest() {
                 sourceTree.visitChanges(targetTree, InvalidatingVisitor(sourceTree, invalidationTree))
             }
         }
-        val otBranch = OTBranch(targetBranch, idGenerator, store)
+        val otBranch = OTBranch(targetBranch, idGenerator)
         otBranch.runWrite {
             ModelSynchronizer(
                 filter = invalidationTree,

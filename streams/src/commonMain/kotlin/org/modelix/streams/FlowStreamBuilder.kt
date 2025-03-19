@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.flow.zip
+import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.kotlin.utils.runBlockingIfJvm
 import kotlin.coroutines.coroutineContext
 
@@ -143,6 +144,7 @@ class FlowStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder, ISt
         fun <R> plusSequence(other: WrapperBase<R>): Wrapper<R> {
             return Wrapper(
                 flow {
+                    @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
                     executeSynchronous()
                     emitAll(other.asFlow())
                 },

@@ -16,7 +16,6 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.CLVersion.Companion.loadFromHash
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.lazy.getObject
 import org.modelix.model.operations.IAppliedOperation
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.OTBranch
@@ -240,7 +239,7 @@ actual open class ReplicatedRepository actual constructor(
             initialVersion = createVersion(initialTree.value, arrayOf(), null)
             client.asyncStore.put(branchReference.getKey(), initialVersion.getContentHash())
         } else {
-            initialTree.setValue(CLTree(initialVersion.treeRef.getObject(store), store))
+            initialTree.setValue(CLTree(initialVersion.treeRef.resolveNow()))
         }
 
         // prefetch to avoid HTTP request in command listener
@@ -248,7 +247,7 @@ actual open class ReplicatedRepository actual constructor(
         localVersion = initialVersion
         remoteVersion = initialVersion
         localBranch = PBranch(initialTree.value, client.idGenerator)
-        localOTBranch = OTBranch(localBranch, client.idGenerator, store)
+        localOTBranch = OTBranch(localBranch, client.idGenerator)
         merger = VersionMerger(store, client.idGenerator)
         versionChangeDetector = object : VersionChangeDetector(client, branchReference.getKey(), coroutineScope) {
             override fun processVersionChange(oldVersion: String?, newVersion: String?) {

@@ -7,6 +7,7 @@ import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.IDeserializingKeyValueStore
+import org.modelix.model.lazy.commonBaseVersion
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.IOperationIntend
 import org.modelix.model.operations.UndoOp
@@ -22,8 +23,8 @@ class VersionMerger(private val idGenerator: IIdGenerator) {
 
     private val logger = mu.KotlinLogging.logger {}
     fun mergeChange(lastMergedVersion: CLVersion, newVersion: CLVersion): CLVersion {
-        require(lastMergedVersion.asyncStore == newVersion.asyncStore) {
-            "Versions are backed by different stores: $lastMergedVersion, $newVersion"
+        require(lastMergedVersion.graph == newVersion.graph) {
+            "Versions are part of different object graphs: $lastMergedVersion, $newVersion"
         }
         if (newVersion.hash == lastMergedVersion.hash) {
             return lastMergedVersion
@@ -92,7 +93,7 @@ class VersionMerger(private val idGenerator: IIdGenerator) {
                 }
                 transformed.map { o ->
                     try {
-                        o.apply(t, (t.tree as CLTree).store)
+                        o.apply(t)
                     } catch (ex: Exception) {
                         throw RuntimeException("Operation failed: $o", ex)
                     }
@@ -105,7 +106,6 @@ class VersionMerger(private val idGenerator: IIdGenerator) {
                 leftVersion,
                 rightVersion,
                 appliedOps.map { it.getOriginalOp() }.toTypedArray(),
-                rightVersion.asyncStore.getLegacyObjectStore(),
             )
         }
         if (mergedVersion == null) {
@@ -141,8 +141,8 @@ class VersionMerger(private val idGenerator: IIdGenerator) {
         val branch = TreePointer(tree)
         return branch.computeWrite {
             operations.map {
-                val intend = it.captureIntend(branch.transaction.tree, version.asyncStore.getLegacyObjectStore())
-                it.apply(branch.writeTransaction, version.asyncStore.getLegacyObjectStore())
+                val intend = it.captureIntend(branch.transaction.tree)
+                it.apply(branch.writeTransaction)
                 intend
             }
         }
@@ -150,35 +150,9 @@ class VersionMerger(private val idGenerator: IIdGenerator) {
 
     companion object {
         fun commonBaseVersion(leftVersion: CLVersion?, rightVersion: CLVersion?): CLVersion? {
-            var leftVersion = leftVersion
-            var rightVersion = rightVersion
-            val leftVersions: MutableSet<String> = HashSet()
-            val rightVersions: MutableSet<String> = HashSet()
-            while (leftVersion != null || rightVersion != null) {
-                if (leftVersion != null) {
-                    leftVersions.add(leftVersion.hash)
-                }
-                if (rightVersion != null) {
-                    rightVersions.add(rightVersion.hash)
-                }
-                if (leftVersion != null) {
-                    if (rightVersions.contains(leftVersion.hash)) {
-                        return leftVersion
-                    }
-                }
-                if (rightVersion != null) {
-                    if (leftVersions.contains(rightVersion.hash)) {
-                        return rightVersion
-                    }
-                }
-                if (leftVersion != null) {
-                    leftVersion = leftVersion.baseVersion
-                }
-                if (rightVersion != null) {
-                    rightVersion = rightVersion.baseVersion
-                }
-            }
-            return null
+            if (leftVersion == null) return null
+            if (rightVersion == null) return null
+            return leftVersion.commonBaseVersion(rightVersion)
         }
     }
 }

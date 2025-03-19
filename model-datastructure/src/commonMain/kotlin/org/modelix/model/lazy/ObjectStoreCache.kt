@@ -2,6 +2,7 @@ package org.modelix.model.lazy
 
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.async.CachingAsyncStore
+import org.modelix.model.async.LegacyKeyValueStoreAsAsyncStore
 import kotlin.jvm.Synchronized
 
 class CacheConfiguration : BulkQueryConfiguration() {
@@ -16,7 +17,7 @@ class CacheConfiguration : BulkQueryConfiguration() {
 }
 
 fun createObjectStoreCache(keyValueStore: IKeyValueStore, cacheSize: Int = 100_000): CachingAsyncStore {
-    return CachingAsyncStore(NonCachingObjectStore(keyValueStore).getAsyncStore(), cacheSize)
+    return CachingAsyncStore(LegacyKeyValueStoreAsAsyncStore(keyValueStore), cacheSize)
 }
 
 @Deprecated("Use createObjectStoreCache(...)..getLegacyObjectStore()")

@@ -605,7 +605,7 @@ internal fun createOTBranchFromModel(model: ModelData): OTBranch {
     pBranch.runWrite {
         ModelImporter(pBranch.getRootNode()).import(model)
     }
-    return OTBranch(pBranch, IdGenerator.getInstance(1), createObjectStoreCache(MapBasedStore()))
+    return OTBranch(pBranch, IdGenerator.getInstance(1))
 }
 
 internal fun IBranch.importIncrementally(model: ModelData) {

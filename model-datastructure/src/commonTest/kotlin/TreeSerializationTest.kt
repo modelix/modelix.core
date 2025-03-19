@@ -4,11 +4,10 @@ import org.modelix.model.api.IConcept
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.PNodeReference
+import org.modelix.model.async.LegacyKeyValueStoreAsAsyncStore
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
-import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.NonCachingObjectStore
 import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.MapBaseStore
@@ -64,9 +63,8 @@ class TreeSerializationTest {
 
     fun serializeAndDeserialize(moreThan10ops: Boolean, expectedVersionHash: String) {
         val mapStore = MapBaseStore()
-        var store = mapStore
-        var objectStore: IDeserializingKeyValueStore = NonCachingObjectStore(mapStore)
-        val initialTree = CLTree.builder(objectStore).repositoryId("tree01").useRoleIds(true).build()
+        val store = LegacyKeyValueStoreAsAsyncStore(mapStore)
+        val initialTree = CLTree.builder(store).repositoryId("tree01").useRoleIds(true).build()
         val initialVersion = CLVersion.createRegularVersion(
             id = 1,
             time = null,
@@ -76,7 +74,7 @@ class TreeSerializationTest {
             operations = arrayOf(),
         )
         val idGenerator = IdGenerator.newInstance(Int.MAX_VALUE)
-        val branch = OTBranch(PBranch(initialTree, idGenerator), idGenerator, objectStore)
+        val branch = OTBranch(PBranch(initialTree, idGenerator), idGenerator)
         initTree(branch, moreThan10ops)
         val (ops, tree) = branch.operationsAndTree
         val version = CLVersion.createRegularVersion(
@@ -88,14 +86,12 @@ class TreeSerializationTest {
             operations = ops.map { it.getOriginalOp() }.toTypedArray(),
         )
         val versionHash = version.write()
-        store.put("branch_master", versionHash)
+        mapStore.put("branch_master", versionHash)
         mapStore.entries.sortedBy { it.key }.forEach { println(""""${it.key}" to "${it.value}",""") }
         assertTree(tree)
         assertEquals(expectedVersionHash, versionHash) // ensures that JVM and JS targets produce the same serialized data
 
-        store = mapStore
-        objectStore = NonCachingObjectStore(store)
-        val deserializedVersion = CLVersion.loadFromHash(version.hash, objectStore)
+        val deserializedVersion = CLVersion.loadFromHash(version.hash, store)
         assertTree(deserializedVersion.tree)
     }
 
@@ -325,7 +321,7 @@ class TreeSerializationTest {
         val branch = PBranch(CLTree.builder(createObjectStoreCache(MapBaseStore())).repositoryId("tree01").useRoleIds(true).build(), IdGenerator.newInstance(2))
         branch.runWrite {
             for (operation in deserializedVersion.operations) {
-                operation.apply(branch.writeTransaction, deserializedVersion.store)
+                operation.apply(branch.writeTransaction)
             }
         }
         val treeFromOps = branch.computeRead { branch.transaction.tree }

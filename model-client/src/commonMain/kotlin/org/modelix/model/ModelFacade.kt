@@ -16,11 +16,7 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.createObjectStoreCache
-import org.modelix.model.objects.Object
-import org.modelix.model.objects.ObjectHash
-import org.modelix.model.objects.ObjectReference
 import org.modelix.model.operations.OTBranch
-import org.modelix.model.persistent.CPVersion
 import org.modelix.model.persistent.MapBasedStore
 import kotlin.jvm.JvmOverloads
 
@@ -93,15 +89,11 @@ object ModelFacade {
     fun createRepositoryId(id: String): RepositoryId = RepositoryId(id)
 
     fun mergeUpdate(client: IModelClient, branch: BranchReference, baseVersionHash: String? = null, userName: String?, body: (IWriteTransaction) -> Unit): CLVersion {
+        val store = client.storeCache.getAsyncStore()
         val actualBaseVersionHash: String = baseVersionHash
             ?: client.get(branch.getKey())
             ?: throw RuntimeException("$branch doesn't exist")
-        val baseVersionData: CPVersion = client.storeCache.get(actualBaseVersionHash) { CPVersion.deserialize(it) }
-            ?: throw RuntimeException("version not found: $actualBaseVersionHash")
-        val baseVersion = CLVersion(
-            Object(baseVersionData, ObjectReference(ObjectHash(actualBaseVersionHash), baseVersionData)),
-            client.storeCache.getAsyncStore(),
-        )
+        val baseVersion = CLVersion.loadFromHash(actualBaseVersionHash, store)
         return applyUpdate(client, baseVersion, branch, userName, body)
     }
 
@@ -112,7 +104,7 @@ object ModelFacade {
         userId: String?,
         body: (IWriteTransaction) -> Unit,
     ): CLVersion {
-        val otBranch = OTBranch(PBranch(baseVersion.getTree(), client.idGenerator), client.idGenerator, client.storeCache)
+        val otBranch = OTBranch(PBranch(baseVersion.getTree(), client.idGenerator), client.idGenerator)
         otBranch.computeWriteT { t -> body(t) }
 
         val operationsAndTree = otBranch.getPendingChanges()

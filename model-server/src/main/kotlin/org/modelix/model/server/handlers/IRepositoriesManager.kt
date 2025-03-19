@@ -53,6 +53,7 @@ interface IRepositoriesManager {
 
     @RequiresTransaction
     fun mergeChanges(branch: BranchReference, newVersionHash: String): String
+    suspend fun mergeChangesWithoutPush(branch: BranchReference, newVersionHash: String): String
     suspend fun computeDelta(repository: RepositoryId?, versionHash: String, baseVersionHash: String?): ObjectData =
         computeDelta(repository, versionHash, ObjectDeltaFilter(knownVersions = setOfNotNull(baseVersionHash)))
     suspend fun computeDelta(repository: RepositoryId?, versionHash: String, filter: ObjectDeltaFilter): ObjectData

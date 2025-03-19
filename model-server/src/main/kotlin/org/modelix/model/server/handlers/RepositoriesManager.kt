@@ -26,6 +26,7 @@ import org.modelix.model.server.store.RequiresTransaction
 import org.modelix.model.server.store.StoreManager
 import org.modelix.model.server.store.assertWrite
 import org.modelix.model.server.store.pollEntry
+import org.modelix.model.server.store.runReadIO
 import org.modelix.streams.IExecutableStream
 import org.modelix.streams.IStream
 import org.modelix.streams.SimpleStreamExecutor
@@ -158,7 +159,8 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
             id = stores.idGenerator.generate(),
             time = Clock.System.now().epochSeconds.toString(),
             author = userName,
-            tree = CLTree(null, null, stores.getLegacyObjectStore(repositoryId.takeIf { isolated }), useRoleIds = useRoleIds),
+            tree = CLTree.builder(stores.getAsyncStore(repositoryId.takeIf { isolated }))
+                .useRoleIds(useRoleIds).build(),
             baseVersion = null,
             operations = emptyArray(),
         )
@@ -243,13 +245,33 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
     override fun mergeChanges(branch: BranchReference, newVersionHash: String): String {
         val headHash = getVersionHash(branch)
         if (headHash == newVersionHash) return headHash
-        val legacyObjectStore = getLegacyObjectStore(branch.repositoryId)
-        val newVersion = CLVersion.loadFromHash(newVersionHash, legacyObjectStore)
+        val mergedHash = validateAndMerge(newVersionHash, headHash, branch.repositoryId)
+        ensureBranchInList(branch)
+        putVersionHash(branch, mergedHash)
+        return mergedHash
+    }
+
+    override suspend fun mergeChangesWithoutPush(branch: BranchReference, newVersionHash: String): String {
+        @OptIn(RequiresTransaction::class)
+        val headHash = getTransactionManager().runReadIO {
+            getVersionHash(branch)
+        }
+        return validateAndMerge(newVersionHash, headHash, branch.repositoryId)
+    }
+
+    private fun validateAndMerge(
+        newVersionHash: String,
+        headHash: String?,
+        repositoryId: RepositoryId,
+    ): String {
+        if (headHash == newVersionHash) return headHash
+        val asyncStore = getAsyncStore(repositoryId)
+        val newVersion = CLVersion.loadFromHash(newVersionHash, asyncStore)
         val mergedHash = if (headHash == null) {
             validateVersion(newVersion, null)
             newVersionHash
         } else {
-            val legacyObjectStore = getLegacyObjectStore(branch.repositoryId)
+            val legacyObjectStore = getLegacyObjectStore(repositoryId)
             val headVersion = CLVersion.loadFromHash(headHash, legacyObjectStore)
             require(headVersion.getTree().getId() == newVersion.getTree().getId()) {
                 "Attempt to merge a model with ID '${newVersion.getTree().getId()}'" +
@@ -260,8 +282,6 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
                 .mergeChange(headVersion, newVersion)
             mergedVersion.getContentHash()
         }
-        ensureBranchInList(branch)
-        putVersionHash(branch, mergedHash)
         return mergedHash
     }
 

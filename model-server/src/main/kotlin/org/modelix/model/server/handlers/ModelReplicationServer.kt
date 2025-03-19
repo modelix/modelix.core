@@ -228,9 +228,14 @@ class ModelReplicationServer(
             @OptIn(RequiresTransaction::class) // no transactions required for immutable store
             repositoriesManager.getStoreClient(RepositoryId(repository), true).putAll(objectsFromClient)
         }
+
+        // Run a merge outside a transaction to keep the transaction for the actual merge smaller.
+        // If there are no concurrent pushes on the same branch, then all the work is done here.
+        val preMergedVersion = repositoriesManager.mergeChangesWithoutPush(branchRef, deltaFromClient.versionHash)
+
         @OptIn(RequiresTransaction::class)
         val mergedHash = runWrite {
-            repositoriesManager.mergeChanges(branchRef, deltaFromClient.versionHash)
+            repositoriesManager.mergeChanges(branchRef, preMergedVersion)
         }
         call.respondDelta(RepositoryId(repository), mergedHash, ObjectDeltaFilter(deltaFromClient.versionHash))
     }

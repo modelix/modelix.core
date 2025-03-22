@@ -12,10 +12,12 @@ import org.modelix.model.TreeType
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITree
+import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.TreePointer
+import org.modelix.model.api.getRootNode
 import org.modelix.model.async.AsyncAsSynchronousTree
 import org.modelix.model.async.AsyncTree
 import org.modelix.model.async.IAsyncObjectStore
@@ -92,6 +94,22 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
 
     override fun getTree(): CLTree = tree
 
+    fun getTree(type: TreeType): CLTree = CLTree(data.getTree(type).resolveNow())
+
+    override fun getTrees(): Map<TreeType, ITree> {
+        return graph.getStreamExecutor().query {
+            getTreesLater().toMap({ it.first }, { it.second })
+        }
+    }
+
+    fun getTreesLater(): IStream.Many<Pair<TreeType, CLTree>> {
+        return IStream.many(data.treeRefs.entries).flatMap { entry ->
+            entry.value.resolve().map { tree ->
+                entry.key to CLTree(tree)
+            }
+        }
+    }
+
     val baseVersion: CLVersion?
         get() {
             val previousVersionHash = data.baseVersion ?: data.previousVersion ?: return null
@@ -117,10 +135,6 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
 
     fun operationsInlined(): Boolean {
         return data.operations != null
-    }
-
-    override fun getTrees(): Map<TreeType, ITree> {
-        return obj.data.treeRefs.mapValues { CLTree(it.value.resolveNow()) }
     }
 
     fun isMerge() = this.data.mergedVersion1 != null
@@ -156,7 +170,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
         val INLINED_OPS_LIMIT = 10
 
         private fun localizeNodeRef(ref: INodeReference?, tree: Object<CPTree>): INodeReference? {
-            return if (ref is PNodeReference && ref.branchId == tree.data.id) ref.toLocal() else ref
+            return if (ref is PNodeReference && ref.treeId == tree.data.id.id) ref.toLocal() else ref
         }
 
         private fun localizeOps(ops: List<IOperation>, tree: Object<CPTree>): List<IOperation> {
@@ -432,6 +446,21 @@ fun <K, V> Map<K, V?>.filterNotNullValues(): Map<K, V> = filterValues { it != nu
 fun CLVersion.runWrite(idGenerator: IIdGenerator, author: String?, body: (IWriteTransaction) -> Unit): CLVersion {
     val branch = OTBranch(TreePointer(getTree(), idGenerator), idGenerator)
     branch.computeWriteT(body)
+    val (ops, newTree) = branch.getPendingChanges()
+    return CLVersion.createRegularVersion(
+        id = idGenerator.generate(),
+        author = author,
+        tree = newTree,
+        baseVersion = this,
+        operations = ops.map { it.getOriginalOp() }.toTypedArray(),
+    )
+}
+
+fun CLVersion.runWriteWithNode(idGenerator: IIdGenerator, author: String?, body: (IWritableNode) -> Unit): CLVersion {
+    val branch = OTBranch(TreePointer(getTree(), idGenerator), idGenerator)
+    branch.runWrite {
+        body(branch.getRootNode().asWritableNode())
+    }
     val (ops, newTree) = branch.getPendingChanges()
     return CLVersion.createRegularVersion(
         id = idGenerator.generate(),

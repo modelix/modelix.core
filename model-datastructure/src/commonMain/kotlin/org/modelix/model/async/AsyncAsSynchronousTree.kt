@@ -55,7 +55,7 @@ internal class AsyncAsSynchronousTree(val asyncTree: IAsyncMutableTree) : ITree 
     private fun IChildLinkReference.getKey() = if (usesRoleIds()) getIdOrNameOrNull() else getNameOrIdOrNull()
 
     override fun getId(): String? {
-        return (asyncTree as AsyncTree).treeData.id
+        return (asyncTree as AsyncTree).treeData.id.id
     }
 
     override fun visitChanges(oldVersion: ITree, visitor: ITreeChangeVisitor) {

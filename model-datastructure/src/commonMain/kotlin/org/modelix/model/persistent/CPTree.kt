@@ -1,5 +1,6 @@
 package org.modelix.model.persistent
 
+import org.modelix.model.TreeId
 import org.modelix.model.objects.IObjectData
 import org.modelix.model.objects.IObjectDeserializer
 import org.modelix.model.objects.IObjectReferenceFactory
@@ -13,7 +14,7 @@ sealed interface ITreeData : IObjectData
 sealed interface ITreeRelatedDeserializer<E : ITreeData> : IObjectDeserializer<E>
 
 class CPTree(
-    val id: String,
+    val id: TreeId,
     var idToHash: ObjectReference<CPHamtNode>,
     val usesRoleIds: Boolean,
 ) : ITreeData {
@@ -44,7 +45,7 @@ class CPTree(
 
         override fun deserialize(input: String, referenceFactory: IObjectReferenceFactory): CPTree {
             val parts = input.split(Separators.LEVEL1)
-            val treeId = parts[0]
+            val treeId = TreeId.fromLegacyId(parts[0])
             val persistenceVersion = parts[1].toInt()
             if (persistenceVersion != PERSISTENCE_VERSION && persistenceVersion != NAMED_BASED_PERSISTENCE_VERSION) {
                 throw RuntimeException(

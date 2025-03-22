@@ -8,6 +8,7 @@ import kotlinx.datetime.toInstant
 import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.model.IVersion
 import org.modelix.model.ObjectDeltaFilter
+import org.modelix.model.TreeType
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITree
@@ -51,7 +52,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
     val resolvedData: Object<CPVersion> get() = obj
 
     @Deprecated("Use obj.data.treeHash", ReplaceWith("obj.data.treeHash"))
-    val treeRef: ObjectReference<CPTree> get() = resolvedData.data.treeRef
+    val treeRef: ObjectReference<CPTree> get() = obj.data.getTree(TreeType.MAIN)
 
     @Deprecated("Use obj.data", ReplaceWith("obj.data"))
     val data: CPVersion get() = resolvedData.data
@@ -87,7 +88,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
     @Deprecated("Use getTree()", ReplaceWith("getTree()"))
     @get:JvmName("getTree_()")
     val tree: CLTree
-        get() = obj.data.treeRef.resolveLater().query().let { CLTree(it) }
+        get() = CLTree(treeRef.resolveNow())
 
     override fun getTree(): CLTree = tree
 
@@ -116,6 +117,10 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
 
     fun operationsInlined(): Boolean {
         return data.operations != null
+    }
+
+    override fun getTrees(): Map<TreeType, ITree> {
+        return obj.data.treeRefs.mapValues { CLTree(it.value.resolveNow()) }
     }
 
     fun isMerge() = this.data.mergedVersion1 != null
@@ -184,7 +189,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
                     id = id,
                     time = Clock.System.now().epochSeconds.toString(),
                     author = null,
-                    treeRef = obj.ref,
+                    treeRefs = mapOf(TreeType.MAIN to obj.ref),
                     previousVersion = null,
                     originalVersion = null,
                     baseVersion = baseVersion.obj.ref,
@@ -218,7 +223,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
                     id = id,
                     time = time,
                     author = author,
-                    treeRef = obj.ref,
+                    treeRefs = mapOf(TreeType.MAIN to obj.ref),
                     previousVersion = null,
                     originalVersion = null,
                     baseVersion = baseVersion?.obj?.ref,
@@ -323,10 +328,19 @@ fun CLVersion.diff(filter: ObjectDeltaFilter, commonBase: CLVersion?): IStream.M
         if (filter.includeTrees) {
             val baseVersion = version.data.baseVersion
             result += if (baseVersion == null) {
-                version.data.treeRef.resolve().flatMap { it.getDescendantsAndSelf() }
+                IStream.many(version.data.treeRefs.values)
+                    .flatMap { it.resolve() }
+                    .flatMap { it.getDescendantsAndSelf() }
             } else {
                 baseVersion.resolve().flatMap { baseVersion ->
-                    version.data.treeRef.diff(baseVersion.data.treeRef)
+                    IStream.many(version.data.treeRefs.entries).flatMap { (type, newTree) ->
+                        val oldTree = baseVersion.data.treeRefs[type]
+                        if (oldTree == null) {
+                            newTree.resolve().flatMap { it.getDescendantsAndSelf() }
+                        } else {
+                            newTree.diff(oldTree)
+                        }
+                    }
                 }
             }
         }

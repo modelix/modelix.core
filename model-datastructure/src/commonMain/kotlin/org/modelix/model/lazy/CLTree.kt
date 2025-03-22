@@ -1,6 +1,7 @@
 package org.modelix.model.lazy
 
 import org.modelix.kotlin.utils.DelicateModelixApi
+import org.modelix.model.TreeId
 import org.modelix.model.api.ITree
 import org.modelix.model.api.async.getAncestors
 import org.modelix.model.api.async.getDescendants
@@ -23,7 +24,7 @@ import org.modelix.streams.IStreamExecutorProvider
 
 private fun createNewTreeData(
     graph: IObjectGraph,
-    repositoryId: RepositoryId = RepositoryId.random(), // TODO This should be a separate TreeId
+    treeId: TreeId = TreeId.random(),
     useRoleIds: Boolean = true,
 ): Object<CPTree> {
     val root = CPNode.create(
@@ -39,7 +40,7 @@ private fun createNewTreeData(
     )
     @OptIn(DelicateModelixApi::class) // this is a new object
     return CPTree(
-        repositoryId.id,
+        treeId,
         graph(
             graph.getStreamExecutor().query {
                 CPHamtInternal.createEmpty()
@@ -71,7 +72,7 @@ class CLTree(val resolvedData: Object<CPTree>) :
         return resolvedData.graph.getStreamExecutor()
     }
 
-    override fun getId(): String = data.id
+    override fun getId(): String = data.id.id
 
     fun getSize(): Long {
         return -1
@@ -162,7 +163,7 @@ class CLTree(val resolvedData: Object<CPTree>) :
     }
 
     class Builder(var graph: IObjectGraph) {
-        private var repositoryId: RepositoryId? = null
+        private var treeId: TreeId? = null
         private var useRoleIds: Boolean = true
 
         fun useRoleIds(value: Boolean = true): Builder {
@@ -170,18 +171,24 @@ class CLTree(val resolvedData: Object<CPTree>) :
             return this
         }
 
+        fun treeId(id: TreeId): Builder = also {
+            this.treeId = id
+        }
+
+        @Deprecated("Provide a treeId")
         fun repositoryId(id: RepositoryId): Builder {
-            this.repositoryId = id
+            this.treeId = TreeId.fromLegacyId(id.id)
             return this
         }
 
-        fun repositoryId(id: String): Builder = repositoryId(RepositoryId(id))
+        @Deprecated("Provide a treeId")
+        fun repositoryId(id: String): Builder = treeId(TreeId.fromLegacyId(id))
 
         fun build(): CLTree {
             return CLTree(
                 createNewTreeData(
                     graph,
-                    repositoryId ?: RepositoryId.random(),
+                    treeId ?: TreeId.random(),
                     useRoleIds,
                 ),
             )

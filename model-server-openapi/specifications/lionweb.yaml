@@ -105,11 +105,17 @@ paths:
                       chunk:
                         $ref: '#/components/schemas/LionwebSerializationChunk'
 
-  /createPartitions:
-    put:
+  /bulk/createPartitions:
+    post:
       operationId: createPartitions
       tags:
         - lionweb
+      parameters:
+        - name: repository
+          in: "query"
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -261,7 +267,20 @@ components:
         messages:
           type: array
           items:
+            $ref: '#/components/schemas/LionwebResponseMessage'
+
+    LionwebResponseMessage:
+      type: object
+      properties:
+        kind:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+          additionalProperties:
             type: string
+
 
     LionwebRepositoryConfiguration:
       type: object
@@ -358,6 +377,8 @@ components:
                       type: string
                     reference:
                       type: string
+            required:
+              - reference
         annotations:
           type: array
           items:

@@ -94,6 +94,20 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
 
     fun getTree(type: TreeType): CLTree = CLTree(data.getTree(type).resolveNow())
 
+    override fun getTrees(): Map<TreeType, ITree> {
+        return graph.getStreamExecutor().query {
+            getTreesLater().toMap({ it.first }, { it.second })
+        }
+    }
+
+    fun getTreesLater(): IStream.Many<Pair<TreeType, CLTree>> {
+        return IStream.many(data.treeRefs.entries).flatMap { entry ->
+            entry.value.resolve().map { tree ->
+                entry.key to CLTree(tree)
+            }
+        }
+    }
+
     val baseVersion: CLVersion?
         get() {
             val previousVersionHash = data.baseVersion ?: data.previousVersion ?: return null
@@ -119,10 +133,6 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
 
     fun operationsInlined(): Boolean {
         return data.operations != null
-    }
-
-    override fun getTrees(): Map<TreeType, ITree> {
-        return obj.data.treeRefs.mapValues { CLTree(it.value.resolveNow()) }
     }
 
     fun isMerge() = this.data.mergedVersion1 != null
@@ -158,7 +168,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
         val INLINED_OPS_LIMIT = 10
 
         private fun localizeNodeRef(ref: INodeReference?, tree: Object<CPTree>): INodeReference? {
-            return if (ref is PNodeReference && ref.branchId == tree.data.id) ref.toLocal() else ref
+            return if (ref is PNodeReference && ref.treeId == tree.data.id.id) ref.toLocal() else ref
         }
 
         private fun localizeOps(ops: List<IOperation>, tree: Object<CPTree>): List<IOperation> {

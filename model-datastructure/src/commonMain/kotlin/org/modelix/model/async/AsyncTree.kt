@@ -213,7 +213,7 @@ open class AsyncTree(val resolvedTreeData: Object<CPTree>) : IAsyncMutableTree, 
     private fun CPNodeRef.convertReference(): INodeReference {
         val targetRef = this
         return when (targetRef) {
-            is CPNodeRef.LocalRef -> PNodeReference(targetRef.elementId, treeData.id)
+            is CPNodeRef.LocalRef -> PNodeReference(targetRef.elementId, treeData.id.id)
             is CPNodeRef.GlobalRef -> PNodeReference(targetRef.elementId, targetRef.treeId)
             is CPNodeRef.ForeignRef -> NodeReference(targetRef.serializedRef)
             else -> throw UnsupportedOperationException("Unsupported reference: $targetRef")
@@ -457,7 +457,7 @@ open class AsyncTree(val resolvedTreeData: Object<CPTree>) : IAsyncMutableTree, 
                 local(target.id)
             }
             is PNodeReference -> {
-                if (target.branchId.isEmpty() || target.branchId == treeData.id) {
+                if (target.branchId.isEmpty() || target.treeId == treeData.id.id) {
                     local(target.id)
                 } else {
                     global(target.branchId, target.id)

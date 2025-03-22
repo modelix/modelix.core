@@ -279,7 +279,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
                     " into one with ID '${headVersion.getTree().getId()}'"
             }
             validateVersion(newVersion, headVersion)
-            val mergedVersion = VersionMerger(legacyObjectStore, stores.idGenerator)
+            val mergedVersion = VersionMerger(stores.idGenerator)
                 .mergeChange(headVersion, newVersion)
             mergedVersion.getContentHash()
         }

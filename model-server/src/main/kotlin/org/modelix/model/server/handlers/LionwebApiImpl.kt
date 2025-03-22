@@ -1,5 +1,7 @@
 package org.modelix.model.server.handlers
 
+import gnu.trove.TLongCollection
+import gnu.trove.set.hash.TLongHashSet
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
@@ -14,20 +16,22 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IRoleReference
+import org.modelix.model.api.ITree
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.NodeReference
 import org.modelix.model.api.NullChildLinkReference
 import org.modelix.model.api.PNodeAdapter
+import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.WritableNodeAsLegacyNode
 import org.modelix.model.api.async.IAsyncNode
 import org.modelix.model.api.async.asAsyncNode
 import org.modelix.model.api.getDescendants
+import org.modelix.model.api.getNode
 import org.modelix.model.api.getRootNode
 import org.modelix.model.api.resolve
 import org.modelix.model.data.NodeData
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.lazy.runWrite
 import org.modelix.model.lazy.runWriteWithNode
 import org.modelix.model.persistent.SerializationUtil
 import org.modelix.model.server.store.RequiresTransaction
@@ -49,11 +53,61 @@ class LionwebApiImpl(val repoManager: IRepositoriesManager) : LionwebApi() {
     }
 
     override suspend fun RoutingContext.bulkRetrieve(
-        partition: String,
-        nodes: List<String>,
+        repository: String,
+        bulkRetrieveRequest: BulkRetrieveRequest,
         depthLimit: Int?,
     ) {
-        TODO("Not yet implemented")
+        val body: BulkRetrieveRequest = call.receive()
+        val idList: List<String> = body.ids ?: emptyList()
+
+        @OptIn(RequiresTransaction::class)
+        val version = runRead { repoManager.getVersion(RepositoryId(repository).getBranchReference()) }
+        if (version == null) {
+            call.respond(HttpStatusCode.NotFound)
+            return
+        }
+
+        val tree = version.getTree()
+        val ownTreeId = tree.getId()
+        val branch = TreePointer(tree)
+        val rootNode = branch.getRootNode().asAsyncNode()
+
+        val foreignIds = HashSet<String>()
+        val modelixIds = TLongHashSet()
+        for (id in idList) {
+            val localNodeId = PNodeReference.tryDeserialize(id)?.takeIf { it.treeId == ownTreeId }?.id
+            if (localNodeId == null) {
+                foreignIds.add(id)
+            } else {
+                modelixIds
+            }
+        }
+
+        if (foreignIds.isNotEmpty()) {
+            version.treeRef.graph.getStreamExecutor().iterateSuspending({
+                version.tree.nodesMap.getEntries().flatMap { it.second.resolve() }
+                    .filter { foreignIds.contains(it.data.getPropertyValue(NodeData.ID_PROPERTY_KEY)) }
+            }) {
+                modelixIds.add(it.data.id)
+            }
+        }
+
+        val nodesData = version.graph.getStreamExecutor().querySuspending {
+            IStream.many(modelixIds.asIterable()).flatMap {
+                toLionwebNode(branch.getNode(it).asAsyncNode())
+            }.toList()
+        }
+
+        val responseData = ListPartitions200Response(
+            success = true,
+            messages = emptyList(),
+            chunk = LionwebSerializationChunk(
+                languages = emptyList(),
+                nodes = nodesData,
+            ),
+        )
+
+        call.respond(responseData)
     }
 
     override suspend fun RoutingContext.bulkStore(
@@ -115,7 +169,8 @@ class LionwebApiImpl(val repoManager: IRepositoriesManager) : LionwebApi() {
                 messages = listOf(
                     LionwebResponseMessage(
                         kind = "RepoVersion",
-                        message = lionwebSerializationChunk.serializationFormatVersion,
+                        message = "RepositoryVersion at end of Transaction",
+                        data = mapOf("version" to newVersion.getContentHash()),
                     ),
                 ),
             ),
@@ -156,6 +211,8 @@ class LionwebApiImpl(val repoManager: IRepositoriesManager) : LionwebApi() {
         call.respond(responseData)
     }
 
+    private fun IAsyncNode.nodeId(): Long = (asRegularNode() as PNodeAdapter).nodeId
+
     private fun toLionwebNode(node: IAsyncNode): IStream.One<LionwebNodeStructure> {
         val id = node.lionwebId()
         val concept = node.getConceptRef()
@@ -170,7 +227,8 @@ class LionwebApiImpl(val repoManager: IRepositoriesManager) : LionwebApi() {
                 ReferenceWithResolveInfo(role, lionwebId, resolveInfo)
             }
         }.toList()
-        val parentId = node.getParent().flatMapZeroOrOne { it.lionwebId() }.orNull()
+        val parentId = node.getParent().filter { it.nodeId() != ITree.ROOT_ID }
+            .flatMapZeroOrOne { it.lionwebId() }.orNull()
 
         return IStream.zip(
             id,
@@ -183,7 +241,7 @@ class LionwebApiImpl(val repoManager: IRepositoriesManager) : LionwebApi() {
             LionwebNodeStructure(
                 id = id,
                 classifier = concept.toLionWeb(),
-                properties = allProperties.map {
+                properties = allProperties.filterNot { it.first.matches(NodeData.ID_PROPERTY_REF) }.map {
                     LionwebNodeStructurePropertiesInner(
                         property = it.first.toLionWeb(),
                         value = it.second,
@@ -384,8 +442,13 @@ class LionwebDataAsNode(
 
     override fun getAllChildren(): List<IWritableNode> {
         return (data.containments ?: emptyList()).flatMap { containment ->
-            (containment.children ?: emptyList()).map {
-                LionwebDataAsNode(allNodes[it]!!, containment.containment, this, allNodes)
+            (containment.children ?: emptyList()).mapNotNull {
+                LionwebDataAsNode(
+                    data = allNodes[it] ?: return@mapNotNull null,
+                    containmentPointer = containment.containment,
+                    parent = this,
+                    allNodes = allNodes,
+                )
             }
         }
     }
@@ -496,5 +559,17 @@ class LionwebDataAsNode(
 
     override fun hashCode(): Int {
         return data.id.hashCode() + parent.hashCode()
+    }
+}
+
+fun TLongCollection.asIterable(): Iterable<Long> {
+    val collection = this
+    return Iterable<Long> {
+        val itr = collection.iterator()
+        object : Iterator<Long> {
+            override fun hasNext(): Boolean = itr.hasNext()
+
+            override fun next(): Long = itr.next()
+        }
     }
 }

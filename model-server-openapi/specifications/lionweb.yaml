@@ -141,25 +141,17 @@ paths:
         "200":
           description: OK
 
-  /{partition}/retrieve:
-    get:
+  /bulk/retrieve:
+    post:
       operationId: bulkRetrieve
       tags:
         - lionweb
       parameters:
-        - name: partition
-          in: "path"
-          required: true
-          schema:
-            type: string
-        - name: nodes
-          description: List of node ids we want to retrieve from the repository.
+        - name: repository
           in: "query"
           required: true
           schema:
-            type: array
-            items:
-              type: string
+            type: string
         - name: depthLimit
           description: Limit the depth of retrieved subtrees. Optional parameter, defaults to infinite. If present, MUST be an integer >= 0, with
             0 meaning "return only the nodes with ids listed in nodes parameter",
@@ -170,6 +162,17 @@ paths:
           required: false
           schema:
             type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
       responses:
         "200":
           description: OK

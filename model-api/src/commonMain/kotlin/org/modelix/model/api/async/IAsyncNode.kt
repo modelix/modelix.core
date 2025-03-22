@@ -7,11 +7,13 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
+import org.modelix.model.api.IWritableNode
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
 
 interface IAsyncNode {
     fun asRegularNode(): INode
+    fun asWritableNode(): IWritableNode = asRegularNode().asWritableNode()
     fun getStreamExecutor(): IStreamExecutor
 
     fun getConcept(): IStream.One<IConcept>

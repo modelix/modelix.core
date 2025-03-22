@@ -53,6 +53,7 @@ val joinSpecs = tasks.register<NpxTask>("joinSpecs") {
             "model-server-v2.yaml",
             "model-server-v1.yaml",
             "model-server-operative.yaml",
+            "lionweb.yaml",
         ).map { bundleDir.file(it).toString() },
     )
 }

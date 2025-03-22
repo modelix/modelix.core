@@ -1,9 +1,12 @@
 package org.modelix.model.api
 
+import org.modelix.model.api.async.IAsyncNode
+import org.modelix.model.api.async.asAsyncNode
 import org.modelix.model.data.NodeData
 
 interface IReadableNode {
     fun asLegacyNode(): INode
+    fun asAsyncNode(): IAsyncNode = asLegacyNode().asAsyncNode()
 
     fun getModel(): IModel
     fun isValid(): Boolean

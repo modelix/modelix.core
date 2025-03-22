@@ -6,18 +6,21 @@ import org.modelix.model.area.IAreaReference
 
 interface IModel : ITransactionManager {
     fun getRootNode(): IReadableNode
+    fun getRootNodes(): List<IReadableNode>
     fun resolveNode(ref: INodeReference): IReadableNode?
 }
 
 interface IMutableModel : IModel {
     fun asArea(): IArea = ModelAsArea(this)
     override fun getRootNode(): IWritableNode
+    override fun getRootNodes(): List<IWritableNode>
     override fun resolveNode(ref: INodeReference): IWritableNode?
 }
 
 data class AreaAsModel(val area: IArea) : IMutableModel {
     override fun asArea(): IArea = area
     override fun getRootNode(): IWritableNode = area.getRoot().asWritableNode()
+    override fun getRootNodes(): List<IWritableNode> = listOf(getRootNode())
     override fun resolveNode(ref: INodeReference): IWritableNode? = area.resolveNode(ref)?.asWritableNode()
     override fun <R> executeRead(body: () -> R): R = area.executeRead(body)
     override fun <R> executeWrite(body: () -> R): R = area.executeWrite(body)

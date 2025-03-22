@@ -1,17 +1,5 @@
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.asObservable
-import com.badoo.reaktive.observable.defaultIfEmpty
-import com.badoo.reaktive.observable.filter
-import com.badoo.reaktive.observable.flatMap
-import com.badoo.reaktive.observable.flatten
-import com.badoo.reaktive.observable.map
-import com.badoo.reaktive.observable.observableOf
-import com.badoo.reaktive.observable.toList
-import com.badoo.reaktive.single.Single
-import com.badoo.reaktive.single.asObservable
-import com.badoo.reaktive.single.singleOf
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -20,24 +8,26 @@ import kotlinx.serialization.builtins.NothingSerializer
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
-import org.modelix.streams.cached
-import org.modelix.streams.exactlyOne
-import org.modelix.streams.getSuspending
-import org.modelix.streams.getSynchronous
+import org.modelix.streams.IExecutableStream
+import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutor
+import org.modelix.streams.flatten
 
 interface IQueryExecutor<out In> {
     fun <Out> createStream(query: IUnboundQuery<In, *, Out>): StepStream<Out>
 }
 
-class SimpleQueryExecutor<E>(val input: Single<E>) : IQueryExecutor<E> {
+class SimpleQueryExecutor<E>(val input: IStream.One<E>) : IQueryExecutor<E> {
     override fun <ElementOut> createStream(query: IUnboundQuery<E, *, ElementOut>): StepStream<ElementOut> {
-        return query.asStream(QueryEvaluationContext.EMPTY, input.asStepStream(null).asObservable())
+        return query.asStream(QueryEvaluationContext.EMPTY, input.asStepStream(null))
     }
 }
 
 interface IQuery<out AggregationOut, out ElementOut> {
-    suspend fun execute(): IStepOutput<AggregationOut>
+    suspend fun execute(streamExecutor: IStreamExecutor): IStepOutput<AggregationOut> =
+        streamExecutor.querySuspending { asAggregationStream() }
     fun asStream(): StepStream<ElementOut>
+    fun asAggregationStream(): MonoStepStream<AggregationOut>
 }
 
 interface IMonoQuery<out Out> : IQuery<Out, Out> {
@@ -66,11 +56,12 @@ class EmptyQueryResultException(message: String, cause: Throwable? = null) : Run
 
 private class MonoBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val query: MonoUnboundQuery<In, Out>) : BoundQuery<In, Out, Out>(executor), IMonoQuery<Out> {
 
-    override suspend fun execute(): IStepOutput<Out> {
-        try {
-            return executor.createStream(query).exactlyOne().getSuspending()
-        } catch (ex: NoSuchElementException) {
-            throw EmptyQueryResultException("Empty query result: $this", ex)
+    override fun asAggregationStream(): MonoStepStream<Out> {
+        return executor.createStream(query).exactlyOne().onErrorReturn { ex ->
+            throw when (ex) {
+                is NoSuchElementException -> EmptyQueryResultException("Empty query result: $this", ex)
+                else -> ex
+            }
         }
     }
 
@@ -86,8 +77,8 @@ private class MonoBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val
 private class FluxBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val query: FluxUnboundQuery<In, Out>) :
     BoundQuery<In, List<IStepOutput<Out>>, Out>(executor), IFluxQuery<Out> {
 
-    override suspend fun execute(): IStepOutput<List<IStepOutput<Out>>> {
-        return executor.createStream(query).toList().getSuspending().asStepOutput(null)
+    override fun asAggregationStream(): MonoStepStream<List<IStepOutput<Out>>> {
+        return executor.createStream(query).toList().map { it.asStepOutput(null) }
     }
 
     override fun <T> flatMap(body: (IMonoStep<Out>) -> IFluxStep<T>): IFluxQuery<T> {
@@ -101,10 +92,15 @@ private class FluxBoundQuery<In, Out>(executor: IQueryExecutor<In>, override val
 
 interface IUnboundQuery<in In, out AggregationOut, out ElementOut> {
     val reference: IQueryReference<IUnboundQuery<In, AggregationOut, ElementOut>>
-    suspend fun execute(evaluationContext: QueryEvaluationContext, input: Single<IStepOutput<In>>): IStepOutput<AggregationOut>
-    suspend fun execute(evaluationContext: QueryEvaluationContext, input: IStepOutput<In>) = execute(evaluationContext, singleOf(input))
+
+    suspend fun execute(evaluationContext: QueryEvaluationContext, input: IExecutableStream.One<IStepOutput<In>>): IStepOutput<AggregationOut>
+
+    suspend fun execute(evaluationContext: QueryEvaluationContext, input: IStepOutput<In>): IStepOutput<AggregationOut> {
+        return execute(evaluationContext, IExecutableStream.of(input))
+    }
+
     fun asStream(evaluationContext: QueryEvaluationContext, input: StepStream<In>): StepStream<ElementOut>
-    fun asStream(context: QueryEvaluationContext, input: IStepOutput<In>): StepStream<ElementOut> = asStream(context, observableOf(input))
+    fun asStream(context: QueryEvaluationContext, input: IStepOutput<In>): StepStream<ElementOut> = asStream(context, IStream.of(input))
 
     fun requiresWriteAccess(): Boolean
     fun canBeEmpty(): Boolean
@@ -125,15 +121,6 @@ interface IMonoUnboundQuery<in In, out Out> : IUnboundQuery<In, Out, Out> {
     fun <T> map(query: IFluxUnboundQuery<Out, T>): IFluxUnboundQuery<In, T>
     fun <T> map(body: (IMonoStep<Out>) -> IMonoStep<T>): IMonoUnboundQuery<In, T> = map(buildMonoQuery { body(it) })
     fun <T> flatMap(body: (IMonoStep<Out>) -> IFluxStep<T>): IFluxUnboundQuery<In, T> = map(buildFluxQuery { body(it) })
-}
-
-fun <In, Out> IMonoUnboundQuery<In, Out>.evaluate(evaluationContext: QueryEvaluationContext, input: In): Optional<Out> {
-    return SimpleQueryExecutor(singleOf(input))
-        .createStream(this@evaluate)
-        .map { Optional.of(it.value) }
-        .defaultIfEmpty(Optional.empty())
-        .exactlyOne()
-        .getSynchronous()
 }
 
 fun <In, Out, AggregationT, T> IMonoUnboundQuery<In, Out>.map(query: IUnboundQuery<Out, AggregationT, T>): IUnboundQuery<In, AggregationT, T> {
@@ -168,12 +155,18 @@ class MonoUnboundQuery<In, ElementOut>(
 
     override fun bind(executor: IQueryExecutor<In>): IMonoQuery<ElementOut> = MonoBoundQuery(executor, this)
 
-    override suspend fun execute(evaluationContext: QueryEvaluationContext, input: Single<IStepOutput<In>>): IStepOutput<ElementOut> {
-        try {
-            return asStream(evaluationContext, input.asObservable()).exactlyOne().getSynchronous()
-        } catch (ex: NoSuchElementException) {
-            throw EmptyQueryResultException("Empty query result: $this", ex)
-        }
+    override suspend fun execute(
+        evaluationContext: QueryEvaluationContext,
+        input: IExecutableStream.One<IStepOutput<In>>,
+    ): IStepOutput<ElementOut> {
+        return input.mapOne {
+            asStream(evaluationContext, it).exactlyOne().onErrorReturn { ex ->
+                throw when (ex) {
+                    is NoSuchElementException -> EmptyQueryResultException("Empty query result: $this", ex)
+                    else -> ex
+                }
+            }
+        }.query()
     }
 
     override fun <T> map(query: IMonoUnboundQuery<ElementOut, T>): IMonoUnboundQuery<In, T> {
@@ -211,8 +204,11 @@ class FluxUnboundQuery<In, ElementOut>(
 
     override fun bind(executor: IQueryExecutor<In>): IFluxQuery<ElementOut> = FluxBoundQuery(executor, this)
 
-    override suspend fun execute(evaluationContext: QueryEvaluationContext, input: Single<IStepOutput<In>>): IStepOutput<List<IStepOutput<ElementOut>>> {
-        return asStream(evaluationContext, input.asObservable()).toList().getSynchronous().asStepOutput(null)
+    override suspend fun execute(
+        evaluationContext: QueryEvaluationContext,
+        input: IExecutableStream.One<IStepOutput<In>>,
+    ): IStepOutput<List<IStepOutput<ElementOut>>> {
+        return input.mapOne { asStream(evaluationContext, it).toList().map { it.asStepOutput(null) } }.query()
     }
 
     override fun <T> map(body: (IMonoStep<ElementOut>) -> IMonoStep<T>): IFluxUnboundQuery<In, T> {
@@ -340,26 +336,26 @@ abstract class UnboundQuery<In, AggregationOut, ElementOut>(
         } else {
             return input.flatMap { inputElement ->
                 val context = StreamInstantiationContext(evaluationContext, this@UnboundQuery)
-                context.put(inputStep, observableOf(inputElement))
+                context.put(inputStep, IStream.of(inputElement))
 
                 for (sharedStep in sharedSteps) {
-                    val values: Single<List<IStepOutput<Any?>>> = context.getOrCreateStream(sharedStep.getProducer()).toList().cached()
-                    context.put(sharedStep, values.asObservable())
+                    val values: IStream.One<List<IStepOutput<Any?>>> = context.getOrCreateStream(sharedStep.getProducer()).toList().cached()
+                    context.put(sharedStep, values)
                     context.evaluationContext = context.evaluationContext + (sharedStep to values)
                 }
 
-                var outputStream: Observable<IStepOutput<ElementOut>> = context.getOrCreateStream(outputStep)
+                var outputStream: IStream.Many<IStepOutput<ElementOut>> = context.getOrCreateStream(outputStep)
 
                 // ensure all write operations are executed
                 if (unconsumedSideEffectSteps.isNotEmpty()) {
-                    val sideEffectsStream: Observable<IStepOutput<ElementOut>> = unconsumedSideEffectSteps.asObservable()
+                    val sideEffectsStream: IStream.Many<IStepOutput<ElementOut>> = IStream.many(unconsumedSideEffectSteps)
                         .flatMap {
                             it as IProducingStep<ElementOut>
-                            if (context.getStream(it) == null) context.getOrCreateStream(it) else observableOf<IStepOutput<ElementOut>>()
+                            if (context.getStream(it) == null) context.getOrCreateStream(it) else IStream.empty<IStepOutput<ElementOut>>()
                         }
                         .filter { false } // just consume everything
 
-                    outputStream = observableOf(sideEffectsStream, outputStream).flatten()
+                    outputStream = IStream.of(sideEffectsStream, outputStream).flatten()
                 }
 
                 outputStream
@@ -449,7 +445,7 @@ class SinglePathStreamInstantiationContext(
         return if (step == queryInput) inputStream.upcast() else step.createStream(this)
     }
 
-    override fun <T> getStream(step: IProducingStep<T>): Observable<T>? {
+    override fun <T> getStream(step: IProducingStep<T>): IStream.Many<T>? {
         return null
     }
 }

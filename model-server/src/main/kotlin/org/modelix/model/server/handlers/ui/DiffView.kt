@@ -46,7 +46,6 @@ import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.handlers.VersionNotFoundException
 import org.modelix.model.server.store.RequiresTransaction
 import org.modelix.model.server.templates.PageWithMenuBar
-import org.modelix.streams.getSynchronous
 
 /**
  * Handler which enables to view tree diffs between two [CLVersion] instances of a repository.
@@ -500,12 +499,12 @@ private fun CPNode.getNameClarification(): String {
 }
 
 private fun CLTree.resolveOrThrow(nodeId: Long): CPNode =
-    requireNotNull(resolveElement(nodeId).getSynchronous()) { "node not found. id = $nodeId" }
+    requireNotNull(resolveElementSynchronous(nodeId)) { "node not found. id = $nodeId" }
 
 @Suppress("TooGenericExceptionCaught", "SwallowedException") // the exception is also thrown generically and we don't need the original exception
 private fun CLTree.tryResolve(ref: CPNodeRef?): CPNode? {
     return try {
-        ref?.takeIf { it.isLocal }?.elementId?.let { resolveElement(it).getSynchronous() }
+        ref?.takeIf { it.isLocal }?.elementId?.let { resolveElementSynchronous(it) }
     } catch (e: RuntimeException) {
         null
     }
@@ -540,6 +539,7 @@ internal fun calculateDiff(oldVersion: CLVersion, newVersion: CLVersion, sizeLim
 
     @Suppress("SwallowedException") // we don't need the exception
     try {
+        // TODO re-implement using streams
         newTree.visitChanges(
             oldTree,
             object : ITreeChangeVisitorEx {

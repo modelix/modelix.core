@@ -1,7 +1,5 @@
 package org.modelix.modelql.untyped
 
-import com.badoo.reaktive.single.map
-import com.badoo.reaktive.single.toSingle
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
@@ -17,6 +15,7 @@ import org.modelix.modelql.core.IQueryExecutor
 import org.modelix.modelql.core.SimpleQueryExecutor
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.UnboundQuery
+import org.modelix.streams.IStream
 
 object UntypedModelQL {
     val serializersModule: SerializersModule = SerializersModule {
@@ -59,18 +58,22 @@ interface ISupportsModelQL : INode {
 fun INode.createQueryExecutor(): IQueryExecutor<INode> {
     return when (this) {
         is ISupportsModelQL -> this.createQueryExecutor()
-        else -> SimpleQueryExecutor(this.asAsyncNode().toSingle().map { it.asRegularNode() })
+        else -> SimpleQueryExecutor(IStream.of(this.asAsyncNode()).map { it.asRegularNode() })
     }
 }
 
 suspend fun <R> INode.query(body: (IMonoStep<INode>) -> IMonoStep<R>): R {
     return this.getArea().runWithAdditionalScopeInCoroutine {
-        buildQuery(body).execute().value
+        asAsyncNode().getStreamExecutor().querySuspending {
+            buildQuery(body).asAggregationStream()
+        }.value
     }
 }
 
 suspend fun <R> INode.queryFlux(body: (IMonoStep<INode>) -> IFluxStep<R>): List<R> {
-    return buildFluxQuery(body).execute().value.map { it.value }
+    return asAsyncNode().getStreamExecutor().querySuspending {
+        buildFluxQuery(body).asAggregationStream()
+    }.value.map { it.value }
 }
 
 fun <R> INode.buildQuery(body: (IMonoStep<INode>) -> IMonoStep<R>): IMonoQuery<R> {

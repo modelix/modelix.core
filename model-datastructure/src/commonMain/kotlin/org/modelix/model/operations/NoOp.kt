@@ -2,10 +2,9 @@ package org.modelix.model.operations
 
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
-import org.modelix.model.lazy.IDeserializingKeyValueStore
 
 class NoOp : AbstractOperation(), IAppliedOperation, IOperationIntend {
-    override fun apply(transaction: IWriteTransaction, store: IDeserializingKeyValueStore): IAppliedOperation {
+    override fun apply(transaction: IWriteTransaction): IAppliedOperation {
         return this
     }
 
@@ -17,7 +16,7 @@ class NoOp : AbstractOperation(), IAppliedOperation, IOperationIntend {
         return "NoOp"
     }
 
-    override fun captureIntend(tree: ITree, store: IDeserializingKeyValueStore) = this
+    override fun captureIntend(tree: ITree) = this
 
     override fun getOriginalOp() = this
 

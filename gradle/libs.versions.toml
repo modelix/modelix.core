@@ -28,7 +28,6 @@ docker-compose = { id = "com.avast.gradle.docker-compose" , version = "0.17.12" 
 kotlin = "2.1.10"
 kotlinCoroutines="1.10.1"
 ktor="3.1.1"
-kotlinHtml="0.8.0"
 kotlinSerialization="1.8.0"
 ignite="2.17.0"
 apacheCxf="3.6.6"
@@ -53,6 +52,9 @@ kotlin-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-s
 kotlin-serialization-yaml = { group = "com.charleskorn.kaml", name = "kaml", version = "0.73.0" }
 kotlin-logging = { group = "io.github.microutils", name = "kotlin-logging", version = "3.0.5" }
 kotlin-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version = "0.6.2" }
+kotlin-html = { group = "org.jetbrains.kotlinx", name = "kotlinx-html", version = "0.9.1" }
+kotlin-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotlinx-collections-immutable", version = "0.3.8" }
+kotlinJs = { module = "org.jetbrains.kotlin-wrappers:kotlin-js", version = "2025.1.4" }
 kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 
 kotlin-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinCoroutines" }

@@ -1,20 +1,18 @@
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.observable.asObservable
-import com.badoo.reaktive.observable.flatMap
-import com.badoo.reaktive.observable.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.modelix.streams.IStream
 
 class ListAsFluxStep<E> : FluxTransformingStep<List<E>, E>() {
     override fun createStream(input: StepStream<List<E>>, context: IStreamInstantiationContext): StepStream<E> {
         return input.flatMap {
             when (it) {
                 is CollectorStepOutput<*, *, *> -> {
-                    (it as CollectorStepOutput<E, List<IStepOutput<E>>, List<E>>).input.asObservable()
+                    IStream.many((it as CollectorStepOutput<E, List<IStepOutput<E>>, List<E>>).input)
                 }
-                else -> it.value.asObservable().map {
+                else -> IStream.many(it.value).map {
                     when (it) {
                         is IStepOutput<*> -> it as IStepOutput<E>
                         else -> it.asStepOutput(this)

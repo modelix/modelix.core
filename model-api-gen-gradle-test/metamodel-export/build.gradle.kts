@@ -1,6 +1,7 @@
 plugins {
     base
     id("org.modelix.model-api-gen")
+    java
 }
 
 val mpsDir = layout.buildDirectory.dir("mps")

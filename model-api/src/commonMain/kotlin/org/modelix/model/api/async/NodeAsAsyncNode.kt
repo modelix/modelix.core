@@ -3,11 +3,8 @@ package org.modelix.model.api.async
 import com.badoo.reaktive.maybe.Maybe
 import com.badoo.reaktive.maybe.maybeOf
 import com.badoo.reaktive.maybe.maybeOfEmpty
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.asObservable
 import com.badoo.reaktive.single.Single
 import com.badoo.reaktive.single.singleOf
-import com.badoo.reaktive.single.toSingle
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -19,63 +16,70 @@ import org.modelix.model.api.asProperty
 import org.modelix.model.api.getDescendants
 import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.api.toReference
+import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutor
+import org.modelix.streams.SimpleStreamExecutor
+import org.modelix.streams.withSequences
 
-class NodeAsAsyncNode(val node: INode) : IAsyncNode {
+open class NodeAsAsyncNode(val node: INode) : IAsyncNode {
+    override fun getStreamExecutor(): IStreamExecutor {
+        return SimpleStreamExecutor().withSequences()
+    }
 
     private fun <T : Any> T?.asOptionalMono(): Maybe<T> = if (this != null) maybeOf(this) else maybeOfEmpty()
     private fun <T> T.asMono(): Single<T> = singleOf(this)
 
     override fun asRegularNode(): INode = node
 
-    override fun getConcept(): Single<IConcept> {
-        return (node.concept ?: NullConcept).asMono()
+    override fun getConcept(): IStream.One<IConcept> {
+        return IStream.of((node.concept ?: NullConcept))
     }
 
-    override fun getConceptRef(): Single<ConceptReference> {
-        return ((node.getConceptReference() ?: NullConcept.getReference()) as ConceptReference).asMono()
+    override fun getConceptRef(): IStream.One<ConceptReference> {
+        return IStream.of(((node.getConceptReference() ?: NullConcept.getReference()) as ConceptReference))
     }
 
-    override fun getParent(): Maybe<IAsyncNode> {
-        return node.parent?.asAsyncNode().asOptionalMono()
+    override fun getParent(): IStream.ZeroOrOne<IAsyncNode> {
+        return IStream.ofNotNull(node.parent?.asAsyncNode())
     }
 
-    override fun getRoleInParent(): Single<IChildLinkReference> {
-        return node.getContainmentLink().toReference().toSingle()
+    override fun getRoleInParent(): IStream.One<IChildLinkReference> {
+        return IStream.of(node.getContainmentLink().toReference())
     }
 
-    override fun getPropertyValue(role: IPropertyReference): Maybe<String> {
-        return node.getPropertyValue(role.asProperty()).asOptionalMono()
+    override fun getPropertyValue(role: IPropertyReference): IStream.ZeroOrOne<String> {
+        return IStream.ofNotNull(node.getPropertyValue(role.asProperty()))
     }
 
-    override fun getAllChildren(): Observable<IAsyncNode> {
-        return node.allChildren.map { it.asAsyncNode() }.asObservable()
+    override fun getAllChildren(): IStream.Many<IAsyncNode> {
+        return IStream.many(node.allChildren.map { it.asAsyncNode() })
     }
 
-    override fun getChildren(role: IChildLinkReference): Observable<IAsyncNode> {
-        return node.getChildren(role.toLegacy()).map { it.asAsyncNode() }.asObservable()
+    override fun getChildren(role: IChildLinkReference): IStream.Many<IAsyncNode> {
+        return IStream.many(node.getChildren(role.toLegacy()).map { it.asAsyncNode() })
     }
 
-    override fun getReferenceTarget(role: IReferenceLinkReference): Maybe<IAsyncNode> {
-        return node.getReferenceTarget(role.toLegacy())?.asAsyncNode().asOptionalMono()
+    override fun getReferenceTarget(role: IReferenceLinkReference): IStream.ZeroOrOne<IAsyncNode> {
+        return IStream.ofNotNull(node.getReferenceTarget(role.toLegacy())?.asAsyncNode())
     }
 
-    override fun getReferenceTargetRef(role: IReferenceLinkReference): Maybe<INodeReference> {
-        return node.getReferenceTargetRef(role.toLegacy()).asOptionalMono()
+    override fun getReferenceTargetRef(role: IReferenceLinkReference): IStream.ZeroOrOne<INodeReference> {
+        return IStream.ofNotNull(node.getReferenceTargetRef(role.toLegacy()))
     }
 
-    override fun getAllReferenceTargetRefs(): Observable<Pair<IReferenceLinkReference, INodeReference>> {
-        return node.getAllReferenceTargetRefs().map { it.first.toReference() to it.second }.asObservable()
+    override fun getAllReferenceTargetRefs(): IStream.Many<Pair<IReferenceLinkReference, INodeReference>> {
+        return IStream.many(node.getAllReferenceTargetRefs().map { it.first.toReference() to it.second })
     }
 
-    override fun getAllPropertyValues(): Observable<Pair<IPropertyReference, String>> {
-        return node.getAllProperties().map { it.first.toReference() to it.second }.asObservable()
+    override fun getAllPropertyValues(): IStream.Many<Pair<IPropertyReference, String>> {
+        return IStream.many(node.getAllProperties().map { it.first.toReference() to it.second })
     }
 
-    override fun getAllReferenceTargets(): Observable<Pair<IReferenceLinkReference, IAsyncNode>> {
-        return node.getAllReferenceTargets().map { it.first.toReference() to it.second.asAsyncNode() }.asObservable()
+    override fun getAllReferenceTargets(): IStream.Many<Pair<IReferenceLinkReference, IAsyncNode>> {
+        return IStream.many(node.getAllReferenceTargets().map { it.first.toReference() to it.second.asAsyncNode() })
     }
 
-    override fun getDescendants(includeSelf: Boolean): Observable<IAsyncNode> {
-        return node.getDescendants(includeSelf).map { it.asAsyncNode() }.asIterable().asObservable()
+    override fun getDescendants(includeSelf: Boolean): IStream.Many<IAsyncNode> {
+        return IStream.many(node.getDescendants(includeSelf).map { it.asAsyncNode() })
     }
 }

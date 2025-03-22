@@ -9,13 +9,10 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.KVEntryReference
 
 class OTBranch(
     private val branch: IBranch,
     private val idGenerator: IIdGenerator,
-    private val store: IDeserializingKeyValueStore,
 ) : IBranch {
     private var bulkUpdateMode: Boolean = false
     private var currentOperations: MutableList<IAppliedOperation> = ArrayList()
@@ -38,7 +35,7 @@ class OTBranch(
             val baseTree = branch.transaction.tree as CLTree
             body()
             val resultTree = branch.transaction.tree as CLTree
-            currentOperations += BulkUpdateOp(KVEntryReference(resultTree.data), subtreeRootNodeId).afterApply(baseTree)
+            currentOperations += BulkUpdateOp(resultTree.resolvedData.ref, subtreeRootNodeId).afterApply(baseTree)
         } finally {
             bulkUpdateMode = false
         }
@@ -141,7 +138,7 @@ class OTBranch(
     }
 
     fun wrap(t: IWriteTransaction): IWriteTransaction {
-        return OTWriteTransaction(t, this, idGenerator, store)
+        return OTWriteTransaction(t, this, idGenerator)
     }
 
     protected fun checkNotEDT() {}

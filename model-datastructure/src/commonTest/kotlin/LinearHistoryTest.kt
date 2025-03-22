@@ -2,7 +2,7 @@ import org.modelix.model.LinearHistory
 import org.modelix.model.VersionMerger
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
-import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.operations.IOperation
 import org.modelix.model.persistent.MapBasedStore
 import kotlin.test.Test
@@ -10,7 +10,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class LinearHistoryTest {
-    private val initialTree = CLTree.builder(ObjectStoreCache(MapBasedStore())).repositoryId("LinearHistoryTest").build()
+    private val initialTree = CLTree.builder(createObjectStoreCache(MapBasedStore())).repositoryId("LinearHistoryTest").build()
 
     @Test
     fun baseVersionAndFromVersionAreIncluded() {
@@ -154,7 +154,6 @@ class LinearHistoryTest {
             v1,
             v2,
             emptyArray<IOperation>(),
-            initialTree.store,
         )
     }
 }

@@ -10,6 +10,7 @@ import kotlinx.coroutines.runBlocking
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.oauth.IAuthConfig
+import org.modelix.model.oauth.IAuthRequestHandler
 import org.modelix.model.oauth.OAuthConfig
 import org.modelix.model.oauth.OAuthConfigBuilder
 
@@ -51,8 +52,10 @@ class AppLevelModelSyncService() : Disposable {
     class ServerConnection(val url: String) {
         private var client: ValueWithMutex<IModelClientV2?> = ValueWithMutex(null)
         private var connected: Boolean = false
+        private val authRequestHandler = AsyncAuthRequestHandler()
         private var authConfig: IAuthConfig = IAuthConfig.oauth {
             clientId("external-mps")
+            authRequestHandler(authRequestHandler)
         }
 
         suspend fun getClient(): IModelClientV2 {
@@ -69,10 +72,13 @@ class AppLevelModelSyncService() : Disposable {
             try {
                 getClient().getServerId()
                 connected = true
+                authRequestHandler.clear()
             } catch (ex: Throwable) {
                 connected = false
             }
         }
+
+        fun isConnected(): Boolean = connected
 
         fun setAuthorizationConfig(config: IAuthConfig) {
             this.authConfig = config
@@ -83,5 +89,21 @@ class AppLevelModelSyncService() : Disposable {
             this.authConfig = OAuthConfigBuilder(this.authConfig as? OAuthConfig).apply(body).build()
             runBlocking { client.updateValue { null } }
         }
+
+        fun getPendingAuthRequest(): String? = authRequestHandler.getPendingRequest()
+    }
+}
+
+private class AsyncAuthRequestHandler : IAuthRequestHandler {
+    private var pendingUrl: String? = null
+
+    override fun browse(url: String) {
+        pendingUrl = url
+    }
+
+    fun getPendingRequest(): String? = pendingUrl
+
+    fun clear() {
+        pendingUrl = null
     }
 }

@@ -5,9 +5,10 @@ import org.modelix.model.IKeyValueStore
 import org.modelix.model.IKeyValueStoreWrapper
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.persistent.HashUtil
+import org.modelix.streams.IStreamExecutorProvider
 
 @Deprecated(message = "Replaced by NonWrittenEntry")
-class GarbageFilteringStore(private val store: IKeyValueStore) : IKeyValueStoreWrapper {
+class GarbageFilteringStore(private val store: IKeyValueStore) : IKeyValueStoreWrapper, IStreamExecutorProvider by store {
     private val pendingEntries: MutableMap<String?, String?> = HashMap()
 
     override fun get(key: String): String? {

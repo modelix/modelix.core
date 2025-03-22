@@ -1,14 +1,12 @@
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.observable.toList
-import com.badoo.reaktive.single.Single
-import com.badoo.reaktive.single.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import org.modelix.streams.IStream
 
 abstract class CollectorStep<E, CollectionT>() : AggregationStep<E, CollectionT>() {
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<CollectionT>> {
@@ -135,7 +133,7 @@ class MultimapCollectorStepOutputSerializer<K, V>(inputElementSerializer: KSeria
 class ListCollectorStep<E> : CollectorStep<E, List<E>>() {
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
-    override fun aggregate(input: StepStream<E>, context: IStreamInstantiationContext): Single<IStepOutput<List<E>>> {
+    override fun aggregate(input: StepStream<E>, context: IStreamInstantiationContext): IStream.One<IStepOutput<List<E>>> {
         return input.toList().map { inputList ->
             val outputList = inputList.map { it.value }
             CollectorStepOutput(inputList, inputList, outputList)
@@ -165,7 +163,7 @@ class SetCollectorStep<E> : CollectorStep<E, Set<E>>() {
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
-    override fun aggregate(input: StepStream<E>, context: IStreamInstantiationContext): Single<IStepOutput<Set<E>>> {
+    override fun aggregate(input: StepStream<E>, context: IStreamInstantiationContext): IStream.One<IStepOutput<Set<E>>> {
         return input.toList().map { inputAsList ->
             val inputList = ArrayList<IStepOutput<E>>()
             val outputSet = HashSet<E>()
@@ -197,7 +195,7 @@ class MapCollectorStep<K, V> : CollectorStep<IZip2Output<Any?, K, V>, Map<K, V>>
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
-    override fun aggregate(input: StepStream<IZip2Output<Any?, K, V>>, context: IStreamInstantiationContext): Single<IStepOutput<Map<K, V>>> {
+    override fun aggregate(input: StepStream<IZip2Output<Any?, K, V>>, context: IStreamInstantiationContext): IStream.One<IStepOutput<Map<K, V>>> {
         return input.toList().map { inputAsList ->
             val inputList = ArrayList<IStepOutput<IZip2Output<Any?, K, V>>>()
             val internalMap = HashMap<K, IStepOutput<V>>()
@@ -240,7 +238,7 @@ class MultimapCollectorStep<K, V> : CollectorStep<IZip2Output<Any?, K, V>, Map<K
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor()
 
-    override fun aggregate(input: StepStream<IZip2Output<Any?, K, V>>, context: IStreamInstantiationContext): Single<IStepOutput<Map<K, List<V>>>> {
+    override fun aggregate(input: StepStream<IZip2Output<Any?, K, V>>, context: IStreamInstantiationContext): IStream.One<IStepOutput<Map<K, List<V>>>> {
         return input.toList().map { inputAsList ->
             val inputList = ArrayList<IStepOutput<IZip2Output<Any?, K, V>>>()
             val internalMap = HashMap<K, MutableList<IStepOutput<V>>>()

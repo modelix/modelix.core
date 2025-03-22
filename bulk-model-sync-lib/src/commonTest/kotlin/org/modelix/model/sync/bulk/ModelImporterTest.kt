@@ -8,7 +8,7 @@ import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 import org.modelix.model.data.NodeData.Companion.ID_PROPERTY_KEY
 import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.test.RandomModelChangeGenerator
@@ -24,7 +24,7 @@ class ModelImporterTest : AbstractModelSyncTest() {
     }
 
     override fun runRandomTest(seed: Int) {
-        val tree0 = CLTree(ObjectStoreCache(MapBasedStore()))
+        val tree0 = CLTree(createObjectStoreCache(MapBasedStore()))
         val branch0 = PBranch(tree0, IdGenerator.getInstance(1))
 
         println("Seed for random change test: $seed")
@@ -49,7 +49,7 @@ class ModelImporterTest : AbstractModelSyncTest() {
             specification = rootNode.asExported()
         }
 
-        val store = ObjectStoreCache(MapBasedStore())
+        val store = createObjectStoreCache(MapBasedStore())
         val tree1 = CLTree(store)
         val idGenerator = IdGenerator.getInstance(1)
         val branch1 = PBranch(tree1, idGenerator)
@@ -58,7 +58,7 @@ class ModelImporterTest : AbstractModelSyncTest() {
             val importer = ModelImporter(branch1.getRootNode())
             importer.import(ModelData(root = initialState))
         }
-        val otBranch = OTBranch(branch1, idGenerator, store)
+        val otBranch = OTBranch(branch1, idGenerator)
 
         otBranch.runWrite {
             val importer = ModelImporter(otBranch.getRootNode())

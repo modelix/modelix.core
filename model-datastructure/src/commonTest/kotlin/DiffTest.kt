@@ -3,7 +3,7 @@ import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.NodeReference
 import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.persistent.MapBaseStore
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -129,7 +129,7 @@ class DiffTest {
         initialMutator: (ITree) -> ITree,
         mutator: (ITree) -> ITree,
     ) {
-        val tree1 = initialMutator(CLTree.builder(ObjectStoreCache(MapBaseStore())).build())
+        val tree1 = initialMutator(CLTree.builder(createObjectStoreCache(MapBaseStore())).build())
         val tree2 = mutator(tree1)
         val collector = TreeChangeCollector()
         tree2.visitChanges(tree1, collector)

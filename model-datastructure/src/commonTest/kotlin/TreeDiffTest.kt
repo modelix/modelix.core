@@ -7,12 +7,13 @@ import org.modelix.model.api.getDescendants
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.RoleInNode
-import org.modelix.model.persistent.MapBaseStore
+import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.persistent.SerializationUtil
-import org.modelix.streams.getSynchronous
+import org.modelix.streams.IStream
+import org.modelix.streams.useSequences
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -50,14 +51,14 @@ class TreeDiffTest {
         test(569L, 50, 10)
     }
 
-    fun test(seed: Long, initialSize: Int, numModifications: Int) {
+    fun test(seed: Long, initialSize: Int, numModifications: Int) = IStream.useSequences {
         val rand = Random(seed)
-        val store = MapBaseStore()
-        val storeCache = ObjectStoreCache(store)
+        val store = MapBasedStore()
+        val storeCache = createObjectStoreCache(store)
         val idGenerator = IdGenerator.newInstance(255)
         val initialTree = CLTree(storeCache)
 
-        val branch = OTBranch(PBranch(initialTree, idGenerator), idGenerator, storeCache)
+        val branch = OTBranch(PBranch(initialTree, idGenerator), idGenerator)
         for (i in 1..initialSize) RandomTreeChangeGenerator(idGenerator, rand).growingOperationsOnly().applyRandomChange(branch, null)
         val (_, tree1) = branch.operationsAndTree
         for (i in 1..numModifications) RandomTreeChangeGenerator(idGenerator, rand).withoutMove().applyRandomChange(branch, null)
@@ -79,8 +80,8 @@ class TreeDiffTest {
 
     private fun logicalDiff(oldTree: CLTree, newTree: CLTree): DiffData {
         val diffData: DiffData = DiffData()
-        val newNodes = TreePointer(newTree).getRootNode().getDescendants(true).map { newTree.resolveElement((it as PNodeAdapter).nodeId).getSynchronous()!! }.associateBy { it.id }
-        val oldNodes = TreePointer(oldTree).getRootNode().getDescendants(true).map { oldTree.resolveElement((it as PNodeAdapter).nodeId).getSynchronous()!! }.associateBy { it.id }
+        val newNodes = TreePointer(newTree).getRootNode().getDescendants(true).map { newTree.resolveElementSynchronous((it as PNodeAdapter).nodeId) }.associateBy { it.id }
+        val oldNodes = TreePointer(oldTree).getRootNode().getDescendants(true).map { oldTree.resolveElementSynchronous((it as PNodeAdapter).nodeId) }.associateBy { it.id }
 
         for (newNode in newNodes.values) {
             val oldNode = oldNodes[newNode.id]

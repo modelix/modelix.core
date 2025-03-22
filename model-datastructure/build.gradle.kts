@@ -1,6 +1,7 @@
 plugins {
     `maven-publish`
     `modelix-kotlin-multiplatform`
+    alias(libs.plugins.kotlin.serialization)
 }
 
 kotlin {
@@ -12,6 +13,7 @@ kotlin {
                 implementation(libs.kotlin.coroutines.core)
                 implementation(libs.kotlin.logging)
                 implementation(libs.kotlin.datetime)
+                implementation(libs.kotlin.serialization.json)
             }
         }
         val commonTest by getting {

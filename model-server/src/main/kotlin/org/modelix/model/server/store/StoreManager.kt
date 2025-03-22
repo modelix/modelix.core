@@ -1,5 +1,6 @@
 package org.modelix.model.server.store
 
+import com.google.common.cache.CacheBuilder
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.async.AsyncStoreAsLegacyDeserializingStore
@@ -10,11 +11,9 @@ import org.modelix.model.client.IModelClient
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.RepositoryId
-import java.lang.ref.SoftReference
 
 class StoreManager(val genericStore: IRepositoryAwareStore) {
-
-    private val repositorySpecificStores = HashMap<RepositoryId?, SoftReference<IAsyncObjectStore>>()
+    private val repositorySpecificStores = CacheBuilder.newBuilder().softValues().build<String, IAsyncObjectStore>()
     val clientId: Int by lazy { getGlobalStoreClient().generateId("clientId").toInt() }
     val idGenerator: IIdGenerator by lazy { IdGenerator.getInstance(clientId) }
 
@@ -34,17 +33,14 @@ class StoreManager(val genericStore: IRepositoryAwareStore) {
 
     @Synchronized
     fun getAsyncStore(repository: RepositoryId?): IAsyncObjectStore {
-        val existing = repositorySpecificStores[repository]?.get()
-        if (existing != null) return existing
-
-        val newStore = BulkAsyncStore(
-            CachingAsyncStore(
-                StoreClientAsAsyncStore(getStoreClient(repository, true)),
-                cacheSize = System.getenv("MODELIX_OBJECT_CACHE_SIZE")?.toIntOrNull() ?: 500_000,
-            ),
-        )
-        repositorySpecificStores[repository] = SoftReference(newStore)
-        return newStore
+        return repositorySpecificStores.get(repository?.id ?: "") {
+            BulkAsyncStore(
+                CachingAsyncStore(
+                    StoreClientAsAsyncStore(getStoreClient(repository, true)),
+                    cacheSize = System.getenv("MODELIX_OBJECT_CACHE_SIZE")?.toIntOrNull() ?: 500_000,
+                ),
+            )
+        }
     }
 
     fun getLegacyObjectStore(repository: RepositoryId?) = AsyncStoreAsLegacyDeserializingStore(getAsyncStore(repository))

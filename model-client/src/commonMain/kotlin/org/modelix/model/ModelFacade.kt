@@ -14,18 +14,17 @@ import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
-import org.modelix.model.lazy.ObjectStoreCache
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.operations.OTBranch
-import org.modelix.model.persistent.CPVersion
-import org.modelix.model.persistent.MapBaseStore
+import org.modelix.model.persistent.MapBasedStore
 import kotlin.jvm.JvmOverloads
 
 object ModelFacade {
 
     @JvmOverloads
     fun newLocalTree(useRoleIds: Boolean = true): ITree {
-        return CLTree(ObjectStoreCache(MapBaseStore()), useRoleIds = useRoleIds)
+        return CLTree.builder(createObjectStoreCache(MapBasedStore())).useRoleIds(useRoleIds).build()
     }
 
     fun getRootNode(branch: IBranch): INode {
@@ -90,12 +89,11 @@ object ModelFacade {
     fun createRepositoryId(id: String): RepositoryId = RepositoryId(id)
 
     fun mergeUpdate(client: IModelClient, branch: BranchReference, baseVersionHash: String? = null, userName: String?, body: (IWriteTransaction) -> Unit): CLVersion {
+        val store = client.storeCache.getAsyncStore()
         val actualBaseVersionHash: String = baseVersionHash
             ?: client.get(branch.getKey())
             ?: throw RuntimeException("$branch doesn't exist")
-        val baseVersionData: CPVersion = client.storeCache.get(actualBaseVersionHash) { CPVersion.deserialize(it) }
-            ?: throw RuntimeException("version not found: $actualBaseVersionHash")
-        val baseVersion = CLVersion(baseVersionData, client.storeCache)
+        val baseVersion = CLVersion.loadFromHash(actualBaseVersionHash, store)
         return applyUpdate(client, baseVersion, branch, userName, body)
     }
 
@@ -106,7 +104,7 @@ object ModelFacade {
         userId: String?,
         body: (IWriteTransaction) -> Unit,
     ): CLVersion {
-        val otBranch = OTBranch(PBranch(baseVersion.getTree(), client.idGenerator), client.idGenerator, client.storeCache)
+        val otBranch = OTBranch(PBranch(baseVersion.getTree(), client.idGenerator), client.idGenerator)
         otBranch.computeWriteT { t -> body(t) }
 
         val operationsAndTree = otBranch.getPendingChanges()

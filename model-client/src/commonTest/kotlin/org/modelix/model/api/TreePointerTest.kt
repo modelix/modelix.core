@@ -3,7 +3,6 @@ package org.modelix.model.api
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.async.asAsyncNode
 import org.modelix.model.client.IdGenerator
-import org.modelix.streams.getSynchronous
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -24,6 +23,6 @@ class TreePointerTest {
         val rootNode = branch.getRootNode()
         val role = IReferenceLinkReference.fromName("refA")
         rootNode.setReferenceTarget(role.toLegacy(), rootNode)
-        assertEquals(rootNode, rootNode.asAsyncNode().getReferenceTarget(role).getSynchronous()?.asRegularNode())
+        assertEquals(rootNode, rootNode.asAsyncNode().let { n -> n.getStreamExecutor().query { n.getReferenceTarget(role).orNull() } }?.asRegularNode())
     }
 }

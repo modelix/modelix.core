@@ -5,13 +5,12 @@ import io.ktor.utils.io.ByteChannel
 import io.ktor.utils.io.toByteArray
 import io.ktor.utils.io.writeFully
 import io.ktor.utils.io.writeStringUtf8
-import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.modelix.model.server.api.v2.VersionDeltaStreamV2.Companion.IncompleteData
 import org.modelix.model.server.api.v2.VersionDeltaStreamV2.Companion.decodeVersionDeltaStreamV2
 import org.modelix.model.server.api.v2.VersionDeltaStreamV2.Companion.encodeVersionDeltaStreamV2
+import org.modelix.streams.IExecutableStream
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -22,7 +21,7 @@ class VersionDeltaStreamV2Test {
     fun parsesStreamWithoutObjects() = runTest {
         val channel = ByteChannel()
         channel.use {
-            encodeVersionDeltaStreamV2(channel, "CTVRw*a6KXJ4o7uzGlp-kUosxpyRf4fUpHnLokG9T86A", emptyFlow())
+            encodeVersionDeltaStreamV2(channel, "CTVRw*a6KXJ4o7uzGlp-kUosxpyRf4fUpHnLokG9T86A", IExecutableStream.many())
         }
         val versionDeltaStream = decodeVersionDeltaStreamV2(channel)
 
@@ -37,7 +36,7 @@ class VersionDeltaStreamV2Test {
             encodeVersionDeltaStreamV2(
                 channel,
                 "CTVRw*a6KXJ4o7uzGlp-kUosxpyRf4fUpHnLokG9T86A",
-                flowOf(
+                IExecutableStream.many(
                     "r7k0y*p0mmIhhD46RvqLsmTEGuBQvAf9hw7aN0IzihLc" to "L/100000017/xioDt*mnraICBf48DpWkvvtl2KuPixWn1p7yteYQ3XSg",
                     "CTVRw*a6KXJ4o7uzGlp-kUosxpyRf4fUpHnLokG9T86A" to "1/%00/0/%00///",
                 ),
@@ -161,7 +160,7 @@ class VersionDeltaStreamV2Test {
             encodeVersionDeltaStreamV2(
                 channel,
                 "CTVRw*a6KXJ4o7uzGlp-kUosxpyRf4fUpHnLokG9T86A",
-                flowOf(
+                IExecutableStream.many(
                     "r7k0y*p0mmIhhD46RvqLsmTEGuBQvAf9hw7aN0IzihLc" to "L/100000017/xioDt*mnraICBf48DpWkvvtl2KuPixWn1p7yteYQ3XSg",
                     "CTVRw*a6KXJ4o7uzGlp-kUosxpyRf4fUpHnLokG9T86A" to "1/%00/0/%00///",
                 ),

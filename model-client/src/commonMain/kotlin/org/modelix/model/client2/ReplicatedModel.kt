@@ -197,8 +197,8 @@ private class LocalModel(initialVersion: CLVersion, val idGenerator: IIdGenerato
         }
 
     val rawBranch: IBranch = PBranch(initialVersion.getTree(), idGenerator)
-    val otBranch = OTBranch(rawBranch, idGenerator, initialVersion.store)
-    private val merger = VersionMerger(initialVersion.store, idGenerator)
+    val otBranch = OTBranch(rawBranch, idGenerator)
+    private val merger = VersionMerger(idGenerator)
 
     private val mutex = Mutex()
 

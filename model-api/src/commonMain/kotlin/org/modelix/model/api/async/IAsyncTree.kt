@@ -1,73 +1,71 @@
 package org.modelix.model.api.async
 
-import com.badoo.reaktive.maybe.Maybe
-import com.badoo.reaktive.maybe.flatMapObservable
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.concatWith
-import com.badoo.reaktive.observable.flatMap
-import com.badoo.reaktive.observable.observableOf
-import com.badoo.reaktive.single.Single
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.ITree
+import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutor
+import org.modelix.streams.plus
 
 interface IAsyncTree {
     fun asSynchronousTree(): ITree
-    fun getChanges(oldVersion: IAsyncTree, changesOnly: Boolean): Observable<TreeChangeEvent>
+    fun getStreamExecutor(): IStreamExecutor
 
-    fun getConceptReference(nodeId: Long): Single<ConceptReference>
+    fun getChanges(oldVersion: IAsyncTree, changesOnly: Boolean): IStream.Many<TreeChangeEvent>
 
-    fun containsNode(nodeId: Long): Single<Boolean>
+    fun getConceptReference(nodeId: Long): IStream.One<ConceptReference>
 
-    fun getParent(nodeId: Long): Maybe<Long>
-    fun getRole(nodeId: Long): Single<IChildLinkReference>
+    fun containsNode(nodeId: Long): IStream.One<Boolean>
 
-    fun getChildren(parentId: Long, role: IChildLinkReference): Observable<Long>
-    fun getChildRoles(sourceId: Long): Observable<IChildLinkReference>
-    fun getAllChildren(parentId: Long): Observable<Long>
+    fun getParent(nodeId: Long): IStream.ZeroOrOne<Long>
+    fun getRole(nodeId: Long): IStream.One<IChildLinkReference>
 
-    fun getPropertyValue(nodeId: Long, role: IPropertyReference): Maybe<String>
+    fun getChildren(parentId: Long, role: IChildLinkReference): IStream.Many<Long>
+    fun getChildRoles(sourceId: Long): IStream.Many<IChildLinkReference>
+    fun getAllChildren(parentId: Long): IStream.Many<Long>
 
-    fun getPropertyRoles(sourceId: Long): Observable<IPropertyReference>
-    fun getAllPropertyValues(sourceId: Long): Observable<Pair<IPropertyReference, String>>
+    fun getPropertyValue(nodeId: Long, role: IPropertyReference): IStream.ZeroOrOne<String>
 
-    fun getAllReferenceTargetRefs(sourceId: Long): Observable<Pair<IReferenceLinkReference, INodeReference>>
-    fun getReferenceTarget(sourceId: Long, role: IReferenceLinkReference): Maybe<INodeReference>
-    fun getReferenceRoles(sourceId: Long): Observable<IReferenceLinkReference>
+    fun getPropertyRoles(sourceId: Long): IStream.Many<IPropertyReference>
+    fun getAllPropertyValues(sourceId: Long): IStream.Many<Pair<IPropertyReference, String>>
+
+    fun getAllReferenceTargetRefs(sourceId: Long): IStream.Many<Pair<IReferenceLinkReference, INodeReference>>
+    fun getReferenceTarget(sourceId: Long, role: IReferenceLinkReference): IStream.ZeroOrOne<INodeReference>
+    fun getReferenceRoles(sourceId: Long): IStream.Many<IReferenceLinkReference>
 }
 
 interface IAsyncMutableTree : IAsyncTree {
-    fun deleteNodes(nodeIds: LongArray): Single<IAsyncMutableTree>
-    fun moveChild(newParentId: Long, newRole: IChildLinkReference, newIndex: Int, childId: Long): Single<IAsyncMutableTree>
-    fun setConcept(nodeId: Long, concept: ConceptReference): Single<IAsyncMutableTree>
+    fun deleteNodes(nodeIds: LongArray): IStream.One<IAsyncMutableTree>
+    fun moveChild(newParentId: Long, newRole: IChildLinkReference, newIndex: Int, childId: Long): IStream.One<IAsyncMutableTree>
+    fun setConcept(nodeId: Long, concept: ConceptReference): IStream.One<IAsyncMutableTree>
 
-    fun setPropertyValue(nodeId: Long, role: IPropertyReference, value: String?): Single<IAsyncMutableTree>
+    fun setPropertyValue(nodeId: Long, role: IPropertyReference, value: String?): IStream.One<IAsyncMutableTree>
 
-    fun addNewChildren(parentId: Long, role: IChildLinkReference, index: Int, newIds: LongArray, concepts: Array<ConceptReference>): Single<IAsyncMutableTree>
+    fun addNewChildren(parentId: Long, role: IChildLinkReference, index: Int, newIds: LongArray, concepts: Array<ConceptReference>): IStream.One<IAsyncMutableTree>
 
-    fun setReferenceTarget(sourceId: Long, role: IReferenceLinkReference, target: INodeReference?): Single<IAsyncMutableTree>
-    fun setReferenceTarget(sourceId: Long, role: IReferenceLinkReference, targetId: Long): Single<IAsyncMutableTree>
+    fun setReferenceTarget(sourceId: Long, role: IReferenceLinkReference, target: INodeReference?): IStream.One<IAsyncMutableTree>
+    fun setReferenceTarget(sourceId: Long, role: IReferenceLinkReference, targetId: Long): IStream.One<IAsyncMutableTree>
 }
 
-fun IAsyncTree.getAncestors(nodeId: Long, includeSelf: Boolean): Observable<Long> {
+fun IAsyncTree.getAncestors(nodeId: Long, includeSelf: Boolean): IStream.Many<Long> {
     return if (includeSelf) {
-        observableOf(nodeId).concatWith(getAncestors(nodeId, false))
+        IStream.of(nodeId) + getAncestors(nodeId, false)
     } else {
-        getParent(nodeId).flatMapObservable { getAncestors(it, true) }
+        getParent(nodeId).flatMap { getAncestors(it, true) }
     }
 }
 
-fun IAsyncTree.getDescendants(nodeId: Long, includeSelf: Boolean): Observable<Long> {
+fun IAsyncTree.getDescendants(nodeId: Long, includeSelf: Boolean): IStream.Many<Long> {
     return if (includeSelf) getDescendantsAndSelf(nodeId) else getDescendants(nodeId)
 }
 
-fun IAsyncTree.getDescendants(nodeId: Long): Observable<Long> {
+fun IAsyncTree.getDescendants(nodeId: Long): IStream.Many<Long> {
     return getAllChildren(nodeId).flatMap { getDescendantsAndSelf(it) }
 }
 
-fun IAsyncTree.getDescendantsAndSelf(nodeId: Long): Observable<Long> {
-    return observableOf(nodeId).concatWith(getDescendants(nodeId))
+fun IAsyncTree.getDescendantsAndSelf(nodeId: Long): IStream.Many<Long> {
+    return IStream.of(nodeId) + getDescendants(nodeId)
 }

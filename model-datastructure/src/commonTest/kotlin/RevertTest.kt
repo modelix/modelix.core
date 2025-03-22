@@ -5,9 +5,7 @@ import org.modelix.model.api.PBranch
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
-import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.KVEntryReference
-import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.operations.IAppliedOperation
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.OTWriteTransaction
@@ -22,15 +20,15 @@ class RevertTest {
     fun revert_random() {
         val idGenerator = IdGenerator.newInstance(7)
         val versionIdGenerator = IdGenerator.newInstance(0)
-        val store = ObjectStoreCache(MapBaseStore())
-        val baseBranch = OTBranch(PBranch(CLTree(store), idGenerator), idGenerator, store)
+        val store = createObjectStoreCache(MapBaseStore()).getLegacyObjectStore()
+        val baseBranch = OTBranch(PBranch(CLTree.builder(store).build(), idGenerator), idGenerator)
         val rand = Random(916306)
 
         val allVersions = mutableListOf<CLVersion>()
 
         randomChanges(baseBranch, 10, idGenerator, rand)
 
-        allVersions += createVersion(baseBranch.operationsAndTree, null, versionIdGenerator, store)
+        allVersions += createVersion(baseBranch.operationsAndTree, null, versionIdGenerator)
 
         for (i in 0..100) {
             if (rand.nextInt(10) == 0) {
@@ -39,11 +37,11 @@ class RevertTest {
                 allVersions += VersionMerger(store, versionIdGenerator).mergeChange(v1, v2)
             } else {
                 val v1 = allVersions[rand.nextInt(allVersions.size)]
-                val branch = OTBranch(PBranch(v1.tree, idGenerator), idGenerator, store)
+                val branch = OTBranch(PBranch(v1.tree, idGenerator), idGenerator)
                 branch.runWrite {
                     randomChanges(branch, 5, idGenerator, rand)
                 }
-                allVersions += createVersion(branch.operationsAndTree, v1, versionIdGenerator, store)
+                allVersions += createVersion(branch.operationsAndTree, v1, versionIdGenerator)
             }
         }
 
@@ -58,8 +56,8 @@ class RevertTest {
     }
 
     fun revert(latestKnownVersion: CLVersion, versionToRevertTo: CLVersion, idGenerator: IIdGenerator): CLVersion {
-        val revertOp = RevertToOp(KVEntryReference(latestKnownVersion.data!!), KVEntryReference(versionToRevertTo.data!!))
-        val branch = OTBranch(PBranch(latestKnownVersion.tree, idGenerator), idGenerator, latestKnownVersion.store)
+        val revertOp = RevertToOp(latestKnownVersion.resolvedData.ref, versionToRevertTo.resolvedData.ref)
+        val branch = OTBranch(PBranch(latestKnownVersion.tree, idGenerator), idGenerator)
         branch.runWriteT { t ->
             (t as OTWriteTransaction).apply(revertOp)
         }
@@ -97,7 +95,6 @@ class RevertTest {
         opsAndTree: Pair<List<IAppliedOperation>, ITree>,
         previousVersion: CLVersion?,
         idGenerator: IIdGenerator,
-        storeCache: IDeserializingKeyValueStore,
     ): CLVersion {
         return CLVersion.createRegularVersion(
             id = idGenerator.generate(),

@@ -1,37 +1,25 @@
 package org.modelix.model.server.handlers
 
-import com.badoo.reaktive.coroutinesinterop.asFlow
-import com.badoo.reaktive.observable.map
-import gnu.trove.set.hash.THashSet
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.datetime.Clock
-import org.apache.commons.collections4.map.LRUMap
 import org.modelix.model.ModelMigrations
+import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IReadTransaction
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IdGeneratorDummy
 import org.modelix.model.api.PBranch
-import org.modelix.model.async.getRecursively
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
-import org.modelix.model.lazy.KVEntryReference
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.lazy.computeDelta
-import org.modelix.model.persistent.CPVersion
+import org.modelix.model.lazy.commonBaseVersion
+import org.modelix.model.lazy.diff
+import org.modelix.model.lazy.fullDiff
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.SerializationUtil
-import org.modelix.model.server.api.v2.toMap
 import org.modelix.model.server.store.IRepositoryAwareStore
 import org.modelix.model.server.store.ITransactionManager
 import org.modelix.model.server.store.ObjectInRepository
@@ -39,9 +27,12 @@ import org.modelix.model.server.store.RequiresTransaction
 import org.modelix.model.server.store.StoreManager
 import org.modelix.model.server.store.assertWrite
 import org.modelix.model.server.store.pollEntry
-import org.modelix.streams.endOfSynchronousPipeline
+import org.modelix.model.server.store.runReadIO
+import org.modelix.streams.IExecutableStream
+import org.modelix.streams.IStream
+import org.modelix.streams.SimpleStreamExecutor
+import org.modelix.streams.withSequences
 import org.slf4j.LoggerFactory
-import java.lang.ref.SoftReference
 import java.util.UUID
 
 // The methods in this class are almost cohesive, so the number of functions is fine.
@@ -67,7 +58,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
                 val repositoryId = RepositoryId("info")
                 val v1BranchKey = repositoryId.getBranchReference().getKey()
                 val infoVersionHash = stores.getGlobalStoreClient().get(v1BranchKey) ?: return@runWrite
-                val infoVersion = CLVersion(infoVersionHash, getLegacyObjectStore(repositoryId))
+                val infoVersion = CLVersion.loadFromHash(infoVersionHash, getLegacyObjectStore(repositoryId))
                 val infoBranch: IBranch = PBranch(infoVersion.getTree(), IdGeneratorDummy())
 
                 ModelMigrations.useResolvedConceptsFromMetaModel(infoBranch)
@@ -169,7 +160,8 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
             id = stores.idGenerator.generate(),
             time = Clock.System.now().epochSeconds.toString(),
             author = userName,
-            tree = CLTree(null, null, stores.getLegacyObjectStore(repositoryId.takeIf { isolated }), useRoleIds = useRoleIds),
+            tree = CLTree.builder(stores.getAsyncStore(repositoryId.takeIf { isolated }))
+                .useRoleIds(useRoleIds).build(),
             baseVersion = null,
             operations = emptyArray(),
         )
@@ -253,23 +245,50 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
     @RequiresTransaction
     override fun mergeChanges(branch: BranchReference, newVersionHash: String): String {
         val headHash = getVersionHash(branch)
+        if (headHash == newVersionHash) return headHash
+        val mergedHash = validateAndMerge(newVersionHash, headHash, branch.repositoryId)
+        ensureBranchInList(branch)
+        putVersionHash(branch, mergedHash)
+        return mergedHash
+    }
+
+    override suspend fun mergeChangesWithoutPush(branch: BranchReference, newVersionHash: String): String {
+        @OptIn(RequiresTransaction::class)
+        val headHash = getTransactionManager().runReadIO {
+            getVersionHash(branch)
+        }
+        return validateAndMerge(newVersionHash, headHash, branch.repositoryId)
+    }
+
+    private fun validateAndMerge(
+        newVersionHash: String,
+        headHash: String?,
+        repositoryId: RepositoryId,
+    ): String {
+        if (headHash == newVersionHash) return headHash
+        val asyncStore = getAsyncStore(repositoryId)
+        val newVersion = CLVersion.loadFromHash(newVersionHash, asyncStore)
         val mergedHash = if (headHash == null) {
+            validateVersion(newVersion, null)
             newVersionHash
         } else {
-            val legacyObjectStore = getLegacyObjectStore(branch.repositoryId)
-            val headVersion = CLVersion(headHash, legacyObjectStore)
-            val newVersion = CLVersion(newVersionHash, legacyObjectStore)
+            val legacyObjectStore = getLegacyObjectStore(repositoryId)
+            val headVersion = CLVersion.loadFromHash(headHash, legacyObjectStore)
             require(headVersion.getTree().getId() == newVersion.getTree().getId()) {
                 "Attempt to merge a model with ID '${newVersion.getTree().getId()}'" +
                     " into one with ID '${headVersion.getTree().getId()}'"
             }
+            validateVersion(newVersion, headVersion)
             val mergedVersion = VersionMerger(legacyObjectStore, stores.idGenerator)
                 .mergeChange(headVersion, newVersion)
             mergedVersion.getContentHash()
         }
-        ensureBranchInList(branch)
-        putVersionHash(branch, mergedHash)
         return mergedHash
+    }
+
+    private fun validateVersion(newVersion: CLVersion, oldVersion: CLVersion?) {
+        // ensure there are no missing objects
+        newVersion.graph.getStreamExecutor().iterate({ newVersion.fullDiff(oldVersion) }) { }
     }
 
     @RequiresTransaction
@@ -278,8 +297,8 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
     }
 
     override fun getVersion(repository: RepositoryId, versionHash: String): CLVersion? {
-        val legacyObjectStore = getLegacyObjectStore(repository.takeIf { isIsolated(repository) == true })
-        return CLVersion.tryLoadFromHash(versionHash, legacyObjectStore)
+        val store = getAsyncStore(repository.takeIf { isIsolated(repository) == true })
+        return store.getStreamExecutor().query { CLVersion.tryLoadFromHash(versionHash, store).orNull() }
     }
 
     @RequiresTransaction
@@ -310,26 +329,22 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
             ?: throw IllegalStateException("No version found for branch '${branch.branchName}' in repository '${branch.repositoryId}'")
     }
 
-    private val versionDeltaCache = VersionDeltaCache(stores)
-    override suspend fun computeDelta(repository: RepositoryId?, versionHash: String, baseVersionHash: String?): ObjectData {
-        if (versionHash == baseVersionHash) return ObjectData.empty
-        if (baseVersionHash == null) {
-            // no need to cache anything if there is no delta computation happening
-            return allObjectDataAsFlow(repository, versionHash)
-        }
+    override suspend fun computeDelta(repository: RepositoryId?, versionHash: String, filter: ObjectDeltaFilter): ObjectData {
+        if (filter.knownVersions.contains(versionHash)) return ObjectData.empty
 
-        return versionDeltaCache.getOrComputeDelta(repository?.takeIf { isIsolated(it) ?: false }, versionHash, baseVersionHash)
-    }
+        val store = stores.getAsyncStore(repository?.takeIf { isIsolated(it) ?: false })
+        return store.getStreamExecutor().queryManyLater {
+            val version = CLVersion.loadFromHash(versionHash, store)
 
-    private fun allObjectDataAsFlow(repository: RepositoryId?, versionHash: String): ObjectDataFlow {
-        val asyncStore = getAsyncStore(repository)
-        return asyncStore.getRecursively(KVEntryReference(versionHash, CPVersion.DESERIALIZER), THashSet())
-            .map { it.first.getHash() to it.second.serialize() }
-            .endOfSynchronousPipeline()
-            .asFlow()
-            .checkObjectHashes()
-            .flowOn(Dispatchers.IO)
-            .let { ObjectDataFlow(it) }
+            if (filter.knownVersions.isNotEmpty()) {
+                val commonBase = IStream.many(filter.knownVersions).flatMap {
+                    CLVersion.tryLoadFromHash(it, store)
+                }.fold<CLVersion?>(version) { acc, it -> acc?.commonBaseVersion(it) }
+                commonBase.flatMap { commonBase -> version.diff(filter, commonBase) }
+            } else {
+                version.diff(filter, null)
+            }.map { it.getHashString() to it.data.serialize() }
+        }.let { ObjectDataFlow(it) }
     }
 
     private fun branchKey(branch: BranchReference, isolated: Boolean = isIsolated(branch.repositoryId) ?: true): ObjectInRepository {
@@ -389,7 +404,7 @@ class RepositoryAlreadyExistsException(val name: String) : IllegalStateException
 
 sealed interface ObjectData {
     suspend fun asMap(): Map<String, String>
-    fun asFlow(): Flow<Pair<String, String>>
+    fun asStream(): IExecutableStream.Many<Pair<String, String>>
 
     companion object {
         val empty = ObjectDataMap(emptyMap())
@@ -402,50 +417,18 @@ class ObjectDataMap(private val byHashObjects: Map<String, String>) : ObjectData
     }
 
     override suspend fun asMap(): Map<String, String> = byHashObjects
-    override fun asFlow(): Flow<Pair<String, String>> = byHashObjects.entries.asFlow().map { it.toPair() }
+    override fun asStream(): IExecutableStream.Many<Pair<String, String>> {
+        return SimpleStreamExecutor().withSequences().queryManyLater {
+            IStream.many(byHashObjects.entries).map { it.key to it.value }
+        }
+    }
 }
 
-class ObjectDataFlow(private val hashObjectFlow: Flow<Pair<String, String>>) : ObjectData {
-    override suspend fun asMap(): Map<String, String> = hashObjectFlow.toMap()
-    override fun asFlow(): Flow<Pair<String, String>> = hashObjectFlow
+class ObjectDataFlow(private val hashObjectFlow: IExecutableStream.Many<Pair<String, String>>) : ObjectData {
+    override suspend fun asMap(): Map<String, String> = hashObjectFlow.mapOne { it.toMap({ it.first }, { it.second }) }.querySuspending()
+    override fun asStream(): IExecutableStream.Many<Pair<String, String>> = hashObjectFlow
 }
 
 private fun Flow<Pair<String, String>>.checkObjectHashes(): Flow<Pair<String, String>> {
     return onEach { HashUtil.checkObjectHash(it.first, it.second) }
-}
-
-class VersionDeltaCache(val stores: StoreManager) {
-
-    companion object {
-        private val LOG = LoggerFactory.getLogger(VersionDeltaCache::class.java)
-    }
-
-    private val cacheMap = LRUMap<Triple<RepositoryId?, String, String?>, SoftReference<Deferred<ObjectDataMap>>>(10)
-
-    suspend fun getOrComputeDelta(repository: RepositoryId?, versionHash: String, baseVersionHash: String): ObjectDataMap {
-        return coroutineScope {
-            val deferredDelta = synchronized(cacheMap) {
-                val key = Triple(repository, versionHash, baseVersionHash)
-                val existingDeferredDelta = cacheMap[key]?.get()
-                if (existingDeferredDelta != null) {
-                    LOG.debug("Version delta found in cache for {}.", key)
-                    existingDeferredDelta
-                } else {
-                    LOG.debug("Version delta not found in cache for {}.", key)
-                    val legacyObjectStore = stores.getLegacyObjectStore(repository)
-                    val version = CLVersion(versionHash, legacyObjectStore)
-                    val baseVersion = CLVersion(baseVersionHash, legacyObjectStore)
-                    val newDeferredDelta = async(Dispatchers.IO) {
-                        LOG.debug("Computing for delta for {}.", key)
-                        val result = ObjectDataMap(version.computeDelta(baseVersion))
-                        LOG.debug("Computed version delta for {}.", key)
-                        result
-                    }
-                    cacheMap[key] = SoftReference(newDeferredDelta)
-                    newDeferredDelta
-                }
-            }
-            deferredDelta.await()
-        }
-    }
 }

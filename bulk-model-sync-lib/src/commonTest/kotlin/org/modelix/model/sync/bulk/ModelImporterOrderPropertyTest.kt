@@ -10,7 +10,7 @@ import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.data.ModelData
 import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.withAutoTransactions
 import kotlin.js.JsName
@@ -61,13 +61,8 @@ class ModelImporterOrderPropertyTest {
     }
 
     private fun loadModelIntoBranch(modelData: ModelData): IBranch {
-        val store = ObjectStoreCache(MapBasedStore())
-        val tree = CLTree(
-            data = null,
-            repositoryId_ = null,
-            store_ = store,
-            useRoleIds = true,
-        )
+        val store = createObjectStoreCache(MapBasedStore())
+        val tree = CLTree.builder(store).useRoleIds(true).build()
         val idGenerator = IdGenerator.getInstance(1)
         val pBranch = PBranch(tree, idGenerator)
 

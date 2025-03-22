@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.RepetitionInfo
+import org.modelix.model.IVersion
 import org.modelix.model.ModelFacade
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.IBranch
@@ -21,6 +22,7 @@ import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.client.ReplicatedRepository
 import org.modelix.model.client.RestWebModelClient
+import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.client2.getReplicatedModel
@@ -197,12 +199,15 @@ class ReplicatedRepositoryTest {
         }
 
         val repositoryId = RepositoryId("repo1")
-        val initialVersion = clients[0].initRepository(repositoryId) as CLVersion
         val branchId = repositoryId.getBranchReference("my-branch")
-        clients[0].push(branchId, initialVersion, initialVersion)
-        val localVersions: MutableMap<ModelClientV2, CLVersion> = clients.associateWith { it.pull(branchId, null) as CLVersion }.toMutableMap()
-        val remoteVersions: MutableMap<ModelClientV2, CLVersion> = localVersions.toMutableMap()
-        val lastKnownRemoteVersion: MutableMap<ModelClientV2, CLVersion> = localVersions.toMutableMap()
+        run {
+            val initialVersion = clients[0].initRepository(repositoryId) as CLVersion
+            clients[0].push(branchId, initialVersion, initialVersion)
+        }
+        val initiallyPulledVersions = clients.associateWith<IModelClientV2, CLVersion> { it.pull(branchId, null) as CLVersion }
+        val localVersions = ClientSpecificVersionMap(initiallyPulledVersions)
+        val remoteVersions = ClientSpecificVersionMap(initiallyPulledVersions)
+        val lastKnownRemoteVersion = ClientSpecificVersionMap(initiallyPulledVersions)
 
         val createdNodes: MutableSet<String> = Collections.synchronizedSet(TreeSet<String>())
         val rand = Random(repetitionInfo.currentRepetition + 8745000)
@@ -216,14 +221,15 @@ class ReplicatedRepositoryTest {
 
                 override suspend fun apply() {
                     // Change local version
-                    val baseVersion = localVersions[client]!!
-                    val branch = OTBranch(PBranch(baseVersion.getTree(), client.getIdGenerator()), client.getIdGenerator(), baseVersion.store)
+                    val baseVersion = localVersions[client]
+                    val branch = OTBranch(PBranch(baseVersion.getTree(), client.getIdGenerator()), client.getIdGenerator())
                     branch.runWriteT { t ->
                         createdNodes += t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?).toString(16)
                     }
                     val (ops, tree) = branch.getPendingChanges()
                     val newVersion = CLVersion.createRegularVersion(
                         id = client.getIdGenerator().generate(),
+                        time = null,
                         author = client.getUserId(),
                         tree = tree as CLTree,
                         baseVersion = baseVersion,
@@ -234,50 +240,50 @@ class ReplicatedRepositoryTest {
             },
             object : IRandomOperation {
                 override suspend fun isApplicable(): Boolean {
-                    return remoteVersions[client]!!.getContentHash() != localVersions[client]!!.getContentHash()
+                    return remoteVersions[client].getContentHash() != localVersions[client].getContentHash()
                 }
 
                 override suspend fun apply() {
                     // Merge local into remote
-                    remoteVersions[client] = VersionMerger(initialVersion.store, client.getIdGenerator())
-                        .mergeChange(remoteVersions[client]!!, localVersions[client]!!)
+                    remoteVersions[client] = VersionMerger(client.getIdGenerator())
+                        .mergeChange(remoteVersions[client], localVersions[client])
                 }
             },
             object : IRandomOperation {
                 override suspend fun isApplicable(): Boolean {
-                    return remoteVersions[client]!!.getContentHash() != localVersions[client]!!.getContentHash()
+                    return remoteVersions[client].getContentHash() != localVersions[client].getContentHash()
                 }
 
                 override suspend fun apply() {
                     // Merge remote into local
-                    localVersions[client] = VersionMerger(initialVersion.store, client.getIdGenerator())
-                        .mergeChange(localVersions[client]!!, remoteVersions[client]!!)
+                    localVersions[client] = VersionMerger(client.getIdGenerator())
+                        .mergeChange(localVersions[client], remoteVersions[client])
                 }
             },
             object : IRandomOperation {
                 override suspend fun isApplicable(): Boolean {
-                    return remoteVersions[client]!!.getContentHash() != lastKnownRemoteVersion[client]!!.getContentHash()
+                    return remoteVersions[client].getContentHash() != lastKnownRemoteVersion[client].getContentHash()
                 }
 
                 override suspend fun apply() {
                     // Push to server
-                    val receivedVersion = client.push(branchId, remoteVersions[client]!!, lastKnownRemoteVersion[client]!!) as CLVersion
+                    val receivedVersion = client.push(branchId, remoteVersions[client], lastKnownRemoteVersion[client]) as CLVersion
                     lastKnownRemoteVersion[client] = receivedVersion
-                    remoteVersions[client] = VersionMerger(initialVersion.store, client.getIdGenerator())
-                        .mergeChange(remoteVersions[client]!!, receivedVersion)
+                    remoteVersions[client] = VersionMerger(client.getIdGenerator())
+                        .mergeChange(remoteVersions[client], receivedVersion)
                 }
             },
             object : IRandomOperation {
                 override suspend fun isApplicable(): Boolean {
-                    return client.pullHash(branchId) != remoteVersions[client]!!.getContentHash()
+                    return client.pullHash(branchId) != remoteVersions[client].getContentHash()
                 }
 
                 override suspend fun apply() {
                     // Pull from server
-                    val receivedVersion = client.pull(branchId, lastKnownRemoteVersion[client]!!) as CLVersion
+                    val receivedVersion = client.pull(branchId, lastKnownRemoteVersion[client]) as CLVersion
                     lastKnownRemoteVersion[client] = receivedVersion
-                    remoteVersions[client] = VersionMerger(initialVersion.store, client.getIdGenerator())
-                        .mergeChange(remoteVersions[client]!!, receivedVersion)
+                    remoteVersions[client] = VersionMerger(client.getIdGenerator())
+                        .mergeChange(remoteVersions[client], receivedVersion)
                 }
             },
         )
@@ -300,7 +306,7 @@ class ReplicatedRepositoryTest {
         assertEquals(createdNodes, childrenOnServer)
 
         for (client in clients) {
-            assertEquals(createdNodes, getChildren(localVersions[client]!!))
+            assertEquals(createdNodes, getChildren(localVersions[client]))
         }
     }
 
@@ -424,7 +430,7 @@ class ReplicatedRepositoryTest {
 
         repeat(100) {
             val baseVersion = versions[rand.nextInt(versions.size)]
-            val branch = OTBranch(PBranch(baseVersion.getTree(), idGenerator), idGenerator, initialTree.store)
+            val branch = OTBranch(PBranch(baseVersion.getTree(), idGenerator), idGenerator)
             branch.runWriteT { t ->
                 createdNodes += t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?).toString(16)
             }
@@ -491,3 +497,20 @@ class ReplicatedRepositoryTest {
 }
 
 private fun IBranch.treeHash(): String = computeReadT { t -> (t.tree as CLTree).hash }
+
+class ClientSpecificVersionMap(initialEntries: Map<IModelClientV2, IVersion>) {
+    private val map = mutableMapOf<IModelClientV2, CLVersion>()
+    init {
+        putAll(initialEntries)
+    }
+    operator fun get(client: IModelClientV2): CLVersion {
+        return map[client]!!
+    }
+    operator fun set(client: IModelClientV2, version: IVersion) {
+        version as CLVersion
+        map[client] = version
+    }
+    fun putAll(entries: Map<IModelClientV2, IVersion>) {
+        entries.forEach { set(it.key, it.value) }
+    }
+}

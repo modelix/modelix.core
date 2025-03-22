@@ -2,17 +2,14 @@ package org.modelix.model.lazy
 
 import org.modelix.model.IKeyListener
 import org.modelix.model.IKeyValueStore
+import org.modelix.streams.IStreamExecutorProvider
 
 /**
  * Internal API.
  * Only public for tests.
  */
-class AccessTrackingStore(val store: IKeyValueStore) : IKeyValueStore {
+class AccessTrackingStore(val store: IKeyValueStore) : IKeyValueStore, IStreamExecutorProvider by store {
     val accessedEntries: MutableMap<String, String?> = LinkedHashMap()
-
-    override fun newBulkQuery(deserializingCache: IDeserializingKeyValueStore, config: BulkQueryConfiguration): IBulkQuery {
-        return store.newBulkQuery(deserializingCache, config)
-    }
 
     override fun get(key: String): String? {
         val value = store.get(key)

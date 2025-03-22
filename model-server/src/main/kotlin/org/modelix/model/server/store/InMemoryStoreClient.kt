@@ -138,12 +138,14 @@ class InMemoryStoreClient : IsolatingStore, ITransactionManager, IRepositoryAwar
     override fun getImmutableStore(): IImmutableStore<ObjectInRepository> {
         return object : IImmutableStore<ObjectInRepository> {
             override fun getAll(keys: Set<ObjectInRepository>): Map<ObjectInRepository, String?> {
+                if (keys.isEmpty()) return emptyMap()
                 keys.forEach { require(HashUtil.isSha256(it.key)) { "Not an immutable object: $it" } }
                 @OptIn(RequiresTransaction::class)
                 return runRead { this@InMemoryStoreClient.getAll(keys) }
             }
 
             override fun addAll(entries: Map<ObjectInRepository, String>) {
+                if (entries.isEmpty()) return
                 entries.forEach {
                     require(HashUtil.isSha256(it.key.key)) { "Not an immutable object: $it" }
                     HashUtil.checkObjectHash(it.key.key, it.value)

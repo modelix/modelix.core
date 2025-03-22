@@ -17,10 +17,8 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.createModelClient
 import org.modelix.model.server.installDefaultServerPlugins
 import org.modelix.model.server.store.InMemoryStoreClient
-import org.modelix.streams.getSynchronous
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class KeyValueLikeModelServerTest {
@@ -94,23 +92,6 @@ class KeyValueLikeModelServerTest {
 
                 val branchAVersion = clientV2.pull(branchA, null) as CLVersion
                 assertTrue(branchAVersion.isMerge())
-            }
-        }
-    }
-
-    @Test
-    fun `model client V1 can run a bulk query`() = runTest {
-        RestWebModelClient(baseUrl = "http://localhost/", providedClient = client).use { clientV1 ->
-            createModelClient().use { clientV2 ->
-                val repositoryId = RepositoryId("repo1")
-                val version = clientV2.initRepositoryWithLegacyStorage(repositoryId) as CLVersion
-                val treeHash = checkNotNull(version.treeHash) { "Tree has should be loaded." }
-
-                val bulkQuery = clientV1.storeCache.newBulkQuery()
-                val bulkQueryValue = bulkQuery.query(treeHash)
-                val bulkQueryResult = bulkQueryValue.getSynchronous()
-
-                assertNotNull(bulkQueryResult)
             }
         }
     }

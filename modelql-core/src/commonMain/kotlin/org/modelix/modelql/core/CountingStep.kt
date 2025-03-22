@@ -1,13 +1,12 @@
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.single.Single
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.modelix.streams.count
+import org.modelix.streams.IStream
 
 class CountingStep() : AggregationStep<Any?, Int>() {
-    override fun aggregate(input: StepStream<Any?>, context: IStreamInstantiationContext): Single<IStepOutput<Int>> {
+    override fun aggregate(input: StepStream<Any?>, context: IStreamInstantiationContext): IStream.One<IStepOutput<Int>> {
         return input.count().asStepStream(this)
     }
 

@@ -11,7 +11,7 @@ import org.modelix.model.client.IdGenerator
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.operations.AddNewChildOp
 import org.modelix.model.operations.AddNewChildrenOp
 import org.modelix.model.operations.DeleteNodeOp
@@ -141,7 +141,7 @@ open class ModelSynchronizerTest : AbstractModelSyncTest() {
     }
 
     override fun runRandomTest(seed: Int) {
-        val tree0 = CLTree(ObjectStoreCache(MapBasedStore()))
+        val tree0 = CLTree(createObjectStoreCache(MapBasedStore()))
         val sourceBranch = PBranch(tree0, IdGenerator.getInstance(1))
 
         println("Seed for random change test: $seed")
@@ -162,7 +162,7 @@ open class ModelSynchronizerTest : AbstractModelSyncTest() {
             }
         }
 
-        val store = ObjectStoreCache(MapBasedStore())
+        val store = createObjectStoreCache(MapBasedStore())
         val tree1 = CLTree(store)
         val idGenerator = IdGenerator.getInstance(1)
         val targetBranch = PBranch(tree1, idGenerator)
@@ -173,7 +173,7 @@ open class ModelSynchronizerTest : AbstractModelSyncTest() {
                 importer.import(ModelData(root = sourceBranch.getRootNode().asExported()))
             }
         }
-        val otBranch = OTBranch(targetBranch, idGenerator, store)
+        val otBranch = OTBranch(targetBranch, idGenerator)
 
         otBranch.runWrite {
             ModelSynchronizer(
@@ -196,5 +196,5 @@ open class ModelSynchronizerTest : AbstractModelSyncTest() {
 }
 
 private fun IBranch.toOTBranch(): OTBranch {
-    return OTBranch(this, IdGenerator.getInstance(1), ObjectStoreCache(MapBasedStore()))
+    return OTBranch(this, IdGenerator.getInstance(1))
 }

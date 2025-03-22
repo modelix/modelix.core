@@ -1,7 +1,5 @@
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.observable.asObservable
-import com.badoo.reaktive.observable.flatMap
 import kotlinx.coroutines.test.TestResult
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -443,7 +441,7 @@ suspend fun <ResultT> doRemoteProductDatabaseQuery(body: (IMonoStep<ProductDatab
 
 class ProductsTraversal() : FluxTransformingStep<ProductDatabase, Product>() {
     override fun createStream(input: StepStream<ProductDatabase>, context: IStreamInstantiationContext): StepStream<Product> {
-        return input.flatMap { it.value.products.asObservable() }.asStepStream(this)
+        return input.flatMapIterable { it.value.products }.asStepStream(this)
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Product>> = serializationContext.serializer<Product>().stepOutputSerializer(this)
@@ -530,7 +528,7 @@ class ProductIdTraversal : SimpleMonoTransformingStep<Product, Int>() {
 }
 class ProductImagesTraversal : FluxTransformingStep<Product, String>() {
     override fun createStream(input: StepStream<Product>, context: IStreamInstantiationContext): StepStream<String> {
-        return input.flatMap { it.value.images.asObservable() }.asStepStream(this)
+        return input.flatMapIterable { it.value.images }.asStepStream(this)
     }
 
     override fun toString(): String {

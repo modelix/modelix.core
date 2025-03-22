@@ -42,14 +42,26 @@ class ModelSynchronizer(
 ) {
     private val nodesToRemove: MutableSet<IWritableNode> = HashSet()
     private val pendingReferences: MutableList<PendingReference> = ArrayList()
+    private val syncStack = ArrayList<IReadableNode>()
+
+    fun getCurrentSyncStack(): List<IReadableNode> = syncStack.toList()
+
+    private inline fun <R> withPushSyncStack(element: IReadableNode, body: () -> R): R {
+        syncStack.add(element)
+        try {
+            return body()
+        } finally {
+            syncStack.removeLast()
+        }
+    }
 
     private fun <R> runSafe(body: () -> R): Result<R> {
         return if (onException == null) {
             Result.success(body())
         } else {
             runCatching(body)
-                .onFailure { LOG.error(it) { "Ignoring exception during synchronization" } }
                 .onFailure { onException(it) }
+                .onFailure { LOG.error(it) { "Ignoring exception during synchronization" } }
         }
     }
 
@@ -71,11 +83,21 @@ class ModelSynchronizer(
             }
         }
         LOG.debug { "Removing extra nodes..." }
-        nodesToRemove.filter { it.isValid() }.forEach { it.remove() }
+        nodesToRemove.forEach {
+            runSafe {
+                if (it.isValid()) {
+                    it.remove()
+                }
+            }
+        }
         LOG.debug { "Synchronization finished." }
     }
 
-    private fun synchronizeNode(sourceNode: IReadableNode, targetNode: IWritableNode, forceSyncDescendants: Boolean) {
+    private fun synchronizeNode(
+        sourceNode: IReadableNode,
+        targetNode: IWritableNode,
+        forceSyncDescendants: Boolean,
+    ): Unit = withPushSyncStack(sourceNode) {
         nodeAssociation.associate(sourceNode, targetNode)
         if (forceSyncDescendants || filter.needsSynchronization(sourceNode)) {
             LOG.trace { "Synchronizing changed node. sourceNode = $sourceNode" }

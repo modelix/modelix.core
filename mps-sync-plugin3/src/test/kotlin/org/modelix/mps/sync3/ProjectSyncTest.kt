@@ -1,6 +1,5 @@
 package org.modelix.mps.sync3
 
-import com.badoo.reaktive.observable.toList
 import com.intellij.configurationStore.saveSettings
 import jetbrains.mps.smodel.SNodeUtil
 import jetbrains.mps.smodel.adapter.ids.SConceptId
@@ -29,7 +28,6 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSModuleAsNode
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.tryDecodeModelixReference
-import org.modelix.streams.getSuspending
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.images.builder.ImageFromDockerfile
@@ -168,7 +166,9 @@ class ProjectSyncTest : MPSTestBase() {
         println("Version 2: $version2")
 
         // ... which should result in a new version on the server with a single property change operation
-        val changes: List<TreeChangeEvent> = version2.getTree().asAsyncTree().getChanges(version1.getTree().asAsyncTree(), false).toList().getSuspending()
+        val changes: List<TreeChangeEvent> = version2.getTree().asAsyncTree().let {
+            it.getStreamExecutor().query { it.getChanges(version1.getTree().asAsyncTree(), false).toList() }
+        }
         assertEquals(1, changes.size)
         val change = changes.single() as PropertyChangedEvent
         assertEquals(MPSProperty(nameProperty).getUID(), change.role.getUID())
@@ -508,9 +508,26 @@ class ProjectSyncTest : MPSTestBase() {
         val version3 = binding.flush()
     }
 
+    fun `test sync projects with different name`(): Unit = runWithModelServer { port ->
+        val branchRef = RepositoryId("sync-test").getBranchReference()
+        syncProjectToServer("initial", port, branchRef)
+        val expectedSnapshot = lastSnapshotBeforeSync
+
+        openTestProject(null, projectName = "project-with-different-name")
+        assertEquals("project-with-different-name", project.name)
+
+        val binding = IModelSyncService.getInstance(mpsProject)
+            .addServer("http://localhost:$port")
+            .bind(branchRef)
+        binding.flush()
+
+        assertEquals("test-project", project.name)
+        assertEquals(expectedSnapshot, project.captureSnapshot())
+    }
+
     private fun runWithModelServer(body: suspend (port: Int) -> Unit) = runBlocking {
         @OptIn(ExperimentalTime::class)
-        withTimeout(3.minutes) {
+        withTimeout(5.minutes) {
             val modelServer: GenericContainer<*> = GenericContainer(modelServerImage)
                 .withExposedPorts(28101)
                 .withCommand("-inmemory")

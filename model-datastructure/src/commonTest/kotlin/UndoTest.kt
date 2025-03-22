@@ -3,12 +3,11 @@ import org.modelix.model.VersionMerger
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
-import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.KVEntryReference
-import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.operations.IAppliedOperation
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.UndoOp
@@ -46,23 +45,23 @@ class UndoTest {
          */
         val idGenerator = IdGenerator.newInstance(7)
         val versionIdGenerator = IdGenerator.newInstance(0)
-        val store = ObjectStoreCache(MapBaseStore())
+        val store = createObjectStoreCache(MapBaseStore())
         val merger = VersionMerger(store, idGenerator)
-        val baseBranch = OTBranch(PBranch(CLTree(store), idGenerator), idGenerator, store)
+        val baseBranch = OTBranch(PBranch(CLTree(store), idGenerator), idGenerator)
         val rand = Random(347663)
 
         randomChanges(baseBranch, 50, idGenerator, rand)
-        val baseVersion = createVersion(baseBranch.operationsAndTree, null, versionIdGenerator, store)
+        val baseVersion = createVersion(baseBranch.operationsAndTree, null, versionIdGenerator)
 
         val maxIndex = 2
-        val branches = (0..maxIndex).map { OTBranch(PBranch(baseVersion.tree, idGenerator), idGenerator, store) }.toList()
+        val branches = (0..maxIndex).map { OTBranch(PBranch(baseVersion.tree, idGenerator), idGenerator) }.toList()
         for (i in 0..maxIndex) {
             branches[i].runWrite {
                 randomChanges(branches[i], 50, idGenerator, rand)
             }
         }
         val versions = branches.map { branch ->
-            createVersion(branch.operationsAndTree, baseVersion, versionIdGenerator, store)
+            createVersion(branch.operationsAndTree, baseVersion, versionIdGenerator)
         }.toList()
 
         val mergedVersions = ArrayList(versions)
@@ -87,23 +86,23 @@ class UndoTest {
     fun redo_random() {
         val idGenerator = IdGenerator.newInstance(7)
         val versionIdGenerator = IdGenerator.newInstance(0)
-        val store = ObjectStoreCache(MapBaseStore())
+        val store = createObjectStoreCache(MapBaseStore())
         val merger = VersionMerger(store, idGenerator)
-        val baseBranch = OTBranch(PBranch(CLTree(store), idGenerator), idGenerator, store)
+        val baseBranch = OTBranch(PBranch(CLTree(store), idGenerator), idGenerator)
         val rand = Random(347663)
 
         randomChanges(baseBranch, 50, idGenerator, rand)
-        val baseVersion = createVersion(baseBranch.operationsAndTree, null, versionIdGenerator, store)
+        val baseVersion = createVersion(baseBranch.operationsAndTree, null, versionIdGenerator)
 
         val maxIndex = 2
-        val branches = (0..maxIndex).map { OTBranch(PBranch(baseVersion.tree, idGenerator), idGenerator, store) }.toList()
+        val branches = (0..maxIndex).map { OTBranch(PBranch(baseVersion.tree, idGenerator), idGenerator) }.toList()
         for (i in 0..maxIndex) {
             branches[i].runWrite {
                 randomChanges(branches[i], 50, idGenerator, rand)
             }
         }
         val versions = branches.map { branch ->
-            createVersion(branch.operationsAndTree, baseVersion, versionIdGenerator, store)
+            createVersion(branch.operationsAndTree, baseVersion, versionIdGenerator)
         }.toList()
 
         val mergedVersions = ArrayList(versions)
@@ -123,7 +122,7 @@ class UndoTest {
         printHistory(version_0_1_1u_1r, store)
     }
 
-    fun printHistory(version: CLVersion, store: IDeserializingKeyValueStore) {
+    fun printHistory(version: CLVersion, store: IAsyncObjectStore) {
         LinearHistory(null).load(version).forEach {
             println("Version ${it.id.toString(16)} ${it.hash} ${it.author}")
             for (op in it.operations) {
@@ -139,7 +138,7 @@ class UndoTest {
             author = "undo",
             tree = version.baseVersion!!.tree,
             baseVersion = version,
-            operations = arrayOf(UndoOp(KVEntryReference(version.data!!))),
+            operations = arrayOf(UndoOp(version.resolvedData.ref)),
         )
     }
 
@@ -160,7 +159,6 @@ class UndoTest {
         opsAndTree: Pair<List<IAppliedOperation>, ITree>,
         previousVersion: CLVersion?,
         idGenerator: IIdGenerator,
-        storeCache: IDeserializingKeyValueStore,
     ): CLVersion {
         return CLVersion.createRegularVersion(
             id = idGenerator.generate(),

@@ -5,7 +5,6 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.application.call
 import io.ktor.server.request.acceptItems
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveChannel
@@ -23,13 +22,12 @@ import io.ktor.utils.io.writeStringUtf8
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.onEmpty
-import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.withContext
 import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.hasPermission
 import org.modelix.authorization.requiresLogin
+import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.TreeAsBranch
@@ -59,8 +57,9 @@ import org.modelix.modelql.core.QueryEvaluationContext
 import org.modelix.modelql.core.QueryGraphDescriptor
 import org.modelix.modelql.core.upcast
 import org.modelix.modelql.server.ModelQLServer
-import org.modelix.streams.exactlyOne
-import org.modelix.streams.getSynchronous
+import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutor
+import org.modelix.streams.ifEmpty
 import org.slf4j.LoggerFactory
 
 /**
@@ -77,7 +76,7 @@ class ModelReplicationServer(
     }
 
     private val stores: StoreManager get() = repositoriesManager.getStoreManager()
-    private val indexPersistence: IMemoizationPersistence = InMemoryMemoizationPersistence()
+    private val indexPersistence = CacheBuilder.newBuilder().softValues().build<RepositoryId?, InMemoryMemoizationPersistence>()
 
     fun init(application: Application) {
         application.routing {
@@ -112,6 +111,7 @@ class ModelReplicationServer(
         repository: String,
         branch: String,
         lastKnown: String?,
+        filter: String?,
     ) {
         checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
         val branchRef = repositoryId(repository).getBranchReference(branch)
@@ -120,13 +120,20 @@ class ModelReplicationServer(
         val versionHash = runRead {
             repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
         }
-        call.respondDelta(RepositoryId(repository), versionHash, lastKnown)
+        call.respondDelta(RepositoryId(repository), versionHash, parseFilter(filter, lastKnown))
+    }
+
+    private fun parseFilter(filterAsJson: String?, lastKnown: String?): ObjectDeltaFilter {
+        return (filterAsJson?.let { ObjectDeltaFilter.fromJson(it) } ?: ObjectDeltaFilter()).let {
+            if (lastKnown == null) it else it.copy(knownVersions = it.knownVersions + lastKnown)
+        }
     }
 
     override suspend fun RoutingContext.getRepositoryBranchV1(
         repository: String,
         branch: String,
         lastKnown: String?,
+        filter: String?,
     ) {
         checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
         val branchRef = repositoryId(repository).getBranchReference(branch)
@@ -191,7 +198,7 @@ class ModelReplicationServer(
                 legacyGlobalStorage ?: false,
             )
         }
-        call.respondDelta(RepositoryId(repository), initialVersion.getContentHash(), null)
+        call.respondDelta(RepositoryId(repository), initialVersion.getContentHash(), ObjectDeltaFilter())
     }
 
     override suspend fun RoutingContext.deleteRepository(repository: String) {
@@ -221,11 +228,16 @@ class ModelReplicationServer(
             @OptIn(RequiresTransaction::class) // no transactions required for immutable store
             repositoriesManager.getStoreClient(RepositoryId(repository), true).putAll(objectsFromClient)
         }
+
+        // Run a merge outside a transaction to keep the transaction for the actual merge smaller.
+        // If there are no concurrent pushes on the same branch, then all the work is done here.
+        val preMergedVersion = repositoriesManager.mergeChangesWithoutPush(branchRef, deltaFromClient.versionHash)
+
         @OptIn(RequiresTransaction::class)
         val mergedHash = runWrite {
-            repositoriesManager.mergeChanges(branchRef, deltaFromClient.versionHash)
+            repositoriesManager.mergeChanges(branchRef, preMergedVersion)
         }
-        call.respondDelta(RepositoryId(repository), mergedHash, deltaFromClient.versionHash)
+        call.respondDelta(RepositoryId(repository), mergedHash, ObjectDeltaFilter(deltaFromClient.versionHash))
     }
 
     override suspend fun RoutingContext.pollRepositoryBranch(
@@ -236,7 +248,7 @@ class ModelReplicationServer(
         checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
         val branchRef = repositoryId(repository).getBranchReference(branch)
         val newVersionHash = repositoriesManager.pollVersionHash(branchRef, lastKnown)
-        call.respondDelta(RepositoryId(repository), newVersionHash, lastKnown)
+        call.respondDelta(RepositoryId(repository), newVersionHash, ObjectDeltaFilter(lastKnown))
     }
 
     override suspend fun RoutingContext.postRepositoryObjectsGetAll(repository: String) {
@@ -284,7 +296,7 @@ class ModelReplicationServer(
         if (repositoriesManager.getVersion(repositoryId(repository), versionHash) == null) {
             throw VersionNotFoundException(versionHash)
         }
-        call.respondDelta(RepositoryId(repository), versionHash, lastKnown)
+        call.respondDelta(RepositoryId(repository), versionHash, ObjectDeltaFilter(lastKnown))
     }
 
     override suspend fun RoutingContext.postRepositoryBranchQuery(
@@ -298,14 +310,16 @@ class ModelReplicationServer(
         LOG.trace("Running query on {} @ {}", branchRef, version)
         val initialTree = version.getTree()
 
-        IMemoizationPersistence.CONTEXT_INSTANCE.runInCoroutine(indexPersistence) {
+        val persistence = indexPersistence.get(branchRef.repositoryId) {
+            InMemoryMemoizationPersistence(stores.getAsyncStore(branchRef.repositoryId).getStreamExecutor())
+        }
+        IMemoizationPersistence.CONTEXT_INSTANCE.runInCoroutine(persistence) {
             lateinit var branch: IBranch
             ModelQLServer.handleCall(call, { writeAccess ->
                 branch = if (writeAccess) {
                     OTBranch(
                         PBranch(initialTree, stores.idGenerator),
                         stores.idGenerator,
-                        repositoriesManager.getLegacyObjectStore(RepositoryId(repository)),
                     )
                 } else {
                     TreeAsBranch(initialTree)
@@ -383,27 +397,27 @@ class ModelReplicationServer(
         if (runRead { stores.getGlobalStoreClient()[versionHash] } == null) {
             throw VersionNotFoundException(versionHash)
         }
-        call.respondDelta(null, versionHash, lastKnown)
+        call.respondDelta(null, versionHash, ObjectDeltaFilter(lastKnown))
     }
 
-    private suspend fun ApplicationCall.respondDelta(repositoryId: RepositoryId?, versionHash: String, baseVersionHash: String?) {
+    private suspend fun ApplicationCall.respondDelta(repositoryId: RepositoryId?, versionHash: String, filter: ObjectDeltaFilter) {
         val expectedTypes = request.acceptItems().map { ContentType.parse(it.value) }
         return if (expectedTypes.any { it.match(VersionDeltaStreamV2.CONTENT_TYPE) }) {
-            respondDeltaAsObjectStreamV2(repositoryId, versionHash, baseVersionHash)
+            respondDeltaAsObjectStreamV2(repositoryId, versionHash, filter)
         } else if (expectedTypes.any { it.match(VersionDeltaStream.CONTENT_TYPE) }) {
-            respondDeltaAsObjectStreamV1(repositoryId, versionHash, baseVersionHash, false)
+            respondDeltaAsObjectStreamV1(repositoryId, versionHash, filter, false)
         } else if (expectedTypes.any { it.match(ContentType.Application.Json) }) {
-            respondDeltaAsJson(repositoryId, versionHash, baseVersionHash)
+            respondDeltaAsJson(repositoryId, versionHash, filter)
         } else {
-            respondDeltaAsObjectStreamV1(repositoryId, versionHash, baseVersionHash, true)
+            respondDeltaAsObjectStreamV1(repositoryId, versionHash, filter, true)
         }
     }
 
-    private suspend fun ApplicationCall.respondDeltaAsJson(repositoryId: RepositoryId?, versionHash: String, baseVersionHash: String?) {
+    private suspend fun ApplicationCall.respondDeltaAsJson(repositoryId: RepositoryId?, versionHash: String, filter: ObjectDeltaFilter) {
         val delta = VersionDelta(
             versionHash,
-            baseVersionHash,
-            objectsMap = repositoriesManager.computeDelta(repositoryId, versionHash, baseVersionHash).asMap(),
+            filter.knownVersions.firstOrNull(),
+            objectsMap = repositoriesManager.computeDelta(repositoryId, versionHash, filter).asMap(),
         )
         respond(delta)
     }
@@ -411,33 +425,33 @@ class ModelReplicationServer(
     private suspend fun ApplicationCall.respondDeltaAsObjectStreamV1(
         repositoryId: RepositoryId?,
         versionHash: String,
-        baseVersionHash: String?,
+        filter: ObjectDeltaFilter,
         plainText: Boolean,
     ) {
         // Call `computeDelta` before starting to respond.
         // It could already throw an exception, and in that case we do not want a successful response status.
-        val objectData = repositoriesManager.computeDelta(repositoryId, versionHash, baseVersionHash)
+        val objectData = repositoriesManager.computeDelta(repositoryId, versionHash, filter)
         val contentType = if (plainText) ContentType.Text.Plain else VersionDeltaStream.CONTENT_TYPE
         respondBytesWriter(contentType) {
             this.useClosingWithoutCause {
-                objectData.asFlow()
-                    .flatten()
-                    .withSeparator("\n")
-                    .onEmpty { emit(versionHash) }
-                    .withIndex()
-                    .collect {
-                        if (it.index == 0) check(it.value == versionHash) { "First object should be the version" }
-                        writeStringUtf8(it.value)
-                    }
+                objectData.asStream().mapMany {
+                    it.flatMapIterable { it.toList() }
+                        .withSeparator("\n")
+                        .ifEmpty(versionHash)
+                        .withIndex()
+                }.iterateSuspending {
+                    if (it.index == 0) check(it.value == versionHash) { "First object should be the version" }
+                    writeStringUtf8(it.value)
+                }
             }
         }
     }
 
-    private suspend fun ApplicationCall.respondDeltaAsObjectStreamV2(repositoryId: RepositoryId?, versionHash: String, baseVersionHash: String?) {
-        val objectData = repositoriesManager.computeDelta(repositoryId, versionHash, baseVersionHash)
+    private suspend fun ApplicationCall.respondDeltaAsObjectStreamV2(repositoryId: RepositoryId?, versionHash: String, filter: ObjectDeltaFilter) {
+        val objectData = repositoriesManager.computeDelta(repositoryId, versionHash, filter)
         respondBytesWriter(VersionDeltaStreamV2.CONTENT_TYPE) {
             this.useClosingWithoutCause {
-                VersionDeltaStreamV2.encodeVersionDeltaStreamV2(this, versionHash, objectData.asFlow())
+                VersionDeltaStreamV2.encodeVersionDeltaStreamV2(this, versionHash, objectData.asStream())
             }
         }
     }
@@ -474,6 +488,8 @@ private fun <T> Flow<Pair<T, T>>.flatten() = flow<T> {
     }
 }
 
+private fun IStream.Many<String>.withSeparator(separator: String) = flatMapIterable { listOf(separator, it) }.skip(1)
+
 private fun Flow<String>.withSeparator(separator: String) = flow {
     var first = true
     collect {
@@ -501,7 +517,7 @@ private fun ApplicationCall.parameter(name: String): String {
     return requireNotNull(parameters[name]) { "Unknown parameter '$name'" }
 }
 
-class InMemoryMemoizationPersistence : IMemoizationPersistence {
+class InMemoryMemoizationPersistence(private val streamExecutor: IStreamExecutor) : IMemoizationPersistence {
 
     private val cache = CacheBuilder.newBuilder().softValues().build<IndexCacheKey, IStepOutput<*>>()
 
@@ -518,7 +534,7 @@ class InMemoryMemoizationPersistence : IMemoizationPersistence {
         override fun memoize(input: IStepOutput<In>): IStepOutput<Out> {
             runSynchronized(cache) {
                 return cache.get(IndexCacheKey(normalizedQueryDescriptor, input)) {
-                    query.asStream(QueryEvaluationContext.EMPTY, input).exactlyOne().getSynchronous()
+                    streamExecutor.query { query.asStream(QueryEvaluationContext.EMPTY, input).exactlyOne() }
                 }.upcast()
             }
         }

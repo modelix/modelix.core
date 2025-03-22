@@ -8,7 +8,7 @@ import org.modelix.model.client.IdGenerator
 import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData.Companion.ID_PROPERTY_KEY
 import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.test.RandomModelChangeGenerator
@@ -46,7 +46,7 @@ class ModelSynchronizerWithInvalidationTreeTest : ModelSynchronizerTest() {
     }
 
     override fun runRandomTest(seed: Int) {
-        val tree0 = CLTree(ObjectStoreCache(MapBasedStore()))
+        val tree0 = CLTree(createObjectStoreCache(MapBasedStore()))
         val sourceBranch = PBranch(tree0, IdGenerator.getInstance(1))
 
         println("Seed for random change test: $seed")
@@ -67,7 +67,7 @@ class ModelSynchronizerWithInvalidationTreeTest : ModelSynchronizerTest() {
             }
         }
 
-        val store = ObjectStoreCache(MapBasedStore())
+        val store = createObjectStoreCache(MapBasedStore())
         val tree1 = CLTree(store)
         val idGenerator = IdGenerator.getInstance(1)
         val targetBranch = PBranch(tree1, idGenerator)
@@ -83,7 +83,7 @@ class ModelSynchronizerWithInvalidationTreeTest : ModelSynchronizerTest() {
                 sourceTree.visitChanges(targetTree, InvalidatingVisitor(sourceTree, invalidationTree))
             }
         }
-        val otBranch = OTBranch(targetBranch, idGenerator, store)
+        val otBranch = OTBranch(targetBranch, idGenerator)
         otBranch.runWrite {
             ModelSynchronizer(
                 filter = invalidationTree,

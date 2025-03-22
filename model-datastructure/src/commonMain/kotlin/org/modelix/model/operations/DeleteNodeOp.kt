@@ -4,12 +4,11 @@ import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
-import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.persistent.SerializationUtil
 
 class DeleteNodeOp(val childId: Long) : AbstractOperation(), IOperationIntend {
 
-    override fun apply(t: IWriteTransaction, store: IDeserializingKeyValueStore): IAppliedOperation {
+    override fun apply(t: IWriteTransaction): IAppliedOperation {
         if (t.getAllChildren(childId).count() != 0) {
             throw RuntimeException("Attempt to delete non-leaf node: ${childId.toString(16)}")
         }
@@ -39,7 +38,7 @@ class DeleteNodeOp(val childId: Long) : AbstractOperation(), IOperationIntend {
         return listOf(this)
     }
 
-    override fun captureIntend(tree: ITree, store: IDeserializingKeyValueStore): IOperationIntend {
+    override fun captureIntend(tree: ITree): IOperationIntend {
         return this
     }
 

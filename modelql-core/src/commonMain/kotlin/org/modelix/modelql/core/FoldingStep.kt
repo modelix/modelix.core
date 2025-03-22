@@ -1,12 +1,10 @@
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.single.Single
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.modelix.streams.exactlyOne
-import org.modelix.streams.fold
-import org.modelix.streams.getSynchronous
+import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutor
 
 class FoldingStep<In : CommonIn, Out : CommonIn, CommonIn>(private val operation: MonoUnboundQuery<IZip2Output<CommonIn, Out, In>, Out>) : AggregationStep<CommonIn, Out>() {
 
@@ -32,13 +30,17 @@ class FoldingStep<In : CommonIn, Out : CommonIn, CommonIn>(private val operation
         }
     }
 
-    override fun aggregate(input: StepStream<CommonIn>, context: IStreamInstantiationContext): Single<IStepOutput<Out>> {
-        val initialValue: IStepOutput<Out> = context.getOrCreateStream<Out>(getInitialValueProducer()).exactlyOne().getSynchronous()
-        return input.fold(initialValue) { acc, value -> fold(acc, value) }
+    override fun aggregate(input: StepStream<CommonIn>, context: IStreamInstantiationContext): IStream.One<IStepOutput<Out>> {
+        return context.getOrCreateStream<Out>(getInitialValueProducer()).exactlyOne()
+            .flatMapOne { initialValue: IStepOutput<Out> ->
+                input.fold(initialValue) { acc, value -> fold(acc, value) }
+            }
     }
 
     private fun fold(acc: IStepOutput<Out>, value: IStepOutput<CommonIn>): IStepOutput<Out> {
-        return operation.asStream(QueryEvaluationContext.EMPTY, ZipStepOutput(listOf(acc, value))).exactlyOne().getSynchronous()
+        return IStreamExecutor.getInstance().query {
+            operation.asStream(QueryEvaluationContext.EMPTY, ZipStepOutput(listOf(acc, value))).exactlyOne()
+        }
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<Out>> {
@@ -66,8 +68,10 @@ class FoldingStep<In : CommonIn, Out : CommonIn, CommonIn>(private val operation
     }
 }
 
+@Deprecated("Execution is inefficient. Should be replaced by reduce")
 fun <In> IFluxStep<In>.fold(initial: Int, operation: IStepSharingContext.(acc: IMonoStep<Int>, it: IMonoStep<In>) -> IMonoStep<Int>) = fold(initial.asMono(), operation)
 
+@Deprecated("Execution is inefficient. Should be replaced by reduce")
 fun <In, Out> IFluxStep<In>.fold(initial: IMonoStep<Out>, operation: IStepSharingContext.(acc: IMonoStep<Out>, it: IMonoStep<In>) -> IMonoStep<Out>): IMonoStep<Out> {
     return FoldingStep<In, Out, Any?>(
         buildMonoQuery<IZip2Output<Any?, Out, In>, Out> { operation(it.first, it.second) }.castToInstance(),

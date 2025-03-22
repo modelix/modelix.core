@@ -1,11 +1,8 @@
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.observable.firstOrDefault
-import com.badoo.reaktive.observable.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.modelix.streams.filterBySingle
 
 class FilteringStep<E>(val condition: MonoUnboundQuery<E, Boolean?>) : TransformingStep<E, E>(), IMonoStep<E>, IFluxStep<E> {
 

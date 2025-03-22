@@ -1,6 +1,5 @@
 package org.modelix.modelql.untyped
 
-import com.badoo.reaktive.observable.flatMapSingle
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -25,7 +24,7 @@ import org.modelix.modelql.core.stepOutputSerializer
 class LinkInParentTraversalStep() : MonoTransformingStep<INode, IChildLinkReference>() {
 
     override fun createStream(input: StepStream<INode>, context: IStreamInstantiationContext): StepStream<IChildLinkReference> {
-        return input.flatMapSingle { it.value.asAsyncNode().getRoleInParent() }.asStepStream(this)
+        return input.flatMap { it.value.asAsyncNode().getRoleInParent() }.asStepStream(this)
     }
 
     override fun getOutputSerializer(serializationContext: SerializationContext): KSerializer<out IStepOutput<IChildLinkReference>> {

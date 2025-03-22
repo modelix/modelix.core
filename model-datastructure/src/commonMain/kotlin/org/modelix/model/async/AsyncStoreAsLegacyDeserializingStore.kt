@@ -1,54 +1,48 @@
 package org.modelix.model.async
 
-import com.badoo.reaktive.observable.asObservable
-import com.badoo.reaktive.observable.map
-import com.badoo.reaktive.observable.toList
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.IKVEntryReference
-import org.modelix.model.persistent.IKVValue
-import org.modelix.streams.executeSynchronous
-import org.modelix.streams.getSynchronous
-import org.modelix.streams.orNull
+import org.modelix.model.objects.IObjectData
+import org.modelix.model.objects.IObjectDeserializer
+import org.modelix.model.objects.IObjectReferenceFactory
+import org.modelix.streams.IStreamExecutorProvider
 
-private val ILLEGAL_DESERIALIZER: (String) -> Any = { error("deserialization not expected") }
+private val ILLEGAL_DESERIALIZER: IObjectDeserializer<*> = object : IObjectDeserializer<IObjectData> {
+    override fun deserialize(
+        serialized: String,
+        referenceFactory: IObjectReferenceFactory,
+    ): IObjectData {
+        error("deserialization not expected")
+    }
+}
 
-@Deprecated("use IAsyncStore")
-class AsyncStoreAsLegacyDeserializingStore(val store: IAsyncObjectStore) : IDeserializingKeyValueStore {
+class AsyncStoreAsLegacyDeserializingStore(val store: IAsyncObjectStore) : IDeserializingKeyValueStore, IStreamExecutorProvider by store {
 
     override fun getAsyncStore(): IAsyncObjectStore {
         return store
     }
 
-    override fun <T> get(hash: String, deserializer: (String) -> T): T? {
-        val ref = ObjectHash(hash, deserializer as ((String) -> IKVValue))
-        return store.get(ref).orNull().getSynchronous() as T?
+    override fun <T : IObjectData> get(hash: String, deserializer: IObjectDeserializer<T>): T? {
+        val ref = ObjectRequest(hash, deserializer, store.asObjectGraph())
+        return getStreamExecutor().query { store.get(ref).orNull() } as T?
     }
 
     override val keyValueStore: IKeyValueStore
         get() = store.getLegacyKeyValueStore()
 
-    override fun <T> getIfCached(hash: String, deserializer: (String) -> T, isPrefetch: Boolean): T? {
-        return store.getIfCached(ObjectHash(hash, deserializer as ((String) -> IKVValue))) as T?
+    override fun <T : IObjectData> getIfCached(hash: String, deserializer: IObjectDeserializer<T>, isPrefetch: Boolean): T? {
+        return store.getIfCached(ObjectRequest(hash, deserializer, store.asObjectGraph())) as T?
     }
 
-    override fun <T> getAll(hash: Iterable<String>, deserializer: (String, String) -> T): Iterable<T> {
-        return store.getAllAsStream(hash.asObservable().map { hash -> ObjectHash(hash, { deserializer(hash, it) as Any }) })
-            .map { it.second as T }.toList().getSynchronous()
+    override fun put(hash: String, deserialized: IObjectData, serialized: String) {
+        getStreamExecutor().query {
+            store.putAll(mapOf(ObjectRequest(hash, ILLEGAL_DESERIALIZER, store.asObjectGraph()) to deserialized as IObjectData)).asOne()
+        }
     }
 
-    override fun put(hash: String, deserialized: Any, serialized: String) {
-        store.putAll(mapOf(ObjectHash(hash, ILLEGAL_DESERIALIZER) to deserialized as IKVValue)).executeSynchronous()
-    }
-
-    override fun <T : IKVValue> getAll(
-        regular: List<IKVEntryReference<T>>,
-        prefetch: List<IKVEntryReference<T>>,
+    override fun <T : IObjectData> getAll(
+        regular: List<ObjectRequest<T>>,
     ): Map<String, T?> {
-        return store.getAllAsMap((regular + prefetch).map { it.toObjectHash() }).getSynchronous().entries.associate { it.key.hash to it.value as T? }
-    }
-
-    override fun prefetch(hash: String) {
-        throw UnsupportedOperationException("prefetch is deprecated")
+        return getStreamExecutor().query { store.getAllAsMap(regular) }.entries.associate { it.key.hash to it.value as T? }
     }
 }

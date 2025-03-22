@@ -281,15 +281,11 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
     }
 
     private fun resolveMPSProjectReference(ref: INodeReference): MPSProjectAsNode? {
-        val projectName = if (ref is MPSProjectReference) {
-            ref.projectName
-        } else {
-            ref.serialize().substringAfter("${MPSProjectReference.PREFIX}:")
-        }
+        val projectName = (MPSProjectReference.tryConvert(ref) ?: return null).projectName
 
         val project = ModelixMpsApi.getMPSProjects()
             .filterIsInstance<ProjectBase>()
-            .find { it.name == projectName }
+            .find { it.readName() == projectName }
 
         return project?.let { MPSProjectAsNode(it) }
     }

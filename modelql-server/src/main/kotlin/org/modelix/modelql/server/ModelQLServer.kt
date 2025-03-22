@@ -3,15 +3,14 @@ package org.modelix.modelql.server
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.application.call
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.KSerializer
 import org.modelix.model.api.INode
 import org.modelix.model.api.UnresolvableNodeReferenceException
+import org.modelix.model.api.async.asAsyncNode
 import org.modelix.model.area.IArea
 import org.modelix.modelql.core.EmptyQueryResultException
 import org.modelix.modelql.core.IMonoUnboundQuery
@@ -80,15 +79,15 @@ class ModelQLServer private constructor(val rootNodeProvider: () -> INode?, val 
                 LOG.debug { "query: ${query.toString().lineSequence().map { it.trim() }.joinToString("")}" }
                 val (rootNode, area) = input(query.requiresWriteAccess())
                 val transactionBody: () -> IStepOutput<Any?> = {
-                    runBlocking {
-                        area.runWithAdditionalScopeInCoroutine {
-                            val result: IStepOutput<Any?>
-                            val time = measureTimeMillis {
-                                result = query.bind(rootNode.createQueryExecutor()).execute()
+                    area.runWithAdditionalScope {
+                        val result: IStepOutput<Any?>
+                        val time = measureTimeMillis {
+                            result = rootNode.asAsyncNode().getStreamExecutor().query {
+                                query.bind(rootNode.createQueryExecutor()).asAggregationStream()
                             }
-                            if (time > 100) LOG.info { "Query execution took $time ms: $query" }
-                            result
                         }
+                        if (time > 100) LOG.info { "Query execution took $time ms: $query" }
+                        result
                     }
                 }
                 val result: IStepOutput<Any?> = if (query.requiresWriteAccess()) {

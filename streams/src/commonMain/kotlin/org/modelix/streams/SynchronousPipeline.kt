@@ -5,6 +5,7 @@ import com.badoo.reaktive.observable.observableUnsafe
 import com.badoo.reaktive.single.Single
 import com.badoo.reaktive.single.asObservable
 import org.modelix.kotlin.utils.ContextValue
+import org.modelix.kotlin.utils.UnstableModelixFeature
 
 class SynchronousPipeline {
     val afterRootSubscribed = ArrayList<() -> Unit>()
@@ -14,6 +15,7 @@ class SynchronousPipeline {
     }
 }
 
+@UnstableModelixFeature("Will be removed", "never")
 fun <T> Single<T>.endOfSynchronousPipeline(): Single<T> = asObservable().endOfSynchronousPipeline().exactlyOne()
 
 fun <T> Observable<T>.endOfSynchronousPipeline(): Observable<T> {

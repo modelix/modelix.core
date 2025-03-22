@@ -151,7 +151,6 @@ class ReplicatedModelTest {
             OTBranch(
                 PBranch(baseVersion.getTree(), client.getIdGenerator()),
                 client.getIdGenerator(),
-                baseVersion.store,
             )
         branch.runWriteT { t ->
             t.addNewChild(ITree.ROOT_ID, "hello", -1, null as ConceptReference?)

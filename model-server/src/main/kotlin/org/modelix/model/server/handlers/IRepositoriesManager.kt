@@ -1,5 +1,6 @@
 package org.modelix.model.server.handlers
 
+import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
@@ -52,7 +53,10 @@ interface IRepositoriesManager {
 
     @RequiresTransaction
     fun mergeChanges(branch: BranchReference, newVersionHash: String): String
-    suspend fun computeDelta(repository: RepositoryId?, versionHash: String, baseVersionHash: String?): ObjectData
+    suspend fun mergeChangesWithoutPush(branch: BranchReference, newVersionHash: String): String
+    suspend fun computeDelta(repository: RepositoryId?, versionHash: String, baseVersionHash: String?): ObjectData =
+        computeDelta(repository, versionHash, ObjectDeltaFilter(knownVersions = setOfNotNull(baseVersionHash)))
+    suspend fun computeDelta(repository: RepositoryId?, versionHash: String, filter: ObjectDeltaFilter): ObjectData
 
     /**
      * The data of a repository is stored separately from other repositories, but that wasn't always the case.

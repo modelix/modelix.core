@@ -1,14 +1,9 @@
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.map
-import com.badoo.reaktive.single.Single
-import com.badoo.reaktive.single.asObservable
-import com.badoo.reaktive.single.flatMapIterable
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
-import org.modelix.streams.cached
+import org.modelix.streams.IStream
 import kotlin.reflect.KType
 
 interface IStep {
@@ -27,14 +22,14 @@ interface IStep {
 interface IStreamInstantiationContext {
     val evaluationContext: QueryEvaluationContext
     fun <T> getOrCreateStream(step: IProducingStep<T>): StepStream<T>
-    fun <T> getStream(step: IProducingStep<T>): Observable<T>?
+    fun <T> getStream(step: IProducingStep<T>): IStream.Many<T>?
 }
 class StreamInstantiationContext(
     override var evaluationContext: QueryEvaluationContext,
     val query: UnboundQuery<*, *, *>,
 ) : IStreamInstantiationContext {
-    private val createdProducers = HashMap<IProducingStep<*>, Observable<*>>()
-    fun <T> put(step: IProducingStep<T>, producer: Observable<T>) {
+    private val createdProducers = HashMap<IProducingStep<*>, IStream.Many<*>>()
+    fun <T> put(step: IProducingStep<T>, producer: IStream.Many<T>) {
         createdProducers[step] = producer
     }
     override fun <T> getOrCreateStream(step: IProducingStep<T>): StepStream<T> {
@@ -43,8 +38,8 @@ class StreamInstantiationContext(
             .getOrPut(step) { step.createStream(this) }
     }
 
-    override fun <T> getStream(step: IProducingStep<T>): Observable<T>? {
-        return (createdProducers as MutableMap<IProducingStep<T>, Observable<T>>)[step]
+    override fun <T> getStream(step: IProducingStep<T>): IStream.Many<T>? {
+        return (createdProducers as MutableMap<IProducingStep<T>, IStream.Many<T>>)[step]
     }
 }
 
@@ -192,12 +187,12 @@ abstract class AggregationStep<In, Out> : MonoTransformingStep<In, Out>() {
 
     override fun createStream(input: StepStream<In>, context: IStreamInstantiationContext): StepStream<Out> {
         val aggregated = aggregate(input, context)
-        return (if (outputIsConsumedMultipleTimes()) aggregated.cached() else aggregated).asObservable()
+        return (if (outputIsConsumedMultipleTimes()) aggregated.cached() else aggregated)
     }
 
     override fun inputIsConsumedMultipleTimes(): Boolean {
         return false
     }
 
-    protected abstract fun aggregate(input: StepStream<In>, context: IStreamInstantiationContext): Single<IStepOutput<Out>>
+    protected abstract fun aggregate(input: StepStream<In>, context: IStreamInstantiationContext): IStream.One<IStepOutput<Out>>
 }

@@ -2,10 +2,11 @@ import org.modelix.model.VersionMerger
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
+import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
-import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.lazy.runWrite
 import org.modelix.model.persistent.MapBaseStore
 import kotlin.test.Test
@@ -17,7 +18,7 @@ import kotlin.test.assertEquals
  */
 class MergeOrderTest {
     private var store: MapBaseStore = MapBaseStore()
-    private var storeCache: ObjectStoreCache = ObjectStoreCache(store)
+    private var storeCache: IAsyncObjectStore = createObjectStoreCache(store)
     private var idGenerator: IIdGenerator = IdGenerator.newInstance(3)
 
     fun CLVersion.runWrite(id: Long, body: IWriteTransaction.() -> Unit): CLVersion {

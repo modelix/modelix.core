@@ -1,10 +1,9 @@
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.observable.map
-import com.badoo.reaktive.observable.switchIfEmpty
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.modelix.streams.switchIfEmpty
 import kotlin.jvm.JvmName
 
 class IfEmptyStep<In : Out, Out>(val alternative: UnboundQuery<Unit, *, Out>) : TransformingStep<In, Out>(), IFluxOrMonoStep<Out> {

@@ -9,29 +9,21 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITransaction
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
-import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.DuplicateNodeId
-import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.unwrapAll
 
 class OTWriteTransaction(
     private val transaction: IWriteTransaction,
     private val otBranch: OTBranch,
     private var idGenerator: IIdGenerator,
-    private val store: IDeserializingKeyValueStore,
 ) : IWriteTransaction, ITransactionWrapper {
     private val logger = mu.KotlinLogging.logger {}
     override fun unwrap(): ITransaction = transaction
 
     fun apply(op: IOperation) {
         logger.trace { op.toString() }
-        val appliedOp = op.apply(transaction, getStore())
+        val appliedOp = op.apply(transaction)
         otBranch.operationApplied(appliedOp)
-    }
-
-    fun getStore(): IDeserializingKeyValueStore {
-        val tree = this.tree
-        return if (tree is CLTree) tree.store else store
     }
 
     override fun moveChild(newParentId: Long, newRole: String?, newIndex_: Int, childId: Long) {

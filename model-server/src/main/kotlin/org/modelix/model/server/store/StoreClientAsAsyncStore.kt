@@ -1,24 +1,19 @@
 package org.modelix.model.server.store
 
-import com.badoo.reaktive.completable.Completable
-import com.badoo.reaktive.completable.completableOfEmpty
-import com.badoo.reaktive.maybe.Maybe
-import com.badoo.reaktive.maybe.maybeOfEmpty
-import com.badoo.reaktive.maybe.toMaybe
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.asObservable
-import com.badoo.reaktive.observable.toList
-import com.badoo.reaktive.single.Single
-import com.badoo.reaktive.single.toSingle
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.async.AsyncStoreAsLegacyDeserializingStore
 import org.modelix.model.async.IAsyncObjectStore
-import org.modelix.model.async.ObjectHash
+import org.modelix.model.async.ObjectRequest
 import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.persistent.IKVValue
-import org.modelix.streams.getSynchronous
+import org.modelix.model.objects.IObjectData
+import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutor
+import org.modelix.streams.SimpleStreamExecutor
+import org.modelix.streams.withSequences
 
 class StoreClientAsAsyncStore(val store: IStoreClient) : IAsyncObjectStore {
+    override fun getStreamExecutor(): IStreamExecutor = SimpleStreamExecutor().withSequences()
+
     override fun getLegacyKeyValueStore(): IKeyValueStore {
         return StoreClientAsKeyValueStore(store)
     }
@@ -27,43 +22,50 @@ class StoreClientAsAsyncStore(val store: IStoreClient) : IAsyncObjectStore {
         return AsyncStoreAsLegacyDeserializingStore(this)
     }
 
-    override fun <T : Any> getIfCached(key: ObjectHash<T>): T? {
+    override fun clearCache() {}
+
+    override fun <T : IObjectData> getIfCached(key: ObjectRequest<T>): T? {
         @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
-        return store.getIfCached(key.hash)?.let { key.deserializer(it) }
+        return store.getIfCached(key.hash)?.let { key.deserializer.deserialize(it, key.referenceFactory) }
     }
 
-    override fun <T : Any> get(key: ObjectHash<T>): Maybe<T> {
+    override fun <T : IObjectData> get(key: ObjectRequest<T>): IStream.ZeroOrOne<T> {
         @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
-        val value = store.get(key.hash) ?: return maybeOfEmpty()
-        return key.deserializer(value).toMaybe()
+        val value = store.get(key.hash) ?: return IStream.empty()
+        return IStream.of(key.deserializer.deserialize(value, key.referenceFactory))
     }
 
-    override fun getAllAsStream(keys: Observable<ObjectHash<*>>): Observable<Pair<ObjectHash<*>, Any?>> {
-        val keysList = keys.toList().getSynchronous()
-        val keysMap = keysList.associateBy { it.hash }
+    override fun getAllAsStream(requestsStream: IStream.Many<ObjectRequest<*>>): IStream.Many<Pair<ObjectRequest<*>, IObjectData?>> {
+        return requestsStream.toList().flatMap { requestsList ->
+            val requestsMap = requestsList.associateBy { it.hash }
 
-        @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
-        val serializedValues = store.getAll(keysMap.keys)
-        return serializedValues.map {
-            val ref = keysMap[it.key]!!
-            ref to it.value?.let { ref.deserializer(it) }
-        }.asObservable()
+            @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
+            val serializedValues = store.getAll(requestsMap.keys)
+            IStream.many(
+                serializedValues.map {
+                    val request = requestsMap[it.key]!!
+                    request to it.value?.let { request.deserializer.deserialize(it, request.referenceFactory) }
+                },
+            )
+        }
     }
 
-    override fun getAllAsMap(keys: List<ObjectHash<*>>): Single<Map<ObjectHash<*>, Any?>> {
-        val keysMap = keys.associateBy { it.hash }
+    override fun getAllAsMap(requestList: List<ObjectRequest<*>>): IStream.One<Map<ObjectRequest<*>, IObjectData?>> {
+        val requestsMap = requestList.associateBy { it.hash }
 
         @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
-        val serializedValues = store.getAll(keysMap.keys)
-        return serializedValues.map {
-            val ref = keysMap[it.key]!!
-            ref to it.value?.let { ref.deserializer(it) }
-        }.toMap().toSingle()
+        val serializedValues = store.getAll(requestsMap.keys)
+        return IStream.of(
+            serializedValues.map {
+                val request = requestsMap[it.key]!!
+                request to it.value?.let { request.deserializer.deserialize(it, request.referenceFactory) }
+            }.toMap(),
+        )
     }
 
-    override fun putAll(entries: Map<ObjectHash<*>, IKVValue>): Completable {
+    override fun putAll(entries: Map<ObjectRequest<*>, IObjectData>): IStream.Zero {
         @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
         store.putAll(entries.entries.associate { it.key.hash to it.value.serialize() })
-        return completableOfEmpty()
+        return IStream.zero()
     }
 }

@@ -1,7 +1,5 @@
 package org.modelix.modelql.client
 
-import com.badoo.reaktive.coroutinesinterop.singleFromCoroutine
-import com.badoo.reaktive.single.flatMapIterable
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
@@ -11,6 +9,9 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.SerializedNodeReference
+import org.modelix.model.api.async.IAsyncNode
+import org.modelix.model.api.async.INodeWithAsyncSupport
+import org.modelix.model.api.async.NodeAsAsyncNode
 import org.modelix.model.api.key
 import org.modelix.model.api.resolve
 import org.modelix.model.api.resolveChildLinkOrFallback
@@ -51,16 +52,29 @@ import org.modelix.modelql.untyped.resolve
 import org.modelix.modelql.untyped.roleInParent
 import org.modelix.modelql.untyped.setProperty
 import org.modelix.modelql.untyped.setReference
+import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutor
+import org.modelix.streams.SimpleStreamExecutor
+import org.modelix.streams.withFlows
 
-abstract class ModelQLNode(val client: ModelQLClient) : INode, ISupportsModelQL, IQueryExecutor<INode> {
+class ModelQLNodeAsAsyncNode(node: ModelQLNode) : NodeAsAsyncNode(node) {
+    override fun getStreamExecutor(): IStreamExecutor = SimpleStreamExecutor().withFlows()
+}
+
+abstract class ModelQLNode(val client: ModelQLClient) :
+    INode, ISupportsModelQL, IQueryExecutor<INode>, INodeWithAsyncSupport {
     override fun usesRoleIds(): Boolean = true
 
     override fun createQueryExecutor(): IQueryExecutor<INode> {
         return this
     }
 
+    override fun getAsyncNode(): IAsyncNode {
+        return ModelQLNodeAsAsyncNode(this)
+    }
+
     override fun <Out> createStream(query: IUnboundQuery<INode, *, Out>): StepStream<Out> {
-        return singleFromCoroutine {
+        return IStream.singleFromCoroutine {
             val result = when (query) {
                 is IMonoUnboundQuery<*, *> -> {
                     val castedQuery = query as IMonoUnboundQuery<INode, Out>

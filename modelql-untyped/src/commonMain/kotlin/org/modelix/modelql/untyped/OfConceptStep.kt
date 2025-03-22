@@ -1,6 +1,5 @@
 package org.modelix.modelql.untyped
 
-import com.badoo.reaktive.observable.filter
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

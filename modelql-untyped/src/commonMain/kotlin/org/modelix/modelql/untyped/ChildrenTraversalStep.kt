@@ -1,7 +1,5 @@
 package org.modelix.modelql.untyped
 
-import com.badoo.reaktive.observable.flatMap
-import com.badoo.reaktive.observable.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

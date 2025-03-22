@@ -12,7 +12,7 @@ class DBAccessControlPersistence<E>(val store: IGenericStoreClient<E>, val key: 
     override fun read(): AccessControlData {
         @OptIn(RequiresTransaction::class)
         return store.runReadTransaction {
-            store.get(key)?.let { json.decodeFromString(it) } ?: AccessControlData()
+            (store.get(key)?.let { json.decodeFromString(it) } ?: AccessControlData()).withLegacyRoles()
         }
     }
 

@@ -1,14 +1,13 @@
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.single.Single
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.modelix.streams.exactlyOne
+import org.modelix.streams.IStream
 
 class SingleStep<E>() : AggregationStep<E, E>() {
 
-    override fun aggregate(input: StepStream<E>, context: IStreamInstantiationContext): Single<IStepOutput<E>> {
+    override fun aggregate(input: StepStream<E>, context: IStreamInstantiationContext): IStream.One<IStepOutput<E>> {
         return input.exactlyOne()
     }
 

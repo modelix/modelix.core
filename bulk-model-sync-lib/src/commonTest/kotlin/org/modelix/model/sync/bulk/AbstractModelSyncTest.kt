@@ -8,7 +8,7 @@ import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.data.ModelData
 import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.operations.AddNewChildOp
 import org.modelix.model.operations.DeleteNodeOp
 import org.modelix.model.operations.IOperation
@@ -601,11 +601,11 @@ abstract class AbstractModelSyncTest {
 internal fun OTBranch.getNumOfUsedOperationsByType() = getPendingChanges().first.numOpsByType()
 
 internal fun createOTBranchFromModel(model: ModelData): OTBranch {
-    val pBranch = PBranch(CLTree(ObjectStoreCache(MapBasedStore())), IdGenerator.getInstance(1))
+    val pBranch = PBranch(CLTree(createObjectStoreCache(MapBasedStore())), IdGenerator.getInstance(1))
     pBranch.runWrite {
         ModelImporter(pBranch.getRootNode()).import(model)
     }
-    return OTBranch(pBranch, IdGenerator.getInstance(1), ObjectStoreCache(MapBasedStore()))
+    return OTBranch(pBranch, IdGenerator.getInstance(1))
 }
 
 internal fun IBranch.importIncrementally(model: ModelData) {

@@ -4,27 +4,24 @@ import org.modelix.kotlin.utils.createMemoryEfficientMap
 import org.modelix.kotlin.utils.toSynchronizedMap
 import org.modelix.model.IKeyListener
 import org.modelix.model.IKeyValueStore
-import org.modelix.model.lazy.BulkQueryConfiguration
-import org.modelix.model.lazy.IBulkQuery
-import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.NonBulkQuery
+import org.modelix.streams.IStreamExecutor
+import org.modelix.streams.SimpleStreamExecutor
+import org.modelix.streams.withSequences
 
 @Deprecated("Use MapBasedStore, without a typo.", ReplaceWith("MapBasedStore"))
 open class MapBaseStore : MapBasedStore()
 
 open class MapBasedStore : IKeyValueStore {
     private val map = createMemoryEfficientMap<String?, String?>().toSynchronizedMap()
+
+    override fun getStreamExecutor(): IStreamExecutor = SimpleStreamExecutor().withSequences()
+
     override fun get(key: String): String? {
         return map[key]
     }
 
     override fun getIfCached(key: String): String? {
         return get(key)
-    }
-
-    override fun newBulkQuery(deserializingCache: IDeserializingKeyValueStore, config: BulkQueryConfiguration): IBulkQuery {
-        // This implementation doesn't benefit from bulk queries. The NonBulkQuery has a lower performance overhead.
-        return NonBulkQuery(deserializingCache)
     }
 
     override fun getPendingSize(): Int = 0

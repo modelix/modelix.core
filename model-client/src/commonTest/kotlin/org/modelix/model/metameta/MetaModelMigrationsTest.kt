@@ -12,7 +12,7 @@ import org.modelix.model.data.ModelData
 import org.modelix.model.data.NodeData
 import org.modelix.model.data.asData
 import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.metameta.MetaModelMigration.resolveNewConceptReference
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.model.withAutoTransactions
@@ -26,7 +26,7 @@ class MetaModelMigrationsTest {
 
         private fun createBranchFromModelData(modelData: ModelData): PBranch {
             val store = MapBaseStore()
-            val storeCache = ObjectStoreCache(store)
+            val storeCache = createObjectStoreCache(store)
             val idGenerator = IdGenerator.newInstance(1)
             val emptyTree = CLTree.builder(storeCache)
                 .repositoryId("aRepositoryId")
@@ -848,7 +848,7 @@ class MetaModelMigrationsTest {
         // Arrange
         val modelConcept = BuiltinLanguages.MPSRepositoryConcepts.Model
         val store = MapBaseStore()
-        val storeCache = ObjectStoreCache(store)
+        val storeCache = createObjectStoreCache(store)
         val idGenerator = IdGenerator.newInstance(1)
         val emptyTree = CLTree(storeCache)
 

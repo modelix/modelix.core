@@ -16,10 +16,11 @@ import org.modelix.model.client2.runWriteOnBranch
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
+import org.modelix.model.lazy.MissingEntryException
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.objects.IObjectData
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
-import org.modelix.model.persistent.IKVValue
 import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
@@ -58,14 +59,18 @@ class ModelClientV2Test {
     }
 
     @Test
-    fun test_t1() = runTest {
+    fun `can create and write repository`() = runTest {
         val client = createModelClient()
 
         val repositoryId = RepositoryId("repo1")
         val initialVersion = client.initRepository(repositoryId)
-        assertEquals(0, initialVersion.getTree().getAllChildren(ITree.ROOT_ID).count())
+        assertEquals(
+            0,
+            initialVersion.getTree().asAsyncTree()
+                .let { it.getStreamExecutor().querySuspending { it.getAllChildren(ITree.ROOT_ID).count() } },
+        )
 
-        val branch = OTBranch(PBranch(initialVersion.getTree(), client.getIdGenerator()), client.getIdGenerator(), (initialVersion as CLVersion).store)
+        val branch = OTBranch(PBranch(initialVersion.getTree(), client.getIdGenerator()), client.getIdGenerator())
         branch.runWriteT { t ->
             t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?)
         }
@@ -263,12 +268,16 @@ class ModelClientV2Test {
         val versionPulled = modelClientForAssert.pullIfExists(branchId)!! as CLVersion
 
         // Assert
-        fun checkAllReferencedEntriesExistInStore(referencingEntry: IKVValue) {
-            for (entryReference in referencingEntry.getReferencedEntries()) {
-                // Check that the store also provides each referenced KVEntry.
-                // `getValue` would fail if this is not the case.
-                val referencedEntry = entryReference.getValue(versionPulled.store)
-                checkAllReferencedEntriesExistInStore(referencedEntry)
+        fun checkAllReferencedEntriesExistInStore(referencingEntry: IObjectData) {
+            try {
+                for (entryReference in referencingEntry.getAllReferences()) {
+                    // Check that the store also provides each referenced KVEntry.
+                    // `getValue` would fail if this is not the case.
+                    val referencedEntry = entryReference.resolveLater().query()
+                    checkAllReferencedEntriesExistInStore(referencedEntry.data)
+                }
+            } catch (ex: MissingEntryException) {
+                throw RuntimeException("Referenced by ${referencingEntry.serialize()}", ex)
             }
         }
         checkAllReferencedEntriesExistInStore(versionPulled.data!!)
@@ -344,6 +353,8 @@ class ModelClientV2Test {
         for (i in 0..4) {
             println("repo$i")
             val expectedHash = initialVersions[i].getContentHash()
+
+            @Suppress("DEPRECATION") // calling this deprecated method is the purpose of this test
             val loadedVersion = modelClient.loadVersion(expectedHash, null)
             assertEquals(expectedHash, loadedVersion.getContentHash())
         }

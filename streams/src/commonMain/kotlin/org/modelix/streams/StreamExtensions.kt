@@ -4,7 +4,6 @@ import com.badoo.reaktive.base.tryCatch
 import com.badoo.reaktive.completable.Completable
 import com.badoo.reaktive.completable.CompletableCallbacks
 import com.badoo.reaktive.completable.asSingle
-import com.badoo.reaktive.coroutinesinterop.asFlow
 import com.badoo.reaktive.disposable.Disposable
 import com.badoo.reaktive.maybe.Maybe
 import com.badoo.reaktive.maybe.asCompletable
@@ -32,7 +31,7 @@ import com.badoo.reaktive.single.asObservable
 import com.badoo.reaktive.single.flatMap
 import com.badoo.reaktive.single.map
 import com.badoo.reaktive.single.subscribe
-import kotlinx.coroutines.flow.single
+import org.modelix.kotlin.utils.UnstableModelixFeature
 
 class StreamAssertionError(message: String) : IllegalArgumentException(message)
 
@@ -70,12 +69,18 @@ fun <T> Maybe<T>.orNull(): Single<T?> = defaultIfEmpty(null)
 fun <T> Array<T>.asObservable(): Observable<T> = asIterable().asObservable()
 fun LongArray.asObservable(): Observable<Long> = asIterable().asObservable()
 
+@UnstableModelixFeature("Will get removed", "never")
 fun <T> Observable<T>.iterateSynchronous(visitor: (T) -> Unit) {
     collect({ Unit }) { acc, it -> visitor(it) }.getSynchronous()
 }
+
+@UnstableModelixFeature("Will get removed", "never")
 fun <T> Single<T>.iterateSynchronous(visitor: (T) -> Unit): Unit = asObservable().iterateSynchronous(visitor)
+
+@UnstableModelixFeature("Will get removed", "never")
 fun <T> Maybe<T>.iterateSynchronous(visitor: (T) -> Unit): Unit = asObservable().iterateSynchronous(visitor)
 
+@UnstableModelixFeature("Will get removed", "never")
 fun <T> Single<T>.getSynchronous(): T {
     var result: Result<T>? = null
     val subscription = this.endOfSynchronousPipeline().subscribe(onSuccess = {
@@ -88,16 +93,18 @@ fun <T> Single<T>.getSynchronous(): T {
     return checkNotNull(result) { "Neither onSuccess nor onError was called" }.getOrThrow()
 }
 
+@UnstableModelixFeature("Will get removed", "never")
 fun Completable.executeSynchronous() = this.asSingle(Unit).getSynchronous()
 
+@UnstableModelixFeature("Will get removed", "never")
 fun <T> Maybe<T>.getSynchronous(): T? = orNull().getSynchronous()
 
-suspend fun <T> Single<T>.getSuspending(): T {
-    return this.endOfSynchronousPipeline().asObservable().asFlow().single()
-}
-suspend fun <T> Maybe<T>.getSuspending(): T? {
-    return orNull().getSuspending()
-}
+// suspend fun <T> Single<T>.getSuspending(): T {
+//    return this.endOfSynchronousPipeline().asObservable().asFlow().single()
+// }
+// suspend fun <T> Maybe<T>.getSuspending(): T? {
+//    return orNull().getSuspending()
+// }
 
 fun <T> Observable<T>.distinct(): Observable<T> {
     return observable { emitter ->

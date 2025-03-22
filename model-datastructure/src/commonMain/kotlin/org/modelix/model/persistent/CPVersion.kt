@@ -1,154 +1,42 @@
 package org.modelix.model.persistent
 
-import org.modelix.model.lazy.KVEntryReference
+import org.modelix.model.lazy.CLVersion.Companion.INLINED_OPS_LIMIT
+import org.modelix.model.objects.IObjectData
+import org.modelix.model.objects.IObjectDeserializer
+import org.modelix.model.objects.IObjectReferenceFactory
+import org.modelix.model.objects.ObjectReference
+import org.modelix.model.objects.getHashString
 import org.modelix.model.operations.IOperation
 import org.modelix.model.persistent.SerializationUtil.escape
 import org.modelix.model.persistent.SerializationUtil.longFromHex
 import org.modelix.model.persistent.SerializationUtil.longToHex
 import org.modelix.model.persistent.SerializationUtil.unescape
 
-class CPVersion(
-    id: Long,
-    time: String?,
-    author: String?,
-    treeHash: KVEntryReference<CPTree>,
-    previousVersion: KVEntryReference<CPVersion>?, // deprecated, use baseVersion instead
-    originalVersion: KVEntryReference<CPVersion>?, // deprecated, there is no rewriting of versions anymore. Use mergedVersion1/2 instead
-    baseVersion: KVEntryReference<CPVersion>?, // the version, the operations are applied to, to create this version
-    // in case of a merge it is the common base version of the two branches
-    mergedVersion1: KVEntryReference<CPVersion>?, // null if this is not a merge
-    mergedVersion2: KVEntryReference<CPVersion>?, // null if this is not a merge
-    operations: Array<IOperation>?,
-    operationsHash: KVEntryReference<CPOperationsList>?,
-    numberOfOperations: Int,
-) : IKVValue {
-    private val logger = mu.KotlinLogging.logger {}
-    override var isWritten: Boolean = false
+data class CPVersion(
+    val id: Long,
+    val time: String?,
+    val author: String?,
 
-    val id: Long
-    val time: String?
-    val author: String?
-
-    val treeHash: KVEntryReference<CPTree>
-    val previousVersion: KVEntryReference<CPVersion>?
+    val treeRef: ObjectReference<CPTree>,
+    val previousVersion: ObjectReference<CPVersion>?,
 
     /**
-     * The version created by the original author before is was rewritten during a merge
+     * The version created by the original author before it was rewritten during a merge
      */
-    val originalVersion: KVEntryReference<CPVersion>?
+    @Deprecated("A merge doesn't replace the version anymore, but stores references to the two merged versions")
+    val originalVersion: ObjectReference<CPVersion>?,
 
-    val baseVersion: KVEntryReference<CPVersion>?
-    val mergedVersion1: KVEntryReference<CPVersion>?
-    val mergedVersion2: KVEntryReference<CPVersion>?
+    val baseVersion: ObjectReference<CPVersion>?,
+    val mergedVersion1: ObjectReference<CPVersion>?,
+    val mergedVersion2: ObjectReference<CPVersion>?,
 
-    val operations: Array<IOperation>?
-    val operationsHash: KVEntryReference<CPOperationsList>?
-    val numberOfOperations: Int
-    override fun serialize(): String {
-        val opsPart: String = operationsHash?.getHash()
-            ?: if (operations!!.isEmpty()) {
-                ""
-            } else {
-                operations.joinToString(Separators.OPS) { OperationSerializer.INSTANCE.serialize(it) }
-            }
-        val s = Separators.LEVEL1
-        return longToHex(id) +
-            s + escape(time) +
-            s + escape(author) +
-            s + nullAsEmptyString(treeHash.getHash()) +
-            s + nullAsEmptyString(baseVersion?.getHash()) +
-            s + nullAsEmptyString(mergedVersion1?.getHash()) +
-            s + nullAsEmptyString(mergedVersion2?.getHash()) +
-            s + numberOfOperations +
-            s + opsPart
-    }
-
-    override fun getReferencedEntries(): List<KVEntryReference<IKVValue>> {
-        return listOfNotNull(
-            treeHash,
-            previousVersion,
-            originalVersion,
-            baseVersion,
-            mergedVersion1,
-            mergedVersion2,
-            operationsHash,
-        ) + (operations ?: arrayOf()).map { it.getReferencedEntries() }.flatten()
-    }
-
-    override val hash: String by lazy(LazyThreadSafetyMode.PUBLICATION) { HashUtil.sha256(serialize()) }
-
-    override fun getDeserializer(): (String) -> IKVValue = DESERIALIZER
-
-    companion object {
-        val DESERIALIZER: (String) -> CPVersion = { deserialize(it) }
-
-        fun deserialize(input: String): CPVersion {
-            try {
-                val parts = input.split(Separators.LEVEL1).toTypedArray()
-                if (parts.size == 9) {
-                    var opsHash: String? = null
-                    var ops: Array<IOperation>? = null
-                    if (HashUtil.isSha256(parts[8])) {
-                        opsHash = parts[8]
-                    } else {
-                        ops = parts[8].split(Separators.LEVEL2)
-                            .filter { cs -> cs.isNotEmpty() }
-                            .map { OperationSerializer.INSTANCE.deserialize(it) }
-                            .toTypedArray()
-                    }
-                    val data = CPVersion(
-                        longFromHex(parts[0]),
-                        unescape(parts[1]),
-                        unescape(parts[2]),
-                        treeHash = KVEntryReference(checkNotNull(emptyStringAsNull(parts[3])) { "Tree hash empty in $input" }, CPTree.DESERIALIZER),
-                        previousVersion = null,
-                        originalVersion = null,
-                        baseVersion = emptyStringAsNull(parts[4])?.let { KVEntryReference(it, DESERIALIZER) },
-                        mergedVersion1 = emptyStringAsNull(parts[5])?.let { KVEntryReference(it, DESERIALIZER) },
-                        mergedVersion2 = emptyStringAsNull(parts[6])?.let { KVEntryReference(it, DESERIALIZER) },
-                        operations = ops,
-                        operationsHash = opsHash?.let { KVEntryReference(it, CPOperationsList.DESERIALIZER) },
-                        numberOfOperations = parts[7].toInt(),
-                    )
-                    data.isWritten = true
-                    return data
-                } else {
-                    var opsHash: String? = null
-                    var ops: Array<IOperation>? = null
-                    if (HashUtil.isSha256(parts[5])) {
-                        opsHash = parts[5]
-                    } else {
-                        ops = parts[5].split(Separators.LEVEL2)
-                            .filter { cs: String? -> !cs.isNullOrEmpty() }
-                            .map { serialized: String -> OperationSerializer.INSTANCE.deserialize(serialized) }
-                            .toTypedArray()
-                    }
-                    val numOps = if (parts.size > 6) parts[6].toInt() else -1
-                    val data = CPVersion(
-                        id = longFromHex(parts[0]),
-                        time = unescape(parts[1]),
-                        author = unescape(parts[2]),
-                        treeHash = KVEntryReference(checkNotNull(emptyStringAsNull(parts[3])) { "Tree hash empty in $input" }, CPTree.DESERIALIZER),
-                        previousVersion = emptyStringAsNull(parts[4])?.let { KVEntryReference(it, DESERIALIZER) },
-                        originalVersion = if (parts.size > 7) emptyStringAsNull(parts[7])?.let { KVEntryReference(it, DESERIALIZER) } else null,
-                        baseVersion = null,
-                        mergedVersion1 = null,
-                        mergedVersion2 = null,
-                        ops,
-                        opsHash?.let { KVEntryReference(it, CPOperationsList.DESERIALIZER) },
-                        numOps,
-                    )
-                    data.isWritten = true
-                    return data
-                }
-            } catch (ex: Exception) {
-                throw RuntimeException("Failed to deserialize version: $input", ex)
-            }
-        }
-    }
+    val operations: List<IOperation>?,
+    val operationsHash: ObjectReference<OperationsList>?,
+    val numberOfOperations: Int,
+) : IObjectData {
 
     init {
-        requireNotNull(treeHash) { "No tree hash provided" }
+        requireNotNull(treeRef) { "No tree hash provided" }
         if ((operations == null) == (operationsHash == null)) {
             throw RuntimeException("Only one of 'operations' and 'operationsHash' can be provided")
         }
@@ -158,17 +46,152 @@ class CPVersion(
         if ((mergedVersion1 == null) != (mergedVersion2 == null)) {
             throw RuntimeException("A merge has to specify two versions. Only one was provided.")
         }
-        this.id = id
-        this.author = author
-        this.time = time
-        this.treeHash = treeHash
-        this.previousVersion = previousVersion
-        this.originalVersion = originalVersion
-        this.baseVersion = baseVersion
-        this.mergedVersion1 = mergedVersion1
-        this.mergedVersion2 = mergedVersion2
-        this.operations = operations
-        this.operationsHash = operationsHash
-        this.numberOfOperations = operations?.size ?: numberOfOperations
+    }
+
+    override fun serialize(): String {
+        val opsPart: String = operationsHash?.getHash()?.toString()
+            ?: if (operations!!.isEmpty()) {
+                ""
+            } else {
+                operations.joinToString(Separators.OPS) { OperationSerializer.INSTANCE.serialize(it) }
+            }
+        val s = Separators.LEVEL1
+        return longToHex(id) +
+            s + escape(time) +
+            s + escape(author) +
+            s + nullAsEmptyString(treeRef.getHashString()) +
+            s + nullAsEmptyString(baseVersion?.getHashString()) +
+            s + nullAsEmptyString(mergedVersion1?.getHashString()) +
+            s + nullAsEmptyString(mergedVersion2?.getHashString()) +
+            s + numberOfOperations +
+            s + opsPart
+    }
+
+    override fun getContainmentReferences(): List<ObjectReference<out IObjectData>> {
+        return listOfNotNull(
+            treeRef,
+            previousVersion,
+            originalVersion,
+            baseVersion,
+            mergedVersion1,
+            mergedVersion2,
+            operationsHash,
+        )
+    }
+
+    override fun getNonContainmentReferences(): List<ObjectReference<IObjectData>> {
+        return operations?.flatMap { it.getObjectReferences() } ?: emptyList()
+    }
+
+    override fun getDeserializer() = DESERIALIZER
+
+    companion object : IObjectDeserializer<CPVersion> {
+        val DESERIALIZER: IObjectDeserializer<CPVersion> = this
+
+        override fun deserialize(
+            serialized: String,
+            referenceFactory: IObjectReferenceFactory,
+        ): CPVersion {
+            try {
+                val parts = serialized.split(Separators.LEVEL1).toTypedArray()
+                if (parts.size == 9) {
+                    var opsHash: String? = null
+                    var ops: List<IOperation>? = null
+                    if (HashUtil.isSha256(parts[8])) {
+                        opsHash = parts[8]
+                    } else {
+                        ops = parts[8].split(Separators.LEVEL2)
+                            .filter { cs -> cs.isNotEmpty() }
+                            .map { OperationSerializer.INSTANCE.deserialize(it, referenceFactory) }
+                    }
+                    val data = CPVersion(
+                        longFromHex(parts[0]),
+                        unescape(parts[1]),
+                        unescape(parts[2]),
+                        treeRef = referenceFactory.fromHashString(
+                            checkNotNull(emptyStringAsNull(parts[3])) { "Tree hash empty in $serialized" },
+                            CPTree.DESERIALIZER,
+                        ),
+                        previousVersion = null,
+                        originalVersion = null,
+                        baseVersion = emptyStringAsNull(parts[4])?.let { referenceFactory(it, CPVersion) },
+                        mergedVersion1 = emptyStringAsNull(parts[5])?.let { referenceFactory(it, CPVersion) },
+                        mergedVersion2 = emptyStringAsNull(parts[6])?.let { referenceFactory(it, CPVersion) },
+                        operations = ops,
+                        operationsHash = opsHash?.let { referenceFactory(it, OperationsList.DESERIALIZER) },
+                        numberOfOperations = parts[7].toInt(),
+                    )
+                    return data
+                } else {
+                    var opsHash: String? = null
+                    var ops: List<IOperation>? = null
+                    if (HashUtil.isSha256(parts[5])) {
+                        opsHash = parts[5]
+                    } else {
+                        ops = parts[5].split(Separators.LEVEL2)
+                            .filter { cs: String? -> !cs.isNullOrEmpty() }
+                            .map { serialized: String ->
+                                OperationSerializer.INSTANCE.deserialize(
+                                    serialized,
+                                    referenceFactory,
+                                )
+                            }
+                    }
+                    val numOps = if (parts.size > 6) parts[6].toInt() else -1
+                    val data = CPVersion(
+                        id = longFromHex(parts[0]),
+                        time = unescape(parts[1]),
+                        author = unescape(parts[2]),
+                        treeRef = referenceFactory(
+                            checkNotNull(emptyStringAsNull(parts[3])) { "Tree hash empty in $serialized" },
+                            CPTree.DESERIALIZER,
+                        ),
+                        previousVersion = emptyStringAsNull(parts[4])?.let { referenceFactory(it, DESERIALIZER) },
+                        originalVersion = if (parts.size > 7) {
+                            emptyStringAsNull(parts[7])?.let { referenceFactory(it, DESERIALIZER) }
+                        } else {
+                            null
+                        },
+                        baseVersion = null,
+                        mergedVersion1 = null,
+                        mergedVersion2 = null,
+                        ops,
+                        opsHash?.let { referenceFactory(it, OperationsList.DESERIALIZER) },
+                        numOps,
+                    )
+                    return data
+                }
+            } catch (ex: Exception) {
+                throw RuntimeException("Failed to deserialize version: $serialized", ex)
+            }
+        }
+    }
+
+    fun withOperations(operations: List<IOperation>, referenceFactory: IObjectReferenceFactory): CPVersion {
+        val localizedOps = operations
+        return if (localizedOps.size <= INLINED_OPS_LIMIT) {
+            copy(
+                operations = localizedOps,
+                operationsHash = null,
+                numberOfOperations = localizedOps.size,
+            )
+        } else {
+            val opsList = OperationsList.of(localizedOps, referenceFactory)
+            copy(
+                operations = null,
+                operationsHash = referenceFactory(opsList),
+                numberOfOperations = localizedOps.size,
+            )
+        }
+    }
+
+    fun withUnloadedHistory(): CPVersion {
+        return copy(
+            baseVersion = baseVersion?.asUnloaded(),
+            mergedVersion1 = mergedVersion1?.asUnloaded(),
+            mergedVersion2 = mergedVersion2?.asUnloaded(),
+            previousVersion = previousVersion?.asUnloaded(),
+            originalVersion = originalVersion?.asUnloaded(),
+        )
     }
 }

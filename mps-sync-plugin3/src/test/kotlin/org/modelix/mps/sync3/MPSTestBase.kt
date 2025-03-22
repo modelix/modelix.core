@@ -31,17 +31,18 @@ abstract class MPSTestBase : UsefulTestCase() {
     override fun setUp() {
         super.setUp()
         TestApplicationManager.getInstance()
+        IModelSyncService.continueOnError = false
     }
 
     @OptIn(ExperimentalPathApi::class)
-    fun openTestProject(testDataName: String?, beforeOpen: (projectDir: Path) -> Unit = {}): Project {
+    fun openTestProject(testDataName: String? = null, projectName: String = "test-project", beforeOpen: (projectDir: Path) -> Unit = {}): Project {
         val projectDirParent = Path.of("build", "test-projects").absolute()
         projectDirParent.toFile().mkdirs()
         val projectDir = Files.createTempDirectory(projectDirParent, "mps-project")
         projectDir.delete(recursively = true)
         projectDir.toFile().mkdirs()
         projectDir.toFile().deleteOnExit()
-        val options = OpenProjectTask().withProjectName("test-project")
+        val options = OpenProjectTask().withProjectName(projectName)
         val project = if (testDataName != null) {
             val sourceDir = File("testdata/$testDataName")
             sourceDir.copyRecursively(projectDir.toFile(), overwrite = true)

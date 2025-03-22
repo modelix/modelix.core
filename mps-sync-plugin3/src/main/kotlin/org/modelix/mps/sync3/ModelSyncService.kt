@@ -168,6 +168,7 @@ class ModelSyncService(val project: Project) :
                 serverConnection = addServer(id.url),
                 branchRef = id.branchRef,
                 initialVersionHash = state?.versionHash,
+                continueOnError = { IModelSyncService.continueOnError ?: true },
             )
         }
     }
@@ -243,7 +244,17 @@ class ModelSyncService(val project: Project) :
         }
 
         override fun getStatus(): IServerConnection.Status {
-            TODO("Not yet implemented")
+            return if (connection.isConnected()) {
+                IServerConnection.Status.CONNECTED
+            } else if (connection.getPendingAuthRequest() != null) {
+                IServerConnection.Status.AUTHORIZATION_REQUIRED
+            } else {
+                IServerConnection.Status.DISCONNECTED
+            }
+        }
+
+        override fun getPendingAuthRequest(): String? {
+            return connection.getPendingAuthRequest()
         }
 
         override suspend fun pullVersion(branchRef: BranchReference): IVersion {
@@ -323,6 +334,20 @@ class ModelSyncService(val project: Project) :
                 getOrCreateWorker(id, loadedState.bindings[id])
             }
             return worker.flush()
+        }
+
+        override fun forceSync(push: Boolean) {
+            coroutinesScope.launch {
+                workers[id]?.forceSync(push)
+            }
+        }
+
+        override fun getCurrentVersion(): IVersion? {
+            return workers[id]?.getCurrentVersion()
+        }
+
+        override fun getSyncProgress(): String? {
+            return workers[id]?.getSyncProgress()
         }
 
         private fun getService(): ModelSyncService = this@ModelSyncService

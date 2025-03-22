@@ -1,17 +1,15 @@
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.maybe.defaultIfEmpty
-import com.badoo.reaktive.maybe.map
-import com.badoo.reaktive.observable.firstOrComplete
-import com.badoo.reaktive.single.Single
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.modelix.streams.IStream
+import org.modelix.streams.ifEmpty
 
 class FirstOrNullStep<E>() : AggregationStep<E, E?>() {
-    override fun aggregate(input: StepStream<E>, context: IStreamInstantiationContext): Single<IStepOutput<E?>> {
-        return input.firstOrComplete().map { MultiplexedOutput(0, it) }
-            .defaultIfEmpty(MultiplexedOutput(1, null.asStepOutput(this)))
+    override fun aggregate(input: StepStream<E>, context: IStreamInstantiationContext): IStream.One<IStepOutput<E?>> {
+        return input.firstOrEmpty().map { MultiplexedOutput(0, it) }
+            .ifEmpty { MultiplexedOutput(1, null.asStepOutput(this)) }
     }
 
     override fun toString(): String {

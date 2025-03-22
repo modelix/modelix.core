@@ -19,6 +19,7 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation(libs.trove4j)
+                implementation(libs.guava)
             }
         }
         val jvmTest by getting {
@@ -27,6 +28,7 @@ kotlin {
         }
         val jsMain by getting {
             dependencies {
+                implementation(libs.kotlinJs)
             }
         }
         val jsTest by getting {

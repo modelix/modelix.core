@@ -3,7 +3,6 @@ package org.modelix.model.operations
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
-import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.persistent.SerializationUtil
 
 class AddNewChildOp(position: PositionInRole, childId: Long, concept: IConceptReference?) : AddNewChildrenOp(position, longArrayOf(childId), arrayOf(concept)) {
@@ -29,7 +28,7 @@ open class AddNewChildrenOp(val position: PositionInRole, val childIds: LongArra
         return if (newPos == position) this else AddNewChildrenOp(newPos, childIds, concepts)
     }
 
-    override fun apply(transaction: IWriteTransaction, store: IDeserializingKeyValueStore): IAppliedOperation {
+    override fun apply(transaction: IWriteTransaction): IAppliedOperation {
         transaction.addNewChildren(position.nodeId, position.role, position.index, childIds, concepts)
         return Applied()
     }
@@ -46,7 +45,7 @@ open class AddNewChildrenOp(val position: PositionInRole, val childIds: LongArra
         }
     }
 
-    override fun captureIntend(tree: ITree, store: IDeserializingKeyValueStore): IOperationIntend {
+    override fun captureIntend(tree: ITree): IOperationIntend {
         val children = tree.getChildren(position.nodeId, position.role)
         return Intend(
             CapturedInsertPosition(position.index, children.toList().toLongArray()),

@@ -1,10 +1,6 @@
 package org.modelix.modelql.core
 
-import com.badoo.reaktive.observable.Observable
-import com.badoo.reaktive.observable.flatMap
-import com.badoo.reaktive.observable.observableOf
-import com.badoo.reaktive.single.asObservable
-import org.modelix.streams.firstOrNull
+import org.modelix.streams.IStream
 
 abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonIn, CommonIn, Out> : TransformingStepWithParameterBase<In, ParameterT, CommonIn, Out>() {
     override fun canBeEmpty(): Boolean = getProducer().canBeEmpty()
@@ -13,7 +9,7 @@ abstract class TransformingStepWithParameter<In : CommonIn, ParameterT : CommonI
     fun connectAndDowncast(producer: IMonoStep<In>): IMonoStep<Out> = also { producer.connect(it) }
     fun connectAndDowncast(producer: IFluxStep<In>): IFluxStep<Out> = also { producer.connect(it) }
 
-    override fun transformElementToMultiple(input: IStepOutput<In>, parameter: IStepOutput<ParameterT>?): Observable<IStepOutput<Out>> = observableOf(transformElement(input, parameter))
+    override fun transformElementToMultiple(input: IStepOutput<In>, parameter: IStepOutput<ParameterT>?): IStream.Many<IStepOutput<Out>> = IStream.of(transformElement(input, parameter))
     protected abstract fun transformElement(input: IStepOutput<In>, parameter: IStepOutput<ParameterT>?): IStepOutput<Out>
 }
 
@@ -45,13 +41,13 @@ abstract class TransformingStepWithParameterBase<In : CommonIn, ParameterT : Com
         } else {
             val parameterStream = context.getOrCreateStream<ParameterT>(getParameterProducer())
             val parameterValue = parameterStream.firstOrNull()
-            return listOf(input, parameterValue.asObservable()).zipRepeating().flatMap {
+            return listOf(input, parameterValue).zipRepeating().flatMap {
                 transformElementToMultiple(it[0]!!.upcast(), it[1]?.upcast())
             }
         }
     }
 
-    protected abstract fun transformElementToMultiple(input: IStepOutput<In>, parameter: IStepOutput<ParameterT>?): Observable<IStepOutput<Out>>
+    protected abstract fun transformElementToMultiple(input: IStepOutput<In>, parameter: IStepOutput<ParameterT>?): IStream.Many<IStepOutput<Out>>
 
     override fun getProducers(): List<IProducingStep<CommonIn>> {
         return super.getProducers() + listOfNotNull<IProducingStep<CommonIn>>(targetProducer)

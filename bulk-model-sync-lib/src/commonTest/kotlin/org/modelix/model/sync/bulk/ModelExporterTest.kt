@@ -6,7 +6,7 @@ import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.data.ModelData
 import org.modelix.model.lazy.CLTree
-import org.modelix.model.lazy.ObjectStoreCache
+import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.persistent.MapBasedStore
 import kotlin.js.JsName
 import kotlin.test.Test
@@ -52,7 +52,7 @@ class ModelExporterTest {
     private val model = ModelData.fromJson(serializedModel)
 
     private fun runTest(body: IBranch.() -> Unit) {
-        val branch = PBranch(CLTree(ObjectStoreCache(MapBasedStore())), IdGenerator.getInstance(1))
+        val branch = PBranch(CLTree(createObjectStoreCache(MapBasedStore())), IdGenerator.getInstance(1))
         branch.runWrite {
             model.load(branch)
         }

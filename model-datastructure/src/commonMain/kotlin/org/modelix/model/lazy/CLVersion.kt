@@ -92,6 +92,8 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
 
     override fun getTree(): CLTree = tree
 
+    fun getTree(type: TreeType): CLTree = CLTree(data.getTree(type).resolveNow())
+
     val baseVersion: CLVersion?
         get() {
             val previousVersionHash = data.baseVersion ?: data.previousVersion ?: return null

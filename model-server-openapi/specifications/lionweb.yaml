@@ -81,20 +81,29 @@ paths:
                 items:
                   type: integer
 
-  /listPartitions:
-    get:
+  /bulk/listPartitions:
+    post:
       operationId: listPartitions
       tags:
         - lionweb
+      parameters:
+        - name: repository
+          in: "query"
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/LionwebSerializationChunk"
+                allOf:
+                  - $ref: "#/components/schemas/LionwebResponse"
+                  - type: object
+                    properties:
+                      chunk:
+                        $ref: '#/components/schemas/LionwebSerializationChunk'
 
   /createPartitions:
     put:
@@ -279,7 +288,7 @@ components:
       properties:
         serializationFormatVersion:
           type: string
-          default: "2023.1"
+          default: "2024.1"
         languages:
           type: array
           items:

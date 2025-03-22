@@ -13,6 +13,7 @@ import org.modelix.model.api.IConcept
 import org.modelix.model.api.IMutableModel
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
+import org.modelix.model.api.INodeResolutionScope
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IRoleReference
@@ -30,6 +31,7 @@ import org.modelix.model.api.getDescendants
 import org.modelix.model.api.getNode
 import org.modelix.model.api.getRootNode
 import org.modelix.model.api.resolve
+import org.modelix.model.area.getArea
 import org.modelix.model.data.NodeData
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.runWriteWithNode
@@ -83,6 +85,7 @@ class LionwebApiImpl(val repoManager: IRepositoriesManager) : LionwebApi() {
             }
         }
 
+        // TODO use an index to find the nodes by their foreign ID (aka original ID)
         if (foreignIds.isNotEmpty()) {
             version.treeRef.graph.getStreamExecutor().iterateSuspending({
                 version.tree.nodesMap.getEntries().flatMap { it.second.resolve() }
@@ -92,10 +95,13 @@ class LionwebApiImpl(val repoManager: IRepositoriesManager) : LionwebApi() {
             }
         }
 
-        val nodesData = version.graph.getStreamExecutor().querySuspending {
-            IStream.many(modelixIds.asIterable()).flatMap {
-                toLionwebNode(branch.getNode(it).asAsyncNode())
-            }.toList()
+        val nodesData = INodeResolutionScope.runWithAdditionalScopeInCoroutine(branch.getArea()) {
+            version.graph.getStreamExecutor().querySuspending {
+                IStream.many(modelixIds.asIterable())
+                    .flatMap { branch.getNode(it).asAsyncNode().getDescendants(true) }
+                    .flatMap { toLionwebNode(it) }
+                    .toList()
+            }
         }
 
         val responseData = ListPartitions200Response(

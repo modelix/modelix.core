@@ -196,14 +196,14 @@ paths:
                 items:
                   type: string
 
-  /{partition}/store:
-    put:
+  /bulk/store:
+    post:
       operationId: bulkStore
       tags:
         - lionweb
       parameters:
-        - name: partition
-          in: "path"
+        - name: repository
+          in: "query"
           required: true
           schema:
             type: string

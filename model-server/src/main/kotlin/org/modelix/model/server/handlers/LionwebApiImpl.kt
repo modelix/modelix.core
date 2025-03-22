@@ -53,13 +53,17 @@ class LionwebApiImpl(val repoManager: IRepositoriesManager) : LionwebApi() {
     }
 
     override suspend fun RoutingContext.bulkStore(
-        partition: String,
+        repository: String,
         lionwebSerializationChunk: LionwebSerializationChunk,
     ) {
-        TODO("Not yet implemented")
+        writeNodes(repository, lionwebSerializationChunk)
     }
 
     override suspend fun RoutingContext.createPartitions(repository: String, lionwebSerializationChunk: LionwebSerializationChunk) {
+        writeNodes(repository, lionwebSerializationChunk)
+    }
+
+    private suspend fun RoutingContext.writeNodes(repository: String, lionwebSerializationChunk: LionwebSerializationChunk) {
         val partitions = (lionwebSerializationChunk.nodes ?: emptyList()).filter { it.parent == null }
         val nodesById = (lionwebSerializationChunk.nodes ?: emptyList()).associateBy { it.id }
         val branch = RepositoryId(repository).getBranchReference()

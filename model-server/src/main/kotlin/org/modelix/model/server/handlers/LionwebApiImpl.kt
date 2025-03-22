@@ -1,6 +1,7 @@
 package org.modelix.model.server.handlers
 
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.RoutingContext
 import org.modelix.authorization.getUserName
@@ -16,6 +17,7 @@ import org.modelix.model.api.IRoleReference
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.NodeReference
 import org.modelix.model.api.NullChildLinkReference
+import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.WritableNodeAsLegacyNode
 import org.modelix.model.api.async.IAsyncNode
@@ -23,8 +25,10 @@ import org.modelix.model.api.async.asAsyncNode
 import org.modelix.model.api.getDescendants
 import org.modelix.model.api.getRootNode
 import org.modelix.model.api.resolve
+import org.modelix.model.data.NodeData
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.runWrite
+import org.modelix.model.lazy.runWriteWithNode
 import org.modelix.model.persistent.SerializationUtil
 import org.modelix.model.server.store.RequiresTransaction
 import org.modelix.model.server.store.runReadIO
@@ -56,11 +60,12 @@ class LionwebApiImpl(val repoManager: IRepositoriesManager) : LionwebApi() {
         repository: String,
         lionwebSerializationChunk: LionwebSerializationChunk,
     ) {
-        writeNodes(repository, lionwebSerializationChunk)
+        writeNodes(repository, call.receive())
     }
 
     override suspend fun RoutingContext.createPartitions(repository: String, lionwebSerializationChunk: LionwebSerializationChunk) {
-        writeNodes(repository, lionwebSerializationChunk)
+        // TODO fix the generator template to read the request body
+        writeNodes(repository, call.receive())
     }
 
     private suspend fun RoutingContext.writeNodes(repository: String, lionwebSerializationChunk: LionwebSerializationChunk) {
@@ -77,33 +82,31 @@ class LionwebApiImpl(val repoManager: IRepositoriesManager) : LionwebApi() {
         }
 
         val idGenerator = repoManager.getStoreManager().idGenerator
-        val treePointer = TreePointer(baseVersion.getTree(), idGenerator)
-        val rootNode = treePointer.getRootNode().asAsyncNode()
-        treePointer.runWrite {
+        val newVersion = baseVersion.runWriteWithNode(idGenerator, call.getUserName()) { rootNode ->
             val existingPartitions = baseVersion.graph.getStreamExecutor().query {
-                rootNode.getAllChildren()
+                rootNode.asAsyncNode().getAllChildren()
                     .flatMap { node -> node.lionwebId().map { it to node } }
-                    .toMap({ it.first }, { it.second })
+                    .toMap({ it.first }, { it.second.asWritableNode() })
             }
 
             for (partition in partitions) {
                 val existing = existingPartitions[partition.id]
                 val targetNode = if (existing == null) {
-                    rootNode.asWritableNode()
-                        .addNewChild(NullChildLinkReference, -1, partition.classifier.toConceptReference())
+                    rootNode.addNewChild(NullChildLinkReference, -1, partition.classifier.toConceptReference())
                 } else {
-                    // cache warmup
-                    baseVersion.graph.getStreamExecutor()
-                        .iterate<IAsyncNode>({ existing.getDescendants(true).take(30_000) }) {}
-
-                    existing.asWritableNode()
+                    existing
                 }
                 ModelSynchronizer(
                     sourceRoot = LionwebDataAsNode(partition, null, null, nodesById),
                     targetRoot = targetNode,
-                    nodeAssociation = NodeAssociationToModelServer(treePointer),
+                    nodeAssociation = NodeAssociationToModelServer((rootNode.asLegacyNode() as PNodeAdapter).branch),
                 ).synchronize()
             }
+        }
+
+        @OptIn(RequiresTransaction::class)
+        runWrite {
+            repoManager.mergeChanges(branch, newVersion.getContentHash())
         }
 
         call.respond(
@@ -263,9 +266,11 @@ private class ReferenceWithResolveInfo(
 )
 
 private fun IAsyncNode.lionwebId(): IStream.One<String> {
-    return getPropertyValue(IPropertyReference.fromId("lionweb:id"))
+    return getPropertyValue(NodeData.ID_PROPERTY_REF)
         .ifEmpty { asRegularNode().asReadableNode().getNodeReference().serialize() }
 }
+
+private fun String.removePrefix(prefix: String) = if (startsWith(prefix)) substring(prefix.length) else this
 
 private fun ConceptReference.toLionWeb(): LionwebMetaPointer {
     return createLionwebMetaPointer(getUID())
@@ -358,7 +363,7 @@ class LionwebDataAsNode(
     }
 
     override fun getNodeReference(): INodeReference {
-        return NodeReference(checkNotNull(data.id) { "No ID specified" })
+        return NodeReference(data.id)
     }
 
     override fun getConcept(): IConcept {

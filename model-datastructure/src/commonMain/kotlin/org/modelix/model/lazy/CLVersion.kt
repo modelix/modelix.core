@@ -12,10 +12,12 @@ import org.modelix.model.TreeType
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITree
+import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.TreePointer
+import org.modelix.model.api.getRootNode
 import org.modelix.model.async.AsyncAsSynchronousTree
 import org.modelix.model.async.AsyncTree
 import org.modelix.model.async.IAsyncObjectStore
@@ -444,6 +446,21 @@ fun <K, V> Map<K, V?>.filterNotNullValues(): Map<K, V> = filterValues { it != nu
 fun CLVersion.runWrite(idGenerator: IIdGenerator, author: String?, body: (IWriteTransaction) -> Unit): CLVersion {
     val branch = OTBranch(TreePointer(getTree(), idGenerator), idGenerator)
     branch.computeWriteT(body)
+    val (ops, newTree) = branch.getPendingChanges()
+    return CLVersion.createRegularVersion(
+        id = idGenerator.generate(),
+        author = author,
+        tree = newTree,
+        baseVersion = this,
+        operations = ops.map { it.getOriginalOp() }.toTypedArray(),
+    )
+}
+
+fun CLVersion.runWriteWithNode(idGenerator: IIdGenerator, author: String?, body: (IWritableNode) -> Unit): CLVersion {
+    val branch = OTBranch(TreePointer(getTree(), idGenerator), idGenerator)
+    branch.runWrite {
+        body(branch.getRootNode().asWritableNode())
+    }
     val (ops, newTree) = branch.getPendingChanges()
     return CLVersion.createRegularVersion(
         id = idGenerator.generate(),

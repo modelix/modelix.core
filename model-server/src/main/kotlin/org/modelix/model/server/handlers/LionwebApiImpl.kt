@@ -31,6 +31,7 @@ import org.modelix.model.api.getDescendants
 import org.modelix.model.api.getNode
 import org.modelix.model.api.getRootNode
 import org.modelix.model.api.resolve
+import org.modelix.model.api.resolveInCurrentContext
 import org.modelix.model.area.getArea
 import org.modelix.model.data.NodeData
 import org.modelix.model.lazy.RepositoryId
@@ -228,8 +229,10 @@ class LionwebApiImpl(val repoManager: IRepositoriesManager) : LionwebApi() {
                 role to id
             }
         }.toList().map { it.groupBy { it.first } }
-        val referenceTargetsWithResolveInfo = node.getAllReferenceTargets().flatMap { (role, target) ->
-            target.lionwebId().zipWith(node.getPropertyValue(role.toResolveInfoRole()).orNull()) { lionwebId, resolveInfo ->
+        val referenceTargetsWithResolveInfo = node.getAllReferenceTargetRefs().flatMap { (role, targetRef) ->
+            val targetId = targetRef.resolveInCurrentContext()?.asAsyncNode()?.lionwebId()
+                ?: IStream.of(targetRef.serialize())
+            targetId.zipWith(node.getPropertyValue(role.toResolveInfoRole()).orNull()) { lionwebId, resolveInfo ->
                 ReferenceWithResolveInfo(role, lionwebId, resolveInfo)
             }
         }.toList()

@@ -1,7 +1,6 @@
 import org.modelix.datastructures.btree.BTreeNode
 import kotlin.random.Random
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class BTreeTest {
 
@@ -17,7 +16,7 @@ class BTreeTest {
                 0 -> {
                     if (expected.isNotEmpty()) {
                         val key = expected.keys.random(rand)
-                        //println("remove $key")
+                        // println("remove $key")
                         tree = tree.remove(key).createRoot()
                         expected.remove(key)
                     }
@@ -25,7 +24,7 @@ class BTreeTest {
                 else -> {
                     val key = "k" + rand.nextInt(10000).toString()
                     val value = "v" + rand.nextInt(5).toString()
-                    //println("insert $key -> $value")
+                    // println("insert $key -> $value")
                     tree = tree.put(key, value).createRoot()
                     expected[key] = value
                 }

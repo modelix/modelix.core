@@ -51,11 +51,11 @@ data class BTreeNode<K : Comparable<K>, V>(
         return UpdateResult.Overfill(left, right, medianValue)
     }
 
-    fun mergeWith(centerEntry: Pair<K, V>, right: BTreeNode<K, V>): UpdateResult<K, V> {
+    fun mergeWith(centerEntry: Pair<K, V>, right: BTreeNode<K, V>): BTreeNode<K, V> {
         return copy(
             entries = entries + centerEntry + right.entries,
             children = children + right.children,
-        ).checkSize()
+        )
     }
 
     fun checkSize(): UpdateResult<K, V> {
@@ -104,30 +104,24 @@ data class BTreeNode<K : Comparable<K>, V>(
             } else {
                 val childBefore = children[index]
                 val childAfter = children[index + 1]
-                if (childBefore.entries.size > childAfter.entries.size) {
-                    val shiftedLeaf = childBefore.removeLastLeaf()
-                    if (shiftedLeaf.updatedNode.entries.size < config.minEntries) {
-                        shiftedLeaf.updatedNode.mergeWith(shiftedLeaf.entry, childAfter)
-                            .apply(ChildrenRange(index..(index + 1)))
-                    } else {
-                        ChildrenRange(index..(index + 1)).replaceWith(
-                            shiftedLeaf.updatedNode,
-                            shiftedLeaf.entry,
-                            childAfter,
-                        )
-                    }
+                if (childBefore.entries.size <= config.minEntries && childAfter.entries.size <= config.minEntries) {
+                    childBefore.mergeWith(entries[index], childAfter)
+                        .remove(key)
+                        .apply(ChildrenRange(index..(index + 1)))
+                } else if (childBefore.entries.size > childAfter.entries.size) {
+                    val shiftedLeaf = childBefore.removeLastEntry()
+                    ChildrenRange(index..(index + 1)).replaceWith(
+                        shiftedLeaf.updatedNode,
+                        shiftedLeaf.entry,
+                        childAfter,
+                    )
                 } else {
-                    val shiftedLeaf = childAfter.removeFirstLeaf()
-                    if (shiftedLeaf.updatedNode.entries.size < config.minEntries) {
-                        childBefore.mergeWith(shiftedLeaf.entry, shiftedLeaf.updatedNode)
-                            .apply(ChildrenRange(index..(index + 1)))
-                    } else {
-                        ChildrenRange(index..(index + 1)).replaceWith(
-                            childBefore,
-                            shiftedLeaf.entry,
-                            shiftedLeaf.updatedNode,
-                        )
-                    }
+                    val shiftedLeaf = childAfter.removeFirstEntry()
+                    ChildrenRange(index..(index + 1)).replaceWith(
+                        childBefore,
+                        shiftedLeaf.entry,
+                        shiftedLeaf.updatedNode,
+                    )
                 }
             }
         } else {
@@ -137,28 +131,40 @@ data class BTreeNode<K : Comparable<K>, V>(
         }
     }
 
-    private fun removeFirstLeaf(): RemovedEntry<K, V> {
+    private fun removeFirstEntry(): RemovedEntry<K, V> {
         return if (children.isEmpty()) {
             RemovedEntry(
                 entries.first(),
                 copy(entries = entries.drop(1)),
             )
         } else {
-            children.first().removeFirstLeaf().let {
-                RemovedEntry(it.entry, ChildrenRange(0).replaceWith(it.updatedNode))
+            if (children.first().entries.size <= config.minEntries) {
+                ChildrenRange(0..1)
+                    .replaceWith(children[0].mergeWith(entries[0], children[1]))
+                    .removeFirstEntry()
+            } else {
+                children.first().removeFirstEntry().let {
+                    RemovedEntry(it.entry, ChildrenRange(0).replaceWith(it.updatedNode))
+                }
             }
         }
     }
 
-    private fun removeLastLeaf(): RemovedEntry<K, V> {
+    private fun removeLastEntry(): RemovedEntry<K, V> {
         return if (children.isEmpty()) {
             RemovedEntry(
                 entries.last(),
                 copy(entries = entries.dropLast(1)),
             )
         } else {
-            children.last().removeLastLeaf().let {
-                RemovedEntry(it.entry, ChildrenRange(children.lastIndex).replaceWith(it.updatedNode))
+            if (children.last().entries.size <= config.minEntries) {
+                ChildrenRange((children.lastIndex - 1)..children.lastIndex)
+                    .replaceWith(children[children.lastIndex - 1].mergeWith(entries.last(), children.last()))
+                    .removeLastEntry()
+            } else {
+                children.last().removeLastEntry().let {
+                    RemovedEntry(it.entry, ChildrenRange(children.lastIndex).replaceWith(it.updatedNode))
+                }
             }
         }
     }
@@ -183,6 +189,7 @@ class RemovedEntry<K : Comparable<K>, V>(val entry: Pair<K, V>, val updatedNode:
 sealed class UpdateResult<K : Comparable<K>, V> {
     abstract fun apply(toReplace: BTreeNode<K, V>.ChildrenRange): UpdateResult<K, V>
     abstract fun createRoot(): BTreeNode<K, V>
+    abstract fun expectCompletion(): BTreeNode<K, V>
 
     class Complete<K : Comparable<K>, V>(val newNode: BTreeNode<K, V>) : UpdateResult<K, V>() {
         override fun apply(toReplace: BTreeNode<K, V>.ChildrenRange): UpdateResult<K, V> {
@@ -192,6 +199,8 @@ sealed class UpdateResult<K : Comparable<K>, V> {
         override fun createRoot(): BTreeNode<K, V> {
             return newNode
         }
+
+        override fun expectCompletion(): BTreeNode<K, V> = newNode
     }
     class Overfill<K : Comparable<K>, V>(val left: BTreeNode<K, V>, val right: BTreeNode<K, V>, val medianEntry: Pair<K, V>) : UpdateResult<K, V>() {
         override fun apply(toReplace: BTreeNode<K, V>.ChildrenRange): UpdateResult<K, V> {
@@ -201,6 +210,7 @@ sealed class UpdateResult<K : Comparable<K>, V> {
         override fun createRoot(): BTreeNode<K, V> {
             return BTreeNode(left.config, listOf(medianEntry), listOf(left, right))
         }
+        override fun expectCompletion(): BTreeNode<K, V> = throw IllegalStateException("Not complete: $this")
     }
     class Underfill<K : Comparable<K>, V>(val newNode: BTreeNode<K, V>) : UpdateResult<K, V>() {
         override fun apply(toReplace: BTreeNode<K, V>.ChildrenRange): UpdateResult<K, V> {
@@ -212,18 +222,22 @@ sealed class UpdateResult<K : Comparable<K>, V> {
                     TODO("Can this happen?")
                 } else {
                     newNode.mergeWith(toReplace.parent.entries[toReplace.range.last], nextSibling)
+                        .checkSize()
                         .apply(toReplace.extendRight())
                 }
             } else {
                 if (nextSibling == null) {
                     prevSibling.mergeWith(toReplace.parent.entries[toReplace.range.first - 1], newNode)
+                        .checkSize()
                         .apply(toReplace.extendLeft())
                 } else {
                     if (prevSibling.entries.size > nextSibling.entries.size) {
                         newNode.mergeWith(toReplace.parent.entries[toReplace.range.last], nextSibling)
+                            .checkSize()
                             .apply(toReplace.extendRight())
                     } else {
                         prevSibling.mergeWith(toReplace.parent.entries[toReplace.range.first - 1], newNode)
+                            .checkSize()
                             .apply(toReplace.extendLeft())
                     }
                 }
@@ -234,6 +248,8 @@ sealed class UpdateResult<K : Comparable<K>, V> {
             // root node is allowed to be smaller
             return newNode
         }
+
+        override fun expectCompletion(): BTreeNode<K, V> = throw IllegalStateException("Not complete: $this")
     }
     class NothingChanged<K : Comparable<K>, V>(val oldNode: BTreeNode<K, V>) : UpdateResult<K, V>() {
         override fun apply(toReplace: BTreeNode<K, V>.ChildrenRange): UpdateResult<K, V> {
@@ -243,6 +259,8 @@ sealed class UpdateResult<K : Comparable<K>, V> {
         override fun createRoot(): BTreeNode<K, V> {
             return oldNode
         }
+
+        override fun expectCompletion(): BTreeNode<K, V> = oldNode
     }
 }
 

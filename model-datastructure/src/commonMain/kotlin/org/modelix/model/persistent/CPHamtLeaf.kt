@@ -1,10 +1,10 @@
 package org.modelix.model.persistent
 
-import org.modelix.model.objects.IObjectData
-import org.modelix.model.objects.IObjectGraph
-import org.modelix.model.objects.Object
-import org.modelix.model.objects.ObjectReference
-import org.modelix.model.objects.requireDifferentHash
+import org.modelix.datastructures.objects.IObjectData
+import org.modelix.datastructures.objects.IObjectGraph
+import org.modelix.datastructures.objects.Object
+import org.modelix.datastructures.objects.ObjectReference
+import org.modelix.datastructures.objects.requireDifferentHash
 import org.modelix.model.persistent.SerializationUtil.longToHex
 import org.modelix.streams.IStream
 import org.modelix.streams.ifEmpty
@@ -113,13 +113,14 @@ data class CPHamtLeaf(
     }
 
     override fun objectDiff(self: Object<*>, oldObject: Object<*>?, shift: Int): IStream.Many<Object<*>> {
-        return when (oldObject?.data) {
+        val oldData = oldObject?.data
+        return when (oldData) {
             is CPHamtLeaf -> {
-                requireDifferentHash(oldObject.data)
+                requireDifferentHash(oldData)
                 IStream.of(self) + value.resolve()
             }
             is CPHamtInternal, is CPHamtSingle -> {
-                oldObject.data.get(key, shift).orNull().flatMapZeroOrOne { oldValue ->
+                oldData.get(key, shift).orNull().flatMapZeroOrOne { oldValue ->
                     if (oldValue?.getHash() == value.getHash()) {
                         IStream.empty()
                     } else {

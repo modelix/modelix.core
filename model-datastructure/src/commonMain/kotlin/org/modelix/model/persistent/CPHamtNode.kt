@@ -1,11 +1,11 @@
 package org.modelix.model.persistent
 
-import org.modelix.model.objects.IObjectDeserializer
-import org.modelix.model.objects.IObjectGraph
-import org.modelix.model.objects.IObjectReferenceFactory
-import org.modelix.model.objects.Object
-import org.modelix.model.objects.ObjectReference
-import org.modelix.model.objects.hash
+import org.modelix.datastructures.objects.IObjectDeserializer
+import org.modelix.datastructures.objects.IObjectGraph
+import org.modelix.datastructures.objects.IObjectReferenceFactory
+import org.modelix.datastructures.objects.Object
+import org.modelix.datastructures.objects.ObjectReference
+import org.modelix.datastructures.objects.hash
 import org.modelix.model.persistent.SerializationUtil.intFromHex
 import org.modelix.model.persistent.SerializationUtil.longFromHex
 import org.modelix.streams.IStream

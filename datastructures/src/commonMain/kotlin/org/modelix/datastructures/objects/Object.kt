@@ -59,3 +59,8 @@ fun Object<*>.getDescendants(): IStream.Many<Object<*>> {
 fun Object<*>.getDescendantsAndSelf(): IStream.Many<Object<*>> {
     return IStream.of(this) + getDescendants()
 }
+
+fun <T : IObjectData> Object<*>.upcast(): Object<T> {
+    @Suppress("UNCHECKED_CAST")
+    return this as Object<T>
+}

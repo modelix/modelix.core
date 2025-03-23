@@ -76,7 +76,7 @@ data class BTreeNode<K : Comparable<K>, V>(
     }
 }
 
-data class BTree<K : Comparable<K>, V>(val root: BTreeNode<K, V> = BTreeNode(), val minDegree: Int) {
+data class BTree<K : Comparable<K>, V>(val root: BTreeNode<K, V> = BTreeNode(), val minDegree: Int = 2) {
 
     fun search(key: K): V? = root.search(key)
 
@@ -98,12 +98,8 @@ data class BTree<K : Comparable<K>, V>(val root: BTreeNode<K, V> = BTreeNode(), 
     }
 
     fun update(key: K, value: V): BTree<K, V> {
-        // Update is similar to insert; we perform a search and replace the value
-        val updatedNode = root.search(key)?.let {
-            root.insertNonFull(key, value, minDegree)
-        } ?: this
-
-        return updatedNode
+        // We simply insert the key-value pair again, updating the value if the key exists
+        return insert(key, value)
     }
 
     fun traverse(node: BTreeNode<K, V> = root, level: Int = 0) {

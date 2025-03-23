@@ -1,5 +1,10 @@
 package org.modelix.model.lazy
 
+import org.modelix.datastructures.objects.IObjectGraph
+import org.modelix.datastructures.objects.Object
+import org.modelix.datastructures.objects.asObject
+import org.modelix.datastructures.objects.getHashString
+import org.modelix.datastructures.objects.getObject
 import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.model.TreeId
 import org.modelix.model.api.ITree
@@ -9,11 +14,6 @@ import org.modelix.model.async.AsyncAsSynchronousTree
 import org.modelix.model.async.AsyncTree
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.async.getAsyncStore
-import org.modelix.model.objects.IObjectGraph
-import org.modelix.model.objects.Object
-import org.modelix.model.objects.asObject
-import org.modelix.model.objects.getHashString
-import org.modelix.model.objects.getObject
 import org.modelix.model.persistent.CPHamtInternal
 import org.modelix.model.persistent.CPHamtNode
 import org.modelix.model.persistent.CPNode

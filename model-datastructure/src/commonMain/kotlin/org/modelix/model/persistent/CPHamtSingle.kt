@@ -1,15 +1,15 @@
 package org.modelix.model.persistent
 
+import org.modelix.datastructures.objects.IObjectData
+import org.modelix.datastructures.objects.IObjectGraph
+import org.modelix.datastructures.objects.Object
+import org.modelix.datastructures.objects.ObjectReference
+import org.modelix.datastructures.objects.customDiff
+import org.modelix.datastructures.objects.getDescendantRefs
+import org.modelix.datastructures.objects.getDescendantsAndSelf
+import org.modelix.datastructures.objects.requireDifferentHash
 import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.model.bitCount
-import org.modelix.model.objects.IObjectData
-import org.modelix.model.objects.IObjectGraph
-import org.modelix.model.objects.Object
-import org.modelix.model.objects.ObjectReference
-import org.modelix.model.objects.customDiff
-import org.modelix.model.objects.getDescendantRefs
-import org.modelix.model.objects.getDescendantsAndSelf
-import org.modelix.model.objects.requireDifferentHash
 import org.modelix.model.persistent.SerializationUtil.longToHex
 import org.modelix.streams.IStream
 import org.modelix.streams.flatten
@@ -169,13 +169,14 @@ data class CPHamtSingle(
                     repeat(numLevels - 1) { iteration ->
                         val relativeLevel = iteration + 1
                         oldChildRef = oldChildRef.flatMapZeroOrOne { it.resolve() }.flatMapZeroOrOne { oldChild ->
-                            when (oldChild.data) {
+                            val oldData = oldChild.data
+                            when (oldData) {
                                 is CPHamtSingle -> {
                                     // oldChildRef is checked below to ensure this doesn't leak into the result
                                     @OptIn(DelicateModelixApi::class)
-                                    CPHamtInternal.replace(oldChild.data, IObjectGraph.FREE_FLOATING)
+                                    CPHamtInternal.replace(oldData, IObjectGraph.FREE_FLOATING)
                                 }
-                                is CPHamtInternal -> oldChild.data
+                                is CPHamtInternal -> oldData
                                 is CPHamtLeaf -> null
                             }?.getChildRef(logicalIndexOfChild(relativeLevel))
                                 ?.let { IStream.of(it) }

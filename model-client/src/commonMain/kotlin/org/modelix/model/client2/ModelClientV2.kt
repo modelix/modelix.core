@@ -36,6 +36,8 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import org.modelix.datastructures.objects.IObjectGraph
+import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.kotlin.utils.WeakValueMap
 import org.modelix.kotlin.utils.getOrPut
@@ -64,8 +66,6 @@ import org.modelix.model.oauth.OAuthConfig
 import org.modelix.model.oauth.OAuthConfigBuilder
 import org.modelix.model.oauth.TokenProvider
 import org.modelix.model.oauth.TokenProviderAuthConfig
-import org.modelix.model.objects.IObjectGraph
-import org.modelix.model.objects.ObjectHash
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.api.v2.ImmutableObjectsStream

@@ -1,6 +1,6 @@
 package org.modelix.model.persistent
 
-import org.modelix.model.objects.ObjectReference
+import org.modelix.datastructures.objects.ObjectReference
 
 sealed class MapChangeEvent
 data class EntryAddedEvent(val key: Long, val value: ObjectReference<CPNode>) : MapChangeEvent()

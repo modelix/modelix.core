@@ -1,4 +1,4 @@
-package org.modelix.model.objects
+package org.modelix.datastructures.objects
 
 interface IObjectWriter {
     fun write(obj: Object<*>)

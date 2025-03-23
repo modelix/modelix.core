@@ -15,11 +15,11 @@ import org.modelix.streams.IStream
 import org.modelix.streams.flatten
 import org.modelix.streams.plus
 
-class LongKeyHamtInternal<V : IObjectData>(
-    override val config: Config<V>,
+class LongKeyHamtInternal<K, V : IObjectData>(
+    override val config: Config<K, V>,
     val bitmap: Int,
-    val children: Array<out ObjectReference<LongKeyHamtNode<V>>>,
-) : LongKeyHamtNode<V>() {
+    val children: Array<out ObjectReference<LongKeyHamtNode<K, V>>>,
+) : LongKeyHamtNode<K, V>() {
 
     val data get() = this
 
@@ -34,27 +34,27 @@ class LongKeyHamtInternal<V : IObjectData>(
     }
 
     companion object {
-        fun <V : IObjectData> createEmpty(config: Config<V>) = create(config, 0, arrayOf<ObjectReference<LongKeyHamtNode<V>>>())
+        fun <K, V : IObjectData> createEmpty(config: Config<K, V>) = create(config, 0, arrayOf<ObjectReference<LongKeyHamtNode<K, V>>>())
 
-        fun <V : IObjectData> create(config: Config<V>, bitmap: Int, childHashes: Array<out ObjectReference<LongKeyHamtNode<V>>>): LongKeyHamtInternal<V> {
+        fun <K, V : IObjectData> create(config: Config<K, V>, bitmap: Int, childHashes: Array<out ObjectReference<LongKeyHamtNode<K, V>>>): LongKeyHamtInternal<K, V> {
             return LongKeyHamtInternal(config, bitmap, childHashes)
         }
 
-        fun <V : IObjectData> create(config: Config<V>, key: Long, childHash: ObjectReference<V>, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<V>> {
-            return createEmpty<V>(config).put(key, childHash, shift, graph)
+        fun <K, V : IObjectData> create(config: Config<K, V>, key: K, childHash: ObjectReference<V>, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<K, V>> {
+            return createEmpty<K, V>(config).put(key, childHash, shift, graph)
         }
 
-        fun <V : IObjectData> replace(single: LongKeyHamtSingle<V>, graph: IObjectGraph): LongKeyHamtInternal<V> {
+        fun <K, V : IObjectData> replace(single: LongKeyHamtSingle<K, V>, graph: IObjectGraph): LongKeyHamtInternal<K, V> {
             if (single.numLevels != 1) return replace(single.splitOneLevel(graph), graph)
-            val data: LongKeyHamtSingle<V> = single
+            val data: LongKeyHamtSingle<K, V> = single
             val logicalIndex: Int = data.bits.toInt()
             return create(single.config, 1 shl logicalIndex, arrayOf(data.child))
         }
     }
 
-    override fun put(key: Long, value: ObjectReference<V>?, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<V>> {
+    override fun put(key: K, value: ObjectReference<V>?, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<K, V>> {
         require(shift <= MAX_SHIFT) { "$shift > $MAX_SHIFT" }
-        val childIndex = indexFromKey(key, shift)
+        val childIndex = indexFromHash(config.keyHashFunction(key), shift)
         return getChild(childIndex).orNull().flatMapZeroOrOne { child ->
             if (child == null) {
                 setChild(childIndex, LongKeyHamtLeaf.create(config, key, value), shift, graph)
@@ -66,11 +66,11 @@ class LongKeyHamtInternal<V : IObjectData>(
         }
     }
 
-    override fun putAll(entries: List<Pair<Long, ObjectReference<V>?>>, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<V>> {
-        val groups = entries.groupBy { indexFromKey(it.first, shift) }
+    override fun putAll(entries: List<Pair<K, ObjectReference<V>?>>, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<K, V>> {
+        val groups = entries.groupBy { indexFromHash(config.keyHashFunction(it.first), shift) }
         val logicalIndices = groups.keys.toIntArray()
         val newChildrenLists = groups.values.toList()
-        return getChildren(logicalIndices).flatMap { children: List<LongKeyHamtNode<V>?> ->
+        return getChildren(logicalIndices).flatMap { children: List<LongKeyHamtNode<K, V>?> ->
             IStream.many(children.withIndex()).flatMap { (i, oldChild) ->
                 val newChildren = newChildrenLists[i]
                 if (oldChild == null) {
@@ -98,9 +98,9 @@ class LongKeyHamtInternal<V : IObjectData>(
         }
     }
 
-    override fun remove(key: Long, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<V>> {
+    override fun remove(key: K, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<K, V>> {
         require(shift <= MAX_SHIFT) { "$shift > $MAX_SHIFT" }
-        val childIndex = indexFromKey(key, shift)
+        val childIndex = indexFromHash(config.keyHashFunction(key), shift)
         return getChild(childIndex).orNull().flatMapZeroOrOne { child ->
             if (child == null) {
                 IStream.of(this)
@@ -112,32 +112,32 @@ class LongKeyHamtInternal<V : IObjectData>(
         }
     }
 
-    override fun get(key: Long, shift: Int): IStream.ZeroOrOne<ObjectReference<V>> {
+    override fun get(key: K, shift: Int): IStream.ZeroOrOne<ObjectReference<V>> {
         require(shift <= MAX_SHIFT) { "$shift > $MAX_SHIFT" }
-        val childIndex = indexFromKey(key, shift)
+        val childIndex = indexFromHash(config.keyHashFunction(key), shift)
         return getChild(childIndex).flatMapZeroOrOne { child ->
             child.get(key, shift + BITS_PER_LEVEL)
         }
     }
 
     override fun getAll(
-        keys: LongArray,
+        keys: Iterable<K>,
         shift: Int,
-    ): IStream.Many<Pair<Long, ObjectReference<V>?>> {
-        val groups = keys.groupBy { indexFromKey(it, shift) }
+    ): IStream.Many<Pair<K, ObjectReference<V>?>> {
+        val groups = keys.groupBy { indexFromHash(config.keyHashFunction(it), shift) }
         return IStream.many(groups.entries).flatMap { group ->
             getChild(group.key).flatMap { child ->
-                child.getAll(group.value.toLongArray(), shift + BITS_PER_LEVEL)
+                child.getAll(group.value, shift + BITS_PER_LEVEL)
             }
         }
     }
 
-    fun getChild(logicalIndex: Int): IStream.ZeroOrOne<LongKeyHamtNode<V>> {
+    fun getChild(logicalIndex: Int): IStream.ZeroOrOne<LongKeyHamtNode<K, V>> {
         val childHash = getChildRef(logicalIndex) ?: return IStream.empty()
         return getChild(childHash)
     }
 
-    fun getChildRef(logicalIndex: Int): ObjectReference<LongKeyHamtNode<V>>? {
+    fun getChildRef(logicalIndex: Int): ObjectReference<LongKeyHamtNode<K, V>>? {
         if (isBitNotSet(data.bitmap, logicalIndex)) {
             return null
         }
@@ -145,7 +145,7 @@ class LongKeyHamtInternal<V : IObjectData>(
         return data.children[physicalIndex]
     }
 
-    private fun getChildren(logicalIndices: IntArray): IStream.One<List<LongKeyHamtNode<V>?>> {
+    private fun getChildren(logicalIndices: IntArray): IStream.One<List<LongKeyHamtNode<K, V>?>> {
         val childHashes = logicalIndices.map { logicalIndex ->
             if (isBitNotSet(data.bitmap, logicalIndex)) {
                 null
@@ -157,11 +157,11 @@ class LongKeyHamtInternal<V : IObjectData>(
         return IStream.many(childHashes).flatMap { it?.resolveData() ?: IStream.of(null) }.toList()
     }
 
-    protected fun getChild(childHash: ObjectReference<LongKeyHamtNode<V>>): IStream.One<LongKeyHamtNode<V>> {
+    protected fun getChild(childHash: ObjectReference<LongKeyHamtNode<K, V>>): IStream.One<LongKeyHamtNode<K, V>> {
         return childHash.resolveData()
     }
 
-    fun setChildren(logicalIndices: IntArray, children: List<ObjectReference<LongKeyHamtNode<V>>?>, shift: Int): IStream.ZeroOrOne<LongKeyHamtNode<V>> {
+    fun setChildren(logicalIndices: IntArray, children: List<ObjectReference<LongKeyHamtNode<K, V>>?>, shift: Int): IStream.ZeroOrOne<LongKeyHamtNode<K, V>> {
         var oldBitmap = data.bitmap
         var newBitmap = data.bitmap
         val oldChildren = data.children
@@ -199,7 +199,7 @@ class LongKeyHamtInternal<V : IObjectData>(
         }
     }
 
-    fun setChild(logicalIndex: Int, child: LongKeyHamtNode<V>?, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<V>> {
+    fun setChild(logicalIndex: Int, child: LongKeyHamtNode<K, V>?, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<K, V>> {
         if (child == null) {
             return deleteChild(logicalIndex)
         }
@@ -225,7 +225,7 @@ class LongKeyHamtInternal<V : IObjectData>(
         }
     }
 
-    fun deleteChild(logicalIndex: Int): IStream.ZeroOrOne<LongKeyHamtNode<V>> {
+    fun deleteChild(logicalIndex: Int): IStream.ZeroOrOne<LongKeyHamtNode<K, V>> {
         if (isBitNotSet(data.bitmap, logicalIndex)) {
             return IStream.of(this)
         }
@@ -248,18 +248,18 @@ class LongKeyHamtInternal<V : IObjectData>(
         }
     }
 
-    override fun getEntries(): IStream.Many<Pair<Long, ObjectReference<V>>> {
+    override fun getEntries(): IStream.Many<Pair<K, ObjectReference<V>>> {
         return IStream.many(data.children).flatMap { it.resolveData() }.flatMap { it.getEntries() }
     }
 
-    override fun getChanges(oldNode: LongKeyHamtNode<V>?, shift: Int, changesOnly: Boolean): IStream.Many<MapChangeEvent<V>> {
+    override fun getChanges(oldNode: LongKeyHamtNode<K, V>?, shift: Int, changesOnly: Boolean): IStream.Many<MapChangeEvent<K, V>> {
         if (oldNode === this) {
             return IStream.empty()
         }
         requireDifferentHash(oldNode)
         return when (oldNode) {
             is LongKeyHamtInternal -> {
-                val oldInternalNode: LongKeyHamtInternal<V> = oldNode
+                val oldInternalNode: LongKeyHamtInternal<K, V> = oldNode
                 if (data.bitmap == oldInternalNode.data.bitmap) {
                     IStream.many(data.children.indices).flatMap { i ->
                         val oldChildRef = oldInternalNode.data.children[i]
@@ -269,7 +269,7 @@ class LongKeyHamtInternal<V : IObjectData>(
                                 child.getChanges(oldChild, shift + BITS_PER_LEVEL, changesOnly)
                             }.flatten()
                         } else {
-                            IStream.empty<MapChangeEvent<V>>()
+                            IStream.empty<MapChangeEvent<K, V>>()
                         }
                     }
                 } else {
@@ -279,16 +279,16 @@ class LongKeyHamtInternal<V : IObjectData>(
                         if (newChildRef == null) {
                             if (oldChildRef == null) {
                                 // no change
-                                IStream.empty<MapChangeEvent<V>>()
+                                IStream.empty<MapChangeEvent<K, V>>()
                             } else {
                                 if (!changesOnly) {
                                     oldChildRef.resolve().flatMap { oldChild ->
                                         oldChild.data.getEntries().map { (key, value) ->
-                                            EntryRemovedEvent<V>(key, value)
+                                            EntryRemovedEvent<K, V>(key, value)
                                         }
                                     }
                                 } else {
-                                    IStream.empty<MapChangeEvent<V>>()
+                                    IStream.empty<MapChangeEvent<K, V>>()
                                 }
                             }
                         } else {
@@ -296,11 +296,11 @@ class LongKeyHamtInternal<V : IObjectData>(
                                 if (!changesOnly) {
                                     newChildRef.resolveData().flatMap { newChild ->
                                         newChild.getEntries().map { (key, value) ->
-                                            EntryAddedEvent<V>(key, value)
+                                            EntryAddedEvent<K, V>(key, value)
                                         }
                                     }
                                 } else {
-                                    IStream.empty<MapChangeEvent<V>>()
+                                    IStream.empty<MapChangeEvent<K, V>>()
                                 }
                             } else {
                                 if (newChildRef.getHash() == oldChildRef.getHash()) {
@@ -353,16 +353,16 @@ class LongKeyHamtInternal<V : IObjectData>(
     ): IStream.Many<Object<*>> {
         val oldData = oldObject?.data
         return when (oldData) {
-            is LongKeyHamtInternal<*> -> {
+            is LongKeyHamtInternal<*, *> -> {
                 requireDifferentHash(oldObject)
                 IStream.of(self) + diffChildren(oldData, shift)
             }
-            is LongKeyHamtSingle<*> -> {
+            is LongKeyHamtSingle<*, *> -> {
                 @OptIn(DelicateModelixApi::class) // free floating objects are filtered out
                 IStream.of(self) + diffChildren(replace(oldData, IObjectGraph.FREE_FLOATING), shift)
                     .filter { it.graph != IObjectGraph.FREE_FLOATING }
             }
-            is LongKeyHamtLeaf<*> -> {
+            is LongKeyHamtLeaf<*, *> -> {
                 IStream.of(self) +
                     getDescendantRefs()
                         .filter { it.getHash() != oldObject.ref.getHash() }
@@ -372,7 +372,7 @@ class LongKeyHamtInternal<V : IObjectData>(
         }
     }
 
-    fun diffChildren(oldObject: LongKeyHamtInternal<*>, shift: Int): IStream.Many<Object<*>> {
+    fun diffChildren(oldObject: LongKeyHamtInternal<*, *>, shift: Int): IStream.Many<Object<*>> {
         val changedChildren = (0 until ENTRIES_PER_LEVEL)
             .mapNotNull { logicalIndex ->
                 (getChildRef(logicalIndex) ?: return@mapNotNull null) to oldObject.getChildRef(logicalIndex)
@@ -403,7 +403,7 @@ class LongKeyHamtInternal<V : IObjectData>(
         if (this === other) return true
         if (other == null || this::class != other::class) return false
 
-        other as LongKeyHamtInternal<*>
+        other as LongKeyHamtInternal<*, *>
 
         if (bitmap != other.bitmap) return false
         if (config != other.config) return false

@@ -12,40 +12,40 @@ import org.modelix.streams.IStream
 /**
  * Implementation of a hash array mapped trie.
  */
-sealed class LongKeyHamtNode<V : IObjectData> : IObjectData {
-    abstract val config: Config<V>
+sealed class LongKeyHamtNode<K, V : IObjectData> : IObjectData {
+    abstract val config: Config<K, V>
 
     override fun getDeserializer() = config.deserializer
 
-    protected fun createEmptyNode(): LongKeyHamtNode<V> {
+    protected fun createEmptyNode(): LongKeyHamtNode<K, V> {
         return LongKeyHamtInternal(config, 0, arrayOf())
     }
 
-    fun getAll(keys: LongArray): IStream.One<List<ObjectReference<V>?>> {
+    fun getAll(keys: Iterable<K>): IStream.One<List<ObjectReference<V>?>> {
         return getAll(keys, 0).toList().map {
             val entries = it.associateBy { it.first }
             keys.map { entries[it]?.second }
         }
     }
 
-    fun put(key: Long, value: ObjectReference<V>?, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<V>> {
+    fun put(key: K, value: ObjectReference<V>?, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<K, V>> {
         return put(key, value, 0, graph)
     }
 
-    fun remove(key: Long, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<V>> {
+    fun remove(key: K, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<K, V>> {
         return remove(key, 0, graph)
     }
 
-    fun get(key: Long): IStream.ZeroOrOne<ObjectReference<V>> = get(key, 0)
+    fun get(key: K): IStream.ZeroOrOne<ObjectReference<V>> = get(key, 0)
 
-    abstract fun get(key: Long, shift: Int): IStream.ZeroOrOne<ObjectReference<V>>
-    abstract fun put(key: Long, value: ObjectReference<V>?, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<V>>
-    abstract fun putAll(entries: List<Pair<Long, ObjectReference<V>?>>, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<V>>
-    abstract fun getAll(keys: LongArray, shift: Int): IStream.Many<Pair<Long, ObjectReference<V>?>>
-    abstract fun remove(key: Long, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<V>>
-    abstract fun getEntries(): IStream.Many<Pair<Long, ObjectReference<V>>>
-    abstract fun getChanges(oldNode: LongKeyHamtNode<V>?, shift: Int, changesOnly: Boolean): IStream.Many<MapChangeEvent<V>>
-    fun getChanges(oldNode: LongKeyHamtNode<V>?, changesOnly: Boolean) = getChanges(oldNode, 0, changesOnly)
+    abstract fun get(key: K, shift: Int): IStream.ZeroOrOne<ObjectReference<V>>
+    abstract fun put(key: K, value: ObjectReference<V>?, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<K, V>>
+    abstract fun putAll(entries: List<Pair<K, ObjectReference<V>?>>, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<K, V>>
+    abstract fun getAll(keys: Iterable<K>, shift: Int): IStream.Many<Pair<K, ObjectReference<V>?>>
+    abstract fun remove(key: K, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<K, V>>
+    abstract fun getEntries(): IStream.Many<Pair<K, ObjectReference<V>>>
+    abstract fun getChanges(oldNode: LongKeyHamtNode<K, V>?, shift: Int, changesOnly: Boolean): IStream.Many<MapChangeEvent<K, V>>
+    fun getChanges(oldNode: LongKeyHamtNode<K, V>?, changesOnly: Boolean) = getChanges(oldNode, 0, changesOnly)
 
     abstract fun objectDiff(
         self: Object<*>,
@@ -74,7 +74,7 @@ sealed class LongKeyHamtNode<V : IObjectData> : IObjectData {
         const val SEPARATOR = "/"
         const val SEPARATOR2 = ","
 
-        fun indexFromKey(key: Long, shift: Int): Int = levelBits(key, shift)
+        fun indexFromHash(hash: Long, shift: Int): Int = levelBits(hash, shift)
 
         fun intToHex(value: Int): String = value.toUInt().toString(16)
         fun intFromHex(hex: String): Int = hex.toLong(16).toInt()
@@ -91,25 +91,25 @@ sealed class LongKeyHamtNode<V : IObjectData> : IObjectData {
             return i and 0x3f
         }
 
-        fun levelBits(key: Long, shift: Int): Int {
+        fun levelBits(hash: Long, shift: Int): Int {
             val s = MAX_BITS - BITS_PER_LEVEL - shift
             return if (s >= 0) {
-                ((key ushr s) and LEVEL_MASK).toInt()
+                ((hash ushr s) and LEVEL_MASK).toInt()
             } else {
-                ((key shl -s) and LEVEL_MASK).toInt()
+                ((hash shl -s) and LEVEL_MASK).toInt()
             }
         }
     }
 
-    private class Deserializer<V : IObjectData>(val config: Config<V>): IObjectDeserializer<LongKeyHamtNode<V>> {
+    private class Deserializer<K, V : IObjectData>(val config: Config<K, V>) : IObjectDeserializer<LongKeyHamtNode<K, V>> {
         override fun deserialize(
             serialized: String,
             referenceFactory: IObjectReferenceFactory,
-        ): LongKeyHamtNode<V> {
+        ): LongKeyHamtNode<K, V> {
             val parts = serialized.split(SEPARATOR)
             val data = when (parts[0]) {
-                "L" -> LongKeyHamtLeaf<V>(config, longFromHex(parts[1]), referenceFactory(parts[2], config.valueDeserializer))
-                "I" -> LongKeyHamtInternal<V>(
+                "L" -> LongKeyHamtLeaf<K, V>(config, config.keyDeserializer(parts[1]), referenceFactory(parts[2], config.valueDeserializer))
+                "I" -> LongKeyHamtInternal<K, V>(
                     config,
                     intFromHex(parts[1]),
                     parts[2].split(SEPARATOR2)
@@ -117,7 +117,7 @@ sealed class LongKeyHamtNode<V : IObjectData> : IObjectData {
                         .map { referenceFactory(it, this) }
                         .toTypedArray(),
                 )
-                "S" -> LongKeyHamtSingle<V>(
+                "S" -> LongKeyHamtSingle<K, V>(
                     config,
                     parts[1].toInt(),
                     longFromHex(parts[2]),
@@ -129,9 +129,24 @@ sealed class LongKeyHamtNode<V : IObjectData> : IObjectData {
         }
     }
 
-    data class Config<V : IObjectData>(
-        val valueDeserializer: IObjectDeserializer<V>
+    data class Config<K, V : IObjectData>(
+        val valueDeserializer: IObjectDeserializer<V>,
+        /**
+         * Has to escape special characters that are not part of Base64Url.
+         */
+        val keySerializer: (K) -> String,
+        val keyDeserializer: (String) -> K,
+        val keyHashFunction: (K) -> Long,
     ) {
-        val deserializer: IObjectDeserializer<LongKeyHamtNode<V>> = Deserializer<V>(this)
+        val deserializer: IObjectDeserializer<LongKeyHamtNode<K, V>> = Deserializer<K, V>(this)
+
+        companion object {
+            fun <V : IObjectData> withLongKeys(valueDeserializer: IObjectDeserializer<V>) = Config<Long, V>(
+                valueDeserializer = valueDeserializer,
+                keySerializer = { longToHex(it) },
+                keyDeserializer = { longFromHex(it) },
+                keyHashFunction = { it },
+            )
+        }
     }
 }

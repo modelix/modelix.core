@@ -18,12 +18,12 @@ import org.modelix.streams.plus
  * Replacement for a chain of CPHamtInternals with a single child.
  * Helps to reduce the depth of the tree and therefor the number of requests necessary to access an entry.
  */
-data class LongKeyHamtSingle<V : IObjectData>(
-    override val config: Config<V>,
+data class LongKeyHamtSingle<K, V : IObjectData>(
+    override val config: Config<K, V>,
     val numLevels: Int,
     val bits: Long,
-    val child: ObjectReference<LongKeyHamtNode<V>>,
-) : LongKeyHamtNode<V>() {
+    val child: ObjectReference<LongKeyHamtNode<K, V>>,
+) : LongKeyHamtNode<K, V>() {
 
     init {
         require(numLevels <= 13) { "$numLevels > 13" }
@@ -41,11 +41,11 @@ data class LongKeyHamtSingle<V : IObjectData>(
         require(numLevels <= MAX_LEVELS) { "Only $MAX_LEVELS levels expected, but was $numLevels" }
     }
 
-    private fun maskBits(key: Long, shift: Int): Long = (key ushr (MAX_BITS - BITS_PER_LEVEL * numLevels - shift)) and mask
+    private fun maskBits(hash: Long, shift: Int): Long = (hash ushr (MAX_BITS - BITS_PER_LEVEL * numLevels - shift)) and mask
 
-    override fun get(key: Long, shift: Int): IStream.ZeroOrOne<ObjectReference<V>> {
+    override fun get(key: K, shift: Int): IStream.ZeroOrOne<ObjectReference<V>> {
         require(shift <= MAX_SHIFT) { "$shift > $MAX_SHIFT" }
-        if (maskBits(key, shift) == bits) {
+        if (maskBits(config.keyHashFunction(key), shift) == bits) {
             return child.resolveData().flatMapZeroOrOne {
                 it.get(key, shift + numLevels * BITS_PER_LEVEL)
             }
@@ -55,10 +55,10 @@ data class LongKeyHamtSingle<V : IObjectData>(
     }
 
     override fun getAll(
-        keys: LongArray,
+        keys: Iterable<K>,
         shift: Int,
-    ): IStream.Many<Pair<Long, ObjectReference<V>?>> {
-        if (keys.any { maskBits(it, shift) == bits }) {
+    ): IStream.Many<Pair<K, ObjectReference<V>?>> {
+        if (keys.any { maskBits(config.keyHashFunction(it), shift) == bits }) {
             return child.resolveData().flatMap {
                 it.getAll(keys, shift + numLevels * BITS_PER_LEVEL)
             }
@@ -67,16 +67,17 @@ data class LongKeyHamtSingle<V : IObjectData>(
         }
     }
 
-    override fun put(key: Long, value: ObjectReference<V>?, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<V>> {
+    override fun put(key: K, value: ObjectReference<V>?, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<K, V>> {
         return putAll(listOf(key to value), shift, graph)
     }
 
     override fun putAll(
-        entries: List<Pair<Long, ObjectReference<V>?>>,
+        entries: List<Pair<K, ObjectReference<V>?>>,
         shift: Int,
         graph: IObjectGraph,
-    ): IStream.ZeroOrOne<LongKeyHamtNode<V>> {
-        if (entries.all { maskBits(it.first, shift) == bits }) {
+    ): IStream.ZeroOrOne<LongKeyHamtNode<K, V>> {
+        // TODO handle collisions
+        if (entries.all { maskBits(config.keyHashFunction(it.first), shift) == bits }) {
             return getChild()
                 .flatMapZeroOrOne { it.putAll(entries, shift + BITS_PER_LEVEL * numLevels, graph) }
                 .map { withNewChild(it, graph) }
@@ -89,12 +90,12 @@ data class LongKeyHamtSingle<V : IObjectData>(
         }
     }
 
-    fun splitOneLevel(graph: IObjectGraph): LongKeyHamtSingle<V> {
+    fun splitOneLevel(graph: IObjectGraph): LongKeyHamtSingle<K, V> {
         val nextLevel = LongKeyHamtSingle(config, numLevels - 1, bits and maskForLevels(numLevels - 1), child)
         return LongKeyHamtSingle(config, 1, bits ushr (BITS_PER_LEVEL * (numLevels - 1)), graph(nextLevel))
     }
 
-    fun withNewChild(newChild: LongKeyHamtNode<V>, graph: IObjectGraph): LongKeyHamtSingle<V> {
+    fun withNewChild(newChild: LongKeyHamtNode<K, V>, graph: IObjectGraph): LongKeyHamtSingle<K, V> {
         return if (newChild is LongKeyHamtSingle) {
             LongKeyHamtSingle(
                 config,
@@ -107,20 +108,20 @@ data class LongKeyHamtSingle<V : IObjectData>(
         }
     }
 
-    override fun remove(key: Long, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<V>> {
+    override fun remove(key: K, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<K, V>> {
         require(shift <= MAX_SHIFT) { "$shift > ${MAX_SHIFT}" }
         return put(key, null, shift, graph)
     }
 
-    fun getChild(): IStream.One<LongKeyHamtNode<V>> {
+    fun getChild(): IStream.One<LongKeyHamtNode<K, V>> {
         return child.resolveData()
     }
 
-    override fun getEntries(): IStream.Many<Pair<Long, ObjectReference<V>>> {
+    override fun getEntries(): IStream.Many<Pair<K, ObjectReference<V>>> {
         return getChild().flatMap { it.getEntries() }
     }
 
-    override fun getChanges(oldNode: LongKeyHamtNode<V>?, shift: Int, changesOnly: Boolean): IStream.Many<MapChangeEvent<V>> {
+    override fun getChanges(oldNode: LongKeyHamtNode<K, V>?, shift: Int, changesOnly: Boolean): IStream.Many<MapChangeEvent<K, V>> {
         requireDifferentHash(oldNode)
         return if (oldNode === this) {
             IStream.empty()
@@ -155,7 +156,7 @@ data class LongKeyHamtSingle<V : IObjectData>(
         }
         val (oldObject, oldRef) = oldObject
         return when (oldObject) {
-            is LongKeyHamtSingle<*> -> {
+            is LongKeyHamtSingle<*, *> -> {
                 requireDifferentHash(oldObject)
                 if (oldObject.numLevels == this.numLevels && oldObject.mask == this.mask) {
                     if (this.child.getHash() == oldObject.child.getHash()) {
@@ -166,7 +167,7 @@ data class LongKeyHamtSingle<V : IObjectData>(
                         }
                     }
                 } else {
-                    var oldChildRef: IStream.ZeroOrOne<ObjectReference<LongKeyHamtNode<V>>> =
+                    var oldChildRef: IStream.ZeroOrOne<ObjectReference<LongKeyHamtNode<K, V>>> =
                         IStream.of(oldObject.child.upcast())
                     repeat(numLevels - 1) { iteration ->
                         val relativeLevel = iteration + 1
@@ -199,12 +200,12 @@ data class LongKeyHamtSingle<V : IObjectData>(
                     IStream.of(self) + childDiff
                 }
             }
-            is LongKeyHamtInternal<*> -> {
+            is LongKeyHamtInternal<*, *> -> {
                 @OptIn(DelicateModelixApi::class) // free floating objects are filtered out
                 IStream.of(self) + LongKeyHamtInternal.replace(this, IObjectGraph.FREE_FLOATING)
                     .diffChildren(oldObject, shift).filter { it.graph != IObjectGraph.FREE_FLOATING }
             }
-            is LongKeyHamtLeaf<*> -> {
+            is LongKeyHamtLeaf<*, *> -> {
                 IStream.of(self) +
                     getDescendantRefs()
                         .filter { it.getHash() != oldRef.getHash() }
@@ -217,7 +218,7 @@ data class LongKeyHamtSingle<V : IObjectData>(
     companion object {
         fun maskForLevels(numLevels: Int) = -1L ushr (MAX_BITS - BITS_PER_LEVEL * numLevels)
 
-        fun <V : IObjectData> replace(node: LongKeyHamtInternal<V>): IStream.One<LongKeyHamtSingle<V>> {
+        fun <K, V : IObjectData> replace(node: LongKeyHamtInternal<K, V>): IStream.One<LongKeyHamtSingle<K, V>> {
             if (node.children.size != 1) throw RuntimeException("Can only replace nodes with a single child")
             return node.children[0].resolveData().map { child ->
                 if (child is LongKeyHamtSingle) {
@@ -233,7 +234,7 @@ data class LongKeyHamtSingle<V : IObjectData>(
             }
         }
 
-        fun <V : IObjectData> replaceIfSingleChild(node: LongKeyHamtInternal<V>): IStream.One<LongKeyHamtNode<V>> {
+        fun <K, V : IObjectData> replaceIfSingleChild(node: LongKeyHamtInternal<K, V>): IStream.One<LongKeyHamtNode<K, V>> {
             return if (node.children.size == 1) replace(node) else IStream.of(node)
         }
 

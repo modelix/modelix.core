@@ -5,22 +5,23 @@ import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.datastructures.objects.requireDifferentHash
+import org.modelix.datastructures.objects.upcast
 import org.modelix.streams.IStream
 import org.modelix.streams.ifEmpty
 import org.modelix.streams.plus
 
-data class LongKeyHamtLeaf<V : IObjectData>(
-    override val config: Config<V>,
-    val key: Long,
+data class LongKeyHamtLeaf<K, V : IObjectData>(
+    override val config: Config<K, V>,
+    val key: K,
     val value: ObjectReference<V>,
-) : LongKeyHamtNode<V>() {
+) : LongKeyHamtNode<K, V>() {
     override fun getContainmentReferences(): List<ObjectReference<IObjectData>> = listOf(value)
 
     override fun serialize(): String {
-        return """L/${longToHex(key)}/${value.getHash()}"""
+        return """L/${config.keySerializer(key)}/${value.getHash()}"""
     }
 
-    override fun put(key: Long, value: ObjectReference<V>?, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<V>> {
+    override fun put(key: K, value: ObjectReference<V>?, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<K, V>> {
         require(shift <= MAX_SHIFT + BITS_PER_LEVEL) { "$shift > ${MAX_SHIFT + BITS_PER_LEVEL}" }
         return if (key == this.key) {
             if (value?.getHash() == this.value.getHash()) {
@@ -36,7 +37,7 @@ data class LongKeyHamtLeaf<V : IObjectData>(
         }
     }
 
-    override fun putAll(entries: List<Pair<Long, ObjectReference<V>?>>, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<V>> {
+    override fun putAll(entries: List<Pair<K, ObjectReference<V>?>>, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<K, V>> {
         return if (entries.size == 1) {
             val entry = entries.single()
             put(entry.first, entry.second, shift, graph)
@@ -46,7 +47,7 @@ data class LongKeyHamtLeaf<V : IObjectData>(
         }
     }
 
-    override fun remove(key: Long, shift: Int, store: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<V>> {
+    override fun remove(key: K, shift: Int, store: IObjectGraph): IStream.ZeroOrOne<LongKeyHamtNode<K, V>> {
         require(shift <= MAX_SHIFT + BITS_PER_LEVEL) { "$shift > ${MAX_SHIFT + BITS_PER_LEVEL}" }
         return if (key == this.key) {
             IStream.empty()
@@ -55,23 +56,23 @@ data class LongKeyHamtLeaf<V : IObjectData>(
         }
     }
 
-    override fun get(key: Long, shift: Int): IStream.ZeroOrOne<ObjectReference<V>> {
+    override fun get(key: K, shift: Int): IStream.ZeroOrOne<ObjectReference<V>> {
         require(shift <= MAX_SHIFT + BITS_PER_LEVEL) { "$shift > ${MAX_SHIFT + BITS_PER_LEVEL}" }
         return if (key == this.key) IStream.of(value) else IStream.empty()
     }
 
     override fun getAll(
-        keys: LongArray,
+        keys: Iterable<K>,
         shift: Int,
-    ): IStream.Many<Pair<Long, ObjectReference<V>?>> {
+    ): IStream.Many<Pair<K, ObjectReference<V>?>> {
         return if (keys.contains(this.key)) IStream.of(key to value) else IStream.empty()
     }
 
-    override fun getEntries(): IStream.Many<Pair<Long, ObjectReference<V>>> {
+    override fun getEntries(): IStream.Many<Pair<K, ObjectReference<V>>> {
         return IStream.of(key to value)
     }
 
-    override fun getChanges(oldNode: LongKeyHamtNode<V>?, shift: Int, changesOnly: Boolean): IStream.Many<MapChangeEvent<V>> {
+    override fun getChanges(oldNode: LongKeyHamtNode<K, V>?, shift: Int, changesOnly: Boolean): IStream.Many<MapChangeEvent<K, V>> {
         requireDifferentHash(oldNode)
         return if (oldNode === this) {
             IStream.empty()
@@ -90,10 +91,10 @@ data class LongKeyHamtLeaf<V : IObjectData>(
         } else {
             var oldValue: ObjectReference<V>? = null
 
-            oldNode!!.getEntries().flatMap { (k: Long, v: ObjectReference<V>) ->
+            oldNode!!.getEntries().flatMap { (k: K, v: ObjectReference<V>) ->
                 if (k == key) {
                     oldValue = v
-                    IStream.empty<EntryRemovedEvent<V>>()
+                    IStream.empty<EntryRemovedEvent<K, V>>()
                 } else {
                     IStream.of(EntryRemovedEvent(k, v))
                 }
@@ -113,13 +114,13 @@ data class LongKeyHamtLeaf<V : IObjectData>(
     }
 
     override fun objectDiff(self: Object<*>, oldObject: Object<*>?, shift: Int): IStream.Many<Object<*>> {
-        val oldData = oldObject?.data
+        val oldData = oldObject?.data?.upcast<LongKeyHamtNode<K, V>>()
         return when (oldData) {
-            is LongKeyHamtLeaf<*> -> {
+            is LongKeyHamtLeaf<*, *> -> {
                 requireDifferentHash(oldData)
                 IStream.of(self) + value.resolve()
             }
-            is LongKeyHamtInternal<*>, is LongKeyHamtSingle<*> -> {
+            is LongKeyHamtInternal<*, *>, is LongKeyHamtSingle<*, *> -> {
                 oldData.get(key, shift).orNull().flatMapZeroOrOne { oldValue ->
                     if (oldValue?.getHash() == value.getHash()) {
                         IStream.empty()
@@ -133,9 +134,9 @@ data class LongKeyHamtLeaf<V : IObjectData>(
     }
 
     companion object {
-        fun <V : IObjectData> create(config: Config<V>, key: Long, value: ObjectReference<V>?): LongKeyHamtLeaf<V>? {
+        fun <K, V : IObjectData> create(config: Config<K, V>, key: K, value: ObjectReference<V>?): LongKeyHamtLeaf<K, V>? {
             if (value == null) return null
-            return LongKeyHamtLeaf<V>(config, key, value)
+            return LongKeyHamtLeaf<K, V>(config, key, value)
         }
     }
 }

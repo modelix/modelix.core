@@ -15,12 +15,12 @@ class BTreeTest {
         repeat(10000) {
             when (rand.nextInt(5)) {
                 0 -> {
-//                    if (expected.isNotEmpty()) {
-//                        val key = expected.keys.random(rand)
-//                        println("remove $key")
-//                        tree = tree.remove(key)
-//                        expected.remove(key)
-//                    }
+                    if (expected.isNotEmpty()) {
+                        val key = expected.keys.random(rand)
+                        println("remove $key")
+                        tree = tree.remove(key).createRoot()
+                        expected.remove(key)
+                    }
                 }
                 else -> {
                     val key = "k" + rand.nextInt(100).toString()

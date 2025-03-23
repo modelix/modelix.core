@@ -33,6 +33,9 @@ data class BTreeNode<K : Comparable<K>, V>(
                 children = children.take(range.first) + leftChild + rightChild + children.drop(range.last + 1),
             ).splitIfNecessary()
         }
+
+        fun extendLeft() = ChildrenRange((range.first - 1)..range.last)
+        fun extendRight() = ChildrenRange(range.first..(range.last + 1))
     }
 
     private fun split(): UpdateResult.Overfill<K, V> {
@@ -188,7 +191,30 @@ sealed class UpdateResult<K : Comparable<K>, V> {
     }
     class Underfill<K : Comparable<K>, V>(val newNode: BTreeNode<K, V>) : UpdateResult<K, V>() {
         override fun apply(toReplace: BTreeNode<K, V>.ChildrenRange): UpdateResult<K, V> {
-            TODO("Not yet implemented")
+            val prevSibling = toReplace.parent.children.getOrNull(toReplace.range.first - 1)
+            val nextSibling = toReplace.parent.children.getOrNull(toReplace.range.last + 1)
+
+            return if (prevSibling == null) {
+                if (nextSibling == null) {
+                    TODO("Can this happen?")
+                } else {
+                    newNode.mergeWith(toReplace.parent.entries[toReplace.range.last], nextSibling)
+                        .apply(toReplace.extendRight())
+                }
+            } else {
+                if (nextSibling == null) {
+                    prevSibling.mergeWith(toReplace.parent.entries[toReplace.range.first - 1], newNode)
+                        .apply(toReplace.extendLeft())
+                } else {
+                    if (prevSibling.entries.size > nextSibling.entries.size) {
+                        newNode.mergeWith(toReplace.parent.entries[toReplace.range.last], nextSibling)
+                            .apply(toReplace.extendRight())
+                    } else {
+                        prevSibling.mergeWith(toReplace.parent.entries[toReplace.range.first - 1], newNode)
+                            .apply(toReplace.extendLeft())
+                    }
+                }
+            }
         }
 
         override fun createRoot(): BTreeNode<K, V> {

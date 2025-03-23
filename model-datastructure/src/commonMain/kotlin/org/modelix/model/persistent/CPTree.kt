@@ -1,12 +1,12 @@
 package org.modelix.model.persistent
 
+import org.modelix.datastructures.objects.IObjectData
+import org.modelix.datastructures.objects.IObjectDeserializer
+import org.modelix.datastructures.objects.IObjectReferenceFactory
+import org.modelix.datastructures.objects.Object
+import org.modelix.datastructures.objects.ObjectReference
+import org.modelix.datastructures.objects.getDescendantsAndSelf
 import org.modelix.model.TreeId
-import org.modelix.model.objects.IObjectData
-import org.modelix.model.objects.IObjectDeserializer
-import org.modelix.model.objects.IObjectReferenceFactory
-import org.modelix.model.objects.Object
-import org.modelix.model.objects.ObjectReference
-import org.modelix.model.objects.getDescendantsAndSelf
 import org.modelix.streams.IStream
 import org.modelix.streams.plus
 
@@ -29,8 +29,11 @@ class CPTree(
     override fun getContainmentReferences(): List<ObjectReference<IObjectData>> = listOf(idToHash)
 
     override fun objectDiff(self: Object<*>, oldObject: Object<*>?): IStream.Many<Object<*>> {
-        return when (oldObject?.data) {
-            is CPTree -> IStream.of(self) + idToHash.diff(oldObject.data.idToHash)
+        val oldData = oldObject?.data
+        return when (oldData) {
+            is CPTree -> {
+                IStream.of(self) + idToHash.diff(oldData.idToHash)
+            }
             else -> self.getDescendantsAndSelf()
         }
     }

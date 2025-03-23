@@ -1,5 +1,10 @@
 package org.modelix.model.async
 
+import org.modelix.datastructures.objects.IObjectGraph
+import org.modelix.datastructures.objects.Object
+import org.modelix.datastructures.objects.ObjectReference
+import org.modelix.datastructures.objects.asObject
+import org.modelix.datastructures.objects.requestBoth
 import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
@@ -29,11 +34,6 @@ import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.COWArrays.insert
 import org.modelix.model.lazy.NodeNotFoundException
-import org.modelix.model.objects.IObjectGraph
-import org.modelix.model.objects.Object
-import org.modelix.model.objects.ObjectReference
-import org.modelix.model.objects.asObject
-import org.modelix.model.objects.requestBoth
 import org.modelix.model.persistent.CPHamtInternal
 import org.modelix.model.persistent.CPHamtNode
 import org.modelix.model.persistent.CPNode

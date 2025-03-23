@@ -1,11 +1,11 @@
 package org.modelix.model.operations
 
+import org.modelix.datastructures.objects.IObjectData
+import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.TreePointer
 import org.modelix.model.lazy.CLVersion
-import org.modelix.model.objects.IObjectData
-import org.modelix.model.objects.ObjectReference
 import org.modelix.model.persistent.CPVersion
 
 class UndoOp(val versionHash: ObjectReference<CPVersion>) : AbstractOperation() {

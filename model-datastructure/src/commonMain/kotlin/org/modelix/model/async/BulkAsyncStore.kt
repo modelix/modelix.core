@@ -1,8 +1,8 @@
 package org.modelix.model.async
 
+import org.modelix.datastructures.objects.IObjectData
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.objects.IObjectData
 import org.modelix.streams.BulkRequestStreamExecutor
 import org.modelix.streams.IBulkExecutor
 import org.modelix.streams.IStream

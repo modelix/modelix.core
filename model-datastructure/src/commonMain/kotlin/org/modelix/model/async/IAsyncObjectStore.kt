@@ -1,14 +1,13 @@
 package org.modelix.model.async
 
+import org.modelix.datastructures.objects.IObjectData
+import org.modelix.datastructures.objects.IObjectDeserializer
+import org.modelix.datastructures.objects.IObjectGraph
+import org.modelix.datastructures.objects.IObjectReferenceFactory
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.objects.IObjectData
-import org.modelix.model.objects.IObjectDeserializer
-import org.modelix.model.objects.IObjectGraph
-import org.modelix.model.objects.IObjectReferenceFactory
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutorProvider
-import org.modelix.streams.plus
 
 interface IAsyncObjectStore : IStreamExecutorProvider {
     fun getLegacyKeyValueStore(): IKeyValueStore

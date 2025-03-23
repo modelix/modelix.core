@@ -1,4 +1,4 @@
-package org.modelix.model.objects
+package org.modelix.datastructures.objects
 
 import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.streams.IStream

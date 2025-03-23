@@ -5,6 +5,13 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
+import org.modelix.datastructures.objects.IObjectData
+import org.modelix.datastructures.objects.IObjectGraph
+import org.modelix.datastructures.objects.Object
+import org.modelix.datastructures.objects.ObjectHash
+import org.modelix.datastructures.objects.ObjectReference
+import org.modelix.datastructures.objects.asObject
+import org.modelix.datastructures.objects.getDescendantsAndSelf
 import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.model.IVersion
 import org.modelix.model.ObjectDeltaFilter
@@ -23,13 +30,6 @@ import org.modelix.model.async.AsyncTree
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.async.LazyLoadingObjectGraph
 import org.modelix.model.async.ObjectRequest
-import org.modelix.model.objects.IObjectData
-import org.modelix.model.objects.IObjectGraph
-import org.modelix.model.objects.Object
-import org.modelix.model.objects.ObjectHash
-import org.modelix.model.objects.ObjectReference
-import org.modelix.model.objects.asObject
-import org.modelix.model.objects.getDescendantsAndSelf
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.SetReferenceOp
@@ -358,9 +358,9 @@ fun CLVersion.diff(filter: ObjectDeltaFilter, commonBase: CLVersion?): IStream.M
                 }
             }
         }
-        if (filter.includeOperations && version.data.operationsHash != null) {
-            result += version.data.operationsHash.resolve()
-                .flatMap { it.getDescendantsAndSelf() }
+        val operationsRef = version.data.operationsHash
+        if (filter.includeOperations && operationsRef != null) {
+            result += operationsRef.resolve().flatMap { it.getDescendantsAndSelf() }
         }
         result
     }

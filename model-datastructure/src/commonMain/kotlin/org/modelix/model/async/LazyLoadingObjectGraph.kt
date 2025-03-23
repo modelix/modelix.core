@@ -1,14 +1,14 @@
 package org.modelix.model.async
 
+import org.modelix.datastructures.objects.IObjectData
+import org.modelix.datastructures.objects.IObjectDeserializer
+import org.modelix.datastructures.objects.IObjectGraph
+import org.modelix.datastructures.objects.Object
+import org.modelix.datastructures.objects.ObjectHash
+import org.modelix.datastructures.objects.ObjectReference
+import org.modelix.datastructures.objects.ObjectReferenceImpl
+import org.modelix.datastructures.objects.getHashString
 import org.modelix.model.lazy.MissingEntryException
-import org.modelix.model.objects.IObjectData
-import org.modelix.model.objects.IObjectDeserializer
-import org.modelix.model.objects.IObjectGraph
-import org.modelix.model.objects.Object
-import org.modelix.model.objects.ObjectHash
-import org.modelix.model.objects.ObjectReference
-import org.modelix.model.objects.ObjectReferenceImpl
-import org.modelix.model.objects.getHashString
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
 

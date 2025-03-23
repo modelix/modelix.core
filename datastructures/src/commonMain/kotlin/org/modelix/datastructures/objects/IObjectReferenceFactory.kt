@@ -1,4 +1,4 @@
-package org.modelix.model.objects
+package org.modelix.datastructures.objects
 
 interface IObjectReferenceFactory {
     operator fun <T : IObjectData> invoke(hash: String, deserializer: IObjectDeserializer<T>): ObjectReference<T> {

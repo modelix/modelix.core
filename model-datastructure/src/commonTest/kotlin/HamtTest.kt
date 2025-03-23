@@ -1,8 +1,8 @@
+import org.modelix.datastructures.objects.IObjectReferenceFactory
+import org.modelix.datastructures.objects.ObjectReference
+import org.modelix.datastructures.objects.hash
 import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.model.lazy.createObjectStoreCache
-import org.modelix.model.objects.IObjectReferenceFactory
-import org.modelix.model.objects.ObjectReference
-import org.modelix.model.objects.hash
 import org.modelix.model.persistent.CPHamtInternal
 import org.modelix.model.persistent.CPHamtNode
 import org.modelix.model.persistent.CPNode

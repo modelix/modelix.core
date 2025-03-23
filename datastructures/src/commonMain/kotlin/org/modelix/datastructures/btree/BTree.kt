@@ -1,167 +1,215 @@
 package org.modelix.datastructures.btree
 
 data class BTreeNode<K : Comparable<K>, V>(
-    val entries: List<Pair<K, V>> = listOf(),
-    val children: List<BTreeNode<K, V>> = listOf(),
-    val leaf: Boolean = true
+    val config: BTreeConfig<K, V>,
+    val entries: List<Pair<K, V>>,
+    val children: List<BTreeNode<K, V>>,
 ) {
+    constructor(minEntries: Int = 2) : this(BTreeConfig(minEntries = minEntries), emptyList(), emptyList())
 
-    fun search(key: K): V? {
-        val index = entries.indexOfFirst { it.first >= key }.takeIf { it != -1 } ?: entries.size
-        return when {
-            index < entries.size && entries[index].first == key -> entries[index].second
-            leaf -> null
-            else -> children[index].search(key)
+    init {
+        require(children.isEmpty() || children.size == entries.size + 1) {
+            "entries: ${entries.size}, children expected: ${entries.size + 1}, children actual: ${children.size}"
         }
     }
 
-    fun insertNonFull(key: K, value: V, minDegree: Int): BTreeNode<K, V> {
-        val index = entries.indexOfFirst { it.first > key }.takeIf { it != -1 } ?: entries.size
+    inner class ChildrenRange(val range: IntRange) {
+        constructor(index: Int) : this(index..index)
+        val parent = this@BTreeNode
+        fun replaceWith(newChild: BTreeNode<K, V>): BTreeNode<K, V> {
+            return copy(
+                entries = if (range.first < range.last) {
+                    entries.take(range.first) + entries.drop(range.last)
+                } else {
+                    entries
+                },
+                children = children.take(range.first) + newChild + children.drop(range.last + 1),
+            )
+        }
 
-        return if (leaf) {
-            // Insert key-value pair into the sorted list (immutably)
-            copy(entries = (entries + Pair(key, value)).sortedBy { it.first })
+        fun replaceWith(leftChild: BTreeNode<K, V>, centerEntry: Pair<K, V>, rightChild: BTreeNode<K, V>): UpdateResult<K, V> {
+            return copy(
+                entries = entries.take(range.first) + centerEntry + entries.drop(range.last),
+                children = children.take(range.first) + leftChild + rightChild + children.drop(range.last + 1),
+            ).splitIfNecessary()
+        }
+    }
+
+    private fun split(): UpdateResult.Overfill<K, V> {
+        val medianIndex = entries.size / 2
+        val medianValue = entries[medianIndex]
+
+        val left = BTreeNode<K, V>(config, entries.take(medianIndex), children.take(medianIndex + 1))
+        val right = BTreeNode<K, V>(config, entries.drop(medianIndex + 1), children.drop(medianIndex + 1))
+
+        return UpdateResult.Overfill(left, right, medianValue)
+    }
+
+    fun mergeWith(centerEntry: Pair<K, V>, right: BTreeNode<K, V>): UpdateResult<K, V> {
+        return copy(
+            entries = entries + centerEntry + right.entries,
+            children = children + right.children,
+        ).splitIfNecessary()
+    }
+
+    fun splitIfNecessary(): UpdateResult<K, V> {
+        return if (entries.size > config.maxEntries) {
+            split()
+        } else if (entries.size < config.minEntries) {
+            UpdateResult.Underfill(this)
         } else {
-            // Ensure we do not access a non-existent child
-            if (index >= children.size) {
-                throw IllegalStateException("Attempted to access child $index in a node with ${children.size} children.")
-            }
+            UpdateResult.Complete(this)
+        }
+    }
 
-            val (updatedChild, splitInfo) = children[index].insertWithSplit(key, value, minDegree)
-
-            val newChildren = children.toMutableList().apply {
-                this[index] = updatedChild.first() // Replace the modified child
-            }
-
-            if (splitInfo == null) {
-                // No split happened, return updated node
-                return copy(children = newChildren)
+    fun put(key: K, value: V): UpdateResult<K, V> {
+        return if (children.isEmpty()) {
+            insertEntry(key to value).splitIfNecessary()
+        } else {
+            val index = entries.binarySearch { it.first.compareTo(key) }
+            if (index >= 0) {
+                copy(entries = entries.take(index) + (key to value) + entries.drop(index + 1)).splitIfNecessary()
             } else {
-                // A split happened, we need to insert the new key-value pair and right child
-                val (middleKey, middleValue, rightNode) = splitInfo
-
-                return copy(
-                    entries = entries.take(index) + Pair(middleKey, middleValue) + entries.drop(index),
-                    children = newChildren.take(index + 1) + listOf(rightNode) + newChildren.drop(index + 1)
-                )
+                val insertionIndex = (-index) - 1
+                val childUpdateResult = children[insertionIndex].put(key, value)
+                childUpdateResult.apply(ChildrenRange(insertionIndex))
             }
         }
     }
 
-    fun insertWithSplit(key: K, value: V, minDegree: Int): Pair<List<BTreeNode<K, V>>, Triple<K, V, BTreeNode<K, V>>?> {
-        val updatedNode = insertNonFull(key, value, minDegree)
-
-        return if (updatedNode.entries.size < 2 * minDegree - 1) {
-            listOf(updatedNode) to null
+    fun get(key: K): V? {
+        val index = entries.binarySearch { it.first.compareTo(key) }
+        return if (index >= 0) {
+            entries[index].second
         } else {
-            // Split node
-            val mid = updatedNode.entries.size / 2
-            val middleKey = updatedNode.entries[mid].first
-            val middleValue = updatedNode.entries[mid].second
-
-            val left = updatedNode.copy(
-                entries = updatedNode.entries.take(mid),
-                children = if (updatedNode.leaf) listOf() else updatedNode.children.take(mid + 1),
-                leaf = updatedNode.leaf
-            )
-
-            val right = updatedNode.copy(
-                entries = updatedNode.entries.drop(mid + 1),
-                children = if (updatedNode.leaf) listOf() else updatedNode.children.drop(mid + 1),
-                leaf = updatedNode.leaf
-            )
-
-            listOf(left, right) to Triple(middleKey, middleValue, right)
+            val insertionIndex = (-index) - 1
+            children.getOrNull(insertionIndex)?.get(key)
         }
     }
 
-    // Helper function to remove an entry from a non-empty leaf node
-    fun removeFromLeaf(key: K): BTreeNode<K, V> {
-        return copy(entries = entries.filterNot { it.first == key })
-    }
-
-    // Helper function to remove an entry from an internal node
-    fun removeFromInternal(key: K, minDegree: Int): BTreeNode<K, V> {
-        val index = entries.indexOfFirst { it.first >= key }
-        if (index == -1 || entries[index].first != key) return this  // If the key is not found, return as is
-
-        val (leftChild, rightChild) = children[index] to children[index + 1]
-        val (successorKey, successorValue) = rightChild.entries.first()
-
-        val newEntries = entries.take(index) + Pair(successorKey, successorValue) + entries.drop(index + 1)
-
-        val newChildren = children.take(index) + listOf(leftChild) + children.drop(index + 2)
-
-        return copy(entries = newEntries, children = newChildren)
-    }
-}
-
-data class BTree<K : Comparable<K>, V>(val root: BTreeNode<K, V> = BTreeNode(), val minDegree: Int) {
-
-    fun search(key: K): V? = root.search(key)
-
-    fun insert(key: K, value: V): BTree<K, V> {
-        val (updatedRootChildren, splitInfo) = root.insertWithSplit(key, value, minDegree)
-
-        return if (splitInfo == null) {
-            copy(root = updatedRootChildren.first())
+    /**
+     * @return null if nothing changed
+     */
+    fun remove(key: K): UpdateResult<K, V> {
+        val index = entries.binarySearch { it.first.compareTo(key) }
+        return if (index >= 0) {
+            if (children.isEmpty()) {
+                copy(entries = entries.take(index) + entries.drop(index + 1)).splitIfNecessary()
+            } else {
+                val childBefore = children[index]
+                val childAfter = children[index + 1]
+                if (childBefore.entries.size > childAfter.entries.size) {
+                    val shiftedLeaf = childBefore.removeLastLeaf()
+                    ChildrenRange(index..(index + 1)).replaceWith(
+                        shiftedLeaf.updatedNode,
+                        shiftedLeaf.entry,
+                        childAfter,
+                    )
+                } else {
+                    val shiftedLeaf = childAfter.removeFirstLeaf()
+                    ChildrenRange(index..(index + 1)).replaceWith(
+                        childBefore,
+                        shiftedLeaf.entry,
+                        shiftedLeaf.updatedNode,
+                    )
+                }
+            }
         } else {
-            // Root split, create a new root
-            val (middleKey, middleValue, rightChild) = splitInfo
-            val newRoot = BTreeNode(
-                entries = listOf(Pair(middleKey, middleValue)),
-                children = listOf(updatedRootChildren.first(), rightChild),
-                leaf = false
+            val insertionIndex = (-index) - 1
+            val newChild = children.getOrNull(insertionIndex)?.remove(key) ?: return UpdateResult.NothingChanged(this)
+            newChild.apply(ChildrenRange(insertionIndex))
+        }
+    }
+
+    private fun removeFirstLeaf(): RemovedEntry<K, V> {
+        return if (children.isEmpty()) {
+            RemovedEntry(
+                entries.first(),
+                copy(entries = entries.drop(1)),
             )
-            copy(root = newRoot)
+        } else {
+            children.first().removeFirstLeaf().let {
+                RemovedEntry(it.entry, ChildrenRange(0).replaceWith(it.updatedNode))
+            }
         }
     }
 
-    fun remove(key: K): BTree<K, V> {
-        val updatedRoot = root.remove(key, minDegree)
-        return copy(root = updatedRoot)
+    private fun removeLastLeaf(): RemovedEntry<K, V> {
+        return if (children.isEmpty()) {
+            RemovedEntry(
+                entries.last(),
+                copy(entries = entries.dropLast(1)),
+            )
+        } else {
+            children.last().removeLastLeaf().let {
+                RemovedEntry(it.entry, ChildrenRange(children.lastIndex).replaceWith(it.updatedNode))
+            }
+        }
     }
 
-    // Remove entry starting from the root node
-    private fun BTreeNode<K, V>.remove(key: K, minDegree: Int): BTreeNode<K, V> {
-        if (this.entries.isEmpty()) return this  // If the node is empty, there's nothing to remove
+    private fun insertEntry(newEntry: Pair<K, V>): BTreeNode<K, V> {
+        val index = entries.binarySearch { it.first.compareTo(newEntry.first) }
+        if (index >= 0) {
+            return copy(
+                entries = entries.take(index) + newEntry + entries.drop(index + 1),
+            )
+        } else {
+            val insertionIndex = if (index >= 0) index else (-index) - 1
+            return copy(
+                entries = entries.take(insertionIndex) + newEntry + entries.drop(insertionIndex),
+            )
+        }
+    }
+}
 
-        // Case 1: Key is in the leaf node, remove directly
-        if (this.leaf) {
-            return removeFromLeaf(key)
+class RemovedEntry<K : Comparable<K>, V>(val entry: Pair<K, V>, val updatedNode: BTreeNode<K, V>)
+
+sealed class UpdateResult<K : Comparable<K>, V> {
+    abstract fun apply(toReplace: BTreeNode<K, V>.ChildrenRange): UpdateResult<K, V>
+    abstract fun createRoot(): BTreeNode<K, V>
+
+    class Complete<K : Comparable<K>, V>(val newNode: BTreeNode<K, V>) : UpdateResult<K, V>() {
+        override fun apply(toReplace: BTreeNode<K, V>.ChildrenRange): UpdateResult<K, V> {
+            return toReplace.replaceWith(newNode).splitIfNecessary()
         }
 
-        // Case 2: Key is in an internal node, remove by finding successor
-        return removeFromInternal(key, minDegree)
+        override fun createRoot(): BTreeNode<K, V> {
+            return newNode
+        }
     }
+    class Overfill<K : Comparable<K>, V>(val left: BTreeNode<K, V>, val right: BTreeNode<K, V>, val medianEntry: Pair<K, V>) : UpdateResult<K, V>() {
+        override fun apply(toReplace: BTreeNode<K, V>.ChildrenRange): UpdateResult<K, V> {
+            return toReplace.replaceWith(left, medianEntry, right)
+        }
 
-    fun traverse(node: BTreeNode<K, V> = root, level: Int = 0) {
-        println("Level $level: ${node.entries}")
-        node.children.forEach { traverse(it, level + 1) }
+        override fun createRoot(): BTreeNode<K, V> {
+            return BTreeNode(left.config, listOf(medianEntry), listOf(left, right))
+        }
+    }
+    class Underfill<K : Comparable<K>, V>(val newNode: BTreeNode<K, V>) : UpdateResult<K, V>() {
+        override fun apply(toReplace: BTreeNode<K, V>.ChildrenRange): UpdateResult<K, V> {
+            TODO("Not yet implemented")
+        }
+
+        override fun createRoot(): BTreeNode<K, V> {
+            // root node is allowed to be smaller
+            return newNode
+        }
+    }
+    class NothingChanged<K : Comparable<K>, V>(val oldNode: BTreeNode<K, V>) : UpdateResult<K, V>() {
+        override fun apply(toReplace: BTreeNode<K, V>.ChildrenRange): UpdateResult<K, V> {
+            return toReplace.parent.splitIfNecessary()
+        }
+
+        override fun createRoot(): BTreeNode<K, V> {
+            return oldNode
+        }
     }
 }
 
-fun main() {
-    var tree = BTree<Int, String>(minDegree = 2) // Minimum degree 2
-
-    tree = tree.insert(10, "Ten")
-    tree = tree.insert(20, "Twenty")
-    tree = tree.insert(5, "Five")
-    tree = tree.insert(6, "Six")
-    tree = tree.insert(12, "Twelve")
-    tree = tree.insert(30, "Thirty")
-    tree = tree.insert(7, "Seven")
-    tree = tree.insert(17, "Seventeen")
-
-    println("Persistent B-Tree structure before removal:")
-    tree.traverse()
-
-    tree = tree.remove(12)
-    println("\nPersistent B-Tree structure after removing key 12:")
-    tree.traverse()
-
-    tree = tree.remove(6)
-    println("\nPersistent B-Tree structure after removing key 6:")
-    tree.traverse()
+data class BTreeConfig<K : Comparable<K>, V>(val minEntries: Int = 2) {
+    val minChildren = minEntries + 1
+    val maxEntries = 2 * minEntries
+    val maxChildren = maxEntries + 1
+    val emptyNode = BTreeNode(this, emptyList(), emptyList())
 }
-

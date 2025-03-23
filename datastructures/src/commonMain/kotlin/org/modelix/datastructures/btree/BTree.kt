@@ -74,9 +74,29 @@ data class BTreeNode<K : Comparable<K>, V>(
             listOf(left, right) to Triple(middleKey, middleValue, right)
         }
     }
+
+    // Helper function to remove an entry from a non-empty leaf node
+    fun removeFromLeaf(key: K): BTreeNode<K, V> {
+        return copy(entries = entries.filterNot { it.first == key })
+    }
+
+    // Helper function to remove an entry from an internal node
+    fun removeFromInternal(key: K, minDegree: Int): BTreeNode<K, V> {
+        val index = entries.indexOfFirst { it.first >= key }
+        if (index == -1 || entries[index].first != key) return this  // If the key is not found, return as is
+
+        val (leftChild, rightChild) = children[index] to children[index + 1]
+        val (successorKey, successorValue) = rightChild.entries.first()
+
+        val newEntries = entries.take(index) + Pair(successorKey, successorValue) + entries.drop(index + 1)
+
+        val newChildren = children.take(index) + listOf(leftChild) + children.drop(index + 2)
+
+        return copy(entries = newEntries, children = newChildren)
+    }
 }
 
-data class BTree<K : Comparable<K>, V>(val root: BTreeNode<K, V> = BTreeNode(), val minDegree: Int = 2) {
+data class BTree<K : Comparable<K>, V>(val root: BTreeNode<K, V> = BTreeNode(), val minDegree: Int) {
 
     fun search(key: K): V? = root.search(key)
 
@@ -97,9 +117,22 @@ data class BTree<K : Comparable<K>, V>(val root: BTreeNode<K, V> = BTreeNode(), 
         }
     }
 
-    fun update(key: K, value: V): BTree<K, V> {
-        // We simply insert the key-value pair again, updating the value if the key exists
-        return insert(key, value)
+    fun remove(key: K): BTree<K, V> {
+        val updatedRoot = root.remove(key, minDegree)
+        return copy(root = updatedRoot)
+    }
+
+    // Remove entry starting from the root node
+    private fun BTreeNode<K, V>.remove(key: K, minDegree: Int): BTreeNode<K, V> {
+        if (this.entries.isEmpty()) return this  // If the node is empty, there's nothing to remove
+
+        // Case 1: Key is in the leaf node, remove directly
+        if (this.leaf) {
+            return removeFromLeaf(key)
+        }
+
+        // Case 2: Key is in an internal node, remove by finding successor
+        return removeFromInternal(key, minDegree)
     }
 
     fun traverse(node: BTreeNode<K, V> = root, level: Int = 0) {
@@ -120,13 +153,15 @@ fun main() {
     tree = tree.insert(7, "Seven")
     tree = tree.insert(17, "Seventeen")
 
-    println("Persistent B-Tree structure:")
+    println("Persistent B-Tree structure before removal:")
     tree.traverse()
 
-    val searchKey = 12
-    println("Searching for $searchKey: ${tree.search(searchKey)}")
+    tree = tree.remove(12)
+    println("\nPersistent B-Tree structure after removing key 12:")
+    tree.traverse()
 
-    // Update an existing key
-    tree = tree.update(12, "Updated Twelve")
-    println("Updated value for 12: ${tree.search(12)}")
+    tree = tree.remove(6)
+    println("\nPersistent B-Tree structure after removing key 6:")
+    tree.traverse()
 }
+

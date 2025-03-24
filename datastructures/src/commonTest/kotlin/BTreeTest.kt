@@ -1,4 +1,5 @@
 import org.modelix.datastructures.btree.BTree
+import org.modelix.datastructures.btree.BTreeConfig
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -10,7 +11,9 @@ class BTreeTest {
 
     fun runTest(numOperations: Int, keyRange: Int, valueRange: Int) {
         val rand = Random(6734687)
-        var tree = BTree<String, String>(2)
+        var tree = BTree<String, String>(BTreeConfig.builder().stringKeys().stringValues().build())
+
+        BTreeConfig.builder().stringKeys().longValues().build()
 
         val expected = HashMap<String, String>()
 

@@ -1,18 +1,20 @@
 package org.modelix.datastructures.btree
 
-import kotlin.collections.plus
+import org.modelix.datastructures.objects.IObjectData
+import org.modelix.datastructures.objects.IObjectDeserializer
+import org.modelix.datastructures.objects.IObjectReferenceFactory
+import org.modelix.datastructures.objects.ObjectReference
+import org.modelix.datastructures.serialization.SerializationSeparators
 
-data class BTree<K : Comparable<K>, V>(
-    val root: BTreeNode<K, V>,
-) {
-    constructor(minEntries: Int = 8) : this(BTreeNode(minEntries))
+data class BTree<K, V>(val root: BTreeNode<K, V>) {
+    constructor(config: BTreeConfig<K, V>) : this(BTreeNode(config, emptyList(), emptyList()))
 
     fun validate() {
         root.validate(true)
         check(root.getEntries().map { it.key }.toSet().size == root.getEntries().map { it.key }.count()) {
             "duplicate entries: $root"
         }
-        check(root.getEntries().map { it.key }.toList().sorted() == root.getEntries().map { it.key }.toList()) {
+        check(root.getEntries().map { it.key }.toList().sortedWith(root.config.keyComparator) == root.getEntries().map { it.key }.toList()) {
             "not sorted: $this"
         }
     }
@@ -21,12 +23,13 @@ data class BTree<K : Comparable<K>, V>(
     fun remove(key: K): BTree<K, V> = copy(root = root.remove(key).createRoot())
 }
 
-data class BTreeNode<K : Comparable<K>, V>(
+data class BTreeNode<K, V>(
     val config: BTreeConfig<K, V>,
     val entries: List<Entry<K, V>>,
     val children: List<BTreeNode<K, V>>,
-) {
-    constructor(minEntries: Int = 8) : this(BTreeConfig(minEntries = minEntries), emptyList(), emptyList())
+) : IObjectData {
+
+    private operator fun K.compareTo(other: K): Int = config.keyComparator.compare(this, other)
 
     fun validate(isRoot: Boolean) {
         check(children.isEmpty() || children.size == entries.size + 1) {
@@ -35,7 +38,7 @@ data class BTreeNode<K : Comparable<K>, V>(
         check(entries.size == entries.map { it.key }.toSet().size) {
             "duplicate entries: $entries"
         }
-        check(entries.map { it.key }.sorted() == entries.map { it.key }) {
+        check(entries.map { it.key }.sortedWith(config.keyComparator) == entries.map { it.key }) {
             "entries not sorted: $entries"
         }
         check(entries.size <= config.maxEntries) {
@@ -209,7 +212,7 @@ data class BTreeNode<K : Comparable<K>, V>(
         }
     }
 
-    private fun insertEntry(newEntry: BTreeNode.Entry<K, V>): BTreeNode<K, V> {
+    private fun insertEntry(newEntry: Entry<K, V>): BTreeNode<K, V> {
         val index = entries.binarySearch { it.key.compareTo(newEntry.key) }
         if (index >= 0) {
             return copy(
@@ -223,14 +226,49 @@ data class BTreeNode<K : Comparable<K>, V>(
         }
     }
 
-    class Entry<K : Comparable<K>, V>(val key: K, val value: V) {
+    override fun getDeserializer(): IObjectDeserializer<*> {
+        return config.nodeDeserializer
+    }
+
+    override fun getContainmentReferences(): List<ObjectReference<IObjectData>> {
+        //return children
+        TODO()
+    }
+
+    override fun serialize(): String {
+        return entries.joinToString(SerializationSeparators.LEVEL2) {
+            config.keySerializer(it.key) + SerializationSeparators.MAPPING + config.valueSerializer(it.value)
+        } + SerializationSeparators.LEVEL1 + children.joinToString(SerializationSeparators.LEVEL2) {
+            //it.getHashString()
+            TODO()
+        }
+    }
+
+    class Deserializer<K, V>(val config: BTreeConfig<K, V>) : IObjectDeserializer<BTreeNode<K, V>> {
+        override fun deserialize(
+            serialized: String,
+            referenceFactory: IObjectReferenceFactory,
+        ): BTreeNode<K, V> {
+            val parts = serialized.split(SerializationSeparators.LEVEL1)
+            val entries = parts[0].split(SerializationSeparators.LEVEL2).map {
+                val entryParts = it.split(SerializationSeparators.MAPPING, limit = 2)
+                Entry(config.keyDeserializer(entryParts[0]), config.valueDeserializer(entryParts[1]))
+            }
+            val children = parts[1].split(SerializationSeparators.LEVEL2)
+                .map { referenceFactory.fromHashString(it, this) }
+            //return BTreeNode(config, entries, children)
+            TODO()
+        }
+    }
+
+    class Entry<K, V>(val key: K, val value: V) {
         override fun toString(): String {
             return "$key -> $value"
         }
     }
 }
 
-data class ChildrenRange<K : Comparable<K>, V>(val parent: BTreeNode<K, V>, val range: IntRange) {
+data class ChildrenRange<K, V>(val parent: BTreeNode<K, V>, val range: IntRange) {
     constructor(parent: BTreeNode<K, V>, index: Int) : this(parent, index..index)
 
     val config: BTreeConfig<K, V> get() = parent.config
@@ -292,7 +330,7 @@ data class ChildrenRange<K : Comparable<K>, V>(val parent: BTreeNode<K, V>, val 
     fun extendRight() = ChildrenRange(parent, range.first..(range.last + 1))
 }
 
-class PendingReplacement<K : Comparable<K>, V>(val childrenRange: ChildrenRange<K, V>, val replacement: Replacement<K, V>) {
+class PendingReplacement<K, V>(val childrenRange: ChildrenRange<K, V>, val replacement: Replacement<K, V>) {
     fun removeEntry(key: K): PendingReplacement<K, V> {
         return PendingReplacement(childrenRange, replacement.removeEntry(key).splitIfNecessary())
     }
@@ -316,13 +354,13 @@ class PendingReplacement<K : Comparable<K>, V>(val childrenRange: ChildrenRange<
     fun applyReplacement(): Replacement<K, V> = replacement.apply(childrenRange)
 }
 
-data class RemovedEntry<K : Comparable<K>, V>(val entry: BTreeNode.Entry<K, V>, val updatedNode: Replacement<K, V>) {
+data class RemovedEntry<K, V>(val entry: BTreeNode.Entry<K, V>, val updatedNode: Replacement<K, V>) {
     fun splitIfNecessary(): RemovedEntry<K, V> {
         return copy(updatedNode = updatedNode.splitIfNecessary())
     }
 }
 
-sealed class Replacement<K : Comparable<K>, V> {
+sealed class Replacement<K, V> {
     /**
      * Replaces the children and returns a replacement for the parent node
      */
@@ -334,7 +372,7 @@ sealed class Replacement<K : Comparable<K>, V> {
     abstract fun removeLastEntry(): RemovedEntry<K, V>
     abstract fun splitIfNecessary(): Replacement<K, V>
 
-    class Single<K : Comparable<K>, V>(val newNode: BTreeNode<K, V>) : Replacement<K, V>() {
+    class Single<K, V>(val newNode: BTreeNode<K, V>) : Replacement<K, V>() {
         override fun apply(toReplace: ChildrenRange<K, V>): Replacement<K, V> {
             check(newNode.size() <= newNode.config.maxEntries)
             return if (toReplace.size() == 1 && toReplace.firstInRange() === newNode) {
@@ -354,7 +392,7 @@ sealed class Replacement<K : Comparable<K>, V> {
         override fun removeLastEntry(): RemovedEntry<K, V> = newNode.removeLastEntry()
         override fun splitIfNecessary(): Replacement<K, V> = newNode.splitIfNecessary()
     }
-    class Splitted<K : Comparable<K>, V>(
+    class Splitted<K, V>(
         val left: BTreeNode<K, V>,
         val right: BTreeNode<K, V>,
         val medianEntry: BTreeNode.Entry<K, V>,
@@ -372,10 +410,6 @@ sealed class Replacement<K : Comparable<K>, V> {
         override fun removeFirstEntry(): RemovedEntry<K, V> = error("unexpected")
         override fun removeLastEntry(): RemovedEntry<K, V> = error("unexpected")
     }
-}
-
-data class BTreeConfig<K : Comparable<K>, V>(val minEntries: Int = 2) {
-    val maxEntries = 2 * minEntries
 }
 
 private fun IntRange.size() = (last - first + 1)

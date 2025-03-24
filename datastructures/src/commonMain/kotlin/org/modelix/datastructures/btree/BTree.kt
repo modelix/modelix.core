@@ -1,9 +1,15 @@
 package org.modelix.datastructures.btree
 
+import kotlin.collections.plus
+
 data class BTree<K : Comparable<K>, V>(
     val root: BTreeNode<K, V>,
 ) {
     constructor(minEntries: Int = 8) : this(BTreeNode(minEntries))
+
+    init {
+        root.validate()
+    }
 
     fun put(key: K, value: V): BTree<K, V> = copy(root = root.put(key, value).createRoot().also { it.validate() })
     fun get(key: K): V? = root.get(key)
@@ -12,7 +18,7 @@ data class BTree<K : Comparable<K>, V>(
 
 data class BTreeNode<K : Comparable<K>, V>(
     val config: BTreeConfig<K, V>,
-    val entries: List<Pair<K, V>>,
+    val entries: List<Entry<K, V>>,
     val children: List<BTreeNode<K, V>>,
 ) {
     constructor(minEntries: Int = 8) : this(BTreeConfig(minEntries = minEntries), emptyList(), emptyList())
@@ -25,171 +31,188 @@ data class BTreeNode<K : Comparable<K>, V>(
         check(children.isEmpty() || children.size == entries.size + 1) {
             "entries: ${entries.size}, children expected: ${entries.size + 1}, children actual: ${children.size}"
         }
+        check(entries.size == entries.map { it.key }.toSet().size) {
+            "$entries"
+        }
+        check(entries.map { it.key }.sorted() == entries.map { it.key }) {
+            "not sorted: $entries"
+        }
         for (child in children) {
             check((config.minEntries..config.maxEntries).contains(child.entries.size)) {
                 "$child"
             }
             child.validate()
         }
+        if (children.isNotEmpty()) {
+            for ((index, entry) in entries.withIndex()) {
+                check(children[index].getLastEntry().key < entry.key) {
+                    "not sorted: $this"
+                }
+                check(children[index + 1].getFirstEntry().key > entry.key) {
+                    "not sorted: $this"
+                }
+            }
+        }
+        check(getEntries().map { it.key }.toSet().size == getEntries().map { it.key }.count()) {
+            "duplicate entries: $this"
+        }
+        check(getEntries().map { it.key }.toList().sorted() == getEntries().map { it.key }.toList()) {
+            "not sorted: $this"
+        }
+
         children.forEach { it.validate() }
     }
 
-    inner class ChildrenRange(val range: IntRange) {
-        constructor(index: Int) : this(index..index)
-        val parent: BTreeNode<K, V> get() = this@BTreeNode
-        fun replaceWith(newChild: BTreeNode<K, V>): BTreeNode<K, V> {
-            return copy(
-                entries = if (range.first < range.last) {
-                    entries.take(range.first) + entries.drop(range.last)
-                } else {
-                    entries
-                },
-                children = children.take(range.first) + newChild + children.drop(range.last + 1),
-            )
+    fun getEntries(): Sequence<Entry<K, V>> {
+        return if (children.isEmpty()) {
+            entries.asSequence()
+        } else {
+            (0 until (entries.size + children.size)).asSequence().flatMap { i ->
+                if (i % 2 == 0) children[i / 2].getEntries() else sequenceOf(entries[i / 2])
+            }
         }
-
-        fun replaceWith(leftChild: BTreeNode<K, V>, centerEntry: Pair<K, V>, rightChild: BTreeNode<K, V>): UpdateResult<K, V> {
-            return copy(
-                entries = entries.take(range.first) + centerEntry + entries.drop(range.last),
-                children = children.take(range.first) + leftChild + rightChild + children.drop(range.last + 1),
-            ).checkSize()
-        }
-
-        fun extendLeft() = ChildrenRange((range.first - 1)..range.last)
-        fun extendRight() = ChildrenRange(range.first..(range.last + 1))
     }
 
-    private fun split(): UpdateResult.Overfill<K, V> {
+    private fun childrenRange(index: Int) = ChildrenRange(this, index)
+    private fun childrenRange(first: Int, last: Int) = ChildrenRange(this, first..last)
+
+    fun size() = entries.size
+    fun hasMinSize() = entries.size <= config.minEntries
+    fun hasMaxSize() = entries.size >= config.maxEntries
+
+    private fun split(): Replacement.Splitted<K, V> {
         val medianIndex = entries.size / 2
         val medianValue = entries[medianIndex]
 
         val left = BTreeNode<K, V>(config, entries.take(medianIndex), children.take(medianIndex + 1))
         val right = BTreeNode<K, V>(config, entries.drop(medianIndex + 1), children.drop(medianIndex + 1))
 
-        return UpdateResult.Overfill(left, right, medianValue)
+        return Replacement.Splitted(left, right, medianValue)
     }
 
-    fun mergeWith(centerEntry: Pair<K, V>, right: BTreeNode<K, V>): BTreeNode<K, V> {
+    fun mergeWith(centerEntry: Entry<K, V>, right: BTreeNode<K, V>): BTreeNode<K, V> {
         return copy(
             entries = entries + centerEntry + right.entries,
             children = children + right.children,
         )
     }
 
-    fun checkSize(): UpdateResult<K, V> {
+    fun splitIfNecessary(): Replacement<K, V> {
         return if (entries.size > config.maxEntries) {
             split()
-        } else if (entries.size < config.minEntries) {
-            UpdateResult.Underfill(this)
         } else {
-            UpdateResult.Complete(this)
+            Replacement.Single(this)
         }
     }
 
-    fun put(key: K, value: V): UpdateResult<K, V> {
+    fun put(key: K, value: V): Replacement<K, V> {
         return if (children.isEmpty()) {
-            insertEntry(key to value).checkSize()
+            insertEntry(Entry(key, value)).splitIfNecessary()
         } else {
-            val index = entries.binarySearch { it.first.compareTo(key) }
+            val index = entries.binarySearch { it.key.compareTo(key) }
             if (index >= 0) {
-                copy(entries = entries.take(index) + (key to value) + entries.drop(index + 1)).checkSize()
+                copy(entries = entries.take(index) + Entry(key, value) + entries.drop(index + 1)).splitIfNecessary()
             } else {
                 val insertionIndex = (-index) - 1
-                val childUpdateResult = children[insertionIndex].put(key, value)
-                childUpdateResult.apply(ChildrenRange(insertionIndex))
+                children[insertionIndex].put(key, value).apply(childrenRange(insertionIndex)).splitIfNecessary()
             }
         }
     }
 
     fun get(key: K): V? {
-        val index = entries.binarySearch { it.first.compareTo(key) }
+        val index = entries.binarySearch { it.key.compareTo(key) }
         return if (index >= 0) {
-            entries[index].second
+            entries[index].value
         } else {
             val insertionIndex = (-index) - 1
             children.getOrNull(insertionIndex)?.get(key)
         }
     }
 
-    fun remove(key: K): UpdateResult<K, V> {
-        val index = entries.binarySearch { it.first.compareTo(key) }
+    fun remove(key: K): Replacement<K, V> {
+        val index = entries.binarySearch { it.key.compareTo(key) }
         return if (index >= 0) {
             if (children.isEmpty()) {
-                copy(entries = entries.take(index) + entries.drop(index + 1)).checkSize()
+                Replacement.Single(copy(entries = entries.take(index) + entries.drop(index + 1)))
             } else {
+                val siblingsRange = childrenRange(index, index + 1)
                 val childBefore = children[index]
                 val childAfter = children[index + 1]
-                if (childBefore.entries.size <= config.minEntries && childAfter.entries.size <= config.minEntries) {
+                if (childBefore.hasMinSize() && childAfter.hasMinSize()) {
                     childBefore.mergeWith(entries[index], childAfter)
                         .remove(key)
-                        .apply(ChildrenRange(index..(index + 1)))
-                } else if (childBefore.entries.size > childAfter.entries.size) {
-                    val shiftedLeaf = childBefore.removeLastEntry()
-                    ChildrenRange(index..(index + 1)).replaceWith(
-                        shiftedLeaf.updatedNode,
-                        shiftedLeaf.entry,
+                        .apply(siblingsRange)
+                } else if (childBefore.size() > childAfter.size()) {
+                    val shiftedEntry = childBefore.removeLastEntry()
+                    siblingsRange.replaceWith(
+                        shiftedEntry.updatedNode.expectSingle(),
+                        shiftedEntry.entry,
                         childAfter,
                     )
                 } else {
-                    val shiftedLeaf = childAfter.removeFirstEntry()
-                    ChildrenRange(index..(index + 1)).replaceWith(
+                    val shiftedEntry = childAfter.removeFirstEntry()
+                    siblingsRange.replaceWith(
                         childBefore,
-                        shiftedLeaf.entry,
-                        shiftedLeaf.updatedNode,
+                        shiftedEntry.entry,
+                        shiftedEntry.updatedNode.expectSingle(),
                     )
                 }
             }
         } else {
-            val insertionIndex = (-index) - 1
-            val newChild = children.getOrNull(insertionIndex)?.remove(key) ?: return UpdateResult.NothingChanged(this)
-            newChild.apply(ChildrenRange(insertionIndex))
-        }
-    }
-
-    private fun removeFirstEntry(): RemovedEntry<K, V> {
-        return if (children.isEmpty()) {
-            RemovedEntry(
-                entries.first(),
-                copy(entries = entries.drop(1)),
-            )
-        } else {
-            if (children.first().entries.size <= config.minEntries) {
-                val mergedChild = children[0].mergeWith(entries[0], children[1])
-                val withRemovedEntry = mergedChild.removeFirstEntry()
-                withRemovedEntry.copy(
-                    updatedNode = withRemovedEntry.updatedNode.checkSize().apply(ChildrenRange(0..1)).expectCompletion(),
-                )
+            if (children.isEmpty()) {
+                Replacement.Single(this)
             } else {
-                children.first().removeFirstEntry().let {
-                    RemovedEntry(it.entry, ChildrenRange(0).replaceWith(it.updatedNode))
-                }
+                val insertionIndex = (-index) - 1
+                childrenRange(insertionIndex)
+                    .mergeWithSiblingBeforeRemoveIfNecessary()
+                    .removeEntry(key)
+                    .splitIfNecessary()
+                    .applyReplacement()
             }
         }
     }
 
-    private fun removeLastEntry(): RemovedEntry<K, V> {
+    fun getFirstEntry(): BTreeNode.Entry<K, V> {
         return if (children.isEmpty()) {
-            RemovedEntry(
-                entries.last(),
-                copy(entries = entries.dropLast(1)),
-            )
+            entries.first()
         } else {
-            if (children.last().entries.size <= config.minEntries) {
-                val mergedChild = children[children.lastIndex - 1].mergeWith(entries.last(), children.last())
-                val withRemovedEntry = mergedChild.removeLastEntry()
-                withRemovedEntry.copy(
-                    updatedNode = withRemovedEntry.updatedNode.checkSize().apply(ChildrenRange((children.lastIndex - 1)..children.lastIndex)).expectCompletion(),
-                )
-            } else {
-                children.last().removeLastEntry().let {
-                    RemovedEntry(it.entry, ChildrenRange(children.lastIndex).replaceWith(it.updatedNode))
-                }
-            }
+            children.first().getFirstEntry()
         }
     }
 
-    private fun insertEntry(newEntry: Pair<K, V>): BTreeNode<K, V> {
-        val index = entries.binarySearch { it.first.compareTo(newEntry.first) }
+    fun getLastEntry(): BTreeNode.Entry<K, V> {
+        return if (children.isEmpty()) {
+            entries.first()
+        } else {
+            children.first().getFirstEntry()
+        }
+    }
+
+    fun removeFirstEntry(): RemovedEntry<K, V> = removeFirstOrLastEntry(true)
+
+    fun removeLastEntry(): RemovedEntry<K, V> = removeFirstOrLastEntry(false)
+
+    fun removeFirstOrLastEntry(first: Boolean): RemovedEntry<K, V> {
+        check(size() > config.minEntries)
+        return if (children.isEmpty()) {
+            RemovedEntry(
+                if (first) entries.first() else entries.last(),
+                Replacement.Single(
+                    copy(
+                        entries = if (first) entries.drop(1) else entries.dropLast(1),
+                    ),
+                ),
+            )
+        } else {
+            childrenRange(if (first) 0 else children.lastIndex)
+                .mergeWithSiblingBeforeRemoveIfNecessary()
+                .let { if (first) it.removeFirstEntry() else it.removeLastEntry() }
+                .splitIfNecessary()
+        }
+    }
+
+    private fun insertEntry(newEntry: BTreeNode.Entry<K, V>): BTreeNode<K, V> {
+        val index = entries.binarySearch { it.key.compareTo(newEntry.key) }
         if (index >= 0) {
             return copy(
                 entries = entries.take(index) + newEntry + entries.drop(index + 1),
@@ -201,91 +224,167 @@ data class BTreeNode<K : Comparable<K>, V>(
             )
         }
     }
+
+    class Entry<K : Comparable<K>, V>(val key: K, val value: V) {
+        override fun toString(): String {
+            return "$key -> $value"
+        }
+    }
 }
 
-data class RemovedEntry<K : Comparable<K>, V>(val entry: Pair<K, V>, val updatedNode: BTreeNode<K, V>)
+data class ChildrenRange<K : Comparable<K>, V>(val parent: BTreeNode<K, V>, val range: IntRange) {
+    constructor(parent: BTreeNode<K, V>, index: Int) : this(parent, index..index)
 
-sealed class UpdateResult<K : Comparable<K>, V> {
-    abstract fun apply(toReplace: BTreeNode<K, V>.ChildrenRange): UpdateResult<K, V>
+    val config: BTreeConfig<K, V> get() = parent.config
+
+    fun replaceWith(newChild: BTreeNode<K, V>): ChildrenRange<K, V> {
+        return copy(
+            parent = parent.copy(
+                entries = if (range.first < range.last) {
+                    parent.entries.take(range.first) + parent.entries.drop(range.last)
+                } else {
+                    parent.entries
+                },
+                children = parent.children.take(range.first) + newChild + parent.children.drop(range.last + 1),
+            ),
+        )
+    }
+
+    fun replaceWith(leftChild: BTreeNode<K, V>, centerEntry: BTreeNode.Entry<K, V>, rightChild: BTreeNode<K, V>): Replacement<K, V> {
+        return parent.copy(
+            entries = parent.entries.take(range.first) + centerEntry + parent.entries.drop(range.last),
+            children = parent.children.take(range.first) + leftChild + rightChild + parent.children.drop(range.last + 1),
+        ).splitIfNecessary()
+    }
+
+    fun merge(): PendingReplacement<K, V> {
+        return when (range.size()) {
+            1 -> PendingReplacement(this, Replacement.Single(firstInRange()))
+            2 -> PendingReplacement(this, Replacement.Single(firstInRange().mergeWith(firstCenterEntry(), lastInRange())))
+            else -> error("range spans across more than two children")
+        }
+    }
+
+    fun mergeWithSiblingBeforeRemoveIfNecessary(): PendingReplacement<K, V> {
+        check(range.size() == 1)
+        return if (firstInRange().size() <= config.minEntries) {
+            extendToSmaller().merge()
+        } else {
+            PendingReplacement(this, Replacement.Single(firstInRange()))
+        }
+    }
+
+    fun firstInRange() = parent.children[range.first]
+    fun lastInRange() = parent.children[range.last]
+    fun firstCenterEntry() = parent.entries[range.first]
+    fun size() = range.size()
+
+    fun extendToSmaller(): ChildrenRange<K, V> {
+        return if (range.first <= 0) {
+            extendRight()
+        } else if (range.last >= parent.children.lastIndex) {
+            extendLeft()
+        } else if (parent.children[range.first - 1].entries.size < parent.children[range.last + 1].entries.size) {
+            extendLeft()
+        } else {
+            extendRight()
+        }
+    }
+    fun extendLeft() = ChildrenRange(parent, (range.first - 1)..range.last)
+    fun extendRight() = ChildrenRange(parent, range.first..(range.last + 1))
+}
+
+class PendingReplacement<K : Comparable<K>, V>(val childrenRange: ChildrenRange<K, V>, val replacement: Replacement<K, V>) {
+    fun removeEntry(key: K): PendingReplacement<K, V> {
+        return PendingReplacement(childrenRange, replacement.removeEntry(key).splitIfNecessary())
+    }
+    fun removeLastEntry(): RemovedEntry<K, V> {
+        return replacement.removeLastEntry().let {
+            it.copy(updatedNode = it.updatedNode.splitIfNecessary().apply(childrenRange))
+        }
+    }
+    fun removeFirstEntry(): RemovedEntry<K, V> {
+        return replacement.removeFirstEntry().let {
+            it.copy(updatedNode = it.updatedNode.splitIfNecessary().apply(childrenRange))
+        }
+    }
+    fun splitIfNecessary(): PendingReplacement<K, V> {
+        return PendingReplacement(childrenRange, replacement.splitIfNecessary())
+    }
+
+    /**
+     * Replaces the children and returns a replacement for the parent node.
+     */
+    fun applyReplacement(): Replacement<K, V> = replacement.apply(childrenRange)
+}
+
+data class RemovedEntry<K : Comparable<K>, V>(val entry: BTreeNode.Entry<K, V>, val updatedNode: Replacement<K, V>) {
+    fun splitIfNecessary(): RemovedEntry<K, V> {
+        return copy(updatedNode = updatedNode.splitIfNecessary())
+    }
+}
+
+sealed class Replacement<K : Comparable<K>, V> {
+    /**
+     * Replaces the children and returns a replacement for the parent node
+     */
+    abstract fun apply(toReplace: ChildrenRange<K, V>): Replacement<K, V>
     abstract fun createRoot(): BTreeNode<K, V>
-    abstract fun expectCompletion(): BTreeNode<K, V>
+    abstract fun expectSingle(): BTreeNode<K, V>
+    abstract fun removeEntry(key: K): Replacement<K, V>
+    abstract fun removeFirstEntry(): RemovedEntry<K, V>
+    abstract fun removeLastEntry(): RemovedEntry<K, V>
+    abstract fun splitIfNecessary(): Replacement<K, V>
 
-    class Complete<K : Comparable<K>, V>(val newNode: BTreeNode<K, V>) : UpdateResult<K, V>() {
-        override fun apply(toReplace: BTreeNode<K, V>.ChildrenRange): UpdateResult<K, V> {
-            return toReplace.replaceWith(newNode).checkSize()
+    class Single<K : Comparable<K>, V>(val newNode: BTreeNode<K, V>) : Replacement<K, V>() {
+        override fun apply(toReplace: ChildrenRange<K, V>): Replacement<K, V> {
+            check(newNode.size() <= newNode.config.maxEntries) {
+                "$newNode"
+            }
+            return if (toReplace.size() == 1 && toReplace.firstInRange() === newNode) {
+                Single(toReplace.parent) // nothing changed
+            } else {
+                toReplace.replaceWith(newNode).parent.splitIfNecessary()
+            }
         }
 
         override fun createRoot(): BTreeNode<K, V> {
             return newNode
         }
 
-        override fun expectCompletion(): BTreeNode<K, V> = newNode
+        override fun expectSingle(): BTreeNode<K, V> = newNode
+        override fun removeEntry(key: K): Replacement<K, V> = newNode.remove(key)
+        override fun removeFirstEntry(): RemovedEntry<K, V> = newNode.removeFirstEntry()
+        override fun removeLastEntry(): RemovedEntry<K, V> = newNode.removeLastEntry()
+        override fun splitIfNecessary(): Replacement<K, V> = newNode.splitIfNecessary()
     }
-    class Overfill<K : Comparable<K>, V>(val left: BTreeNode<K, V>, val right: BTreeNode<K, V>, val medianEntry: Pair<K, V>) : UpdateResult<K, V>() {
-        override fun apply(toReplace: BTreeNode<K, V>.ChildrenRange): UpdateResult<K, V> {
+    class Splitted<K : Comparable<K>, V>(val left: BTreeNode<K, V>, val right: BTreeNode<K, V>, val medianEntry: BTreeNode.Entry<K, V>) : Replacement<K, V>() {
+        override fun apply(toReplace: ChildrenRange<K, V>): Replacement<K, V> {
             return toReplace.replaceWith(left, medianEntry, right)
         }
 
         override fun createRoot(): BTreeNode<K, V> {
             return BTreeNode(left.config, listOf(medianEntry), listOf(left, right))
         }
-        override fun expectCompletion(): BTreeNode<K, V> = throw IllegalStateException("Not complete: $this")
-    }
-    class Underfill<K : Comparable<K>, V>(val newNode: BTreeNode<K, V>) : UpdateResult<K, V>() {
-        override fun apply(toReplace: BTreeNode<K, V>.ChildrenRange): UpdateResult<K, V> {
-            val prevSibling = toReplace.parent.children.getOrNull(toReplace.range.first - 1)
-            val nextSibling = toReplace.parent.children.getOrNull(toReplace.range.last + 1)
-
-            return if (prevSibling == null) {
-                if (nextSibling == null) {
-                    TODO("Can this happen?")
-                } else {
-                    newNode.mergeWith(toReplace.parent.entries[toReplace.range.last], nextSibling)
-                        .checkSize()
-                        .apply(toReplace.extendRight())
-                }
-            } else {
-                if (nextSibling == null) {
-                    prevSibling.mergeWith(toReplace.parent.entries[toReplace.range.first - 1], newNode)
-                        .checkSize()
-                        .apply(toReplace.extendLeft())
-                } else {
-                    if (prevSibling.entries.size > nextSibling.entries.size) {
-                        newNode.mergeWith(toReplace.parent.entries[toReplace.range.last], nextSibling)
-                            .checkSize()
-                            .apply(toReplace.extendRight())
-                    } else {
-                        prevSibling.mergeWith(toReplace.parent.entries[toReplace.range.first - 1], newNode)
-                            .checkSize()
-                            .apply(toReplace.extendLeft())
-                    }
-                }
-            }
+        override fun expectSingle(): BTreeNode<K, V> = throw IllegalStateException("Not complete: $this")
+        override fun removeEntry(key: K): Replacement<K, V> {
+            TODO("Not yet implemented")
         }
 
-        override fun createRoot(): BTreeNode<K, V> {
-            // root node is allowed to be smaller
-            return newNode
+        override fun removeFirstEntry(): RemovedEntry<K, V> {
+            TODO("Not yet implemented")
         }
 
-        override fun expectCompletion(): BTreeNode<K, V> = throw IllegalStateException("Not complete: $this")
-    }
-    class NothingChanged<K : Comparable<K>, V>(val oldNode: BTreeNode<K, V>) : UpdateResult<K, V>() {
-        override fun apply(toReplace: BTreeNode<K, V>.ChildrenRange): UpdateResult<K, V> {
-            return toReplace.parent.checkSize()
+        override fun removeLastEntry(): RemovedEntry<K, V> {
+            TODO("Not yet implemented")
         }
 
-        override fun createRoot(): BTreeNode<K, V> {
-            return oldNode
-        }
-
-        override fun expectCompletion(): BTreeNode<K, V> = oldNode
+        override fun splitIfNecessary(): Replacement<K, V> = this
     }
 }
 
 data class BTreeConfig<K : Comparable<K>, V>(val minEntries: Int = 2) {
-    val minChildren = minEntries + 1
     val maxEntries = 2 * minEntries
-    val maxChildren = maxEntries + 1
-    val emptyNode = BTreeNode(this, emptyList(), emptyList())
 }
+
+private fun IntRange.size() = (last - first + 1)

@@ -34,6 +34,9 @@ class BTreeTest {
             }
 
             for (entry in expected.entries) {
+                if (entry.value != tree.get(entry.key)) {
+                    println("breakpoint")
+                }
                 assertEquals(entry.value, tree.get(entry.key), "for key ${entry.key}")
             }
         }

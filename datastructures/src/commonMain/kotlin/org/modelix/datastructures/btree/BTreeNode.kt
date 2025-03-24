@@ -51,7 +51,7 @@ sealed class BTreeNode<K, V> : IObjectData {
                     }
                     val children = parts[2].split(SerializationSeparators.LEVEL2)
                         .map { referenceFactory.fromHashString(it, this) }
-                    //BTreeNodeInternal(config, keys, children)
+                    // BTreeNodeInternal(config, keys, children)
                     TODO()
                 }
                 else -> error("unknown node type ${parts[0]}: $serialized")

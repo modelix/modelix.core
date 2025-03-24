@@ -5,7 +5,7 @@ import saschpe.kase64.base64UrlEncoded
 
 data class BTreeConfig<K, V>(
     val minEntries: Int,
-    val minChildren: Int = minEntries + 1,
+    val minChildren: Int,
     val keyComparator: Comparator<K>,
     /**
      * Has to escape special characters that are not part of Base64Url.
@@ -29,6 +29,7 @@ data class BTreeConfig<K, V>(
 
 class BTreeConfigBuilder<K, V> {
     private var minEntries: Int = 8
+    private var minChildren: Int = 8
     private var keyComparator: Comparator<K>? = null
     private var keySerializer: ((K) -> String)? = null
     private var keyDeserializer: ((String) -> K)? = null
@@ -36,10 +37,16 @@ class BTreeConfigBuilder<K, V> {
     private var valueDeserializer: ((String) -> V)? = null
 
     fun minEntries(value: Int) = also { minEntries = value }
+    fun minChildren(value: Int) = also { minChildren = value }
 
     fun maxEntries(value: Int) = also {
         require(value % 2 == 0) { "Has to be a multiple of 2: $value" }
         minEntries(value / 2)
+    }
+
+    fun maxChildren(value: Int) = also {
+        require(value % 2 == 0) { "Has to be a multiple of 2: $value" }
+        minChildren(value / 2)
     }
 
     fun compareKeysBy(selector: (K) -> Comparable<*>?) = keyComparator(compareBy(selector))
@@ -56,6 +63,13 @@ class BTreeConfigBuilder<K, V> {
             .keyDeserializer { it.base64UrlDecoded }
     }
 
+    fun longKeys(): BTreeConfigBuilder<Long, V> {
+        return (this as BTreeConfigBuilder<Long, V>)
+            .compareKeysBy { it }
+            .keySerializer { it.toUInt().toString(16) }
+            .keyDeserializer { it.toULong(16).toLong() }
+    }
+
     fun longValues(): BTreeConfigBuilder<K, Long> {
         return (this as BTreeConfigBuilder<K, Long>)
             .valueSerializer { it.toUInt().toString(16) }
@@ -70,6 +84,7 @@ class BTreeConfigBuilder<K, V> {
 
     fun build() = BTreeConfig(
         minEntries = minEntries,
+        minChildren = minChildren,
         keyComparator = checkNotNull(keyComparator) { "keyComparator not specified" },
         keySerializer = checkNotNull(keySerializer) { "keySerializer not specified" },
         keyDeserializer = checkNotNull(keyDeserializer) { "keyDeserializer not specified" },

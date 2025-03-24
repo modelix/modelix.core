@@ -15,4 +15,5 @@ data class BTree<K, V>(val root: BTreeNode<K, V>) {
     fun put(key: K, value: V): BTree<K, V> = copy(root = root.put(key, value).createRoot())
     fun get(key: K): V? = root.get(key)
     fun remove(key: K): BTree<K, V> = copy(root = root.remove(key).createRoot())
+    fun getEntries(): Sequence<BTreeEntry<K, V>> = root.getEntries()
 }

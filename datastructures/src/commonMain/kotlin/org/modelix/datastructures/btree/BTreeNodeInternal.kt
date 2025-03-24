@@ -65,12 +65,12 @@ data class BTreeNodeInternal<K, V>(
         val left = BTreeNodeInternal<K, V>(
             config,
             separatorKeys.take(leftSeparatorsSize),
-            children.take(leftChildrenSize)
+            children.take(leftChildrenSize),
         )
         val right = BTreeNodeInternal<K, V>(
             config,
             separatorKeys.takeLast(rightSeparatorsSize),
-            children.drop(leftChildrenSize)
+            children.drop(leftChildrenSize),
         )
 
         return Replacement.Splitted(left, separatorForParent, right)
@@ -133,7 +133,7 @@ data class BTreeNodeInternal<K, V>(
     }
 
     override fun getContainmentReferences(): List<ObjectReference<IObjectData>> {
-        //return children
+        // return children
         TODO()
     }
 
@@ -141,7 +141,7 @@ data class BTreeNodeInternal<K, V>(
         return separatorKeys.joinToString(SerializationSeparators.LEVEL2) {
             config.keySerializer(it)
         } + SerializationSeparators.LEVEL1 + children.joinToString(SerializationSeparators.LEVEL2) {
-            //it.getHashString()
+            // it.getHashString()
             TODO()
         }
     }

@@ -42,4 +42,18 @@ class BTreeTest {
             }
         }
     }
+
+    @Test
+    fun `can clear all entries`() {
+        var tree = BTree(BTreeConfig.builder().longKeys().longValues().build())
+
+        for (i in 1L..1000L) {
+            tree = tree.put(i, i)
+        }
+        for (i in 1L..1000L) {
+            tree = tree.remove(i)
+        }
+
+        assertEquals(emptyList(), tree.getEntries().toList())
+    }
 }

@@ -23,7 +23,7 @@ sealed class Replacement<K, V> {
         }
 
         override fun createRoot(): BTreeNode<K, V> {
-            return newNode
+            return if (newNode is BTreeNodeInternal<K, V> && newNode.size() == 1) newNode.children.single() else newNode
         }
 
         override fun expectSingle(): BTreeNode<K, V> = newNode

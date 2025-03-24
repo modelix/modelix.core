@@ -11,7 +11,6 @@ kotlin {
                 api(project(":streams"))
                 implementation(libs.kotlin.coroutines.core)
                 implementation(libs.kotlincrypto.sha2)
-                implementation(libs.kase64)
             }
         }
         commonTest {

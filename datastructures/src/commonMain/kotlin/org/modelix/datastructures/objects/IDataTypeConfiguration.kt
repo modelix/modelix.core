@@ -1,7 +1,7 @@
 package org.modelix.datastructures.objects
 
-import saschpe.kase64.base64UrlDecoded
-import saschpe.kase64.base64UrlEncoded
+import org.modelix.kotlin.utils.base64UrlDecoded
+import org.modelix.kotlin.utils.base64UrlEncoded
 
 interface IDataTypeConfiguration<E> : Comparator<E> {
     fun serialize(element: E): String

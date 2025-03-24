@@ -1,19 +1,25 @@
 package org.modelix.datastructures.btree
 
+import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.streams.IStream
 
 data class BTree<K, V>(val root: BTreeNode<K, V>) {
     constructor(config: BTreeConfig<K, V>) : this(BTreeNodeLeaf(config, emptyList()))
 
+    val graph: IObjectGraph get() = root.config.graph
+
     fun validate() {
-        root.validate(true)
-        @OptIn(DelicateModelixApi::class)
-        check(root.getEntries().toList().getSynchronous().map { it.key }.toSet().size == root.getEntries().map { it.key }.count().getSynchronous()) {
-            "duplicate entries: $root"
-        }
-        check(root.getEntries().map { it.key }.toList().getSynchronous().sortedWith(root.config.keyConfiguration) == root.getEntries().map { it.key }.toList()) {
-            "not sorted: $this"
+        graph.getStreamExecutor().query {
+            root.validate(true)
+            @OptIn(DelicateModelixApi::class)
+            check(root.getEntries().toList().getSynchronous().map { it.key }.toSet().size == root.getEntries().map { it.key }.count().getSynchronous()) {
+                "duplicate entries: $root"
+            }
+            check(root.getEntries().map { it.key }.toList().getSynchronous().sortedWith(root.config.keyConfiguration) == root.getEntries().map { it.key }.toList().getSynchronous()) {
+                "not sorted: $this"
+            }
+            IStream.of(Unit)
         }
     }
     fun put(key: K, value: V): BTree<K, V> = copy(root = root.put(key, value).createRoot())

@@ -1,0 +1,142 @@
+package org.modelix.datastructures.btree
+
+import org.modelix.datastructures.objects.IObjectData
+import org.modelix.datastructures.objects.IObjectDeserializer
+import org.modelix.datastructures.objects.ObjectReference
+import org.modelix.datastructures.serialization.SerializationSeparators
+
+data class BTreeNodeLeaf<K, V>(
+    override val config: BTreeConfig<K, V>,
+    val entries: List<BTreeEntry<K, V>>,
+) : BTreeNode<K, V>() {
+
+    override fun validate(isRoot: Boolean) {
+//        check(children.isEmpty() || children.size == entries.size + 1) {
+//            "entries: ${entries.size}, children expected: ${entries.size + 1}, children actual: ${children.size}"
+//        }
+//        check(entries.size == entries.map { it.key }.toSet().size) {
+//            "duplicate entries: $entries"
+//        }
+//        check(entries.map { it.key }.sortedWith(config.keyComparator) == entries.map { it.key }) {
+//            "entries not sorted: $entries"
+//        }
+//        check(entries.size <= config.maxEntries) {
+//            "overfilled: $this"
+//        }
+//        if (!isRoot) {
+//            check(entries.size >= config.minEntries) {
+//                "underfilled: $this"
+//            }
+//        }
+//        if (children.isNotEmpty()) {
+//            for ((index, entry) in entries.withIndex()) {
+//                check(children[index].getLastEntry().key < entry.key) {
+//                    "not sorted: $this"
+//                }
+//                check(children[index + 1].getFirstEntry().key > entry.key) {
+//                    "not sorted: $this"
+//                }
+//            }
+//        }
+//        for (child in children) {
+//            child.validate(false)
+//        }
+    }
+
+    override fun getEntries(): Sequence<BTreeEntry<K, V>> {
+        return entries.asSequence()
+    }
+
+    override fun size() = entries.size
+    override fun hasMinSize() = entries.size <= config.minEntries
+    override fun hasMaxSize() = entries.size >= config.maxEntries
+    override fun isOverfilled(): Boolean = entries.size > config.maxEntries
+
+    override fun split(): Replacement.Splitted<K, V> {
+        check(!hasMinSize())
+
+        // left gets one more if odd number of entries
+        val leftSize = (entries.size + 1) / 2
+
+        val left = BTreeNodeLeaf<K, V>(config, entries.take(leftSize))
+        val right = BTreeNodeLeaf<K, V>(config, entries.drop(leftSize))
+
+        return Replacement.Splitted(left, right.entries.first().key, right)
+    }
+
+    override fun mergeWithSibling(knownSeparator: K, right: BTreeNode<K, V>): BTreeNode<K, V> {
+        right as BTreeNodeLeaf<K, V>
+        return copy(entries = entries + right.entries)
+    }
+
+    override fun put(key: K, value: V): Replacement<K, V> {
+        return insertEntry(BTreeEntry(key, value)).splitIfNecessary()
+    }
+
+    override fun get(key: K): V? {
+        val index = entries.binarySearch { it.key.compareTo(key) }
+        return if (index >= 0) {
+            entries[index].value
+        } else {
+            null
+        }
+    }
+
+    override fun remove(key: K): Replacement<K, V> {
+        val index = entries.binarySearch { it.key.compareTo(key) }
+        return if (index >= 0) {
+            Replacement.Single(copy(entries = entries.take(index) + entries.drop(index + 1)))
+        } else {
+            Replacement.Single(this)
+        }
+    }
+
+    override fun getFirstEntry(): BTreeEntry<K, V> {
+        return entries.first()
+    }
+
+    override fun getLastEntry(): BTreeEntry<K, V> {
+        return entries.last()
+    }
+
+    override fun removeFirstOrLastEntry(first: Boolean): RemovedEntry<K, V> {
+        check(size() > config.minEntries)
+        return RemovedEntry(
+            if (first) entries.first() else entries.last(),
+            Replacement.Single(
+                copy(
+                    entries = if (first) entries.drop(1) else entries.dropLast(1),
+                ),
+            ),
+        )
+    }
+
+    private fun insertEntry(newEntry: BTreeEntry<K, V>): BTreeNodeLeaf<K, V> {
+        val index = entries.binarySearch { it.key.compareTo(newEntry.key) }
+        if (index >= 0) {
+            return copy(
+                entries = entries.take(index) + newEntry + entries.drop(index + 1),
+            )
+        } else {
+            val insertionIndex = if (index >= 0) index else (-index) - 1
+            return copy(
+                entries = entries.take(insertionIndex) + newEntry + entries.drop(insertionIndex),
+            )
+        }
+    }
+
+    override fun getDeserializer(): IObjectDeserializer<*> {
+        return config.nodeDeserializer
+    }
+
+    override fun getContainmentReferences(): List<ObjectReference<IObjectData>> {
+        //return children
+        TODO()
+    }
+
+    override fun serialize(): String {
+        return "L" + SerializationSeparators.LEVEL1 + entries.joinToString(SerializationSeparators.LEVEL2) {
+            config.keySerializer(it.key) + SerializationSeparators.MAPPING + config.valueSerializer(it.value)
+        }
+    }
+}

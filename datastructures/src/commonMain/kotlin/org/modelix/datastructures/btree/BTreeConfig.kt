@@ -5,6 +5,7 @@ import saschpe.kase64.base64UrlEncoded
 
 data class BTreeConfig<K, V>(
     val minEntries: Int,
+    val minChildren: Int = minEntries + 1,
     val keyComparator: Comparator<K>,
     /**
      * Has to escape special characters that are not part of Base64Url.
@@ -18,6 +19,7 @@ data class BTreeConfig<K, V>(
     val valueDeserializer: (String) -> V,
 ) {
     val maxEntries = 2 * minEntries
+    val maxChildren = 2 * minChildren
     val nodeDeserializer = BTreeNode.Deserializer(this)
 
     companion object {

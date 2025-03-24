@@ -4,8 +4,9 @@ import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
 import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.datastructures.serialization.SerializationSeparators
+import org.modelix.streams.IStream
+import kotlin.collections.component1
 import kotlin.collections.plus
-import kotlin.text.iterator
 
 data class BTreeNodeInternal<K, V>(
     override val config: BTreeConfig<K, V>,
@@ -101,6 +102,13 @@ data class BTreeNodeInternal<K, V>(
     override fun get(key: K): V? {
         val childIndex = childIndexForKey(key)
         return children[childIndex].get(key)
+    }
+
+    override fun getAll(keys: Iterable<K>): IStream.Many<Pair<K, V>> {
+        val groups = keys.groupBy { childIndexForKey(it) }
+        return IStream.many(groups.entries).flatMap { (childIndex, keysInGroup) ->
+            children[childIndex].getAll(keysInGroup)
+        }
     }
 
     override fun remove(key: K): Replacement<K, V> {

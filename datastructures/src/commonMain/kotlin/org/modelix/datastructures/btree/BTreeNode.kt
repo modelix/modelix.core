@@ -4,6 +4,7 @@ import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
 import org.modelix.datastructures.objects.IObjectReferenceFactory
 import org.modelix.datastructures.serialization.SerializationSeparators
+import org.modelix.streams.IStream
 
 sealed class BTreeNode<K, V> : IObjectData {
     abstract val config: BTreeConfig<K, V>
@@ -13,6 +14,7 @@ sealed class BTreeNode<K, V> : IObjectData {
 
     abstract fun put(key: K, value: V): Replacement<K, V>
     abstract fun get(key: K): V?
+    abstract fun getAll(keys: Iterable<K>): IStream.Many<Pair<K, V>>
     abstract fun remove(key: K): Replacement<K, V>
 
     abstract fun getEntries(): Sequence<BTreeEntry<K, V>>

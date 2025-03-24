@@ -4,6 +4,7 @@ import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
 import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.datastructures.serialization.SerializationSeparators
+import org.modelix.streams.IStream
 
 data class BTreeNodeLeaf<K, V>(
     override val config: BTreeConfig<K, V>,
@@ -64,6 +65,19 @@ data class BTreeNodeLeaf<K, V>(
         } else {
             null
         }
+    }
+
+    override fun getAll(keys: Iterable<K>): IStream.Many<Pair<K, V>> {
+        return IStream.many(
+            keys.mapNotNull { key ->
+                val index = entries.binarySearch { it.key.compareTo(key) }
+                if (index >= 0) {
+                    key to entries[index].value
+                } else {
+                    null
+                }
+            },
+        )
     }
 
     override fun remove(key: K): Replacement<K, V> {

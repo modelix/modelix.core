@@ -1,7 +1,7 @@
 package org.modelix.datastructures.objects
 
 import org.kotlincrypto.hash.sha2.SHA256
-import saschpe.kase64.base64UrlEncoded
+import org.modelix.kotlin.utils.base64UrlEncoded
 import kotlin.jvm.JvmInline
 
 @JvmInline

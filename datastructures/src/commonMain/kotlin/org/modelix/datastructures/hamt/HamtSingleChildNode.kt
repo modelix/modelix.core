@@ -18,7 +18,7 @@ import org.modelix.streams.plus
  * Replacement for a chain of CPHamtInternals with a single child.
  * Helps to reduce the depth of the tree and therefor the number of requests necessary to access an entry.
  */
-data class HamtSingleChildNode<K, V : IObjectData>(
+data class HamtSingleChildNode<K, V : Any>(
     override val config: Config<K, V>,
     val numLevels: Int,
     val bits: Long,
@@ -43,9 +43,9 @@ data class HamtSingleChildNode<K, V : IObjectData>(
 
     private fun maskBits(hash: Long, shift: Int): Long = (hash ushr (MAX_BITS - BITS_PER_LEVEL * numLevels - shift)) and mask
 
-    override fun get(key: K, shift: Int): IStream.ZeroOrOne<ObjectReference<V>> {
+    override fun get(key: K, shift: Int): IStream.ZeroOrOne<V> {
         require(shift <= MAX_SHIFT) { "$shift > $MAX_SHIFT" }
-        if (maskBits(config.keyHashFunction(key), shift) == bits) {
+        if (maskBits(config.keyConfig.hashCode64(key), shift) == bits) {
             return child.resolveData().flatMapZeroOrOne {
                 it.get(key, shift + numLevels * BITS_PER_LEVEL)
             }
@@ -57,8 +57,8 @@ data class HamtSingleChildNode<K, V : IObjectData>(
     override fun getAll(
         keys: Iterable<K>,
         shift: Int,
-    ): IStream.Many<Pair<K, ObjectReference<V>?>> {
-        if (keys.any { maskBits(config.keyHashFunction(it), shift) == bits }) {
+    ): IStream.Many<Pair<K, V?>> {
+        if (keys.any { maskBits(config.keyConfig.hashCode64(it), shift) == bits }) {
             return child.resolveData().flatMap {
                 it.getAll(keys, shift + numLevels * BITS_PER_LEVEL)
             }
@@ -67,17 +67,17 @@ data class HamtSingleChildNode<K, V : IObjectData>(
         }
     }
 
-    override fun put(key: K, value: ObjectReference<V>?, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>> {
+    override fun put(key: K, value: V?, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>> {
         return putAll(listOf(key to value), shift, graph)
     }
 
     override fun putAll(
-        entries: List<Pair<K, ObjectReference<V>?>>,
+        entries: List<Pair<K, V?>>,
         shift: Int,
         graph: IObjectGraph,
     ): IStream.ZeroOrOne<HamtNode<K, V>> {
         // TODO handle collisions
-        if (entries.all { maskBits(config.keyHashFunction(it.first), shift) == bits }) {
+        if (entries.all { maskBits(config.keyConfig.hashCode64(it.first), shift) == bits }) {
             return getChild()
                 .flatMapZeroOrOne { it.putAll(entries, shift + BITS_PER_LEVEL * numLevels, graph) }
                 .map { withNewChild(it, graph) }
@@ -117,7 +117,7 @@ data class HamtSingleChildNode<K, V : IObjectData>(
         return child.resolveData()
     }
 
-    override fun getEntries(): IStream.Many<Pair<K, ObjectReference<V>>> {
+    override fun getEntries(): IStream.Many<Pair<K, V>> {
         return getChild().flatMap { it.getEntries() }
     }
 
@@ -218,7 +218,7 @@ data class HamtSingleChildNode<K, V : IObjectData>(
     companion object {
         fun maskForLevels(numLevels: Int) = -1L ushr (MAX_BITS - BITS_PER_LEVEL * numLevels)
 
-        fun <K, V : IObjectData> replace(node: HamtInternalNode<K, V>): IStream.One<HamtSingleChildNode<K, V>> {
+        fun <K, V : Any> replace(node: HamtInternalNode<K, V>): IStream.One<HamtSingleChildNode<K, V>> {
             if (node.children.size != 1) throw RuntimeException("Can only replace nodes with a single child")
             return node.children[0].resolveData().map { child ->
                 if (child is HamtSingleChildNode) {
@@ -234,7 +234,7 @@ data class HamtSingleChildNode<K, V : IObjectData>(
             }
         }
 
-        fun <K, V : IObjectData> replaceIfSingleChild(node: HamtInternalNode<K, V>): IStream.One<HamtNode<K, V>> {
+        fun <K, V : Any> replaceIfSingleChild(node: HamtInternalNode<K, V>): IStream.One<HamtNode<K, V>> {
             return if (node.children.size == 1) replace(node) else IStream.of(node)
         }
 

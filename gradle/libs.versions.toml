@@ -151,4 +151,3 @@ nimbus-jose-jwt = { group = "com.nimbusds", name = "nimbus-jose-jwt", version = 
 bouncycastle-bcpkix = { group = "org.bouncycastle", name = "bcpkix-lts8on", version = "2.73.7" }
 
 kotlincrypto-sha2 = { module = "org.kotlincrypto.hash:sha2", version = "0.7.0" }
-kase64 = { module = "de.peilicke.sascha:kase64", version = "1.2.0" }

@@ -1,3 +1,5 @@
+package org.modelix.datastructures
+
 import org.modelix.datastructures.btree.BTree
 import org.modelix.datastructures.btree.BTreeConfig
 import org.modelix.streams.SimpleStreamExecutor
@@ -56,7 +58,7 @@ class BTreeTest {
             tree = tree.remove(i)
         }
 
-        assertEquals(emptyList(), tree.getEntries().toList())
+        assertEquals(emptyList(), tree.getEntries().toList().getSynchronous())
     }
 
     @Test

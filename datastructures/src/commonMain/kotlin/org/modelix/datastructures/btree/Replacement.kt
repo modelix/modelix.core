@@ -23,7 +23,11 @@ sealed class Replacement<K, V> {
         }
 
         override fun createRoot(): BTreeNode<K, V> {
-            return if (newNode is BTreeNodeInternal<K, V> && newNode.size() == 1) newNode.children.single() else newNode
+            return if (newNode is BTreeNodeInternal<K, V> && newNode.size() == 1) {
+                newNode.children.single().resolveNow().data
+            } else {
+                newNode
+            }
         }
 
         override fun expectSingle(): BTreeNode<K, V> = newNode
@@ -42,7 +46,11 @@ sealed class Replacement<K, V> {
         }
 
         override fun createRoot(): BTreeNode<K, V> {
-            return BTreeNodeInternal(left.config, listOf(separatorKey), listOf(left, right))
+            return BTreeNodeInternal(
+                left.config,
+                listOf(separatorKey),
+                listOf(left.config.graph.fromCreated(left), right.config.graph.fromCreated(right)),
+            )
         }
         override fun expectSingle(): BTreeNode<K, V> = throw IllegalStateException("Single node expected: $this")
         override fun splitIfNecessary(): Replacement<K, V> = this

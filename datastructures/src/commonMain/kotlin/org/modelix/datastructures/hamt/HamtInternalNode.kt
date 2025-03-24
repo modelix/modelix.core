@@ -15,7 +15,7 @@ import org.modelix.streams.IStream
 import org.modelix.streams.flatten
 import org.modelix.streams.plus
 
-class HamtInternalNode<K, V : IObjectData>(
+class HamtInternalNode<K, V : Any>(
     override val config: Config<K, V>,
     val bitmap: Int,
     val children: Array<out ObjectReference<HamtNode<K, V>>>,
@@ -34,17 +34,17 @@ class HamtInternalNode<K, V : IObjectData>(
     }
 
     companion object {
-        fun <K, V : IObjectData> createEmpty(config: Config<K, V>) = create(config, 0, arrayOf<ObjectReference<HamtNode<K, V>>>())
+        fun <K, V : Any> createEmpty(config: Config<K, V>) = create(config, 0, arrayOf<ObjectReference<HamtNode<K, V>>>())
 
-        fun <K, V : IObjectData> create(config: Config<K, V>, bitmap: Int, childHashes: Array<out ObjectReference<HamtNode<K, V>>>): HamtInternalNode<K, V> {
+        fun <K, V : Any> create(config: Config<K, V>, bitmap: Int, childHashes: Array<out ObjectReference<HamtNode<K, V>>>): HamtInternalNode<K, V> {
             return HamtInternalNode(config, bitmap, childHashes)
         }
 
-        fun <K, V : IObjectData> create(config: Config<K, V>, key: K, childHash: ObjectReference<V>, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>> {
+        fun <K, V : Any> create(config: Config<K, V>, key: K, childHash: V, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>> {
             return createEmpty<K, V>(config).put(key, childHash, shift, graph)
         }
 
-        fun <K, V : IObjectData> replace(single: HamtSingleChildNode<K, V>, graph: IObjectGraph): HamtInternalNode<K, V> {
+        fun <K, V : Any> replace(single: HamtSingleChildNode<K, V>, graph: IObjectGraph): HamtInternalNode<K, V> {
             if (single.numLevels != 1) return replace(single.splitOneLevel(graph), graph)
             val data: HamtSingleChildNode<K, V> = single
             val logicalIndex: Int = data.bits.toInt()
@@ -52,9 +52,9 @@ class HamtInternalNode<K, V : IObjectData>(
         }
     }
 
-    override fun put(key: K, value: ObjectReference<V>?, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>> {
+    override fun put(key: K, value: V?, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>> {
         require(shift <= MAX_SHIFT) { "$shift > $MAX_SHIFT" }
-        val childIndex = indexFromHash(config.keyHashFunction(key), shift)
+        val childIndex = indexFromHash(config.keyConfig.hashCode64(key), shift)
         return getChild(childIndex).orNull().flatMapZeroOrOne { child ->
             if (child == null) {
                 setChild(childIndex, HamtLeafNode.create(config, key, value), shift, graph)
@@ -66,8 +66,8 @@ class HamtInternalNode<K, V : IObjectData>(
         }
     }
 
-    override fun putAll(entries: List<Pair<K, ObjectReference<V>?>>, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>> {
-        val groups = entries.groupBy { indexFromHash(config.keyHashFunction(it.first), shift) }
+    override fun putAll(entries: List<Pair<K, V?>>, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>> {
+        val groups = entries.groupBy { indexFromHash(config.keyConfig.hashCode64(it.first), shift) }
         val logicalIndices = groups.keys.toIntArray()
         val newChildrenLists = groups.values.toList()
         return getChildren(logicalIndices).flatMap { children: List<HamtNode<K, V>?> ->
@@ -100,7 +100,7 @@ class HamtInternalNode<K, V : IObjectData>(
 
     override fun remove(key: K, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>> {
         require(shift <= MAX_SHIFT) { "$shift > $MAX_SHIFT" }
-        val childIndex = indexFromHash(config.keyHashFunction(key), shift)
+        val childIndex = indexFromHash(config.keyConfig.hashCode64(key), shift)
         return getChild(childIndex).orNull().flatMapZeroOrOne { child ->
             if (child == null) {
                 IStream.of(this)
@@ -112,9 +112,9 @@ class HamtInternalNode<K, V : IObjectData>(
         }
     }
 
-    override fun get(key: K, shift: Int): IStream.ZeroOrOne<ObjectReference<V>> {
+    override fun get(key: K, shift: Int): IStream.ZeroOrOne<V> {
         require(shift <= MAX_SHIFT) { "$shift > $MAX_SHIFT" }
-        val childIndex = indexFromHash(config.keyHashFunction(key), shift)
+        val childIndex = indexFromHash(config.keyConfig.hashCode64(key), shift)
         return getChild(childIndex).flatMapZeroOrOne { child ->
             child.get(key, shift + BITS_PER_LEVEL)
         }
@@ -123,8 +123,8 @@ class HamtInternalNode<K, V : IObjectData>(
     override fun getAll(
         keys: Iterable<K>,
         shift: Int,
-    ): IStream.Many<Pair<K, ObjectReference<V>?>> {
-        val groups = keys.groupBy { indexFromHash(config.keyHashFunction(it), shift) }
+    ): IStream.Many<Pair<K, V?>> {
+        val groups = keys.groupBy { indexFromHash(config.keyConfig.hashCode64(it), shift) }
         return IStream.many(groups.entries).flatMap { group ->
             getChild(group.key).flatMap { child ->
                 child.getAll(group.value, shift + BITS_PER_LEVEL)
@@ -248,7 +248,7 @@ class HamtInternalNode<K, V : IObjectData>(
         }
     }
 
-    override fun getEntries(): IStream.Many<Pair<K, ObjectReference<V>>> {
+    override fun getEntries(): IStream.Many<Pair<K, V>> {
         return IStream.many(data.children).flatMap { it.resolveData() }.flatMap { it.getEntries() }
     }
 
@@ -317,7 +317,7 @@ class HamtInternalNode<K, V : IObjectData>(
             }
             is HamtLeafNode -> {
                 if (changesOnly) {
-                    get(oldNode.key, shift).filter { it.getHash() != oldNode.value.getHash() }.map { newValue ->
+                    get(oldNode.key, shift).filter { it != oldNode.value }.map { newValue ->
                         EntryChangedEvent(oldNode.key, oldNode.value, newValue)
                     }
                 } else {
@@ -326,7 +326,7 @@ class HamtInternalNode<K, V : IObjectData>(
                     val changeOrRemoveEvent = newEntry.orNull().flatMapZeroOrOne { newValue ->
                         if (newValue == null) {
                             IStream.of(EntryRemovedEvent(oldNode.key, oldNode.value))
-                        } else if (newValue.getHash() != oldNode.value.getHash()) {
+                        } else if (newValue != oldNode.value) {
                             IStream.of(EntryChangedEvent(oldNode.key, oldNode.value, newValue))
                         } else {
                             IStream.empty()

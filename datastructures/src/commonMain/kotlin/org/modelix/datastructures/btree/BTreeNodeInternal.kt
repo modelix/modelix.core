@@ -3,15 +3,14 @@ package org.modelix.datastructures.btree
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
 import org.modelix.datastructures.objects.ObjectReference
+import org.modelix.datastructures.objects.getHashString
 import org.modelix.datastructures.serialization.SerializationSeparators
 import org.modelix.streams.IStream
-import kotlin.collections.component1
-import kotlin.collections.plus
 
 data class BTreeNodeInternal<K, V>(
     override val config: BTreeConfig<K, V>,
     val separatorKeys: List<K>,
-    val children: List<BTreeNode<K, V>>,
+    val children: List<ObjectReference<BTreeNode<K, V>>>,
 ) : BTreeNode<K, V>() {
 
     override fun validate(isRoot: Boolean) {
@@ -21,7 +20,7 @@ data class BTreeNodeInternal<K, V>(
         check(separatorKeys.size == separatorKeys.toSet().size) {
             "duplicate entries: $separatorKeys"
         }
-        check(separatorKeys.sortedWith(config.keyComparator) == separatorKeys) {
+        check(separatorKeys.sortedWith(config.keyConfiguration) == separatorKeys) {
             "separators not sorted: $separatorKeys"
         }
         check(children.size <= config.maxChildren) {
@@ -33,20 +32,24 @@ data class BTreeNodeInternal<K, V>(
             }
         }
         for ((index, separator) in separatorKeys.withIndex()) {
-            check(children[index].getLastEntry().key < separator) {
+            check(children[index].resolveNow().data.getLastEntry().key < separator) {
                 "not sorted: $this"
             }
-            check(children[index + 1].getFirstEntry().key >= separator) {
+            check(children[index + 1].resolveNow().data.getFirstEntry().key >= separator) {
                 "not sorted: $this"
             }
         }
         for (child in children) {
-            child.validate(false)
+            child.resolveNow().data.validate(false)
         }
     }
 
-    override fun getEntries(): Sequence<BTreeEntry<K, V>> {
-        return children.asSequence().flatMap { it.getEntries() }
+    private fun getChildNow(index: Int) = children[index].resolveNow().data
+
+    override fun getEntries(): IStream.Many<BTreeEntry<K, V>> {
+        return IStream.many(children).flatMap {
+            it.resolve().flatMap { it.data.getEntries() }
+        }
     }
 
     private fun childrenRange(index: Int) = ChildrenRange(this, index)
@@ -96,18 +99,18 @@ data class BTreeNodeInternal<K, V>(
     override fun put(key: K, value: V): Replacement<K, V> {
         val index = separatorKeys.binarySearch { it.compareTo(key) }
         val childIndex = childIndexForKey(key)
-        return children[childIndex].put(key, value).apply(childrenRange(childIndex)).splitIfNecessary()
+        return getChildNow(childIndex).put(key, value).apply(childrenRange(childIndex)).splitIfNecessary()
     }
 
     override fun get(key: K): V? {
         val childIndex = childIndexForKey(key)
-        return children[childIndex].get(key)
+        return getChildNow(childIndex).get(key)
     }
 
     override fun getAll(keys: Iterable<K>): IStream.Many<Pair<K, V>> {
         val groups = keys.groupBy { childIndexForKey(it) }
         return IStream.many(groups.entries).flatMap { (childIndex, keysInGroup) ->
-            children[childIndex].getAll(keysInGroup)
+            getChildNow(childIndex).getAll(keysInGroup)
         }
     }
 
@@ -121,11 +124,11 @@ data class BTreeNodeInternal<K, V>(
     }
 
     override fun getFirstEntry(): BTreeEntry<K, V> {
-        return children.first().getFirstEntry()
+        return getChildNow(0).getFirstEntry()
     }
 
     override fun getLastEntry(): BTreeEntry<K, V> {
-        return children.last().getLastEntry()
+        return getChildNow(children.lastIndex).getLastEntry()
     }
 
     override fun removeFirstOrLastEntry(first: Boolean): RemovedEntry<K, V> {
@@ -141,16 +144,14 @@ data class BTreeNodeInternal<K, V>(
     }
 
     override fun getContainmentReferences(): List<ObjectReference<IObjectData>> {
-        // return children
-        TODO()
+        return children
     }
 
     override fun serialize(): String {
         return separatorKeys.joinToString(SerializationSeparators.LEVEL2) {
-            config.keySerializer(it)
+            config.keyConfiguration.serialize(it)
         } + SerializationSeparators.LEVEL1 + children.joinToString(SerializationSeparators.LEVEL2) {
-            // it.getHashString()
-            TODO()
+            it.getHashString()
         }
     }
 }

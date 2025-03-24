@@ -1,9 +1,14 @@
 package org.modelix.datastructures.btree
 
+import org.modelix.datastructures.objects.ObjectReference
+
 data class ChildrenRange<K, V>(val parent: BTreeNodeInternal<K, V>, val range: IntRange) {
     constructor(parent: BTreeNodeInternal<K, V>, index: Int) : this(parent, index..index)
 
     val config: BTreeConfig<K, V> get() = parent.config
+
+    private fun BTreeNode<K, V>.toRef() = config.graph.fromCreated(this)
+    private fun ObjectReference<BTreeNode<K, V>>.deref() = resolveNow().data
 
     fun replaceWith(newChild: BTreeNode<K, V>): ChildrenRange<K, V> {
         return copy(
@@ -13,7 +18,7 @@ data class ChildrenRange<K, V>(val parent: BTreeNodeInternal<K, V>, val range: I
                 } else {
                     parent.separatorKeys
                 },
-                children = parent.children.take(range.first) + newChild + parent.children.drop(range.last + 1),
+                children = parent.children.take(range.first) + newChild.toRef() + parent.children.drop(range.last + 1),
             ),
         )
     }
@@ -21,24 +26,24 @@ data class ChildrenRange<K, V>(val parent: BTreeNodeInternal<K, V>, val range: I
     fun replaceWith(leftChild: BTreeNode<K, V>, separatorKey: K, rightChild: BTreeNode<K, V>): Replacement<K, V> {
         return parent.copy(
             separatorKeys = parent.separatorKeys.take(range.first) + separatorKey + parent.separatorKeys.drop(range.last),
-            children = parent.children.take(range.first) + leftChild + rightChild + parent.children.drop(range.last + 1),
+            children = parent.children.take(range.first) + leftChild.toRef() + rightChild.toRef() + parent.children.drop(range.last + 1),
         ).splitIfNecessary()
     }
 
     fun merge(): PendingReplacement<K, V> {
         return when (range.size()) {
-            1 -> PendingReplacement(this, Replacement.Single(firstInRange()))
-            2 -> PendingReplacement(this, Replacement.Single(firstInRange().mergeWithSibling(firstSeparator(), lastInRange())))
+            1 -> PendingReplacement(this, Replacement.Single(firstInRange().deref()))
+            2 -> PendingReplacement(this, Replacement.Single(firstInRange().deref().mergeWithSibling(firstSeparator(), lastInRange().deref())))
             else -> error("range spans across more than two children")
         }
     }
 
     fun mergeWithSiblingBeforeRemoveIfNecessary(): PendingReplacement<K, V> {
         check(range.size() == 1)
-        return if (firstInRange().hasMinSize()) {
+        return if (firstInRange().deref().hasMinSize()) {
             extendToSmaller().merge()
         } else {
-            PendingReplacement(this, Replacement.Single(firstInRange()))
+            PendingReplacement(this, Replacement.Single(firstInRange().deref()))
         }
     }
 
@@ -52,7 +57,7 @@ data class ChildrenRange<K, V>(val parent: BTreeNodeInternal<K, V>, val range: I
             extendRight()
         } else if (range.last >= parent.children.lastIndex) {
             extendLeft()
-        } else if (parent.children[range.first - 1].size() < parent.children[range.last + 1].size()) {
+        } else if (parent.children[range.first - 1].deref().size() < parent.children[range.last + 1].deref().size()) {
             extendLeft()
         } else {
             extendRight()

@@ -8,7 +8,7 @@ import org.modelix.streams.IStream
 
 sealed class BTreeNode<K, V> : IObjectData {
     abstract val config: BTreeConfig<K, V>
-    protected operator fun K.compareTo(other: K): Int = config.keyComparator.compare(this, other)
+    protected operator fun K.compareTo(other: K): Int = config.keyConfiguration.compare(this, other)
 
     abstract fun validate(isRoot: Boolean)
 
@@ -17,7 +17,7 @@ sealed class BTreeNode<K, V> : IObjectData {
     abstract fun getAll(keys: Iterable<K>): IStream.Many<Pair<K, V>>
     abstract fun remove(key: K): Replacement<K, V>
 
-    abstract fun getEntries(): Sequence<BTreeEntry<K, V>>
+    abstract fun getEntries(): IStream.Many<BTreeEntry<K, V>>
 
     abstract fun getFirstEntry(): BTreeEntry<K, V>
     abstract fun getLastEntry(): BTreeEntry<K, V>
@@ -43,18 +43,20 @@ sealed class BTreeNode<K, V> : IObjectData {
                 "L" -> {
                     val entries = parts[1].split(SerializationSeparators.LEVEL2).map {
                         val entryParts = it.split(SerializationSeparators.MAPPING, limit = 2)
-                        BTreeEntry(config.keyDeserializer(entryParts[0]), config.valueDeserializer(entryParts[1]))
+                        BTreeEntry(
+                            config.keyConfiguration.deserialize(entryParts[0]),
+                            config.valueConfiguration.deserialize(entryParts[1]),
+                        )
                     }
                     BTreeNodeLeaf(config, entries)
                 }
                 "I" -> {
                     val keys = parts[1].split(SerializationSeparators.LEVEL2).map {
-                        config.keyDeserializer(it)
+                        config.keyConfiguration.deserialize(it)
                     }
                     val children = parts[2].split(SerializationSeparators.LEVEL2)
                         .map { referenceFactory.fromHashString(it, this) }
-                    // BTreeNodeInternal(config, keys, children)
-                    TODO()
+                    BTreeNodeInternal(config, keys, children)
                 }
                 else -> error("unknown node type ${parts[0]}: $serialized")
             }

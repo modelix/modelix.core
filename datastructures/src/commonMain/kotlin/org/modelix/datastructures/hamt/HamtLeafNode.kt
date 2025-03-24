@@ -10,21 +10,22 @@ import org.modelix.streams.IStream
 import org.modelix.streams.ifEmpty
 import org.modelix.streams.plus
 
-data class HamtLeafNode<K, V : IObjectData>(
+data class HamtLeafNode<K, V : Any>(
     override val config: Config<K, V>,
     val key: K,
-    val value: ObjectReference<V>,
+    val value: V,
 ) : HamtNode<K, V>() {
-    override fun getContainmentReferences(): List<ObjectReference<IObjectData>> = listOf(value)
+    override fun getContainmentReferences(): List<ObjectReference<IObjectData>> =
+        config.valueConfig.getContainmentReferences(value)
 
     override fun serialize(): String {
-        return """L/${config.keySerializer(key)}/${value.getHash()}"""
+        return """L/${config.keyConfig.serialize(key)}/${config.valueConfig.serialize(value)}"""
     }
 
-    override fun put(key: K, value: ObjectReference<V>?, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>> {
+    override fun put(key: K, value: V?, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>> {
         require(shift <= MAX_SHIFT + BITS_PER_LEVEL) { "$shift > ${MAX_SHIFT + BITS_PER_LEVEL}" }
         return if (key == this.key) {
-            if (value?.getHash() == this.value.getHash()) {
+            if (value == this.value) {
                 IStream.of(this)
             } else {
                 IStream.ofNotNull(create(config, key, value))
@@ -37,7 +38,7 @@ data class HamtLeafNode<K, V : IObjectData>(
         }
     }
 
-    override fun putAll(entries: List<Pair<K, ObjectReference<V>?>>, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>> {
+    override fun putAll(entries: List<Pair<K, V?>>, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>> {
         return if (entries.size == 1) {
             val entry = entries.single()
             put(entry.first, entry.second, shift, graph)
@@ -56,7 +57,7 @@ data class HamtLeafNode<K, V : IObjectData>(
         }
     }
 
-    override fun get(key: K, shift: Int): IStream.ZeroOrOne<ObjectReference<V>> {
+    override fun get(key: K, shift: Int): IStream.ZeroOrOne<V> {
         require(shift <= MAX_SHIFT + BITS_PER_LEVEL) { "$shift > ${MAX_SHIFT + BITS_PER_LEVEL}" }
         return if (key == this.key) IStream.of(value) else IStream.empty()
     }
@@ -64,11 +65,11 @@ data class HamtLeafNode<K, V : IObjectData>(
     override fun getAll(
         keys: Iterable<K>,
         shift: Int,
-    ): IStream.Many<Pair<K, ObjectReference<V>?>> {
+    ): IStream.Many<Pair<K, V?>> {
         return if (keys.contains(this.key)) IStream.of(key to value) else IStream.empty()
     }
 
-    override fun getEntries(): IStream.Many<Pair<K, ObjectReference<V>>> {
+    override fun getEntries(): IStream.Many<Pair<K, V>> {
         return IStream.of(key to value)
     }
 
@@ -79,7 +80,7 @@ data class HamtLeafNode<K, V : IObjectData>(
         } else if (changesOnly) {
             if (oldNode != null) {
                 oldNode.get(key, shift).orNull().flatMapZeroOrOne { oldValue ->
-                    if (oldValue != null && value.getHash() != oldValue.getHash()) {
+                    if (oldValue != null && value != oldValue) {
                         IStream.of(EntryChangedEvent(key, oldValue, value))
                     } else {
                         IStream.empty()
@@ -89,9 +90,9 @@ data class HamtLeafNode<K, V : IObjectData>(
                 IStream.empty()
             }
         } else {
-            var oldValue: ObjectReference<V>? = null
+            var oldValue: V? = null
 
-            oldNode!!.getEntries().flatMap { (k: K, v: ObjectReference<V>) ->
+            oldNode!!.getEntries().flatMap { (k: K, v: V) ->
                 if (k == key) {
                     oldValue = v
                     IStream.empty<EntryRemovedEvent<K, V>>()
@@ -103,7 +104,7 @@ data class HamtLeafNode<K, V : IObjectData>(
                     val oldValue = oldValue
                     if (oldValue == null) {
                         IStream.of(EntryAddedEvent(key, value))
-                    } else if (oldValue.getHash() != value.getHash()) {
+                    } else if (oldValue != value) {
                         IStream.of(EntryChangedEvent(key, oldValue, value))
                     } else {
                         IStream.empty()
@@ -117,12 +118,12 @@ data class HamtLeafNode<K, V : IObjectData>(
         val oldData = oldObject?.data?.upcast<HamtNode<K, V>>()
         return when (oldData) {
             is HamtLeafNode<*, *> -> {
-                requireDifferentHash(oldData)
-                IStream.of(self) + value.resolve()
+                IStream.of(self) + IStream.many(config.valueConfig.getContainmentReferences(value))
+                    .flatMap { it.resolve() }
             }
             is HamtInternalNode<*, *>, is HamtSingleChildNode<*, *> -> {
                 oldData.get(key, shift).orNull().flatMapZeroOrOne { oldValue ->
-                    if (oldValue?.getHash() == value.getHash()) {
+                    if (oldValue == value) {
                         IStream.empty()
                     } else {
                         IStream.of(self)
@@ -134,7 +135,7 @@ data class HamtLeafNode<K, V : IObjectData>(
     }
 
     companion object {
-        fun <K, V : IObjectData> create(config: Config<K, V>, key: K, value: ObjectReference<V>?): HamtLeafNode<K, V>? {
+        fun <K, V : Any> create(config: Config<K, V>, key: K, value: V?): HamtLeafNode<K, V>? {
             if (value == null) return null
             return HamtLeafNode<K, V>(config, key, value)
         }

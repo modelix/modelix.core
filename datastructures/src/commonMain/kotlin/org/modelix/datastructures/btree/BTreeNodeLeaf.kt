@@ -15,7 +15,7 @@ data class BTreeNodeLeaf<K, V>(
         check(entries.size == entries.map { it.key }.toSet().size) {
             "duplicate entries: $entries"
         }
-        check(entries.map { it.key }.sortedWith(config.keyComparator) == entries.map { it.key }) {
+        check(entries.map { it.key }.sortedWith(config.keyConfiguration) == entries.map { it.key }) {
             "entries not sorted: $entries"
         }
         check(entries.size <= config.maxEntries) {
@@ -28,8 +28,8 @@ data class BTreeNodeLeaf<K, V>(
         }
     }
 
-    override fun getEntries(): Sequence<BTreeEntry<K, V>> {
-        return entries.asSequence()
+    override fun getEntries(): IStream.Many<BTreeEntry<K, V>> {
+        return IStream.many(entries)
     }
 
     override fun size() = entries.size
@@ -128,13 +128,14 @@ data class BTreeNodeLeaf<K, V>(
     }
 
     override fun getContainmentReferences(): List<ObjectReference<IObjectData>> {
-        // return children
-        TODO()
+        return emptyList()
     }
 
     override fun serialize(): String {
         return "L" + SerializationSeparators.LEVEL1 + entries.joinToString(SerializationSeparators.LEVEL2) {
-            config.keySerializer(it.key) + SerializationSeparators.MAPPING + config.valueSerializer(it.value)
+            config.keyConfiguration.serialize(it.key) +
+                SerializationSeparators.MAPPING +
+                config.valueConfiguration.serialize(it.value)
         }
     }
 }

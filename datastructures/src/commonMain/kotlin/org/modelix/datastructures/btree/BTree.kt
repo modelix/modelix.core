@@ -1,5 +1,6 @@
 package org.modelix.datastructures.btree
 
+import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.streams.IStream
 
 data class BTree<K, V>(val root: BTreeNode<K, V>) {
@@ -7,10 +8,11 @@ data class BTree<K, V>(val root: BTreeNode<K, V>) {
 
     fun validate() {
         root.validate(true)
-        check(root.getEntries().map { it.key }.toSet().size == root.getEntries().map { it.key }.count()) {
+        @OptIn(DelicateModelixApi::class)
+        check(root.getEntries().toList().getSynchronous().map { it.key }.toSet().size == root.getEntries().map { it.key }.count().getSynchronous()) {
             "duplicate entries: $root"
         }
-        check(root.getEntries().map { it.key }.toList().sortedWith(root.config.keyComparator) == root.getEntries().map { it.key }.toList()) {
+        check(root.getEntries().map { it.key }.toList().getSynchronous().sortedWith(root.config.keyConfiguration) == root.getEntries().map { it.key }.toList()) {
             "not sorted: $this"
         }
     }
@@ -18,5 +20,5 @@ data class BTree<K, V>(val root: BTreeNode<K, V>) {
     fun get(key: K): V? = root.get(key)
     fun getAll(keys: Iterable<K>): IStream.Many<Pair<K, V>> = root.getAll(keys)
     fun remove(key: K): BTree<K, V> = copy(root = root.remove(key).createRoot())
-    fun getEntries(): Sequence<BTreeEntry<K, V>> = root.getEntries()
+    fun getEntries(): IStream.Many<BTreeEntry<K, V>> = root.getEntries()
 }

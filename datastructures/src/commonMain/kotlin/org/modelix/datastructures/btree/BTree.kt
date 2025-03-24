@@ -1,19 +1,37 @@
 package org.modelix.datastructures.btree
 
+data class BTree<K : Comparable<K>, V>(
+    val root: BTreeNode<K, V>,
+) {
+    constructor(minEntries: Int = 8) : this(BTreeNode(minEntries))
+
+    fun put(key: K, value: V): BTree<K, V> = copy(root = root.put(key, value).createRoot().also { it.validate() })
+    fun get(key: K): V? = root.get(key)
+    fun remove(key: K): BTree<K, V> = copy(root = root.remove(key).createRoot().also { it.validate() })
+}
+
 data class BTreeNode<K : Comparable<K>, V>(
     val config: BTreeConfig<K, V>,
     val entries: List<Pair<K, V>>,
     val children: List<BTreeNode<K, V>>,
 ) {
-    constructor(minEntries: Int = 10) : this(BTreeConfig(minEntries = minEntries), emptyList(), emptyList())
+    constructor(minEntries: Int = 8) : this(BTreeConfig(minEntries = minEntries), emptyList(), emptyList())
 
     init {
+        validate()
+    }
+
+    fun validate() {
         check(children.isEmpty() || children.size == entries.size + 1) {
             "entries: ${entries.size}, children expected: ${entries.size + 1}, children actual: ${children.size}"
         }
-        check(children.all { it.entries.size >= config.minEntries }) {
-            "$children"
+        for (child in children) {
+            check((config.minEntries..config.maxEntries).contains(child.entries.size)) {
+                "$child"
+            }
+            child.validate()
         }
+        children.forEach { it.validate() }
     }
 
     inner class ChildrenRange(val range: IntRange) {
@@ -139,9 +157,11 @@ data class BTreeNode<K : Comparable<K>, V>(
             )
         } else {
             if (children.first().entries.size <= config.minEntries) {
-                ChildrenRange(0..1)
-                    .replaceWith(children[0].mergeWith(entries[0], children[1]))
-                    .removeFirstEntry()
+                val mergedChild = children[0].mergeWith(entries[0], children[1])
+                val withRemovedEntry = mergedChild.removeFirstEntry()
+                withRemovedEntry.copy(
+                    updatedNode = withRemovedEntry.updatedNode.checkSize().apply(ChildrenRange(0..1)).expectCompletion(),
+                )
             } else {
                 children.first().removeFirstEntry().let {
                     RemovedEntry(it.entry, ChildrenRange(0).replaceWith(it.updatedNode))
@@ -158,9 +178,11 @@ data class BTreeNode<K : Comparable<K>, V>(
             )
         } else {
             if (children.last().entries.size <= config.minEntries) {
-                ChildrenRange((children.lastIndex - 1)..children.lastIndex)
-                    .replaceWith(children[children.lastIndex - 1].mergeWith(entries.last(), children.last()))
-                    .removeLastEntry()
+                val mergedChild = children[children.lastIndex - 1].mergeWith(entries.last(), children.last())
+                val withRemovedEntry = mergedChild.removeLastEntry()
+                withRemovedEntry.copy(
+                    updatedNode = withRemovedEntry.updatedNode.checkSize().apply(ChildrenRange((children.lastIndex - 1)..children.lastIndex)).expectCompletion(),
+                )
             } else {
                 children.last().removeLastEntry().let {
                     RemovedEntry(it.entry, ChildrenRange(children.lastIndex).replaceWith(it.updatedNode))
@@ -184,7 +206,7 @@ data class BTreeNode<K : Comparable<K>, V>(
     }
 }
 
-class RemovedEntry<K : Comparable<K>, V>(val entry: Pair<K, V>, val updatedNode: BTreeNode<K, V>)
+data class RemovedEntry<K : Comparable<K>, V>(val entry: Pair<K, V>, val updatedNode: BTreeNode<K, V>)
 
 sealed class UpdateResult<K : Comparable<K>, V> {
     abstract fun apply(toReplace: BTreeNode<K, V>.ChildrenRange): UpdateResult<K, V>

@@ -111,9 +111,6 @@ data class BTreeNode<K : Comparable<K>, V>(
         }
     }
 
-    /**
-     * @return null if nothing changed
-     */
     fun remove(key: K): UpdateResult<K, V> {
         val index = entries.binarySearch { it.first.compareTo(key) }
         return if (index >= 0) {

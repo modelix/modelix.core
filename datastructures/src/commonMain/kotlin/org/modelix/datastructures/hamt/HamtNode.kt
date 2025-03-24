@@ -1,19 +1,21 @@
 package org.modelix.datastructures.hamt
 
+import org.modelix.datastructures.objects.IDataTypeConfiguration
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.IObjectReferenceFactory
 import org.modelix.datastructures.objects.Object
-import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.datastructures.objects.hash
 import org.modelix.streams.IStream
 
 /**
  * Implementation of a hash array mapped trie.
  */
-sealed class HamtNode<K, V : IObjectData> : IObjectData {
+sealed class HamtNode<K, V : Any> : IObjectData {
     abstract val config: Config<K, V>
+
+    protected operator fun V.compareTo(other: V): Int = config.valueConfig.compare(this, other)
 
     override fun getDeserializer() = config.deserializer
 
@@ -21,14 +23,14 @@ sealed class HamtNode<K, V : IObjectData> : IObjectData {
         return HamtInternalNode(config, 0, arrayOf())
     }
 
-    fun getAll(keys: Iterable<K>): IStream.One<List<ObjectReference<V>?>> {
+    fun getAll(keys: Iterable<K>): IStream.One<List<V?>> {
         return getAll(keys, 0).toList().map {
             val entries = it.associateBy { it.first }
             keys.map { entries[it]?.second }
         }
     }
 
-    fun put(key: K, value: ObjectReference<V>?, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>> {
+    fun put(key: K, value: V?, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>> {
         return put(key, value, 0, graph)
     }
 
@@ -36,14 +38,14 @@ sealed class HamtNode<K, V : IObjectData> : IObjectData {
         return remove(key, 0, graph)
     }
 
-    fun get(key: K): IStream.ZeroOrOne<ObjectReference<V>> = get(key, 0)
+    fun get(key: K): IStream.ZeroOrOne<V> = get(key, 0)
 
-    abstract fun get(key: K, shift: Int): IStream.ZeroOrOne<ObjectReference<V>>
-    abstract fun put(key: K, value: ObjectReference<V>?, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>>
-    abstract fun putAll(entries: List<Pair<K, ObjectReference<V>?>>, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>>
-    abstract fun getAll(keys: Iterable<K>, shift: Int): IStream.Many<Pair<K, ObjectReference<V>?>>
+    abstract fun get(key: K, shift: Int): IStream.ZeroOrOne<V>
+    abstract fun put(key: K, value: V?, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>>
+    abstract fun putAll(entries: List<Pair<K, V?>>, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>>
+    abstract fun getAll(keys: Iterable<K>, shift: Int): IStream.Many<Pair<K, V?>>
     abstract fun remove(key: K, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>>
-    abstract fun getEntries(): IStream.Many<Pair<K, ObjectReference<V>>>
+    abstract fun getEntries(): IStream.Many<Pair<K, V>>
     abstract fun getChanges(oldNode: HamtNode<K, V>?, shift: Int, changesOnly: Boolean): IStream.Many<MapChangeEvent<K, V>>
     fun getChanges(oldNode: HamtNode<K, V>?, changesOnly: Boolean) = getChanges(oldNode, 0, changesOnly)
 
@@ -101,14 +103,18 @@ sealed class HamtNode<K, V : IObjectData> : IObjectData {
         }
     }
 
-    private class Deserializer<K, V : IObjectData>(val config: Config<K, V>) : IObjectDeserializer<HamtNode<K, V>> {
+    private class Deserializer<K, V : Any>(val config: Config<K, V>) : IObjectDeserializer<HamtNode<K, V>> {
         override fun deserialize(
             serialized: String,
             referenceFactory: IObjectReferenceFactory,
         ): HamtNode<K, V> {
             val parts = serialized.split(SEPARATOR)
             val data = when (parts[0]) {
-                "L" -> HamtLeafNode<K, V>(config, config.keyDeserializer(parts[1]), referenceFactory(parts[2], config.valueDeserializer))
+                "L" -> HamtLeafNode<K, V>(
+                    config,
+                    config.keyConfig.deserialize(parts[1]),
+                    config.valueConfig.deserialize(parts[2]),
+                )
                 "I" -> HamtInternalNode<K, V>(
                     config,
                     intFromHex(parts[1]),
@@ -129,24 +135,11 @@ sealed class HamtNode<K, V : IObjectData> : IObjectData {
         }
     }
 
-    data class Config<K, V : IObjectData>(
-        val valueDeserializer: IObjectDeserializer<V>,
-        /**
-         * Has to escape special characters that are not part of Base64Url.
-         */
-        val keySerializer: (K) -> String,
-        val keyDeserializer: (String) -> K,
-        val keyHashFunction: (K) -> Long,
+    data class Config<K, V : Any>(
+        val graph: IObjectGraph,
+        val keyConfig: IDataTypeConfiguration<K>,
+        val valueConfig: IDataTypeConfiguration<V>,
     ) {
         val deserializer: IObjectDeserializer<HamtNode<K, V>> = Deserializer<K, V>(this)
-
-        companion object {
-            fun <V : IObjectData> withLongKeys(valueDeserializer: IObjectDeserializer<V>) = Config<Long, V>(
-                valueDeserializer = valueDeserializer,
-                keySerializer = { longToHex(it) },
-                keyDeserializer = { longFromHex(it) },
-                keyHashFunction = { it },
-            )
-        }
     }
 }

@@ -7,13 +7,18 @@ data class BTree<K : Comparable<K>, V>(
 ) {
     constructor(minEntries: Int = 8) : this(BTreeNode(minEntries))
 
-    init {
-        root.validate()
+    fun validate() {
+        root.validate(true)
+        check(root.getEntries().map { it.key }.toSet().size == root.getEntries().map { it.key }.count()) {
+            "duplicate entries: $root"
+        }
+        check(root.getEntries().map { it.key }.toList().sorted() == root.getEntries().map { it.key }.toList()) {
+            "not sorted: $this"
+        }
     }
-
-    fun put(key: K, value: V): BTree<K, V> = copy(root = root.put(key, value).createRoot().also { it.validate() })
+    fun put(key: K, value: V): BTree<K, V> = copy(root = root.put(key, value).createRoot())
     fun get(key: K): V? = root.get(key)
-    fun remove(key: K): BTree<K, V> = copy(root = root.remove(key).createRoot().also { it.validate() })
+    fun remove(key: K): BTree<K, V> = copy(root = root.remove(key).createRoot())
 }
 
 data class BTreeNode<K : Comparable<K>, V>(
@@ -23,25 +28,23 @@ data class BTreeNode<K : Comparable<K>, V>(
 ) {
     constructor(minEntries: Int = 8) : this(BTreeConfig(minEntries = minEntries), emptyList(), emptyList())
 
-    init {
-        validate()
-    }
-
-    fun validate() {
+    fun validate(isRoot: Boolean) {
         check(children.isEmpty() || children.size == entries.size + 1) {
             "entries: ${entries.size}, children expected: ${entries.size + 1}, children actual: ${children.size}"
         }
         check(entries.size == entries.map { it.key }.toSet().size) {
-            "$entries"
+            "duplicate entries: $entries"
         }
         check(entries.map { it.key }.sorted() == entries.map { it.key }) {
-            "not sorted: $entries"
+            "entries not sorted: $entries"
         }
-        for (child in children) {
-            check((config.minEntries..config.maxEntries).contains(child.entries.size)) {
-                "$child"
+        check(entries.size <= config.maxEntries) {
+            "overfilled: $this"
+        }
+        if (!isRoot) {
+            check(entries.size >= config.minEntries) {
+                "underfilled: $this"
             }
-            child.validate()
         }
         if (children.isNotEmpty()) {
             for ((index, entry) in entries.withIndex()) {
@@ -53,14 +56,9 @@ data class BTreeNode<K : Comparable<K>, V>(
                 }
             }
         }
-        check(getEntries().map { it.key }.toSet().size == getEntries().map { it.key }.count()) {
-            "duplicate entries: $this"
+        for (child in children) {
+            child.validate(false)
         }
-        check(getEntries().map { it.key }.toList().sorted() == getEntries().map { it.key }.toList()) {
-            "not sorted: $this"
-        }
-
-        children.forEach { it.validate() }
     }
 
     fun getEntries(): Sequence<Entry<K, V>> {
@@ -338,9 +336,7 @@ sealed class Replacement<K : Comparable<K>, V> {
 
     class Single<K : Comparable<K>, V>(val newNode: BTreeNode<K, V>) : Replacement<K, V>() {
         override fun apply(toReplace: ChildrenRange<K, V>): Replacement<K, V> {
-            check(newNode.size() <= newNode.config.maxEntries) {
-                "$newNode"
-            }
+            check(newNode.size() <= newNode.config.maxEntries)
             return if (toReplace.size() == 1 && toReplace.firstInRange() === newNode) {
                 Single(toReplace.parent) // nothing changed
             } else {
@@ -358,7 +354,11 @@ sealed class Replacement<K : Comparable<K>, V> {
         override fun removeLastEntry(): RemovedEntry<K, V> = newNode.removeLastEntry()
         override fun splitIfNecessary(): Replacement<K, V> = newNode.splitIfNecessary()
     }
-    class Splitted<K : Comparable<K>, V>(val left: BTreeNode<K, V>, val right: BTreeNode<K, V>, val medianEntry: BTreeNode.Entry<K, V>) : Replacement<K, V>() {
+    class Splitted<K : Comparable<K>, V>(
+        val left: BTreeNode<K, V>,
+        val right: BTreeNode<K, V>,
+        val medianEntry: BTreeNode.Entry<K, V>,
+    ) : Replacement<K, V>() {
         override fun apply(toReplace: ChildrenRange<K, V>): Replacement<K, V> {
             return toReplace.replaceWith(left, medianEntry, right)
         }
@@ -366,20 +366,11 @@ sealed class Replacement<K : Comparable<K>, V> {
         override fun createRoot(): BTreeNode<K, V> {
             return BTreeNode(left.config, listOf(medianEntry), listOf(left, right))
         }
-        override fun expectSingle(): BTreeNode<K, V> = throw IllegalStateException("Not complete: $this")
-        override fun removeEntry(key: K): Replacement<K, V> {
-            TODO("Not yet implemented")
-        }
-
-        override fun removeFirstEntry(): RemovedEntry<K, V> {
-            TODO("Not yet implemented")
-        }
-
-        override fun removeLastEntry(): RemovedEntry<K, V> {
-            TODO("Not yet implemented")
-        }
-
+        override fun expectSingle(): BTreeNode<K, V> = throw IllegalStateException("Single node expected: $this")
         override fun splitIfNecessary(): Replacement<K, V> = this
+        override fun removeEntry(key: K): Replacement<K, V> = error("unexpected")
+        override fun removeFirstEntry(): RemovedEntry<K, V> = error("unexpected")
+        override fun removeLastEntry(): RemovedEntry<K, V> = error("unexpected")
     }
 }
 

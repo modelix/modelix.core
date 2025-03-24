@@ -11,36 +11,20 @@ data class BTreeNodeLeaf<K, V>(
 ) : BTreeNode<K, V>() {
 
     override fun validate(isRoot: Boolean) {
-//        check(children.isEmpty() || children.size == entries.size + 1) {
-//            "entries: ${entries.size}, children expected: ${entries.size + 1}, children actual: ${children.size}"
-//        }
-//        check(entries.size == entries.map { it.key }.toSet().size) {
-//            "duplicate entries: $entries"
-//        }
-//        check(entries.map { it.key }.sortedWith(config.keyComparator) == entries.map { it.key }) {
-//            "entries not sorted: $entries"
-//        }
-//        check(entries.size <= config.maxEntries) {
-//            "overfilled: $this"
-//        }
-//        if (!isRoot) {
-//            check(entries.size >= config.minEntries) {
-//                "underfilled: $this"
-//            }
-//        }
-//        if (children.isNotEmpty()) {
-//            for ((index, entry) in entries.withIndex()) {
-//                check(children[index].getLastEntry().key < entry.key) {
-//                    "not sorted: $this"
-//                }
-//                check(children[index + 1].getFirstEntry().key > entry.key) {
-//                    "not sorted: $this"
-//                }
-//            }
-//        }
-//        for (child in children) {
-//            child.validate(false)
-//        }
+        check(entries.size == entries.map { it.key }.toSet().size) {
+            "duplicate entries: $entries"
+        }
+        check(entries.map { it.key }.sortedWith(config.keyComparator) == entries.map { it.key }) {
+            "entries not sorted: $entries"
+        }
+        check(entries.size <= config.maxEntries) {
+            "overfilled: $this"
+        }
+        if (!isRoot) {
+            check(entries.size >= config.minEntries) {
+                "underfilled: $this"
+            }
+        }
     }
 
     override fun getEntries(): Sequence<BTreeEntry<K, V>> {

@@ -13,39 +13,35 @@ data class BTreeNodeInternal<K, V>(
     val children: List<BTreeNode<K, V>>,
 ) : BTreeNode<K, V>() {
 
-
-
     override fun validate(isRoot: Boolean) {
-//        check(children.isEmpty() || children.size == entries.size + 1) {
-//            "entries: ${entries.size}, children expected: ${entries.size + 1}, children actual: ${children.size}"
-//        }
-//        check(entries.size == entries.map { it.key }.toSet().size) {
-//            "duplicate entries: $entries"
-//        }
-//        check(entries.map { it.key }.sortedWith(config.keyComparator) == entries.map { it.key }) {
-//            "entries not sorted: $entries"
-//        }
-//        check(entries.size <= config.maxEntries) {
-//            "overfilled: $this"
-//        }
-//        if (!isRoot) {
-//            check(entries.size >= config.minEntries) {
-//                "underfilled: $this"
-//            }
-//        }
-//        if (children.isNotEmpty()) {
-//            for ((index, entry) in entries.withIndex()) {
-//                check(children[index].getLastEntry().key < entry.key) {
-//                    "not sorted: $this"
-//                }
-//                check(children[index + 1].getFirstEntry().key > entry.key) {
-//                    "not sorted: $this"
-//                }
-//            }
-//        }
-//        for (child in children) {
-//            child.validate(false)
-//        }
+        check(children.isEmpty() || children.size == separatorKeys.size + 1) {
+            "separators: ${separatorKeys.size}, children expected: ${separatorKeys.size + 1}, children actual: ${children.size}"
+        }
+        check(separatorKeys.size == separatorKeys.toSet().size) {
+            "duplicate entries: $separatorKeys"
+        }
+        check(separatorKeys.sortedWith(config.keyComparator) == separatorKeys) {
+            "separators not sorted: $separatorKeys"
+        }
+        check(children.size <= config.maxChildren) {
+            "overfilled: $this"
+        }
+        if (!isRoot) {
+            check(children.size >= config.minChildren) {
+                "underfilled: $this"
+            }
+        }
+        for ((index, separator) in separatorKeys.withIndex()) {
+            check(children[index].getLastEntry().key < separator) {
+                "not sorted: $this"
+            }
+            check(children[index + 1].getFirstEntry().key >= separator) {
+                "not sorted: $this"
+            }
+        }
+        for (child in children) {
+            child.validate(false)
+        }
     }
 
     override fun getEntries(): Sequence<BTreeEntry<K, V>> {

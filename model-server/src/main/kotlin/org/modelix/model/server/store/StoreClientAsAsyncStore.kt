@@ -8,10 +8,10 @@ import org.modelix.model.async.ObjectRequest
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
-import org.modelix.streams.SequenceStreamBuilder
+import org.modelix.streams.SimpleStreamExecutor
 
 class StoreClientAsAsyncStore(val store: IStoreClient) : IAsyncObjectStore {
-    override fun getStreamExecutor(): IStreamExecutor = SequenceStreamBuilder.INSTANCE.getStreamExecutor()
+    override fun getStreamExecutor(): IStreamExecutor = SimpleStreamExecutor
 
     override fun getLegacyKeyValueStore(): IKeyValueStore {
         return StoreClientAsKeyValueStore(store)

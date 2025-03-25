@@ -4,11 +4,11 @@ import org.apache.commons.collections4.IterableUtils
 import org.modelix.model.IKeyListener
 import org.modelix.model.IKeyValueStore
 import org.modelix.streams.IStreamExecutor
-import org.modelix.streams.SequenceStreamBuilder
+import org.modelix.streams.SimpleStreamExecutor
 
 class StoreClientAsKeyValueStore(val store: IStoreClient) : IKeyValueStore {
 
-    override fun getStreamExecutor(): IStreamExecutor = SequenceStreamBuilder.INSTANCE.getStreamExecutor()
+    override fun getStreamExecutor(): IStreamExecutor = SimpleStreamExecutor
 
     override fun get(key: String): String? {
         @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions

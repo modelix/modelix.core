@@ -3,7 +3,7 @@ package org.modelix.datastructures.objects
 import org.modelix.kotlin.utils.WeakValueMap
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
-import org.modelix.streams.SequenceStreamBuilder
+import org.modelix.streams.SimpleStreamExecutor
 import kotlin.jvm.Synchronized
 
 /**
@@ -113,7 +113,7 @@ class FullyLoadedObjectGraph : IObjectGraph, IObjectWriter {
     }
 
     override fun getStreamExecutor(): IStreamExecutor {
-        return SequenceStreamBuilder.INSTANCE.getStreamExecutor()
+        return SimpleStreamExecutor
     }
 
     override fun <T : IObjectData> request(ref: ObjectReference<T>): IStream.One<T> {

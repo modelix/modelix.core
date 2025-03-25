@@ -50,7 +50,7 @@ import org.modelix.model.oauth.ModelixAuthClient
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.sleep
 import org.modelix.model.util.StreamUtils.toStream
-import org.modelix.streams.FlowStreamBuilder
+import org.modelix.streams.BlockingStreamExecutor
 import org.modelix.streams.IStreamExecutor
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -228,7 +228,7 @@ class RestWebModelClient @JvmOverloads constructor(
         }
     private var connectionStatusListeners: Set<ConnectionStatusListener> = emptySet()
 
-    override fun getStreamExecutor(): IStreamExecutor = FlowStreamBuilder.INSTANCE.getStreamExecutor()
+    override fun getStreamExecutor(): IStreamExecutor = BlockingStreamExecutor
 
     private fun startConnectionWatchdog() {
         watchdogJob = coroutineScope.launch {

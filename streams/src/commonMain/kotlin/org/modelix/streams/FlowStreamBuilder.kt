@@ -1,7 +1,6 @@
 package org.modelix.streams
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
@@ -16,7 +15,6 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.fold
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
@@ -29,12 +27,11 @@ import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.flow.zip
 import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.kotlin.utils.runBlockingIfJvm
-import kotlin.coroutines.coroutineContext
 
-class FlowStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder, IStreamConverter, IStreamExecutorProvider by executor {
+class FlowStreamBuilder() : IStreamBuilder {
 
     companion object {
-        val INSTANCE = FlowStreamBuilder(SimpleStreamExecutor.asProvider())
+        val INSTANCE = FlowStreamBuilder()
     }
 
     fun <T> convert(stream: IStream<T>) = (stream.convert(this) as WrapperBase<T>).wrapped
@@ -48,15 +45,9 @@ class FlowStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder, ISt
     override fun <T> singleFromCoroutine(block: suspend CoroutineScope.() -> T): IStream.One<T> {
         return Wrapper(
             flow {
-                val contextWithFlowBuilder = IStream.useBuilderSuspending(this@FlowStreamBuilder) { coroutineContext }
-                    .minusKey(Job)
-                emitAll(
-                    flow {
-                        coroutineScope {
-                            emit(block())
-                        }
-                    }.flowOn(contextWithFlowBuilder),
-                )
+                coroutineScope {
+                    emit(block())
+                }
             },
         )
     }
@@ -73,7 +64,11 @@ class FlowStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder, ISt
         input: Iterable<IStream.One<T>>,
         mapper: (List<T>) -> R,
     ): IStream.One<R> {
-        TODO("Not yet implemented")
+        return Wrapper(
+            flow {
+                emit(mapper(input.map { convert(it).single() }))
+            },
+        )
     }
 
     override fun <T1, T2, R> zip(
@@ -95,7 +90,7 @@ class FlowStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder, ISt
         TODO("Not yet implemented")
     }
 
-    abstract inner class WrapperBase<E>(val wrapped: Flow<E>) : IStream<E>, IStreamExecutorProvider by this {
+    abstract inner class WrapperBase<E>(val wrapped: Flow<E>) : IStream<E> {
         override fun asFlow(): Flow<E> = wrapped
         override fun toList(): IStream.One<List<E>> = Wrapper(flow { emit(wrapped.toList()) })
         override fun asSequence(): Sequence<E> = throw UnsupportedOperationException()

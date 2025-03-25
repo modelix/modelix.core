@@ -50,10 +50,6 @@ class DeferredStreamBuilder : IStreamBuilder {
         return ConvertibleOne { it.singleFromCoroutine(block) }
     }
 
-    override fun getStreamExecutor(): IStreamExecutor {
-        return SimpleStreamExecutor
-    }
-
     class ConvertibleOne<E>(conversion: (IStreamBuilder) -> IStream.One<E>) : ConvertibleZeroOrOne<E>(conversion), IStream.One<E> {
         override fun convert(converter: IStreamBuilder): IStream.One<E> {
             return super.convert(converter) as IStream.One<E>
@@ -355,6 +351,5 @@ class DeferredStreamBuilder : IStreamBuilder {
         override suspend fun iterateSuspending(visitor: suspend (E) -> Unit) {
             FlowStreamBuilder.INSTANCE.convert(this).collect(visitor)
         }
-        override fun getStreamExecutor(): IStreamExecutor = throw UnsupportedOperationException()
     }
 }

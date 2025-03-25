@@ -10,9 +10,7 @@ import org.modelix.model.data.asData
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.persistent.MapBasedStore
-import org.modelix.streams.IStream
 import org.modelix.streams.plus
-import org.modelix.streams.useSequences
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -21,7 +19,7 @@ import kotlin.test.assertEquals
 class ObjectDiffTest {
 
     @Test
-    fun treeDiff() = IStream.useSequences {
+    fun treeDiff() {
         val store = createObjectStoreCache(MapBasedStore())
         val tree1 = CLTree.builder(store).repositoryId("test").build()
             .addNewChild(ITree.ROOT_ID, "childrenA", 0, 100, null as IConceptReference?)
@@ -57,7 +55,7 @@ class ObjectDiffTest {
     }
 
     @Test
-    fun randomChange() = IStream.useSequences {
+    fun randomChange() {
         for (i in 1..10) {
             println(i)
             runRandomChange(Random(i + 67872346))

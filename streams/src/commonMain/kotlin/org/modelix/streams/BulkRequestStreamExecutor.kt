@@ -17,7 +17,7 @@ interface IBulkExecutor<K, V> {
 
 class BulkRequestStreamExecutor<K, V>(private val bulkExecutor: IBulkExecutor<K, V>, val batchSize: Int = 5000) : IStreamExecutor, IStreamExecutorProvider {
     private val requestQueue = ContextValue<RequestQueue>()
-    private val streamBuilder = ReaktiveStreamBuilder(this)
+    private val streamBuilder = ReaktiveStreamBuilder()
 
     private inner class RequestQueue {
         val queue: MutableMap<K, QueueElement> = LinkedHashMap()
@@ -98,7 +98,7 @@ class BulkRequestStreamExecutor<K, V>(private val bulkExecutor: IBulkExecutor<K,
         return if (existingQueue == null) {
             val newQueue = RequestQueue()
             requestQueue.computeWith(newQueue) {
-                IStream.useBuilder(streamBuilder) {
+                IStreamExecutor.CONTEXT.computeWith(this) {
                     doProcess(newQueue)
                 }
             }
@@ -126,7 +126,7 @@ class BulkRequestStreamExecutor<K, V>(private val bulkExecutor: IBulkExecutor<K,
         return if (existingQueue == null) {
             val newQueue = RequestQueue()
             requestQueue.runInCoroutine(newQueue) {
-                IStream.useBuilderSuspending(streamBuilder) {
+                IStreamExecutor.CONTEXT.runInCoroutine(this) {
                     doProcess(newQueue)
                 }
             }
@@ -149,7 +149,7 @@ class BulkRequestStreamExecutor<K, V>(private val bulkExecutor: IBulkExecutor<K,
         return if (existingQueue == null) {
             val newQueue = RequestQueue()
             requestQueue.computeWith(newQueue) {
-                IStream.useBuilder(streamBuilder) {
+                IStreamExecutor.CONTEXT.computeWith(this) {
                     doProcess(newQueue)
                 }
             }
@@ -189,7 +189,7 @@ class BulkRequestStreamExecutor<K, V>(private val bulkExecutor: IBulkExecutor<K,
         return if (existingQueue == null) {
             val newQueue = RequestQueue()
             requestQueue.runInCoroutine(newQueue) {
-                IStream.useBuilderSuspending(streamBuilder) {
+                IStreamExecutor.CONTEXT.runInCoroutine(this) {
                     doProcess(newQueue)
                 }
             }

@@ -85,6 +85,7 @@ class AsyncNode(
 
     override fun getDescendants(includeSelf: Boolean): IStream.Many<IAsyncNode> {
         return if (includeSelf) {
+            getStreamExecutor()
             IStream.of(IStream.of(this), getDescendants(false)).flatten()
         } else {
             getAllChildren().flatMap { it.getDescendants(true) }

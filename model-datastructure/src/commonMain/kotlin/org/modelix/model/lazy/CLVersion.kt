@@ -28,7 +28,6 @@ import org.modelix.model.api.getRootNode
 import org.modelix.model.async.AsyncAsSynchronousTree
 import org.modelix.model.async.AsyncTree
 import org.modelix.model.async.IAsyncObjectStore
-import org.modelix.model.async.LazyLoadingObjectGraph
 import org.modelix.model.async.ObjectRequest
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.OTBranch
@@ -37,6 +36,7 @@ import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.CPVersion
 import org.modelix.streams.IStream
 import org.modelix.streams.plus
+import org.modelix.streams.query
 import kotlin.jvm.JvmName
 
 class CLVersion(val obj: Object<CPVersion>) : IVersion {
@@ -278,13 +278,12 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
         }
 
         fun tryLoadFromHash(hash: String, store: IDeserializingKeyValueStore): CLVersion? {
-            val data = store.get(hash, CPVersion.DESERIALIZER) ?: return null
-            val graph = LazyLoadingObjectGraph(store.getAsyncStore())
-            return CLVersion(data.asObject(ObjectHash(hash), graph))
+            val asyncStore = store.getAsyncStore()
+            return asyncStore.query { tryLoadFromHash(hash, asyncStore).orNull() }
         }
 
         fun tryLoadFromHash(hash: String, store: IAsyncObjectStore): IStream.ZeroOrOne<CLVersion> {
-            val graph = LazyLoadingObjectGraph(store)
+            val graph = store.asObjectGraph()
             return store.get(ObjectRequest(hash, CPVersion.DESERIALIZER, graph))
                 .map { CLVersion(it.asObject(ObjectHash(hash), graph)) }
         }

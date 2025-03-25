@@ -8,7 +8,6 @@ import org.modelix.model.persistent.CPHamtNode
 import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.streams.IStream
-import org.modelix.streams.useSequences
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,7 +15,7 @@ import kotlin.test.assertEquals
 @OptIn(DelicateModelixApi::class) // in tests everything is allowed
 class HamtTest {
     @Test
-    fun test_random() = IStream.useSequences {
+    fun test_random() {
         val rand = Random(1)
         val expectedMap: MutableMap<Long, Long> = HashMap()
         val store = MapBaseStore()
@@ -66,7 +65,7 @@ class HamtTest {
     )
 
     @Test
-    fun test_random_case_causing_outofbounds_on_js() = IStream.useSequences {
+    fun test_random_case_causing_outofbounds_on_js() {
         val store = MapBaseStore()
         val storeCache = createObjectStoreCache(store)
         val graph = storeCache.asObjectGraph()
@@ -94,7 +93,7 @@ class HamtTest {
      * the operations of a new version instead of downloading the new snapshot (which would require multiple requests).
      */
     @Test
-    fun insertionOrderTest() = IStream.useSequences {
+    fun insertionOrderTest() {
         val store = createObjectStoreCache(MapBaseStore())
         val graph = store.asObjectGraph()
         val emptyMap = CPHamtInternal.createEmpty()

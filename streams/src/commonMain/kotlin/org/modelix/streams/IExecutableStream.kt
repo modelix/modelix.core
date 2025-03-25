@@ -16,10 +16,16 @@ interface IExecutableStream : IStreamExecutorProvider {
 
     companion object {
         fun <T> of(element: T): IExecutableStream.One<T> {
-            return ExecutableStreamOne(SequenceStreamBuilder.INSTANCE.getStreamExecutor()) { IStream.of(element) }
+            return ExecutableStreamOne(SimpleStreamExecutor) { IStream.of(element) }
         }
         fun <T> many(vararg elements: T): IExecutableStream.Many<T> {
-            return ExecutableStreamMany(SequenceStreamBuilder.INSTANCE.getStreamExecutor()) { IStream.many(elements) }
+            return ExecutableStreamMany(SimpleStreamExecutor) { IStream.many(elements) }
+        }
+        fun <T> many(elements: Sequence<T>): IExecutableStream.Many<T> {
+            return ExecutableStreamMany(SimpleStreamExecutor) { IStream.many(elements) }
+        }
+        fun <T> many(elements: Iterable<T>): IExecutableStream.Many<T> {
+            return ExecutableStreamMany(SimpleStreamExecutor) { IStream.many(elements) }
         }
     }
 }
@@ -42,8 +48,8 @@ class ExecutableStreamOne<T>(
     override suspend fun querySuspending(): T = executor.querySuspending { streamBuilder() }
 }
 
-@Deprecated("Use IStreamExecutor.queryLater")
 fun <T> IStream.One<T>.asExecutable(executor: IStreamExecutor) = ExecutableStreamOne(executor) { this }
+fun <T> IStream.Many<T>.asExecutable(executor: IStreamExecutor) = ExecutableStreamMany(executor) { this }
 
 class ExecutableStreamOneSuspending<T>(
     private val executor: IStreamExecutor,

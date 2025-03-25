@@ -5,11 +5,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import org.modelix.kotlin.utils.DelicateModelixApi
 
-class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
-    IStreamBuilder, IStreamExecutorProvider by executor {
+class SequenceStreamBuilder() : IStreamBuilder {
 
     companion object {
-        val INSTANCE = SequenceStreamBuilder(SimpleStreamExecutor.asProvider())
+        val INSTANCE = SequenceStreamBuilder()
     }
 
     fun <T> convert(stream: IStream<T>) = (stream.convert(this) as WrapperBase<T>).wrapped
@@ -83,7 +82,7 @@ class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
         }
     }
 
-    inner class Zero(wrapped: Sequence<Any?>) : WrapperBase<Any?>(wrapped), IStream.Zero, IStreamExecutorProvider by this {
+    inner class Zero(wrapped: Sequence<Any?>) : WrapperBase<Any?>(wrapped), IStream.Zero {
         override fun convert(converter: IStreamBuilder): IStream.Zero {
             require(converter == this@SequenceStreamBuilder)
             return this
@@ -150,7 +149,7 @@ class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
         }
     }
 
-    inner class Wrapper<E>(wrapped: Sequence<E>) : WrapperBase<E>(wrapped), IStream.One<E>, IStreamExecutorProvider by this {
+    inner class Wrapper<E>(wrapped: Sequence<E>) : WrapperBase<E>(wrapped), IStream.One<E> {
         override fun convert(converter: IStreamBuilder): IStream.One<E> {
             require(converter == this@SequenceStreamBuilder)
             return this
@@ -334,11 +333,4 @@ class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
             )
         }
     }
-}
-
-fun <R> IStream.Companion.useSequences(body: () -> R): R {
-    return useBuilder(SequenceStreamBuilder.INSTANCE, body)
-}
-suspend fun <R> IStream.Companion.useSequencesSuspending(body: suspend () -> R): R {
-    return useBuilderSuspending(SequenceStreamBuilder.INSTANCE, body)
 }

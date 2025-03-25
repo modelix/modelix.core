@@ -12,8 +12,6 @@ import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.RoleInNode
 import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.persistent.SerializationUtil
-import org.modelix.streams.IStream
-import org.modelix.streams.useSequences
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -51,7 +49,7 @@ class TreeDiffTest {
         test(569L, 50, 10)
     }
 
-    fun test(seed: Long, initialSize: Int, numModifications: Int) = IStream.useSequences {
+    fun test(seed: Long, initialSize: Int, numModifications: Int) {
         val rand = Random(seed)
         val store = MapBasedStore()
         val storeCache = createObjectStoreCache(store)

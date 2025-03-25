@@ -61,7 +61,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import org.modelix.streams.IStream.OneOrMany
 
-class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder, IStreamExecutorProvider by executor {
+class ReaktiveStreamBuilder() : IStreamBuilder {
 
     fun convert(stream: IStream.Zero) = (stream.convert(this) as Wrapper<*>).wrappedAsCompletable()
     fun <T> convert(stream: IStream.One<T>) = (stream.convert(this) as Wrapper<T>).wrappedAsSingle()
@@ -120,7 +120,7 @@ class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder,
         )
     }
 
-    abstract inner class Wrapper<E> : IStreamExecutorProvider by this {
+    abstract inner class Wrapper<E> {
         abstract fun wrappedAsSingle(): Single<E>
         abstract fun wrappedAsMaybe(): Maybe<E>
         abstract fun wrappedAsObservable(): Observable<E>

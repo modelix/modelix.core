@@ -36,7 +36,7 @@ class AsyncStoreAsLegacyDeserializingStore(val store: IAsyncObjectStore) : IDese
 
     override fun put(hash: String, deserialized: IObjectData, serialized: String) {
         getStreamExecutor().query {
-            store.putAll(mapOf(ObjectRequest(hash, ILLEGAL_DESERIALIZER, store.asObjectGraph()) to deserialized as IObjectData)).asOne()
+            store.putAll(mapOf(ObjectRequest(hash, ILLEGAL_DESERIALIZER, store.asObjectGraph()) to deserialized as IObjectData)).andThenUnit()
         }
     }
 

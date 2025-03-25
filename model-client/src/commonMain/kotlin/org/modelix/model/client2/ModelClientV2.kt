@@ -80,8 +80,7 @@ import org.modelix.modelql.client.ModelQLClient
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.streams.IExecutableStream
 import org.modelix.streams.IStream
-import org.modelix.streams.SimpleStreamExecutor
-import org.modelix.streams.withSequences
+import org.modelix.streams.SequenceStreamBuilder
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -359,7 +358,7 @@ class ModelClientV2(
     override suspend fun pushObjects(repository: RepositoryId, objects: Sequence<ObjectHashAndSerializedObject>) {
         pushObjects(
             repository,
-            SimpleStreamExecutor().withSequences().queryManyLater { IStream.many(objects) },
+            SequenceStreamBuilder.INSTANCE.getStreamExecutor().queryManyLater { IStream.many(objects) },
             false,
         )
     }

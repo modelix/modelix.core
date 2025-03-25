@@ -48,7 +48,7 @@ data class LazyLoadingObjectGraph(val store: IAsyncObjectStore) : IObjectGraph {
 
     override fun write(obj: Object<*>) {
         getStreamExecutor().query {
-            store.putAll(mapOf(ObjectRequest(obj.getHashString(), obj.ref.getDeserializer(), this) to obj.data)).asOne()
+            store.putAll(mapOf(ObjectRequest(obj.getHashString(), obj.ref.getDeserializer(), this) to obj.data)).andThenUnit()
         }
     }
 }

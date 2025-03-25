@@ -110,16 +110,24 @@ data class BTreeNodeLeaf<K, V>(
     }
 
     private fun insertEntry(newEntry: BTreeEntry<K, V>): BTreeNodeLeaf<K, V> {
-        val index = entries.binarySearch { it.key.compareTo(newEntry.key) }
-        if (index >= 0) {
-            return copy(
-                entries = entries.take(index) + newEntry + entries.drop(index + 1),
-            )
+        val index = entries.binarySearch(newEntry, config.entryComparatorForInsertion)
+        return if (index >= 0) {
+            if (config.multimap) {
+                // In case of multimaps, the comparator also compares the values, meaning the value of the newEntry
+                // already exists in the tree.
+                this
+            } else {
+                // In case of non-multimaps, the comparator only compares the key. Check the value to avoid unnecessary
+                // changes to the tree.
+                if (entries[index].value == newEntry.value) {
+                    this
+                } else {
+                    copy(entries = entries.take(index) + newEntry + entries.drop(index + 1))
+                }
+            }
         } else {
             val insertionIndex = if (index >= 0) index else (-index) - 1
-            return copy(
-                entries = entries.take(insertionIndex) + newEntry + entries.drop(insertionIndex),
-            )
+            copy(entries = entries.take(insertionIndex) + newEntry + entries.drop(insertionIndex))
         }
     }
 

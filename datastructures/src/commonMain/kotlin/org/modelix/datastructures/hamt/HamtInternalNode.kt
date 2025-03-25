@@ -52,21 +52,21 @@ class HamtInternalNode<K, V : Any>(
         }
     }
 
-    override fun put(key: K, value: V?, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>> {
+    override fun put(key: K, value: V, shift: Int, graph: IObjectGraph): IStream.One<HamtNode<K, V>> {
         require(shift <= MAX_SHIFT) { "$shift > $MAX_SHIFT" }
         val childIndex = indexFromHash(config.keyConfig.hashCode64(key), shift)
-        return getChild(childIndex).orNull().flatMapZeroOrOne { child ->
+        return getChild(childIndex).orNull().flatMapOne { child ->
             if (child == null) {
-                setChild(childIndex, HamtLeafNode.create(config, key, value), shift, graph)
+                setChild(childIndex, HamtLeafNode.create(config, key, value), shift, graph).exactlyOne()
             } else {
-                child.put(key, value, shift + BITS_PER_LEVEL, graph).orNull().flatMapZeroOrOne {
-                    setChild(childIndex, it, shift, graph)
+                child.put(key, value, shift + BITS_PER_LEVEL, graph).orNull().flatMapOne {
+                    setChild(childIndex, it, shift, graph).exactlyOne()
                 }
             }
         }
     }
 
-    override fun putAll(entries: List<Pair<K, V?>>, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>> {
+    override fun putAll(entries: List<Pair<K, V>>, shift: Int, graph: IObjectGraph): IStream.One<HamtNode<K, V>> {
         val groups = entries.groupBy { indexFromHash(config.keyConfig.hashCode64(it.first), shift) }
         val logicalIndices = groups.keys.toIntArray()
         val newChildrenLists = groups.values.toList()
@@ -89,12 +89,12 @@ class HamtInternalNode<K, V : Any>(
                     oldChild.putAll(newChildren, shift + BITS_PER_LEVEL, graph).orNull()
                 }
             }
-        }.toList().flatMapZeroOrOne { updatedChildren ->
+        }.toList().flatMapOne { updatedChildren ->
             setChildren(
                 logicalIndices,
                 updatedChildren.map { it?.let { graph(it) } },
                 shift,
-            )
+            ).exactlyOne()
         }
     }
 

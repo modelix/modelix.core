@@ -1,5 +1,8 @@
 package org.modelix.datastructures.hamt
 
+import org.modelix.datastructures.btree.BTree
+import org.modelix.datastructures.btree.BTreeConfig
+import org.modelix.datastructures.btree.BTreeNode
 import org.modelix.datastructures.objects.IDataTypeConfiguration
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
@@ -8,6 +11,7 @@ import org.modelix.datastructures.objects.IObjectReferenceFactory
 import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.hash
 import org.modelix.streams.IStream
+import kotlin.jvm.JvmName
 
 /**
  * Implementation of a hash array mapped trie.
@@ -31,7 +35,7 @@ sealed class HamtNode<K, V : Any> : IObjectData {
     }
 
     fun put(key: K, value: V?, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>> {
-        return put(key, value, 0, graph)
+        return if (value == null) remove(key, 0, graph) else put(key, value, 0, graph)
     }
 
     fun remove(key: K, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>> {
@@ -41,8 +45,8 @@ sealed class HamtNode<K, V : Any> : IObjectData {
     fun get(key: K): IStream.ZeroOrOne<V> = get(key, 0)
 
     abstract fun get(key: K, shift: Int): IStream.ZeroOrOne<V>
-    abstract fun put(key: K, value: V?, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>>
-    abstract fun putAll(entries: List<Pair<K, V?>>, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>>
+    abstract fun put(key: K, value: V, shift: Int, graph: IObjectGraph): IStream.One<HamtNode<K, V>>
+    abstract fun putAll(entries: List<Pair<K, V>>, shift: Int, graph: IObjectGraph): IStream.One<HamtNode<K, V>>
     abstract fun getAll(keys: Iterable<K>, shift: Int): IStream.Many<Pair<K, V?>>
     abstract fun remove(key: K, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>>
     abstract fun getEntries(): IStream.Many<Pair<K, V>>
@@ -129,6 +133,10 @@ sealed class HamtNode<K, V : Any> : IObjectData {
                     longFromHex(parts[2]),
                     referenceFactory(parts[3], this),
                 )
+                "C" -> HamtCollisionNode(
+                    config,
+                    BTree(config.btreeDeserializer.deserialize(serialized.substring(2), referenceFactory)),
+                )
                 else -> throw RuntimeException("Unknown type: " + parts[0] + ", input: " + serialized)
             }
             return data
@@ -140,6 +148,18 @@ sealed class HamtNode<K, V : Any> : IObjectData {
         val keyConfig: IDataTypeConfiguration<K>,
         val valueConfig: IDataTypeConfiguration<V>,
     ) {
+        val btreeConfig = BTreeConfig.builder()
+            .graph(graph)
+            .keyConfiguration(keyConfig)
+            .valueConfiguration(valueConfig)
+            .build()
         val deserializer: IObjectDeserializer<HamtNode<K, V>> = Deserializer<K, V>(this)
+        val btreeDeserializer = BTreeNode.Deserializer(btreeConfig)
+
+        @JvmName("keysEqual")
+        fun equal(a: K, b: K) = keyConfig.equal(a, b)
+
+        @JvmName("valuesEqual")
+        fun equal(a: V, b: V) = valueConfig.equal(a, b)
     }
 }

@@ -18,11 +18,11 @@ import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.api.toReference
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
-import org.modelix.streams.SequenceStreamBuilder
+import org.modelix.streams.SimpleStreamExecutor
 
 open class NodeAsAsyncNode(val node: INode) : IAsyncNode {
     override fun getStreamExecutor(): IStreamExecutor {
-        return SequenceStreamBuilder.INSTANCE.getStreamExecutor()
+        return SimpleStreamExecutor
     }
 
     private fun <T : Any> T?.asOptionalMono(): Maybe<T> = if (this != null) maybeOf(this) else maybeOfEmpty()

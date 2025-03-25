@@ -51,6 +51,10 @@ interface IModelClientV2 {
 
     suspend fun loadVersion(repositoryId: RepositoryId, versionHash: String, baseVersion: IVersion?): IVersion
 
+    suspend fun lazyLoadVersion(repositoryId: RepositoryId, versionHash: String): IVersion
+
+    suspend fun lazyLoadVersion(branch: BranchReference): IVersion
+
     /**
      * The pushed version is merged automatically by the server with the current head.
      * The merge result is returned.

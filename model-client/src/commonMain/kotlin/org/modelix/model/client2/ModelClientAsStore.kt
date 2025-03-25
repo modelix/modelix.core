@@ -9,7 +9,7 @@ import org.modelix.model.async.ObjectRequest
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.persistent.HashUtil
-import org.modelix.streams.FlowStreamBuilder
+import org.modelix.streams.BlockingStreamExecutor
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
 
@@ -69,6 +69,6 @@ class ModelClientAsStore(client: IModelClientV2, val repositoryId: RepositoryId)
     }
 
     override fun getStreamExecutor(): IStreamExecutor {
-        return FlowStreamBuilder.INSTANCE.getStreamExecutor()
+        return BlockingStreamExecutor
     }
 }

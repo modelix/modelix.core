@@ -6,9 +6,7 @@ import org.modelix.streams.IStream.Many
 import org.modelix.streams.IStream.One
 import org.modelix.streams.IStream.OneOrMany
 
-interface IStreamConverter : IStreamBuilder
-
-interface IStream<out E> : IStreamExecutorProvider {
+interface IStream<out E> {
     fun convert(converter: IStreamBuilder): IStream<E>
     fun asFlow(): Flow<E>
     fun asSequence(): Sequence<E>
@@ -141,13 +139,6 @@ interface IStream<out E> : IStreamExecutorProvider {
     }
 
     companion object : IStreamBuilder by DeferredStreamBuilder() {
-        fun <R> useBuilder(builder: IStreamBuilder, body: () -> R): R {
-            return ContextStreamBuilder.globalInstance.contextValue.computeWith(builder, body)
-        }
-
-        suspend fun <R> useBuilderSuspending(builder: IStreamBuilder, body: suspend () -> R): R {
-            return ContextStreamBuilder.globalInstance.contextValue.runInCoroutine(builder, body)
-        }
     }
 }
 

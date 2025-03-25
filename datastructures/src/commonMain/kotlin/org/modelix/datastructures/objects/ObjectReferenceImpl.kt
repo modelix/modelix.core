@@ -29,7 +29,7 @@ class ObjectReferenceImpl<E : IObjectData> private constructor(
     override fun isLoaded(): Boolean = state.isLoaded()
     override fun resolveData(): IStream.One<E> = state.request(this)
     override fun resolve(): IStream.One<Object<E>> = resolveData().map { Object(it, this) }
-    override fun write(writer: IObjectWriter) = state.write(this, writer)
+    override fun write() = state.write(this)
 
     override fun diff(oldRef: ObjectReference<IObjectData>?): IStream.Many<Object<IObjectData>> {
         return if (oldRef == null) {
@@ -63,11 +63,11 @@ class ObjectReferenceImpl<E : IObjectData> private constructor(
         abstract fun isLoaded(): Boolean
         abstract fun getLoadedData(): E?
         abstract fun request(ref: ObjectReferenceImpl<E>): IStream.One<E>
-        abstract fun write(ref: ObjectReferenceImpl<E>, writer: IObjectWriter)
+        abstract fun write(ref: ObjectReferenceImpl<E>)
     }
 
     private abstract class Written<E : IObjectData>(override val hash: ObjectHash) : State<E>() {
-        override fun write(ref: ObjectReferenceImpl<E>, writer: IObjectWriter) {}
+        override fun write(ref: ObjectReferenceImpl<E>) {}
     }
 
     private class Created<E : IObjectData>(val data: E) : State<E>() {
@@ -82,18 +82,18 @@ class ObjectReferenceImpl<E : IObjectData> private constructor(
         override fun isLoaded(): Boolean = true
         override fun getLoadedData(): E = data
         override fun request(ref: ObjectReferenceImpl<E>): IStream.One<E> = IStream.Companion.of(data)
-        override fun write(ref: ObjectReferenceImpl<E>, writer: IObjectWriter) {
+        override fun write(ref: ObjectReferenceImpl<E>) {
             // Writer may try to unload this object after write, which wouldn't be allowed in the current state.
             // That's why the state change has to happen first.
             ref.state = Loaded(hash, data)
             try {
-                writer.write(Object(data, ref))
+                ref.graph.write(Object(data, ref))
             } catch (ex: Throwable) {
                 ref.state = this
                 throw ex
             }
             for (otherReference in data.getAllReferences()) {
-                otherReference.write(writer)
+                otherReference.write()
             }
         }
         override fun toString(): String = "[created]$hash"

@@ -23,8 +23,7 @@ sealed interface ObjectReference<out E : IObjectData> {
     fun resolve(): IStream.One<Object<E>>
     fun resolveLater(): IExecutableStream.One<Object<E>> = graph.getStreamExecutor().queryLater { resolve() }
     fun resolveNow(): Object<E> = graph.getStreamExecutor().query { resolve() }
-    fun write(writer: IObjectWriter)
-    fun write() = write(graph)
+    fun write()
     fun diff(oldRef: ObjectReference<*>?): IStream.Many<Object<IObjectData>>
 }
 

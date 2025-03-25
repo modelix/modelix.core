@@ -30,7 +30,6 @@ import org.modelix.model.server.store.pollEntry
 import org.modelix.model.server.store.runReadIO
 import org.modelix.streams.IExecutableStream
 import org.modelix.streams.IStream
-import org.modelix.streams.SequenceStreamBuilder
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
@@ -417,9 +416,7 @@ class ObjectDataMap(private val byHashObjects: Map<String, String>) : ObjectData
 
     override suspend fun asMap(): Map<String, String> = byHashObjects
     override fun asStream(): IExecutableStream.Many<Pair<String, String>> {
-        return SequenceStreamBuilder.INSTANCE.getStreamExecutor().queryManyLater {
-            IStream.many(byHashObjects.entries).map { it.key to it.value }
-        }
+        return IExecutableStream.many(byHashObjects.entries).mapMany { it.map { it.key to it.value } }
     }
 }
 

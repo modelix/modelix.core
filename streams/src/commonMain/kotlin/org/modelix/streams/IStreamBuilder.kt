@@ -8,7 +8,7 @@ interface IStreamBuilder : IStreamExecutorProvider {
     fun zero(): IStream.Zero
     fun <T> empty(): IStream.ZeroOrOne<T>
     fun <T> of(element: T): IStream.One<T>
-    fun <T> of(vararg elements: T): IStream.Many<T>
+    fun <T> of(vararg elements: T): IStream.Many<T> = many(elements)
     fun <T : Any> ofNotNull(element: T?): IStream.ZeroOrOne<T> = if (element == null) empty() else of(element)
 
     fun <T> deferZeroOrOne(supplier: () -> IStream.ZeroOrOne<T>): IStream.ZeroOrOne<T>
@@ -61,7 +61,7 @@ open class IndirectStreamBuilder(private val provider: () -> IStreamBuilder) : I
 }
 
 class ContextStreamBuilder(
-    val contextValue: ContextValue<IStreamBuilder> = ContextValue(),
+    val contextValue: ContextValue<IStreamBuilder> = ContextValue(DeferredStreamBuilder()),
 ) : IndirectStreamBuilder({
     checkNotNull(contextValue.getValueOrNull()) { "No stream builder available in the current context" }
 }) {

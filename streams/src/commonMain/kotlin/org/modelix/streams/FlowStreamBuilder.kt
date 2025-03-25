@@ -31,7 +31,10 @@ import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.kotlin.utils.runBlockingIfJvm
 import kotlin.coroutines.coroutineContext
 
-class FlowStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder, IStreamExecutorProvider by executor {
+class FlowStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder, IStreamConverter, IStreamExecutorProvider by executor {
+
+    fun <T> convert(stream: IStream<T>) = (stream.convert(this) as WrapperBase<T>).wrapped
+
     override fun <T> of(element: T): IStream.One<T> = Wrapper(flowOf(element))
     override fun <T> many(elements: Sequence<T>): IStream.Many<T> = Wrapper(elements.asFlow())
     override fun <T> of(vararg elements: T): IStream.Many<T> = Wrapper(elements.asFlow())
@@ -104,6 +107,11 @@ class FlowStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder, ISt
     }
 
     inner class Zero(wrapped: Flow<Any?>) : WrapperBase<Any?>(wrapped), IStream.Zero {
+        override fun convert(converter: IStreamBuilder): IStream<Any?> {
+            require(converter == this@FlowStreamBuilder)
+            return this
+        }
+
         override fun onAfterSubscribe(action: () -> Unit): IStream<Any?> {
             return Zero(
                 flow {
@@ -153,6 +161,10 @@ class FlowStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder, ISt
     }
 
     inner class Wrapper<E>(wrapped: Flow<E>) : WrapperBase<E>(wrapped), IStream.One<E> {
+        override fun convert(converter: IStreamBuilder): IStream<E> {
+            require(converter == this@FlowStreamBuilder)
+            return this
+        }
         override fun getAsync(onError: ((Throwable) -> Unit)?, onSuccess: ((E) -> Unit)?) {
             runBlockingIfJvm {
                 try {

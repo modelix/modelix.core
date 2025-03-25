@@ -7,6 +7,9 @@ import org.modelix.kotlin.utils.DelicateModelixApi
 
 class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
     IStreamBuilder, IStreamExecutorProvider by executor {
+
+    fun <T> convert(stream: IStream<T>) = (stream.convert(this) as WrapperBase<T>).wrapped
+
     override fun <T> of(element: T): IStream.One<T> = Wrapper(sequenceOf(element))
     override fun <T> many(elements: Sequence<T>): IStream.Many<T> = Wrapper(elements)
     override fun <T> of(vararg elements: T): IStream.Many<T> = Wrapper(elements.asSequence())
@@ -77,6 +80,10 @@ class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
     }
 
     inner class Zero(wrapped: Sequence<Any?>) : WrapperBase<Any?>(wrapped), IStream.Zero, IStreamExecutorProvider by this {
+        override fun convert(converter: IStreamBuilder): IStream<Any?> {
+            require(converter == this@SequenceStreamBuilder)
+            return this
+        }
         override fun onAfterSubscribe(action: () -> Unit): IStream<Any?> {
             return Zero(
                 sequence {
@@ -130,6 +137,10 @@ class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
     }
 
     inner class Wrapper<E>(wrapped: Sequence<E>) : WrapperBase<E>(wrapped), IStream.One<E>, IStreamExecutorProvider by this {
+        override fun convert(converter: IStreamBuilder): IStream<E> {
+            require(converter == this@SequenceStreamBuilder)
+            return this
+        }
         override fun getAsync(onError: ((Throwable) -> Unit)?, onSuccess: ((E) -> Unit)?) {
             try {
                 for (element in wrapped) {

@@ -6,9 +6,13 @@ import org.modelix.streams.IStream.Many
 import org.modelix.streams.IStream.One
 import org.modelix.streams.IStream.OneOrMany
 
+interface IStreamConverter : IStreamBuilder
+
 interface IStream<out E> : IStreamExecutorProvider {
+    fun convert(converter: IStreamBuilder): IStream<E>
     fun asFlow(): Flow<E>
     fun asSequence(): Sequence<E>
+
     fun toList(): One<List<E>>
 
     /**
@@ -43,7 +47,7 @@ interface IStream<out E> : IStreamExecutorProvider {
         operator fun <R> plus(other: ZeroOrOne<R>): ZeroOrOne<R>
         operator fun <R> plus(other: One<R>): One<R>
         operator fun <R> plus(other: OneOrMany<R>): OneOrMany<R>
-        fun asOne(): One<Unit> = plus(IStream.of(Unit))
+        fun andThenUnit(): One<Unit> = plus(IStream.of(Unit))
     }
 
     interface Many<out E> : IStream<E> {

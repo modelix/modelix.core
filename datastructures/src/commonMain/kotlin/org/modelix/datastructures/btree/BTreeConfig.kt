@@ -35,7 +35,7 @@ class BTreeConfigBuilder<K, V> {
     private var minChildren: Int = 8
     private var keyConfiguration: IDataTypeConfiguration<K>? = null
     private var valueConfiguration: IDataTypeConfiguration<V>? = null
-    private var multimap: Boolean = true
+    private var multimap: Boolean = false
 
     fun minEntries(value: Int) = also { minEntries = value }
     fun minChildren(value: Int) = also { minChildren = value }

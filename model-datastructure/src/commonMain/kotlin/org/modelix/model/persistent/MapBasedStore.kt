@@ -5,8 +5,7 @@ import org.modelix.kotlin.utils.toSynchronizedMap
 import org.modelix.model.IKeyListener
 import org.modelix.model.IKeyValueStore
 import org.modelix.streams.IStreamExecutor
-import org.modelix.streams.SimpleStreamExecutor
-import org.modelix.streams.withSequences
+import org.modelix.streams.SequenceStreamBuilder
 
 @Deprecated("Use MapBasedStore, without a typo.", ReplaceWith("MapBasedStore"))
 open class MapBaseStore : MapBasedStore()
@@ -14,7 +13,7 @@ open class MapBaseStore : MapBasedStore()
 open class MapBasedStore : IKeyValueStore {
     private val map = createMemoryEfficientMap<String?, String?>().toSynchronizedMap()
 
-    override fun getStreamExecutor(): IStreamExecutor = SimpleStreamExecutor().withSequences()
+    override fun getStreamExecutor(): IStreamExecutor = SequenceStreamBuilder.INSTANCE.getStreamExecutor()
 
     override fun get(key: String): String? {
         return map[key]

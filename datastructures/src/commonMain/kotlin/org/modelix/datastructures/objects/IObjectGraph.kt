@@ -3,8 +3,7 @@ package org.modelix.datastructures.objects
 import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
-import org.modelix.streams.SimpleStreamExecutor
-import org.modelix.streams.withSequences
+import org.modelix.streams.SequenceStreamBuilder
 import kotlin.jvm.JvmName
 
 interface IObjectGraph : IObjectReferenceFactory, IObjectLoader, IObjectWriter {
@@ -37,7 +36,7 @@ private class FreeFloatingObjectGraph() : IObjectGraph {
         ObjectReferenceImpl(this, data)
 
     override fun getStreamExecutor(): IStreamExecutor {
-        return SimpleStreamExecutor().withSequences()
+        return SequenceStreamBuilder.INSTANCE.getStreamExecutor()
     }
 
     override fun <T : IObjectData> request(ref: ObjectReference<T>): IStream.One<T> {

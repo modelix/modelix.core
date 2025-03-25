@@ -16,10 +16,10 @@ interface IExecutableStream : IStreamExecutorProvider {
 
     companion object {
         fun <T> of(element: T): IExecutableStream.One<T> {
-            return ExecutableStreamOne(SimpleStreamExecutor().withSequences()) { IStream.of(element) }
+            return ExecutableStreamOne(SequenceStreamBuilder.INSTANCE.getStreamExecutor()) { IStream.of(element) }
         }
         fun <T> many(vararg elements: T): IExecutableStream.Many<T> {
-            return ExecutableStreamMany(SimpleStreamExecutor().withSequences()) { IStream.many(elements) }
+            return ExecutableStreamMany(SequenceStreamBuilder.INSTANCE.getStreamExecutor()) { IStream.many(elements) }
         }
     }
 }

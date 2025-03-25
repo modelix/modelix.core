@@ -2,7 +2,7 @@ package org.modelix.streams
 
 import org.modelix.kotlin.utils.DelicateModelixApi
 
-class SimpleStreamExecutor : IStreamExecutor {
+object SimpleStreamExecutor : IStreamExecutor {
     override fun <T> query(body: () -> IStream.One<T>): T {
         @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
         return body().getSynchronous()

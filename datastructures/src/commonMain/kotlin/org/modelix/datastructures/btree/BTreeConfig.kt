@@ -9,6 +9,7 @@ import org.modelix.datastructures.objects.StringDataTypeConfiguration
 data class BTreeConfig<K, V>(
     val minEntries: Int,
     val minChildren: Int,
+    val multimap: Boolean,
     val keyConfiguration: IDataTypeConfiguration<K>,
     val valueConfiguration: IDataTypeConfiguration<V>,
     val graph: IObjectGraph,
@@ -16,6 +17,12 @@ data class BTreeConfig<K, V>(
     val maxEntries = 2 * minEntries
     val maxChildren = 2 * minChildren
     val nodeDeserializer = BTreeNode.Deserializer(this)
+    val entryComparatorForInsertion: Comparator<BTreeEntry<K, V>> = if (multimap) {
+        compareBy<BTreeEntry<K, V>, K>(keyConfiguration) { it.key }
+            .thenBy<BTreeEntry<K, V>, V>(valueConfiguration) { it.value }
+    } else {
+        compareBy<BTreeEntry<K, V>, K>(keyConfiguration) { it.key }
+    }
 
     companion object {
         fun builder() = BTreeConfigBuilder<Nothing, Nothing>()
@@ -28,6 +35,7 @@ class BTreeConfigBuilder<K, V> {
     private var minChildren: Int = 8
     private var keyConfiguration: IDataTypeConfiguration<K>? = null
     private var valueConfiguration: IDataTypeConfiguration<V>? = null
+    private var multimap: Boolean = true
 
     fun minEntries(value: Int) = also { minEntries = value }
     fun minChildren(value: Int) = also { minChildren = value }
@@ -52,6 +60,9 @@ class BTreeConfigBuilder<K, V> {
         return (this as BTreeConfigBuilder<K, T>).also { it.valueConfiguration = config }
     }
 
+    fun multipleValuesPerKey() = also { multimap = true }
+    fun singleValuePerKey() = also { multimap = false }
+
     fun stringKeys() = keyConfiguration(Base64DataTypeConfiguration(StringDataTypeConfiguration()))
     fun stringValues() = valueConfiguration(Base64DataTypeConfiguration(StringDataTypeConfiguration()))
     fun longKeys() = keyConfiguration(LongDataTypeConfiguration())
@@ -61,6 +72,7 @@ class BTreeConfigBuilder<K, V> {
         graph = checkNotNull(graph) { "graph not specified" },
         minEntries = minEntries,
         minChildren = minChildren,
+        multimap = multimap,
         keyConfiguration = checkNotNull(keyConfiguration) { "keyConfiguration not specified" },
         valueConfiguration = checkNotNull(valueConfiguration) { "valueConfiguration not specified" },
     )

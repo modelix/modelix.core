@@ -67,19 +67,19 @@ data class HamtSingleChildNode<K, V : Any>(
         }
     }
 
-    override fun put(key: K, value: V?, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>> {
+    override fun put(key: K, value: V, shift: Int, graph: IObjectGraph): IStream.One<HamtNode<K, V>> {
         return putAll(listOf(key to value), shift, graph)
     }
 
     override fun putAll(
-        entries: List<Pair<K, V?>>,
+        entries: List<Pair<K, V>>,
         shift: Int,
         graph: IObjectGraph,
-    ): IStream.ZeroOrOne<HamtNode<K, V>> {
+    ): IStream.One<HamtNode<K, V>> {
         // TODO handle collisions
         if (entries.all { maskBits(config.keyConfig.hashCode64(it.first), shift) == bits }) {
             return getChild()
-                .flatMapZeroOrOne { it.putAll(entries, shift + BITS_PER_LEVEL * numLevels, graph) }
+                .flatMapOne { it.putAll(entries, shift + BITS_PER_LEVEL * numLevels, graph) }
                 .map { withNewChild(it, graph) }
         } else {
             if (numLevels > 1) {
@@ -110,7 +110,9 @@ data class HamtSingleChildNode<K, V : Any>(
 
     override fun remove(key: K, shift: Int, graph: IObjectGraph): IStream.ZeroOrOne<HamtNode<K, V>> {
         require(shift <= MAX_SHIFT) { "$shift > ${MAX_SHIFT}" }
-        return put(key, null, shift, graph)
+        return getChild()
+            .flatMapZeroOrOne { it.remove(key, shift + BITS_PER_LEVEL * numLevels, graph) }
+            .map { withNewChild(it, graph) }
     }
 
     fun getChild(): IStream.One<HamtNode<K, V>> {
@@ -180,7 +182,7 @@ data class HamtSingleChildNode<K, V : Any>(
                                     HamtInternalNode.replace(oldData, IObjectGraph.FREE_FLOATING)
                                 }
                                 is HamtInternalNode -> oldData
-                                is HamtLeafNode -> null
+                                is HamtLeafNode, is HamtCollisionNode -> null
                             }?.getChildRef(logicalIndexOfChild(relativeLevel))
                                 ?.let { IStream.of(it) }
                                 ?: IStream.empty()

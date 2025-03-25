@@ -26,5 +26,6 @@ data class BTree<K, V>(val root: BTreeNode<K, V>) {
     fun get(key: K): V? = root.get(key)
     fun getAll(keys: Iterable<K>): IStream.Many<Pair<K, V>> = root.getAll(keys)
     fun remove(key: K): BTree<K, V> = copy(root = root.remove(key).createRoot())
+    fun remove(key: K, value: V): BTree<K, V> = copy(root = root.remove(key).createRoot())
     fun getEntries(): IStream.Many<BTreeEntry<K, V>> = root.getEntries()
 }

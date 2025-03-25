@@ -9,6 +9,7 @@ interface IDataTypeConfiguration<E> : Comparator<E> {
 
     fun hashCode64(element: E): Long = hashCode32(element).toLong()
     fun hashCode32(element: E): Int
+    fun equal(a: E, b: E): Boolean = compare(a, b) == 0
 
     fun getAllReferences(element: E): List<ObjectReference<IObjectData>> {
         return getContainmentReferences(element) + getNonContainmentReferences(element)

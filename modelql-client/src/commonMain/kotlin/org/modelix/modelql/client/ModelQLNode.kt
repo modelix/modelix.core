@@ -52,13 +52,12 @@ import org.modelix.modelql.untyped.resolve
 import org.modelix.modelql.untyped.roleInParent
 import org.modelix.modelql.untyped.setProperty
 import org.modelix.modelql.untyped.setReference
+import org.modelix.streams.FlowStreamBuilder
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
-import org.modelix.streams.SimpleStreamExecutor
-import org.modelix.streams.withFlows
 
 class ModelQLNodeAsAsyncNode(node: ModelQLNode) : NodeAsAsyncNode(node) {
-    override fun getStreamExecutor(): IStreamExecutor = SimpleStreamExecutor().withFlows()
+    override fun getStreamExecutor(): IStreamExecutor = FlowStreamBuilder.INSTANCE.getStreamExecutor()
 }
 
 abstract class ModelQLNode(val client: ModelQLClient) :

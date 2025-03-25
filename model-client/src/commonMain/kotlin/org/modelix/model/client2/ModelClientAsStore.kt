@@ -9,10 +9,9 @@ import org.modelix.model.async.ObjectRequest
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.persistent.HashUtil
+import org.modelix.streams.FlowStreamBuilder
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
-import org.modelix.streams.SimpleStreamExecutor
-import org.modelix.streams.withFlows
 
 class ModelClientAsStore(client: IModelClientV2, val repositoryId: RepositoryId) : IAsyncObjectStore {
     private val client: IModelClientV2Internal = client as IModelClientV2Internal
@@ -70,6 +69,6 @@ class ModelClientAsStore(client: IModelClientV2, val repositoryId: RepositoryId)
     }
 
     override fun getStreamExecutor(): IStreamExecutor {
-        return SimpleStreamExecutor().withFlows()
+        return FlowStreamBuilder.INSTANCE.getStreamExecutor()
     }
 }

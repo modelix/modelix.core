@@ -6,9 +6,13 @@ import org.modelix.streams.IStream.Many
 import org.modelix.streams.IStream.One
 import org.modelix.streams.IStream.OneOrMany
 
+interface IStreamConverter : IStreamBuilder
+
 interface IStream<out E> : IStreamExecutorProvider {
+    fun convert(converter: IStreamBuilder): IStream<E>
     fun asFlow(): Flow<E>
     fun asSequence(): Sequence<E>
+
     fun toList(): One<List<E>>
 
     /**
@@ -33,6 +37,8 @@ interface IStream<out E> : IStreamExecutorProvider {
     fun onAfterSubscribe(action: () -> Unit): IStream<E>
 
     interface Zero : IStream<Any?> {
+        override fun convert(converter: IStreamBuilder): IStream.Zero
+
         /**
          * See documentation of [iterateSynchronous].
          */
@@ -43,10 +49,11 @@ interface IStream<out E> : IStreamExecutorProvider {
         operator fun <R> plus(other: ZeroOrOne<R>): ZeroOrOne<R>
         operator fun <R> plus(other: One<R>): One<R>
         operator fun <R> plus(other: OneOrMany<R>): OneOrMany<R>
-        fun asOne(): One<Unit> = plus(IStream.of(Unit))
+        fun andThenUnit(): One<Unit> = plus(IStream.of(Unit))
     }
 
     interface Many<out E> : IStream<E> {
+        override fun convert(converter: IStreamBuilder): IStream.Many<E>
         fun filter(predicate: (E) -> Boolean): Many<E>
         fun <R> map(mapper: (E) -> R): Many<R>
         fun <R : Any> mapNotNull(mapper: (E) -> R?): Many<R> = map(mapper).filterNotNull()
@@ -80,6 +87,7 @@ interface IStream<out E> : IStreamExecutorProvider {
     }
 
     interface OneOrMany<out E> : IStream<E>, Many<E> {
+        override fun convert(converter: IStreamBuilder): IStream.OneOrMany<E>
         override fun <R> map(mapper: (E) -> R): OneOrMany<R>
         fun <R> flatMapOne(mapper: (E) -> One<R>): OneOrMany<R>
         override fun distinct(): OneOrMany<E>
@@ -89,6 +97,7 @@ interface IStream<out E> : IStreamExecutorProvider {
     }
 
     interface ZeroOrOne<out E> : IStream<E>, Many<E> {
+        override fun convert(converter: IStreamBuilder): IStream.ZeroOrOne<E>
         override fun filter(predicate: (E) -> Boolean): ZeroOrOne<E>
         override fun <R> map(mapper: (E) -> R): ZeroOrOne<R>
         override fun <R : Any> mapNotNull(mapper: (E) -> R?): ZeroOrOne<R> = map(mapper).filterNotNull()
@@ -109,6 +118,7 @@ interface IStream<out E> : IStreamExecutorProvider {
     }
 
     interface One<out E> : IStream<E>, ZeroOrOne<E>, OneOrMany<E> {
+        override fun convert(converter: IStreamBuilder): IStream.One<E>
         override fun <R> flatMapOne(mapper: (E) -> One<R>): One<R>
         override fun <R> map(mapper: (E) -> R): One<R>
         fun <T, R> zipWith(other: One<T>, mapper: (E, T) -> R): One<R> = IStream.zip(this, other, mapper)
@@ -126,15 +136,11 @@ interface IStream<out E> : IStreamExecutorProvider {
         suspend fun getSuspending(): E
         override fun onAfterSubscribe(action: () -> Unit): One<E>
         fun cached(): One<E>
-        fun getAsync(
-            onError: ((Throwable) -> Unit)? = null,
-            onSuccess: ((E) -> Unit)? = null,
-        )
         override fun onErrorReturn(valueSupplier: (Throwable) -> @UnsafeVariance E): One<E>
         override fun doOnBeforeError(consumer: (Throwable) -> Unit): One<E>
     }
 
-    companion object : IStreamBuilder by ContextStreamBuilder.globalInstance {
+    companion object : IStreamBuilder by DeferredStreamBuilder() {
         fun <R> useBuilder(builder: IStreamBuilder, body: () -> R): R {
             return ContextStreamBuilder.globalInstance.contextValue.computeWith(builder, body)
         }

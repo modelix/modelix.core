@@ -7,6 +7,13 @@ import org.modelix.kotlin.utils.DelicateModelixApi
 
 class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
     IStreamBuilder, IStreamExecutorProvider by executor {
+
+    companion object {
+        val INSTANCE = SequenceStreamBuilder(SimpleStreamExecutor.asProvider())
+    }
+
+    fun <T> convert(stream: IStream<T>) = (stream.convert(this) as WrapperBase<T>).wrapped
+
     override fun <T> of(element: T): IStream.One<T> = Wrapper(sequenceOf(element))
     override fun <T> many(elements: Sequence<T>): IStream.Many<T> = Wrapper(elements)
     override fun <T> of(vararg elements: T): IStream.Many<T> = Wrapper(elements.asSequence())
@@ -34,8 +41,8 @@ class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
         mapper: (T1, T2) -> R,
     ): IStream.One<R> {
         return Wrapper(
-            (source1 as Wrapper<T1>).wrapped
-                .zip((source2 as Wrapper<T2>).wrapped)
+            convert(source1)
+                .zip(convert(source2))
                 .map { mapper(it.first, it.second) },
         )
     }
@@ -45,7 +52,7 @@ class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
         mapper: (List<T>) -> R,
     ): Wrapper<R> {
         val input = input.toList()
-        val sequences = input.map { (it as Wrapper<T>).wrapped }
+        val sequences = input.map { convert(it) }
         return Wrapper(
             when (sequences.size) {
                 0 -> emptySequence()
@@ -77,6 +84,10 @@ class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
     }
 
     inner class Zero(wrapped: Sequence<Any?>) : WrapperBase<Any?>(wrapped), IStream.Zero, IStreamExecutorProvider by this {
+        override fun convert(converter: IStreamBuilder): IStream.Zero {
+            require(converter == this@SequenceStreamBuilder)
+            return this
+        }
         override fun onAfterSubscribe(action: () -> Unit): IStream<Any?> {
             return Zero(
                 sequence {
@@ -103,19 +114,19 @@ class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
         }
 
         override fun <R> plus(other: IStream.Many<R>): IStream.Many<R> {
-            return plusSequence(other as WrapperBase<R>)
+            return plusSequence(convert(other))
         }
 
         override fun <R> plus(other: IStream.ZeroOrOne<R>): IStream.ZeroOrOne<R> {
-            return plusSequence(other as WrapperBase<R>)
+            return plusSequence(convert(other))
         }
 
         override fun <R> plus(other: IStream.One<R>): IStream.One<R> {
-            return plusSequence(other as WrapperBase<R>)
+            return plusSequence(convert(other))
         }
 
         override fun <R> plus(other: IStream.OneOrMany<R>): IStream.OneOrMany<R> {
-            return plusSequence(other as WrapperBase<R>)
+            return plusSequence(convert(other))
         }
 
         fun <R> plusSequence(other: WrapperBase<R>): Wrapper<R> {
@@ -127,10 +138,24 @@ class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
                 },
             )
         }
+
+        fun <R> plusSequence(other: Sequence<R>): Wrapper<R> {
+            return Wrapper(
+                sequence {
+                    @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
+                    executeSynchronous()
+                    yieldAll(other)
+                },
+            )
+        }
     }
 
     inner class Wrapper<E>(wrapped: Sequence<E>) : WrapperBase<E>(wrapped), IStream.One<E>, IStreamExecutorProvider by this {
-        override fun getAsync(onError: ((Throwable) -> Unit)?, onSuccess: ((E) -> Unit)?) {
+        override fun convert(converter: IStreamBuilder): IStream.One<E> {
+            require(converter == this@SequenceStreamBuilder)
+            return this
+        }
+        fun getAsync(onError: ((Throwable) -> Unit)?, onSuccess: ((E) -> Unit)?) {
             try {
                 for (element in wrapped) {
                     onSuccess?.invoke(element)
@@ -141,7 +166,7 @@ class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
         }
 
         override fun <R> flatMapOne(mapper: (E) -> IStream.One<R>): IStream.One<R> {
-            return Wrapper(wrapped.flatMap { (mapper(it) as Wrapper<R>).wrapped })
+            return Wrapper(wrapped.flatMap { convert(mapper(it)) })
         }
 
         override fun <R> map(mapper: (E) -> R): IStream.One<R> {
@@ -165,19 +190,19 @@ class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
         }
 
         override fun <R> flatMapZeroOrOne(mapper: (E) -> IStream.ZeroOrOne<R>): IStream.ZeroOrOne<R> {
-            return Wrapper(wrapped.flatMap { (mapper(it) as Wrapper<R>).wrapped })
+            return Wrapper(wrapped.flatMap { convert(mapper(it)) })
         }
 
         override fun <R> flatMap(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
-            return Wrapper(wrapped.flatMap { (mapper(it) as Wrapper<R>).wrapped })
+            return Wrapper(wrapped.flatMap { convert(mapper(it)) })
         }
 
         override fun concat(other: IStream.Many<E>): IStream.Many<E> {
-            return Wrapper(wrapped + (other as Wrapper<E>).wrapped)
+            return Wrapper(wrapped + convert(other))
         }
 
         override fun concat(other: IStream.OneOrMany<E>): IStream.OneOrMany<E> {
-            return Wrapper(wrapped + (other as Wrapper<E>).wrapped)
+            return Wrapper(wrapped + convert(other))
         }
 
         override fun getSynchronous(): E {
@@ -257,7 +282,7 @@ class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
         }
 
         override fun filterBySingle(condition: (E) -> IStream.One<Boolean>): IStream.Many<E> {
-            return Wrapper(wrapped.filter { (condition(it) as Wrapper<Boolean>).wrapped.single() })
+            return Wrapper(wrapped.filter { convert(condition(it)).single() })
         }
 
         override fun firstOrDefault(defaultValue: () -> E): IStream.One<E> {
@@ -273,7 +298,7 @@ class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
         }
 
         override fun switchIfEmpty_(alternative: () -> IStream.Many<E>): IStream.Many<E> {
-            return Wrapper(wrapped.ifEmpty { (alternative() as Wrapper<E>).wrapped })
+            return Wrapper(wrapped.ifEmpty { convert(alternative()) })
         }
 
         override fun isEmpty(): IStream.One<Boolean> {
@@ -311,10 +336,9 @@ class SequenceStreamBuilder(executor: IStreamExecutorProvider) :
     }
 }
 
-fun IStreamExecutor.withSequences(): IStreamExecutor = withBuilder(SequenceStreamBuilder(this.asProvider()))
 fun <R> IStream.Companion.useSequences(body: () -> R): R {
-    return useBuilder(SequenceStreamBuilder(SimpleStreamExecutor().asProvider()), body)
+    return useBuilder(SequenceStreamBuilder.INSTANCE, body)
 }
 suspend fun <R> IStream.Companion.useSequencesSuspending(body: suspend () -> R): R {
-    return useBuilderSuspending(SequenceStreamBuilder(SimpleStreamExecutor().asProvider()), body)
+    return useBuilderSuspending(SequenceStreamBuilder.INSTANCE, body)
 }

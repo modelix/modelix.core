@@ -62,6 +62,12 @@ import kotlinx.coroutines.flow.Flow
 import org.modelix.streams.IStream.OneOrMany
 
 class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder, IStreamExecutorProvider by executor {
+
+    fun convert(stream: IStream.Zero) = (stream.convert(this) as Wrapper<*>).wrappedAsCompletable()
+    fun <T> convert(stream: IStream.One<T>) = (stream.convert(this) as Wrapper<T>).wrappedAsSingle()
+    fun <T> convert(stream: IStream.ZeroOrOne<T>) = (stream.convert(this) as Wrapper<T>).wrappedAsMaybe()
+    fun <T> convert(stream: IStream.Many<T>) = (stream.convert(this) as Wrapper<T>).wrappedAsObservable()
+
     override fun <T> of(element: T): IStream.One<T> = WrapperSingle(singleOf(element))
     override fun <T> many(elements: Sequence<T>): IStream.Many<T> = WrapperMany(elements.asObservable())
     override fun <T> of(vararg elements: T): IStream.Many<T> = WrapperMany(elements.asObservable())
@@ -118,6 +124,7 @@ class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder,
         abstract fun wrappedAsSingle(): Single<E>
         abstract fun wrappedAsMaybe(): Maybe<E>
         abstract fun wrappedAsObservable(): Observable<E>
+        abstract fun wrappedAsCompletable(): Completable
     }
 
     abstract inner class ReaktiveWrapper<E> : Wrapper<E>(), IStream.Many<E> {
@@ -161,9 +168,14 @@ class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder,
 
     inner class WrapperCompletable(val wrapped: Completable) :
         Wrapper<Unit>(), IStream.Zero {
+        override fun convert(converter: IStreamBuilder): IStream.Zero {
+            require(converter == this@ReaktiveStreamBuilder)
+            return this
+        }
         override fun wrappedAsSingle(): Single<Unit> = throw NoSuchElementException()
         override fun wrappedAsMaybe(): Maybe<Unit> = wrapped.asMaybe()
         override fun wrappedAsObservable(): Observable<Unit> = wrapped.asObservable()
+        override fun wrappedAsCompletable(): Completable = wrapped
 
         override fun executeSynchronous() {
             throw UnsupportedOperationException("Use IStreamExecutor.query")
@@ -216,11 +228,14 @@ class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder,
 
     open inner class WrapperMany<E>(override val wrapped: Observable<E>) :
         ReaktiveWrapper<E>(), IStream.Many<E> {
+        override fun convert(converter: IStreamBuilder): IStream.Many<E> {
+            require(converter == this@ReaktiveStreamBuilder)
+            return this
+        }
         override fun wrappedAsObservable(): Observable<E> = wrapped
-
         override fun wrappedAsSingle(): Single<E> = wrapped.exactlyOne()
-
         override fun wrappedAsMaybe(): Maybe<E> = wrapped.firstOrComplete()
+        override fun wrappedAsCompletable(): Completable = wrapped.asCompletable()
 
         override fun filter(predicate: (E) -> Boolean): IStream.Many<E> {
             return WrapperMany(wrapped.filter(predicate))
@@ -328,6 +343,11 @@ class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder,
 
     inner class WrapperOneOrMany<E>(wrapped: Observable<E>) :
         WrapperMany<E>(wrapped), OneOrMany<E> {
+        override fun convert(converter: IStreamBuilder): OneOrMany<E> {
+            require(converter == this@ReaktiveStreamBuilder)
+            return this
+        }
+
         override fun wrappedAsObservable(): Observable<E> = wrapped
         override fun wrappedAsSingle(): Single<E> = wrapped.exactlyOne()
         override fun wrappedAsMaybe(): Maybe<E> = wrapped.firstOrComplete()
@@ -358,11 +378,16 @@ class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder,
     }
 
     inner class WrapperSingle<E>(override val wrapped: Single<E>) : ReaktiveWrapper<E>(), IStream.One<E> {
+        override fun convert(converter: IStreamBuilder): IStream.One<E> {
+            require(converter == this@ReaktiveStreamBuilder)
+            return this
+        }
         override fun wrappedAsObservable(): Observable<E> = wrapped.asObservable()
         override fun wrappedAsSingle(): Single<E> = wrapped
         override fun wrappedAsMaybe(): Maybe<E> = wrapped.asMaybe()
+        override fun wrappedAsCompletable(): Completable = wrapped.asCompletable()
 
-        override fun getAsync(onError: ((Throwable) -> Unit)?, onSuccess: ((E) -> Unit)?) {
+        fun getAsync(onError: ((Throwable) -> Unit)?, onSuccess: ((E) -> Unit)?) {
             wrappedAsSingle().subscribe(onError = onError, onSuccess = onSuccess)
         }
 
@@ -507,9 +532,14 @@ class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder,
     }
 
     inner class WrapperMaybe<E>(override val wrapped: Maybe<E>) : ReaktiveWrapper<E>(), IStream.ZeroOrOne<E> {
+        override fun convert(converter: IStreamBuilder): IStream.ZeroOrOne<E> {
+            require(converter == this@ReaktiveStreamBuilder)
+            return this
+        }
         override fun wrappedAsObservable(): Observable<E> = wrapped.asObservable()
         override fun wrappedAsSingle(): Single<E> = wrapped.asSingleOrError()
         override fun wrappedAsMaybe(): Maybe<E> = wrapped
+        override fun wrappedAsCompletable(): Completable = wrapped.asCompletable()
 
         override fun exceptionIfEmpty(exception: () -> Throwable): IStream.One<E> {
             return WrapperSingle(wrapped.asSingleOrError(exception))
@@ -626,17 +656,8 @@ class ReaktiveStreamBuilder(executor: IStreamExecutorProvider) : IStreamBuilder,
             return WrapperMaybe(wrapped.doOnBeforeError(consumer))
         }
     }
-}
-
-fun <R> IStream.One<R>.toReaktive() = (this as ReaktiveStreamBuilder.Wrapper<R>).wrappedAsSingle()
-fun <R> IStream.ZeroOrOne<R>.toReaktive() = (this as ReaktiveStreamBuilder.Wrapper<R>).wrappedAsMaybe()
-fun <R> IStream.Many<R>.toReaktive() = (this as ReaktiveStreamBuilder.Wrapper<R>).wrappedAsObservable()
-fun IStream.Zero.toReaktive() = (this as ReaktiveStreamBuilder.WrapperCompletable).wrapped
-
-fun IStreamExecutor.withReaktive(): IStreamExecutor = withBuilder(ReaktiveStreamBuilder(this.asProvider()))
-fun <R> IStream.Companion.useReaktive(body: () -> R): R {
-    return useBuilder(ReaktiveStreamBuilder(SimpleStreamExecutor().asProvider()), body)
-}
-suspend fun <R> IStream.Companion.useReaktiveSuspending(body: suspend () -> R): R {
-    return useBuilderSuspending(ReaktiveStreamBuilder(SimpleStreamExecutor().asProvider()), body)
+    fun <R> IStream.One<R>.toReaktive() = this@ReaktiveStreamBuilder.convert(this)
+    fun <R> IStream.ZeroOrOne<R>.toReaktive() = this@ReaktiveStreamBuilder.convert(this)
+    fun <R> IStream.Many<R>.toReaktive() = this@ReaktiveStreamBuilder.convert(this)
+    fun IStream.Zero.toReaktive() = this@ReaktiveStreamBuilder.convert(this)
 }

@@ -1,6 +1,7 @@
 plugins {
     `maven-publish`
     `modelix-kotlin-multiplatform`
+    alias(libs.plugins.kotlin.serialization)
 }
 
 kotlin {
@@ -9,6 +10,7 @@ kotlin {
             dependencies {
                 api(project(":kotlin-utils"))
                 api(project(":streams"))
+                implementation(libs.kotlin.serialization.core)
                 implementation(libs.kotlin.coroutines.core)
                 implementation(libs.kotlincrypto.sha2)
             }

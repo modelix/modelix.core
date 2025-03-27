@@ -1,11 +1,12 @@
 package org.modelix.model.persistent
 
-import org.modelix.model.objects.IObjectData
-import org.modelix.model.objects.IObjectDeserializer
-import org.modelix.model.objects.IObjectReferenceFactory
-import org.modelix.model.objects.Object
-import org.modelix.model.objects.ObjectReference
-import org.modelix.model.objects.getDescendantsAndSelf
+import org.modelix.datastructures.objects.IObjectData
+import org.modelix.datastructures.objects.IObjectDeserializer
+import org.modelix.datastructures.objects.IObjectReferenceFactory
+import org.modelix.datastructures.objects.Object
+import org.modelix.datastructures.objects.ObjectReference
+import org.modelix.datastructures.objects.getDescendantsAndSelf
+import org.modelix.model.TreeId
 import org.modelix.streams.IStream
 import org.modelix.streams.plus
 
@@ -13,7 +14,7 @@ sealed interface ITreeData : IObjectData
 sealed interface ITreeRelatedDeserializer<E : ITreeData> : IObjectDeserializer<E>
 
 class CPTree(
-    val id: String,
+    val id: TreeId,
     var idToHash: ObjectReference<CPHamtNode>,
     val usesRoleIds: Boolean,
 ) : ITreeData {
@@ -28,8 +29,11 @@ class CPTree(
     override fun getContainmentReferences(): List<ObjectReference<IObjectData>> = listOf(idToHash)
 
     override fun objectDiff(self: Object<*>, oldObject: Object<*>?): IStream.Many<Object<*>> {
-        return when (oldObject?.data) {
-            is CPTree -> IStream.of(self) + idToHash.diff(oldObject.data.idToHash)
+        val oldData = oldObject?.data
+        return when (oldData) {
+            is CPTree -> {
+                IStream.of(self) + idToHash.diff(oldData.idToHash)
+            }
             else -> self.getDescendantsAndSelf()
         }
     }
@@ -44,7 +48,7 @@ class CPTree(
 
         override fun deserialize(input: String, referenceFactory: IObjectReferenceFactory): CPTree {
             val parts = input.split(Separators.LEVEL1)
-            val treeId = parts[0]
+            val treeId = TreeId.fromLegacyId(parts[0])
             val persistenceVersion = parts[1].toInt()
             if (persistenceVersion != PERSISTENCE_VERSION && persistenceVersion != NAMED_BASED_PERSISTENCE_VERSION) {
                 throw RuntimeException(

@@ -13,11 +13,11 @@ import org.modelix.model.operations.IOperationIntend
 import org.modelix.model.operations.UndoOp
 
 class VersionMerger(private val idGenerator: IIdGenerator) {
-    @Deprecated("store is required anymore")
+    @Deprecated("store isn't required anymore")
     constructor(store: IDeserializingKeyValueStore, idGenerator: IIdGenerator) :
         this(idGenerator)
 
-    @Deprecated("store is required anymore")
+    @Deprecated("store isn't required anymore")
     constructor(store: IAsyncObjectStore, idGenerator: IIdGenerator) :
         this(idGenerator)
 

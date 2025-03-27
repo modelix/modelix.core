@@ -1,10 +1,10 @@
 package org.modelix.model.async
 
+import org.modelix.datastructures.objects.IObjectData
+import org.modelix.datastructures.objects.IObjectDeserializer
+import org.modelix.datastructures.objects.IObjectReferenceFactory
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.objects.IObjectData
-import org.modelix.model.objects.IObjectDeserializer
-import org.modelix.model.objects.IObjectReferenceFactory
 import org.modelix.streams.IStreamExecutorProvider
 
 private val ILLEGAL_DESERIALIZER: IObjectDeserializer<*> = object : IObjectDeserializer<IObjectData> {
@@ -36,7 +36,7 @@ class AsyncStoreAsLegacyDeserializingStore(val store: IAsyncObjectStore) : IDese
 
     override fun put(hash: String, deserialized: IObjectData, serialized: String) {
         getStreamExecutor().query {
-            store.putAll(mapOf(ObjectRequest(hash, ILLEGAL_DESERIALIZER, store.asObjectGraph()) to deserialized as IObjectData)).asOne()
+            store.putAll(mapOf(ObjectRequest(hash, ILLEGAL_DESERIALIZER, store.asObjectGraph()) to deserialized as IObjectData)).andThenUnit()
         }
     }
 

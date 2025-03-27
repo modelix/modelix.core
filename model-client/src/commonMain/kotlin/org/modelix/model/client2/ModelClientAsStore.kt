@@ -1,18 +1,17 @@
 package org.modelix.model.client2
 
 import kotlinx.coroutines.flow.flow
+import org.modelix.datastructures.objects.IObjectData
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.async.AsyncStoreAsLegacyDeserializingStore
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.async.ObjectRequest
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.objects.IObjectData
 import org.modelix.model.persistent.HashUtil
+import org.modelix.streams.BlockingStreamExecutor
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
-import org.modelix.streams.SimpleStreamExecutor
-import org.modelix.streams.withFlows
 
 class ModelClientAsStore(client: IModelClientV2, val repositoryId: RepositoryId) : IAsyncObjectStore {
     private val client: IModelClientV2Internal = client as IModelClientV2Internal
@@ -70,6 +69,6 @@ class ModelClientAsStore(client: IModelClientV2, val repositoryId: RepositoryId)
     }
 
     override fun getStreamExecutor(): IStreamExecutor {
-        return SimpleStreamExecutor().withFlows()
+        return BlockingStreamExecutor
     }
 }

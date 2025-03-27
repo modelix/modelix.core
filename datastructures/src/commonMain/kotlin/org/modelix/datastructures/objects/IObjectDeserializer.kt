@@ -1,4 +1,4 @@
-package org.modelix.model.objects
+package org.modelix.datastructures.objects
 
 interface IObjectDeserializer<out E : IObjectData> {
     fun deserialize(serialized: String, referenceFactory: IObjectReferenceFactory): E

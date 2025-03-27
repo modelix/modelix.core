@@ -1,18 +1,17 @@
 package org.modelix.model.server.store
 
+import org.modelix.datastructures.objects.IObjectData
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.async.AsyncStoreAsLegacyDeserializingStore
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.async.ObjectRequest
 import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.objects.IObjectData
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
 import org.modelix.streams.SimpleStreamExecutor
-import org.modelix.streams.withSequences
 
 class StoreClientAsAsyncStore(val store: IStoreClient) : IAsyncObjectStore {
-    override fun getStreamExecutor(): IStreamExecutor = SimpleStreamExecutor().withSequences()
+    override fun getStreamExecutor(): IStreamExecutor = SimpleStreamExecutor
 
     override fun getLegacyKeyValueStore(): IKeyValueStore {
         return StoreClientAsKeyValueStore(store)

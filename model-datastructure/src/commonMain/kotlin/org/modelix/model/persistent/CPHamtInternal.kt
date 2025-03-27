@@ -1,18 +1,18 @@
 package org.modelix.model.persistent
 
+import org.modelix.datastructures.objects.IObjectData
+import org.modelix.datastructures.objects.IObjectGraph
+import org.modelix.datastructures.objects.Object
+import org.modelix.datastructures.objects.ObjectReference
+import org.modelix.datastructures.objects.customDiff
+import org.modelix.datastructures.objects.getDescendantRefs
+import org.modelix.datastructures.objects.getDescendantsAndSelf
+import org.modelix.datastructures.objects.getHashString
+import org.modelix.datastructures.objects.requestBoth
+import org.modelix.datastructures.objects.requireDifferentHash
 import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.model.bitCount
 import org.modelix.model.lazy.COWArrays
-import org.modelix.model.objects.IObjectData
-import org.modelix.model.objects.IObjectGraph
-import org.modelix.model.objects.Object
-import org.modelix.model.objects.ObjectReference
-import org.modelix.model.objects.customDiff
-import org.modelix.model.objects.getDescendantRefs
-import org.modelix.model.objects.getDescendantsAndSelf
-import org.modelix.model.objects.getHashString
-import org.modelix.model.objects.requestBoth
-import org.modelix.model.objects.requireDifferentHash
 import org.modelix.model.persistent.SerializationUtil.intToHex
 import org.modelix.streams.IStream
 import org.modelix.streams.flatten
@@ -350,14 +350,15 @@ class CPHamtInternal(
         oldObject: Object<*>?,
         shift: Int,
     ): IStream.Many<Object<*>> {
-        return when (oldObject?.data) {
+        val oldData = oldObject?.data
+        return when (oldData) {
             is CPHamtInternal -> {
                 requireDifferentHash(oldObject)
-                IStream.of(self) + diffChildren(oldObject.data, shift)
+                IStream.of(self) + diffChildren(oldData, shift)
             }
             is CPHamtSingle -> {
                 @OptIn(DelicateModelixApi::class) // free floating objects are filtered out
-                IStream.of(self) + diffChildren(replace(oldObject.data, IObjectGraph.FREE_FLOATING), shift)
+                IStream.of(self) + diffChildren(replace(oldData, IObjectGraph.FREE_FLOATING), shift)
                     .filter { it.graph != IObjectGraph.FREE_FLOATING }
             }
             is CPHamtLeaf -> {

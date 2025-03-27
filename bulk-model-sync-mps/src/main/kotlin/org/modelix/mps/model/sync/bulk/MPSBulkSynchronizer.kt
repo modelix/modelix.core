@@ -25,7 +25,6 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.ModelClientV2
-import org.modelix.model.client2.lazyLoadVersion
 import org.modelix.model.data.ModelData
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSArea

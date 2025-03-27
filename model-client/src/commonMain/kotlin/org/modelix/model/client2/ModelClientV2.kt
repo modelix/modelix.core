@@ -36,6 +36,8 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import org.modelix.datastructures.objects.IObjectGraph
+import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.kotlin.utils.WeakValueMap
 import org.modelix.kotlin.utils.getOrPut
@@ -64,9 +66,8 @@ import org.modelix.model.oauth.OAuthConfig
 import org.modelix.model.oauth.OAuthConfigBuilder
 import org.modelix.model.oauth.TokenProvider
 import org.modelix.model.oauth.TokenProviderAuthConfig
-import org.modelix.model.objects.IObjectGraph
-import org.modelix.model.objects.ObjectHash
 import org.modelix.model.operations.OTBranch
+import org.modelix.model.persistent.CPVersion
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.api.v2.ImmutableObjectsStream
 import org.modelix.model.server.api.v2.ObjectHashAndSerializedObject
@@ -79,9 +80,6 @@ import org.modelix.model.server.api.v2.toMap
 import org.modelix.modelql.client.ModelQLClient
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.streams.IExecutableStream
-import org.modelix.streams.IStream
-import org.modelix.streams.SimpleStreamExecutor
-import org.modelix.streams.withSequences
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -289,6 +287,20 @@ class ModelClientV2(
         return doLoadVersion(repositoryId, versionHash, baseVersion)
     }
 
+    override suspend fun lazyLoadVersion(
+        repositoryId: RepositoryId,
+        versionHash: String,
+    ): IVersion {
+        val graph = getObjectGraph(repositoryId)
+        return graph.getStreamExecutor().querySuspending {
+            graph.fromHashString(versionHash, CPVersion).resolve()
+        }.let { CLVersion(it) }
+    }
+
+    override suspend fun lazyLoadVersion(branch: BranchReference): IVersion {
+        return lazyLoadVersion(branch.repositoryId, pullHash(branch))
+    }
+
     private suspend fun doLoadVersion(
         repositoryId: RepositoryId?,
         versionHash: String,
@@ -359,7 +371,7 @@ class ModelClientV2(
     override suspend fun pushObjects(repository: RepositoryId, objects: Sequence<ObjectHashAndSerializedObject>) {
         pushObjects(
             repository,
-            SimpleStreamExecutor().withSequences().queryManyLater { IStream.many(objects) },
+            IExecutableStream.many(objects),
             false,
         )
     }

@@ -1,10 +1,9 @@
-package org.modelix.model.objects
+package org.modelix.datastructures.objects
 
 import org.modelix.kotlin.utils.WeakValueMap
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
 import org.modelix.streams.SimpleStreamExecutor
-import org.modelix.streams.withSequences
 import kotlin.jvm.Synchronized
 
 /**
@@ -114,7 +113,7 @@ class FullyLoadedObjectGraph : IObjectGraph, IObjectWriter {
     }
 
     override fun getStreamExecutor(): IStreamExecutor {
-        return SimpleStreamExecutor().withSequences()
+        return SimpleStreamExecutor
     }
 
     override fun <T : IObjectData> request(ref: ObjectReference<T>): IStream.One<T> {

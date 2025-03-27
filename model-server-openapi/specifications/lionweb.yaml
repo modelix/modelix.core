@@ -1,0 +1,405 @@
+openapi: "3.0.3"
+info:
+  title: "modelix lionweb bulk API adapter"
+  description: "modelix lionweb bulk API adapter"
+  version: "1.0.0"
+servers:
+  - url: '/lionweb'
+    description: modelix-lionweb-adapter
+tags:
+  - name: lionweb
+paths:
+  /listRepositories:
+    post:
+      operationId: listRepositories
+      tags:
+        - lionweb
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/LionwebResponse"
+                  - type: object
+                    properties:
+                      repositories:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/LionwebRepositoryConfiguration'
+
+  /createRepository:
+    post:
+      operationId: createRepository
+      parameters:
+        - name: repository
+          in: "query"
+          required: true
+          schema:
+            type: string
+        - name: history
+          in: "query"
+          required: false
+          schema:
+            type: boolean
+        - name: lionWebVersion
+          in: "query"
+          required: false
+          schema:
+            type: string
+      tags:
+        - lionweb
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LionwebResponse"
+
+  /ids:
+    post:
+      operationId: getIds
+      tags:
+        - lionweb
+      description: Provides unused valid ids.
+      parameters:
+        - name: count
+          description: Number of ids requested. The repository MUST return between one (inclusive) and count (inclusive) ids. It MAY return less than count ids.
+          in: "query"
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+
+  /bulk/listPartitions:
+    post:
+      operationId: listPartitions
+      tags:
+        - lionweb
+      parameters:
+        - name: repository
+          in: "query"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/LionwebResponse"
+                  - type: object
+                    properties:
+                      chunk:
+                        $ref: '#/components/schemas/LionwebSerializationChunk'
+
+  /bulk/createPartitions:
+    post:
+      operationId: createPartitions
+      tags:
+        - lionweb
+      parameters:
+        - name: repository
+          in: "query"
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LionwebSerializationChunk"
+      responses:
+        "200":
+          description: OK
+
+  /deletePartitions:
+    put:
+      operationId: deletePartitions
+      tags:
+        - lionweb
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LionwebSerializationChunk"
+      responses:
+        "200":
+          description: OK
+
+  /bulk/retrieve:
+    post:
+      operationId: bulkRetrieve
+      tags:
+        - lionweb
+      parameters:
+        - name: repository
+          in: "query"
+          required: true
+          schema:
+            type: string
+        - name: depthLimit
+          description: Limit the depth of retrieved subtrees. Optional parameter, defaults to infinite. If present, MUST be an integer >= 0, with
+            0 meaning "return only the nodes with ids listed in nodes parameter",
+            1 meaning "return the nodes with id listed in the nodes parameter and their direct children/annotations",
+            2 meaning "return the nodes with id listed in the nodes parameter, their direct children/annotations, and the direct children/annotations of these",
+            There’s no magic value of depthLimit to express infinite depth. We need to omit the parameter if we don’t want to limit the depth.
+          in: "query"
+          required: false
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LionwebSerializationChunk"
+        "404":
+          description: node id not found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        "422":
+          description: Invalid IDs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /bulk/store:
+    post:
+      operationId: bulkStore
+      tags:
+        - lionweb
+      parameters:
+        - name: repository
+          in: "query"
+          required: true
+          schema:
+            type: string
+      description: Creates new nodes, or updates existing nodes in the repository.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LionwebSerializationChunk"
+      responses:
+        "200":
+          description: OK
+
+  /{partition}/delete:
+    delete:
+      operationId: bulkDelete
+      tags:
+        - lionweb
+      parameters:
+        - name: partition
+          in: "path"
+          required: true
+          schema:
+            type: string
+        - name: nodes
+          description: List of node ids we want to retrieve from the repository.
+          in: "query"
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        "200":
+          description: OK
+        "404":
+          description: node id not found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        "422":
+          description: Invalid IDs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+components:
+  schemas:
+    LionwebResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/LionwebResponseMessage'
+
+    LionwebResponseMessage:
+      type: object
+      properties:
+        kind:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+          additionalProperties:
+            type: string
+
+
+    LionwebRepositoryConfiguration:
+      type: object
+      properties:
+        name:
+          type: string
+        lionweb_version:
+          type: string
+        history:
+          type: boolean
+
+    LionwebPartitionArray:
+      title: PartitionArray
+      type: object
+      properties:
+        partitions:
+          type: array
+          items:
+            type: string
+
+    LionwebSerializationChunk:
+      title: SerializationChunk
+      type: object
+      properties:
+        serializationFormatVersion:
+          type: string
+          default: "2024.1"
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/LionwebLanguageStructure'
+          default: []
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/LionwebNodeStructure'
+          default: []
+#      required:
+#        - serializationFormatVersion
+#        - languages
+#        - nodes
+
+    LionwebLanguageStructure:
+      title: LanguageStructure
+      properties:
+        key:
+          type: string
+        version:
+          type: string
+
+    LionwebNodeStructure:
+      title: NodeStructure
+      properties:
+        id:
+          type: string
+        classifier:
+          $ref: '#/components/schemas/LionwebMetaPointer'
+        properties:
+          type: array
+          items:
+            type: object
+            properties:
+              property:
+                $ref: '#/components/schemas/LionwebMetaPointer'
+              value:
+                type: string
+            required:
+              - property
+              - value
+        containments:
+          type: array
+          items:
+            type: object
+            properties:
+              containment:
+                $ref: '#/components/schemas/LionwebMetaPointer'
+              children:
+                type: array
+                items:
+                  type: string
+        references:
+          type: array
+          items:
+            type: object
+            properties:
+              reference:
+                $ref: '#/components/schemas/LionwebMetaPointer'
+              targets:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    resolveInfo:
+                      type: string
+                    reference:
+                      type: string
+            required:
+              - reference
+        annotations:
+          type: array
+          items:
+            type: string
+        parent:
+          type: string
+      required:
+        - id
+        - classifier
+
+    LionwebMetaPointer:
+      title: MetaPointer
+      properties:
+        language:
+          type: string
+        version:
+          type: string
+        key:
+          type: string
+      required:
+        - key

@@ -2,6 +2,7 @@ package org.modelix.model.server
 
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
+import org.modelix.model.TreeId
 import org.modelix.model.async.BulkAsyncStore
 import org.modelix.model.async.LegacyKeyValueStoreAsAsyncStore
 import org.modelix.model.client.RestWebModelClient
@@ -45,7 +46,7 @@ class RepositoryStorageBackwardsCompatiblityTest {
                 val initialVersion = CLVersion.createRegularVersion(
                     id = idGenerator.generate(),
                     author = "unit-test",
-                    tree = CLTree.builder(store).repositoryId(repositoryId).build(),
+                    tree = CLTree.builder(store).treeId(TreeId.fromLegacyId(repositoryId.id)).build(),
                     baseVersion = null,
                     operations = emptyArray(),
                 )

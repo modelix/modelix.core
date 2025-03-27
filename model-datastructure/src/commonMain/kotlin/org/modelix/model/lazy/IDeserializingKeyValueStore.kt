@@ -1,10 +1,10 @@
 package org.modelix.model.lazy
 
+import org.modelix.datastructures.objects.IObjectData
+import org.modelix.datastructures.objects.IObjectDeserializer
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.async.ObjectRequest
-import org.modelix.model.objects.IObjectData
-import org.modelix.model.objects.IObjectDeserializer
 import org.modelix.streams.IStreamExecutorProvider
 
 interface IDeserializingKeyValueStore : IStreamExecutorProvider {

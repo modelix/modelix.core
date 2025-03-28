@@ -27,7 +27,7 @@ docker-compose = { id = "com.avast.gradle.docker-compose" , version = "0.17.12" 
 [versions]
 kotlin = "2.1.10"
 kotlinCoroutines="1.10.1"
-ktor="3.1.1"
+ktor="3.1.2"
 kotlinSerialization="1.8.0"
 ignite="2.17.0"
 apacheCxf="3.6.6"

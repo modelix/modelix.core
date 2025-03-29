@@ -1,5 +1,6 @@
 package org.modelix.model.mpsadapters
 
+import jetbrains.mps.project.structure.modules.ModuleReference
 import jetbrains.mps.smodel.SNodePointer
 import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.model.SNodeReference
@@ -15,7 +16,7 @@ data class MPSModuleReference(val moduleReference: SModuleReference) : INodeRefe
     }
 
     override fun serialize(): String {
-        return "$PREFIX:$moduleReference"
+        return "$PREFIX:${moduleReference.withoutNames()}"
     }
 }
 
@@ -26,7 +27,7 @@ data class MPSModelReference(val modelReference: SModelReference) : INodeReferen
     }
 
     override fun serialize(): String {
-        return "$PREFIX:$modelReference"
+        return "$PREFIX:${modelReference.withoutNames()}"
     }
 }
 
@@ -48,34 +49,26 @@ data class MPSNodeReference(val ref: SNodeReference) : INodeReference {
     }
 
     override fun serialize(): String {
-        return "$PREFIX:$ref"
+        return "$PREFIX:${ref.withoutNames()}"
     }
 }
 
-fun SNodeReference.toNodeId(): String {
-    return requireNotNull(modelReference) {
-        "Node model ID provided: $this"
-    }.toNodeId() + "/" + nodeId.toString()
+fun SNodeReference.withoutNames(): SNodeReference {
+    return SNodePointer(modelReference?.withoutNames(), nodeId)
 }
 
-fun SModelReference.toNodeId(): String {
-    return if (this.modelId.isGloballyUnique) {
-        // MPS often omits the module reference, if the model ID is globally unique.
-        // The module reference is ignored here, even if one is provided, to generate a consistent ID.
-        "mps:" + this.modelId
-    } else {
-        requireNotNull(moduleReference) {
-            "Model ID isn't globally unique and also doesn't provide a module ID: $this"
-        }.toNodeId() + "/" + modelId
-    }
+fun SModelReference.withoutNames(): SModelReference {
+    // MPS often omits the module reference, if the model ID is globally unique.
+    // The module reference is ignored here, even if one is provided, to generate a consistent ID.
+    return jetbrains.mps.smodel.SModelReference(
+        moduleReference?.takeIf { !modelId.isGloballyUnique },
+        modelId,
+        "",
+    )
 }
 
-fun SModuleReference.toNodeId(): String {
-    return moduleId.toNodeId()
-}
-
-fun SModuleId.toNodeId(): String {
-    return "mps:$this"
+fun SModuleReference.withoutNames(): SModuleReference {
+    return ModuleReference(null, this.moduleId)
 }
 
 data class MPSDevKitDependencyReference(
@@ -90,8 +83,8 @@ data class MPSDevKitDependencyReference(
     }
 
     override fun serialize(): String {
-        val importer = userModule?.let { "mps-module:$it" }
-            ?: userModel?.let { "mps-model:$it" }
+        val importer = userModule?.let { "mps-module:${it.withoutNames()}" }
+            ?: userModel?.let { "mps-model:${it.withoutNames()}" }
             ?: error("importer not found")
 
         return "$PREFIX:$usedModuleId$SEPARATOR$importer"
@@ -105,7 +98,7 @@ data class MPSJavaModuleFacetReference(val moduleReference: SModuleReference) : 
     }
 
     override fun serialize(): String {
-        return "$PREFIX:$moduleReference"
+        return "$PREFIX:${moduleReference.withoutNames()}"
     }
 }
 
@@ -120,7 +113,7 @@ data class MPSModelImportReference(
     }
 
     override fun serialize(): String {
-        return "$PREFIX:$importedModel$SEPARATOR$importingModel"
+        return "$PREFIX:${importedModel.withoutNames()}$SEPARATOR${importingModel.withoutNames()}"
     }
 }
 
@@ -135,7 +128,7 @@ data class MPSModuleDependencyReference(
     }
 
     override fun serialize(): String {
-        return "$PREFIX:$usedModuleId$SEPARATOR$userModuleReference"
+        return "$PREFIX:$usedModuleId$SEPARATOR${userModuleReference.withoutNames()}"
     }
 }
 
@@ -171,7 +164,7 @@ data class MPSProjectModuleReference(val moduleRef: SModuleReference, val projec
     }
 
     override fun serialize(): String {
-        return "$PREFIX:$moduleRef$SEPARATOR${projectRef.serialize()}"
+        return "$PREFIX:${moduleRef.withoutNames()}$SEPARATOR${projectRef.serialize()}"
     }
 }
 
@@ -187,8 +180,8 @@ data class MPSSingleLanguageDependencyReference(
     }
 
     override fun serialize(): String {
-        val importer = userModule?.let { "mps-module:$it" }
-            ?: userModel?.let { "mps-model:$it" }
+        val importer = userModule?.let { "mps-module:${it.withoutNames()}" }
+            ?: userModel?.let { "mps-model:${it.withoutNames()}" }
             ?: error("importer not found")
 
         return "$PREFIX:$usedModuleId$SEPARATOR$importer"

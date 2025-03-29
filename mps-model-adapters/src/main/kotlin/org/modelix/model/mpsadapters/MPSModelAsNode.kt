@@ -194,10 +194,6 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
         return model.module?.let { MPSModuleAsNode(it) }
     }
 
-    override fun getId(): String {
-        return model.reference.toNodeId()
-    }
-
     override fun getNodeReference(): INodeReference {
         return MPSModelReference(model.reference)
     }

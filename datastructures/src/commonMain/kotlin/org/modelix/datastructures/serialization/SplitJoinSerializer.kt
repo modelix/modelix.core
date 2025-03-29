@@ -3,6 +3,7 @@ package org.modelix.datastructures.serialization
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationStrategy
+import kotlinx.serialization.StringFormat
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.StructureKind
@@ -14,7 +15,25 @@ import kotlinx.serialization.modules.SerializersModule
 import org.modelix.kotlin.utils.urlDecode
 import org.modelix.kotlin.utils.urlEncode
 
-class SplitJoinSerializer {
+class SplitJoinFormat(override val serializersModule: SerializersModule) : StringFormat {
+    override fun <T> decodeFromString(
+        deserializer: DeserializationStrategy<T>,
+        string: String,
+    ): T {
+        return deserializer.deserialize(SplitJoinValueDecoder(serializersModule, string, 0, false))
+    }
+
+    override fun <T> encodeToString(
+        serializer: SerializationStrategy<T>,
+        value: T,
+    ): String {
+        val encoder = SplitJoinSerializer(serializersModule)
+        serializer.serialize(encoder.ForValue(-1, false), value)
+        return encoder.toString()
+    }
+}
+
+class SplitJoinSerializer(val serializersModule: SerializersModule) {
     private val sb = StringBuilder()
 
     private fun appendRaw(encodedItem: String) {
@@ -159,7 +178,7 @@ class SplitJoinSerializer {
         override fun endStructure(descriptor: SerialDescriptor) {}
 
         override val serializersModule: SerializersModule
-            get() = TODO("Not yet implemented")
+            get() = this@SplitJoinSerializer.serializersModule
     }
 
     inner class ForValue(val separatorIndex: Int, val alreadyInsideMap: Boolean) : Encoder {
@@ -186,7 +205,7 @@ class SplitJoinSerializer {
         override fun encodeString(value: String) = appendString(value)
 
         override val serializersModule: SerializersModule
-            get() = TODO("Not yet implemented")
+            get() = this@SplitJoinSerializer.serializersModule
     }
 
     companion object {
@@ -202,38 +221,42 @@ class SplitJoinSerializer {
         )
         val MAPPING = '='
 
+        private val DEFAULT_SERIALIZERS_MODULE = SerializersModule {}
+
         fun <T> serialize(strategy: SerializationStrategy<T>, data: T): String {
-            val encoder = SplitJoinSerializer()
+            val encoder = SplitJoinSerializer(DEFAULT_SERIALIZERS_MODULE)
             strategy.serialize(encoder.ForValue(-1, false), data)
             return encoder.toString()
         }
 
         fun <T> deserialize(strategy: DeserializationStrategy<T>, serialized: String): T {
-            return strategy.deserialize(SplitJoinValueDecoder(serialized, 0, false))
+            return strategy.deserialize(SplitJoinValueDecoder(DEFAULT_SERIALIZERS_MODULE, serialized, 0, false))
         }
     }
 }
 
 class SplitJoinMapDecoder(
+    serializersModule: SerializersModule,
     descriptor: SerialDescriptor,
     serialized: List<String>,
     separatorIndex: Int,
-) : SplitJoinStructureDecoder(descriptor, serialized, separatorIndex, true) {
+) : SplitJoinStructureDecoder(serializersModule, descriptor, serialized, separatorIndex, true) {
     override fun forIndex(index: Int): SplitJoinValueDecoder {
         check(nextElementIndex == index) {
             "Element with index $nextElementIndex expected, but was $index"
         }
         nextElementIndex++
         return SplitJoinValueDecoder(
-            serialized[index / 2].let {
+            serializersModule = serializersModule,
+            serialized = serialized[index / 2].let {
                 if (index % 2 == 0) {
                     it.substringBefore(SplitJoinSerializer.MAPPING)
                 } else {
                     it.substringAfter(SplitJoinSerializer.MAPPING)
                 }
             },
-            separatorIndex,
-            true,
+            separatorIndex = separatorIndex,
+            alreadyInsideMap = true,
         )
     }
 
@@ -243,6 +266,7 @@ class SplitJoinMapDecoder(
 }
 
 open class SplitJoinStructureDecoder(
+    override val serializersModule: SerializersModule,
     val descriptor: SerialDescriptor,
     val serialized: List<String>,
     val separatorIndex: Int,
@@ -255,7 +279,7 @@ open class SplitJoinStructureDecoder(
             "Element with index $nextElementIndex expected, but was $index"
         }
         nextElementIndex++
-        return SplitJoinValueDecoder(serialized[index], separatorIndex, alreadyInsideMap)
+        return SplitJoinValueDecoder(serializersModule, serialized[index], separatorIndex, alreadyInsideMap)
     }
 
     override fun decodeBooleanElement(
@@ -356,12 +380,10 @@ open class SplitJoinStructureDecoder(
     }
 
     override fun endStructure(descriptor: SerialDescriptor) {}
-
-    override val serializersModule: SerializersModule
-        get() = TODO("Not yet implemented")
 }
 
 class SplitJoinValueDecoder(
+    override val serializersModule: SerializersModule,
     val serialized: String,
     val separatorIndex: Int,
     val alreadyInsideMap: Boolean,
@@ -375,9 +397,9 @@ class SplitJoinValueDecoder(
         }
 
         if (!alreadyInsideMap && descriptor.kind == StructureKind.MAP) {
-            return SplitJoinMapDecoder(descriptor, parts, separatorIndex + 1)
+            return SplitJoinMapDecoder(serializersModule, descriptor, parts, separatorIndex + 1)
         } else {
-            return SplitJoinStructureDecoder(descriptor, parts, separatorIndex + 1, alreadyInsideMap)
+            return SplitJoinStructureDecoder(serializersModule, descriptor, parts, separatorIndex + 1, alreadyInsideMap)
         }
     }
 
@@ -435,7 +457,4 @@ class SplitJoinValueDecoder(
     override fun decodeString(): String {
         return checkNotNull(serialized.urlDecode())
     }
-
-    override val serializersModule: SerializersModule
-        get() = TODO("Not yet implemented")
 }

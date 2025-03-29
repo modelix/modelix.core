@@ -10,6 +10,7 @@ interface IReadableNode {
 
     fun getModel(): IModel
     fun isValid(): Boolean
+    fun getId(): String = getNodeReference().serialize()
     fun getNodeReference(): INodeReference
 
     fun getConcept(): IConcept

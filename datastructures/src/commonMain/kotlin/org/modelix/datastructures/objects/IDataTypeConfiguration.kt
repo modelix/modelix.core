@@ -1,5 +1,10 @@
 package org.modelix.datastructures.objects
 
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import org.modelix.kotlin.utils.base64UrlDecoded
 import org.modelix.kotlin.utils.base64UrlEncoded
 
@@ -27,6 +32,20 @@ interface IDataTypeConfiguration<E> : Comparator<E> {
      */
     fun getNonContainmentReferences(element: E): List<ObjectReference<IObjectData>> = emptyList()
 }
+
+class DataTypeConfigAsKSerializer<E>(val config: IDataTypeConfiguration<E>) : KSerializer<E> {
+    override val descriptor: SerialDescriptor = String.serializer().descriptor
+
+    override fun serialize(encoder: Encoder, value: E) {
+        encoder.encodeString(config.serialize(value))
+    }
+
+    override fun deserialize(decoder: Decoder): E {
+        return config.deserialize(decoder.decodeString())
+    }
+}
+
+fun <T> IDataTypeConfiguration<T>.asKSerializer(): KSerializer<T> = DataTypeConfigAsKSerializer(this)
 
 class LongDataTypeConfiguration : IDataTypeConfiguration<Long> {
     override fun serialize(element: Long): String {

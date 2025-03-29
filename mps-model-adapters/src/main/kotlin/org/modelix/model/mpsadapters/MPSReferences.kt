@@ -52,6 +52,32 @@ data class MPSNodeReference(val ref: SNodeReference) : INodeReference {
     }
 }
 
+fun SNodeReference.toNodeId(): String {
+    return requireNotNull(modelReference) {
+        "Node model ID provided: $this"
+    }.toNodeId() + "/" + nodeId.toString()
+}
+
+fun SModelReference.toNodeId(): String {
+    return if (this.modelId.isGloballyUnique) {
+        // MPS often omits the module reference, if the model ID is globally unique.
+        // The module reference is ignored here, even if one is provided, to generate a consistent ID.
+        "mps:" + this.modelId
+    } else {
+        requireNotNull(moduleReference) {
+            "Model ID isn't globally unique and also doesn't provide a module ID: $this"
+        }.toNodeId() + "/" + modelId
+    }
+}
+
+fun SModuleReference.toNodeId(): String {
+    return moduleId.toNodeId()
+}
+
+fun SModuleId.toNodeId(): String {
+    return "mps:$this"
+}
+
 data class MPSDevKitDependencyReference(
     val usedModuleId: SModuleId,
     val userModule: SModuleReference? = null,

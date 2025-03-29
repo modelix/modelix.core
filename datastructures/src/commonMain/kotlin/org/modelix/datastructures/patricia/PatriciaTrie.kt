@@ -1,6 +1,7 @@
 package org.modelix.datastructures.patricia
 
 import org.modelix.datastructures.IPersistentMap
+import org.modelix.datastructures.objects.IDataTypeConfiguration
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectHash
@@ -18,6 +19,10 @@ class PatriciaTrie<K, V : Any>(
     constructor(config: PatriciaTrieConfig<K, V>) : this(config, PatriciaNode(config).asObject(config.graph))
 
     override fun getHash(): ObjectHash = root.getHash()
+
+    override fun getKeyTypeConfig(): IDataTypeConfiguration<K> {
+        return config.keyConfig
+    }
 
     private fun keyAsString(key: K): String {
         return config.keyConfig.serialize(key)
@@ -61,14 +66,15 @@ class PatriciaTrie<K, V : Any>(
     }
 
     override fun putAll(entries: Iterable<Pair<K, V>>): IStream.One<IPersistentMap<K, V>> {
-        TODO("Not yet implemented")
+        // TODO performance
+        return entries.fold(IStream.of(this)) { acc, entry -> acc.flatMapOne { it.put(entry.first, entry.second) } }
     }
 
     override fun removeAll(keys: Iterable<K>): IStream.One<IPersistentMap<K, V>> {
         TODO("Not yet implemented")
     }
 
-    override fun removeAll(entries: Iterable<Pair<K, V>>): IStream.One<IPersistentMap<K, V>> {
+    override fun removeAllEntries(entries: Iterable<Pair<K, V>>): IStream.One<IPersistentMap<K, V>> {
         TODO("Not yet implemented")
     }
 

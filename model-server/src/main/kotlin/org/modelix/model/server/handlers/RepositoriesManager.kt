@@ -287,6 +287,8 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
     private fun validateVersion(newVersion: CLVersion, oldVersion: CLVersion?) {
         // ensure there are no missing objects
         newVersion.graph.getStreamExecutor().iterate({ newVersion.fullDiff(oldVersion) }) { }
+
+        // TODO check invariants of the model (consistent parent-child relations, single root, containment cycles)
     }
 
     @RequiresTransaction

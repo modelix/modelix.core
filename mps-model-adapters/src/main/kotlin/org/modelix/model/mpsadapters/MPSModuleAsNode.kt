@@ -300,6 +300,10 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
         return module.repository?.asWritableNode()
     }
 
+    override fun getId(): String {
+        return module.moduleReference.toNodeId()
+    }
+
     override fun getNodeReference(): INodeReference {
         return MPSModuleReference(module.moduleReference)
     }

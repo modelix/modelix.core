@@ -1,5 +1,6 @@
 package org.modelix.datastructures
 
+import org.modelix.datastructures.objects.IDataTypeConfiguration
 import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.streams.IStream
 
@@ -9,10 +10,11 @@ import org.modelix.streams.IStream
  */
 interface IPersistentMap<K, V> {
     fun getHash(): ObjectHash
+    fun getKeyTypeConfig(): IDataTypeConfiguration<K>
 
     fun putAll(entries: Iterable<Pair<K, V>>): IStream.One<IPersistentMap<K, V>>
     fun removeAll(keys: Iterable<K>): IStream.One<IPersistentMap<K, V>>
-    fun removeAll(entries: Iterable<Pair<K, V>>): IStream.One<IPersistentMap<K, V>>
+    fun removeAllEntries(entries: Iterable<Pair<K, V>>): IStream.One<IPersistentMap<K, V>>
 
     fun getAllValues(keys: Iterable<K>): IStream.Many<V>
     fun getAllValues(): IStream.Many<V>

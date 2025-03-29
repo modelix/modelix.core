@@ -1,18 +1,7 @@
 package org.modelix.datastructures.model
 
-import org.modelix.datastructures.IPersistentMap
-import org.modelix.model.api.ConceptReference
-import org.modelix.model.api.IChildLinkReference
-import org.modelix.model.api.IPropertyReference
-import org.modelix.model.lazy.NodeNotFoundException
-import org.modelix.streams.IStream
-import org.modelix.streams.plus
-
-open class TreeMutator<NodeId : Any>(val tree: DefaultModelTree<NodeId>) {
-    val nodesMap: IPersistentMap<NodeId, NodeObjectData<NodeId>> get() = tree.nodesMap
-
-    fun getNode(id: NodeId): IStream.One<NodeObjectData<NodeId>> = nodesMap.get(id)
-        .exceptionIfEmpty { NodeNotFoundException(id) }
+// open class TreeMutator<NodeId : Any>(val tree: GenericModelTree<NodeId>) {
+//    val nodesMap: IPersistentMap<NodeId, NodeObjectData<NodeId>> get() = tree.nodesMap
 
 //    fun getNodes(ids: LongArray): IStream.Many<NodeObjectData<NodeId>> {
 //        return nodesMap.resolveData().flatMap {
@@ -240,130 +229,12 @@ open class TreeMutator<NodeId : Any>(val tree: DefaultModelTree<NodeId>) {
 //        }
 //    }
 //
-    private fun updateNode(nodeId: NodeId, transform: (NodeObjectData<NodeId>) -> IStream.One<NodeObjectData<NodeId>>): IStream.One<IPersistentMap<NodeId, NodeObjectData<NodeId>>> {
-        return updateNodeInMap(nodesMap, nodeId, transform)
-    }
 
-    private fun updateNodeInMap(
-        nodesMap: IPersistentMap<NodeId, NodeObjectData<NodeId>>,
-        nodeId: NodeId,
-        transform: (NodeObjectData<NodeId>) -> IStream.One<NodeObjectData<NodeId>>,
-    ): IStream.One<IPersistentMap<NodeId, NodeObjectData<NodeId>>> {
-        return nodesMap.let { oldMap ->
-            oldMap.get(nodeId)
-                .exceptionIfEmpty { throw IllegalArgumentException("Node not found: $nodeId") }
-                .flatMapOne { nodeData -> transform(nodeData).flatMapOne { newData -> oldMap.put(nodeId, newData) } }
-        }
-    }
-
-    fun addNewChildren(
-        parentId: NodeId,
-        role: IChildLinkReference,
-        index: Int,
-        newIds: Iterable<NodeId>,
-        concepts: Iterable<ConceptReference>,
-    ): IStream.One<IPersistentMap<NodeId, NodeObjectData<NodeId>>> {
-        val newNodes = newIds.zip(concepts).map { (childId, concept) ->
-            childId to NodeObjectData<NodeId>(
-                id = childId,
-                concept = concept,
-                containment = parentId to role,
-            )
-        }
-
-        val newParentData: IStream.One<NodeObjectData<NodeId>> = insertChildrenIntoParentData(parentId, index, newIds, role)
-        return newParentData.flatMapOne { newParentData ->
-            nodesMap
-                .getAll(newIds)
-                .assertEmpty { "Node with ID ${it.first} already exists" }
-                .plus(nodesMap.putAll(newNodes + (parentId to newParentData)))
-        }
-    }
-
-    private fun insertChildrenIntoParentData(parentId: NodeId, index: Int, newIds: Iterable<NodeId>, role: IChildLinkReference): IStream.One<NodeObjectData<NodeId>> {
-        return getNode(parentId).flatMapOne { parentData ->
-            insertChildrenIntoParentData(parentData, index, newIds, role)
-        }
-    }
-
-    private fun insertChildrenIntoParentData(parentData: NodeObjectData<NodeId>, index: Int, newIds: Iterable<NodeId>, role: IChildLinkReference): IStream.One<NodeObjectData<NodeId>> {
-        return if (index == -1) {
-            IStream.of(parentData.children + newIds)
-        } else {
-            tree.getChildren(parentData.id, role).toList().map { childrenInRole ->
-                if (index > childrenInRole.size) throw RuntimeException("Invalid index $index. There are only ${childrenInRole.size} nodes in ${parentData.id}.$role")
-                if (index == childrenInRole.size) {
-                    parentData.children + newIds
-                } else {
-                    val indexInAll = parentData.children.indexOf(childrenInRole[index])
-                    parentData.children.take(indexInAll) + newIds + parentData.children.drop(indexInAll)
-                }
-            }
-        }.map { newChildrenArray ->
-            parentData.copy(children = newChildrenArray)
-        }
-    }
-
-//
-//    override fun moveChild(
-//        newParentId: NodeId,
-//        newRole: IChildLinkReference,
-//        newIndex: Int,
-//        childId: NodeId,
-//    ): IStream.One<IAsyncMutableTree> {
-//        require(childId != ITree.ROOT_ID) { "Moving the root node is not allowed" }
-//        val checkCycle = getAncestors(newParentId, true).toList().map { ancestors ->
-//            if (ancestors.contains(childId)) {
-//                throw ContainmentCycleException(newParentId, childId)
-//            }
-//        }.drainAll()
-//
-//        val oldParent = getParent(childId).exceptionIfEmpty() {
-//            IllegalArgumentException("Cannot move node without parent: ${childId.toString(16)}")
-//        }
-//        val adjustedIndex: IStream.One<Int> = oldParent.flatMapOne { oldParentId ->
-//            if (oldParentId != newParentId) {
-//                IStream.of(newIndex)
-//            } else {
-//                getRole(childId).flatMapOne { oldRole ->
-//                    if (getRoleKey(oldRole) != getRoleKey(newRole)) {
-//                        IStream.of(newIndex)
-//                    } else {
-//                        getChildren(oldParentId, oldRole).toList().map { oldSiblings ->
-//                            val oldIndex = oldSiblings.indexOf(childId)
-//                            if (oldIndex < newIndex) newIndex - 1 else newIndex
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//
-//        val newTree: IStream.One<IAsyncMutableTree> = oldParent.zipWith(adjustedIndex) { oldParentId, adjustedIndex ->
-//            val withChildRemoved = updateNode(oldParentId) {
-//                IStream.of(it.withChildRemoved(childId))
-//            }
-//            val withChildAdded = withChildRemoved.flatMapOne { tree ->
-//                tree.updateNode(newParentId) {
-//                    tree.insertChildrenIntoParentData(it, adjustedIndex, longArrayOf(childId), newRole)
-//                }
-//            }
-//            val withUpdatedRole = withChildAdded.flatMapOne { tree ->
-//                tree.updateNode(childId) {
-//                    IStream.of(it.withContainment(newParentId, getRoleKey(newRole)))
-//                }
-//            }
-//            withUpdatedRole
-//        }.flatten()
-//        return checkCycle.plus(newTree)
-//    }
-//
 //    override fun setConcept(nodeId: NodeId, concept: ConceptReference): IStream.One<IAsyncMutableTree> {
 //        return updateNode(nodeId) { IStream.of(it.withConcept(concept.getUID().takeIf { it != NullConcept.getUID() })) }
 //    }
 //
-    fun setPropertyValue(nodeId: NodeId, role: IPropertyReference, value: String?): IStream.One<IPersistentMap<NodeId, NodeObjectData<NodeId>>> {
-        return updateNode(nodeId) { IStream.of(it.withPropertyValue(role, value)) }
-    }
+
 //
 //    override fun setReferenceTarget(sourceId: NodeId, role: IReferenceLinkReference, target: INodeReference?): IStream.One<IAsyncMutableTree> {
 //        val refData: CPNodeRef? = when (target) {
@@ -404,9 +275,9 @@ open class TreeMutator<NodeId : Any>(val tree: DefaultModelTree<NodeId>) {
 //            updateNodeInMap(mapWithoutRemovedNodes, parentId) { IStream.of(it.withChildRemoved(nodeId)) }
 //        }.newTree()
 //    }
-}
+// }
 
-class ContainmentCycleException(val newParentId: Any, val childId: Any) :
+class ContainmentCycleException(val newParentId: Any?, val childId: Any?) :
     RuntimeException(
         "$newParentId is a descendant of $childId." +
             " Moving the node would create a cycle in the containment hierarchy.",

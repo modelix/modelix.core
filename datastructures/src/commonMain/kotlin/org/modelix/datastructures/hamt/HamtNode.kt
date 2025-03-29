@@ -1,5 +1,6 @@
 package org.modelix.datastructures.hamt
 
+import org.modelix.datastructures.MapChangeEvent
 import org.modelix.datastructures.btree.BTree
 import org.modelix.datastructures.btree.BTreeConfig
 import org.modelix.datastructures.btree.BTreeNode
@@ -107,7 +108,7 @@ sealed class HamtNode<K, V : Any> : IObjectData {
         }
     }
 
-    private class Deserializer<K, V : Any>(val config: Config<K, V>) : IObjectDeserializer<HamtNode<K, V>> {
+    class Deserializer<K, V : Any> internal constructor(val config: Config<K, V>) : IObjectDeserializer<HamtNode<K, V>> {
         override fun deserialize(
             serialized: String,
             referenceFactory: IObjectReferenceFactory,

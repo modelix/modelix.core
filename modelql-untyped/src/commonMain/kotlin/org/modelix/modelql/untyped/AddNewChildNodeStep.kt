@@ -19,7 +19,6 @@ import org.modelix.modelql.core.SimpleMonoTransformingStep
 import org.modelix.modelql.core.StepDescriptor
 import org.modelix.modelql.core.connect
 import org.modelix.modelql.core.stepOutputSerializer
-import org.modelix.modelql.untyped.AllReferencesTraversalStep.Descriptor
 
 class AddNewChildNodeStep(val link: IChildLinkReference, val index: Int, val concept: ConceptReference?) :
     SimpleMonoTransformingStep<INode, INode>() {
@@ -48,7 +47,7 @@ class AddNewChildNodeStep(val link: IChildLinkReference, val index: Int, val con
     @SerialName("untyped.addNewChild")
     data class Descriptor(val role: String?, val link: IChildLinkReference? = null, val index: Int, val concept: ConceptReference?) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
-            return AddNewChildNodeStep(link ?: IChildLinkReference.fromUnclassifiedString(role), index, concept)
+            return AddNewChildNodeStep(link ?: IChildLinkReference.fromNullableUnclassifiedString(role), index, concept)
         }
 
         override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(role, link, index, concept)
@@ -65,22 +64,22 @@ fun IMonoStep<INode>.addNewChild(role: IChildLinkReference, concept: ConceptRefe
 
 @Deprecated("Provide an IChildLinkReference")
 fun IMonoStep<INode>.addNewChild(role: String, index: Int, concept: ConceptReference?): IMonoStep<INode> {
-    return AddNewChildNodeStep(IChildLinkReference.fromUnclassifiedString(role), index, concept).also { connect(it) }
+    return AddNewChildNodeStep(IChildLinkReference.fromNullableUnclassifiedString(role), index, concept).also { connect(it) }
 }
 
 @Deprecated("Provide an IChildLinkReference")
 fun IMonoStep<INode>.addNewChild(role: String, concept: ConceptReference?): IMonoStep<INode> {
-    return addNewChild(IChildLinkReference.fromUnclassifiedString(role), -1, concept)
+    return addNewChild(IChildLinkReference.fromNullableUnclassifiedString(role), -1, concept)
 }
 
 @Deprecated("Provide an IChildLinkReference")
 fun IMonoStep<INode>.addNewChild(role: String): IMonoStep<INode> {
-    return addNewChild(IChildLinkReference.fromUnclassifiedString(role), -1, null)
+    return addNewChild(IChildLinkReference.fromNullableUnclassifiedString(role), -1, null)
 }
 
 @Deprecated("Provide an IChildLinkReference")
 fun IMonoStep<INode>.addNewChild(role: String, index: Int): IMonoStep<INode> {
-    return addNewChild(IChildLinkReference.fromUnclassifiedString(role), index, null)
+    return addNewChild(IChildLinkReference.fromNullableUnclassifiedString(role), index, null)
 }
 
 @Deprecated("Provide an IChildLinkReference")

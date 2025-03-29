@@ -30,14 +30,19 @@ sealed interface IPropertyReference : IRoleReference {
 
     fun matches(other: IPropertyReference): Boolean
 
-    companion object {
+    override fun matches(unclassified: String?) = unclassified != null && matches(fromUnclassifiedString(unclassified))
+
+    companion object : IRoleReferenceFactory<IPropertyReference> {
         /**
          * Can be a name or UID or anything else. INode will decide how to resolve it.
          */
-        fun fromUnclassifiedString(value: String): IPropertyReference = UnclassifiedPropertyReference(value)
-        fun fromName(value: String): IPropertyReference = PropertyReferenceByName(value)
-        fun fromId(value: String): IPropertyReference = PropertyReferenceByUID(value)
-        fun fromIdAndName(id: String?, name: String?): IPropertyReference {
+        override fun fromUnclassifiedString(value: String): IPropertyReference {
+            IRoleReference.requireNotForLegacyApi(value)
+            return UnclassifiedPropertyReference(value)
+        }
+        override fun fromName(value: String): IPropertyReference = PropertyReferenceByName(value)
+        override fun fromId(value: String): IPropertyReference = PropertyReferenceByUID(value)
+        override fun fromIdAndName(id: String?, name: String?): IPropertyReference {
             return if (id == null) {
                 if (name == null) {
                     throw IllegalArgumentException("Both 'id' and 'name' are null")

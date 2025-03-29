@@ -31,14 +31,19 @@ sealed interface IReferenceLinkReference : ILinkReference {
 
     fun matches(other: IReferenceLinkReference): Boolean
 
-    companion object {
+    override fun matches(unclassified: String?) = unclassified != null && matches(fromUnclassifiedString(unclassified))
+
+    companion object : IRoleReferenceFactory<IReferenceLinkReference> {
         /**
          * Can be a name or UID or anything else. INode will decide how to resolve it.
          */
-        fun fromUnclassifiedString(value: String): IReferenceLinkReference = UnclassifiedReferenceLinkReference(value)
-        fun fromName(value: String): IReferenceLinkReference = ReferenceLinkReferenceByName(value)
-        fun fromId(value: String): IReferenceLinkReference = ReferenceLinkReferenceByUID(value)
-        fun fromIdAndName(id: String?, name: String?): IReferenceLinkReference {
+        override fun fromUnclassifiedString(value: String): IReferenceLinkReference {
+            IRoleReference.requireNotForLegacyApi(value)
+            return UnclassifiedReferenceLinkReference(value)
+        }
+        override fun fromName(value: String): IReferenceLinkReference = ReferenceLinkReferenceByName(value)
+        override fun fromId(value: String): IReferenceLinkReference = ReferenceLinkReferenceByUID(value)
+        override fun fromIdAndName(id: String?, name: String?): IReferenceLinkReference {
             return if (id == null) {
                 if (name == null) {
                     throw IllegalArgumentException("Both 'id' and 'name' are null")

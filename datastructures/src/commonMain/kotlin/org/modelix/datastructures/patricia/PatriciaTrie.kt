@@ -1,13 +1,14 @@
 package org.modelix.datastructures.patricia
 
 import org.modelix.datastructures.IPersistentMap
+import org.modelix.datastructures.MapChangeEvent
 import org.modelix.datastructures.objects.IDataTypeConfiguration
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.Object
-import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.datastructures.objects.StringDataTypeConfiguration
 import org.modelix.datastructures.objects.asObject
 import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutorProvider
 
 /**
  * Entries with the same prefix are put into the same subtree. The prefix has a variable length.
@@ -15,10 +16,13 @@ import org.modelix.streams.IStream
 class PatriciaTrie<K, V : Any>(
     val config: PatriciaTrieConfig<K, V>,
     val root: Object<PatriciaNode<V>>,
-) : IPersistentMap<K, V> {
+) : IPersistentMap<K, V>, IStreamExecutorProvider by root.graph {
     constructor(config: PatriciaTrieConfig<K, V>) : this(config, PatriciaNode(config).asObject(config.graph))
+    constructor(root: Object<PatriciaNode<V>>) : this(root.data.config as PatriciaTrieConfig<K, V>, root)
 
-    override fun getHash(): ObjectHash = root.getHash()
+    override fun asObject(): Object<*> {
+        return root
+    }
 
     override fun getKeyTypeConfig(): IDataTypeConfiguration<K> {
         return config.keyConfig
@@ -75,6 +79,13 @@ class PatriciaTrie<K, V : Any>(
     }
 
     override fun removeAllEntries(entries: Iterable<Pair<K, V>>): IStream.One<IPersistentMap<K, V>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getChanges(
+        oldMap: IPersistentMap<K, V>,
+        changesOnly: Boolean,
+    ): IStream.Many<MapChangeEvent<K, V>> {
         TODO("Not yet implemented")
     }
 

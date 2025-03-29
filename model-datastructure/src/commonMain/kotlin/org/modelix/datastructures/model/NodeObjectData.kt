@@ -1,39 +1,60 @@
 package org.modelix.datastructures.model
 
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
+import kotlinx.serialization.modules.SerializersModule
+import org.modelix.datastructures.objects.DataTypeConfigAsKSerializer
 import org.modelix.datastructures.objects.IDataTypeConfiguration
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
 import org.modelix.datastructures.objects.IObjectReferenceFactory
 import org.modelix.datastructures.objects.ObjectReference
+import org.modelix.datastructures.objects.asKSerializer
+import org.modelix.datastructures.serialization.SplitJoinFormat
+import org.modelix.model.TreeId
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
+import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.IReferenceLinkReference
-import org.modelix.model.api.NodeReference
 import org.modelix.model.api.meta.NullConcept
-import org.modelix.model.api.toSerialized
+import org.modelix.model.persistent.CPNode
+import org.modelix.model.persistent.CPNodeRef
+
+fun NodeObjectData<Long>.toLegacy() = CPNode(
+    id = id,
+    concept = concept.getUID(),
+    parentId = parentId ?: 0L,
+    roleInParent = roleInParent.getUID(),
+    childrenIds = children.toLongArray(),
+    propertyRoles = properties.map { it.first }.toTypedArray(),
+    propertyValues = properties.map { it.second }.toTypedArray(),
+    referenceRoles = references.map { it.first }.toTypedArray(),
+    referenceTargets = references.map { CPNodeRef.fromNodeReference(it.second, deserializer!!.treeId) }.toTypedArray(),
+)
 
 @Serializable
 data class NodeObjectData<NodeId>(
+    @Transient val deserializer: Deserializer<NodeId>? = null,
     val id: NodeId,
     val concept: ConceptReference = NullConcept.getReference(),
-    val containment: Pair<NodeId, IChildLinkReference>? = null,
+    val containment: Pair<NodeId, String?>? = null,
     val children: List<NodeId> = emptyList(),
-    val properties: List<Pair<IPropertyReference, String>> = emptyList(),
-    val references: List<Pair<IReferenceLinkReference, NodeReference>> = emptyList(),
+    val properties: List<Pair<String, String>> = emptyList(),
+    val references: List<Pair<String, @Contextual INodeReference>> = emptyList(),
 ) : IObjectData {
 
     val parentId: NodeId? get() = containment?.first
-    val roleInParent: IChildLinkReference? get() = containment?.second
+    val roleInParent: IChildLinkReference get() = containment?.second.let { IChildLinkReference.fromNullableUnclassifiedString(it) }
 
     override fun serialize(): String {
-        TODO("Not yet implemented")
+        return deserializer!!.serialFormat.encodeToString(deserializer.kSerializer, this)
     }
 
     override fun getDeserializer(): IObjectDeserializer<*> {
-        TODO("Not yet implemented")
+        return deserializer!!
     }
 
     override fun getContainmentReferences(): List<ObjectReference<IObjectData>> {
@@ -41,15 +62,15 @@ data class NodeObjectData<NodeId>(
     }
 
     fun getProperty(role: IPropertyReference): String? {
-        return properties.find { it.first.matches(role) }?.second
+        return properties.find { role.matches(it.first) }?.second
     }
 
-    fun getReferenceTarget(role: IReferenceLinkReference): NodeReference? {
-        return references.find { it.first.matches(role) }?.second
+    fun getReferenceTarget(role: IReferenceLinkReference): INodeReference? {
+        return references.find { role.matches(it.first) }?.second
     }
 
     fun withPropertyValue(role: IPropertyReference, value: String?): NodeObjectData<NodeId> {
-        var index = properties.indexOfFirst { it.first.matches(role) }
+        var index = properties.indexOfFirst { role.matches(it.first) }
         return if (value == null) {
             if (index < 0) {
                 this
@@ -58,28 +79,49 @@ data class NodeObjectData<NodeId>(
             }
         } else {
             if (index < 0) {
-                copy(properties = properties + (role to value))
+                copy(properties = properties + (role.getIdOrName() to value))
             } else {
-                copy(properties = properties.take(index) + (role to value) + properties.drop(index + 1))
+                copy(properties = properties.take(index) + (role.getIdOrName() to value) + properties.drop(index + 1))
             }
         }
     }
 
-    class Deserializer<NodeId>(val nodeIdConfig: IDataTypeConfiguration<NodeId>) : IObjectDeserializer<NodeObjectData<NodeId>> {
+    fun withChildRemoved(childId: NodeId): NodeObjectData<NodeId> {
+        return copy(children = children.filterNot { deserializer!!.nodeIdTypeConfig.equal(it, childId) })
+    }
+
+    class Deserializer<NodeId>(
+        val nodeIdTypeConfig: IDataTypeConfiguration<NodeId>,
+        val treeId: TreeId,
+    ) : IObjectDeserializer<NodeObjectData<NodeId>> {
+        val serialFormat = SplitJoinFormat(
+            SerializersModule {
+                contextual(INodeReference::class, DataTypeConfigAsKSerializer<INodeReference>(LegacyNodeReferenceDataTypeConfig(treeId)))
+            },
+        )
+        val kSerializer = NodeObjectData.serializer(nodeIdTypeConfig.asKSerializer())
         override fun deserialize(
             serialized: String,
             referenceFactory: IObjectReferenceFactory,
         ): NodeObjectData<NodeId> {
-            TODO("Not yet implemented")
+            return serialFormat.decodeFromString(kSerializer, serialized)
+                .copy(deserializer = this)
         }
     }
 }
 
 fun IReadableNode.toNodeObjectData() = NodeObjectData(
-    id = getNodeReference().serialize(),
+    deserializer = NodeObjectData.Deserializer(NodeReferenceDataTypeConfig(), getTreeId()),
+    id = getNodeReference(),
     concept = getConceptReference(),
-    containment = getParent()?.getId()?.let { it to getContainmentLink() },
-    children = getAllChildren().map { it.getNodeReference().serialize() },
-    properties = getAllProperties(),
-    references = getAllReferenceTargetRefs().map { it.first to it.second.toSerialized() },
+    containment = getParent()?.let { it.getNodeReference() to getContainmentLink().getIdOrNameOrNull() },
+    children = getAllChildren().map { it.getNodeReference() },
+    properties = getAllProperties().map { it.first.getIdOrName() to it.second },
+    references = getAllReferenceTargetRefs().map { it.first.getIdOrName() to it.second },
 )
+
+fun IReadableNode.getTreeId(): TreeId {
+    return when (this) {
+        else -> throw IllegalArgumentException("Unknown node type: $this")
+    }
+}

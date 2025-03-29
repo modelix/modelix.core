@@ -1,5 +1,6 @@
 package org.modelix.model.persistent
 
+import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.IObjectReferenceFactory
@@ -13,7 +14,7 @@ import org.modelix.streams.IStream
 /**
  * Implementation of a hash array mapped trie.
  */
-sealed class CPHamtNode : ITreeData {
+sealed class CPHamtNode : IObjectData {
     override fun getDeserializer() = DESERIALIZER
 
     protected fun createEmptyNode(): CPHamtNode {
@@ -72,7 +73,7 @@ sealed class CPHamtNode : ITreeData {
         return "$hash -> ${serialize()}"
     }
 
-    companion object : ITreeRelatedDeserializer<CPHamtNode> {
+    companion object : IObjectDeserializer<CPHamtNode> {
         const val BITS_PER_LEVEL = 5
         const val ENTRIES_PER_LEVEL = 1 shl BITS_PER_LEVEL
         const val LEVEL_MASK: Long = (-0x1 ushr 32 - BITS_PER_LEVEL).toLong()

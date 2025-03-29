@@ -50,7 +50,7 @@ class MoveNodeStep(val link: IChildLinkReference, val index: Int) :
     @SerialName("untyped.moveChild")
     data class Descriptor(val role: String?, val link: IChildLinkReference? = null, val index: Int) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
-            return MoveNodeStep(link ?: IChildLinkReference.fromUnclassifiedString(role), index)
+            return MoveNodeStep(link ?: IChildLinkReference.fromNullableUnclassifiedString(role), index)
         }
 
         override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(role, link, index)
@@ -59,7 +59,7 @@ class MoveNodeStep(val link: IChildLinkReference, val index: Int) :
 
 @Deprecated("provide an IChildLinkReference")
 fun IMonoStep<INode>.moveChild(link: String?, index: Int = -1, child: IMonoStep<INode>): IMonoStep<INode> {
-    return moveChild(IChildLinkReference.fromUnclassifiedString(link), index, child)
+    return moveChild(IChildLinkReference.fromNullableUnclassifiedString(link), index, child)
 }
 
 fun IMonoStep<INode>.moveChild(link: IChildLinkReference, index: Int = -1, child: IMonoStep<INode>): IMonoStep<INode> {

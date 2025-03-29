@@ -6,6 +6,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.acceptItems
+import io.ktor.server.request.contentType
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveChannel
 import io.ktor.server.response.respond
@@ -28,6 +29,7 @@ import org.modelix.authorization.getUserName
 import org.modelix.authorization.hasPermission
 import org.modelix.authorization.requiresLogin
 import org.modelix.model.ObjectDeltaFilter
+import org.modelix.model.TreeId
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.TreeAsBranch
@@ -42,6 +44,7 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.ModelServerPermissionSchema
+import org.modelix.model.server.api.RepositoryConfig
 import org.modelix.model.server.api.v2.ImmutableObjectsStream
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.api.v2.VersionDeltaStream
@@ -86,8 +89,10 @@ class ModelReplicationServer(
         }
     }
 
-    private fun repositoryId(paramValue: String?) =
-        RepositoryId(checkNotNull(paramValue) { "Parameter 'repository' not available" })
+    private fun resolveRepositoryId(paramValue: String?): RepositoryId {
+        val name = checkNotNull(paramValue) { "Parameter 'repositoryName' not available" }
+        return repositoriesManager.findRepositoryByAlias(name) ?: throw InvalidRepositoryIdException(name)
+    }
 
     override suspend fun RoutingContext.getRepositories() {
         call.respondText(
@@ -98,29 +103,31 @@ class ModelReplicationServer(
         )
     }
 
-    override suspend fun RoutingContext.getRepositoryBranches(repository: String) {
+    override suspend fun RoutingContext.getRepositoryBranches(repositoryName: String) {
+        val repositoryId = resolveRepositoryId(repositoryName)
         call.respondText(
             @OptIn(RequiresTransaction::class)
-            runRead { repositoriesManager.getBranchNames(repositoryId(repository)) }
-                .filter { call.hasPermission(ModelServerPermissionSchema.repository(repository).branch(it).list) }
+            runRead { repositoriesManager.getBranchNames(repositoryId) }
+                .filter { call.hasPermission(ModelServerPermissionSchema.repository(repositoryId).branch(it).list) }
                 .joinToString("\n"),
         )
     }
 
     override suspend fun RoutingContext.getRepositoryBranchDelta(
-        repository: String,
+        repositoryName: String,
         branch: String,
         lastKnown: String?,
         filter: String?,
     ) {
-        checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
-        val branchRef = repositoryId(repository).getBranchReference(branch)
+        val repositoryId = resolveRepositoryId(repositoryName)
+        checkPermission(ModelServerPermissionSchema.repository(repositoryId).branch(branch).pull)
+        val branchRef = repositoryId.getBranchReference(branch)
 
         @OptIn(RequiresTransaction::class)
         val versionHash = runRead {
             repositoriesManager.getVersionHash(branchRef) ?: throw BranchNotFoundException(branchRef)
         }
-        call.respondDelta(RepositoryId(repository), versionHash, parseFilter(filter, lastKnown))
+        call.respondDelta(repositoryId, versionHash, parseFilter(filter, lastKnown))
     }
 
     private fun parseFilter(filterAsJson: String?, lastKnown: String?): ObjectDeltaFilter {
@@ -130,13 +137,14 @@ class ModelReplicationServer(
     }
 
     override suspend fun RoutingContext.getRepositoryBranchV1(
-        repository: String,
+        repositoryName: String,
         branch: String,
         lastKnown: String?,
         filter: String?,
     ) {
-        checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
-        val branchRef = repositoryId(repository).getBranchReference(branch)
+        val repositoryId = resolveRepositoryId(repositoryName)
+        checkPermission(ModelServerPermissionSchema.repository(repositoryId).branch(branch).pull)
+        val branchRef = repositoryId.getBranchReference(branch)
 
         @OptIn(RequiresTransaction::class)
         val versionHash = runRead {
@@ -146,15 +154,10 @@ class ModelReplicationServer(
     }
 
     override suspend fun RoutingContext.deleteRepositoryBranch(
-        repository: String,
+        repositoryName: String,
         branch: String,
     ) {
-        val repositoryId = try {
-            RepositoryId(repository)
-        } catch (e: IllegalArgumentException) {
-            throw InvalidRepositoryIdException(repository, e)
-        }
-
+        val repositoryId = resolveRepositoryId(repositoryName)
         checkPermission(ModelServerPermissionSchema.repository(repositoryId).branch(branch).delete)
 
         @OptIn(RequiresTransaction::class)
@@ -170,11 +173,12 @@ class ModelReplicationServer(
     }
 
     override suspend fun RoutingContext.getRepositoryBranchHash(
-        repository: String,
+        repositoryName: String,
         branch: String,
     ) {
-        checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
-        val branchRef = repositoryId(repository).getBranchReference(branch)
+        val repositoryId = resolveRepositoryId(repositoryName)
+        checkPermission(ModelServerPermissionSchema.repository(repositoryId).branch(branch).pull)
+        val branchRef = repositoryId.getBranchReference(branch)
 
         @OptIn(RequiresTransaction::class)
         val versionHash = runRead {
@@ -184,29 +188,60 @@ class ModelReplicationServer(
     }
 
     override suspend fun RoutingContext.initializeRepository(
-        repository: String,
+        repositoryName: String,
         useRoleIds: Boolean?,
         legacyGlobalStorage: Boolean?,
     ) {
-        checkPermission(ModelServerPermissionSchema.repository(repository).create)
+        val config = if (call.request.contentType() == ContentType.Application.Json) {
+            call.receive<RepositoryConfig>()
+        } else {
+            // Legacy configuration for old clients.
+            // New clients with support for new data structures will send the desired config as JSON.
+            RepositoryConfig(
+                legacyNameBasedRoles = useRoleIds ?: true,
+                legacyGlobalStorage = legacyGlobalStorage ?: false,
+                nodeIdType = RepositoryConfig.NodeIdType.INT64,
+                primaryTreeType = RepositoryConfig.TreeType.HASH_ARRAY_MAPPED_TRIE,
+                modelId = TreeId.random().id,
+                repositoryId = repositoryName,
+                repositoryName = repositoryName,
+            )
+        }
+
+        val repositoryId = RepositoryId(config.repositoryId)
+        checkPermission(ModelServerPermissionSchema.repository(repositoryId).create)
+
         @OptIn(RequiresTransaction::class)
         val initialVersion = runWrite {
             repositoriesManager.createRepository(
-                repositoryId(repository),
+                config,
                 call.getUserName(),
-                useRoleIds ?: true,
-                legacyGlobalStorage ?: false,
             )
         }
-        call.respondDelta(RepositoryId(repository), initialVersion.getContentHash(), ObjectDeltaFilter())
+        call.respondDelta(repositoryId, initialVersion.getContentHash(), ObjectDeltaFilter())
     }
 
-    override suspend fun RoutingContext.deleteRepository(repository: String) {
-        checkPermission(ModelServerPermissionSchema.repository(repository).delete)
+    override suspend fun RoutingContext.getRepositoryConfig(repositoryName: String) {
+        val repositoryId = resolveRepositoryId(repositoryName)
+        checkPermission(ModelServerPermissionSchema.repository(repositoryId).create)
+        @OptIn(RequiresTransaction::class)
+        val config = runRead {
+            repositoriesManager.getRepositoryConfig(repositoryId)
+        }
+        if (config == null) {
+            call.respond(HttpStatusCode.NotFound)
+        } else {
+            call.respond(config)
+        }
+    }
+
+    override suspend fun RoutingContext.deleteRepository(repositoryName: String) {
+        val repositoryId = resolveRepositoryId(repositoryName)
+        checkPermission(ModelServerPermissionSchema.repository(repositoryId).delete)
 
         @OptIn(RequiresTransaction::class)
         val foundAndDeleted = runWrite {
-            repositoriesManager.removeRepository(repositoryId(repository))
+            repositoriesManager.removeRepository(repositoryId)
         }
         if (foundAndDeleted) {
             call.respond(HttpStatusCode.NoContent)
@@ -216,17 +251,18 @@ class ModelReplicationServer(
     }
 
     override suspend fun RoutingContext.postRepositoryBranch(
-        repository: String,
+        repositoryName: String,
         branch: String,
     ) {
-        checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).push)
-        val branchRef = repositoryId(repository).getBranchReference(branch)
+        val repositoryId = resolveRepositoryId(repositoryName)
+        checkPermission(ModelServerPermissionSchema.repository(repositoryId).branch(branch).push)
+        val branchRef = repositoryId.getBranchReference(branch)
         val deltaFromClient = call.receive<VersionDelta>()
         deltaFromClient.checkObjectHashes()
         val objectsFromClient = deltaFromClient.getAllObjects()
         withContext(Dispatchers.IO) {
             @OptIn(RequiresTransaction::class) // no transactions required for immutable store
-            repositoriesManager.getStoreClient(RepositoryId(repository), true).putAll(objectsFromClient)
+            repositoriesManager.getStoreClient(repositoryId, true).putAll(objectsFromClient)
         }
 
         // Run a merge outside a transaction to keep the transaction for the actual merge smaller.
@@ -237,22 +273,24 @@ class ModelReplicationServer(
         val mergedHash = runWrite {
             repositoriesManager.mergeChanges(branchRef, preMergedVersion)
         }
-        call.respondDelta(RepositoryId(repository), mergedHash, ObjectDeltaFilter(deltaFromClient.versionHash))
+        call.respondDelta(repositoryId, mergedHash, ObjectDeltaFilter(deltaFromClient.versionHash))
     }
 
     override suspend fun RoutingContext.pollRepositoryBranch(
-        repository: String,
+        repositoryName: String,
         branch: String,
         lastKnown: String?,
     ) {
-        checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
-        val branchRef = repositoryId(repository).getBranchReference(branch)
+        val repositoryId = resolveRepositoryId(repositoryName)
+        checkPermission(ModelServerPermissionSchema.repository(repositoryId).branch(branch).pull)
+        val branchRef = repositoryId.getBranchReference(branch)
         val newVersionHash = repositoriesManager.pollVersionHash(branchRef, lastKnown)
-        call.respondDelta(RepositoryId(repository), newVersionHash, ObjectDeltaFilter(lastKnown))
+        call.respondDelta(repositoryId, newVersionHash, ObjectDeltaFilter(lastKnown))
     }
 
-    override suspend fun RoutingContext.postRepositoryObjectsGetAll(repository: String) {
-        checkPermission(ModelServerPermissionSchema.repository(repository).objects.read)
+    override suspend fun RoutingContext.postRepositoryObjectsGetAll(repositoryName: String) {
+        val repositoryId = resolveRepositoryId(repositoryName)
+        checkPermission(ModelServerPermissionSchema.repository(repositoryId).objects.read)
         val channel = call.receiveChannel()
         val keys = hashSetOf<String>()
         while (true) {
@@ -262,7 +300,7 @@ class ModelReplicationServer(
 
         val objects = withContext(Dispatchers.IO) {
             @OptIn(RequiresTransaction::class) // no transactions required for immutable store
-            repositoriesManager.getStoreClient(RepositoryId(repository), true).getAll(keys)
+            repositoriesManager.getStoreClient(repositoryId, true).getAll(keys)
         }
 
         for (entry in objects) {
@@ -276,34 +314,37 @@ class ModelReplicationServer(
     }
 
     override suspend fun RoutingContext.pollRepositoryBranchHash(
-        repository: String,
+        repositoryName: String,
         branch: String,
         lastKnown: String?,
         legacyGlobalStorage: Boolean?,
     ) {
-        checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
-        val branchRef = repositoryId(repository).getBranchReference(branch)
+        val repositoryId = resolveRepositoryId(repositoryName)
+        checkPermission(ModelServerPermissionSchema.repository(repositoryId).branch(branch).pull)
+        val branchRef = repositoryId.getBranchReference(branch)
         val newVersionHash = repositoriesManager.pollVersionHash(branchRef, lastKnown)
         call.respondText(newVersionHash)
     }
 
     override suspend fun RoutingContext.getRepositoryVersionHash(
         versionHash: String,
-        repository: String,
+        repositoryName: String,
         lastKnown: String?,
     ) {
-        checkPermission(ModelServerPermissionSchema.repository(repository).objects.read)
-        if (repositoriesManager.getVersion(repositoryId(repository), versionHash) == null) {
+        val repositoryId = resolveRepositoryId(repositoryName)
+        checkPermission(ModelServerPermissionSchema.repository(repositoryId).objects.read)
+        if (repositoriesManager.getVersion(repositoryId, versionHash) == null) {
             throw VersionNotFoundException(versionHash)
         }
-        call.respondDelta(RepositoryId(repository), versionHash, ObjectDeltaFilter(lastKnown))
+        call.respondDelta(repositoryId, versionHash, ObjectDeltaFilter(lastKnown))
     }
 
     override suspend fun RoutingContext.postRepositoryBranchQuery(
-        repository: String,
+        repositoryName: String,
         branchName: String,
     ) {
-        val branchRef = repositoryId(repository).getBranchReference(branchName)
+        val repositoryId = resolveRepositoryId(repositoryName)
+        val branchRef = repositoryId.getBranchReference(branchName)
         checkPermission(ModelServerPermissionSchema.branch(branchRef).query)
         @OptIn(RequiresTransaction::class)
         val version = runRead { repositoriesManager.getVersion(branchRef) ?: throw BranchNotFoundException(branchRef) }
@@ -350,16 +391,18 @@ class ModelReplicationServer(
 
     override suspend fun RoutingContext.postRepositoryVersionHashQuery(
         versionHash: String,
-        repository: String,
+        repositoryName: String,
     ) {
-        checkPermission(ModelServerPermissionSchema.repository(repository).objects.read)
-        val version = CLVersion.loadFromHash(versionHash, repositoriesManager.getLegacyObjectStore(RepositoryId(repository)))
+        val repositoryId = resolveRepositoryId(repositoryName)
+        checkPermission(ModelServerPermissionSchema.repository(repositoryId).objects.read)
+        val version = CLVersion.loadFromHash(versionHash, repositoriesManager.getLegacyObjectStore(repositoryId))
         val initialTree = version.getTree()
         val branch = TreePointer(initialTree)
         ModelQLServer.handleCall(call, branch.getRootNode(), branch.getArea())
     }
 
-    override suspend fun RoutingContext.putRepositoryObjects(repository: String) {
+    override suspend fun RoutingContext.putRepositoryObjects(repositoryName: String) {
+        val repositoryId = resolveRepositoryId(repositoryName)
         checkPermission(ModelServerPermissionSchema.repository(parameter("repository")).objects.add)
 
         val channel = call.receiveChannel()
@@ -382,7 +425,7 @@ class ModelReplicationServer(
 
         withContext(Dispatchers.IO) {
             @OptIn(RequiresTransaction::class) // no transactions required for immutable store
-            repositoriesManager.getStoreClient(RepositoryId(repository), true).putAll(entries, true)
+            repositoriesManager.getStoreClient(repositoryId, true).putAll(entries, true)
         }
         call.respondText("${entries.size} objects received")
     }

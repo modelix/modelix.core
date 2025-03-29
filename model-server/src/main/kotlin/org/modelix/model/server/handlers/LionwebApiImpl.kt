@@ -7,6 +7,7 @@ import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.RoutingContext
 import org.modelix.authorization.getUserName
+import org.modelix.model.TreeId
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -37,6 +38,7 @@ import org.modelix.model.data.NodeData
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.runWriteWithNode
 import org.modelix.model.persistent.SerializationUtil
+import org.modelix.model.server.api.RepositoryConfig
 import org.modelix.model.server.store.RequiresTransaction
 import org.modelix.model.server.store.runReadIO
 import org.modelix.model.server.store.runWriteIO
@@ -88,12 +90,12 @@ class LionwebApiImpl(val repoManager: IRepositoriesManager) : LionwebApi() {
 
         // TODO use an index to find the nodes by their foreign ID (aka original ID)
         if (foreignIds.isNotEmpty()) {
-            version.treeRef.graph.getStreamExecutor().iterateSuspending({
-                version.tree.nodesMap.getEntries().flatMap { it.second.resolve() }
-                    .filter { foreignIds.contains(it.data.getPropertyValue(NodeData.ID_PROPERTY_KEY)) }
-            }) {
-                modelixIds.add(it.data.id)
-            }
+//            version.obj.graph.getStreamExecutor().iterateSuspending({
+//                version.tree.nodesMap.getEntries().flatMap { it.second.resolve() }
+//                    .filter { foreignIds.contains(it.data.getPropertyValue(NodeData.ID_PROPERTY_KEY)) }
+//            }) {
+//                modelixIds.add(it.data.id)
+//            }
         }
 
         val nodesData = INodeResolutionScope.runWithAdditionalScopeInCoroutine(branch.getArea()) {
@@ -308,7 +310,11 @@ class LionwebApiImpl(val repoManager: IRepositoriesManager) : LionwebApi() {
         @OptIn(RequiresTransaction::class)
         runWrite {
             repoManager.createRepository(
-                RepositoryId(repository),
+                config = RepositoryConfig(
+                    modelId = TreeId.random().id,
+                    repositoryId = RepositoryId.random().id,
+                    repositoryName = repository,
+                ),
                 userName = user,
             )
         }

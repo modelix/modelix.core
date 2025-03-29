@@ -1,5 +1,6 @@
 package org.modelix.datastructures.hamt
 
+import org.modelix.datastructures.MapChangeEvent
 import org.modelix.datastructures.btree.BTree
 import org.modelix.datastructures.btree.BTreeNodeLeaf
 import org.modelix.datastructures.objects.IObjectData

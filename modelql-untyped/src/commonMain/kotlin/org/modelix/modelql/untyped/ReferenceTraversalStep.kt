@@ -44,7 +44,7 @@ class ReferenceTraversalStep(val link: IReferenceLinkReference) : MonoTransformi
     @SerialName("untyped.referenceTarget")
     data class Descriptor(val role: String, val link: IReferenceLinkReference? = null) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
-            return ReferenceTraversalStep(link ?: IReferenceLinkReference.fromUnclassifiedString(role))
+            return ReferenceTraversalStep(link ?: IReferenceLinkReference.fromNullableUnclassifiedString(role))
         }
 
         override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(role, link)
@@ -60,13 +60,13 @@ fun IMonoStep<INode>.referenceOrNull(role: IReferenceLinkReference): IMonoStep<I
 fun IFluxStep<INode>.referenceOrNull(role: IReferenceLinkReference): IFluxStep<INode?> = map { it.referenceOrNull(role) }
 
 @Deprecated("provide an IReferenceLinkReference")
-fun IMonoStep<INode>.reference(role: String) = reference(IReferenceLinkReference.fromUnclassifiedString(role))
+fun IMonoStep<INode>.reference(role: String) = reference(IReferenceLinkReference.fromNullableUnclassifiedString(role))
 
 @Deprecated("provide an IReferenceLinkReference")
-fun IFluxStep<INode>.reference(role: String) = reference(IReferenceLinkReference.fromUnclassifiedString(role))
+fun IFluxStep<INode>.reference(role: String) = reference(IReferenceLinkReference.fromNullableUnclassifiedString(role))
 
 @Deprecated("provide an IReferenceLinkReference")
-fun IMonoStep<INode>.referenceOrNull(role: String): IMonoStep<INode?> = referenceOrNull(IReferenceLinkReference.fromUnclassifiedString(role))
+fun IMonoStep<INode>.referenceOrNull(role: String): IMonoStep<INode?> = referenceOrNull(IReferenceLinkReference.fromNullableUnclassifiedString(role))
 
 @Deprecated("provide an IReferenceLinkReference")
-fun IFluxStep<INode>.referenceOrNull(role: String): IFluxStep<INode?> = referenceOrNull(IReferenceLinkReference.fromUnclassifiedString(role))
+fun IFluxStep<INode>.referenceOrNull(role: String): IFluxStep<INode?> = referenceOrNull(IReferenceLinkReference.fromNullableUnclassifiedString(role))

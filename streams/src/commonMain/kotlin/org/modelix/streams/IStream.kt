@@ -165,3 +165,6 @@ fun <R> IStream.ZeroOrOne<R>.ifEmpty(defaultValue: () -> R): One<R> = ifEmpty_(d
 fun <R> IStream.Many<R>.switchIfEmpty(alternative: () -> Many<R>): Many<R> = switchIfEmpty_(alternative)
 fun <R> IStream.Many<R>.ifEmpty(alternative: R): OneOrMany<R> = ifEmpty_({ alternative })
 fun <R> IStream.Many<R>.ifEmpty(alternative: () -> R): OneOrMany<R> = ifEmpty_(alternative)
+
+fun <A, B, R> IStream.Many<Pair<A, B>>.mapFirst(mapper: (A) -> R) = map { mapper(it.first) to it.second }
+fun <A, B, R> IStream.Many<Pair<A, B>>.mapSecond(mapper: (B) -> R) = map { it.first to mapper(it.second) }

@@ -1,5 +1,7 @@
 package org.modelix.model.operations
 
+import org.modelix.datastructures.model.IModelTree
+import org.modelix.datastructures.model.asModelTree
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.model.api.ITree
@@ -14,10 +16,9 @@ sealed class AbstractOperation : IOperation {
 
     override fun getObjectReferences(): List<ObjectReference<IObjectData>> = listOf()
 
-    protected fun getNodePosition(tree: ITree, nodeId: Long): PositionInRole {
-        val parent = tree.getParent(nodeId)
-        val role = tree.getRole(nodeId)
-        val index = tree.getChildren(parent, role).indexOf(nodeId)
+    protected fun getNodePosition(tree: IModelTree<Long>, nodeId: Long): PositionInRole {
+        val (parent, role) = tree.getContainment(nodeId).getSynchronous()!!
+        val index = tree.getChildren(parent, role).asSequence().indexOf(nodeId)
         return PositionInRole(RoleInNode(parent, role), index)
     }
 
@@ -32,11 +33,12 @@ sealed class AbstractOperation : IOperation {
     }
 
     protected fun getDetachedNodesEndPosition(tree: ITree): PositionInRole {
-        val index = tree.getChildren(DETACHED_ROLE.nodeId, DETACHED_ROLE.role).count()
+        val tree = tree.asModelTree()
+        val index = tree.getChildren(DETACHED_ROLE.nodeId, DETACHED_ROLE.role).count().getSynchronous()
         return PositionInRole(DETACHED_ROLE, index)
     }
 
     companion object {
-        protected val DETACHED_ROLE = RoleInNode(ITree.ROOT_ID, ITree.DETACHED_NODES_ROLE)
+        protected val DETACHED_ROLE = RoleInNode(ITree.ROOT_ID, ITree.DETACHED_NODES_LINK)
     }
 }

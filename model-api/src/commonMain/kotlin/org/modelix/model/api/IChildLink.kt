@@ -57,16 +57,17 @@ sealed interface IChildLinkReference : ILinkReference {
 
     fun matches(other: IChildLinkReference): Boolean
 
-    companion object {
-        /**
-         * Can be a name or UID or anything else. INode will decide how to resolve it.
-         */
-        fun fromUnclassifiedString(value: String?): IChildLinkReference {
-            return if (value == null) NullChildLinkReference else UnclassifiedChildLinkReference(value)
+    override fun matches(unclassified: String?) = matches(fromNullableUnclassifiedString(unclassified))
+
+    companion object : IRoleReferenceFactory<IChildLinkReference> {
+        override fun fromUnclassifiedString(value: String): IChildLinkReference {
+            IRoleReference.requireNotForLegacyApi(value)
+            return UnclassifiedChildLinkReference(value)
         }
-        fun fromName(value: String): IChildLinkReference = ChildLinkReferenceByName(value)
-        fun fromId(value: String): IChildLinkReference = ChildLinkReferenceByUID(value)
-        fun fromIdAndName(id: String?, name: String?): IChildLinkReference {
+        override fun fromNull(): IChildLinkReference = NullChildLinkReference
+        override fun fromName(value: String): IChildLinkReference = ChildLinkReferenceByName(value)
+        override fun fromId(value: String): IChildLinkReference = ChildLinkReferenceByUID(value)
+        override fun fromIdAndName(id: String?, name: String?): IChildLinkReference {
             return if (id == null) {
                 if (name == null) {
                     throw IllegalArgumentException("Both 'id' and 'name' are null")

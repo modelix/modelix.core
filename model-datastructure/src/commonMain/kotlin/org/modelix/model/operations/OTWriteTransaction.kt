@@ -2,6 +2,7 @@ package org.modelix.model.operations
 
 import org.modelix.model.ITransactionWrapper
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.IIdGenerator
@@ -29,9 +30,9 @@ class OTWriteTransaction(
     override fun moveChild(newParentId: Long, newRole: String?, newIndex_: Int, childId: Long) {
         val newIndex = if (newIndex_ != -1) newIndex_ else getChildren(newParentId, newRole).count()
 
-        val newPosition = PositionInRole(newParentId, newRole, newIndex)
-        val currentRole = RoleInNode(transaction.getParent(childId), transaction.getRole(childId))
-        val currentIndex = transaction.getChildren(currentRole.nodeId, currentRole.role).indexOf(childId)
+        val newPosition = PositionInRole(newParentId, IChildLinkReference.fromLegacyApi(newRole), newIndex)
+        val currentRole = RoleInNode(transaction.getParent(childId), IChildLinkReference.fromLegacyApi(transaction.getRole(childId)))
+        val currentIndex = transaction.getChildren(currentRole.nodeId, currentRole.role.stringForLegacyApi()).indexOf(childId)
         val currentPosition = PositionInRole(currentRole, currentIndex)
         if (currentPosition == newPosition) return
 
@@ -51,7 +52,7 @@ class OTWriteTransaction(
         if (index_ == -1) {
             index_ = getChildren(parentId, role).count()
         }
-        apply(AddNewChildOp(PositionInRole(parentId, role, index_), childId, concept))
+        apply(AddNewChildOp(PositionInRole(parentId, IChildLinkReference.fromLegacyApi(role), index_), childId, concept))
     }
 
     override fun addNewChildren(
@@ -63,7 +64,7 @@ class OTWriteTransaction(
     ) {
         if (childIds.isEmpty()) return
         val index = if (index != -1) index else getChildren(parentId, role).count()
-        apply(AddNewChildrenOp(PositionInRole(parentId, role, index), childIds, concepts))
+        apply(AddNewChildrenOp(PositionInRole(parentId, IChildLinkReference.fromLegacyApi(role), index), childIds, concepts))
     }
 
     override fun addNewChild(parentId: Long, role: String?, index: Int, childId: Long, concept: IConcept?) {

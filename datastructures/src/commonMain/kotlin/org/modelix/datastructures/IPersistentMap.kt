@@ -1,15 +1,16 @@
 package org.modelix.datastructures
 
 import org.modelix.datastructures.objects.IDataTypeConfiguration
-import org.modelix.datastructures.objects.ObjectHash
+import org.modelix.datastructures.objects.Object
 import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutorProvider
 
 /**
  * Also works as a multimap. A multimap can store multiple entries with the same key. It depends on the configuration of
  * the implementation whether it behaves as a multimap or not.
  */
-interface IPersistentMap<K, V> {
-    fun getHash(): ObjectHash
+interface IPersistentMap<K, V> : IStreamExecutorProvider {
+    fun asObject(): Object<*>
     fun getKeyTypeConfig(): IDataTypeConfiguration<K>
 
     fun putAll(entries: Iterable<Pair<K, V>>): IStream.One<IPersistentMap<K, V>>
@@ -24,4 +25,6 @@ interface IPersistentMap<K, V> {
     fun get(key: K): IStream.ZeroOrOne<V> = getAll(listOf(key)).filter { it.first == key }.map { it.second }.firstOrEmpty()
     fun put(key: K, value: V): IStream.One<IPersistentMap<K, V>> = putAll(listOf(key to value))
     fun remove(key: K): IStream.One<IPersistentMap<K, V>> = removeAll(listOf(key))
+
+    fun getChanges(oldMap: IPersistentMap<K, V>, changesOnly: Boolean): IStream.Many<MapChangeEvent<K, V>>
 }

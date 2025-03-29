@@ -1,13 +1,14 @@
 package org.modelix.model.operations
 
+import org.modelix.datastructures.model.IModelTree
+import org.modelix.datastructures.model.asModelTree
+import org.modelix.datastructures.model.getDescendants
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.async.getDescendants
-import org.modelix.model.lazy.CLTree
-import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.SerializationUtil
 
@@ -26,30 +27,32 @@ class AddNewChildSubtreeOp(val resultTreeHash: ObjectReference<CPTree>, val posi
 
     fun decompress(opsVisitor: (IOperation) -> Unit) {
         val resultTree = getResultTree()
-        for (node in resultTree.getDescendants(childId, true)) {
+        for (node in resultTree.getDescendants(childId, true).asSequence()) {
+            val parent = resultTree.getParent(node).getSynchronous()!!
+            val roleInParent = resultTree.getRoleInParent(node).getSynchronous()!!
             val pos = PositionInRole(
-                node.parentId,
-                node.roleInParent,
-                resultTree.getChildren(node.parentId, node.roleInParent).indexOf(node.id),
+                parent,
+                roleInParent,
+                resultTree.getChildren(parent, roleInParent).asSequence().indexOf(node),
             )
-            decompressNode(resultTree, node.getData(), pos, false, opsVisitor)
+            decompressNode(resultTree, node, pos, false, opsVisitor)
         }
-        for (node in resultTree.getDescendants(childId, true)) {
-            decompressNode(resultTree, node.getData(), null, true, opsVisitor)
+        for (node in resultTree.getDescendants(childId, true).asSequence()) {
+            decompressNode(resultTree, node, null, true, opsVisitor)
         }
     }
 
-    private fun getResultTree(): CLTree = CLTree(resultTreeHash.resolveLater().query())
+    private fun getResultTree(): IModelTree<Long> = resultTreeHash.resolveNow().data.getLegacyModelTree()
 
-    private fun decompressNode(tree: ITree, node: CPNode, position: PositionInRole?, references: Boolean, opsVisitor: (IOperation) -> Unit) {
+    private fun decompressNode(tree: IModelTree<Long>, node: Long, position: PositionInRole?, references: Boolean, opsVisitor: (IOperation) -> Unit) {
         if (references) {
-            for (role in node.referenceRoles) {
-                opsVisitor(SetReferenceOp(node.id, role, tree.getReferenceTarget(node.id, role)))
+            for ((role, target) in tree.getReferenceTargets(node).asSequence()) {
+                opsVisitor(SetReferenceOp(node, role.getIdOrName(), target))
             }
         } else {
-            opsVisitor(AddNewChildOp(position!!, node.id, tree.getConceptReference(node.id)))
-            for (property in node.propertyRoles) {
-                opsVisitor(SetPropertyOp(node.id, property, node.getPropertyValue(property)))
+            opsVisitor(AddNewChildOp(position!!, node, tree.getConceptReference(node).getSynchronous()))
+            for ((property, value) in tree.getProperties(node).asSequence()) {
+                opsVisitor(SetPropertyOp(node, property.getIdOrName(), value))
             }
         }
     }
@@ -63,17 +66,17 @@ class AddNewChildSubtreeOp(val resultTreeHash: ObjectReference<CPTree>, val posi
 
         override fun invert(): List<IOperation> {
             val resultTree = getResultTree()
-            val asyncTree = resultTree.asAsyncTree()
-            return asyncTree.getStreamExecutor().query {
-                asyncTree
-                    .getDescendants(childId, true).map { DeleteNodeOp(it) }
-                    .toList()
-            }.asReversed()
+            return resultTree
+                .getDescendants(childId, true)
+                .map { DeleteNodeOp(it) }
+                .toList()
+                .getSynchronous()
+                .asReversed()
         }
     }
 
     override fun captureIntend(tree: ITree): IOperationIntend {
-        val children = tree.getChildren(position.nodeId, position.role)
+        val children = tree.asModelTree().getChildren(position.nodeId, position.role).asSequence()
         return Intend(
             CapturedInsertPosition(position.index, children.toList().toLongArray()),
         )
@@ -82,7 +85,7 @@ class AddNewChildSubtreeOp(val resultTreeHash: ObjectReference<CPTree>, val posi
     inner class Intend(val capturedPosition: CapturedInsertPosition) : IOperationIntend {
         override fun restoreIntend(tree: ITree): List<IOperation> {
             if (tree.containsNode(position.nodeId)) {
-                val newIndex = capturedPosition.findIndex(tree.getChildren(position.nodeId, position.role).toList().toLongArray())
+                val newIndex = capturedPosition.findIndex(tree.getChildren(position.nodeId, position.role.getIdOrName()).toList().toLongArray())
                 return listOf(withPosition(position.withIndex(newIndex)))
             } else {
                 return listOf(withPosition(getDetachedNodesEndPosition(tree)))

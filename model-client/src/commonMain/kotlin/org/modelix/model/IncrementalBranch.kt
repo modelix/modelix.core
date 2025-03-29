@@ -356,6 +356,7 @@ class IncrementalBranch(val branch: IBranch) : IBranch, IBranchWrapper {
     }
 
     inner class IncrementalTree(val tree: ITree) : ITree {
+        override fun asObject() = tree.asObject()
 
         override fun asAsyncTree(): IAsyncMutableTree {
             throw UnsupportedOperationException("Dependency recording not supported yet for IAsyncTree")

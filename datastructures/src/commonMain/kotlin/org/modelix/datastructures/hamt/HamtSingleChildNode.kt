@@ -1,5 +1,6 @@
 package org.modelix.datastructures.hamt
 
+import org.modelix.datastructures.MapChangeEvent
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.Object

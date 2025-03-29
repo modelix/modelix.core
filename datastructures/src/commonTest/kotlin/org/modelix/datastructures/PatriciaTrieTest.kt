@@ -45,7 +45,7 @@ class PatriciaTrieTest {
 
         val initialTree = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
 
-        val removedEntries = (1..100).map { randomString(rand.nextInt(3, 6)) }.toMutableSet()
+        val removedEntries = (1..100).map { randomString(rand.nextInt(0, 6)) }.toMutableSet()
         val values = removedEntries.associateWith { "value_of_$it" }
         val addedEntries = mutableSetOf<String>()
 
@@ -59,7 +59,7 @@ class PatriciaTrieTest {
             val expectedTree = addedEntries.fold(initialTree) { acc, it -> acc.put(it, values[it]!!).getSynchronous() }
             assertEquals(expectedTree, tree)
 
-            assertEquals(expectedTree.getHash(), tree.getHash())
+            assertEquals(expectedTree.asObject().getHash(), tree.asObject().getHash())
         }
 
         repeat(1_000) {
@@ -79,5 +79,59 @@ class PatriciaTrieTest {
         }
 
         assertTree()
+    }
+
+    @Test
+    fun `slice with shorter prefix and single entry`() {
+        var tree: PatriciaTrie<String, String> = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
+        tree = tree.put("abcdef", "1").getSynchronous()
+
+        assertEquals("1", tree.slice("abc").flatMapZeroOrOne { it.get("abcdef") }.getSynchronous())
+    }
+
+    @Test
+    fun `slice with shorter prefix and two entries`() {
+        var tree: PatriciaTrie<String, String> = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
+        tree = tree.put("abcdef", "1").getSynchronous()
+        tree = tree.put("abcdeg", "2").getSynchronous()
+
+        assertEquals("1", tree.slice("abc").flatMapZeroOrOne { it.get("abcdef") }.getSynchronous())
+        assertEquals("2", tree.slice("abc").flatMapZeroOrOne { it.get("abcdeg") }.getSynchronous())
+    }
+
+    @Test
+    fun `slice with prefix between two entries`() {
+        var tree: PatriciaTrie<String, String> = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
+        tree = tree.put("ab", "1").getSynchronous()
+        tree = tree.put("abcdef", "2").getSynchronous()
+
+        assertEquals(null, tree.slice("abcd").flatMapZeroOrOne { it.get("ab") }.getSynchronous())
+        assertEquals("2", tree.slice("abcd").flatMapZeroOrOne { it.get("abcdef") }.getSynchronous())
+    }
+
+    @Test
+    fun `slice with one before and two after`() {
+        var tree: PatriciaTrie<String, String> = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
+        tree = tree.put("ab", "1").getSynchronous()
+        tree = tree.put("abcdef", "2").getSynchronous()
+        tree = tree.put("abcdeg", "3").getSynchronous()
+
+        assertEquals(null, tree.slice("abcd").flatMapZeroOrOne { it.get("ab") }.getSynchronous())
+        assertEquals("2", tree.slice("abcd").flatMapZeroOrOne { it.get("abcdef") }.getSynchronous())
+        assertEquals("3", tree.slice("abcd").flatMapZeroOrOne { it.get("abcdeg") }.getSynchronous())
+    }
+
+    @Test
+    fun `slice with two before and two after at existing split`() {
+        var tree: PatriciaTrie<String, String> = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
+        tree = tree.put("a", "0").getSynchronous()
+        tree = tree.put("ab", "1").getSynchronous()
+        tree = tree.put("abcdef", "2").getSynchronous()
+        tree = tree.put("abcdeg", "3").getSynchronous()
+
+        assertEquals(null, tree.slice("ab").flatMapZeroOrOne { it.get("a") }.getSynchronous())
+        assertEquals("1", tree.slice("ab").flatMapZeroOrOne { it.get("ab") }.getSynchronous())
+        assertEquals("2", tree.slice("ab").flatMapZeroOrOne { it.get("abcdef") }.getSynchronous())
+        assertEquals("3", tree.slice("ab").flatMapZeroOrOne { it.get("abcdeg") }.getSynchronous())
     }
 }

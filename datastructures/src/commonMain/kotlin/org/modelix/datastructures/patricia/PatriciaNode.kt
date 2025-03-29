@@ -2,6 +2,7 @@ package org.modelix.datastructures.patricia
 
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
+import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.IObjectReferenceFactory
 import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.datastructures.objects.getHashString
@@ -16,6 +17,10 @@ data class PatriciaNode<V : Any>(
     val ownPrefix: String,
     val firstChars: String,
     val children: List<ObjectReference<PatriciaNode<V>>>,
+
+    /**
+     * [ownPrefix] is part of the key for entry that s stored in this node
+     */
     val value: V?,
 ) : IObjectData {
     constructor(config: PatriciaTrieConfig<*, V>) : this(config, "", "", emptyList(), null)
@@ -94,7 +99,7 @@ data class PatriciaNode<V : Any>(
     fun getSubtree(prefix: CharSequence): IStream.ZeroOrOne<PatriciaNode<V>> {
         if (ownPrefix.startsWith(prefix)) {
             return if (ownPrefix.length == prefix.length) {
-                IStream.of(this)
+                IStream.of(this.copy(ownPrefix = ""))
             } else {
                 split(prefix).children.single().resolveData()
             }
@@ -109,15 +114,13 @@ data class PatriciaNode<V : Any>(
     }
 
     fun get(partialKey: CharSequence): IStream.ZeroOrOne<V> {
-        if (partialKey.isEmpty()) return IStream.ofNotNull(value)
-        val index = firstChars.binarySearch(partialKey.first())
+        if (!partialKey.startsWith(ownPrefix)) return IStream.empty()
+        if (ownPrefix == partialKey) return IStream.ofNotNull(value)
+        val remainingKey = partialKey.drop(ownPrefix.length)
+        val index = firstChars.binarySearch(remainingKey.first())
         return if (index >= 0) {
             children[index].resolveData().flatMapZeroOrOne { child ->
-                if (partialKey.startsWith(child.ownPrefix)) {
-                    child.get(partialKey.subSequence(child.ownPrefix.length, partialKey.length))
-                } else {
-                    IStream.empty()
-                }
+                child.get(remainingKey)
             }
         } else {
             IStream.empty()
@@ -195,7 +198,8 @@ data class PatriciaNode<V : Any>(
         return children + (value?.let { config.valueConfig.getContainmentReferences(it) } ?: emptyList())
     }
 
-    class Deserializer<V : Any>(val config: PatriciaTrieConfig<*, V>) : IObjectDeserializer<PatriciaNode<V>> {
+    class Deserializer<V : Any>(val config: (IObjectGraph) -> PatriciaTrieConfig<*, V>) : IObjectDeserializer<PatriciaNode<V>> {
+        constructor(config: PatriciaTrieConfig<*, V>) : this({ config })
         override fun deserialize(
             serialized: String,
             referenceFactory: IObjectReferenceFactory,
@@ -203,6 +207,7 @@ data class PatriciaNode<V : Any>(
             val S1 = SplitJoinSerializer.SEPARATORS[0]
             val S2 = SplitJoinSerializer.SEPARATORS[1]
             val parts = serialized.split(S1, limit = 4)
+            val config = config(referenceFactory as IObjectGraph)
             return PatriciaNode<V>(
                 config,
                 parts[0].urlDecode()!!,

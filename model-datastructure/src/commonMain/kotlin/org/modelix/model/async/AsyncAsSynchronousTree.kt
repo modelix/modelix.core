@@ -1,5 +1,6 @@
 package org.modelix.model.async
 
+import org.modelix.datastructures.model.ModelTreeAsLegacyAsyncTree
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -23,6 +24,7 @@ import org.modelix.model.api.resolve
 import org.modelix.streams.IStream
 
 internal class AsyncAsSynchronousTree(val asyncTree: IAsyncMutableTree) : ITree {
+    override fun asObject() = asyncTree.asObject()
 
     private fun getStreamExecutor() = asyncTree.getStreamExecutor()
 
@@ -38,7 +40,7 @@ internal class AsyncAsSynchronousTree(val asyncTree: IAsyncMutableTree) : ITree 
         return queryTree {
             asyncTree.addNewChildren(
                 parentId,
-                IChildLinkReference.fromUnclassifiedString(role),
+                IChildLinkReference.fromNullableUnclassifiedString(role),
                 index,
                 longArrayOf(childId),
                 arrayOf((concept ?: NullConcept).getReference().let { it as ConceptReference }),
@@ -47,7 +49,7 @@ internal class AsyncAsSynchronousTree(val asyncTree: IAsyncMutableTree) : ITree 
     }
 
     override fun usesRoleIds(): Boolean {
-        return (asyncTree as? AsyncTree)?.treeData?.usesRoleIds != false
+        return true
     }
 
     private fun IPropertyReference.getKey() = if (usesRoleIds()) getIdOrName() else getNameOrId()
@@ -55,7 +57,7 @@ internal class AsyncAsSynchronousTree(val asyncTree: IAsyncMutableTree) : ITree 
     private fun IChildLinkReference.getKey() = if (usesRoleIds()) getIdOrNameOrNull() else getNameOrIdOrNull()
 
     override fun getId(): String? {
-        return (asyncTree as AsyncTree).treeData.id.id
+        return (asyncTree as ModelTreeAsLegacyAsyncTree).tree.getId().id
     }
 
     override fun visitChanges(oldVersion: ITree, visitor: ITreeChangeVisitor) {
@@ -79,11 +81,11 @@ internal class AsyncAsSynchronousTree(val asyncTree: IAsyncMutableTree) : ITree 
     }
 
     override fun getProperty(nodeId: Long, role: String): String? {
-        return getStreamExecutor().query { asyncTree.getPropertyValue(nodeId, IPropertyReference.fromUnclassifiedString(role)).orNull() }
+        return getStreamExecutor().query { asyncTree.getPropertyValue(nodeId, IPropertyReference.fromNullableUnclassifiedString(role)).orNull() }
     }
 
     override fun getChildren(parentId: Long, role: String?): Iterable<Long> {
-        return getStreamExecutor().query { asyncTree.getChildren(parentId, IChildLinkReference.fromUnclassifiedString(role)).toList() }
+        return getStreamExecutor().query { asyncTree.getChildren(parentId, IChildLinkReference.fromNullableUnclassifiedString(role)).toList() }
     }
 
     override fun getConcept(nodeId: Long): IConcept? {
@@ -103,15 +105,15 @@ internal class AsyncAsSynchronousTree(val asyncTree: IAsyncMutableTree) : ITree 
     }
 
     override fun setProperty(nodeId: Long, role: String, value: String?): ITree {
-        return queryTree { asyncTree.setPropertyValue(nodeId, IPropertyReference.fromUnclassifiedString(role), value) }
+        return queryTree { asyncTree.setPropertyValue(nodeId, IPropertyReference.fromNullableUnclassifiedString(role), value) }
     }
 
     override fun getReferenceTarget(sourceId: Long, role: String): INodeReference? {
-        return getStreamExecutor().query { asyncTree.getReferenceTarget(sourceId, IReferenceLinkReference.fromUnclassifiedString(role)).orNull() }
+        return getStreamExecutor().query { asyncTree.getReferenceTarget(sourceId, IReferenceLinkReference.fromNullableUnclassifiedString(role)).orNull() }
     }
 
     override fun setReferenceTarget(sourceId: Long, role: String, target: INodeReference?): ITree {
-        return queryTree { asyncTree.setReferenceTarget(sourceId, IReferenceLinkReference.fromUnclassifiedString(role), target) }
+        return queryTree { asyncTree.setReferenceTarget(sourceId, IReferenceLinkReference.fromNullableUnclassifiedString(role), target) }
     }
 
     override fun getReferenceRoles(sourceId: Long): Iterable<String> {
@@ -145,7 +147,7 @@ internal class AsyncAsSynchronousTree(val asyncTree: IAsyncMutableTree) : ITree 
     }
 
     override fun moveChild(newParentId: Long, newRole: String?, newIndex: Int, childId: Long): ITree {
-        return queryTree { asyncTree.moveChild(newParentId, IChildLinkReference.fromUnclassifiedString(newRole), newIndex, childId) }
+        return queryTree { asyncTree.moveChild(newParentId, IChildLinkReference.fromNullableUnclassifiedString(newRole), newIndex, childId) }
     }
 
     override fun addNewChild(
@@ -158,7 +160,7 @@ internal class AsyncAsSynchronousTree(val asyncTree: IAsyncMutableTree) : ITree 
         return queryTree {
             asyncTree.addNewChildren(
                 parentId,
-                IChildLinkReference.fromUnclassifiedString(role),
+                IChildLinkReference.fromNullableUnclassifiedString(role),
                 index,
                 longArrayOf(childId),
                 arrayOf((concept ?: NullConcept.getReference()) as ConceptReference),
@@ -176,7 +178,7 @@ internal class AsyncAsSynchronousTree(val asyncTree: IAsyncMutableTree) : ITree 
         return queryTree {
             asyncTree.addNewChildren(
                 parentId,
-                IChildLinkReference.fromUnclassifiedString(role),
+                IChildLinkReference.fromNullableUnclassifiedString(role),
                 index,
                 newIds,
                 concepts.map { (it ?: NullConcept).getReference() as ConceptReference }.toTypedArray(),
@@ -194,7 +196,7 @@ internal class AsyncAsSynchronousTree(val asyncTree: IAsyncMutableTree) : ITree 
         return queryTree {
             asyncTree.addNewChildren(
                 parentId,
-                IChildLinkReference.fromUnclassifiedString(role),
+                IChildLinkReference.fromNullableUnclassifiedString(role),
                 index,
                 newIds,
                 concepts.map { (it ?: NullConcept.getReference()) as ConceptReference }.toTypedArray(),

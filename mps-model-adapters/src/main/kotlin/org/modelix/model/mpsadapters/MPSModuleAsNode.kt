@@ -71,7 +71,7 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
             },
             BuiltinLanguages.jetbrains_mps_lang_core.BaseConcept.virtualPackage.toReference() to object : IPropertyAccessor<SModule> {
                 override fun read(element: SModule): String? {
-                    return ModelixMpsApi.getVirtualFolder(element)
+                    return runCatching { ModelixMpsApi.getVirtualFolder(element) }.getOrNull()
                 }
 
                 override fun write(element: SModule, value: String?) {
@@ -298,10 +298,6 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
 
     override fun getParent(): IWritableNode? {
         return module.repository?.asWritableNode()
-    }
-
-    override fun getId(): String {
-        return module.moduleReference.toNodeId()
     }
 
     override fun getNodeReference(): INodeReference {

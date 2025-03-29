@@ -37,8 +37,10 @@ data class MPSModuleReferenceAsNode(
         return listOf(
             BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference() to object : IReferenceAccessor<MPSModuleReferenceAsNode> {
                 override fun read(element: MPSModuleReferenceAsNode): IWritableNode? {
-                    val repo = ModelixMpsApi.getRepository()
-                    return target.resolve(repo)?.let { MPSModuleAsNode(it) }
+                    return runCatching {
+                        val repo = ModelixMpsApi.getRepository()
+                        target.resolve(repo)?.let { MPSModuleAsNode(it) }
+                    }.getOrNull()
                 }
 
                 override fun write(element: MPSModuleReferenceAsNode, value: IWritableNode?) {

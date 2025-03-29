@@ -38,10 +38,6 @@ data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
         return MPSArea(node.model?.repository ?: MPSModuleRepository.getInstance()).asModel()
     }
 
-    override fun getId(): String {
-        return node.reference.toNodeId()
-    }
-
     override fun getAllChildren(): List<IWritableNode> {
         DependencyTracking.accessed(MPSAllChildrenDependency(node))
         return node.children.map { MPSWritableNode(it) }

@@ -2,6 +2,8 @@ package org.modelix.model.api
 
 import kotlinx.serialization.Serializable
 import org.modelix.kotlin.utils.ContextValue
+import org.modelix.kotlin.utils.base64UrlDecoded
+import org.modelix.kotlin.utils.base64UrlEncoded
 
 /**
  * An [IRole] is a structural feature of a concept.
@@ -69,8 +71,72 @@ sealed interface IRoleReference {
      */
     fun getIdOrName(): String
 
+    /**
+     * Use this for APIs that still work with strings, but have some implementation that uses [IRoleReference].
+     */
+    fun stringForLegacyApi(): String = when (this) {
+        is IRoleReferenceByUID -> {
+            if (this is IRoleReferenceByName) {
+                encodeStringForLegacyApi(getUID(), getSimpleName())
+            } else {
+                encodeStringForLegacyApi(getUID(), null)
+            }
+        }
+        is IRoleReferenceByName -> {
+            encodeStringForLegacyApi(null, getSimpleName())
+        }
+        is IUnclassifiedRoleReference -> getStringValue()
+        NullChildLinkReference -> "null"
+    }
+
+    fun matches(unclassified: String?): Boolean
+
     @Deprecated("use IRoleReference or IRoleDefinition instead of IRole")
     fun toLegacy(): IRole
+
+    companion object {
+        fun <T : IRoleReference> decodeStringFromLegacyApi(value: String?, factory: IRoleReferenceFactory<T>): T {
+            if (value == null || value == "null") return factory.fromNull()
+            val parts = value.split(":")
+            if (parts.size != 3 || parts[0] != "") return factory.fromNullableUnclassifiedString(value)
+            val id = parts[1].takeIf { it.isNotEmpty() }?.base64UrlDecoded
+            val name = parts[2].takeIf { it.isNotEmpty() }?.base64UrlDecoded
+            return if (id != null) {
+                if (name != null) {
+                    factory.fromIdAndName(id, name)
+                } else {
+                    factory.fromId(id)
+                }
+            } else {
+                if (name != null) {
+                    factory.fromName(name)
+                } else {
+                    throw IllegalArgumentException("No ID and no name provided: $value")
+                }
+            }
+        }
+
+        fun encodeStringForLegacyApi(id: String?, name: String?): String {
+            return ":" + (id?.base64UrlEncoded ?: "") + ":" + (name?.base64UrlEncoded ?: "")
+        }
+
+        fun requireNotForLegacyApi(value: String?) {
+            if (value == null) return
+            require(value.count { it == ':' } != 3) {
+                "Use .fromLegacyApi() for this string: $value"
+            }
+        }
+    }
+}
+
+interface IRoleReferenceFactory<E : IRoleReference> {
+    fun fromNull(): E = throw IllegalArgumentException("Null values not allowed")
+    fun fromNullableUnclassifiedString(value: String?): E = if (value == null) fromNull() else fromUnclassifiedString(value)
+    fun fromUnclassifiedString(value: String): E
+    fun fromName(value: String): E
+    fun fromId(value: String): E
+    fun fromIdAndName(id: String?, name: String?): E
+    fun fromLegacyApi(value: String?): E = IRoleReference.decodeStringFromLegacyApi(value, this)
 }
 
 fun IRoleReference.matches(other: IRoleReference): Boolean {

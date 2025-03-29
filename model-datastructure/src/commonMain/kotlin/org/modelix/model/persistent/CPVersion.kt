@@ -1,10 +1,12 @@
 package org.modelix.model.persistent
 
+import org.modelix.datastructures.hamt.HamtNode
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
 import org.modelix.datastructures.objects.IObjectReferenceFactory
 import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.datastructures.objects.getHashString
+import org.modelix.datastructures.patricia.PatriciaNode
 import org.modelix.model.TreeType
 import org.modelix.model.lazy.CLVersion.Companion.INLINED_OPS_LIMIT
 import org.modelix.model.operations.IOperation
@@ -46,6 +48,7 @@ data class CPVersion(
         if ((mergedVersion1 == null) != (mergedVersion2 == null)) {
             throw RuntimeException("A merge has to specify two versions. Only one was provided.")
         }
+        require(treeRefs.all { it.value.getDeserializer() == CPTree })
     }
 
     fun getTree(type: TreeType): ObjectReference<CPTree> {
@@ -59,13 +62,27 @@ data class CPVersion(
             } else {
                 operations.joinToString(Separators.OPS) { OperationSerializer.INSTANCE.serialize(it) }
             }
+
+        // The serialization format is chosen in a way that a single legacy tree serializes into a simple ObjectHash,
+        // which makes it backwards compatible.
         val serializedTrees = treeRefs.entries.sortedBy { it.key.name }.joinToString(Separators.LEVEL2) {
-            if (it.key == TreeType.MAIN) {
+            val treeImplPrefix = when (it.value.getDeserializer()) {
+                CPTree -> ""
+                is HamtNode.Deserializer<*, *> -> ""
+                is PatriciaNode.Deserializer<*> -> {
+                    // S as in [S]tring based node IDs
+                    "S" + Separators.LEVEL4
+                }
+                else -> error("Unsupported tree implementation: ${it.value.getDeserializer()}")
+            }
+            val treeTypeAndHash = if (it.key == TreeType.MAIN) {
                 it.value.getHashString()
             } else {
                 it.key.name + Separators.MAPPING + it.value.getHashString()
             }
+            treeImplPrefix + treeTypeAndHash
         }
+
         val s = Separators.LEVEL1
         return longToHex(id) +
             s + escape(time) +
@@ -115,7 +132,7 @@ data class CPVersion(
                             .map { OperationSerializer.INSTANCE.deserialize(it, referenceFactory) }
                     }
 
-                    val treeHashes = checkNotNull(emptyStringAsNull(parts[3])) { "Tree hash empty in $serialized" }
+                    val treeHashes: Map<TreeType, ObjectReference<CPTree>> = checkNotNull(emptyStringAsNull(parts[3])) { "Tree hash empty in $serialized" }
                         .split(Separators.LEVEL2)
                         .associate {
                             it.split(Separators.MAPPING).let {
@@ -164,7 +181,7 @@ data class CPVersion(
                         id = longFromHex(parts[0]),
                         time = unescape(parts[1]),
                         author = unescape(parts[2]),
-                        treeRefs = mapOf(TreeType.MAIN to referenceFactory(checkNotNull(emptyStringAsNull(parts[3])) { "Tree hash empty in $serialized" }, CPTree.DESERIALIZER)),
+                        treeRefs = mapOf(TreeType.MAIN to referenceFactory(checkNotNull(emptyStringAsNull(parts[3])) { "Tree hash empty in $serialized" }, CPTree)),
                         previousVersion = emptyStringAsNull(parts[4])?.let { referenceFactory(it, DESERIALIZER) },
                         originalVersion = if (parts.size > 7) {
                             emptyStringAsNull(parts[7])?.let { referenceFactory(it, DESERIALIZER) }

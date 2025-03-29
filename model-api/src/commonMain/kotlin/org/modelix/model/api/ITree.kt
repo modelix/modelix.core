@@ -13,6 +13,8 @@ import org.modelix.model.api.async.IAsyncMutableTree
  * Consists of [INode]s.
  */
 interface ITree {
+    fun asObject(): Any
+
     fun asAsyncTree(): IAsyncMutableTree
 
     /**
@@ -265,6 +267,7 @@ interface ITree {
     companion object {
         const val ROOT_ID = 1L
         const val DETACHED_NODES_ROLE = "detached"
+        val DETACHED_NODES_LINK = IChildLinkReference.fromIdAndName(DETACHED_NODES_ROLE, DETACHED_NODES_ROLE)
     }
 }
 

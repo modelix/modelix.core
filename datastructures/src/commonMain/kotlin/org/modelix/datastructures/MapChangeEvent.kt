@@ -1,4 +1,4 @@
-package org.modelix.datastructures.hamt
+package org.modelix.datastructures
 
 sealed class MapChangeEvent<K, V>
 data class EntryAddedEvent<K, V>(val key: K, val value: V) : MapChangeEvent<K, V>()

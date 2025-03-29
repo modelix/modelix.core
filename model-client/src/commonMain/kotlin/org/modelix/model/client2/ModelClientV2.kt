@@ -12,7 +12,6 @@ import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
-import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.preparePost
@@ -36,20 +35,22 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import mu.KotlinLogging
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.kotlin.utils.WeakValueMap
 import org.modelix.kotlin.utils.getOrPut
+import org.modelix.kotlin.utils.runSynchronized
 import org.modelix.model.IVersion
 import org.modelix.model.ObjectDeltaFilter
+import org.modelix.model.TreeId
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INode
 import org.modelix.model.api.IdGeneratorDummy
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.getRootNode
-import org.modelix.model.api.runSynchronized
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.async.LazyLoadingObjectGraph
 import org.modelix.model.async.getAsyncStore
@@ -69,6 +70,7 @@ import org.modelix.model.oauth.TokenProviderAuthConfig
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.CPVersion
 import org.modelix.model.persistent.HashUtil
+import org.modelix.model.server.api.RepositoryConfig
 import org.modelix.model.server.api.v2.ImmutableObjectsStream
 import org.modelix.model.server.api.v2.ObjectHashAndSerializedObject
 import org.modelix.model.server.api.v2.SerializedObject
@@ -95,6 +97,7 @@ class ModelClientV2(
     private var serverProvidedUserId: String? = null
 
     private val objectGraphs = WeakValueMap<RepositoryId, ModelClientGraph>()
+    private val repositoryConfigurations = HashMap<String, RepositoryConfig>()
 
     suspend fun init() {
         updateClientId()
@@ -182,25 +185,75 @@ class ModelClientV2(
     override fun getUserId(): String? = clientProvidedUserId ?: serverProvidedUserId
 
     override suspend fun initRepository(repository: RepositoryId, useRoleIds: Boolean): IVersion {
-        return initRepository(repository, useRoleIds = useRoleIds, legacyGlobalStorage = false)
+        return initRepository(
+            RepositoryConfig(
+                legacyNameBasedRoles = !useRoleIds,
+                legacyGlobalStorage = false,
+                nodeIdType = RepositoryConfig.NodeIdType.STRING,
+                primaryTreeType = RepositoryConfig.TreeType.PATRICIA_TRIE,
+                modelId = TreeId.random().id,
+                repositoryId = RepositoryId.random().id,
+                repositoryName = repository.id,
+                alternativeNames = emptySet(),
+            ),
+        )
     }
 
     override suspend fun initRepositoryWithLegacyStorage(repository: RepositoryId): IVersion {
-        return initRepository(repository, useRoleIds = true, legacyGlobalStorage = true)
+        return initRepository(
+            RepositoryConfig(
+                legacyNameBasedRoles = false,
+                legacyGlobalStorage = true,
+                nodeIdType = RepositoryConfig.NodeIdType.STRING,
+                primaryTreeType = RepositoryConfig.TreeType.PATRICIA_TRIE,
+                modelId = TreeId.random().id,
+                repositoryId = RepositoryId.random().id,
+                repositoryName = repository.id,
+                alternativeNames = emptySet(),
+            ),
+        )
     }
 
-    suspend fun initRepository(repository: RepositoryId, useRoleIds: Boolean = true, legacyGlobalStorage: Boolean = false): IVersion {
+    override suspend fun initRepository(config: RepositoryConfig): IVersion {
+        val repositoryId = RepositoryId(config.repositoryId)
         return httpClient.preparePost {
             url {
-                parameter("useRoleIds", useRoleIds)
                 takeFrom(baseUrl)
-                appendPathSegmentsEncodingSlash("repositories", repository.id, "init")
-                if (legacyGlobalStorage) parameters["legacyGlobalStorage"] = legacyGlobalStorage.toString()
+                appendPathSegmentsEncodingSlash("repositories", repositoryId.id, "init")
             }
             useVersionStreamFormat()
         }.execute { response ->
-            createVersion(repository, null, response.readVersionDelta())
+            createVersion(repositoryId, null, response.readVersionDelta()).also {
+                runSynchronized(repositoryConfigurations) {
+                    for (alias in config.getAliases()) {
+                        repositoryConfigurations[alias] = config
+                    }
+                }
+            }
         }
+    }
+
+    override suspend fun getRepositoryConfig(alias: String): RepositoryConfig? {
+        runSynchronized(repositoryConfigurations) {
+            repositoryConfigurations[alias]?.let { return it }
+        }
+        return requestRepositoryConfig(alias)?.also { config ->
+            runSynchronized(repositoryConfigurations) {
+                repositoryConfigurations[alias] = config
+            }
+        }
+    }
+
+    private suspend fun requestRepositoryConfig(repositoryAlias: String): RepositoryConfig? {
+        val response = httpClient.get {
+            expectSuccess = false
+            url {
+                takeFrom(baseUrl)
+                appendPathSegmentsEncodingSlash("repositories", repositoryAlias, "config")
+            }
+        }
+        if (response.status == HttpStatusCode.NotFound) return null
+        return response.body<RepositoryConfig>()
     }
 
     override suspend fun listRepositories(): List<RepositoryId> {
@@ -533,14 +586,16 @@ class ModelClientV2(
         httpClient.close()
     }
 
-    private suspend fun createVersion(repository: RepositoryId, baseVersion: CLVersion?, delta: VersionDeltaStream): CLVersion {
-        val graph = getObjectGraph(repository)
+    private suspend fun createVersion(repositoryAlias: RepositoryId, baseVersion: CLVersion?, delta: VersionDeltaStream): CLVersion {
+        val config = getRepositoryConfig(repositoryAlias.id)
+        val repositoryId = config?.let { RepositoryId(it.repositoryId) } ?: repositoryAlias
+        val graph = getObjectGraph(repositoryId)
         return if (baseVersion != null && delta.versionHash == baseVersion.getContentHash()) {
             CLVersion(graph.withUnloadedHistory(baseVersion.obj))
         } else {
             val receivedObjects = delta.getObjectsAsFlow()
                 .map { ObjectHash(it.first) to it.second }.toMap()
-            val graph = getObjectGraph(repository)
+            val graph = getObjectGraph(repositoryId)
             CLVersion(graph.loadVersion(ObjectHash(delta.versionHash), receivedObjects))
         }
     }
@@ -559,7 +614,7 @@ class ModelClientV2(
     }
 
     companion object {
-        private val LOG = mu.KotlinLogging.logger {}
+        private val LOG = KotlinLogging.logger {}
         fun builder(): ModelClientV2Builder = ModelClientV2PlatformSpecificBuilder()
     }
 }
@@ -718,7 +773,7 @@ abstract class ModelClientV2Builder {
     protected abstract fun createHttpClient(): HttpClient
 
     companion object {
-        private val LOG = mu.KotlinLogging.logger {}
+        private val LOG = KotlinLogging.logger {}
 
         fun normalizeUrl(url: String): String {
             return buildUrl {

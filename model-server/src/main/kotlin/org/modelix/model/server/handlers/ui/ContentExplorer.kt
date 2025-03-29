@@ -51,7 +51,6 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.TreePointer
 import org.modelix.model.lazy.BranchReference
-import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.model.server.handlers.IRepositoriesManager
@@ -216,7 +215,7 @@ class ContentExplorer(private val repoManager: IRepositoriesManager) {
         }
     }
 
-    private fun getAncestorsAndSelf(expandTo: Long, tree: CLTree): Set<String> {
+    private fun getAncestorsAndSelf(expandTo: Long, tree: ITree): Set<String> {
         val seq = generateSequence(expandTo) { id ->
             try {
                 tree.getParent(id).takeIf { it != 0L } // getParent returns 0L for root node

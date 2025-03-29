@@ -51,5 +51,10 @@ data class PNodeReference(val id: Long, val treeId: String) : INodeReference {
             }
             return null
         }
+
+        fun tryConvert(ref: INodeReference): PNodeReference? {
+            if (ref is PNodeReference) return ref
+            return tryDeserialize(ref.serialize())
+        }
     }
 }

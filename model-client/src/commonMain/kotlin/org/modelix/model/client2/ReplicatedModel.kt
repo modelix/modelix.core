@@ -9,6 +9,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.modelix.datastructures.model.asModelTree
 import org.modelix.model.IVersion
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.IBranch
@@ -257,7 +258,7 @@ private class LocalModel(initialVersion: CLVersion, val idGenerator: IIdGenerato
 
         val baseVersion = localVersion
 
-        if (ops.isEmpty() && baseVersion.getTree().hash == tree.hash) return null
+        if (ops.isEmpty() && baseVersion.getTreeReference().getHash() == tree.asModelTree().asObject().getHash()) return null
         val newVersion = CLVersion.createRegularVersion(
             id = idGenerator.generate(),
             author = author(),

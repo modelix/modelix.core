@@ -1,5 +1,9 @@
 package org.modelix.datastructures.hamt
 
+import org.modelix.datastructures.EntryAddedEvent
+import org.modelix.datastructures.EntryChangedEvent
+import org.modelix.datastructures.EntryRemovedEvent
+import org.modelix.datastructures.MapChangeEvent
 import org.modelix.datastructures.btree.BTree
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectGraph
@@ -31,7 +35,7 @@ data class HamtLeafNode<K, V : Any>(
                 IStream.of(create(config, key, value))
             }
         } else {
-            if (shift + BITS_PER_LEVEL > MAX_SHIFT) {
+            if (shift > MAX_SHIFT) {
                 IStream.of(
                     HamtCollisionNode(
                         config,

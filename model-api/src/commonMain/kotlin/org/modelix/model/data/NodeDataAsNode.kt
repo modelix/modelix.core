@@ -73,7 +73,7 @@ class NodeDataAsNode(val data: NodeData, val parent: NodeDataAsNode?) : IWritabl
     }
 
     override fun getContainmentLink(): IChildLinkReference {
-        return IChildLinkReference.fromUnclassifiedString(data.role)
+        return IChildLinkReference.fromNullableUnclassifiedString(data.role)
     }
 
     override fun getAllChildren(): List<IWritableNode> {
@@ -86,16 +86,16 @@ class NodeDataAsNode(val data: NodeData, val parent: NodeDataAsNode?) : IWritabl
 
     override fun getPropertyValue(property: IPropertyReference): String? {
         return data.properties.entries
-            .find { IPropertyReference.fromUnclassifiedString(it.key).matches(property) }
+            .find { IPropertyReference.fromNullableUnclassifiedString(it.key).matches(property) }
             ?.value
     }
 
     override fun getPropertyLinks(): List<IPropertyReference> {
-        return data.properties.keys.map { IPropertyReference.fromUnclassifiedString(it) }
+        return data.properties.keys.map { IPropertyReference.fromNullableUnclassifiedString(it) }
     }
 
     override fun getAllProperties(): List<Pair<IPropertyReference, String>> {
-        return data.properties.map { IPropertyReference.fromUnclassifiedString(it.key) to it.value }
+        return data.properties.map { IPropertyReference.fromNullableUnclassifiedString(it.key) to it.value }
     }
 
     override fun getReferenceTarget(role: IReferenceLinkReference): IWritableNode? {
@@ -104,13 +104,13 @@ class NodeDataAsNode(val data: NodeData, val parent: NodeDataAsNode?) : IWritabl
 
     override fun getReferenceTargetRef(role: IReferenceLinkReference): INodeReference? {
         return data.references.entries
-            .find { IReferenceLinkReference.fromUnclassifiedString(it.key).matches(role) }
+            .find { IReferenceLinkReference.fromNullableUnclassifiedString(it.key).matches(role) }
             ?.value
             ?.let { NodeReference(it) }
     }
 
     override fun getReferenceLinks(): List<IReferenceLinkReference> {
-        return data.references.keys.map { IReferenceLinkReference.fromUnclassifiedString(it) }
+        return data.references.keys.map { IReferenceLinkReference.fromNullableUnclassifiedString(it) }
     }
 
     override fun getAllReferenceTargets(): List<Pair<IReferenceLinkReference, IWritableNode>> {
@@ -118,7 +118,7 @@ class NodeDataAsNode(val data: NodeData, val parent: NodeDataAsNode?) : IWritabl
     }
 
     override fun getAllReferenceTargetRefs(): List<Pair<IReferenceLinkReference, INodeReference>> {
-        return data.references.map { IReferenceLinkReference.fromUnclassifiedString(it.key) to NodeReference(it.value) }
+        return data.references.map { IReferenceLinkReference.fromNullableUnclassifiedString(it.key) to NodeReference(it.value) }
     }
 
     override fun changeConcept(newConcept: ConceptReference): IWritableNode {

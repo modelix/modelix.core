@@ -119,7 +119,7 @@ data class BTreeNodeLeaf<K, V>(
             } else {
                 // In case of non-multimaps, the comparator only compares the key. Check the value to avoid unnecessary
                 // changes to the tree.
-                if (entries[index].value == newEntry.value) {
+                if (config.valueConfiguration.equal(entries[index].value, newEntry.value)) {
                     this
                 } else {
                     copy(entries = entries.take(index) + newEntry + entries.drop(index + 1))

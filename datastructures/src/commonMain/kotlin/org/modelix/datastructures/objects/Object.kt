@@ -44,7 +44,7 @@ open class Object<out E : IObjectData>(val data: E, val ref: ObjectReference<E>)
  * Provide the hash if the object was just deserialized.
  */
 @DelicateModelixApi
-fun <T : IObjectData> T.asObject(factory: IObjectReferenceFactory): Object<T> = Object(this, factory(this))
+fun <T : IObjectData> T.asObject(factory: IObjectReferenceFactory): Object<T> = Object(this, factory.fromCreated(this))
 
 fun <T : IObjectData> T.asObject(hash: ObjectHash, factory: IObjectReferenceFactory): Object<T> =
     Object(this, factory.fromDeserialized(hash, this))

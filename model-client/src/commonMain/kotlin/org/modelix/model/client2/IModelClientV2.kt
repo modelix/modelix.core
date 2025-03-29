@@ -8,6 +8,7 @@ import org.modelix.model.api.INode
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.server.api.RepositoryConfig
 import org.modelix.modelql.core.IMonoStep
 
 /**
@@ -31,8 +32,15 @@ interface IModelClientV2 {
 
     fun getStore(repository: RepositoryId): IAsyncObjectStore
 
+    @Deprecated("Provide a RepositoryConfig")
     suspend fun initRepository(repository: RepositoryId, useRoleIds: Boolean = true): IVersion
+
+    @Deprecated("Provide a RepositoryConfig")
     suspend fun initRepositoryWithLegacyStorage(repository: RepositoryId): IVersion
+
+    suspend fun initRepository(config: RepositoryConfig): IVersion
+    suspend fun getRepositoryConfig(repositoryAlias: String): RepositoryConfig?
+
     suspend fun listRepositories(): List<RepositoryId>
     suspend fun deleteRepository(repository: RepositoryId): Boolean
     suspend fun listBranches(repository: RepositoryId): List<BranchReference>

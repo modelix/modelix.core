@@ -29,7 +29,7 @@ open class AddNewChildrenOp(val position: PositionInRole, val childIds: LongArra
     }
 
     override fun apply(transaction: IWriteTransaction): IAppliedOperation {
-        transaction.addNewChildren(position.nodeId, position.role, position.index, childIds, concepts)
+        transaction.addNewChildren(position.nodeId, position.role.stringForLegacyApi(), position.index, childIds, concepts)
         return Applied()
     }
 
@@ -46,7 +46,7 @@ open class AddNewChildrenOp(val position: PositionInRole, val childIds: LongArra
     }
 
     override fun captureIntend(tree: ITree): IOperationIntend {
-        val children = tree.getChildren(position.nodeId, position.role)
+        val children = tree.getChildren(position.nodeId, position.role.stringForLegacyApi())
         return Intend(
             CapturedInsertPosition(position.index, children.toList().toLongArray()),
         )
@@ -55,7 +55,7 @@ open class AddNewChildrenOp(val position: PositionInRole, val childIds: LongArra
     inner class Intend(val capturedPosition: CapturedInsertPosition) : IOperationIntend {
         override fun restoreIntend(tree: ITree): List<IOperation> {
             if (tree.containsNode(position.nodeId)) {
-                val newIndex = capturedPosition.findIndex(tree.getChildren(position.nodeId, position.role).toList().toLongArray())
+                val newIndex = capturedPosition.findIndex(tree.getChildren(position.nodeId, position.role.stringForLegacyApi()).toList().toLongArray())
                 return listOf(withPosition(position.withIndex(newIndex)))
             } else {
                 return listOf(withPosition(getDetachedNodesEndPosition(tree)))

@@ -26,19 +26,19 @@ class HamtCollisionTest {
         )
         var tree: HamtTree<Long, String> = HamtTree(HamtInternalNode.createEmpty(config))
 
-        tree = tree.put(0b000000000, "a")
-        tree = tree.put(0b000000001, "b")
-        tree = tree.put(0b000000011, "c")
-        tree = tree.put(0b100000000, "d")
-        tree = tree.put(0b100000001, "e")
-        tree = tree.put(0b100000011, "f")
+        tree = tree.put(0b000000000, "a").getSynchronous()
+        tree = tree.put(0b000000001, "b").getSynchronous()
+        tree = tree.put(0b000000011, "c").getSynchronous()
+        tree = tree.put(0b100000000, "d").getSynchronous()
+        tree = tree.put(0b100000001, "e").getSynchronous()
+        tree = tree.put(0b100000011, "f").getSynchronous()
 
-        assertEquals("a", tree.get(0b000000000))
-        assertEquals("b", tree.get(0b000000001))
-        assertEquals("c", tree.get(0b000000011))
-        assertEquals("d", tree.get(0b100000000))
-        assertEquals("e", tree.get(0b100000001))
-        assertEquals("f", tree.get(0b100000011))
+        assertEquals("a", tree.get(0b000000000).getSynchronous())
+        assertEquals("b", tree.get(0b000000001).getSynchronous())
+        assertEquals("c", tree.get(0b000000011).getSynchronous())
+        assertEquals("d", tree.get(0b100000000).getSynchronous())
+        assertEquals("e", tree.get(0b100000001).getSynchronous())
+        assertEquals("f", tree.get(0b100000011).getSynchronous())
     }
 
     /**
@@ -59,22 +59,22 @@ class HamtCollisionTest {
         )
         var tree: HamtTree<Long, String> = HamtTree(HamtInternalNode.createEmpty(config))
 
-        tree = tree.put(0b00, "a")
-        tree = tree.put(0b01, "b")
-        tree = tree.put(0b10, "c")
-        tree = tree.put(0b11, "d")
+        tree = tree.put(0b00, "a").getSynchronous()
+        tree = tree.put(0b01, "b").getSynchronous()
+        tree = tree.put(0b10, "c").getSynchronous()
+        tree = tree.put(0b11, "d").getSynchronous()
 
-        assertEquals("a", tree.get(0b00))
-        assertEquals("b", tree.get(0b01))
-        assertEquals("c", tree.get(0b10))
-        assertEquals("d", tree.get(0b11))
+        assertEquals("a", tree.get(0b00).getSynchronous())
+        assertEquals("b", tree.get(0b01).getSynchronous())
+        assertEquals("c", tree.get(0b10).getSynchronous())
+        assertEquals("d", tree.get(0b11).getSynchronous())
 
-        tree = tree.put(0b01, "changed")
+        tree = tree.put(0b01, "changed").getSynchronous()
 
-        assertEquals("a", tree.get(0b00))
-        assertEquals("changed", tree.get(0b01))
-        assertEquals("c", tree.get(0b10))
-        assertEquals("d", tree.get(0b11))
+        assertEquals("a", tree.get(0b00).getSynchronous())
+        assertEquals("changed", tree.get(0b01).getSynchronous())
+        assertEquals("c", tree.get(0b10).getSynchronous())
+        assertEquals("d", tree.get(0b11).getSynchronous())
     }
 }
 

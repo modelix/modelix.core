@@ -42,7 +42,7 @@ class PropertyTraversalStep(val property: IPropertyReference) : MonoTransforming
     @SerialName("untyped.property")
     data class PropertyStepDescriptor(val role: String, val property: IPropertyReference? = null) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
-            return PropertyTraversalStep(property ?: IPropertyReference.fromUnclassifiedString(role))
+            return PropertyTraversalStep(property ?: IPropertyReference.fromNullableUnclassifiedString(role))
         }
 
         override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = PropertyStepDescriptor(role, property)
@@ -57,7 +57,7 @@ fun IMonoStep<INode>.property(role: IPropertyReference) = PropertyTraversalStep(
 fun IFluxStep<INode>.property(role: IPropertyReference) = PropertyTraversalStep(role).connectAndDowncast(this)
 
 @Deprecated("provide an IPropertyReference")
-fun IMonoStep<INode>.property(role: String) = property(IPropertyReference.fromUnclassifiedString(role))
+fun IMonoStep<INode>.property(role: String) = property(IPropertyReference.fromNullableUnclassifiedString(role))
 
 @Deprecated("provide an IPropertyReference")
-fun IFluxStep<INode>.property(role: String) = property(IPropertyReference.fromUnclassifiedString(role))
+fun IFluxStep<INode>.property(role: String) = property(IPropertyReference.fromNullableUnclassifiedString(role))

@@ -3,21 +3,22 @@ package org.modelix.datastructures
 import org.modelix.datastructures.objects.IDataTypeConfiguration
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectGraph
-import org.modelix.datastructures.objects.ObjectHash
+import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutorProvider
 
 class MapWithObjectReferenceValues<K, V : IObjectData>(
     val graph: IObjectGraph,
     val map: IPersistentMap<K, ObjectReference<V>>,
-) : IPersistentMap<K, V> {
+) : IPersistentMap<K, V>, IStreamExecutorProvider by graph {
 
     private fun IPersistentMap<K, ObjectReference<V>>.wrap() = MapWithObjectReferenceValues(graph, this)
     private fun IStream.One<IPersistentMap<K, ObjectReference<V>>>.wrap() = map { it.wrap() }
     private fun V.toRef() = graph.fromCreated(this)
 
-    override fun getHash(): ObjectHash {
-        return map.getHash()
+    override fun asObject(): Object<*> {
+        return map.asObject()
     }
 
     override fun getKeyTypeConfig(): IDataTypeConfiguration<K> {
@@ -55,4 +56,30 @@ class MapWithObjectReferenceValues<K, V : IObjectData>(
     override fun put(key: K, value: V) = putAll(listOf(key to value))
 
     override fun remove(key: K) = removeAll(listOf(key))
+
+    override fun getChanges(
+        oldMap: IPersistentMap<K, V>,
+        changesOnly: Boolean,
+    ): IStream.Many<MapChangeEvent<K, V>> {
+        oldMap as MapWithObjectReferenceValues<K, V>
+        return map.getChanges(oldMap.map, changesOnly).flatMap { event ->
+            when (event) {
+                is EntryAddedEvent<K, ObjectReference<V>> -> {
+                    event.value.resolveData().map { value ->
+                        EntryAddedEvent(event.key, value)
+                    }
+                }
+                is EntryChangedEvent<K, ObjectReference<V>> -> {
+                    event.oldValue.resolveData().zipWith(event.newValue.resolveData()) { oldValue, newValue ->
+                        EntryChangedEvent(event.key, oldValue, newValue)
+                    }
+                }
+                is EntryRemovedEvent<K, ObjectReference<V>> -> {
+                    event.value.resolveData().map { value ->
+                        EntryRemovedEvent(event.key, value)
+                    }
+                }
+            }
+        }
+    }
 }

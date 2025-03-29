@@ -4,7 +4,6 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.PBranch
-import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.operations.IAppliedOperation
 import org.modelix.model.operations.OTBranch
@@ -789,7 +788,7 @@ class ConflictResolutionTest : TreeTestBase() {
     }
 
     fun createVersion(opsAndTree: Pair<List<IAppliedOperation>, ITree>, previousVersion: CLVersion?): CLVersion {
-        val clTree = opsAndTree.second as CLTree
+        val clTree = opsAndTree.second
         return CLVersion.createRegularVersion(
             id = idGenerator.generate(),
             time = null,

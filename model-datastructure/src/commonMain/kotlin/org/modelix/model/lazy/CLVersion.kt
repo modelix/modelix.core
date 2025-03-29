@@ -5,6 +5,8 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
+import org.modelix.datastructures.model.IModelTree
+import org.modelix.datastructures.model.asLegacyTree
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.Object
@@ -25,8 +27,6 @@ import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.getRootNode
-import org.modelix.model.async.AsyncAsSynchronousTree
-import org.modelix.model.async.AsyncTree
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.async.ObjectRequest
 import org.modelix.model.operations.IOperation
@@ -52,9 +52,6 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
 
     @Deprecated("Use obj", ReplaceWith("obj"))
     val resolvedData: Object<CPVersion> get() = obj
-
-    @Deprecated("Use obj.data.treeHash", ReplaceWith("obj.data.treeHash"))
-    val treeRef: ObjectReference<CPTree> get() = obj.data.getTree(TreeType.MAIN)
 
     @Deprecated("Use obj.data", ReplaceWith("obj.data"))
     val data: CPVersion get() = resolvedData.data
@@ -89,12 +86,17 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
 
     @Deprecated("Use getTree()", ReplaceWith("getTree()"))
     @get:JvmName("getTree_()")
-    val tree: CLTree
-        get() = CLTree(treeRef.resolveNow())
+    val tree: ITree
+        get() = getTree()
 
-    override fun getTree(): CLTree = tree
+    override fun getTree(): ITree = getTree(TreeType.MAIN)
 
-    fun getTree(type: TreeType): CLTree = CLTree(data.getTree(type).resolveNow())
+    fun getTree(type: TreeType): ITree = data.getTree(type).resolveNow().data.getLegacyModelTree().asLegacyTree()
+
+    fun getTreeReference(type: TreeType): ObjectReference<CPTree> = data.getTree(type)
+    fun getTreeReference(): ObjectReference<CPTree> = data.getTree(TreeType.MAIN)
+
+    fun getModelTree(type: TreeType): IModelTree<INodeReference> = data.getTree(type).resolveNow().data.getModelTree()
 
     override fun getTrees(): Map<TreeType, ITree> {
         return graph.getStreamExecutor().query {
@@ -102,10 +104,10 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
         }
     }
 
-    fun getTreesLater(): IStream.Many<Pair<TreeType, CLTree>> {
+    fun getTreesLater(): IStream.Many<Pair<TreeType, ITree>> {
         return IStream.many(data.treeRefs.entries).flatMap { entry ->
             entry.value.resolve().map { tree ->
-                entry.key to CLTree(tree)
+                entry.key to (tree as IModelTree<Long>).asLegacyTree()
             }
         }
     }
@@ -191,7 +193,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
             operations: Array<IOperation>,
             graph: IObjectGraph? = null,
         ): CLVersion {
-            val obj = tree.extractObject()
+            val treeObject = tree.asObject() as Object<CPTree>
             val graph = graph ?: run {
                 val graphs = setOf(baseVersion.obj.graph, mergedVersion1.obj.graph, mergedVersion2.obj.graph)
                 require(graphs.size == 1) { "Versions are part of different object graphs: $graphs" }
@@ -203,7 +205,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
                     id = id,
                     time = Clock.System.now().epochSeconds.toString(),
                     author = null,
-                    treeRefs = mapOf(TreeType.MAIN to obj.ref),
+                    treeRefs = mapOf(TreeType.MAIN to treeObject.ref),
                     previousVersion = null,
                     originalVersion = null,
                     baseVersion = baseVersion.obj.ref,
@@ -212,7 +214,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
                     operations = emptyList(),
                     operationsHash = null,
                     numberOfOperations = 0,
-                ).withOperations(localizeOps(operations.toList(), obj), graph)
+                ).withOperations(localizeOps(operations.toList(), treeObject), graph)
                     .asObject(graph),
             )
         }
@@ -226,8 +228,8 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
             operations: Array<IOperation>,
             graph: IObjectGraph? = null,
         ): CLVersion {
-            val obj = tree.extractObject()
-            val compressedOps = OperationsCompressor(CLTree(obj))
+            val obj = tree.asObject() as Object<CPTree>
+            val compressedOps = OperationsCompressor(obj)
                 .compressOperations(operations)
             val localizedOps = localizeOps(compressedOps.toList(), obj)
             val graph = graph ?: baseVersion?.obj?.graph ?: obj.graph
@@ -301,7 +303,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
     private fun globalizeNodeRef(ref: INodeReference?): INodeReference? {
         return when (ref) {
             null -> null
-            is LocalPNodeReference -> ref.toGlobal(tree.getId())
+            is LocalPNodeReference -> ref.toGlobal(tree.getId()!!)
             else -> ref
         }
     }
@@ -468,10 +470,4 @@ fun CLVersion.runWriteWithNode(idGenerator: IIdGenerator, author: String?, body:
         baseVersion = this,
         operations = ops.map { it.getOriginalOp() }.toTypedArray(),
     )
-}
-
-fun ITree.extractObject(): Object<CPTree> = when (this) {
-    is CLTree -> this.resolvedData
-    is AsyncAsSynchronousTree -> (this.asyncTree as AsyncTree).resolvedTreeData
-    else -> throw IllegalArgumentException("Unknown tree type: $this")
 }

@@ -48,6 +48,13 @@ interface IGenericStoreClient<KeyT> : AutoCloseable {
     @RequiresTransaction
     fun put(key: KeyT, value: String?, silent: Boolean = false) = putAll(mapOf(key to value))
 
+    fun update(key: KeyT, updater: (String?) -> String?): String? {
+        @OptIn(RequiresTransaction::class)
+        return getTransactionManager().runWrite {
+            updater(get(key)).also { put(key, it) }
+        }
+    }
+
     @RequiresTransaction
     fun putAll(entries: Map<KeyT, String?>, silent: Boolean = false)
     fun listen(key: KeyT, listener: IGenericKeyListener<KeyT>)

@@ -16,7 +16,7 @@ import org.modelix.model.persistent.SerializationUtil.longToHex
 import org.modelix.model.persistent.SerializationUtil.unescape
 import kotlin.jvm.JvmStatic
 
-class CPNode private constructor(
+class CPNode(
     val id: Long,
     val concept: String?,
     val parentId: Long,
@@ -26,7 +26,7 @@ class CPNode private constructor(
     val propertyValues: Array<String>,
     val referenceRoles: Array<String>,
     val referenceTargets: Array<CPNodeRef>,
-) : ITreeData {
+) : IObjectData {
 
     override fun serialize(): String {
         val sb = StringBuilder()
@@ -213,7 +213,7 @@ class CPNode private constructor(
     override fun getDeserializer() = DESERIALIZER
     override fun getContainmentReferences(): List<ObjectReference<IObjectData>> = emptyList()
 
-    companion object : ITreeRelatedDeserializer<CPNode> {
+    companion object : IObjectDeserializer<CPNode> {
         val DESERIALIZER: IObjectDeserializer<CPNode> = this
 
         @JvmStatic

@@ -255,11 +255,12 @@ class ModelQLRootNode(client: ModelQLClient) : ModelQLNodeWithConceptCache(clien
         get() = ModelQLRootNodeReference()
 }
 
-class ModelQLRootNodeReference : INodeReference {
+class ModelQLRootNodeReference : INodeReference() {
     override fun resolveNode(area: IArea?): INode? {
         if (area is ModelQLArea) return ModelQLRootNode(area.client)
         return area?.resolveNode(this)
     }
+    override fun serialize(): String = TODO("Not yet implemented")
 }
 
 internal fun INodeReference.toSerializedRef() = when (this) {

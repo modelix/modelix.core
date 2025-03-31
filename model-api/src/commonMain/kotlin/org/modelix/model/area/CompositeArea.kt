@@ -192,10 +192,12 @@ class CompositeArea : IArea {
         }
     }
 
-    data class RootNodeReference(val areaRef: AreaReference) : INodeReference {
+    data class RootNodeReference(val areaRef: AreaReference) : INodeReference() {
         override fun resolveNode(area: IArea?): INode? {
             return area?.resolveArea(areaRef)?.getRoot()
         }
+
+        override fun serialize(): String = TODO("Not yet implemented")
     }
 
     inner class NodeWrapper(val node: INode) : INode, INodeWrapper, IReplaceableNode {
@@ -284,12 +286,13 @@ class CompositeArea : IArea {
         }
     }
 
-    data class NodeWrapperReference(val nodeRef: INodeReference, val areaRef: AreaReference) : INodeReference {
+    data class NodeWrapperReference(val nodeRef: INodeReference, val areaRef: AreaReference) : INodeReference() {
         override fun resolveNode(contextArea: IArea?): INode? {
             val compositeArea = contextArea?.resolveArea(areaRef)
             if (compositeArea is CompositeArea) return compositeArea.resolveNode(nodeRef)
             return null
         }
+        override fun serialize(): String = TODO("Not yet implemented")
     }
 
     inner class ListenerWrapper(wrappedListener: IAreaListener) : AreaListenerWrapper(wrappedListener) {

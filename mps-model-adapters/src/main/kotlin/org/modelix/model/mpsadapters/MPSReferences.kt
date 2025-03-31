@@ -9,7 +9,7 @@ import org.jetbrains.mps.openapi.module.SModuleReference
 import org.jetbrains.mps.openapi.project.Project
 import org.modelix.model.api.INodeReference
 
-data class MPSModuleReference(val moduleReference: SModuleReference) : INodeReference {
+data class MPSModuleReference(val moduleReference: SModuleReference) : INodeReference() {
 
     companion object {
         internal const val PREFIX = "mps-module"
@@ -20,7 +20,7 @@ data class MPSModuleReference(val moduleReference: SModuleReference) : INodeRefe
     }
 }
 
-data class MPSModelReference(val modelReference: SModelReference) : INodeReference {
+data class MPSModelReference(val modelReference: SModelReference) : INodeReference() {
 
     companion object {
         internal const val PREFIX = "mps-model"
@@ -31,7 +31,7 @@ data class MPSModelReference(val modelReference: SModelReference) : INodeReferen
     }
 }
 
-data class MPSNodeReference(val ref: SNodeReference) : INodeReference {
+data class MPSNodeReference(val ref: SNodeReference) : INodeReference() {
     companion object {
 
         internal const val PREFIX = "mps"
@@ -75,7 +75,7 @@ data class MPSDevKitDependencyReference(
     val usedModuleId: SModuleId,
     val userModule: SModuleReference? = null,
     val userModel: SModelReference? = null,
-) : INodeReference {
+) : INodeReference() {
 
     companion object {
         internal const val PREFIX = "mps-devkit"
@@ -91,7 +91,7 @@ data class MPSDevKitDependencyReference(
     }
 }
 
-data class MPSJavaModuleFacetReference(val moduleReference: SModuleReference) : INodeReference {
+data class MPSJavaModuleFacetReference(val moduleReference: SModuleReference) : INodeReference() {
 
     companion object {
         internal const val PREFIX = "mps-java-facet"
@@ -105,7 +105,7 @@ data class MPSJavaModuleFacetReference(val moduleReference: SModuleReference) : 
 data class MPSModelImportReference(
     val importedModel: SModelReference,
     val importingModel: SModelReference,
-) : INodeReference {
+) : INodeReference() {
 
     companion object {
         internal const val PREFIX = "mps-model-import"
@@ -120,7 +120,7 @@ data class MPSModelImportReference(
 data class MPSModuleDependencyReference(
     val usedModuleId: SModuleId,
     val userModuleReference: SModuleReference,
-) : INodeReference {
+) : INodeReference() {
 
     companion object {
         internal const val PREFIX = "mps-module-dep"
@@ -132,7 +132,7 @@ data class MPSModuleDependencyReference(
     }
 }
 
-data class MPSProjectReference(val projectName: String) : INodeReference {
+data class MPSProjectReference(val projectName: String) : INodeReference() {
 
     companion object {
         internal const val PREFIX = "mps-project"
@@ -156,7 +156,7 @@ data class MPSProjectReference(val projectName: String) : INodeReference {
     }
 }
 
-data class MPSProjectModuleReference(val moduleRef: SModuleReference, val projectRef: MPSProjectReference) : INodeReference {
+data class MPSProjectModuleReference(val moduleRef: SModuleReference, val projectRef: MPSProjectReference) : INodeReference() {
 
     companion object {
         internal const val PREFIX = "mps-project-module"
@@ -172,7 +172,7 @@ data class MPSSingleLanguageDependencyReference(
     val usedModuleId: SModuleId,
     val userModule: SModuleReference? = null,
     val userModel: SModelReference? = null,
-) : INodeReference {
+) : INodeReference() {
 
     companion object {
         internal const val PREFIX = "mps-lang"
@@ -188,7 +188,7 @@ data class MPSSingleLanguageDependencyReference(
     }
 }
 
-object MPSRepositoryReference : INodeReference {
+object MPSRepositoryReference : INodeReference() {
     internal const val PREFIX = "mps-repository"
 
     override fun serialize(): String {

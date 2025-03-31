@@ -6,6 +6,6 @@ import kotlinx.serialization.Serializable
 typealias SerializedNodeReference = NodeReference
 
 @Serializable
-data class NodeReference(val serialized: String) : INodeReference {
+data class NodeReference(val serialized: String) : INodeReference() {
     override fun serialize(): String = serialized
 }

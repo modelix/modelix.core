@@ -110,7 +110,7 @@ actual open class ReplicatedRepository actual constructor(
             if (ops.isEmpty()) {
                 return null
             }
-            newLocalVersion = createVersion(opsAndTree.second as CLTree, ops, localBase)
+            newLocalVersion = createVersion(opsAndTree.second, ops, localBase)
             localVersion = newLocalVersion
             divergenceTime = 0
         }
@@ -185,7 +185,7 @@ actual open class ReplicatedRepository actual constructor(
         }
     }
 
-    fun createVersion(tree: CLTree, operations: Array<IOperation>, previousVersion: CLVersion?): CLVersion {
+    fun createVersion(tree: ITree, operations: Array<IOperation>, previousVersion: CLVersion?): CLVersion {
         checkDisposed()
         val time = LocalDateTime.now().toString()
         return CLVersion.createRegularVersion(
@@ -222,10 +222,6 @@ actual open class ReplicatedRepository actual constructor(
         private val LOG = mu.KotlinLogging.logger {}
         private fun getHash(v: CLVersion?): String? {
             return v?.getContentHash()
-        }
-
-        private fun getHash(v: CLTree?): String? {
-            return v?.hash
         }
     }
 

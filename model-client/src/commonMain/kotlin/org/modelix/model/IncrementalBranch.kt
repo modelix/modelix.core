@@ -367,7 +367,7 @@ class IncrementalBranch(val branch: IBranch) : IBranch, IBranchWrapper {
             return tree.usesRoleIds()
         }
 
-        override fun getId(): String? {
+        override fun getId(): String {
             return tree.getId()
         }
 

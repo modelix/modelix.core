@@ -39,7 +39,6 @@ import org.modelix.authorization.requiresLogin
 import org.modelix.model.LinearHistory
 import org.modelix.model.api.PBranch
 import org.modelix.model.lazy.BranchReference
-import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.CLVersion.Companion.createRegularVersion
 import org.modelix.model.lazy.RepositoryId
@@ -140,7 +139,7 @@ class HistoryHandler(private val repositoriesManager: IRepositoriesManager) {
             stores.idGenerator.generate(),
             LocalDateTime.now().toString(),
             author ?: "<server>",
-            (tree as CLTree),
+            tree,
             version,
             ops.map { it.getOriginalOp() }.toTypedArray(),
         )

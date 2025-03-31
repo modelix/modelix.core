@@ -30,7 +30,7 @@ interface ITree {
      *
      * @return id of the tree
      */
-    fun getId(): String?
+    fun getId(): String
 
     /**
      * Propagates changes to the given visitor.

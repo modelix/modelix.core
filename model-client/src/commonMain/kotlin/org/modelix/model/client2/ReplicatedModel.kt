@@ -19,7 +19,6 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.lazy.BranchReference
-import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.operations.OTBranch
 
@@ -254,8 +253,6 @@ private class LocalModel(initialVersion: CLVersion, val idGenerator: IIdGenerato
     private fun doCreateNewLocalVersion(): CLVersion? {
         check(mutex.isLocked)
         val (ops, tree) = otBranch.getPendingChanges()
-        check(tree is CLTree)
-
         val baseVersion = localVersion
 
         if (ops.isEmpty() && baseVersion.getTreeReference().getHash() == tree.asModelTree().asObject().getHash()) return null

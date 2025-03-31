@@ -28,6 +28,7 @@ class NodeReferenceDataTypeConfig : IDataTypeConfiguration<INodeReference> {
 
 class LegacyNodeReferenceDataTypeConfig(val treeId: TreeId) : IDataTypeConfiguration<INodeReference> {
     override fun serialize(element: INodeReference): String {
+        if (element is LocalPNodeReference) return element.id.toULong().toString(16)
         return PNodeReference.tryConvert(element)
             ?.takeIf { it.treeId == treeId.id }
             ?.let { it.id.toULong().toString(16) }

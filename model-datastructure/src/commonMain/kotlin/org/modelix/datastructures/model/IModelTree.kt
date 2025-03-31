@@ -7,7 +7,6 @@ import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
-import org.modelix.model.api.NodeReference
 import org.modelix.model.persistent.CPTree
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutorProvider
@@ -60,24 +59,6 @@ interface IModelTree<NodeId> : IStreamExecutorProvider {
     fun mutate(operations: Iterable<MutationParameters<NodeId>>): IStream.One<IModelTree<NodeId>>
 
     fun mutate(operation: MutationParameters<NodeId>): IStream.One<IModelTree<NodeId>> = mutate(listOf(operation))
-
-    fun setProperty(nodeId: NodeId, role: IPropertyReference, value: String?): IStream.One<IModelTree<NodeId>> =
-        mutate(MutationParameters.Property(nodeId, role, value))
-
-    fun setReferenceTarget(sourceId: NodeId, role: IReferenceLinkReference, target: NodeReference): IStream.One<IModelTree<NodeId>> =
-        mutate(MutationParameters.Reference(sourceId, role, target))
-
-    fun moveNode(newParentId: NodeId, newRole: IChildLinkReference, newIndex: Int, childId: NodeId): IStream.One<IModelTree<NodeId>> =
-        mutate(MutationParameters.Move(newParentId, newRole, newIndex, listOf(childId)))
-
-    fun addNewChild(parentId: NodeId, role: IChildLinkReference, index: Int, childId: NodeId, concept: ConceptReference): IStream.One<IModelTree<NodeId>> =
-        mutate(MutationParameters.AddNew(parentId, role, index, listOf(childId to concept)))
-
-    fun removeNode(nodeId: NodeId): IStream.One<IModelTree<NodeId>> =
-        mutate(MutationParameters.Remove(nodeId))
-
-    fun changeConcept(nodeId: NodeId, concept: ConceptReference): IStream.One<IModelTree<NodeId>> =
-        mutate(MutationParameters.Concept(nodeId, concept))
 }
 
 sealed class MutationParameters<NodeId> {
@@ -139,3 +120,21 @@ fun <NodeId> IModelTree<NodeId>.getAncestors(nodeId: NodeId, includeSelf: Boolea
         getParent(nodeId).flatMap { getAncestors(it, true) }
     }
 }
+
+fun <NodeId> IModelTree<NodeId>.setProperty(nodeId: NodeId, role: IPropertyReference, value: String?): IStream.One<IModelTree<NodeId>> =
+    mutate(MutationParameters.Property(nodeId, role, value))
+
+fun <NodeId> IModelTree<NodeId>.setReferenceTarget(sourceId: NodeId, role: IReferenceLinkReference, target: INodeReference): IStream.One<IModelTree<NodeId>> =
+    mutate(MutationParameters.Reference(sourceId, role, target))
+
+fun <NodeId> IModelTree<NodeId>.moveNode(newParentId: NodeId, newRole: IChildLinkReference, newIndex: Int, childId: NodeId): IStream.One<IModelTree<NodeId>> =
+    mutate(MutationParameters.Move(newParentId, newRole, newIndex, listOf(childId)))
+
+fun <NodeId> IModelTree<NodeId>.addNewChild(parentId: NodeId, role: IChildLinkReference, index: Int, childId: NodeId, concept: ConceptReference): IStream.One<IModelTree<NodeId>> =
+    mutate(MutationParameters.AddNew(parentId, role, index, listOf(childId to concept)))
+
+fun <NodeId> IModelTree<NodeId>.removeNode(nodeId: NodeId): IStream.One<IModelTree<NodeId>> =
+    mutate(MutationParameters.Remove(nodeId))
+
+fun <NodeId> IModelTree<NodeId>.changeConcept(nodeId: NodeId, concept: ConceptReference): IStream.One<IModelTree<NodeId>> =
+    mutate(MutationParameters.Concept(nodeId, concept))

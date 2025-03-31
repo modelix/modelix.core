@@ -24,6 +24,7 @@ import org.modelix.datastructures.patricia.PatriciaTrie
 import org.modelix.datastructures.patricia.PatriciaTrieConfig
 import org.modelix.model.TreeId
 import org.modelix.model.api.INodeReference
+import org.modelix.model.api.ITree
 import org.modelix.streams.IStream
 import org.modelix.streams.plus
 
@@ -164,3 +165,5 @@ class CPTree(
         }
     }
 }
+
+fun ITree.getTreeObject() = (asObject() as Object<CPTree>)

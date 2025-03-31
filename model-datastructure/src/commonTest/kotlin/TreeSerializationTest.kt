@@ -81,7 +81,7 @@ class TreeSerializationTest {
             id = 1,
             time = null,
             author = null,
-            tree = tree as CLTree,
+            tree = tree,
             baseVersion = initialVersion,
             operations = ops.map { it.getOriginalOp() }.toTypedArray(),
         )

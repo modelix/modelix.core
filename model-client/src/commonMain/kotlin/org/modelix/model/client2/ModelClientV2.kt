@@ -56,7 +56,6 @@ import org.modelix.model.async.LazyLoadingObjectGraph
 import org.modelix.model.async.getAsyncStore
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.BranchReference
-import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.fullDiff
@@ -893,7 +892,7 @@ fun IVersion.runWrite(idGenerator: IIdGenerator, author: String?, body: (IBranch
     return CLVersion.createRegularVersion(
         id = idGenerator.generate(),
         author = author,
-        tree = newTree as CLTree,
+        tree = newTree,
         baseVersion = baseVersion as CLVersion?,
         operations = ops.map { it.getOriginalOp() }.toTypedArray(),
     )

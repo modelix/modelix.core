@@ -67,7 +67,7 @@ class RevertTest {
             id = idGenerator.generate(),
             time = null,
             author = "revert",
-            tree = tree as CLTree,
+            tree = tree,
             baseVersion = latestKnownVersion,
             operations = ops.map { it.getOriginalOp() }.toTypedArray(),
         )
@@ -100,7 +100,7 @@ class RevertTest {
             id = idGenerator.generate(),
             time = null,
             author = null,
-            tree = opsAndTree.second as CLTree,
+            tree = opsAndTree.second,
             baseVersion = previousVersion,
             operations = opsAndTree.first.map { it.getOriginalOp() }.toTypedArray(),
         )

@@ -9,6 +9,7 @@ import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectReference
+import org.modelix.datastructures.objects.getDescendantsAndSelf
 import org.modelix.datastructures.objects.requireDifferentHash
 import org.modelix.datastructures.objects.upcast
 import org.modelix.streams.IStream
@@ -99,7 +100,7 @@ data class HamtLeafNode<K, V : Any>(
         } else if (changesOnly) {
             if (oldNode != null) {
                 oldNode.get(key, shift).orNull().flatMapZeroOrOne { oldValue ->
-                    if (oldValue != null && value != oldValue) {
+                    if (oldValue != null && !config.equal(value, oldValue)) {
                         IStream.of(EntryChangedEvent(key, oldValue, value))
                     } else {
                         IStream.empty()
@@ -123,7 +124,7 @@ data class HamtLeafNode<K, V : Any>(
                     val oldValue = oldValue
                     if (oldValue == null) {
                         IStream.of(EntryAddedEvent(key, value))
-                    } else if (oldValue != value) {
+                    } else if (!config.equal(oldValue, value)) {
                         IStream.of(EntryChangedEvent(key, oldValue, value))
                     } else {
                         IStream.empty()
@@ -136,20 +137,16 @@ data class HamtLeafNode<K, V : Any>(
     override fun objectDiff(self: Object<*>, oldObject: Object<*>?, shift: Int): IStream.Many<Object<*>> {
         val oldData = oldObject?.data?.upcast<HamtNode<K, V>>()
         return when (oldData) {
-            is HamtLeafNode<*, *> -> {
-                IStream.of(self) + IStream.many(config.valueConfig.getContainmentReferences(value))
-                    .flatMap { it.resolve() }
-            }
-            is HamtInternalNode<*, *>, is HamtSingleChildNode<*, *> -> {
-                oldData.get(key, shift).orNull().flatMapZeroOrOne { oldValue ->
-                    if (oldValue == value) {
-                        IStream.empty()
-                    } else {
+            is HamtLeafNode<*, *>, null -> self.getDescendantsAndSelf()
+            is HamtInternalNode<*, *>, is HamtSingleChildNode<*, *>, is HamtCollisionNode<*, *> -> {
+                return oldData.get(key, shift).orNull().flatMap { oldValue ->
+                    if (config.equal(oldValue, value)) {
                         IStream.of(self)
+                    } else {
+                        self.getDescendantsAndSelf()
                     }
                 }
             }
-            else -> IStream.of(self)
         }
     }
 

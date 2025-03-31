@@ -15,7 +15,6 @@ import org.modelix.model.client2.VersionNotFoundException
 import org.modelix.model.client2.runWrite
 import org.modelix.model.client2.runWriteOnBranch
 import org.modelix.model.lazy.BranchReference
-import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.MissingEntryException
 import org.modelix.model.lazy.RepositoryId
@@ -79,7 +78,7 @@ class ModelClientV2Test {
             client.getIdGenerator().generate(),
             null,
             null,
-            newTree as CLTree,
+            newTree,
             initialVersion as CLVersion,
             ops.map { it.getOriginalOp() }.toTypedArray(),
         )

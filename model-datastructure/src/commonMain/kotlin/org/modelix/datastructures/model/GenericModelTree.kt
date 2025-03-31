@@ -11,6 +11,8 @@ import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
+import org.modelix.model.api.meta.NullConcept
+import org.modelix.model.async.ContainmentCycleException
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutorProvider
 import org.modelix.streams.flatten
@@ -40,7 +42,7 @@ abstract class GenericModelTree<NodeId>(
     }
 
     override fun getConceptReference(nodeId: NodeId): IStream.One<ConceptReference> {
-        return resolveNode(nodeId).map { it.concept }
+        return resolveNode(nodeId).map { it.concept ?: NullConcept.getReference() }
     }
 
     override fun getParent(nodeId: NodeId): IStream.ZeroOrOne<NodeId> {
@@ -179,7 +181,7 @@ abstract class GenericModelTree<NodeId>(
             .distinct()
             .map { IReferenceLinkReference.fromUnclassifiedString(it) }
             .forEach { role: IReferenceLinkReference ->
-                if (oldNode.getReferenceTarget(role)?.serialize() != newNode.getReferenceTarget(role)?.serialize()) {
+                if (oldNode.getReferenceTarget(role) != newNode.getReferenceTarget(role)) {
                     changes += ReferenceChangedEvent(newNode.id, role)
                 }
             }
@@ -189,8 +191,8 @@ abstract class GenericModelTree<NodeId>(
         val childrenChanges: IStream.Many<ChildrenChangedEvent<NodeId>> = newChildren.zipWith(oldChildren) { newChildrenList, oldChildrenList ->
             val oldChildren: MutableMap<String?, MutableList<NodeObjectData<NodeId>>> = HashMap()
             val newChildren: MutableMap<String?, MutableList<NodeObjectData<NodeId>>> = HashMap()
-            oldChildrenList.forEach { oldChildren.getOrPut(it.containment?.second, { ArrayList() }).add(it) }
-            newChildrenList.forEach { newChildren.getOrPut(it.containment?.second, { ArrayList() }).add(it) }
+            oldChildrenList.forEach { oldChildren.getOrPut(it.containment?.second?.getIdOrNameOrNull(), { ArrayList() }).add(it) }
+            newChildrenList.forEach { newChildren.getOrPut(it.containment?.second?.getIdOrNameOrNull(), { ArrayList() }).add(it) }
 
             val roles: MutableSet<String?> = HashSet()
             roles.addAll(oldChildren.keys)
@@ -237,7 +239,9 @@ abstract class GenericModelTree<NodeId>(
                 }
             }
             is MutationParameters.Concept -> {
-                TODO()
+                updateNode(operation.nodeId) {
+                    IStream.of(it.copy(concept = operation.concept.takeIf { it != NullConcept.getReference() }))
+                }.wrap()
             }
             is MutationParameters.Property -> {
                 setPropertyValue(
@@ -247,7 +251,11 @@ abstract class GenericModelTree<NodeId>(
                 ).wrap()
             }
             is MutationParameters.Reference -> {
-                TODO()
+                setReferenceTarget(
+                    sourceId = operation.nodeId,
+                    role = operation.role,
+                    target = operation.target,
+                ).wrap()
             }
             is MutationParameters.Remove -> {
                 deleteNodes(listOf(operation.nodeId))
@@ -282,8 +290,8 @@ abstract class GenericModelTree<NodeId>(
             childId to NodeObjectData<NodeId>(
                 deserializer = NodeObjectData.Deserializer(this.nodesMap.getKeyTypeConfig(), getId()),
                 id = childId,
-                concept = concept,
-                containment = parentId to role.getIdOrNameOrNull(),
+                concept = concept.takeIf { it != NullConcept.getReference() },
+                containment = parentId to role,
             )
         }
 
@@ -324,7 +332,11 @@ abstract class GenericModelTree<NodeId>(
         .exceptionIfEmpty { NodeNotFoundException(nodesMap.getKeyTypeConfig().serialize(id)) }
 
     private fun setPropertyValue(nodeId: NodeId, role: IPropertyReference, value: String?): IStream.One<IPersistentMap<NodeId, NodeObjectData<NodeId>>> {
-        return updateNode(nodeId) { IStream.Companion.of(it.withPropertyValue(role, value)) }
+        return updateNode(nodeId) { IStream.of(it.withPropertyValue(role, value)) }
+    }
+
+    private fun setReferenceTarget(sourceId: NodeId, role: IReferenceLinkReference, target: INodeReference?): IStream.One<IPersistentMap<NodeId, NodeObjectData<NodeId>>> {
+        return updateNode(sourceId) { IStream.of(it.withReferenceTarget(role, target)) }
     }
 
     private fun moveChild(
@@ -372,7 +384,7 @@ abstract class GenericModelTree<NodeId>(
             }.wrap()
             val withUpdatedRole = withChildAdded.flatMapOne { tree ->
                 tree.updateNode(childId) {
-                    IStream.of(it.copy(containment = newParentId to newRole.getIdOrNameOrNull()))
+                    IStream.of(it.copy(containment = newParentId to newRole))
                 }
             }
             withUpdatedRole

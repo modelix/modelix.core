@@ -10,6 +10,7 @@ import org.modelix.model.data.asData
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.persistent.MapBasedStore
+import org.modelix.model.persistent.getTreeObject
 import org.modelix.streams.plus
 import kotlin.random.Random
 import kotlin.test.Test
@@ -25,18 +26,16 @@ class ObjectDiffTest {
             .addNewChild(ITree.ROOT_ID, "childrenA", 0, 100, null as IConceptReference?)
             .addNewChild(ITree.ROOT_ID, "childrenA", 1, 101, null as IConceptReference?)
             .addNewChild(ITree.ROOT_ID, "childrenA", 1, 102, null as IConceptReference?)
-            as CLTree
         val tree2 = tree1
             .setProperty(100, "name", "a")
             .setProperty(102, "name", "b")
-            as CLTree
 
-        val diff = tree2.resolvedData.objectDiff(tree1.resolvedData)
+        val diff = tree2.getTreeObject().objectDiff(tree1.getTreeObject())
         val diffString = diff.map { it.getHashString() + " -> " + it.data.serialize() }.asSequence().joinToString("\n")
 
-        val allObjects = tree1.resolvedData.getDescendantsAndSelf().plus(diff).asSequence()
+        val allObjects = tree1.getTreeObject().getDescendantsAndSelf().plus(diff).asSequence()
         val store2 = createObjectStoreCache(MapBasedStore().also { it.putAll(allObjects.associate { it.getHashString() to it.data.serialize() }) })
-        val tree3 = CLTree.fromHash(tree2.hash, store2)
+        val tree3 = CLTree.fromHash(tree2.getTreeObject().getHashString(), store2)
 
         tree3.asAsyncTree().getDescendantsAndSelf(ITree.ROOT_ID).asSequence()
 
@@ -77,19 +76,19 @@ class ObjectDiffTest {
         }
         val changeGenerator1 = RandomTreeChangeGenerator(idGenerator, rand).growingOperationsOnly()
         val changeGenerator2 = RandomTreeChangeGenerator(idGenerator, rand)
-        var initialTree = CLTree.builder(store1).repositoryId("test").build()
+        var initialTree: ITree = CLTree.builder(store1).repositoryId("test").build()
         repeat(100) {
-            initialTree = changeGenerator1.applyRandomChange(initialTree, null) as CLTree
+            initialTree = changeGenerator1.applyRandomChange(initialTree, null)
         }
 
         var newTree = initialTree
         repeat(100) {
-            newTree = changeGenerator2.applyRandomChange(newTree, null) as CLTree
+            newTree = changeGenerator2.applyRandomChange(newTree, null)
         }
 
-        val diff = newTree.resolvedData.objectDiff(initialTree.resolvedData).toList().getSynchronous()
-        val initialObjects = initialTree.resolvedData.getDescendantsAndSelf().toList().getSynchronous()
-        val newObjects = newTree.resolvedData.getDescendantsAndSelf().toList().getSynchronous()
+        val diff = newTree.getTreeObject().objectDiff(initialTree.getTreeObject()).toList().getSynchronous()
+        val initialObjects = initialTree.getTreeObject().getDescendantsAndSelf().toList().getSynchronous()
+        val newObjects = newTree.getTreeObject().getDescendantsAndSelf().toList().getSynchronous()
         val unnecessaryObjects = (diff.associateBy { it.getHashString() } - newObjects.map { it.getHashString() }.toSet()).values.toSet()
 
         assertEquals(emptySet(), unnecessaryObjects)
@@ -102,7 +101,7 @@ class ObjectDiffTest {
             },
         )
 
-        val restoredTree = CLTree.fromHash(newTree.hash, store2)
+        val restoredTree = CLTree.fromHash(newTree.getTreeObject().getHashString(), store2)
 
         val expectedNodes = TreePointer(newTree).getRootNode().asData()
         val restoredNodes = TreePointer(restoredTree).getRootNode().asData()

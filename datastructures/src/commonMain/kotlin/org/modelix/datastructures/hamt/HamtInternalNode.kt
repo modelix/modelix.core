@@ -321,7 +321,7 @@ class HamtInternalNode<K, V : Any>(
             }
             is HamtLeafNode -> {
                 if (changesOnly) {
-                    get(oldNode.key, shift).filter { it != oldNode.value }.map { newValue ->
+                    get(oldNode.key, shift).filter { !config.equal(it, oldNode.value) }.map { newValue ->
                         EntryChangedEvent(oldNode.key, oldNode.value, newValue)
                     }
                 } else {
@@ -330,7 +330,7 @@ class HamtInternalNode<K, V : Any>(
                     val changeOrRemoveEvent = newEntry.orNull().flatMapZeroOrOne { newValue ->
                         if (newValue == null) {
                             IStream.of(EntryRemovedEvent(oldNode.key, oldNode.value))
-                        } else if (newValue != oldNode.value) {
+                        } else if (!config.equal(newValue, oldNode.value)) {
                             IStream.of(EntryChangedEvent(oldNode.key, oldNode.value, newValue))
                         } else {
                             IStream.empty()
@@ -346,8 +346,13 @@ class HamtInternalNode<K, V : Any>(
                 }
             }
             is HamtSingleChildNode -> {
-                @OptIn(DelicateModelixApi::class) // free floating objects are not returned
-                getChanges(replace(oldNode, IObjectGraph.FREE_FLOATING), shift, changesOnly)
+                val replacement = replace(oldNode, IObjectGraph.FREE_FLOATING)
+                if (replacement.bitmap == this.bitmap && replacement.children.single().getHash() == this.children.single().getHash()) {
+                    IStream.empty()
+                } else {
+                    @OptIn(DelicateModelixApi::class) // free floating objects are not returned
+                    getChanges(replacement, shift, changesOnly)
+                }
             }
             else -> {
                 throw RuntimeException("Unknown type: " + oldNode!!::class.simpleName)

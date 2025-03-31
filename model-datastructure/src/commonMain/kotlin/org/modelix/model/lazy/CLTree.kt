@@ -4,7 +4,7 @@ import org.modelix.datastructures.hamt.HamtInternalNode
 import org.modelix.datastructures.hamt.HamtNode
 import org.modelix.datastructures.model.NodeObjectData
 import org.modelix.datastructures.model.asLegacyTree
-import org.modelix.datastructures.model.toLegacy
+import org.modelix.datastructures.model.fromNodeReference
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.LongDataTypeConfiguration
 import org.modelix.datastructures.objects.Object
@@ -17,10 +17,10 @@ import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.model.TreeId
 import org.modelix.model.api.ITree
 import org.modelix.model.api.async.getDescendants
-import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.async.getAsyncStore
 import org.modelix.model.persistent.CPNode
+import org.modelix.model.persistent.CPNodeRef
 import org.modelix.model.persistent.CPTree
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
@@ -34,7 +34,7 @@ private fun createNewTreeData(
     val root = NodeObjectData<Long>(
         deserializer = NodeObjectData.Deserializer(LongDataTypeConfiguration(), treeId),
         id = ITree.ROOT_ID,
-        concept = NullConcept.getReference(),
+        concept = null,
         containment = null,
     )
     val config = HamtNode.Config(
@@ -57,17 +57,13 @@ private fun createNewTreeData(
 }
 
 @Deprecated("Use IModelTree<Long>")
-class CLTree(val resolvedData: Object<CPTree>) :
+class CLTree private constructor(val resolvedData: Object<CPTree>) :
     ITree by resolvedData.data.getLegacyModelTree().asLegacyTree(),
     IStreamExecutorProvider {
 
     override fun asObject() = resolvedData
 
     val asyncStore: IAsyncObjectStore get() = resolvedData.graph.getAsyncStore()
-
-    @Deprecated("Use CLTree.builder")
-    constructor(store: IAsyncObjectStore, useRoleIds: Boolean = true) :
-        this(createNewTreeData(store.asObjectGraph(), useRoleIds = useRoleIds))
 
     val data: CPTree get() = resolvedData.data
 
@@ -107,10 +103,6 @@ class CLTree(val resolvedData: Object<CPTree>) :
         }
     }
 
-    fun resolveElementSynchronous(id: Long): CPNode {
-        return getStreamExecutor().query { resolveElement(id).assertNotEmpty { "Not found: $id" } }.toLegacy()
-    }
-
     override fun toString(): String {
         return "CLTree[${resolvedData.ref.getHash()}]"
     }
@@ -132,11 +124,16 @@ class CLTree(val resolvedData: Object<CPTree>) :
         fun builder(graph: IObjectGraph) = Builder(graph)
         fun builder(store: IDeserializingKeyValueStore) = Builder(store.getAsyncStore().asObjectGraph())
         fun builder(store: IAsyncObjectStore) = Builder(store.asObjectGraph())
-        fun fromHash(hash: String, graph: IObjectGraph): CLTree {
-            return graph.getObject(hash, CPTree).let { CLTree(it) }
+        fun fromHash(hash: String, graph: IObjectGraph): ITree {
+            return graph.getObject(hash, CPTree).let { it.data.getLegacyModelTree().asLegacyTree() }
         }
-        fun fromHash(hash: String, store: IAsyncObjectStore): CLTree {
+        fun fromHash(hash: String, store: IAsyncObjectStore): ITree {
             return fromHash(hash, store.asObjectGraph())
+        }
+
+        @Deprecated("Use CLTree.builder")
+        operator fun invoke(store: IAsyncObjectStore, useRoleIds: Boolean = true): ITree {
+            return createNewTreeData(store.asObjectGraph(), useRoleIds = useRoleIds).data.getLegacyModelTree().asLegacyTree()
         }
     }
 
@@ -162,14 +159,32 @@ class CLTree(val resolvedData: Object<CPTree>) :
         @Deprecated("Provide a treeId")
         fun repositoryId(id: String): Builder = treeId(TreeId.fromLegacyId(id))
 
-        fun build(): CLTree {
-            return CLTree(
-                createNewTreeData(
-                    graph,
-                    treeId ?: TreeId.random(),
-                    useRoleIds,
-                ),
-            )
+        fun build(): ITree {
+            return createNewTreeData(
+                graph,
+                treeId ?: TreeId.random(),
+                useRoleIds,
+            ).data.getLegacyModelTree().asLegacyTree()
         }
     }
 }
+
+fun ITree.resolveElementSynchronous(id: Long): CPNode {
+    val sortedPropertyRoles = getPropertyRoles(id).sorted()
+    val sortedReferenceRoles = getReferenceRoles(id).sorted()
+    return CPNode(
+        id = id,
+        concept = getConceptReference(id)?.getUID(),
+        parentId = getParent(id),
+        roleInParent = getRole(id),
+        childrenIds = getAllChildren(id).toList().toLongArray(),
+        propertyRoles = sortedPropertyRoles.toList().toTypedArray(),
+        propertyValues = sortedPropertyRoles.map { getProperty(id, it)!! }.toTypedArray(),
+        referenceRoles = sortedReferenceRoles.toList().toTypedArray(),
+        referenceTargets = sortedReferenceRoles.map {
+            CPNodeRef.fromNodeReference(getReferenceTarget(id, it)!!, TreeId.fromLegacyId(getId()!!))
+        }.toTypedArray(),
+    )
+}
+
+val ITree.root: CPNode get() = resolveElementSynchronous(ITree.ROOT_ID)

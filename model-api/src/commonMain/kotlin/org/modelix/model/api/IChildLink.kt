@@ -125,6 +125,9 @@ object NullChildLinkReference : AbstractChildLinkReference() {
 
 @Serializable
 data class UnclassifiedChildLinkReference(val value: String) : AbstractChildLinkReference(), IUnclassifiedRoleReference {
+    init {
+        require(value != "null") { "Use NullChildLinkReference" }
+    }
     override fun getStringValue(): String = value
     override fun getIdOrName(): String = value
     override fun getNameOrId(): String = value
@@ -143,6 +146,9 @@ data class UnclassifiedChildLinkReference(val value: String) : AbstractChildLink
 
 @Serializable
 data class ChildLinkReferenceByName(override val name: String) : AbstractChildLinkReference(), IRoleReferenceByName {
+    init {
+        require(name != "null") { "Use NullChildLinkReference" }
+    }
     override fun getSimpleName(): String = name
     override fun getIdOrName(): String = name
     override fun getNameOrId(): String = name
@@ -159,6 +165,9 @@ data class ChildLinkReferenceByName(override val name: String) : AbstractChildLi
 
 @Serializable
 data class ChildLinkReferenceByUID(val uid: String) : AbstractChildLinkReference(), IRoleReferenceByUID {
+    init {
+        require(uid != "null") { "Use NullChildLinkReference" }
+    }
     override fun getUID(): String = uid
     override fun getIdOrName(): String = uid
     override fun getNameOrId(): String = uid
@@ -175,6 +184,10 @@ data class ChildLinkReferenceByUID(val uid: String) : AbstractChildLinkReference
 
 @Serializable
 data class ChildLinkReferenceByIdAndName(val uid: String, override val name: String) : AbstractChildLinkReference(), IRoleReferenceByUID, IRoleReferenceByName {
+    init {
+        require(uid != "null") { "Use NullChildLinkReference" }
+        require(name != "null") { "Use NullChildLinkReference" }
+    }
     override fun getUID(): String = uid
     override fun getSimpleName(): String = name
     override fun getIdOrName(): String = uid

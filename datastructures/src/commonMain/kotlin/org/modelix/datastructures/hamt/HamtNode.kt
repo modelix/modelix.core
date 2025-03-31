@@ -64,7 +64,11 @@ sealed class HamtNode<K, V : Any> : IObjectData {
         self: Object<*>,
         oldObject: Object<*>?,
     ): IStream.Many<Object<*>> {
-        return objectDiff(self, oldObject, 0)
+        return if (self.getHash() == oldObject?.getHash()) {
+            IStream.empty()
+        } else {
+            objectDiff(self, oldObject, 0)
+        }
     }
 
     override fun toString(): String {
@@ -158,9 +162,21 @@ sealed class HamtNode<K, V : Any> : IObjectData {
         val btreeDeserializer = BTreeNode.Deserializer(btreeConfig)
 
         @JvmName("keysEqual")
-        fun equal(a: K, b: K) = keyConfig.equal(a, b)
+        fun equal(a: K, b: K): Boolean {
+            return if (a == null) {
+                b == null
+            } else {
+                b != null && keyConfig.equal(a, b)
+            }
+        }
 
         @JvmName("valuesEqual")
-        fun equal(a: V, b: V) = valueConfig.equal(a, b)
+        fun equal(a: V?, b: V?): Boolean {
+            return if (a == null) {
+                b == null
+            } else {
+                b != null && valueConfig.equal(a, b)
+            }
+        }
     }
 }

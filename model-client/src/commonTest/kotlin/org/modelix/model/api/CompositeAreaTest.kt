@@ -9,11 +9,12 @@ import org.modelix.model.area.IAreaReference
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class MyNodeReference : INodeReference {
+class MyNodeReference : INodeReference() {
     @Deprecated("use .resolveIn(INodeResolutionScope)", replaceWith = ReplaceWith("resolveIn(area!!)"))
     override fun resolveNode(area: IArea?): INode? {
         TODO("Not yet implemented")
     }
+    override fun serialize(): String = TODO("Not yet implemented")
 }
 
 @Suppress("OVERRIDE_DEPRECATION")

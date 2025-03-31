@@ -12,11 +12,12 @@ import org.modelix.model.area.IArea
 /**
  * Reference to an [INode]-
  *
- * The relation between an [INodeReference] and an [INode] is n to 1.
- * Two [INodeReference]s that are not equal can resolve to the same [INode].
+ * This class used to be an interface, but was changed to an abstract class for being able to overriding
+ * equals/hashCode. The semantics changed slightly to a unique identifier of a node. Implementing equals/hashCode in a
+ * consistent way is necessary for using this class as the key of map entries.
  */
 @Serializable(with = NodeReferenceKSerializer::class)
-interface INodeReference {
+abstract class INodeReference {
     /**
      * Tries to find the referenced node in the given [IArea].
      *
@@ -24,9 +25,17 @@ interface INodeReference {
      * @return the node, or null if the node could not be found
      */
     @Deprecated("use .resolveIn(INodeResolutionScope)", ReplaceWith("resolveIn(area!!)"))
-    fun resolveNode(area: IArea?): INode? = resolveIn(area as INodeResolutionScope)
+    open fun resolveNode(area: IArea?): INode? = resolveIn(area as INodeResolutionScope)
 
-    fun serialize(): String = INodeReferenceSerializer.serialize(this)
+    abstract fun serialize(): String
+
+    final override fun equals(other: Any?): Boolean {
+        return other is INodeReference && serialize() == other.serialize()
+    }
+
+    final override fun hashCode(): Int {
+        return serialize().hashCode()
+    }
 }
 
 fun INodeReference.resolveInCurrentContext(): INode? {

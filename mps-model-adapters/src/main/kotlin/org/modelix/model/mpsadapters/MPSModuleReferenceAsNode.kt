@@ -75,7 +75,7 @@ data class MPSModuleReferenceAsNode(
     }
 }
 
-data class MPSModuleReferenceReference(val parent: SModuleId, val link: ChildLinkReferenceByUID, val target: SModuleId) : INodeReference {
+data class MPSModuleReferenceReference(val parent: SModuleId, val link: ChildLinkReferenceByUID, val target: SModuleId) : INodeReference() {
     companion object {
         internal const val PREFIX = "mps-module-ref"
         internal const val SEPARATOR = "#"

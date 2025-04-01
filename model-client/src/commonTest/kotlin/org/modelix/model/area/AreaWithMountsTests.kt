@@ -19,7 +19,7 @@ class AreaWithMountsTests {
     protected lateinit var store: MapBaseStore
     protected lateinit var storeCache: IAsyncObjectStore
     protected lateinit var idGenerator: IdGenerator
-    protected lateinit var emptyTree: CLTree
+    protected lateinit var emptyTree: ITree
 
     @BeforeTest
     fun setUp() {

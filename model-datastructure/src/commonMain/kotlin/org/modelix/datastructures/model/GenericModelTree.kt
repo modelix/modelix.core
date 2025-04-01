@@ -11,6 +11,8 @@ import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
+import org.modelix.model.api.LocalPNodeReference
+import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.async.ContainmentCycleException
 import org.modelix.streams.IStream
@@ -25,6 +27,10 @@ abstract class GenericModelTree<NodeId>(
 ) : IModelTree<NodeId>, IStreamExecutorProvider by nodesMap {
     protected abstract fun withNewMap(newNodesMap: IPersistentMap<NodeId, NodeObjectData<NodeId>>): GenericModelTree<NodeId>
     protected abstract fun getRootNodeId(): NodeId
+    protected fun toGlobalNodeReference(ref: INodeReference): INodeReference = when (ref) {
+        is LocalPNodeReference -> PNodeReference(ref.id, treeId.id)
+        else -> ref
+    }
 
     override fun getId(): TreeId = treeId
     val graph: IObjectGraph = nodesMap.asObject().graph
@@ -72,7 +78,7 @@ abstract class GenericModelTree<NodeId>(
     }
 
     override fun getReferenceTarget(sourceId: NodeId, role: IReferenceLinkReference): IStream.ZeroOrOne<INodeReference> {
-        return resolveNode(sourceId).mapNotNull { it.getReferenceTarget(role) }
+        return resolveNode(sourceId).mapNotNull { it.getReferenceTarget(role)?.let { toGlobalNodeReference(it) } }
     }
 
     override fun getReferenceRoles(sourceId: NodeId): IStream.Many<IReferenceLinkReference> {
@@ -80,7 +86,9 @@ abstract class GenericModelTree<NodeId>(
     }
 
     override fun getReferenceTargets(sourceId: NodeId): IStream.Many<Pair<IReferenceLinkReference, INodeReference>> {
-        return resolveNode(sourceId).flatMapIterable { it.references }.mapFirst { IReferenceLinkReference.fromUnclassifiedString(it) }
+        return resolveNode(sourceId).flatMapIterable { it.references }.map {
+            IReferenceLinkReference.fromString(it.first) to toGlobalNodeReference(it.second)
+        }
     }
 
     override fun getChildren(parentId: NodeId): IStream.Many<NodeId> {

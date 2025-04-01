@@ -1,13 +1,12 @@
 package org.modelix.metamodel
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
-import org.modelix.model.api.LocalPNodeReference
+import org.modelix.model.api.PNodeReference
 
 @Serializable
 @Deprecated("use org.modelix.mode.data.*")
@@ -47,7 +46,7 @@ data class ModelData(
         }
         for (referenceData in nodeData.references) {
             pendingReferences += {
-                val target = createdNodes[referenceData.value]?.let { LocalPNodeReference(it) }
+                val target = createdNodes[referenceData.value]?.let { PNodeReference(it, t.tree.getId()) }
                 t.setReferenceTarget(createdId, referenceData.key, target)
             }
         }

@@ -2,7 +2,6 @@ package org.modelix.model.server.handlers
 
 import io.ktor.http.HttpStatusCode
 import org.modelix.model.lazy.BranchReference
-import org.modelix.model.persistent.SerializationUtil
 
 /**
  * A namespace for problems we use as the first part of every `type` in an application/problem+json response.
@@ -92,11 +91,11 @@ class VersionNotFoundException(versionHash: String, cause: Throwable? = null) :
  * @param nodeId id of the missing node
  * @param cause The causing exception for the bad request or null if none.
  */
-class NodeNotFoundException(nodeId: Long, cause: Throwable? = null) :
+class NodeNotFoundException(nodeId: Any?, cause: Throwable? = null) :
     HttpException(
         HttpStatusCode.NotFound,
         title = "Node not found",
-        details = "Node with id '${SerializationUtil.longToHex(nodeId)}' ('$nodeId') doesn't exist",
+        details = "Node with id $nodeId doesn't exist",
         type = "/problems/node-not-found",
         cause = cause,
     )

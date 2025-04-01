@@ -9,7 +9,7 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
-import org.modelix.model.api.LocalPNodeReference
+import org.modelix.model.api.PNodeReference
 
 @Serializable
 data class ModelData(
@@ -73,7 +73,7 @@ data class ModelData(
         }
         for (referenceData in nodeData.references) {
             pendingReferences += {
-                val target = createdNodes[referenceData.value]?.let { LocalPNodeReference(it) }
+                val target = createdNodes[referenceData.value]?.let { PNodeReference(it, t.tree.getId()) }
                 t.setReferenceTarget(createdId, referenceData.key, target)
             }
         }

@@ -219,7 +219,7 @@ class ContentExplorer(private val repoManager: IRepositoriesManager) {
         val seq = generateSequence(expandTo) { id ->
             try {
                 tree.getParent(id).takeIf { it != 0L } // getParent returns 0L for root node
-            } catch (e: org.modelix.model.lazy.NodeNotFoundException) {
+            } catch (e: org.modelix.datastructures.model.NodeNotFoundException) {
                 throw NodeNotFoundException(id, e)
             }
         }

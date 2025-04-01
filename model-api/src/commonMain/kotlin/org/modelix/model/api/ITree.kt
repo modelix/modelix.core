@@ -130,7 +130,7 @@ interface ITree {
     fun setReferenceTarget(sourceId: Long, role: String, target: INodeReference?): ITree
 
     fun setReferenceTarget(sourceId: Long, role: String, targetId: Long): ITree =
-        setReferenceTarget(sourceId, role, LocalPNodeReference(targetId))
+        setReferenceTarget(sourceId, role, PNodeReference(targetId, getId()))
 
     /**
      * Returns all reference roles for the given node in this tree.

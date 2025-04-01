@@ -94,7 +94,7 @@ class ReplicatedRepositoryTest {
                         repeat(1000) { _ ->
                             changeGenerator.applyRandomChange()
                         }
-                        println("new tree: " + (branchToChange.transaction.tree).hash)
+                        println("new tree: " + (branchToChange.transaction.tree).getTreeObject().getHashString())
                     }
 
                     val syncTime = measureTime {
@@ -424,7 +424,7 @@ class ReplicatedRepositoryTest {
         val createdNodes: MutableSet<String> = Collections.synchronizedSet(TreeSet<String>())
 
         fun mergeVersion(versionToMerge: CLVersion) {
-            headVersion = VersionMerger(initialTree.store, idGenerator).mergeChange(headVersion, versionToMerge)
+            headVersion = VersionMerger(idGenerator).mergeChange(headVersion, versionToMerge)
             nonMergedVersions.remove(versionToMerge)
         }
 

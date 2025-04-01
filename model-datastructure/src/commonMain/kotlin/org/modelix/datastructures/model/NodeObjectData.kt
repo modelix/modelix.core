@@ -74,11 +74,13 @@ data class NodeObjectData<NodeId>(
         } else {
             // persist ID only to prevent ObjectHash changes when metamodel elements are renamed
             @OptIn(DelicateModelixApi::class)
-            if (index < 0) {
-                copy(properties = properties + (role.getIdOrName() to value))
+            val newProperties = if (index < 0) {
+                properties + (role.getIdOrName() to value)
             } else {
-                copy(properties = properties.take(index) + (role.getIdOrName() to value) + properties.drop(index + 1))
+                properties.take(index) + (role.getIdOrName() to value) + properties.drop(index + 1)
             }
+            // sorted to get a stable ObjectHash and avoid non-determinism in algorithms working with the model (e.g. sync)
+            copy(properties = newProperties.sortedBy { it.first })
         }
     }
 
@@ -93,11 +95,13 @@ data class NodeObjectData<NodeId>(
         } else {
             // persist ID only to prevent ObjectHash changes when metamodel elements are renamed
             @OptIn(DelicateModelixApi::class)
-            if (index < 0) {
-                copy(references = references + (role.getIdOrName() to value))
+            val newReferences = if (index < 0) {
+                references + (role.getIdOrName() to value)
             } else {
-                copy(references = references.take(index) + (role.getIdOrName() to value) + references.drop(index + 1))
+                references.take(index) + (role.getIdOrName() to value) + references.drop(index + 1)
             }
+            // sorted to get a stable ObjectHash and avoid non-determinism in algorithms working with the model (e.g. sync)
+            copy(references = newReferences.sortedBy { it.first })
         }
     }
 
@@ -133,8 +137,8 @@ data class NodeObjectData<NodeId>(
                     parent = encodeNullId(value.parentId),
                     role = value.roleInParent.getIdOrNameOrNull(),
                     children = value.children,
-                    properties = value.properties.sortedBy { it.first }.toMap(),
-                    references = value.references.sortedBy { it.first }.toMap(),
+                    properties = value.properties.toMap(),
+                    references = value.references.toMap(),
                 )
             }
 

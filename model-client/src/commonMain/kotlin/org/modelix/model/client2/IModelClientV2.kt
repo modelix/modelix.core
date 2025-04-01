@@ -39,7 +39,6 @@ interface IModelClientV2 {
     suspend fun initRepositoryWithLegacyStorage(repository: RepositoryId): IVersion
 
     suspend fun initRepository(config: RepositoryConfig): IVersion
-    suspend fun getRepositoryConfig(repositoryAlias: String): RepositoryConfig?
 
     suspend fun listRepositories(): List<RepositoryId>
     suspend fun deleteRepository(repository: RepositoryId): Boolean

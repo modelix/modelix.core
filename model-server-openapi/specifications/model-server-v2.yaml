@@ -60,13 +60,13 @@ paths:
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/GeneralError'
-  /repositories/{repositoryName}/objects:
+  /repositories/{repository}/objects:
     put:
       tags:
         - v2
       operationId: putRepositoryObjects
       parameters:
-        - name: repositoryName
+        - name: repository
           in: "path"
           required: true
           schema:
@@ -80,13 +80,13 @@ paths:
           $ref: '#/components/responses/200json'
         default:
           $ref: '#/components/responses/GeneralError'
-  /repositories/{repositoryName}/objects/getAll:
+  /repositories/{repository}/objects/getAll:
     post:
       tags:
         - v2
       operationId: postRepositoryObjectsGetAll
       parameters:
-        - name: repositoryName
+        - name: repository
           in: "path"
           required: true
           schema:
@@ -96,29 +96,13 @@ paths:
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/GeneralError'
-  /repositories/{repositoryName}/config:
-    get:
-      tags:
-        - v2
-      operationId: getRepositoryConfig
-      parameters:
-        - name: repositoryName
-          in: "path"
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          $ref: '#/components/responses/200'
-        default:
-          $ref: '#/components/responses/GeneralError'
-  /repositories/{repositoryName}/branches:
+  /repositories/{repository}/branches:
     get:
       tags:
         - v2
       operationId: getRepositoryBranches
       parameters:
-        - name: repositoryName
+        - name: repository
           in: "path"
           required: true
           schema:
@@ -128,13 +112,13 @@ paths:
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/GeneralError'
-  /repositories/{repositoryName}/branches/{branch}:
+  /repositories/{repository}/branches/{branch}:
     delete:
       tags:
         - v2
       operationId: deleteRepositoryBranch
       parameters:
-        - name: repositoryName
+        - name: repository
           in: "path"
           required: true
           schema:
@@ -166,7 +150,7 @@ paths:
           required: false
           schema:
             type: string
-        - name: repositoryName
+        - name: repository
           in: "path"
           required: true
           schema:
@@ -213,7 +197,7 @@ paths:
         - v2
       operationId: postRepositoryBranch
       parameters:
-        - name: repositoryName
+        - name: repository
           in: "path"
           required: true
           schema:
@@ -238,13 +222,13 @@ paths:
           $ref: '#/components/responses/versionDelta'
         default:
           $ref: '#/components/responses/GeneralError'
-  /repositories/{repositoryName}/branches/{branch}/hash:
+  /repositories/{repository}/branches/{branch}/hash:
     get:
       tags:
         - v2
       operationId: getRepositoryBranchHash
       parameters:
-        - name: repositoryName
+        - name: repository
           in: "path"
           required: true
           schema:
@@ -261,7 +245,7 @@ paths:
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/GeneralError'
-  /repositories/{repositoryName}/branches/{branch}/poll:
+  /repositories/{repository}/branches/{branch}/poll:
     get:
       tags:
         - v2
@@ -272,7 +256,7 @@ paths:
           required: false
           schema:
             type: string
-        - name: repositoryName
+        - name: repository
           in: "path"
           required: true
           schema:
@@ -291,7 +275,7 @@ paths:
           $ref: '#/components/responses/versionDelta'
         default:
           $ref: '#/components/responses/GeneralError'
-  /repositories/{repositoryName}/branches/{branch}/pollHash:
+  /repositories/{repository}/branches/{branch}/pollHash:
     get:
       tags:
         - v2
@@ -307,7 +291,7 @@ paths:
           required: false
           schema:
             type: boolean
-        - name: repositoryName
+        - name: repository
           in: "path"
           required: true
           schema:
@@ -326,13 +310,13 @@ paths:
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/GeneralError'
-  /repositories/{repositoryName}/branches/{branch}/query:
+  /repositories/{repository}/branches/{branch}/query:
     post:
       tags:
         - v2
       operationId: postRepositoryBranchQuery
       parameters:
-        - name: repositoryName
+        - name: repository
           in: "path"
           required: true
           schema:
@@ -349,7 +333,7 @@ paths:
           $ref: '#/components/responses/ModelQlQueryExecutionFailed'
         default:
           $ref: '#/components/responses/GeneralError'
-  /repositories/{repositoryName}/init:
+  /repositories/{repository}/init:
     post:
       tags:
         - v2
@@ -367,7 +351,7 @@ paths:
           schema:
             type: boolean
             default: false
-        - name: repositoryName
+        - name: repository
           in: "path"
           required: true
           schema:
@@ -381,13 +365,13 @@ paths:
           $ref: '#/components/responses/versionDelta'
         default:
           $ref: '#/components/responses/GeneralError'
-  /repositories/{repositoryName}/delete:
+  /repositories/{repository}/delete:
     post:
       tags:
         - v2
       operationId: deleteRepository
       parameters:
-        - name: repositoryName
+        - name: repository
           in: "path"
           required: true
           schema:
@@ -403,7 +387,7 @@ paths:
           $ref: '#/components/responses/404'
         default:
           $ref: '#/components/responses/GeneralError'
-  /repositories/{repositoryName}/versions/{versionHash}:
+  /repositories/{repository}/versions/{versionHash}:
     get:
       tags:
         - v2
@@ -419,7 +403,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: repositoryName
+        - name: repository
           in: "path"
           required: true
           schema:
@@ -435,7 +419,7 @@ paths:
                 type: object
         default:
           $ref: '#/components/responses/GeneralError'
-  /repositories/{repositoryName}/versions/{versionHash}/query:
+  /repositories/{repository}/versions/{versionHash}/query:
     post:
       tags:
         - v2
@@ -446,7 +430,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: repositoryName
+        - name: repository
           in: "path"
           required: true
           schema:
@@ -567,13 +551,13 @@ components:
       type: object
       properties:
         versionHash:
-            type: string
+          type: string
         baseVersion:
-            type: string
+          type: string
         objects:
-            $ref: '#/components/schemas/MapItem'
+          $ref: '#/components/schemas/MapItem'
         objectsMap:
-            $ref: '#/components/schemas/MapItem'
+          $ref: '#/components/schemas/MapItem'
       required:
         - versionHash
         - objects

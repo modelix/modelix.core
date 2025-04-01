@@ -259,7 +259,7 @@ interface ITree {
         }
     }
     fun getAllReferenceTargetsAsFlow(nodeId: Long): Flow<Pair<String, INodeReference>> = getReferenceRoles(nodeId).map { it to getReferenceTarget(nodeId, it) }.filterSecondNotNull().asFlow()
-    fun getChildrenAsFlow(parentId: Long, role: String): Flow<Long> = getChildren(parentId, role).asFlow()
+    fun getChildrenAsFlow(parentId: Long, role: String?): Flow<Long> = getChildren(parentId, role).asFlow()
     fun getReferenceTargetAsFlow(nodeId: Long, role: String): Flow<INodeReference> = flowOf(getReferenceTarget(nodeId, role)).filterNotNull()
     fun getParentAsFlow(nodeId: Long): Flow<Long> = flowOf(getParent(nodeId)).filter { it != 0L }
     fun getPropertyValueAsFlow(nodeId: Long, role: String): Flow<String?> = flowOf(getProperty(nodeId, role))
@@ -270,13 +270,3 @@ interface ITree {
         val DETACHED_NODES_LINK = IChildLinkReference.fromIdAndName(DETACHED_NODES_ROLE, DETACHED_NODES_ROLE)
     }
 }
-
-/**
- * Returns the key of the receiver role for the given tree.
- *
- * @param tree the desired tree
- * @return uid of the role, if the tree uses role ids, or
- *          the role name otherwise
- */
-fun IRole.key(tree: ITree): String = toReference().key(tree)
-fun IRoleReference.key(tree: ITree): String = if (tree.usesRoleIds()) getIdOrName() else getNameOrId()

@@ -33,6 +33,8 @@ sealed interface IReferenceLinkReference : ILinkReference {
 
     override fun matches(unclassified: String?) = unclassified != null && matches(fromString(unclassified))
 
+    override fun stringForLegacyApi(): String
+
     companion object : IRoleReferenceFactory<IReferenceLinkReference> {
         /**
          * Can be a name or UID or anything else. INode will decide how to resolve it.
@@ -74,6 +76,7 @@ sealed class AbstractReferenceLinkReference : AbstractRoleReference(), IReferenc
 
 @Serializable
 data class UnclassifiedReferenceLinkReference(val value: String) : AbstractReferenceLinkReference(), IUnclassifiedRoleReference {
+    override fun stringForLegacyApi() = value
     override fun getStringValue(): String = value
     override fun getIdOrName(): String = value
     override fun getNameOrId(): String = value
@@ -91,6 +94,7 @@ data class UnclassifiedReferenceLinkReference(val value: String) : AbstractRefer
 
 @Serializable
 data class ReferenceLinkReferenceByName(override val name: String) : AbstractReferenceLinkReference(), IRoleReferenceByName {
+    override fun stringForLegacyApi() = IRoleReference.encodeStringForLegacyApi(null, name)
     override fun getSimpleName(): String = name
     override fun getIdOrName(): String = name
     override fun getNameOrId(): String = name
@@ -106,6 +110,7 @@ data class ReferenceLinkReferenceByName(override val name: String) : AbstractRef
 
 @Serializable
 data class ReferenceLinkReferenceByUID(val uid: String) : AbstractReferenceLinkReference(), IRoleReferenceByUID {
+    override fun stringForLegacyApi() = IRoleReference.encodeStringForLegacyApi(uid, null)
     override fun getUID(): String = uid
     override fun getIdOrName(): String = uid
     override fun getNameOrId(): String = uid
@@ -121,6 +126,7 @@ data class ReferenceLinkReferenceByUID(val uid: String) : AbstractReferenceLinkR
 
 @Serializable
 data class ReferenceLinkReferenceByIdAndName(val uid: String, override val name: String) : AbstractReferenceLinkReference(), IRoleReferenceByUID, IRoleReferenceByName {
+    override fun stringForLegacyApi() = IRoleReference.encodeStringForLegacyApi(uid, name)
     override fun getUID(): String = uid
     override fun getSimpleName(): String = name
     override fun getIdOrName(): String = uid

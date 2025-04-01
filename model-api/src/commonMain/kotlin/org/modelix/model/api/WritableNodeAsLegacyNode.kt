@@ -21,7 +21,7 @@ data class WritableNodeAsLegacyNode(val node: IWritableNode) : INode, IReplaceab
     override val concept: IConcept?
         get() = node.getConcept()
     override val roleInParent: String?
-        get() = node.getContainmentLink().key(this)
+        get() = node.getContainmentLink().stringForLegacyApi()
     override val parent: INode?
         get() = node.getParent()?.asLegacyNode()
 
@@ -69,11 +69,11 @@ data class WritableNodeAsLegacyNode(val node: IWritableNode) : INode, IReplaceab
     }
 
     override fun getPropertyRoles(): List<String> {
-        return node.getPropertyLinks().map { it.key(this) }
+        return node.getPropertyLinks().map { it.stringForLegacyApi() }
     }
 
     override fun getReferenceRoles(): List<String> {
-        return node.getReferenceLinks().map { it.key(this) }
+        return node.getReferenceLinks().map { it.stringForLegacyApi() }
     }
 
     override fun getChildren(link: IChildLink): Iterable<INode> {

@@ -30,7 +30,7 @@ class SetReferenceStep(val link: IReferenceLinkReference) :
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {
-        return Descriptor(link.getIdOrName(), link)
+        return Descriptor(link.stringForLegacyApi(), link)
     }
 
     override fun requiresWriteAccess(): Boolean {

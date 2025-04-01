@@ -16,10 +16,8 @@ class PBranch constructor(@field:Volatile private var tree: ITree, private val i
     }
 
     private fun <T> runWithTransaction(transaction: ITransaction, runnable: () -> T): T {
-        return RoleAccessContext.runWith(transaction.tree.usesRoleIds()) {
-            INodeResolutionScope.ensureInContext(PArea(this)) {
-                contextTransactions.computeWith(transaction as Transaction, runnable)
-            }
+        return INodeResolutionScope.ensureInContext(PArea(this)) {
+            contextTransactions.computeWith(transaction as Transaction, runnable)
         }
     }
 

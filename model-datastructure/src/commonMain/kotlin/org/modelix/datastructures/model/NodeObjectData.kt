@@ -13,6 +13,7 @@ import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.datastructures.objects.asKSerializer
 import org.modelix.datastructures.serialization.SplitJoinFormat
 import org.modelix.datastructures.serialization.TransformingSerializer
+import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.model.TreeId
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
@@ -71,6 +72,8 @@ data class NodeObjectData<NodeId>(
                 copy(properties = properties.take(index) + properties.drop(index + 1))
             }
         } else {
+            // persist ID only to prevent ObjectHash changes when metamodel elements are renamed
+            @OptIn(DelicateModelixApi::class)
             if (index < 0) {
                 copy(properties = properties + (role.getIdOrName() to value))
             } else {
@@ -88,6 +91,8 @@ data class NodeObjectData<NodeId>(
                 copy(references = references.take(index) + references.drop(index + 1))
             }
         } else {
+            // persist ID only to prevent ObjectHash changes when metamodel elements are renamed
+            @OptIn(DelicateModelixApi::class)
             if (index < 0) {
                 copy(references = references + (role.getIdOrName() to value))
             } else {
@@ -166,15 +171,19 @@ data class LegacyCompatibleFormat<NodeId, ReferenceType>(
     val references: Map<String, ReferenceType>,
 )
 
-fun IReadableNode.toNodeObjectData() = NodeObjectData(
-    deserializer = NodeObjectData.Deserializer(NodeReferenceDataTypeConfig(), getTreeId()),
-    id = getNodeReference(),
-    concept = getConceptReference(),
-    containment = getParent()?.let { it.getNodeReference() to getContainmentLink() },
-    children = getAllChildren().map { it.getNodeReference() },
-    properties = getAllProperties().map { it.first.getIdOrName() to it.second },
-    references = getAllReferenceTargetRefs().map { it.first.getIdOrName() to it.second },
-)
+fun IReadableNode.toNodeObjectData(): NodeObjectData<INodeReference> {
+    // persist ID only to prevent ObjectHash changes when metamodel elements are renamed
+    @OptIn(DelicateModelixApi::class)
+    return NodeObjectData(
+        deserializer = NodeObjectData.Deserializer(NodeReferenceDataTypeConfig(), getTreeId()),
+        id = getNodeReference(),
+        concept = getConceptReference(),
+        containment = getParent()?.let { it.getNodeReference() to getContainmentLink() },
+        children = getAllChildren().map { it.getNodeReference() },
+        properties = getAllProperties().map { it.first.getIdOrName() to it.second },
+        references = getAllReferenceTargetRefs().map { it.first.getIdOrName() to it.second },
+    )
+}
 
 fun IReadableNode.getTreeId(): TreeId {
     return when (this) {

@@ -758,7 +758,7 @@ class MetaModelMigrationsTest {
                             "concept": "mps:0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892",
                             "role": "aChild",
                             "properties": {
-                                "id": "myId"
+                                "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618892/2615330535972958738": "myId"
                             },
                             "references": {
                                 "someRef": "modelix:aRepositoryId/100000043"

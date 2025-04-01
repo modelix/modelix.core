@@ -52,9 +52,9 @@ internal class AsyncAsSynchronousTree(val asyncTree: IAsyncMutableTree) : ITree 
         return true
     }
 
-    private fun IPropertyReference.getKey() = if (usesRoleIds()) getIdOrName() else getNameOrId()
-    private fun IReferenceLinkReference.getKey() = if (usesRoleIds()) getIdOrName() else getNameOrId()
-    private fun IChildLinkReference.getKey() = if (usesRoleIds()) getIdOrNameOrNull() else getNameOrIdOrNull()
+    private fun IPropertyReference.getKey() = stringForLegacyApi()
+    private fun IReferenceLinkReference.getKey() = stringForLegacyApi()
+    private fun IChildLinkReference.getKey() = stringForLegacyApi()
 
     override fun getId(): String {
         return (asyncTree as ModelTreeAsLegacyAsyncTree).tree.getId().id

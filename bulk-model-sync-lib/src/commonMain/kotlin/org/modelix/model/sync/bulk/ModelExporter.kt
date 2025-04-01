@@ -1,8 +1,12 @@
 package org.modelix.model.sync.bulk
 
+import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.model.api.INode
+import org.modelix.model.api.IReadableNode
+import org.modelix.model.api.getOriginalOrCurrentReference
+import org.modelix.model.api.getOriginalReference
+import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.data.NodeData
-import org.modelix.model.data.associateWithNotNull
 
 /**
  * A ModelExporter exports a node and its subtree in bulk.
@@ -14,15 +18,21 @@ expect class ModelExporter(root: INode)
  * This function is recursively called on the node's children.
  */
 fun INode.asExported(): NodeData {
-    val idKey = NodeData.idPropertyKey
+    return asReadableNode().asExported()
+}
+
+fun IReadableNode.asExported(): NodeData {
+    @OptIn(DelicateModelixApi::class) // json file should contain role IDs
     return NodeData(
-        id = getPropertyValue(idKey) ?: reference.serialize(),
-        concept = getConceptReference()?.getUID(),
-        role = roleInParent,
-        properties = getPropertyRoles().associateWithNotNull { getPropertyValue(it) }.filterKeys { it != idKey },
-        references = getReferenceRoles().associateWithNotNull {
-            getReferenceTarget(it)?.getPropertyValue(idKey) ?: getReferenceTargetRef(it)?.serialize()
+        id = getOriginalOrCurrentReference(),
+        concept = getConceptReference().takeIf { it != NullConcept.getReference() }?.getUID(),
+        role = getContainmentLink().getIdOrNameOrNull(),
+        properties = getAllProperties()
+            .filterNot { it.first.matches(NodeData.ID_PROPERTY_REF) }
+            .associate { it.first.getIdOrName() to it.second },
+        references = getAllReferenceTargetRefs().associate {
+            it.first.getIdOrName() to (getReferenceTarget(it.first)?.getOriginalReference() ?: it.second.serialize())
         },
-        children = allChildren.map { it.asExported() },
+        children = getAllChildren().map { it.asExported() },
     )
 }

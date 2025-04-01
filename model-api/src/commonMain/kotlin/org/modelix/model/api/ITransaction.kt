@@ -114,13 +114,3 @@ interface ITransaction {
      */
     fun putUserObject(key: Any, value: Any?)
 }
-
-/**
- * Returns the key of the receiver role for the given transaction.
- *
- * @param t the desired transaction
- * @return uid of the role, if the tree of the transaction uses role ids, or
- *          the role name otherwise
- */
-fun IRole.key(t: ITransaction): String = toReference().key(t)
-fun IRoleReference.key(t: ITransaction): String = if (t.tree.usesRoleIds()) getIdOrName() else getNameOrId()

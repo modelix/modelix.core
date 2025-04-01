@@ -30,7 +30,7 @@ sealed interface IPropertyReference : IRoleReference {
 
     fun matches(other: IPropertyReference): Boolean
 
-    override fun matches(unclassified: String?) = unclassified != null && matches(fromUnclassifiedString(unclassified))
+    override fun matches(unclassified: String?) = unclassified != null && matches(fromString(unclassified))
 
     companion object : IRoleReferenceFactory<IPropertyReference> {
         /**

@@ -167,7 +167,7 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) :
         }
 
     override fun getContainmentLink(): IChildLink? {
-        return IChildLinkReference.fromNullableUnclassifiedString(roleInParent).toLegacy()
+        return IChildLinkReference.fromString(roleInParent).toLegacy()
     }
 
     override val isValid: Boolean

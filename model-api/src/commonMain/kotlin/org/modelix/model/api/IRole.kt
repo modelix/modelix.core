@@ -2,6 +2,7 @@ package org.modelix.model.api
 
 import kotlinx.serialization.Serializable
 import org.modelix.kotlin.utils.ContextValue
+import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.kotlin.utils.base64UrlDecoded
 import org.modelix.kotlin.utils.base64UrlEncoded
 
@@ -98,7 +99,7 @@ sealed interface IRoleReference {
         fun <T : IRoleReference> decodeStringFromLegacyApi(value: String?, factory: IRoleReferenceFactory<T>): T {
             if (value == null || value == "null") return factory.fromNull()
             val parts = value.split(":")
-            if (parts.size != 3 || parts[0] != "") return factory.fromNullableUnclassifiedString(value)
+            if (parts.size != 3 || parts[0] != "") return factory.fromUnclassifiedString(value)
             val id = parts[1].takeIf { it.isNotEmpty() }?.base64UrlDecoded
             val name = parts[2].takeIf { it.isNotEmpty() }?.base64UrlDecoded
             return if (id != null) {
@@ -131,12 +132,18 @@ sealed interface IRoleReference {
 
 interface IRoleReferenceFactory<E : IRoleReference> {
     fun fromNull(): E = throw IllegalArgumentException("Null values not allowed")
-    fun fromNullableUnclassifiedString(value: String?): E = if (value == null) fromNull() else fromUnclassifiedString(value)
+
+    /**
+     * Use [fromString] instead, unless you are sure you want to create an instance of an Unclassified...Reference.
+     */
+    @DelicateModelixApi
     fun fromUnclassifiedString(value: String): E
+
     fun fromName(value: String): E
     fun fromId(value: String): E
     fun fromIdAndName(id: String?, name: String?): E
     fun fromLegacyApi(value: String?): E = IRoleReference.decodeStringFromLegacyApi(value, this)
+    fun fromString(value: String?): E = fromLegacyApi(value)
 }
 
 fun IRoleReference.matches(other: IRoleReference): Boolean {
@@ -173,8 +180,38 @@ sealed interface IRoleReferenceByUID : IRoleReference {
 
 @Serializable
 sealed class AbstractRoleReference : IRoleReference {
+    override fun toString(): String = stringForLegacyApi()
     override fun getUID(): String = throw UnsupportedOperationException()
     override fun getSimpleName(): String = throw UnsupportedOperationException()
+    final override fun equals(other: Any?): Boolean {
+        if (other !is IRoleReference) return false
+
+        /**
+         Using [matches] would violate this requirement:
+
+         It is transitive: for any non-null reference values x, y, and z, if x.equals(y) returns true and
+         y.equals(z) returns true, then x.equals(z) should return true.
+
+         For the three reference
+         - x of type ByIdAndName with the ID '123' and the name 'abc'
+         - y of type ByUID with the ID '123'
+         - z of type ByName with the name 'abc'
+         x.matches(y) is true, x.matches(z) is true, but y.matches(z) is false.
+
+         By comparing the values of [getIdOrName] x.equals(y) is true, x.equals(z) is false and y.equals(z) is false.
+
+         References should be compared using [matches] and not be used as a key in a map.
+         This implementation exists to support some like `List<IRoleReference>.distinct()`.
+
+         This implementation is only problematic when name based references are used, which are considered legacy.
+         */
+
+        return getIdOrName() == other.getIdOrName()
+    }
+
+    final override fun hashCode(): Int {
+        return getIdOrName().hashCode()
+    }
 }
 
 @Deprecated("Will be removed after all usages of IRole.name are migrated.")

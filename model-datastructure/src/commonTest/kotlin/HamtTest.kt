@@ -1,10 +1,12 @@
+import org.modelix.datastructures.hamt.HamtInternalNode
+import org.modelix.datastructures.hamt.HamtNode
+import org.modelix.datastructures.hamt.HamtTree
 import org.modelix.datastructures.objects.IObjectReferenceFactory
+import org.modelix.datastructures.objects.LongDataTypeConfiguration
 import org.modelix.datastructures.objects.ObjectReference
-import org.modelix.datastructures.objects.hash
+import org.modelix.datastructures.objects.ObjectReferenceDataTypeConfiguration
 import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.model.lazy.createObjectStoreCache
-import org.modelix.model.persistent.CPHamtInternal
-import org.modelix.model.persistent.CPHamtNode
 import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.streams.IStream
@@ -21,25 +23,30 @@ class HamtTest {
         val store = MapBaseStore()
         val storeCache = createObjectStoreCache(store)
         val graph = storeCache.asObjectGraph()
-        var hamt: CPHamtNode? = CPHamtInternal.createEmpty()
+        val config = HamtNode.Config(
+            graph = graph,
+            keyConfig = LongDataTypeConfiguration(),
+            valueConfig = ObjectReferenceDataTypeConfiguration(graph, CPNode),
+        )
+        var hamt = HamtTree(HamtInternalNode.createEmpty(config))
         for (i in 0..999) {
             if (expectedMap.isEmpty() || rand.nextBoolean()) {
                 // add entry
                 val key = rand.nextInt(1000).toLong()
                 val value = rand.nextLong()
-                hamt = hamt!!.put(key, createEntry(value, graph), graph).getSynchronous()
+                hamt = hamt!!.put(key, createEntry(value, graph)).getSynchronous()
                 expectedMap[key] = value
             } else {
                 val keys: List<Long> = ArrayList(expectedMap.keys)
                 val key = keys[rand.nextInt(keys.size)]
                 if (rand.nextBoolean()) {
                     // remove entry
-                    hamt = hamt!!.remove(key, graph).getSynchronous()
+                    hamt = hamt!!.remove(key).getSynchronous()
                     expectedMap.remove(key)
                 } else {
                     // replace entry
                     val value = rand.nextLong()
-                    hamt = hamt!!.put(key, createEntry(value, graph), graph).getSynchronous()
+                    hamt = hamt!!.put(key, createEntry(value, graph)).getSynchronous()
                     expectedMap[key] = value
                 }
             }
@@ -69,18 +76,23 @@ class HamtTest {
         val store = MapBaseStore()
         val storeCache = createObjectStoreCache(store)
         val graph = storeCache.asObjectGraph()
-        var hamt: CPHamtNode? = CPHamtInternal.createEmpty()
+        val config = HamtNode.Config(
+            graph = graph,
+            keyConfig = LongDataTypeConfiguration(),
+            valueConfig = ObjectReferenceDataTypeConfiguration(graph, CPNode),
+        )
+        var hamt = HamtTree(HamtInternalNode.createEmpty(config))
         var getId = { e: IStream.ZeroOrOne<ObjectReference<CPNode>> -> e.flatMapZeroOrOne { it.resolve() }.getSynchronous()!!.data.id }
 
-        hamt = hamt!!.put(965L, createEntry(-6579471327666419615, graph), graph).getSynchronous()
-        hamt = hamt!!.put(949L, createEntry(4912341421267007347, graph), graph).getSynchronous()
+        hamt = hamt!!.put(965L, createEntry(-6579471327666419615, graph)).getSynchronous()
+        hamt = hamt!!.put(949L, createEntry(4912341421267007347, graph)).getSynchronous()
         assertEquals(4912341421267007347, getId(hamt!!.get(949L)))
-        hamt = hamt!!.put(260L, createEntry(4166750678024106842, graph), graph).getSynchronous()
+        hamt = hamt!!.put(260L, createEntry(4166750678024106842, graph)).getSynchronous()
         assertEquals(4166750678024106842, getId(hamt!!.get(260L)))
-        hamt = hamt!!.put(794L, createEntry(5492533034562136353, graph), graph).getSynchronous()
-        hamt = hamt!!.put(104L, createEntry(-6505928823483070382, graph), graph).getSynchronous()
-        hamt = hamt!!.put(47L, createEntry(3122507882718949737, graph), graph).getSynchronous()
-        hamt = hamt!!.put(693L, createEntry(-2086105010854963537, graph), graph).getSynchronous()
+        hamt = hamt!!.put(794L, createEntry(5492533034562136353, graph)).getSynchronous()
+        hamt = hamt!!.put(104L, createEntry(-6505928823483070382, graph)).getSynchronous()
+        hamt = hamt!!.put(47L, createEntry(3122507882718949737, graph)).getSynchronous()
+        hamt = hamt!!.put(693L, createEntry(-2086105010854963537, graph)).getSynchronous()
         storeCache.clearCache()
         // assertEquals(69239088, (hamt!!.getData() as CPHamtInternal).bitmap)
         // assertEquals(6, (hamt!!.getData() as CPHamtInternal).children.count())
@@ -96,7 +108,12 @@ class HamtTest {
     fun insertionOrderTest() {
         val store = createObjectStoreCache(MapBaseStore())
         val graph = store.asObjectGraph()
-        val emptyMap = CPHamtInternal.createEmpty()
+        val config = HamtNode.Config(
+            graph = graph,
+            keyConfig = LongDataTypeConfiguration(),
+            valueConfig = ObjectReferenceDataTypeConfiguration(graph, CPNode),
+        )
+        var emptyMap = HamtTree(HamtInternalNode.createEmpty(config))
 
         val rand = Random(123456789L)
         val entries = HashMap<Long, ObjectReference<CPNode>>()
@@ -111,10 +128,10 @@ class HamtTest {
         var expectedHash: String? = null
 
         for (i in 1..10) {
-            var map: CPHamtNode = emptyMap
-            entries.entries.shuffled(rand).forEach { map = map.put(it.key, it.value, graph).getSynchronous()!! }
-            keysToRemove.forEach { map = map.remove(it, graph).getSynchronous()!! }
-            val hash = map.hash.toString()
+            var map = emptyMap
+            entries.entries.shuffled(rand).forEach { map = map.put(it.key, it.value).getSynchronous()!! }
+            keysToRemove.forEach { map = map.remove(it).getSynchronous()!! }
+            val hash = map.asObject().getHashString()
             if (i == 1) {
                 expectedHash = hash
             } else {

@@ -315,10 +315,9 @@ interface IReplaceableNode : INode {
     fun replaceNode(concept: ConceptReference?): INode
 }
 
-@Deprecated("Use .key(INode), .key(IBranch), .key(ITransaction) or .key(ITree)")
-fun IRole.key(): String = RoleAccessContext.getKey(this)
-fun IRole.key(node: INode): String = toReference().key(node)
-fun IRoleReference.key(node: INode): String = if (node.usesRoleIds()) getIdOrName() else getNameOrId()
+fun IProperty.key(node: INode): String = toReference().stringForLegacyApi()
+fun IReferenceLink.key(node: INode): String = toReference().stringForLegacyApi()
+fun IRoleReference.key(node: INode): String? = stringForLegacyApi()
 fun IChildLinkReference.key(node: INode): String? = when (this) {
     is NullChildLinkReference -> null
     else -> (this as IRoleReference).key(node)

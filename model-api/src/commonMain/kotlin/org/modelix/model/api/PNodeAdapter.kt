@@ -218,7 +218,7 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) :
 
     override fun getChildrenAsFlow(role: IChildLink): Flow<INode> {
         val tree = getTree()
-        return tree.getChildrenAsFlow(nodeId, role.key(tree)).map { createAdapter(it) }
+        return tree.getChildrenAsFlow(nodeId, role.toReference().stringForLegacyApi()).map { createAdapter(it) }
     }
 
     override fun getParentAsFlow(): Flow<INode> {
@@ -227,7 +227,7 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) :
 
     override fun getPropertyValueAsFlow(role: IProperty): Flow<String?> {
         val tree = getTree()
-        return tree.getPropertyValueAsFlow(nodeId, role.key(tree))
+        return tree.getPropertyValueAsFlow(nodeId, role.toReference().stringForLegacyApi())
     }
 
     override fun getReferenceTargetAsFlow(role: IReferenceLink): Flow<INode> {
@@ -236,7 +236,7 @@ open class PNodeAdapter(val nodeId: Long, val branch: IBranch) :
 
     override fun getReferenceTargetRefAsFlow(role: IReferenceLink): Flow<INodeReference> {
         val tree = getTree()
-        return tree.getReferenceTargetAsFlow(nodeId, role.key(tree))
+        return tree.getReferenceTargetAsFlow(nodeId, role.toReference().stringForLegacyApi())
     }
 
     override fun equals(o: Any?): Boolean {

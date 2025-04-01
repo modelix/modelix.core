@@ -47,12 +47,12 @@ class AddNewChildSubtreeOp(val resultTreeHash: ObjectReference<CPTree>, val posi
     private fun decompressNode(tree: IModelTree<Long>, node: Long, position: PositionInRole?, references: Boolean, opsVisitor: (IOperation) -> Unit) {
         if (references) {
             for ((role, target) in tree.getReferenceTargets(node).asSequence()) {
-                opsVisitor(SetReferenceOp(node, role.getIdOrName(), target))
+                opsVisitor(SetReferenceOp(node, role.stringForLegacyApi(), target))
             }
         } else {
             opsVisitor(AddNewChildOp(position!!, node, tree.getConceptReference(node).getSynchronous()))
             for ((property, value) in tree.getProperties(node).asSequence()) {
-                opsVisitor(SetPropertyOp(node, property.getIdOrName(), value))
+                opsVisitor(SetPropertyOp(node, property.stringForLegacyApi(), value))
             }
         }
     }
@@ -85,7 +85,7 @@ class AddNewChildSubtreeOp(val resultTreeHash: ObjectReference<CPTree>, val posi
     inner class Intend(val capturedPosition: CapturedInsertPosition) : IOperationIntend {
         override fun restoreIntend(tree: ITree): List<IOperation> {
             if (tree.containsNode(position.nodeId)) {
-                val newIndex = capturedPosition.findIndex(tree.getChildren(position.nodeId, position.role.getIdOrName()).toList().toLongArray())
+                val newIndex = capturedPosition.findIndex(tree.getChildren(position.nodeId, position.role.stringForLegacyApi()).toList().toLongArray())
                 return listOf(withPosition(position.withIndex(newIndex)))
             } else {
                 return listOf(withPosition(getDetachedNodesEndPosition(tree)))

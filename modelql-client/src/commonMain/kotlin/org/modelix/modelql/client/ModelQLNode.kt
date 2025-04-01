@@ -12,7 +12,6 @@ import org.modelix.model.api.SerializedNodeReference
 import org.modelix.model.api.async.IAsyncNode
 import org.modelix.model.api.async.INodeWithAsyncSupport
 import org.modelix.model.api.async.NodeAsAsyncNode
-import org.modelix.model.api.key
 import org.modelix.model.api.resolve
 import org.modelix.model.api.resolveChildLinkOrFallback
 import org.modelix.model.api.resolvePropertyOrFallback
@@ -118,7 +117,7 @@ abstract class ModelQLNode(val client: ModelQLClient) :
         get() = blockingQuery { it.parent().orNull() }
 
     override fun getChildren(role: IChildLink): Iterable<INode> {
-        return blockingQuery { it.children(role.key()).toList() }
+        return blockingQuery { it.children(role.toReference().stringForLegacyApi()).toList() }
     }
 
     override fun getChildren(role: String?): Iterable<INode> {

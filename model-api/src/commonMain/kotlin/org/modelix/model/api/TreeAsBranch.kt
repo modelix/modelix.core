@@ -20,7 +20,7 @@ data class TreeAsBranch(override val tree: ITree) : IBranch, IReadTransaction {
     }
 
     override fun <T> computeRead(computable: () -> T): T {
-        return RoleAccessContext.runWith(tree.usesRoleIds()) { computable() }
+        return computable()
     }
 
     override fun runWrite(runnable: () -> Unit) {

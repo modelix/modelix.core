@@ -38,7 +38,7 @@ class ReferenceTraversalStep(val link: IReferenceLinkReference) : MonoTransformi
         return serializationContext.serializer<INode>().stepOutputSerializer(this)
     }
 
-    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor(link.getIdOrName(), link)
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = Descriptor(link.stringForLegacyApi(), link)
 
     @Serializable
     @SerialName("untyped.referenceTarget")

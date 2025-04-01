@@ -32,7 +32,7 @@ class AddNewChildNodeStep(val link: IChildLinkReference, val index: Int, val con
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {
-        return Descriptor(link.getIdOrName(), link, index, concept)
+        return Descriptor(link.stringForLegacyApi(), link, index, concept)
     }
 
     override fun requiresWriteAccess(): Boolean {

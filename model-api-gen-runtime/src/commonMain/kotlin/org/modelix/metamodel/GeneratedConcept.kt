@@ -10,7 +10,6 @@ import org.modelix.model.api.IProperty
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.IReferenceLinkReference
-import org.modelix.model.api.RoleAccessContext
 import org.modelix.model.api.getAllConcepts
 import kotlin.reflect.KClass
 
@@ -112,17 +111,17 @@ abstract class GeneratedConcept<NodeT : ITypedNode, ConceptT : ITypedConcept>(
     }
 
     override fun getChildLink(roleKey: String): IChildLink {
-        return getAllChildLinks().find { RoleAccessContext.getKey(it) == roleKey }
+        return getAllChildLinks().find { it.toReference().matches(roleKey) }
             ?: throw IllegalArgumentException("Concept ${getLongName()} doesn't contain child link $roleKey")
     }
 
     override fun getProperty(roleKey: String): IProperty {
-        return getAllProperties().find { RoleAccessContext.getKey(it) == roleKey }
+        return getAllProperties().find { it.toReference().matches(roleKey) }
             ?: throw IllegalArgumentException("Concept ${getLongName()} doesn't contain property $roleKey")
     }
 
     override fun getReferenceLink(roleKey: String): IReferenceLink {
-        return getAllReferenceLinks().find { RoleAccessContext.getKey(it) == roleKey }
+        return getAllReferenceLinks().find { it.toReference().matches(roleKey) }
             ?: throw IllegalArgumentException("Concept ${getLongName()} doesn't contain reference link $roleKey")
     }
 

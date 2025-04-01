@@ -100,7 +100,7 @@ sealed class AbstractChildLinkReference : AbstractRoleReference(), IChildLinkRef
 
 @Serializable
 object NullChildLinkReference : AbstractChildLinkReference() {
-    override fun toString(): String = "null"
+    override fun stringForLegacyApi() = null
 
     override fun getIdOrName(): String = "null"
 
@@ -126,7 +126,7 @@ data class UnclassifiedChildLinkReference(val value: String) : AbstractChildLink
     init {
         require(value != "null") { "Use NullChildLinkReference" }
     }
-    override fun toString(): String = value
+    override fun stringForLegacyApi() = value
     override fun getStringValue(): String = value
     override fun getIdOrName(): String = value
     override fun getNameOrId(): String = value
@@ -148,7 +148,7 @@ data class ChildLinkReferenceByName(override val name: String) : AbstractChildLi
     init {
         require(name != "null") { "Use NullChildLinkReference" }
     }
-    override fun toString(): String = name
+    override fun stringForLegacyApi() = IRoleReference.encodeStringForLegacyApi(null, name)
     override fun getSimpleName(): String = name
     override fun getIdOrName(): String = name
     override fun getNameOrId(): String = name
@@ -168,7 +168,7 @@ data class ChildLinkReferenceByUID(val uid: String) : AbstractChildLinkReference
     init {
         require(uid != "null") { "Use NullChildLinkReference" }
     }
-    override fun toString(): String = uid
+    override fun stringForLegacyApi() = IRoleReference.encodeStringForLegacyApi(uid, null)
     override fun getUID(): String = uid
     override fun getIdOrName(): String = uid
     override fun getNameOrId(): String = uid
@@ -189,7 +189,7 @@ data class ChildLinkReferenceByIdAndName(val uid: String, override val name: Str
         require(uid != "null") { "Use NullChildLinkReference" }
         require(name != "null") { "Use NullChildLinkReference" }
     }
-    override fun toString(): String = stringForLegacyApi()
+    override fun stringForLegacyApi() = IRoleReference.encodeStringForLegacyApi(uid, name)
     override fun getUID(): String = uid
     override fun getSimpleName(): String = name
     override fun getIdOrName(): String = uid

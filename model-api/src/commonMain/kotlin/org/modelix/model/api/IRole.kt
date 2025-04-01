@@ -1,7 +1,6 @@
 package org.modelix.model.api
 
 import kotlinx.serialization.Serializable
-import org.modelix.kotlin.utils.ContextValue
 import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.kotlin.utils.base64UrlDecoded
 import org.modelix.kotlin.utils.base64UrlEncoded
@@ -34,7 +33,7 @@ interface IRole : IRoleDefinition {
     override fun getSimpleName(): String
 
     @Deprecated("Use getSimpleName() when showing it to the user or when accessing the model use the INode functions that accept an IRole or use IRole.key(...)")
-    val name: String get() = RoleAccessContext.getKey(this)
+    val name: String get() = toReference().stringForLegacyApi() ?: "null"
 
     /**
      * Returns whether this role's value has to be set or not.
@@ -64,31 +63,26 @@ sealed interface IRoleReference {
 
     /**
      * Get whichever is available, but prefer the name.
+     *
+     * Should only be use in the same cases as [getIdOrName], but when a legacy name based persistence is used.
      */
+    @DelicateModelixApi
+    @Deprecated("Name based persistence is legacy and IDs should be used")
     fun getNameOrId(): String
 
     /**
      * Get whichever is available, but prefer the UID.
+     *
+     * Use it only when persisting model data to produce a stable ObjectHash.
+     * When passing a string value to some legacy API use [stringForLegacyApi] or [toString].
      */
+    @DelicateModelixApi
     fun getIdOrName(): String
 
     /**
      * Use this for APIs that still work with strings, but have some implementation that uses [IRoleReference].
      */
-    fun stringForLegacyApi(): String = when (this) {
-        is IRoleReferenceByUID -> {
-            if (this is IRoleReferenceByName) {
-                encodeStringForLegacyApi(getUID(), getSimpleName())
-            } else {
-                encodeStringForLegacyApi(getUID(), null)
-            }
-        }
-        is IRoleReferenceByName -> {
-            encodeStringForLegacyApi(null, getSimpleName())
-        }
-        is IUnclassifiedRoleReference -> getStringValue()
-        NullChildLinkReference -> "null"
-    }
+    fun stringForLegacyApi(): String?
 
     fun matches(unclassified: String?): Boolean
 
@@ -180,7 +174,7 @@ sealed interface IRoleReferenceByUID : IRoleReference {
 
 @Serializable
 sealed class AbstractRoleReference : IRoleReference {
-    override fun toString(): String = stringForLegacyApi()
+    final override fun toString(): String = stringForLegacyApi() ?: "null"
     override fun getUID(): String = throw UnsupportedOperationException()
     override fun getSimpleName(): String = throw UnsupportedOperationException()
     final override fun equals(other: Any?): Boolean {
@@ -211,31 +205,6 @@ sealed class AbstractRoleReference : IRoleReference {
 
     final override fun hashCode(): Int {
         return getIdOrName().hashCode()
-    }
-}
-
-@Deprecated("Will be removed after all usages of IRole.name are migrated.")
-object RoleAccessContext {
-    private val value = ContextValue<Boolean>(false)
-
-    fun <T> runWith(useRoleIds: Boolean, body: () -> T): T {
-        return value.computeWith(useRoleIds, body)
-    }
-
-    /**
-     * Depending on the context returns IRole.getSimpleName() or IRole.getUID()
-     */
-    fun getKey(role: IRole): String {
-        return if (isUsingRoleIds()) {
-            // Some implementations use the name to construct a UID. Avoid endless recursions.
-            runWith(false) { role.toReference().getIdOrName() }
-        } else {
-            role.toReference().getNameOrId()
-        }
-    }
-
-    fun isUsingRoleIds(): Boolean {
-        return value.getValueOrNull() ?: false
     }
 }
 

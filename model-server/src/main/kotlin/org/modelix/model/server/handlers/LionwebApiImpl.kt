@@ -7,6 +7,7 @@ import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.RoutingContext
 import org.modelix.authorization.getUserName
+import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.model.TreeId
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
@@ -375,6 +376,7 @@ private fun LionwebMetaPointer.toPropertyReference(): IPropertyReference {
 }
 
 private fun IRoleReference.toLionWeb(): LionwebMetaPointer {
+    @OptIn(DelicateModelixApi::class) // lionweb explicitly expects the ID only
     return createLionwebMetaPointer(getIdOrName())
 }
 
@@ -400,6 +402,7 @@ private fun createLionwebMetaPointer(id: String): LionwebMetaPointer {
 }
 
 private fun IReferenceLinkReference.toResolveInfoRole(): IPropertyReference {
+    @OptIn(DelicateModelixApi::class) // an ID is derived from an ID, which obviously shouldn't contain any name
     return IPropertyReference.fromId("resolve-info:" + getIdOrName())
 }
 

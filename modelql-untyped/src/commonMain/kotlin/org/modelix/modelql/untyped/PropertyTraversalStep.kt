@@ -36,7 +36,7 @@ class PropertyTraversalStep(val property: IPropertyReference) : MonoTransforming
         return serializationContext.serializer<String?>().stepOutputSerializer(this)
     }
 
-    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = PropertyStepDescriptor(property.getIdOrName(), property)
+    override fun createDescriptor(context: QueryGraphDescriptorBuilder) = PropertyStepDescriptor(property.stringForLegacyApi(), property)
 
     @Serializable
     @SerialName("untyped.property")

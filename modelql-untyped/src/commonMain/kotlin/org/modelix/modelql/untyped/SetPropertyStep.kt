@@ -30,7 +30,7 @@ class SetPropertyStep(val property: IPropertyReference) :
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {
-        return Descriptor(property.getIdOrName(), property)
+        return Descriptor(property.stringForLegacyApi(), property)
     }
 
     override fun requiresWriteAccess(): Boolean {

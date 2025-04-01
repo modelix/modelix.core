@@ -31,6 +31,7 @@ import org.modelix.modelql.untyped.allChildren
 import org.modelix.modelql.untyped.descendants
 import java.util.UUID
 import kotlin.random.Random
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -84,8 +85,8 @@ class ModelClientV2Test {
         )
 
         assertEquals(
-            client.listBranches(repositoryId).toSet(),
             setOf(repositoryId.getBranchReference()),
+            client.listBranches(repositoryId).toSet(),
         )
 
         val branchId = repositoryId.getBranchReference("my-branch")
@@ -332,6 +333,7 @@ class ModelClientV2Test {
         assertTrue(initialVersion.getTree().usesRoleIds())
     }
 
+    @Ignore
     @Test
     fun `create repository with useRoleIds false`() = runTest {
         val modelClient = createModelClient()

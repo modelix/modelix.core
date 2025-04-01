@@ -68,7 +68,7 @@ abstract class GenericModelTree<NodeId>(
     }
 
     override fun getProperties(nodeId: NodeId): IStream.Many<Pair<IPropertyReference, String>> {
-        return resolveNode(nodeId).flatMapIterable { it.properties }.mapFirst { IPropertyReference.fromUnclassifiedString(it) }
+        return resolveNode(nodeId).flatMapIterable { it.properties }.mapFirst { IPropertyReference.fromString(it) }
     }
 
     override fun getReferenceTarget(sourceId: NodeId, role: IReferenceLinkReference): IStream.ZeroOrOne<INodeReference> {
@@ -168,7 +168,7 @@ abstract class GenericModelTree<NodeId>(
             .plus(newNode.properties.asSequence())
             .map { it.first }
             .distinct()
-            .map { IPropertyReference.fromUnclassifiedString(it) }
+            .map { IPropertyReference.fromString(it) }
             .forEach { role: IPropertyReference ->
                 if (oldNode.getProperty(role) != newNode.getProperty(role)) {
                     changes += PropertyChangedEvent(newNode.id, role)
@@ -179,7 +179,7 @@ abstract class GenericModelTree<NodeId>(
             .plus(newNode.references.asSequence())
             .map { it.first }
             .distinct()
-            .map { IReferenceLinkReference.fromUnclassifiedString(it) }
+            .map { IReferenceLinkReference.fromString(it) }
             .forEach { role: IReferenceLinkReference ->
                 if (oldNode.getReferenceTarget(role) != newNode.getReferenceTarget(role)) {
                     changes += ReferenceChangedEvent(newNode.id, role)
@@ -204,7 +204,7 @@ abstract class GenericModelTree<NodeId>(
                     val oldValues = oldChildrenInRole?.map { it.id }
                     val newValues = newChildrenInRole?.map { it.id }
                     if (oldValues != newValues) {
-                        ChildrenChangedEvent(newNode.id, IChildLinkReference.fromNullableUnclassifiedString(role))
+                        ChildrenChangedEvent(newNode.id, IChildLinkReference.fromString(role))
                     } else {
                         null
                     }

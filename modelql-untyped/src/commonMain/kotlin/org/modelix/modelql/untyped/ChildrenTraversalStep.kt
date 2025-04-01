@@ -37,7 +37,7 @@ class ChildrenTraversalStep(val link: IChildLinkReference) : FluxTransformingSte
     @SerialName("untyped.children")
     data class ChildrenStepDescriptor(val role: String?, val link: IChildLinkReference? = null) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
-            return ChildrenTraversalStep(link ?: IChildLinkReference.fromNullableUnclassifiedString(role))
+            return ChildrenTraversalStep(link ?: IChildLinkReference.fromString(role))
         }
 
         override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = ChildrenStepDescriptor(role, link)
@@ -51,4 +51,4 @@ class ChildrenTraversalStep(val link: IChildLinkReference) : FluxTransformingSte
 fun IProducingStep<INode>.children(role: IChildLinkReference): IFluxStep<INode> = ChildrenTraversalStep(role).also { connect(it) }
 
 @Deprecated("provide an IChildLinkReference")
-fun IProducingStep<INode>.children(role: String?): IFluxStep<INode> = children(IChildLinkReference.fromNullableUnclassifiedString(role))
+fun IProducingStep<INode>.children(role: String?): IFluxStep<INode> = children(IChildLinkReference.fromString(role))

@@ -45,7 +45,7 @@ class SetPropertyStep(val property: IPropertyReference) :
     @SerialName("untyped.setProperty")
     data class Descriptor(val role: String, val property: IPropertyReference? = null) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
-            return SetPropertyStep(property ?: IPropertyReference.fromNullableUnclassifiedString(role))
+            return SetPropertyStep(property ?: IPropertyReference.fromString(role))
         }
 
         override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(role, property)
@@ -59,7 +59,7 @@ fun IMonoStep<INode>.setProperty(role: String, value: String?): IMonoStep<INode>
 
 @Deprecated("provide an IPropertyReference")
 fun IMonoStep<INode>.setProperty(role: String, value: IMonoStep<String?>): IMonoStep<INode> {
-    return this.setProperty(IPropertyReference.fromNullableUnclassifiedString(role), value)
+    return this.setProperty(IPropertyReference.fromString(role), value)
 }
 
 fun IMonoStep<INode>.setProperty(role: IPropertyReference, value: IMonoStep<String?>): IMonoStep<INode> {

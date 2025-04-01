@@ -57,7 +57,7 @@ sealed interface IChildLinkReference : ILinkReference {
 
     fun matches(other: IChildLinkReference): Boolean
 
-    override fun matches(unclassified: String?) = matches(fromNullableUnclassifiedString(unclassified))
+    override fun matches(unclassified: String?) = matches(fromString(unclassified))
 
     companion object : IRoleReferenceFactory<IChildLinkReference> {
         override fun fromUnclassifiedString(value: String): IChildLinkReference {
@@ -100,13 +100,11 @@ sealed class AbstractChildLinkReference : AbstractRoleReference(), IChildLinkRef
 
 @Serializable
 object NullChildLinkReference : AbstractChildLinkReference() {
-    override fun getIdOrName(): String {
-        throw NullPointerException("link is a NullChildLinkReference")
-    }
+    override fun toString(): String = "null"
 
-    override fun getNameOrId(): String {
-        throw NullPointerException("link is a NullChildLinkReference")
-    }
+    override fun getIdOrName(): String = "null"
+
+    override fun getNameOrId(): String = "null"
 
     override fun getIdOrNameOrNull(): String? = null
 
@@ -118,7 +116,7 @@ object NullChildLinkReference : AbstractChildLinkReference() {
             is ChildLinkReferenceByName -> false
             is ChildLinkReferenceByUID -> false
             NullChildLinkReference -> true
-            is UnclassifiedChildLinkReference -> other.value == "null"
+            is UnclassifiedChildLinkReference -> false
         }
     }
 }
@@ -128,6 +126,7 @@ data class UnclassifiedChildLinkReference(val value: String) : AbstractChildLink
     init {
         require(value != "null") { "Use NullChildLinkReference" }
     }
+    override fun toString(): String = value
     override fun getStringValue(): String = value
     override fun getIdOrName(): String = value
     override fun getNameOrId(): String = value
@@ -149,6 +148,7 @@ data class ChildLinkReferenceByName(override val name: String) : AbstractChildLi
     init {
         require(name != "null") { "Use NullChildLinkReference" }
     }
+    override fun toString(): String = name
     override fun getSimpleName(): String = name
     override fun getIdOrName(): String = name
     override fun getNameOrId(): String = name
@@ -168,6 +168,7 @@ data class ChildLinkReferenceByUID(val uid: String) : AbstractChildLinkReference
     init {
         require(uid != "null") { "Use NullChildLinkReference" }
     }
+    override fun toString(): String = uid
     override fun getUID(): String = uid
     override fun getIdOrName(): String = uid
     override fun getNameOrId(): String = uid
@@ -188,6 +189,7 @@ data class ChildLinkReferenceByIdAndName(val uid: String, override val name: Str
         require(uid != "null") { "Use NullChildLinkReference" }
         require(name != "null") { "Use NullChildLinkReference" }
     }
+    override fun toString(): String = stringForLegacyApi()
     override fun getUID(): String = uid
     override fun getSimpleName(): String = name
     override fun getIdOrName(): String = uid

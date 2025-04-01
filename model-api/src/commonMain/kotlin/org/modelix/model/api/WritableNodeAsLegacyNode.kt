@@ -30,14 +30,14 @@ data class WritableNodeAsLegacyNode(val node: IWritableNode) : INode, IReplaceab
     }
 
     override fun getChildren(role: String?): Iterable<INode> {
-        return node.getChildren(IChildLinkReference.fromNullableUnclassifiedString(role)).map { it.asLegacyNode() }
+        return node.getChildren(IChildLinkReference.fromString(role)).map { it.asLegacyNode() }
     }
 
     override val allChildren: Iterable<INode>
         get() = node.getAllChildren().map { it.asLegacyNode() }
 
     override fun moveChild(role: String?, index: Int, child: INode) {
-        node.moveChild(IChildLinkReference.fromNullableUnclassifiedString(role), index, child.asWritableNode())
+        node.moveChild(IChildLinkReference.fromString(role), index, child.asWritableNode())
     }
 
     override fun addNewChild(
@@ -45,7 +45,7 @@ data class WritableNodeAsLegacyNode(val node: IWritableNode) : INode, IReplaceab
         index: Int,
         concept: IConcept?,
     ): INode {
-        return node.addNewChild(IChildLinkReference.fromNullableUnclassifiedString(role), index, concept.getReference()).asLegacyNode()
+        return node.addNewChild(IChildLinkReference.fromString(role), index, concept.getReference()).asLegacyNode()
     }
 
     override fun removeChild(child: INode) {
@@ -53,19 +53,19 @@ data class WritableNodeAsLegacyNode(val node: IWritableNode) : INode, IReplaceab
     }
 
     override fun getReferenceTarget(role: String): INode? {
-        return node.getReferenceTarget(IReferenceLinkReference.fromNullableUnclassifiedString(role))?.asLegacyNode()
+        return node.getReferenceTarget(IReferenceLinkReference.fromString(role))?.asLegacyNode()
     }
 
     override fun setReferenceTarget(role: String, target: INode?) {
-        node.setReferenceTarget(IReferenceLinkReference.fromNullableUnclassifiedString(role), target?.asWritableNode())
+        node.setReferenceTarget(IReferenceLinkReference.fromString(role), target?.asWritableNode())
     }
 
     override fun getPropertyValue(role: String): String? {
-        return node.getPropertyValue(IPropertyReference.fromNullableUnclassifiedString(role))
+        return node.getPropertyValue(IPropertyReference.fromString(role))
     }
 
     override fun setPropertyValue(role: String, value: String?) {
-        return node.setPropertyValue(IPropertyReference.fromNullableUnclassifiedString(role), value)
+        return node.setPropertyValue(IPropertyReference.fromString(role), value)
     }
 
     override fun getPropertyRoles(): List<String> {
@@ -94,7 +94,7 @@ data class WritableNodeAsLegacyNode(val node: IWritableNode) : INode, IReplaceab
         concept: IConceptReference?,
     ): INode {
         return node.addNewChild(
-            IChildLinkReference.fromNullableUnclassifiedString(role),
+            IChildLinkReference.fromString(role),
             index,
             concept.upcast(),
         ).asLegacyNode()
@@ -121,7 +121,7 @@ data class WritableNodeAsLegacyNode(val node: IWritableNode) : INode, IReplaceab
     }
 
     override fun setReferenceTarget(role: String, target: INodeReference?) {
-        node.setReferenceTargetRef(IReferenceLinkReference.fromNullableUnclassifiedString(role), target)
+        node.setReferenceTargetRef(IReferenceLinkReference.fromString(role), target)
     }
 
     override fun setReferenceTarget(link: IReferenceLink, target: INode?) {
@@ -152,7 +152,7 @@ data class WritableNodeAsLegacyNode(val node: IWritableNode) : INode, IReplaceab
         index: Int,
         concepts: List<IConceptReference?>,
     ): List<INode> {
-        return node.addNewChildren(IChildLinkReference.fromNullableUnclassifiedString(role), index, concepts.map { it.upcast() }).map { it.asLegacyNode() }
+        return node.addNewChildren(IChildLinkReference.fromString(role), index, concepts.map { it.upcast() }).map { it.asLegacyNode() }
     }
 
     override fun addNewChildren(
@@ -164,7 +164,7 @@ data class WritableNodeAsLegacyNode(val node: IWritableNode) : INode, IReplaceab
     }
 
     override fun getReferenceTargetRef(role: String): INodeReference? {
-        return node.getReferenceTargetRef(IReferenceLinkReference.fromNullableUnclassifiedString(role))
+        return node.getReferenceTargetRef(IReferenceLinkReference.fromString(role))
     }
 
     override fun getReferenceTargetRef(role: IReferenceLink): INodeReference? {

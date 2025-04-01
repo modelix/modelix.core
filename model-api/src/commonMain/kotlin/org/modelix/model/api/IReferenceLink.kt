@@ -31,7 +31,7 @@ sealed interface IReferenceLinkReference : ILinkReference {
 
     fun matches(other: IReferenceLinkReference): Boolean
 
-    override fun matches(unclassified: String?) = unclassified != null && matches(fromUnclassifiedString(unclassified))
+    override fun matches(unclassified: String?) = unclassified != null && matches(fromString(unclassified))
 
     companion object : IRoleReferenceFactory<IReferenceLinkReference> {
         /**

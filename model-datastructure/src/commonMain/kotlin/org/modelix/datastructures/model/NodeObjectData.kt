@@ -138,7 +138,7 @@ data class NodeObjectData<NodeId>(
                     deserializer = this@Deserializer,
                     id = value.id,
                     concept = value.concept,
-                    containment = decodeNullId(value.parent)?.let { it to IChildLinkReference.fromNullableUnclassifiedString(value.role) },
+                    containment = decodeNullId(value.parent)?.let { it to IChildLinkReference.fromString(value.role) },
                     children = value.children,
                     properties = value.properties.toList(),
                     references = value.references.toList(),

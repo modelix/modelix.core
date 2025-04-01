@@ -207,7 +207,7 @@ interface INode {
 
     // <editor-fold desc="non-string based API">
     fun usesRoleIds(): Boolean = false
-    fun getContainmentLink(): IChildLink? = roleInParent?.let { IChildLinkReference.fromNullableUnclassifiedString(it) }?.let { role ->
+    fun getContainmentLink(): IChildLink? = roleInParent?.let { IChildLinkReference.fromString(it) }?.let { role ->
         parent?.concept?.getAllChildLinks()?.find { it.toReference().matches(role) } ?: role.toLegacy()
     }
     fun getChildren(link: IChildLink): Iterable<INode> = getChildren(link.key(this))
@@ -367,7 +367,7 @@ fun INode.resolveProperty(role: String): IProperty {
  *         or null, if this concept has no child link or an exception was thrown during concept resolution
  */
 fun INode.tryResolveChildLink(role: String): IChildLink? {
-    return asReadableNode().tryResolveChildLink(IChildLinkReference.fromNullableUnclassifiedString(role))?.toLegacy()
+    return asReadableNode().tryResolveChildLink(IChildLinkReference.fromString(role))?.toLegacy()
 }
 
 fun IReadableNode.tryResolveChildLink(role: IChildLinkReference): IChildLinkDefinition? {
@@ -385,7 +385,7 @@ fun INode.resolveChildLinkOrFallback(role: String?): IChildLink {
  *         or null, if this node has no reference link or an exception was thrown during concept resolution
  */
 fun INode.tryResolveReferenceLink(role: String): IReferenceLink? {
-    return tryGetConcept()?.tryResolveReferenceLink(IReferenceLinkReference.fromNullableUnclassifiedString(role))?.toLegacy()
+    return tryGetConcept()?.tryResolveReferenceLink(IReferenceLinkReference.fromString(role))?.toLegacy()
 }
 
 fun INode.resolveReferenceLinkOrFallback(role: String): IReferenceLink {
@@ -413,7 +413,7 @@ fun INode.tryResolveProperty(role: String): IProperty? {
  */
 @Deprecated("provide a IChildLinkReference")
 fun INode.isChildRoleOrdered(role: String?): Boolean {
-    return asReadableNode().isOrdered(IChildLinkReference.fromNullableUnclassifiedString(role))
+    return asReadableNode().isOrdered(IChildLinkReference.fromString(role))
     return if (role == null) {
         true
     } else {

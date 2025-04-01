@@ -33,11 +33,6 @@ interface IRepositoriesManager {
     fun createRepository(config: RepositoryConfig, userName: String?): CLVersion
 
     @RequiresTransaction
-    fun getRepositoryConfig(repositoryId: RepositoryId): RepositoryConfig?
-
-    fun findRepositoryByAlias(name: String): RepositoryId?
-
-    @RequiresTransaction
     fun removeRepository(repository: RepositoryId): Boolean
 
     @RequiresTransaction

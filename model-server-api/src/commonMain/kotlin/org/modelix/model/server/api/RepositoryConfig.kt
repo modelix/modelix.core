@@ -2,6 +2,9 @@ package org.modelix.model.server.api
 
 import kotlinx.serialization.Serializable
 
+/**
+ * Specification for the initial version when a new repository is created.
+ */
 @Serializable
 data class RepositoryConfig(
     val legacyNameBasedRoles: Boolean = false,
@@ -46,11 +49,13 @@ data class RepositoryConfig(
     /**
      * Some human-readable identifier. Can be changed later.
      */
+    @Deprecated("Not implemented yet")
     val repositoryName: String,
 
     /**
      * Names under which the repository can also be found. Usually used to store the previous name after renaming.
      */
+    @Deprecated("Not implemented yet")
     val alternativeNames: Set<String> = emptySet(),
 ) {
 

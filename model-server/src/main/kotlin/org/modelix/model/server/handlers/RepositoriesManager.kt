@@ -1,11 +1,8 @@
 package org.modelix.model.server.handlers
 
-import com.google.common.cache.CacheBuilder
-import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.datetime.Clock
-import kotlinx.serialization.json.Json
 import org.modelix.model.ModelMigrations
 import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.VersionMerger
@@ -42,8 +39,6 @@ import java.util.UUID
 class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
     constructor(store: IRepositoryAwareStore) : this(StoreManager(store))
 
-    private val aliasToIdCache = CacheBuilder.newBuilder().maximumSize(1000).build<String, RepositoryId>()
-
     init {
         @RequiresTransaction
         fun migrateLegacyRepositoriesList(infoBranch: IBranch) {
@@ -71,14 +66,6 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         }
 
         doMigrations()
-
-        // assign aliases to existing repositories to prevent reuse
-        @OptIn(RequiresTransaction::class)
-        stores.getTransactionManager().runWrite {
-            for (repository in getRepositories(true) + getRepositories(false)) {
-                assignAlias(repository.id, repository)
-            }
-        }
     }
 
     override fun getStoreManager(): StoreManager = stores
@@ -166,15 +153,6 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
             (existingRepositories + repositoryId).joinToString("\n") { it.id },
             false,
         )
-
-        for (alias in config.getAliases()) {
-            assignAlias(alias, repositoryId)
-            val existingId = findRepositoryByAlias(alias)
-            if (existingId != null && existingId.id != config.repositoryId) {
-                throw HttpException(HttpStatusCode.Conflict, "Repository alias already exists: $alias")
-            }
-        }
-
         stores.genericStore.put(branchListKey(repositoryId, isolated), masterBranch.branchName, false)
         val initialVersion = CLVersion.createRegularVersion(
             id = stores.idGenerator.generate(),
@@ -187,37 +165,6 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         )
         putVersionHash(masterBranch, initialVersion.getContentHash())
         return initialVersion
-    }
-
-    @RequiresTransaction
-    override fun getRepositoryConfig(repositoryId: RepositoryId): RepositoryConfig? {
-        return stores.genericStore.get(repositoryConfigKey(repositoryId))?.let {
-            Json.decodeFromString<RepositoryConfig>(it)
-        }
-    }
-
-    override fun findRepositoryByAlias(alias: String): RepositoryId? {
-        // For security reasons, names cannot be reused for other repositories and will always resolve to the same ID.
-        return aliasToIdCache.get(alias) {
-            @OptIn(RequiresTransaction::class)
-            stores.getTransactionManager().runRead {
-                stores.genericStore.get(repositoryAliasToIdKey(alias))?.let { RepositoryId(it) }
-            }
-        }
-    }
-
-    @RequiresTransaction
-    private fun assignAlias(alias: String, newRepositoryId: RepositoryId) {
-        stores.genericStore.update(repositoryAliasToIdKey(alias)) { existingRepositoryId ->
-            if (existingRepositoryId != newRepositoryId.id) {
-                throw HttpException(
-                    HttpStatusCode.Conflict,
-                    "Repository alias is already assigned to a different repository: $alias",
-                )
-            }
-            aliasToIdCache.put(alias, newRepositoryId)
-            newRepositoryId.id
-        }
     }
 
     @RequiresTransaction
@@ -419,14 +366,6 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         } else {
             return ObjectInRepository.global("$KEY_PREFIX:repositories:${repositoryId.id}:branches")
         }
-    }
-
-    private fun repositoryConfigKey(repository: RepositoryId): ObjectInRepository {
-        return ObjectInRepository(repository.id, "$KEY_PREFIX:config")
-    }
-
-    private fun repositoryAliasToIdKey(name: String): ObjectInRepository {
-        return ObjectInRepository.global("$KEY_PREFIX:repository-alias:$name")
     }
 
     private fun listLegacyRepositories(infoBranch: IBranch): Set<BranchReference> {

@@ -12,9 +12,9 @@ abstract class AbstractArea : IArea {
 
     override fun collectAreas(): List<IArea> = listOf(this)
 
-    override fun <T> executeRead(f: () -> T): T = ContextArea.offer(this, f)
+    override fun <T> executeRead(f: () -> T): T = f()
 
-    override fun <T> executeWrite(f: () -> T): T = ContextArea.offer(this, f)
+    override fun <T> executeWrite(f: () -> T): T = f()
 
     override fun canRead(): Boolean = true
 

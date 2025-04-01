@@ -17,7 +17,6 @@ import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.async.IAsyncMutableTree
 import org.modelix.model.api.runSynchronized
-import org.modelix.model.lazy.NodeNotFoundException
 
 class IncrementalBranch(val branch: IBranch) : IBranch, IBranchWrapper {
 
@@ -525,7 +524,7 @@ data class UnclassifiedNodeDependency(val branch: IBranch, val nodeId: Long) : D
         return try {
             branch.computeReadT { if (it.containsNode(nodeId)) it.getParent(nodeId) else 0L }
                 .let { parent -> if (parent == 0L) null else UnclassifiedNodeDependency(branch, parent) }
-        } catch (ex: NodeNotFoundException) {
+        } catch (ex: org.modelix.datastructures.model.NodeNotFoundException) {
             BranchDependency(branch)
         }
     }

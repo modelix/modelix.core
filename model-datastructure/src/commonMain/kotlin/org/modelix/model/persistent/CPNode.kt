@@ -212,6 +212,37 @@ class CPNode(
 
     override fun getDeserializer() = DESERIALIZER
     override fun getContainmentReferences(): List<ObjectReference<IObjectData>> = emptyList()
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as CPNode
+
+        if (id != other.id) return false
+        if (parentId != other.parentId) return false
+        if (concept != other.concept) return false
+        if (roleInParent != other.roleInParent) return false
+        if (!childrenIds.contentEquals(other.childrenIds)) return false
+        if (!propertyRoles.contentEquals(other.propertyRoles)) return false
+        if (!propertyValues.contentEquals(other.propertyValues)) return false
+        if (!referenceRoles.contentEquals(other.referenceRoles)) return false
+        if (!referenceTargets.contentEquals(other.referenceTargets)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = id.hashCode()
+        result = 31 * result + parentId.hashCode()
+        result = 31 * result + (concept?.hashCode() ?: 0)
+        result = 31 * result + (roleInParent?.hashCode() ?: 0)
+        result = 31 * result + childrenIds.contentHashCode()
+        result = 31 * result + propertyRoles.contentHashCode()
+        result = 31 * result + propertyValues.contentHashCode()
+        result = 31 * result + referenceRoles.contentHashCode()
+        result = 31 * result + referenceTargets.contentHashCode()
+        return result
+    }
 
     companion object : IObjectDeserializer<CPNode> {
         val DESERIALIZER: IObjectDeserializer<CPNode> = this

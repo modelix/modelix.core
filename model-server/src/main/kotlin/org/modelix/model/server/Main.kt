@@ -236,7 +236,9 @@ object Main {
                 routing {
                     HealthApiImpl(repositoriesManager).installRoutes(this)
                     AboutApiImpl.installRoutes(this)
-                    LionwebApiImpl(repositoriesManager).installRoutes(this)
+                    if (System.getenv("MODELIX_LIONWEB_API_ENABLED").toBoolean()) {
+                        LionwebApiImpl(repositoriesManager).installRoutes(this)
+                    }
                     staticResources("/public", "public")
 
                     if (cmdLineArgs.noSwaggerUi) {

@@ -27,10 +27,10 @@ import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.data.asData
-import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
+import org.modelix.model.persistent.getTreeObject
 import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.ModelReplicationServer
@@ -94,7 +94,7 @@ class ReplicatedRepositoryTest {
                         repeat(1000) { _ ->
                             changeGenerator.applyRandomChange()
                         }
-                        println("new tree: " + (branchToChange.transaction.tree as CLTree).hash)
+                        println("new tree: " + (branchToChange.transaction.tree).getTreeObject().getHashString())
                     }
 
                     val syncTime = measureTime {
@@ -231,7 +231,7 @@ class ReplicatedRepositoryTest {
                         id = client.getIdGenerator().generate(),
                         time = null,
                         author = client.getUserId(),
-                        tree = tree as CLTree,
+                        tree = tree,
                         baseVersion = baseVersion,
                         operations = ops.map { it.getOriginalOp() }.toTypedArray(),
                     )
@@ -409,7 +409,7 @@ class ReplicatedRepositoryTest {
     fun mergePerformanceTest() {
         val rand = Random(917563)
         val idGenerator = IdGenerator.getInstance(100)
-        val initialTree = ModelFacade.newLocalTree() as CLTree
+        val initialTree = ModelFacade.newLocalTree()
         val initialVersion = CLVersion.createRegularVersion(
             idGenerator.generate(),
             null,
@@ -424,7 +424,7 @@ class ReplicatedRepositoryTest {
         val createdNodes: MutableSet<String> = Collections.synchronizedSet(TreeSet<String>())
 
         fun mergeVersion(versionToMerge: CLVersion) {
-            headVersion = VersionMerger(initialTree.store, idGenerator).mergeChange(headVersion, versionToMerge)
+            headVersion = VersionMerger(idGenerator).mergeChange(headVersion, versionToMerge)
             nonMergedVersions.remove(versionToMerge)
         }
 
@@ -439,7 +439,7 @@ class ReplicatedRepositoryTest {
                 idGenerator.generate(),
                 null,
                 null,
-                newTree as CLTree,
+                newTree,
                 baseVersion,
                 ops.map { it.getOriginalOp() }.toTypedArray(),
             )
@@ -496,7 +496,7 @@ class ReplicatedRepositoryTest {
     }
 }
 
-private fun IBranch.treeHash(): String = computeReadT { t -> (t.tree as CLTree).hash }
+private fun IBranch.treeHash(): String = computeReadT { t -> (t.tree).getTreeObject().getHashString() }
 
 class ClientSpecificVersionMap(initialEntries: Map<IModelClientV2, IVersion>) {
     private val map = mutableMapOf<IModelClientV2, CLVersion>()

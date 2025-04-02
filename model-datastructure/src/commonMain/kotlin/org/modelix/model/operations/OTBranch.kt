@@ -8,7 +8,7 @@ import org.modelix.model.api.ITransaction
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.runSynchronized
-import org.modelix.model.lazy.CLTree
+import org.modelix.model.persistent.getTreeObject
 
 class OTBranch(
     private val branch: IBranch,
@@ -32,10 +32,10 @@ class OTBranch(
         if (bulkUpdateMode) return body()
         try {
             bulkUpdateMode = true
-            val baseTree = branch.transaction.tree as CLTree
+            val baseTree = branch.transaction.tree
             body()
-            val resultTree = branch.transaction.tree as CLTree
-            currentOperations += BulkUpdateOp(resultTree.resolvedData.ref, subtreeRootNodeId).afterApply(baseTree)
+            val resultTree = branch.transaction.tree
+            currentOperations += BulkUpdateOp(resultTree.getTreeObject().ref, subtreeRootNodeId).afterApply(baseTree)
         } finally {
             bulkUpdateMode = false
         }

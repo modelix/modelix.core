@@ -1,11 +1,14 @@
 package org.modelix.model.persistent
 
+import org.modelix.datastructures.hamt.HamtNode
+import org.modelix.datastructures.objects.IObjectData
+import org.modelix.datastructures.objects.IObjectDeserializer
+import org.modelix.datastructures.objects.IObjectReferenceFactory
+import org.modelix.datastructures.objects.ObjectReference
+import org.modelix.datastructures.objects.getHashString
+import org.modelix.datastructures.patricia.PatriciaNode
+import org.modelix.model.TreeType
 import org.modelix.model.lazy.CLVersion.Companion.INLINED_OPS_LIMIT
-import org.modelix.model.objects.IObjectData
-import org.modelix.model.objects.IObjectDeserializer
-import org.modelix.model.objects.IObjectReferenceFactory
-import org.modelix.model.objects.ObjectReference
-import org.modelix.model.objects.getHashString
 import org.modelix.model.operations.IOperation
 import org.modelix.model.persistent.SerializationUtil.escape
 import org.modelix.model.persistent.SerializationUtil.longFromHex
@@ -17,7 +20,7 @@ data class CPVersion(
     val time: String?,
     val author: String?,
 
-    val treeRef: ObjectReference<CPTree>,
+    val treeRefs: Map<TreeType, ObjectReference<CPTree>>,
     val previousVersion: ObjectReference<CPVersion>?,
 
     /**
@@ -36,7 +39,6 @@ data class CPVersion(
 ) : IObjectData {
 
     init {
-        requireNotNull(treeRef) { "No tree hash provided" }
         if ((operations == null) == (operationsHash == null)) {
             throw RuntimeException("Only one of 'operations' and 'operationsHash' can be provided")
         }
@@ -46,6 +48,11 @@ data class CPVersion(
         if ((mergedVersion1 == null) != (mergedVersion2 == null)) {
             throw RuntimeException("A merge has to specify two versions. Only one was provided.")
         }
+        require(treeRefs.all { it.value.getDeserializer() == CPTree })
+    }
+
+    fun getTree(type: TreeType): ObjectReference<CPTree> {
+        return checkNotNull(treeRefs[type]) { "Version $this doesn't contain a $type tree" }
     }
 
     override fun serialize(): String {
@@ -55,11 +62,32 @@ data class CPVersion(
             } else {
                 operations.joinToString(Separators.OPS) { OperationSerializer.INSTANCE.serialize(it) }
             }
+
+        // The serialization format is chosen in a way that a single legacy tree serializes into a simple ObjectHash,
+        // which makes it backwards compatible.
+        val serializedTrees = treeRefs.entries.sortedBy { it.key.name }.joinToString(Separators.LEVEL2) {
+            val treeImplPrefix = when (it.value.getDeserializer()) {
+                CPTree -> ""
+                is HamtNode.Deserializer<*, *> -> ""
+                is PatriciaNode.Deserializer<*, *> -> {
+                    // S as in [S]tring based node IDs
+                    "S" + Separators.LEVEL4
+                }
+                else -> error("Unsupported tree implementation: ${it.value.getDeserializer()}")
+            }
+            val treeTypeAndHash = if (it.key == TreeType.MAIN) {
+                it.value.getHashString()
+            } else {
+                it.key.name + Separators.MAPPING + it.value.getHashString()
+            }
+            treeImplPrefix + treeTypeAndHash
+        }
+
         val s = Separators.LEVEL1
         return longToHex(id) +
             s + escape(time) +
             s + escape(author) +
-            s + nullAsEmptyString(treeRef.getHashString()) +
+            s + serializedTrees +
             s + nullAsEmptyString(baseVersion?.getHashString()) +
             s + nullAsEmptyString(mergedVersion1?.getHashString()) +
             s + nullAsEmptyString(mergedVersion2?.getHashString()) +
@@ -69,14 +97,13 @@ data class CPVersion(
 
     override fun getContainmentReferences(): List<ObjectReference<out IObjectData>> {
         return listOfNotNull(
-            treeRef,
             previousVersion,
             originalVersion,
             baseVersion,
             mergedVersion1,
             mergedVersion2,
             operationsHash,
-        )
+        ) + treeRefs.values
     }
 
     override fun getNonContainmentReferences(): List<ObjectReference<IObjectData>> {
@@ -104,14 +131,24 @@ data class CPVersion(
                             .filter { cs -> cs.isNotEmpty() }
                             .map { OperationSerializer.INSTANCE.deserialize(it, referenceFactory) }
                     }
+
+                    val treeHashes: Map<TreeType, ObjectReference<CPTree>> = checkNotNull(emptyStringAsNull(parts[3])) { "Tree hash empty in $serialized" }
+                        .split(Separators.LEVEL2)
+                        .associate {
+                            it.split(Separators.MAPPING).let {
+                                when (it.size) {
+                                    1 -> TreeType.MAIN to referenceFactory(it[0], CPTree)
+                                    2 -> TreeType(it[0]) to referenceFactory(it[1], CPTree)
+                                    else -> throw IllegalArgumentException("Invalid tree reference $it in $serialized")
+                                }
+                            }
+                        }
+
                     val data = CPVersion(
                         longFromHex(parts[0]),
                         unescape(parts[1]),
                         unescape(parts[2]),
-                        treeRef = referenceFactory.fromHashString(
-                            checkNotNull(emptyStringAsNull(parts[3])) { "Tree hash empty in $serialized" },
-                            CPTree.DESERIALIZER,
-                        ),
+                        treeRefs = treeHashes,
                         previousVersion = null,
                         originalVersion = null,
                         baseVersion = emptyStringAsNull(parts[4])?.let { referenceFactory(it, CPVersion) },
@@ -123,6 +160,8 @@ data class CPVersion(
                     )
                     return data
                 } else {
+                    // legacy serialization format
+
                     var opsHash: String? = null
                     var ops: List<IOperation>? = null
                     if (HashUtil.isSha256(parts[5])) {
@@ -142,10 +181,7 @@ data class CPVersion(
                         id = longFromHex(parts[0]),
                         time = unescape(parts[1]),
                         author = unescape(parts[2]),
-                        treeRef = referenceFactory(
-                            checkNotNull(emptyStringAsNull(parts[3])) { "Tree hash empty in $serialized" },
-                            CPTree.DESERIALIZER,
-                        ),
+                        treeRefs = mapOf(TreeType.MAIN to referenceFactory(checkNotNull(emptyStringAsNull(parts[3])) { "Tree hash empty in $serialized" }, CPTree)),
                         previousVersion = emptyStringAsNull(parts[4])?.let { referenceFactory(it, DESERIALIZER) },
                         originalVersion = if (parts.size > 7) {
                             emptyStringAsNull(parts[7])?.let { referenceFactory(it, DESERIALIZER) }

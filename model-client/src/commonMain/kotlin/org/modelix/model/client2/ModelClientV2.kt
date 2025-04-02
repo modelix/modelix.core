@@ -12,7 +12,6 @@ import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
-import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.preparePost
@@ -36,24 +35,27 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import mu.KotlinLogging
+import org.modelix.datastructures.objects.IObjectGraph
+import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.kotlin.utils.WeakValueMap
 import org.modelix.kotlin.utils.getOrPut
+import org.modelix.kotlin.utils.runSynchronized
 import org.modelix.model.IVersion
 import org.modelix.model.ObjectDeltaFilter
+import org.modelix.model.TreeId
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INode
 import org.modelix.model.api.IdGeneratorDummy
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.getRootNode
-import org.modelix.model.api.runSynchronized
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.async.LazyLoadingObjectGraph
 import org.modelix.model.async.getAsyncStore
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.BranchReference
-import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.fullDiff
@@ -64,10 +66,10 @@ import org.modelix.model.oauth.OAuthConfig
 import org.modelix.model.oauth.OAuthConfigBuilder
 import org.modelix.model.oauth.TokenProvider
 import org.modelix.model.oauth.TokenProviderAuthConfig
-import org.modelix.model.objects.IObjectGraph
-import org.modelix.model.objects.ObjectHash
 import org.modelix.model.operations.OTBranch
+import org.modelix.model.persistent.CPVersion
 import org.modelix.model.persistent.HashUtil
+import org.modelix.model.server.api.RepositoryConfig
 import org.modelix.model.server.api.v2.ImmutableObjectsStream
 import org.modelix.model.server.api.v2.ObjectHashAndSerializedObject
 import org.modelix.model.server.api.v2.SerializedObject
@@ -79,9 +81,6 @@ import org.modelix.model.server.api.v2.toMap
 import org.modelix.modelql.client.ModelQLClient
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.streams.IExecutableStream
-import org.modelix.streams.IStream
-import org.modelix.streams.SimpleStreamExecutor
-import org.modelix.streams.withSequences
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -192,16 +191,32 @@ class ModelClientV2(
     }
 
     suspend fun initRepository(repository: RepositoryId, useRoleIds: Boolean = true, legacyGlobalStorage: Boolean = false): IVersion {
+        return initRepository(
+            RepositoryConfig(
+                legacyNameBasedRoles = !useRoleIds,
+                legacyGlobalStorage = legacyGlobalStorage,
+                nodeIdType = RepositoryConfig.NodeIdType.STRING,
+                primaryTreeType = RepositoryConfig.TreeType.PATRICIA_TRIE,
+                modelId = TreeId.random().id,
+                repositoryId = repository.id,
+                repositoryName = repository.id,
+                alternativeNames = emptySet(),
+            ),
+        )
+    }
+
+    override suspend fun initRepository(config: RepositoryConfig): IVersion {
+        val repositoryId = RepositoryId(config.repositoryId)
         return httpClient.preparePost {
             url {
-                parameter("useRoleIds", useRoleIds)
                 takeFrom(baseUrl)
-                appendPathSegmentsEncodingSlash("repositories", repository.id, "init")
-                if (legacyGlobalStorage) parameters["legacyGlobalStorage"] = legacyGlobalStorage.toString()
+                appendPathSegmentsEncodingSlash("repositories", repositoryId.id, "init")
             }
             useVersionStreamFormat()
+            contentType(ContentType.Application.Json)
+            setBody(config)
         }.execute { response ->
-            createVersion(repository, null, response.readVersionDelta())
+            createVersion(repositoryId, null, response.readVersionDelta())
         }
     }
 
@@ -289,6 +304,20 @@ class ModelClientV2(
         return doLoadVersion(repositoryId, versionHash, baseVersion)
     }
 
+    override suspend fun lazyLoadVersion(
+        repositoryId: RepositoryId,
+        versionHash: String,
+    ): IVersion {
+        val graph = getObjectGraph(repositoryId)
+        return graph.getStreamExecutor().querySuspending {
+            graph.fromHashString(versionHash, CPVersion).resolve()
+        }.let { CLVersion(it) }
+    }
+
+    override suspend fun lazyLoadVersion(branch: BranchReference): IVersion {
+        return lazyLoadVersion(branch.repositoryId, pullHash(branch))
+    }
+
     private suspend fun doLoadVersion(
         repositoryId: RepositoryId?,
         versionHash: String,
@@ -359,7 +388,7 @@ class ModelClientV2(
     override suspend fun pushObjects(repository: RepositoryId, objects: Sequence<ObjectHashAndSerializedObject>) {
         pushObjects(
             repository,
-            SimpleStreamExecutor().withSequences().queryManyLater { IStream.many(objects) },
+            IExecutableStream.many(objects),
             false,
         )
     }
@@ -547,7 +576,7 @@ class ModelClientV2(
     }
 
     companion object {
-        private val LOG = mu.KotlinLogging.logger {}
+        private val LOG = KotlinLogging.logger {}
         fun builder(): ModelClientV2Builder = ModelClientV2PlatformSpecificBuilder()
     }
 }
@@ -706,7 +735,7 @@ abstract class ModelClientV2Builder {
     protected abstract fun createHttpClient(): HttpClient
 
     companion object {
-        private val LOG = mu.KotlinLogging.logger {}
+        private val LOG = KotlinLogging.logger {}
 
         fun normalizeUrl(url: String): String {
             return buildUrl {
@@ -826,7 +855,7 @@ fun IVersion.runWrite(idGenerator: IIdGenerator, author: String?, body: (IBranch
     return CLVersion.createRegularVersion(
         id = idGenerator.generate(),
         author = author,
-        tree = newTree as CLTree,
+        tree = newTree,
         baseVersion = baseVersion as CLVersion?,
         operations = ops.map { it.getOriginalOp() }.toTypedArray(),
     )

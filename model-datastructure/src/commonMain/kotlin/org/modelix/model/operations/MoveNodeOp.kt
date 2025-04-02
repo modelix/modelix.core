@@ -1,5 +1,6 @@
 package org.modelix.model.operations
 
+import org.modelix.datastructures.model.asModelTree
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 
@@ -13,8 +14,9 @@ class MoveNodeOp(val childId: Long, val targetPosition: PositionInRole) : Abstra
     }
 
     override fun apply(transaction: IWriteTransaction): IAppliedOperation {
-        val sourcePosition = getNodePosition(transaction.tree, childId)
-        transaction.moveChild(targetPosition.nodeId, targetPosition.role, targetPosition.index, childId)
+        val tree = transaction.tree.asModelTree()
+        val sourcePosition = getNodePosition(tree, childId)
+        transaction.moveChild(targetPosition.nodeId, targetPosition.role.stringForLegacyApi(), targetPosition.index, childId)
         return Applied(sourcePosition)
     }
 
@@ -37,7 +39,7 @@ class MoveNodeOp(val childId: Long, val targetPosition: PositionInRole) : Abstra
     override fun captureIntend(tree: ITree): IOperationIntend {
         val capturedTargetPosition = CapturedInsertPosition(
             targetPosition.index,
-            tree.getChildren(targetPosition.nodeId, targetPosition.role).toList().toLongArray(),
+            tree.getChildren(targetPosition.nodeId, targetPosition.role.stringForLegacyApi()).toList().toLongArray(),
         )
 
         return Intend(capturedTargetPosition)
@@ -46,7 +48,7 @@ class MoveNodeOp(val childId: Long, val targetPosition: PositionInRole) : Abstra
     inner class Intend(val capturedTargetPosition: CapturedInsertPosition) : IOperationIntend {
         override fun restoreIntend(tree: ITree): List<IOperation> {
             if (!tree.containsNode(childId)) return listOf(NoOp())
-            val newSourcePosition = getNodePosition(tree, childId)
+            val newSourcePosition = getNodePosition(tree.asModelTree(), childId)
             if (!tree.containsNode(targetPosition.nodeId)) {
                 return listOf(
                     withPos(getDetachedNodesEndPosition(tree)),
@@ -54,7 +56,9 @@ class MoveNodeOp(val childId: Long, val targetPosition: PositionInRole) : Abstra
             }
             if (getAncestors(tree, targetPosition.nodeId).contains(childId)) return listOf(NoOp())
             val newTargetPosition = if (tree.containsNode(targetPosition.nodeId)) {
-                val newTargetIndex = capturedTargetPosition.findIndex(tree.getChildren(targetPosition.nodeId, targetPosition.role).toList().toLongArray())
+                val newTargetIndex = capturedTargetPosition.findIndex(
+                    tree.getChildren(targetPosition.nodeId, targetPosition.role.stringForLegacyApi()).toList().toLongArray(),
+                )
                 targetPosition.withIndex(newTargetIndex)
             } else {
                 getDetachedNodesEndPosition(tree)

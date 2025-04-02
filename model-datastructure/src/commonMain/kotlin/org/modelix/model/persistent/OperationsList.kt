@@ -1,10 +1,10 @@
 package org.modelix.model.persistent
 
-import org.modelix.model.objects.IObjectData
-import org.modelix.model.objects.IObjectDeserializer
-import org.modelix.model.objects.IObjectReferenceFactory
-import org.modelix.model.objects.ObjectReference
-import org.modelix.model.objects.getHashString
+import org.modelix.datastructures.objects.IObjectData
+import org.modelix.datastructures.objects.IObjectDeserializer
+import org.modelix.datastructures.objects.IObjectReferenceFactory
+import org.modelix.datastructures.objects.ObjectReference
+import org.modelix.datastructures.objects.getHashString
 import org.modelix.model.operations.IOperation
 import org.modelix.streams.IStream
 

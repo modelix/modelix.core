@@ -12,7 +12,6 @@ import org.modelix.model.api.SerializedNodeReference
 import org.modelix.model.api.async.IAsyncNode
 import org.modelix.model.api.async.INodeWithAsyncSupport
 import org.modelix.model.api.async.NodeAsAsyncNode
-import org.modelix.model.api.key
 import org.modelix.model.api.resolve
 import org.modelix.model.api.resolveChildLinkOrFallback
 import org.modelix.model.api.resolvePropertyOrFallback
@@ -52,13 +51,12 @@ import org.modelix.modelql.untyped.resolve
 import org.modelix.modelql.untyped.roleInParent
 import org.modelix.modelql.untyped.setProperty
 import org.modelix.modelql.untyped.setReference
+import org.modelix.streams.BlockingStreamExecutor
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
-import org.modelix.streams.SimpleStreamExecutor
-import org.modelix.streams.withFlows
 
 class ModelQLNodeAsAsyncNode(node: ModelQLNode) : NodeAsAsyncNode(node) {
-    override fun getStreamExecutor(): IStreamExecutor = SimpleStreamExecutor().withFlows()
+    override fun getStreamExecutor(): IStreamExecutor = BlockingStreamExecutor
 }
 
 abstract class ModelQLNode(val client: ModelQLClient) :
@@ -119,7 +117,7 @@ abstract class ModelQLNode(val client: ModelQLClient) :
         get() = blockingQuery { it.parent().orNull() }
 
     override fun getChildren(role: IChildLink): Iterable<INode> {
-        return blockingQuery { it.children(role.key()).toList() }
+        return blockingQuery { it.children(role.toReference().stringForLegacyApi()).toList() }
     }
 
     override fun getChildren(role: String?): Iterable<INode> {
@@ -256,11 +254,12 @@ class ModelQLRootNode(client: ModelQLClient) : ModelQLNodeWithConceptCache(clien
         get() = ModelQLRootNodeReference()
 }
 
-class ModelQLRootNodeReference : INodeReference {
+class ModelQLRootNodeReference : INodeReference() {
     override fun resolveNode(area: IArea?): INode? {
         if (area is ModelQLArea) return ModelQLRootNode(area.client)
         return area?.resolveNode(this)
     }
+    override fun serialize(): String = TODO("Not yet implemented")
 }
 
 internal fun INodeReference.toSerializedRef() = when (this) {

@@ -6,7 +6,6 @@ import jetbrains.mps.project.facets.JavaModuleFacet
 import jetbrains.mps.project.structure.modules.ModuleReference
 import jetbrains.mps.smodel.GlobalModelAccess
 import jetbrains.mps.smodel.ModelImports
-import jetbrains.mps.smodel.SNodePointer
 import org.jetbrains.mps.openapi.model.SNodeReference
 import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
@@ -30,7 +29,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
         }
 
         val serialized = ref.serialize().substringAfter("${MPSModelReference.PREFIX}:")
-        val modelRef = PersistenceFacade.getInstance().createModelReference(serialized)
+        val modelRef = MPSReferenceParser.parseSModelReference(serialized)
 
         return modelRef.resolve(repository)?.let { MPSModelAsNode(it).asLegacyNode() }
     }
@@ -170,7 +169,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
             serialized.startsWith("mps:") -> serialized.substringAfter("mps:")
             else -> return null
         }
-        return resolveSNodeReferenceToMPSNode(SNodePointer.deserialize(serializedMPSRef))
+        return resolveSNodeReferenceToMPSNode(MPSReferenceParser.parseSNodeReference(serializedMPSRef))
     }
 
     private fun resolveSNodeReferenceToMPSNode(sNodeReference: SNodeReference): INode? {
@@ -224,14 +223,14 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
             val serializedModelRef = serialized
                 .substringAfter("${MPSModelImportReference.PREFIX}:")
                 .substringBefore(MPSModelImportReference.SEPARATOR)
-            PersistenceFacade.getInstance().createModelReference(serializedModelRef)
+            MPSReferenceParser.parseSModelReference(serializedModelRef)
         }
 
         val importingModelRef = if (ref is MPSModelImportReference) {
             ref.importingModel
         } else {
             val serializedModelRef = serialized.substringAfter(MPSModelImportReference.SEPARATOR)
-            PersistenceFacade.getInstance().createModelReference(serializedModelRef)
+            MPSReferenceParser.parseSModelReference(serializedModelRef)
         }
 
         val importingModel = importingModelRef.resolve(repository) ?: return null

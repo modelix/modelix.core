@@ -2,7 +2,10 @@ package org.modelix.model.api
 
 import org.modelix.model.area.IArea
 
-data class PNodeReference(val id: Long, val branchId: String) : INodeReference {
+data class PNodeReference(val id: Long, val treeId: String) : INodeReference() {
+    @Deprecated("Renamed to treeId", ReplaceWith("treeId"))
+    val branchId: String get() = treeId
+
     override fun resolveNode(area: IArea?): INode? {
         return area?.resolveNode(this)
     }
@@ -47,6 +50,11 @@ data class PNodeReference(val id: Long, val branchId: String) : INodeReference {
                 }
             }
             return null
+        }
+
+        fun tryConvert(ref: INodeReference): PNodeReference? {
+            if (ref is PNodeReference) return ref
+            return tryDeserialize(ref.serialize())
         }
     }
 }

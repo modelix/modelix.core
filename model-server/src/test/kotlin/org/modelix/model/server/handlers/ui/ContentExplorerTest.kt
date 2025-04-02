@@ -19,7 +19,7 @@ import org.jsoup.nodes.Element
 import org.jsoup.select.Evaluator
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.ITree
-import org.modelix.model.api.NodeReferenceById
+import org.modelix.model.api.NodeReference
 import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.addNewChild
 import org.modelix.model.client.successful
@@ -79,7 +79,7 @@ class ContentExplorerTest {
         val repoId = RepositoryId("node-inspector-null-ref")
         val branchRef = repoId.getBranchReference("master")
         val refLinkName = "myUnresolvableRef"
-        val refLinkTargetRef = NodeReferenceById("notAResolvableId")
+        val refLinkTargetRef = NodeReference("notAResolvableId")
 
         modelClient.initRepository(repoId)
 

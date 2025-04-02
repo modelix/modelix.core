@@ -17,7 +17,6 @@ import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.lazy.BranchReference
-import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
@@ -160,7 +159,7 @@ class ReplicatedModelTest {
             client.getIdGenerator().generate(),
             null,
             null,
-            newTree as CLTree,
+            newTree,
             baseVersion,
             ops.map { it.getOriginalOp() }.toTypedArray(),
         )

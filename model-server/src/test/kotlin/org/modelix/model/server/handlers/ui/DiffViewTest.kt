@@ -34,9 +34,10 @@ import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITree
 import org.modelix.model.client.IdGenerator
-import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.lazy.resolveElementSynchronous
+import org.modelix.model.lazy.root
 import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPNodeRef
 import org.modelix.model.server.handlers.RepositoriesManager
@@ -618,7 +619,7 @@ private suspend fun HttpResponse.getDiffSection(id: String): Element {
 
 private fun createCLVersion(baseVersion: CLVersion? = null, treeModification: (ITree) -> ITree): CLVersion {
     val baseTree = baseVersion?.getTree() ?: ModelFacade.newLocalTree()
-    val tree = treeModification(baseTree) as CLTree
+    val tree = treeModification(baseTree)
 
     return CLVersion.createRegularVersion(
         id = IdGenerator.getInstance(1).generate(),

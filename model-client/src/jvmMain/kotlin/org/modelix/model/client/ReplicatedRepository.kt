@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import org.apache.commons.lang3.mutable.MutableObject
+import org.modelix.datastructures.model.asModelTree
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IBranchListener
@@ -109,7 +110,7 @@ actual open class ReplicatedRepository actual constructor(
             if (ops.isEmpty()) {
                 return null
             }
-            newLocalVersion = createVersion(opsAndTree.second as CLTree, ops, localBase)
+            newLocalVersion = createVersion(opsAndTree.second, ops, localBase)
             localVersion = newLocalVersion
             divergenceTime = 0
         }
@@ -176,8 +177,7 @@ actual open class ReplicatedRepository actual constructor(
                 divergenceTime = 0
                 localBranch.runWrite {
                     val newTree = newVersion.getTree()
-                    val currentTree = localBranch.transaction.tree as CLTree?
-                    if (getHash(newTree) != getHash(currentTree)) {
+                    if (newVersion.getTreeReference().getHash() != localBranch.transaction.tree.asModelTree().asObject().getHash()) {
                         localBranch.writeTransaction.tree = newTree
                     }
                 }
@@ -185,7 +185,7 @@ actual open class ReplicatedRepository actual constructor(
         }
     }
 
-    fun createVersion(tree: CLTree, operations: Array<IOperation>, previousVersion: CLVersion?): CLVersion {
+    fun createVersion(tree: ITree, operations: Array<IOperation>, previousVersion: CLVersion?): CLVersion {
         checkDisposed()
         val time = LocalDateTime.now().toString()
         return CLVersion.createRegularVersion(
@@ -223,30 +223,26 @@ actual open class ReplicatedRepository actual constructor(
         private fun getHash(v: CLVersion?): String? {
             return v?.getContentHash()
         }
-
-        private fun getHash(v: CLTree?): String? {
-            return v?.hash
-        }
     }
 
     init {
         val versionHash = client[branchReference.getKey()]
         val store = client.storeCache
         var initialVersion = if (versionHash.isNullOrEmpty()) null else loadFromHash(versionHash, store)
-        val initialTree = MutableObject<CLTree>()
+        var initialTree: ITree
         if (initialVersion == null) {
-            initialTree.setValue(CLTree.builder(store).useRoleIds(false).repositoryId(branchReference.repositoryId).build())
-            initialVersion = createVersion(initialTree.value, arrayOf(), null)
+            initialTree = CLTree.builder(store).useRoleIds(false).build()
+            initialVersion = createVersion(initialTree, arrayOf(), null)
             client.asyncStore.put(branchReference.getKey(), initialVersion.getContentHash())
         } else {
-            initialTree.setValue(CLTree(initialVersion.treeRef.resolveNow()))
+            initialTree = initialVersion.getTree()
         }
 
         // prefetch to avoid HTTP request in command listener
-        SharedExecutors.FIXED.execute { initialTree.value.getChildren(ITree.ROOT_ID, ITree.DETACHED_NODES_ROLE) }
+        SharedExecutors.FIXED.execute { initialTree.getChildren(ITree.ROOT_ID, ITree.DETACHED_NODES_ROLE) }
         localVersion = initialVersion
         remoteVersion = initialVersion
-        localBranch = PBranch(initialTree.value, client.idGenerator)
+        localBranch = PBranch(initialTree, client.idGenerator)
         localOTBranch = OTBranch(localBranch, client.idGenerator)
         merger = VersionMerger(store, client.idGenerator)
         versionChangeDetector = object : VersionChangeDetector(client, branchReference.getKey(), coroutineScope) {

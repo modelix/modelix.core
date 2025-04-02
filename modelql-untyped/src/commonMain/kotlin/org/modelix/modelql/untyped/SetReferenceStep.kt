@@ -30,7 +30,7 @@ class SetReferenceStep(val link: IReferenceLinkReference) :
     }
 
     override fun createDescriptor(context: QueryGraphDescriptorBuilder): StepDescriptor {
-        return Descriptor(link.getIdOrName(), link)
+        return Descriptor(link.stringForLegacyApi(), link)
     }
 
     override fun requiresWriteAccess(): Boolean {
@@ -45,7 +45,7 @@ class SetReferenceStep(val link: IReferenceLinkReference) :
     @SerialName("untyped.setReference")
     data class Descriptor(val role: String, val link: IReferenceLinkReference?) : StepDescriptor() {
         override fun createStep(context: QueryDeserializationContext): IStep {
-            return SetReferenceStep(link ?: IReferenceLinkReference.fromUnclassifiedString(role))
+            return SetReferenceStep(link ?: IReferenceLinkReference.fromString(role))
         }
 
         override fun doNormalize(idReassignments: IdReassignments): StepDescriptor = Descriptor(role, link)
@@ -61,7 +61,7 @@ fun IMonoStep<INode>.setReference(role: IReferenceLinkReference, target: IMonoSt
 
 @Deprecated("provide an IReferenceLinkReference")
 fun IMonoStep<INode>.setReference(role: String, target: IMonoStep<INode?>): IMonoStep<INode> {
-    return setReference(IReferenceLinkReference.fromUnclassifiedString(role), target)
+    return setReference(IReferenceLinkReference.fromString(role), target)
 }
 
 @Deprecated("provide an IReferenceLinkReference")

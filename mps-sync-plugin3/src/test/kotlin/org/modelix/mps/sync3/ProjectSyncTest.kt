@@ -17,7 +17,6 @@ import org.modelix.model.api.async.PropertyChangedEvent
 import org.modelix.model.api.async.TreeChangeEvent
 import org.modelix.model.api.getDescendants
 import org.modelix.model.api.getRootNode
-import org.modelix.model.api.key
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.runWriteOnBranch
 import org.modelix.model.data.NodeData
@@ -172,8 +171,8 @@ class ProjectSyncTest : MPSTestBase() {
         assertEquals(1, changes.size)
         val change = changes.single() as PropertyChangedEvent
         assertEquals(MPSProperty(nameProperty).getUID(), change.role.getUID())
-        assertEquals("MyClass", version1.getTree().getProperty(change.nodeId, change.role.key(version1.getTree())))
-        assertEquals("Changed", version2.getTree().getProperty(change.nodeId, change.role.key(version1.getTree())))
+        assertEquals("MyClass", version1.getTree().getProperty(change.nodeId, change.role.stringForLegacyApi()))
+        assertEquals("Changed", version2.getTree().getProperty(change.nodeId, change.role.stringForLegacyApi()))
     }
 
     fun `test descendants of new node are synchronized`() = runChangeInMpsTest { classNode ->

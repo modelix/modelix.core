@@ -10,6 +10,7 @@ kotlin {
             dependencies {
                 api(project(":kotlin-utils"))
                 api(project(":model-api"))
+                api(project(":datastructures"))
                 implementation(libs.kotlin.coroutines.core)
                 implementation(libs.kotlin.logging)
                 implementation(libs.kotlin.datetime)

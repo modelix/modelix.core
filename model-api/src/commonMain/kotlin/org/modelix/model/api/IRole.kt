@@ -1,7 +1,9 @@
 package org.modelix.model.api
 
 import kotlinx.serialization.Serializable
-import org.modelix.kotlin.utils.ContextValue
+import org.modelix.kotlin.utils.DelicateModelixApi
+import org.modelix.kotlin.utils.urlDecode
+import org.modelix.kotlin.utils.urlEncode
 
 /**
  * An [IRole] is a structural feature of a concept.
@@ -31,7 +33,7 @@ interface IRole : IRoleDefinition {
     override fun getSimpleName(): String
 
     @Deprecated("Use getSimpleName() when showing it to the user or when accessing the model use the INode functions that accept an IRole or use IRole.key(...)")
-    val name: String get() = RoleAccessContext.getKey(this)
+    val name: String get() = toReference().stringForLegacyApi() ?: "null"
 
     /**
      * Returns whether this role's value has to be set or not.
@@ -61,16 +63,81 @@ sealed interface IRoleReference {
 
     /**
      * Get whichever is available, but prefer the name.
+     *
+     * Should only be use in the same cases as [getIdOrName], but when a legacy name based persistence is used.
      */
+    @DelicateModelixApi
+    @Deprecated("Name based persistence is legacy and IDs should be used")
     fun getNameOrId(): String
 
     /**
      * Get whichever is available, but prefer the UID.
+     *
+     * Use it only when persisting model data to produce a stable ObjectHash.
+     * When passing a string value to some legacy API use [stringForLegacyApi] or [toString].
      */
+    @DelicateModelixApi
     fun getIdOrName(): String
+
+    /**
+     * Use this for APIs that still work with strings, but have some implementation that uses [IRoleReference].
+     */
+    fun stringForLegacyApi(): String?
+
+    fun matches(unclassified: String?): Boolean
 
     @Deprecated("use IRoleReference or IRoleDefinition instead of IRole")
     fun toLegacy(): IRole
+
+    companion object {
+        fun <T : IRoleReference> decodeStringFromLegacyApi(value: String?, factory: IRoleReferenceFactory<T>): T {
+            if (value == null || value == "null") return factory.fromNull()
+            val parts = value.split(":")
+            if (parts.size != 3 || parts[0] != "") return factory.fromUnclassifiedString(value)
+            val id = parts[1].takeIf { it.isNotEmpty() }?.urlDecode()
+            val name = parts[2].takeIf { it.isNotEmpty() }?.urlDecode()
+            return if (id != null) {
+                if (name != null) {
+                    factory.fromIdAndName(id, name)
+                } else {
+                    factory.fromId(id)
+                }
+            } else {
+                if (name != null) {
+                    factory.fromName(name)
+                } else {
+                    throw IllegalArgumentException("No ID and no name provided: $value")
+                }
+            }
+        }
+
+        fun encodeStringForLegacyApi(id: String?, name: String?): String {
+            return ":" + (id?.urlEncode() ?: "") + ":" + (name?.urlEncode() ?: "")
+        }
+
+        fun requireNotForLegacyApi(value: String?) {
+            if (value == null) return
+            require(value.count { it == ':' } != 3) {
+                "Use .fromLegacyApi() for this string: $value"
+            }
+        }
+    }
+}
+
+interface IRoleReferenceFactory<E : IRoleReference> {
+    fun fromNull(): E = throw IllegalArgumentException("Null values not allowed")
+
+    /**
+     * Use [fromString] instead, unless you are sure you want to create an instance of an Unclassified...Reference.
+     */
+    @DelicateModelixApi
+    fun fromUnclassifiedString(value: String): E
+
+    fun fromName(value: String): E
+    fun fromId(value: String): E
+    fun fromIdAndName(id: String?, name: String?): E
+    fun fromLegacyApi(value: String?): E = IRoleReference.decodeStringFromLegacyApi(value, this)
+    fun fromString(value: String?): E = fromLegacyApi(value)
 }
 
 fun IRoleReference.matches(other: IRoleReference): Boolean {
@@ -107,32 +174,37 @@ sealed interface IRoleReferenceByUID : IRoleReference {
 
 @Serializable
 sealed class AbstractRoleReference : IRoleReference {
+    final override fun toString(): String = stringForLegacyApi() ?: "null"
     override fun getUID(): String = throw UnsupportedOperationException()
     override fun getSimpleName(): String = throw UnsupportedOperationException()
-}
+    final override fun equals(other: Any?): Boolean {
+        if (other !is IRoleReference) return false
 
-@Deprecated("Will be removed after all usages of IRole.name are migrated.")
-object RoleAccessContext {
-    private val value = ContextValue<Boolean>(false)
+        /**
+         Using [matches] would violate this requirement:
 
-    fun <T> runWith(useRoleIds: Boolean, body: () -> T): T {
-        return value.computeWith(useRoleIds, body)
+         It is transitive: for any non-null reference values x, y, and z, if x.equals(y) returns true and
+         y.equals(z) returns true, then x.equals(z) should return true.
+
+         For the three reference
+         - x of type ByIdAndName with the ID '123' and the name 'abc'
+         - y of type ByUID with the ID '123'
+         - z of type ByName with the name 'abc'
+         x.matches(y) is true, x.matches(z) is true, but y.matches(z) is false.
+
+         By comparing the values of [getIdOrName] x.equals(y) is true, x.equals(z) is false and y.equals(z) is false.
+
+         References should be compared using [matches] and not be used as a key in a map.
+         This implementation exists to support some like `List<IRoleReference>.distinct()`.
+
+         This implementation is only problematic when name based references are used, which are considered legacy.
+         */
+
+        return getIdOrName() == other.getIdOrName()
     }
 
-    /**
-     * Depending on the context returns IRole.getSimpleName() or IRole.getUID()
-     */
-    fun getKey(role: IRole): String {
-        return if (isUsingRoleIds()) {
-            // Some implementations use the name to construct a UID. Avoid endless recursions.
-            runWith(false) { role.toReference().getIdOrName() }
-        } else {
-            role.toReference().getNameOrId()
-        }
-    }
-
-    fun isUsingRoleIds(): Boolean {
-        return value.getValueOrNull() ?: false
+    final override fun hashCode(): Int {
+        return getIdOrName().hashCode()
     }
 }
 

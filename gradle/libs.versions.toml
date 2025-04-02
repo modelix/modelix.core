@@ -48,6 +48,7 @@ keycloak = "26.0.4"
 kotlin-stdlib-common = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-common", version.ref = "kotlin" }
 kotlin-stdlib-jdk8 = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8", version.ref = "kotlin" }
 kotlin-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }
+kotlin-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlinSerialization" }
 kotlin-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinSerialization" }
 kotlin-serialization-yaml = { group = "com.charleskorn.kaml", name = "kaml", version = "0.74.0" }
 kotlin-logging = { group = "io.github.microutils", name = "kotlin-logging", version = "3.0.5" }
@@ -149,3 +150,5 @@ reaktive-coroutines-interop = { group = "org.modelix.reaktive", name = "coroutin
 
 nimbus-jose-jwt = { group = "com.nimbusds", name = "nimbus-jose-jwt", version = "10.0.2" }
 bouncycastle-bcpkix = { group = "org.bouncycastle", name = "bcpkix-lts8on", version = "2.73.7" }
+
+kotlincrypto-sha2 = { module = "org.kotlincrypto.hash:sha2", version = "0.7.0" }

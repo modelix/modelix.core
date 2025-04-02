@@ -1,3 +1,4 @@
+import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitor
 import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.PBranch
@@ -8,12 +9,11 @@ import org.modelix.model.api.getRootNode
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.createObjectStoreCache
+import org.modelix.model.lazy.resolveElementSynchronous
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.RoleInNode
 import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.persistent.SerializationUtil
-import org.modelix.streams.IStream
-import org.modelix.streams.useSequences
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -51,7 +51,7 @@ class TreeDiffTest {
         test(569L, 50, 10)
     }
 
-    fun test(seed: Long, initialSize: Int, numModifications: Int) = IStream.useSequences {
+    fun test(seed: Long, initialSize: Int, numModifications: Int) {
         val rand = Random(seed)
         val store = MapBasedStore()
         val storeCache = createObjectStoreCache(store)
@@ -67,7 +67,7 @@ class TreeDiffTest {
         // println("Applied Ops:")
         // appliedOps.forEach { println("    $it") }
 
-        val expectedDiffResult = logicalDiff(tree1 as CLTree, tree2 as CLTree)
+        val expectedDiffResult = logicalDiff(tree1, tree2)
 
         val actualDiffResult = DiffCollector()
         tree2.visitChanges(tree1, actualDiffResult)
@@ -78,7 +78,7 @@ class TreeDiffTest {
         actualDiffResultEx.assertEquals(expectedDiffResult)
     }
 
-    private fun logicalDiff(oldTree: CLTree, newTree: CLTree): DiffData {
+    private fun logicalDiff(oldTree: ITree, newTree: ITree): DiffData {
         val diffData: DiffData = DiffData()
         val newNodes = TreePointer(newTree).getRootNode().getDescendants(true).map { newTree.resolveElementSynchronous((it as PNodeAdapter).nodeId) }.associateBy { it.id }
         val oldNodes = TreePointer(oldTree).getRootNode().getDescendants(true).map { oldTree.resolveElementSynchronous((it as PNodeAdapter).nodeId) }.associateBy { it.id }

@@ -44,6 +44,7 @@ import org.modelix.model.server.handlers.HealthApiImpl
 import org.modelix.model.server.handlers.HttpException
 import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
+import org.modelix.model.server.handlers.LionwebApiImpl
 import org.modelix.model.server.handlers.MetricsApiImpl
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.Paths.registerJsonTypes
@@ -235,6 +236,9 @@ object Main {
                 routing {
                     HealthApiImpl(repositoriesManager).installRoutes(this)
                     AboutApiImpl.installRoutes(this)
+                    if (System.getenv("MODELIX_LIONWEB_API_ENABLED").toBoolean()) {
+                        LionwebApiImpl(repositoriesManager).installRoutes(this)
+                    }
                     staticResources("/public", "public")
 
                     if (cmdLineArgs.noSwaggerUi) {

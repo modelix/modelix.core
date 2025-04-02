@@ -1,14 +1,14 @@
 package org.modelix.model.persistent
 
+import org.modelix.datastructures.objects.IObjectData
+import org.modelix.datastructures.objects.IObjectDeserializer
+import org.modelix.datastructures.objects.IObjectReferenceFactory
+import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.model.lazy.COWArrays.copy
 import org.modelix.model.lazy.COWArrays.insert
 import org.modelix.model.lazy.COWArrays.remove
 import org.modelix.model.lazy.COWArrays.removeAt
 import org.modelix.model.lazy.COWArrays.set
-import org.modelix.model.objects.IObjectData
-import org.modelix.model.objects.IObjectDeserializer
-import org.modelix.model.objects.IObjectReferenceFactory
-import org.modelix.model.objects.ObjectReference
 import org.modelix.model.persistent.CPNodeRef.Companion.fromString
 import org.modelix.model.persistent.SerializationUtil.escape
 import org.modelix.model.persistent.SerializationUtil.longFromHex
@@ -16,7 +16,7 @@ import org.modelix.model.persistent.SerializationUtil.longToHex
 import org.modelix.model.persistent.SerializationUtil.unescape
 import kotlin.jvm.JvmStatic
 
-class CPNode private constructor(
+class CPNode(
     val id: Long,
     val concept: String?,
     val parentId: Long,
@@ -26,7 +26,7 @@ class CPNode private constructor(
     val propertyValues: Array<String>,
     val referenceRoles: Array<String>,
     val referenceTargets: Array<CPNodeRef>,
-) : ITreeData {
+) : IObjectData {
 
     override fun serialize(): String {
         val sb = StringBuilder()
@@ -212,8 +212,39 @@ class CPNode private constructor(
 
     override fun getDeserializer() = DESERIALIZER
     override fun getContainmentReferences(): List<ObjectReference<IObjectData>> = emptyList()
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
 
-    companion object : ITreeRelatedDeserializer<CPNode> {
+        other as CPNode
+
+        if (id != other.id) return false
+        if (parentId != other.parentId) return false
+        if (concept != other.concept) return false
+        if (roleInParent != other.roleInParent) return false
+        if (!childrenIds.contentEquals(other.childrenIds)) return false
+        if (!propertyRoles.contentEquals(other.propertyRoles)) return false
+        if (!propertyValues.contentEquals(other.propertyValues)) return false
+        if (!referenceRoles.contentEquals(other.referenceRoles)) return false
+        if (!referenceTargets.contentEquals(other.referenceTargets)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = id.hashCode()
+        result = 31 * result + parentId.hashCode()
+        result = 31 * result + (concept?.hashCode() ?: 0)
+        result = 31 * result + (roleInParent?.hashCode() ?: 0)
+        result = 31 * result + childrenIds.contentHashCode()
+        result = 31 * result + propertyRoles.contentHashCode()
+        result = 31 * result + propertyValues.contentHashCode()
+        result = 31 * result + referenceRoles.contentHashCode()
+        result = 31 * result + referenceTargets.contentHashCode()
+        return result
+    }
+
+    companion object : IObjectDeserializer<CPNode> {
         val DESERIALIZER: IObjectDeserializer<CPNode> = this
 
         @JvmStatic

@@ -1,6 +1,7 @@
 package org.modelix.model.api
 
 import kotlinx.serialization.Serializable
+import org.modelix.kotlin.utils.DelicateModelixApi
 
 /**
  * Representation of a parent-child relationship between [IConcept]s.
@@ -51,22 +52,32 @@ sealed interface IChildLinkReference : ILinkReference {
 
     override fun toLegacy(): IChildLink
 
+    /**
+     * @see getIdOrName
+     */
+    @DelicateModelixApi
     fun getIdOrNameOrNull(): String? = getIdOrName()
 
+    /**
+     * @see getNameOrId
+     */
+    @DelicateModelixApi
+    @Deprecated("Name based persistence is legacy and IDs should be used")
     fun getNameOrIdOrNull(): String? = getNameOrId()
 
     fun matches(other: IChildLinkReference): Boolean
 
-    companion object {
-        /**
-         * Can be a name or UID or anything else. INode will decide how to resolve it.
-         */
-        fun fromUnclassifiedString(value: String?): IChildLinkReference {
-            return if (value == null) NullChildLinkReference else UnclassifiedChildLinkReference(value)
+    override fun matches(unclassified: String?) = matches(fromString(unclassified))
+
+    companion object : IRoleReferenceFactory<IChildLinkReference> {
+        override fun fromUnclassifiedString(value: String): IChildLinkReference {
+            IRoleReference.requireNotForLegacyApi(value)
+            return UnclassifiedChildLinkReference(value)
         }
-        fun fromName(value: String): IChildLinkReference = ChildLinkReferenceByName(value)
-        fun fromId(value: String): IChildLinkReference = ChildLinkReferenceByUID(value)
-        fun fromIdAndName(id: String?, name: String?): IChildLinkReference {
+        override fun fromNull(): IChildLinkReference = NullChildLinkReference
+        override fun fromName(value: String): IChildLinkReference = ChildLinkReferenceByName(value)
+        override fun fromId(value: String): IChildLinkReference = ChildLinkReferenceByUID(value)
+        override fun fromIdAndName(id: String?, name: String?): IChildLinkReference {
             return if (id == null) {
                 if (name == null) {
                     throw IllegalArgumentException("Both 'id' and 'name' are null")
@@ -99,13 +110,11 @@ sealed class AbstractChildLinkReference : AbstractRoleReference(), IChildLinkRef
 
 @Serializable
 object NullChildLinkReference : AbstractChildLinkReference() {
-    override fun getIdOrName(): String {
-        throw NullPointerException("link is a NullChildLinkReference")
-    }
+    override fun stringForLegacyApi() = null
 
-    override fun getNameOrId(): String {
-        throw NullPointerException("link is a NullChildLinkReference")
-    }
+    override fun getIdOrName(): String = "null"
+
+    override fun getNameOrId(): String = "null"
 
     override fun getIdOrNameOrNull(): String? = null
 
@@ -117,13 +126,17 @@ object NullChildLinkReference : AbstractChildLinkReference() {
             is ChildLinkReferenceByName -> false
             is ChildLinkReferenceByUID -> false
             NullChildLinkReference -> true
-            is UnclassifiedChildLinkReference -> other.value == "null"
+            is UnclassifiedChildLinkReference -> false
         }
     }
 }
 
 @Serializable
 data class UnclassifiedChildLinkReference(val value: String) : AbstractChildLinkReference(), IUnclassifiedRoleReference {
+    init {
+        require(value != "null") { "Use NullChildLinkReference" }
+    }
+    override fun stringForLegacyApi() = value
     override fun getStringValue(): String = value
     override fun getIdOrName(): String = value
     override fun getNameOrId(): String = value
@@ -142,6 +155,10 @@ data class UnclassifiedChildLinkReference(val value: String) : AbstractChildLink
 
 @Serializable
 data class ChildLinkReferenceByName(override val name: String) : AbstractChildLinkReference(), IRoleReferenceByName {
+    init {
+        require(name != "null") { "Use NullChildLinkReference" }
+    }
+    override fun stringForLegacyApi() = IRoleReference.encodeStringForLegacyApi(null, name)
     override fun getSimpleName(): String = name
     override fun getIdOrName(): String = name
     override fun getNameOrId(): String = name
@@ -158,6 +175,10 @@ data class ChildLinkReferenceByName(override val name: String) : AbstractChildLi
 
 @Serializable
 data class ChildLinkReferenceByUID(val uid: String) : AbstractChildLinkReference(), IRoleReferenceByUID {
+    init {
+        require(uid != "null") { "Use NullChildLinkReference" }
+    }
+    override fun stringForLegacyApi() = IRoleReference.encodeStringForLegacyApi(uid, null)
     override fun getUID(): String = uid
     override fun getIdOrName(): String = uid
     override fun getNameOrId(): String = uid
@@ -174,6 +195,11 @@ data class ChildLinkReferenceByUID(val uid: String) : AbstractChildLinkReference
 
 @Serializable
 data class ChildLinkReferenceByIdAndName(val uid: String, override val name: String) : AbstractChildLinkReference(), IRoleReferenceByUID, IRoleReferenceByName {
+    init {
+        require(uid != "null") { "Use NullChildLinkReference" }
+        require(name != "null") { "Use NullChildLinkReference" }
+    }
+    override fun stringForLegacyApi() = IRoleReference.encodeStringForLegacyApi(uid, name)
     override fun getUID(): String = uid
     override fun getSimpleName(): String = name
     override fun getIdOrName(): String = uid

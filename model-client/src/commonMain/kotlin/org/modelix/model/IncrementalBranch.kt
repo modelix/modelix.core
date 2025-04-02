@@ -17,7 +17,6 @@ import org.modelix.model.api.ITreeChangeVisitorEx
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.async.IAsyncMutableTree
 import org.modelix.model.api.runSynchronized
-import org.modelix.model.lazy.NodeNotFoundException
 
 class IncrementalBranch(val branch: IBranch) : IBranch, IBranchWrapper {
 
@@ -356,6 +355,7 @@ class IncrementalBranch(val branch: IBranch) : IBranch, IBranchWrapper {
     }
 
     inner class IncrementalTree(val tree: ITree) : ITree {
+        override fun asObject() = tree.asObject()
 
         override fun asAsyncTree(): IAsyncMutableTree {
             throw UnsupportedOperationException("Dependency recording not supported yet for IAsyncTree")
@@ -366,7 +366,7 @@ class IncrementalBranch(val branch: IBranch) : IBranch, IBranchWrapper {
             return tree.usesRoleIds()
         }
 
-        override fun getId(): String? {
+        override fun getId(): String {
             return tree.getId()
         }
 
@@ -524,7 +524,7 @@ data class UnclassifiedNodeDependency(val branch: IBranch, val nodeId: Long) : D
         return try {
             branch.computeReadT { if (it.containsNode(nodeId)) it.getParent(nodeId) else 0L }
                 .let { parent -> if (parent == 0L) null else UnclassifiedNodeDependency(branch, parent) }
-        } catch (ex: NodeNotFoundException) {
+        } catch (ex: org.modelix.datastructures.model.NodeNotFoundException) {
             BranchDependency(branch)
         }
     }

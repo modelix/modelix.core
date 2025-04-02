@@ -20,6 +20,7 @@ import org.modelix.model.lazy.diff
 import org.modelix.model.lazy.fullDiff
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.SerializationUtil
+import org.modelix.model.server.api.RepositoryConfig
 import org.modelix.model.server.store.IRepositoryAwareStore
 import org.modelix.model.server.store.ITransactionManager
 import org.modelix.model.server.store.ObjectInRepository
@@ -30,8 +31,6 @@ import org.modelix.model.server.store.pollEntry
 import org.modelix.model.server.store.runReadIO
 import org.modelix.streams.IExecutableStream
 import org.modelix.streams.IStream
-import org.modelix.streams.SimpleStreamExecutor
-import org.modelix.streams.withSequences
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
@@ -139,14 +138,13 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
 
     @RequiresTransaction
     override fun createRepository(
-        repositoryId: RepositoryId,
+        config: RepositoryConfig,
         userName: String?,
-        useRoleIds: Boolean,
-        legacyGlobalStorage: Boolean,
     ): CLVersion {
         getTransactionManager().assertWrite()
-        val isolated = !legacyGlobalStorage
+        val isolated = !config.legacyGlobalStorage
         val globalStore = stores.getGlobalStoreClient()
+        val repositoryId = RepositoryId(config.repositoryId)
         val masterBranch = repositoryId.getBranchReference()
         if (repositoryExists(repositoryId)) throw RepositoryAlreadyExistsException(repositoryId.id)
         val existingRepositories = getRepositories(isolated)
@@ -161,7 +159,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
             time = Clock.System.now().epochSeconds.toString(),
             author = userName,
             tree = CLTree.builder(stores.getAsyncStore(repositoryId.takeIf { isolated }))
-                .useRoleIds(useRoleIds).build(),
+                .useRoleIds(!config.legacyNameBasedRoles).build(),
             baseVersion = null,
             operations = emptyArray(),
         )
@@ -279,7 +277,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
                     " into one with ID '${headVersion.getTree().getId()}'"
             }
             validateVersion(newVersion, headVersion)
-            val mergedVersion = VersionMerger(legacyObjectStore, stores.idGenerator)
+            val mergedVersion = VersionMerger(stores.idGenerator)
                 .mergeChange(headVersion, newVersion)
             mergedVersion.getContentHash()
         }
@@ -289,6 +287,8 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
     private fun validateVersion(newVersion: CLVersion, oldVersion: CLVersion?) {
         // ensure there are no missing objects
         newVersion.graph.getStreamExecutor().iterate({ newVersion.fullDiff(oldVersion) }) { }
+
+        // TODO check invariants of the model (consistent parent-child relations, single root, containment cycles)
     }
 
     @RequiresTransaction
@@ -418,9 +418,7 @@ class ObjectDataMap(private val byHashObjects: Map<String, String>) : ObjectData
 
     override suspend fun asMap(): Map<String, String> = byHashObjects
     override fun asStream(): IExecutableStream.Many<Pair<String, String>> {
-        return SimpleStreamExecutor().withSequences().queryManyLater {
-            IStream.many(byHashObjects.entries).map { it.key to it.value }
-        }
+        return IExecutableStream.many(byHashObjects.entries).mapMany { it.map { it.key to it.value } }
     }
 }
 

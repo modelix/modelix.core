@@ -26,7 +26,7 @@ class TreePointer(private var tree_: ITree, val idGenerator: IIdGenerator = IdGe
     }
 
     override fun <T> computeRead(computable: () -> T): T {
-        return RoleAccessContext.runWith(tree.usesRoleIds()) { computable() }
+        return computable()
     }
 
     override fun runWrite(runnable: () -> Unit) {
@@ -34,7 +34,7 @@ class TreePointer(private var tree_: ITree, val idGenerator: IIdGenerator = IdGe
     }
 
     override fun <T> computeWrite(computable: () -> T): T {
-        return RoleAccessContext.runWith(tree.usesRoleIds()) { computable() }
+        return computable()
     }
 
     override fun canRead(): Boolean {

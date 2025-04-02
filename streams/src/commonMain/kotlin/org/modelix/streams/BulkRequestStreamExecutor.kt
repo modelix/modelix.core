@@ -17,7 +17,7 @@ interface IBulkExecutor<K, V> {
 
 class BulkRequestStreamExecutor<K, V>(private val bulkExecutor: IBulkExecutor<K, V>, val batchSize: Int = 5000) : IStreamExecutor, IStreamExecutorProvider {
     private val requestQueue = ContextValue<RequestQueue>()
-    private val streamBuilder = ReaktiveStreamBuilder(this)
+    private val streamBuilder = ReaktiveStreamBuilder()
 
     private inner class RequestQueue {
         val queue: MutableMap<K, QueueElement> = LinkedHashMap()
@@ -81,8 +81,7 @@ class BulkRequestStreamExecutor<K, V>(private val bulkExecutor: IBulkExecutor<K,
     override fun <T> query(body: () -> IStream.One<T>): T {
         fun doProcess(queue: RequestQueue): T {
             var result: Result<T>? = null
-            val stream = body()
-            val reaktiveStream = (stream as ReaktiveStreamBuilder.Wrapper<T>).wrappedAsSingle()
+            val reaktiveStream = streamBuilder.convert(body())
             val subscription = reaktiveStream.subscribe(
                 onSuccess = { result = Result.success(it) },
                 onError = { result = Result.failure(it) },
@@ -99,7 +98,7 @@ class BulkRequestStreamExecutor<K, V>(private val bulkExecutor: IBulkExecutor<K,
         return if (existingQueue == null) {
             val newQueue = RequestQueue()
             requestQueue.computeWith(newQueue) {
-                IStream.useBuilder(streamBuilder) {
+                IStreamExecutor.CONTEXT.computeWith(this) {
                     doProcess(newQueue)
                 }
             }
@@ -111,8 +110,7 @@ class BulkRequestStreamExecutor<K, V>(private val bulkExecutor: IBulkExecutor<K,
     override suspend fun <T> querySuspending(body: suspend () -> IStream.One<T>): T {
         suspend fun doProcess(queue: RequestQueue): T {
             var result: Result<T>? = null
-            val stream = body()
-            val reaktiveStream = (stream as ReaktiveStreamBuilder.Wrapper<T>).wrappedAsSingle()
+            val reaktiveStream = streamBuilder.convert(body())
             val subscription = reaktiveStream.subscribe(
                 onSuccess = { result = Result.success(it) },
                 onError = { result = Result.failure(it) },
@@ -128,7 +126,7 @@ class BulkRequestStreamExecutor<K, V>(private val bulkExecutor: IBulkExecutor<K,
         return if (existingQueue == null) {
             val newQueue = RequestQueue()
             requestQueue.runInCoroutine(newQueue) {
-                IStream.useBuilderSuspending(streamBuilder) {
+                IStreamExecutor.CONTEXT.runInCoroutine(this) {
                     doProcess(newQueue)
                 }
             }
@@ -139,8 +137,7 @@ class BulkRequestStreamExecutor<K, V>(private val bulkExecutor: IBulkExecutor<K,
 
     override fun <T> iterate(streamProvider: () -> IStream.Many<T>, visitor: (T) -> Unit) {
         fun doProcess(queue: RequestQueue) {
-            val stream = streamProvider()
-            val reaktiveStream = (stream as ReaktiveStreamBuilder.Wrapper<T>).wrappedAsObservable()
+            val reaktiveStream = streamBuilder.convert(streamProvider())
             val subscription = reaktiveStream.subscribe(onNext = visitor)
             try {
                 queue.process()
@@ -152,7 +149,7 @@ class BulkRequestStreamExecutor<K, V>(private val bulkExecutor: IBulkExecutor<K,
         return if (existingQueue == null) {
             val newQueue = RequestQueue()
             requestQueue.computeWith(newQueue) {
-                IStream.useBuilder(streamBuilder) {
+                IStreamExecutor.CONTEXT.computeWith(this) {
                     doProcess(newQueue)
                 }
             }
@@ -166,8 +163,7 @@ class BulkRequestStreamExecutor<K, V>(private val bulkExecutor: IBulkExecutor<K,
         visitor: suspend (T) -> Unit,
     ) {
         suspend fun doProcess(queue: RequestQueue) {
-            val stream = streamProvider()
-            val reaktiveStream = (stream as ReaktiveStreamBuilder.Wrapper<T>).wrappedAsObservable()
+            val reaktiveStream = streamBuilder.convert(streamProvider())
             val channel = Channel<T>(capacity = Channel.Factory.UNLIMITED)
             val subscription = reaktiveStream.subscribe(
                 onNext = { channel.trySend(it).getOrThrow() },
@@ -193,7 +189,7 @@ class BulkRequestStreamExecutor<K, V>(private val bulkExecutor: IBulkExecutor<K,
         return if (existingQueue == null) {
             val newQueue = RequestQueue()
             requestQueue.runInCoroutine(newQueue) {
-                IStream.useBuilderSuspending(streamBuilder) {
+                IStreamExecutor.CONTEXT.runInCoroutine(this) {
                     doProcess(newQueue)
                 }
             }

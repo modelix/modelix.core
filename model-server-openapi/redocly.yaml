@@ -18,3 +18,8 @@ apis:
     output: ./build/bundled/model-server-operative.yaml
     decorators:
       plugin/use-server-path: {}
+  model-server@lionweb:
+    root: ./specifications/lionweb.yaml
+    output: ./build/bundled/lionweb.yaml
+    decorators:
+      plugin/use-server-path: {}

@@ -9,6 +9,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.modelix.datastructures.model.asModelTree
 import org.modelix.model.IVersion
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.IBranch
@@ -18,7 +19,6 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.lazy.BranchReference
-import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.operations.OTBranch
 
@@ -253,11 +253,9 @@ private class LocalModel(initialVersion: CLVersion, val idGenerator: IIdGenerato
     private fun doCreateNewLocalVersion(): CLVersion? {
         check(mutex.isLocked)
         val (ops, tree) = otBranch.getPendingChanges()
-        check(tree is CLTree)
-
         val baseVersion = localVersion
 
-        if (ops.isEmpty() && baseVersion.getTree().hash == tree.hash) return null
+        if (ops.isEmpty() && baseVersion.getTreeReference().getHash() == tree.asModelTree().asObject().getHash()) return null
         val newVersion = CLVersion.createRegularVersion(
             id = idGenerator.generate(),
             author = author(),

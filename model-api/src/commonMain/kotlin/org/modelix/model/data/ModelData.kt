@@ -9,7 +9,7 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
-import org.modelix.model.api.LocalPNodeReference
+import org.modelix.model.api.PNodeReference
 
 @Serializable
 data class ModelData(
@@ -73,7 +73,7 @@ data class ModelData(
         }
         for (referenceData in nodeData.references) {
             pendingReferences += {
-                val target = createdNodes[referenceData.value]?.let { LocalPNodeReference(it) }
+                val target = createdNodes[referenceData.value]?.let { PNodeReference(it, t.tree.getId()) }
                 t.setReferenceTarget(createdId, referenceData.key, target)
             }
         }
@@ -140,9 +140,11 @@ fun ModelData.nodeUID(node: NodeData): String = node.uid(this)
 fun INode.asData(): NodeData = NodeData(
     id = reference.serialize(),
     concept = getConceptReference()?.getUID(),
-    role = roleInParent,
-    properties = getPropertyRoles().associateWithNotNull { getPropertyValue(it) },
-    references = getReferenceRoles().associateWithNotNull { getReferenceTargetRef(it)?.serialize() },
+    role = getContainmentLink()?.toReference()?.getIdOrNameOrNull(),
+    properties = getPropertyLinks().associateWithNotNull { getPropertyValue(it) }
+        .mapKeys { it.key.toReference().getIdOrName() },
+    references = getReferenceLinks().associateWithNotNull { getReferenceTargetRef(it)?.serialize() }
+        .mapKeys { it.key.toReference().getIdOrName() },
     children = allChildren.map { it.asData() },
 )
 

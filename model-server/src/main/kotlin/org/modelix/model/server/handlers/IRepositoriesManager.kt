@@ -1,11 +1,13 @@
 package org.modelix.model.server.handlers
 
 import org.modelix.model.ObjectDeltaFilter
+import org.modelix.model.TreeId
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.server.api.RepositoryConfig
 import org.modelix.model.server.store.IStoreClient
 import org.modelix.model.server.store.ITransactionManager
 import org.modelix.model.server.store.RequiresTransaction
@@ -28,7 +30,7 @@ interface IRepositoriesManager {
     fun getRepositories(): Set<RepositoryId>
 
     @RequiresTransaction
-    fun createRepository(repositoryId: RepositoryId, userName: String?, useRoleIds: Boolean = true, legacyGlobalStorage: Boolean = false): CLVersion
+    fun createRepository(config: RepositoryConfig, userName: String?): CLVersion
 
     @RequiresTransaction
     fun removeRepository(repository: RepositoryId): Boolean
@@ -69,6 +71,26 @@ interface IRepositoriesManager {
     fun getStoreManager(): StoreManager
     fun getTransactionManager(): ITransactionManager
 }
+
+@Deprecated("Provide a RepositoryConfig")
+@RequiresTransaction
+fun IRepositoriesManager.createRepository(
+    repositoryId: RepositoryId,
+    userName: String?,
+    useRoleIds: Boolean = true,
+    legacyGlobalStorage: Boolean = false,
+): CLVersion = createRepository(
+    RepositoryConfig(
+        legacyNameBasedRoles = !useRoleIds,
+        legacyGlobalStorage = legacyGlobalStorage,
+        nodeIdType = RepositoryConfig.NodeIdType.INT64,
+        primaryTreeType = RepositoryConfig.TreeType.HASH_ARRAY_MAPPED_TRIE,
+        modelId = TreeId.random().id,
+        repositoryId = repositoryId.id,
+        repositoryName = repositoryId.id,
+    ),
+    userName,
+)
 
 @RequiresTransaction
 fun IRepositoriesManager.getBranchNames(repositoryId: RepositoryId): Set<String> {

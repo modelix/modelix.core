@@ -34,6 +34,7 @@ dependencies {
     api(project(":model-datastructure", configuration = "jvmRuntimeElements"))
     implementation(project(":modelql-server"))
     implementation(project(":authorization"))
+    implementation(project(":bulk-model-sync-lib"))
     implementation(libs.apache.commons.lang)
 
     implementation(libs.apache.commons.collections)

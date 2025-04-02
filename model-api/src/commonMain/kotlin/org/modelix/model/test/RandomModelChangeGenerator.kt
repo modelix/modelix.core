@@ -2,8 +2,11 @@ package org.modelix.model.test
 
 import org.modelix.model.api.INode
 import org.modelix.model.api.addNewChild
+import org.modelix.model.api.async.IAsyncNode
+import org.modelix.model.api.async.asAsyncNode
 import org.modelix.model.api.getAncestors
-import org.modelix.model.api.getDescendants
+import org.modelix.streams.IStream
+import org.modelix.streams.plus
 import kotlin.random.Random
 
 class RandomModelChangeGenerator(val rootNode: INode, private val rand: Random) {
@@ -91,8 +94,21 @@ class RandomModelChangeGenerator(val rootNode: INode, private val rand: Random) 
     }
 
     private fun getRandomNode(condition: (INode) -> Boolean = { true }, includeRoot: Boolean = true): INode? {
-        val nodes = rootNode.getDescendants(includeRoot).filter(condition).toList()
-        if (nodes.isEmpty()) return null
-        return nodes[rand.nextInt(nodes.size)]
+        return rootNode.asAsyncNode()
+            .getDescendantsShuffled(rand, includeRoot)
+            .map { it.asRegularNode() }
+            .filter(condition)
+            .firstOrNull()
+            .getSynchronous()
+    }
+}
+
+fun IAsyncNode.getDescendantsShuffled(rand: Random, includeSelf: Boolean): IStream.Many<IAsyncNode> {
+    return getAllChildren().toList().flatMap { children ->
+        val children = children.shuffled(rand)
+        val splitAt = rand.nextInt(children.size + 1)
+        IStream.many(children.take(splitAt)).flatMap { it.getDescendantsShuffled(rand, true) } +
+            (if (includeSelf) IStream.of(this) else IStream.empty()) +
+            IStream.many(children.drop(splitAt)).flatMap { it.getDescendantsShuffled(rand, true) }
     }
 }

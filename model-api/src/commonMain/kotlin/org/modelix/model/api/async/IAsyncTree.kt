@@ -7,12 +7,14 @@ import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.ITree
 import org.modelix.streams.IStream
-import org.modelix.streams.IStreamExecutor
+import org.modelix.streams.IStreamExecutorProvider
 import org.modelix.streams.plus
 
-interface IAsyncTree {
+@Deprecated("Use IModelTree")
+interface IAsyncTree : IStreamExecutorProvider {
+    fun asObject(): Any
+
     fun asSynchronousTree(): ITree
-    fun getStreamExecutor(): IStreamExecutor
 
     fun getChanges(oldVersion: IAsyncTree, changesOnly: Boolean): IStream.Many<TreeChangeEvent>
 
@@ -37,6 +39,7 @@ interface IAsyncTree {
     fun getReferenceRoles(sourceId: Long): IStream.Many<IReferenceLinkReference>
 }
 
+@Deprecated("Use IModelTree")
 interface IAsyncMutableTree : IAsyncTree {
     fun deleteNodes(nodeIds: LongArray): IStream.One<IAsyncMutableTree>
     fun moveChild(newParentId: Long, newRole: IChildLinkReference, newIndex: Int, childId: Long): IStream.One<IAsyncMutableTree>

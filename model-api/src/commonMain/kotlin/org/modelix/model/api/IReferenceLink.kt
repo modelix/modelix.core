@@ -31,14 +31,21 @@ sealed interface IReferenceLinkReference : ILinkReference {
 
     fun matches(other: IReferenceLinkReference): Boolean
 
-    companion object {
+    override fun matches(unclassified: String?) = unclassified != null && matches(fromString(unclassified))
+
+    override fun stringForLegacyApi(): String
+
+    companion object : IRoleReferenceFactory<IReferenceLinkReference> {
         /**
          * Can be a name or UID or anything else. INode will decide how to resolve it.
          */
-        fun fromUnclassifiedString(value: String): IReferenceLinkReference = UnclassifiedReferenceLinkReference(value)
-        fun fromName(value: String): IReferenceLinkReference = ReferenceLinkReferenceByName(value)
-        fun fromId(value: String): IReferenceLinkReference = ReferenceLinkReferenceByUID(value)
-        fun fromIdAndName(id: String?, name: String?): IReferenceLinkReference {
+        override fun fromUnclassifiedString(value: String): IReferenceLinkReference {
+            IRoleReference.requireNotForLegacyApi(value)
+            return UnclassifiedReferenceLinkReference(value)
+        }
+        override fun fromName(value: String): IReferenceLinkReference = ReferenceLinkReferenceByName(value)
+        override fun fromId(value: String): IReferenceLinkReference = ReferenceLinkReferenceByUID(value)
+        override fun fromIdAndName(id: String?, name: String?): IReferenceLinkReference {
             return if (id == null) {
                 if (name == null) {
                     throw IllegalArgumentException("Both 'id' and 'name' are null")
@@ -69,6 +76,7 @@ sealed class AbstractReferenceLinkReference : AbstractRoleReference(), IReferenc
 
 @Serializable
 data class UnclassifiedReferenceLinkReference(val value: String) : AbstractReferenceLinkReference(), IUnclassifiedRoleReference {
+    override fun stringForLegacyApi() = value
     override fun getStringValue(): String = value
     override fun getIdOrName(): String = value
     override fun getNameOrId(): String = value
@@ -86,6 +94,7 @@ data class UnclassifiedReferenceLinkReference(val value: String) : AbstractRefer
 
 @Serializable
 data class ReferenceLinkReferenceByName(override val name: String) : AbstractReferenceLinkReference(), IRoleReferenceByName {
+    override fun stringForLegacyApi() = IRoleReference.encodeStringForLegacyApi(null, name)
     override fun getSimpleName(): String = name
     override fun getIdOrName(): String = name
     override fun getNameOrId(): String = name
@@ -101,6 +110,7 @@ data class ReferenceLinkReferenceByName(override val name: String) : AbstractRef
 
 @Serializable
 data class ReferenceLinkReferenceByUID(val uid: String) : AbstractReferenceLinkReference(), IRoleReferenceByUID {
+    override fun stringForLegacyApi() = IRoleReference.encodeStringForLegacyApi(uid, null)
     override fun getUID(): String = uid
     override fun getIdOrName(): String = uid
     override fun getNameOrId(): String = uid
@@ -116,6 +126,7 @@ data class ReferenceLinkReferenceByUID(val uid: String) : AbstractReferenceLinkR
 
 @Serializable
 data class ReferenceLinkReferenceByIdAndName(val uid: String, override val name: String) : AbstractReferenceLinkReference(), IRoleReferenceByUID, IRoleReferenceByName {
+    override fun stringForLegacyApi() = IRoleReference.encodeStringForLegacyApi(uid, name)
     override fun getUID(): String = uid
     override fun getSimpleName(): String = name
     override fun getIdOrName(): String = uid

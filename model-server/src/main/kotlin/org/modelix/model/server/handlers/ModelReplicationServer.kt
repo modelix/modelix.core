@@ -6,6 +6,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.acceptItems
+import io.ktor.server.request.contentType
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveChannel
 import io.ktor.server.response.respond
@@ -28,6 +29,7 @@ import org.modelix.authorization.getUserName
 import org.modelix.authorization.hasPermission
 import org.modelix.authorization.requiresLogin
 import org.modelix.model.ObjectDeltaFilter
+import org.modelix.model.TreeId
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.TreeAsBranch
@@ -42,6 +44,7 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.ModelServerPermissionSchema
+import org.modelix.model.server.api.RepositoryConfig
 import org.modelix.model.server.api.v2.ImmutableObjectsStream
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.api.v2.VersionDeltaStream
@@ -184,21 +187,42 @@ class ModelReplicationServer(
     }
 
     override suspend fun RoutingContext.initializeRepository(
-        repository: String,
+        repositoryName: String,
         useRoleIds: Boolean?,
         legacyGlobalStorage: Boolean?,
     ) {
-        checkPermission(ModelServerPermissionSchema.repository(repository).create)
+        val config = if (call.request.contentType() == ContentType.Application.Json) {
+            call.receive<RepositoryConfig>().copy(
+                // fix possible mismatch
+                repositoryId = repositoryName,
+                repositoryName = repositoryName,
+                alternativeNames = emptySet(),
+            )
+        } else {
+            // Legacy configuration for old clients.
+            // New clients with support for new data structures will send the desired config as JSON.
+            RepositoryConfig(
+                legacyNameBasedRoles = useRoleIds ?: true,
+                legacyGlobalStorage = legacyGlobalStorage ?: false,
+                nodeIdType = RepositoryConfig.NodeIdType.INT64,
+                primaryTreeType = RepositoryConfig.TreeType.HASH_ARRAY_MAPPED_TRIE,
+                modelId = TreeId.random().id,
+                repositoryId = repositoryName,
+                repositoryName = repositoryName,
+            )
+        }
+
+        val repositoryId = RepositoryId(config.repositoryId)
+        checkPermission(ModelServerPermissionSchema.repository(repositoryId).create)
+
         @OptIn(RequiresTransaction::class)
         val initialVersion = runWrite {
             repositoriesManager.createRepository(
-                repositoryId(repository),
+                config,
                 call.getUserName(),
-                useRoleIds ?: true,
-                legacyGlobalStorage ?: false,
             )
         }
-        call.respondDelta(RepositoryId(repository), initialVersion.getContentHash(), ObjectDeltaFilter())
+        call.respondDelta(repositoryId, initialVersion.getContentHash(), ObjectDeltaFilter())
     }
 
     override suspend fun RoutingContext.deleteRepository(repository: String) {

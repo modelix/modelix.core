@@ -164,7 +164,7 @@ class UndoTest {
             id = idGenerator.generate(),
             time = null,
             author = null,
-            tree = opsAndTree.second as CLTree,
+            tree = opsAndTree.second,
             baseVersion = previousVersion,
             operations = opsAndTree.first.map { it.getOriginalOp() }.toTypedArray(),
         )

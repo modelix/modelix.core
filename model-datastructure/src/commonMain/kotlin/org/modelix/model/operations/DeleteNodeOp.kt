@@ -1,5 +1,6 @@
 package org.modelix.model.operations
 
+import org.modelix.datastructures.model.asModelTree
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITree
@@ -14,7 +15,7 @@ class DeleteNodeOp(val childId: Long) : AbstractOperation(), IOperationIntend {
         }
 
         val concept = t.getConceptReference(childId)
-        val position = getNodePosition(t.tree, childId)
+        val position = getNodePosition(t.tree.asModelTree(), childId)
         val properties = t.getPropertyRoles(childId).associateWith { t.getProperty(childId, it) }
         val references = t.getReferenceRoles(childId).associateWith { t.getReferenceTarget(childId, it) }
         t.deleteNode(childId)

@@ -16,7 +16,7 @@ open class TreeTestBase {
     protected var store: MapBasedStore = MapBasedStore()
     protected var storeCache: IAsyncObjectStore = createObjectStoreCache(store)
     protected var idGenerator: IdGenerator = IdGenerator.newInstance(3)
-    protected var initialTree: CLTree = CLTree(storeCache)
+    protected var initialTree: ITree = CLTree(storeCache)
 
     @BeforeTest
     fun setUp() {

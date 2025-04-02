@@ -4,7 +4,6 @@ import org.modelix.model.api.IBranch
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.TreePointer
 import org.modelix.model.async.IAsyncObjectStore
-import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.commonBaseVersion
@@ -13,11 +12,11 @@ import org.modelix.model.operations.IOperationIntend
 import org.modelix.model.operations.UndoOp
 
 class VersionMerger(private val idGenerator: IIdGenerator) {
-    @Deprecated("store is required anymore")
+    @Deprecated("store isn't required anymore")
     constructor(store: IDeserializingKeyValueStore, idGenerator: IIdGenerator) :
         this(idGenerator)
 
-    @Deprecated("store is required anymore")
+    @Deprecated("store isn't required anymore")
     constructor(store: IAsyncObjectStore, idGenerator: IIdGenerator) :
         this(idGenerator)
 
@@ -101,7 +100,7 @@ class VersionMerger(private val idGenerator: IIdGenerator) {
             }
             mergedVersion = CLVersion.createAutoMerge(
                 idGenerator.generate(),
-                t.tree as CLTree,
+                t.tree,
                 commonBase,
                 leftVersion,
                 rightVersion,

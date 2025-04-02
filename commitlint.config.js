@@ -8,6 +8,7 @@ module.exports = {
         "authorization",
         "bulk-model-sync",
         "bulk-model-sync-gradle",
+        "datastructures",
         "deps",
         "metamodel-export",
         "model-api-gen",

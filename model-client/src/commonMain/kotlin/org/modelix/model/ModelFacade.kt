@@ -112,7 +112,7 @@ object ModelFacade {
             client.idGenerator.generate(),
             Clock.System.now().epochSeconds.toString(),
             userId,
-            operationsAndTree.second as CLTree,
+            operationsAndTree.second,
             baseVersion,
             operationsAndTree.first.map { it.getOriginalOp() }.toTypedArray(),
         )

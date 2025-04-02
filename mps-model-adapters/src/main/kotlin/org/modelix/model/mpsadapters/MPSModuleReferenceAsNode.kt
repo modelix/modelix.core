@@ -37,8 +37,10 @@ data class MPSModuleReferenceAsNode(
         return listOf(
             BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference() to object : IReferenceAccessor<MPSModuleReferenceAsNode> {
                 override fun read(element: MPSModuleReferenceAsNode): IWritableNode? {
-                    val repo = ModelixMpsApi.getRepository()
-                    return target.resolve(repo)?.let { MPSModuleAsNode(it) }
+                    return runCatching {
+                        val repo = ModelixMpsApi.getRepository()
+                        target.resolve(repo)?.let { MPSModuleAsNode(it) }
+                    }.getOrNull()
                 }
 
                 override fun write(element: MPSModuleReferenceAsNode, value: IWritableNode?) {
@@ -73,7 +75,7 @@ data class MPSModuleReferenceAsNode(
     }
 }
 
-data class MPSModuleReferenceReference(val parent: SModuleId, val link: ChildLinkReferenceByUID, val target: SModuleId) : INodeReference {
+data class MPSModuleReferenceReference(val parent: SModuleId, val link: ChildLinkReferenceByUID, val target: SModuleId) : INodeReference() {
     companion object {
         internal const val PREFIX = "mps-module-ref"
         internal const val SEPARATOR = "#"

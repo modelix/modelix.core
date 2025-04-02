@@ -30,10 +30,6 @@ interface INodeReferenceSerializer {
         private val serializersForClass: MutableMap<KClass<*>, INodeReferenceSerializerEx> = HashMap()
         private val legacySerializers: MutableSet<INodeReferenceSerializer> = HashSet()
 
-        init {
-            register(ByIdSerializer)
-        }
-
         fun register(serializer: INodeReferenceSerializer) {
             register(serializer, true)
         }
@@ -125,18 +121,3 @@ interface INodeReferenceSerializerEx : INodeReferenceSerializer {
         const val SEPARATOR = ":"
     }
 }
-
-private object ByIdSerializer : INodeReferenceSerializerEx {
-    override val prefix: String = "id"
-    override val supportedReferenceClasses = setOf(NodeReferenceById::class)
-
-    override fun serialize(ref: INodeReference): String {
-        return (ref as NodeReferenceById).nodeId
-    }
-
-    override fun deserialize(serialized: String): INodeReference {
-        return NodeReferenceById(serialized)
-    }
-}
-
-fun INodeReference.serialize() = INodeReferenceSerializer.serialize(this)

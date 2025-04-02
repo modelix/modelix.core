@@ -34,10 +34,11 @@ import org.modelix.authorization.checkPermission
 import org.modelix.authorization.hasPermission
 import org.modelix.authorization.requiresLogin
 import org.modelix.model.api.BuiltinLanguages
+import org.modelix.model.api.ITree
 import org.modelix.model.api.ITreeChangeVisitorEx
-import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.lazy.resolveElementSynchronous
 import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPNodeRef
 import org.modelix.model.server.ModelServerPermissionSchema
@@ -498,16 +499,13 @@ private fun CPNode.getNameClarification(): String {
     return name?.let { "($it)" }.orEmpty()
 }
 
-private fun CLTree.resolveOrThrow(nodeId: Long): CPNode =
-    requireNotNull(resolveElementSynchronous(nodeId)) { "node not found. id = $nodeId" }
+private fun ITree.resolveOrThrow(nodeId: Long): CPNode {
+    return requireNotNull(resolveElementSynchronous(nodeId)) { "node not found. id = $nodeId" }
+}
 
 @Suppress("TooGenericExceptionCaught", "SwallowedException") // the exception is also thrown generically and we don't need the original exception
-private fun CLTree.tryResolve(ref: CPNodeRef?): CPNode? {
-    return try {
-        ref?.takeIf { it.isLocal }?.elementId?.let { resolveElementSynchronous(it) }
-    } catch (e: RuntimeException) {
-        null
-    }
+private fun ITree.tryResolve(ref: CPNodeRef?): CPNode? {
+    return runCatching { ref?.takeIf { it.isLocal }?.elementId?.let { resolveElementSynchronous(it) } }.getOrNull()
 }
 
 private class SizeLimitExceededException(sizeLimit: Int) : RuntimeException("The sizeLimit was exceeded. [sizeLimit] = $sizeLimit")

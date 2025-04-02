@@ -6,7 +6,6 @@ import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.getRootNode
-import org.modelix.model.api.key
 import org.modelix.model.persistent.SerializationUtil
 
 internal object MetaModelMigration {
@@ -119,7 +118,7 @@ internal object MetaModelMigration {
         if (!tree.containsNode(conceptNodeId)) {
             return originalConceptRef
         }
-        val uid = tree.getProperty(conceptNodeId, MetaMetaLanguage.property_IHasUID_uid.key(tree))
+        val uid = tree.getProperty(conceptNodeId, MetaMetaLanguage.property_IHasUID_uid.toReference().stringForLegacyApi())
             ?: return originalConceptRef
 
         return ConceptReference(uid)

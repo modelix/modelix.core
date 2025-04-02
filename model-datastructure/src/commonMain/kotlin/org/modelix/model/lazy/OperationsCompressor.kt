@@ -1,5 +1,6 @@
 package org.modelix.model.lazy
 
+import org.modelix.datastructures.objects.Object
 import org.modelix.model.operations.AddNewChildOp
 import org.modelix.model.operations.AddNewChildSubtreeOp
 import org.modelix.model.operations.AddNewChildrenOp
@@ -13,8 +14,9 @@ import org.modelix.model.operations.SetConceptOp
 import org.modelix.model.operations.SetPropertyOp
 import org.modelix.model.operations.SetReferenceOp
 import org.modelix.model.operations.UndoOp
+import org.modelix.model.persistent.CPTree
 
-class OperationsCompressor(val resultTree: CLTree) {
+class OperationsCompressor(val resultTree: Object<CPTree>) {
 
     /**
      * Optimize for bulk imports
@@ -26,7 +28,6 @@ class OperationsCompressor(val resultTree: CLTree) {
     fun compressOperations(ops: Array<IOperation>): Array<IOperation> {
         if (ops.size <= CLVersion.INLINED_OPS_LIMIT) return ops
 
-        val resultTreeRef = resultTree.resolvedData.ref
         val compressedOps: MutableList<IOperation> = ArrayList()
         val createdNodes: MutableSet<Long> = HashSet()
 
@@ -36,7 +37,7 @@ class OperationsCompressor(val resultTree: CLTree) {
                 is NoOp -> {}
                 is AddNewChildOp -> {
                     if (!createdNodes.contains(op.position.nodeId)) {
-                        compressedOps += AddNewChildSubtreeOp(resultTreeRef, op.position, op.childId, op.concept)
+                        compressedOps += AddNewChildSubtreeOp(resultTree.ref, op.position, op.childId, op.concept)
                     }
                     createdNodes.add(op.childId)
                 }
@@ -53,7 +54,7 @@ class OperationsCompressor(val resultTree: CLTree) {
         }
 
         for (id in createdNodes) {
-            if (!resultTree.containsNode(id)) throw RuntimeException("Tree expected to contain node $id")
+            if (!resultTree.data.getLegacyModelTree().containsNode(id).getSynchronous()) throw RuntimeException("Tree expected to contain node $id")
         }
 
         // if we save less than 10 operations then it's probably not worth doing the replacement

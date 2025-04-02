@@ -59,6 +59,10 @@ interface IModelTree<NodeId> : IStreamExecutorProvider {
     fun mutate(operations: Iterable<MutationParameters<NodeId>>): IStream.One<IModelTree<NodeId>>
 
     fun mutate(operation: MutationParameters<NodeId>): IStream.One<IModelTree<NodeId>> = mutate(listOf(operation))
+
+    companion object {
+        fun builder(): ModelTreeBuilder<Long> = ModelTreeBuilder.newWithInt64Ids()
+    }
 }
 
 sealed class MutationParameters<NodeId> {

@@ -1,6 +1,7 @@
 package org.modelix.datastructures
 
 import org.modelix.datastructures.objects.IDataTypeConfiguration
+import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.Object
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutorProvider
@@ -27,4 +28,12 @@ interface IPersistentMap<K, V> : IStreamExecutorProvider {
     fun remove(key: K): IStream.One<IPersistentMap<K, V>> = removeAll(listOf(key))
 
     fun getChanges(oldMap: IPersistentMap<K, V>, changesOnly: Boolean): IStream.Many<MapChangeEvent<K, V>>
+}
+
+interface IPersistentMapRootData<K, V> : IObjectData {
+    fun createMapInstance(self: Object<IPersistentMapRootData<K, V>>): IPersistentMap<K, V>
+}
+
+fun <K, V> Object<IPersistentMapRootData<K, V>>.createMapInstance(): IPersistentMap<K, V> {
+    return data.createMapInstance(this)
 }

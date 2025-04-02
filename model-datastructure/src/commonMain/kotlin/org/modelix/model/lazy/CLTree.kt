@@ -1,7 +1,11 @@
 package org.modelix.model.lazy
 
+import org.modelix.datastructures.IPersistentMapRootData
+import org.modelix.datastructures.autoResolveValues
+import org.modelix.datastructures.createMapInstance
 import org.modelix.datastructures.hamt.HamtInternalNode
 import org.modelix.datastructures.hamt.HamtNode
+import org.modelix.datastructures.model.IModelTree
 import org.modelix.datastructures.model.NodeObjectData
 import org.modelix.datastructures.model.asLegacyTree
 import org.modelix.datastructures.model.fromNodeReference
@@ -88,7 +92,7 @@ class CLTree private constructor(val resolvedData: Object<CPTree>) :
     val hash: String
         get() = resolvedData.ref.getHashString()
 
-    val nodesMap: HamtNode<Long, ObjectReference<NodeObjectData<Long>>>
+    val nodesMap: IPersistentMapRootData<Long, ObjectReference<NodeObjectData<Long>>>
         get() = getStreamExecutor().query { data.int64Hamt!!.resolveData() }
 
     val root: NodeObjectData<Long>?
@@ -98,9 +102,7 @@ class CLTree private constructor(val resolvedData: Object<CPTree>) :
         if (id == 0L) {
             return IStream.empty()
         }
-        return nodesMap.get(id).flatMapZeroOrOne {
-            it.resolveData()
-        }
+        return data.int64Hamt!!.resolveNow().createMapInstance().autoResolveValues().get(id)
     }
 
     override fun toString(): String {
@@ -137,34 +139,26 @@ class CLTree private constructor(val resolvedData: Object<CPTree>) :
         }
     }
 
-    class Builder(var graph: IObjectGraph) {
-        private var treeId: TreeId? = null
-        private var useRoleIds: Boolean = true
+    class Builder(graph: IObjectGraph) {
+        private val modelBuilder = IModelTree.builder().graph(graph)
 
         fun useRoleIds(value: Boolean = true): Builder {
-            this.useRoleIds = value
+            modelBuilder.storeRoleNames(!value)
             return this
         }
 
         fun treeId(id: TreeId): Builder = also {
-            this.treeId = id
+            modelBuilder.treeId(id)
         }
 
         @Deprecated("Provide a treeId")
-        fun repositoryId(id: RepositoryId): Builder {
-            this.treeId = TreeId.fromLegacyId(id.id)
-            return this
-        }
+        fun repositoryId(id: RepositoryId) = treeId(TreeId.fromLegacyId(id.id))
 
         @Deprecated("Provide a treeId")
-        fun repositoryId(id: String): Builder = treeId(TreeId.fromLegacyId(id))
+        fun repositoryId(id: String) = treeId(TreeId.fromLegacyId(id))
 
         fun build(): ITree {
-            return createNewTreeData(
-                graph,
-                treeId ?: TreeId.random(),
-                useRoleIds,
-            ).data.getLegacyModelTree().asLegacyTree()
+            return modelBuilder.build().asLegacyTree()
         }
     }
 }

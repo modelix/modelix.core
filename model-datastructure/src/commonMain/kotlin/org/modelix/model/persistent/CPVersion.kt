@@ -69,7 +69,7 @@ data class CPVersion(
             val treeImplPrefix = when (it.value.getDeserializer()) {
                 CPTree -> ""
                 is HamtNode.Deserializer<*, *> -> ""
-                is PatriciaNode.Deserializer<*> -> {
+                is PatriciaNode.Deserializer<*, *> -> {
                     // S as in [S]tring based node IDs
                     "S" + Separators.LEVEL4
                 }

@@ -1,15 +1,14 @@
 package org.modelix.model.persistent
 
-import org.modelix.datastructures.MapWithObjectReferenceValues
+import org.modelix.datastructures.IPersistentMapRootData
+import org.modelix.datastructures.autoResolveValues
+import org.modelix.datastructures.createMapInstance
 import org.modelix.datastructures.hamt.HamtNode
-import org.modelix.datastructures.hamt.HamtTree
-import org.modelix.datastructures.model.DefaultModelTree
 import org.modelix.datastructures.model.IModelTree
-import org.modelix.datastructures.model.Int64ModelTree
-import org.modelix.datastructures.model.LongAsNodeReferenceModelTree
 import org.modelix.datastructures.model.NodeObjectData
-import org.modelix.datastructures.model.NodeReferenceAsLongModelTree
 import org.modelix.datastructures.model.NodeReferenceDataTypeConfig
+import org.modelix.datastructures.model.asModelTree
+import org.modelix.datastructures.model.withIdTranslation
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
 import org.modelix.datastructures.objects.IObjectGraph
@@ -20,7 +19,6 @@ import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.datastructures.objects.ObjectReferenceDataTypeConfiguration
 import org.modelix.datastructures.objects.getDescendantsAndSelf
 import org.modelix.datastructures.patricia.PatriciaNode
-import org.modelix.datastructures.patricia.PatriciaTrie
 import org.modelix.datastructures.patricia.PatriciaTrieConfig
 import org.modelix.model.TreeId
 import org.modelix.model.api.INodeReference
@@ -30,35 +28,28 @@ import org.modelix.streams.plus
 
 class CPTree(
     val id: TreeId,
-    val int64Hamt: ObjectReference<HamtNode<Long, ObjectReference<NodeObjectData<Long>>>>?,
-    val trieWithNodeRefIds: ObjectReference<PatriciaNode<ObjectReference<NodeObjectData<INodeReference>>>>?,
+    val int64Hamt: ObjectReference<IPersistentMapRootData<Long, ObjectReference<NodeObjectData<Long>>>>?,
+    val trieWithNodeRefIds: ObjectReference<IPersistentMapRootData<INodeReference, ObjectReference<NodeObjectData<INodeReference>>>>?,
     val usesRoleIds: Boolean,
 ) : IObjectData {
     fun getTreeReference() = checkNotNull(trieWithNodeRefIds ?: int64Hamt) { "Not tree hash provided" }
 
     fun getLegacyModelTree(): IModelTree<Long> {
         if (trieWithNodeRefIds != null) {
-            return NodeReferenceAsLongModelTree(
-                DefaultModelTree(MapWithObjectReferenceValues(trieWithNodeRefIds.graph, PatriciaTrie(trieWithNodeRefIds.resolveNow())), id),
-            )
+            trieWithNodeRefIds.resolveNow().createMapInstance().autoResolveValues().asModelTree(id).withIdTranslation()
         }
         if (int64Hamt != null) {
-            return Int64ModelTree(MapWithObjectReferenceValues(int64Hamt.graph, HamtTree(int64Hamt.resolveNow())), id)
+            return int64Hamt.resolveNow().createMapInstance().autoResolveValues().asModelTree(id)
         }
         throw IllegalStateException("Doesn't contain any tree data")
     }
 
     fun getModelTree(): IModelTree<INodeReference> {
         if (trieWithNodeRefIds != null) {
-            return DefaultModelTree(
-                MapWithObjectReferenceValues(trieWithNodeRefIds.graph, PatriciaTrie(trieWithNodeRefIds.resolveNow())),
-                id,
-            )
+            return trieWithNodeRefIds.resolveNow().createMapInstance().autoResolveValues().asModelTree(id)
         }
         if (int64Hamt != null) {
-            return LongAsNodeReferenceModelTree(
-                Int64ModelTree(MapWithObjectReferenceValues(int64Hamt.graph, HamtTree(int64Hamt.resolveNow())), id),
-            )
+            return int64Hamt.resolveNow().createMapInstance().autoResolveValues().asModelTree(id).withIdTranslation()
         }
         throw IllegalStateException("Doesn't contain any tree data")
     }
@@ -103,7 +94,7 @@ class CPTree(
         val CURRENT_PERSISTENCE_VERSION = STRING_IDS
         val DESERIALIZER: IObjectDeserializer<CPTree> = this
 
-        private fun patriciaDeserializer(graph: IObjectGraph, treeId: TreeId): PatriciaNode.Deserializer<ObjectReference<NodeObjectData<INodeReference>>> {
+        private fun patriciaDeserializer(graph: IObjectGraph, treeId: TreeId): PatriciaNode.Deserializer<INodeReference, ObjectReference<NodeObjectData<INodeReference>>> {
             val nodeIdType = NodeReferenceDataTypeConfig()
             val config = PatriciaTrieConfig(
                 graph = graph,

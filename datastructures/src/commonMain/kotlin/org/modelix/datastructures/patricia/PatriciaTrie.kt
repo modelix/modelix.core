@@ -15,10 +15,10 @@ import org.modelix.streams.IStreamExecutorProvider
  */
 class PatriciaTrie<K, V : Any>(
     val config: PatriciaTrieConfig<K, V>,
-    val root: Object<PatriciaNode<V>>,
+    val root: Object<PatriciaNode<K, V>>,
 ) : IPersistentMap<K, V>, IStreamExecutorProvider by root.graph {
     constructor(config: PatriciaTrieConfig<K, V>) : this(config, PatriciaNode(config).asObject(config.graph))
-    constructor(root: Object<PatriciaNode<V>>) : this(root.data.config as PatriciaTrieConfig<K, V>, root)
+    constructor(root: Object<PatriciaNode<K, V>>) : this(root.data.config as PatriciaTrieConfig<K, V>, root)
 
     override fun asObject(): Object<*> {
         return root
@@ -32,7 +32,7 @@ class PatriciaTrie<K, V : Any>(
         return config.keyConfig.serialize(key)
     }
 
-    private fun withNewRoot(newRoot: PatriciaNode<V>?): PatriciaTrie<K, V> {
+    private fun withNewRoot(newRoot: PatriciaNode<K, V>?): PatriciaTrie<K, V> {
         return PatriciaTrie(config, (newRoot ?: PatriciaNode(config)).asObject(config.graph))
     }
 

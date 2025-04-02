@@ -83,3 +83,7 @@ class MapWithObjectReferenceValues<K, V : IObjectData>(
         }
     }
 }
+
+fun <K, V : IObjectData> IPersistentMap<K, ObjectReference<V>>.autoResolveValues(): IPersistentMap<K, V> {
+    return MapWithObjectReferenceValues(asObject().graph, this)
+}

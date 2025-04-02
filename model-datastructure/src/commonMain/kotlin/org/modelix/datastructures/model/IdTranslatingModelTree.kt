@@ -13,6 +13,7 @@ import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
 import org.modelix.streams.mapFirst
 import org.modelix.streams.mapSecond
+import kotlin.jvm.JvmName
 
 class NodeReferenceAsLongModelTree(tree: IModelTree<INodeReference>) : IdTranslatingModelTree<Long, INodeReference>(tree) {
     override fun Long.toInternal(): INodeReference = PNodeReference(this, getId().id)
@@ -185,4 +186,14 @@ abstract class IdTranslatingModelTree<ExternalId, InternalId>(val tree: IModelTr
             }
         }
     }
+}
+
+@JvmName("withIdTranslationToInt64")
+fun IModelTree<INodeReference>.withIdTranslation(): IModelTree<Long> {
+    return NodeReferenceAsLongModelTree(this)
+}
+
+@JvmName("withIdTranslationToNodeReferences")
+fun IModelTree<Long>.withIdTranslation(): IModelTree<INodeReference> {
+    return LongAsNodeReferenceModelTree(this)
 }

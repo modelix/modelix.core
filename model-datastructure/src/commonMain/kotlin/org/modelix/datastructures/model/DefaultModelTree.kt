@@ -1,16 +1,15 @@
 package org.modelix.datastructures.model
 
 import org.modelix.datastructures.IPersistentMap
-import org.modelix.datastructures.hamt.HamtNode
 import org.modelix.datastructures.objects.Object
-import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.datastructures.objects.asObject
-import org.modelix.datastructures.patricia.PatriciaNode
+import org.modelix.datastructures.objects.upcast
 import org.modelix.model.TreeId
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.persistent.CPTree
+import kotlin.jvm.JvmName
 
 /**
  * Legacy storage with new API that hides details about the type of IDs that's used internally.
@@ -23,7 +22,7 @@ class Int64ModelTree(nodesMap: IPersistentMap<Long, NodeObjectData<Long>>, treeI
     override fun asObject(): Object<CPTree> {
         return CPTree(
             id = getId(),
-            int64Hamt = nodesMap.asObject().ref as ObjectReference<HamtNode<Long, ObjectReference<NodeObjectData<Long>>>>,
+            int64Hamt = nodesMap.asObject().ref.upcast(),
             trieWithNodeRefIds = null,
             usesRoleIds = true,
         ).asObject(graph)
@@ -41,7 +40,7 @@ class DefaultModelTree(nodesMap: IPersistentMap<INodeReference, NodeObjectData<I
         return CPTree(
             id = getId(),
             int64Hamt = null,
-            trieWithNodeRefIds = nodesMap.asObject() as ObjectReference<PatriciaNode<ObjectReference<NodeObjectData<INodeReference>>>>,
+            trieWithNodeRefIds = nodesMap.asObject().ref.upcast(),
             usesRoleIds = true,
         ).asObject(graph)
     }
@@ -54,3 +53,13 @@ class DefaultModelTree(nodesMap: IPersistentMap<INodeReference, NodeObjectData<I
 }
 
 class NodeNotFoundException(nodeId: Any?) : RuntimeException("Node doesn't exist: $nodeId")
+
+@JvmName("asModelTreeWithNodeReferences")
+fun IPersistentMap<INodeReference, NodeObjectData<INodeReference>>.asModelTree(treeId: TreeId): IModelTree<INodeReference> {
+    return DefaultModelTree(this, treeId)
+}
+
+@JvmName("asModelTreeWithInt64")
+fun IPersistentMap<Long, NodeObjectData<Long>>.asModelTree(treeId: TreeId): IModelTree<Long> {
+    return Int64ModelTree(this, treeId)
+}

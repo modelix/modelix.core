@@ -1,59 +1,67 @@
 package org.modelix.datastructures.patricia
 
+import org.modelix.datastructures.IPersistentMap
+import org.modelix.datastructures.IPersistentMapRootData
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.IObjectReferenceFactory
+import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.datastructures.objects.getHashString
+import org.modelix.datastructures.objects.upcast
 import org.modelix.datastructures.serialization.SplitJoinSerializer
 import org.modelix.kotlin.utils.urlDecode
 import org.modelix.kotlin.utils.urlEncode
 import org.modelix.streams.IStream
 import org.modelix.streams.plus
 
-data class PatriciaNode<V : Any>(
-    val config: PatriciaTrieConfig<*, V>,
+data class PatriciaNode<K, V : Any>(
+    val config: PatriciaTrieConfig<K, V>,
     val ownPrefix: String,
     val firstChars: String,
-    val children: List<ObjectReference<PatriciaNode<V>>>,
+    val children: List<ObjectReference<PatriciaNode<K, V>>>,
 
     /**
      * [ownPrefix] is part of the key for entry that s stored in this node
      */
     val value: V?,
-) : IObjectData {
-    constructor(config: PatriciaTrieConfig<*, V>) : this(config, "", "", emptyList(), null)
+) : IPersistentMapRootData<K, V> {
+    constructor(config: PatriciaTrieConfig<K, V>) : this(config, "", "", emptyList(), null)
 
-    constructor(config: PatriciaTrieConfig<*, V>, key: String, value: V) :
+    constructor(config: PatriciaTrieConfig<K, V>, key: String, value: V) :
         this(config = config, ownPrefix = key, value = value, firstChars = "", children = emptyList())
+
+    override fun createMapInstance(self: Object<IPersistentMapRootData<K, V>>): IPersistentMap<K, V> {
+        return PatriciaTrie(self.upcast<PatriciaNode<K, V>>())
+    }
 
     fun calculateDepth(): Int = (children.maxOfOrNull { it.resolveNow().data.calculateDepth() } ?: 0) + 1
 
-    fun withChildInserted(index: Int, firstChar: Char, child: PatriciaNode<V>): PatriciaNode<V> {
+    fun withChildInserted(index: Int, firstChar: Char, child: PatriciaNode<K, V>): PatriciaNode<K, V> {
         return copy(
             firstChars = firstChars.take(index) + firstChar + firstChars.drop(index),
             children = children.take(index) + config.graph.fromCreated(child) + children.drop(index),
         )
     }
 
-    private fun withChildReplacedNullable(index: Int, child: PatriciaNode<V>?): PatriciaNode<V>? {
+    private fun withChildReplacedNullable(index: Int, child: PatriciaNode<K, V>?): PatriciaNode<K, V>? {
         return if (child == null) withoutChild(index) else withChildReplaced(index, config.graph.fromCreated(child))
     }
 
-    private fun withChildReplaced(index: Int, child: ObjectReference<PatriciaNode<V>>): PatriciaNode<V> {
+    private fun withChildReplaced(index: Int, child: ObjectReference<PatriciaNode<K, V>>): PatriciaNode<K, V> {
         if (children[index] === child) return this
         return copy(children = children.take(index) + child + children.drop(index + 1))
     }
 
-    fun withoutChild(index: Int): PatriciaNode<V>? {
+    fun withoutChild(index: Int): PatriciaNode<K, V>? {
         return copy(
             firstChars = firstChars.take(index) + firstChars.drop(index + 1),
             children = children.take(index) + children.drop(index + 1),
         )
     }
 
-    fun tryMerge(): IStream.ZeroOrOne<PatriciaNode<V>> {
+    fun tryMerge(): IStream.ZeroOrOne<PatriciaNode<K, V>> {
         if (value != null) return IStream.of(this)
         return when (children.size) {
             0 -> IStream.empty()
@@ -89,14 +97,14 @@ data class PatriciaNode<V : Any>(
     /**
      * Returns a new root that contains only those entries that start with the given prefix.
      */
-    fun slice(prefix: CharSequence): IStream.ZeroOrOne<PatriciaNode<V>> {
+    fun slice(prefix: CharSequence): IStream.ZeroOrOne<PatriciaNode<K, V>> {
         return getSubtree(prefix).map { it.copy(ownPrefix = prefix.toString() + it.ownPrefix) }
     }
 
     /**
      * Returns a subtree with all known suffixes of the provided prefix.
      */
-    fun getSubtree(prefix: CharSequence): IStream.ZeroOrOne<PatriciaNode<V>> {
+    fun getSubtree(prefix: CharSequence): IStream.ZeroOrOne<PatriciaNode<K, V>> {
         if (ownPrefix.startsWith(prefix)) {
             return if (ownPrefix.length == prefix.length) {
                 IStream.of(this.copy(ownPrefix = ""))
@@ -127,7 +135,7 @@ data class PatriciaNode<V : Any>(
         }
     }
 
-    fun put(newKey: CharSequence, newValue: V?): IStream.ZeroOrOne<PatriciaNode<V>> {
+    fun put(newKey: CharSequence, newValue: V?): IStream.ZeroOrOne<PatriciaNode<K, V>> {
         val commonPrefix = newKey.commonPrefixWith(this.ownPrefix)
         val remainingNewKey = newKey.drop(commonPrefix.length)
         val remainingOwnPrefix = this.ownPrefix.drop(commonPrefix.length)
@@ -144,7 +152,7 @@ data class PatriciaNode<V : Any>(
                         .mapNotNull { withChildReplacedNullable(index, it) }
                 } else {
                     val insertionIndex = (-index) - 1
-                    val newChild = PatriciaNode<V>(
+                    val newChild = PatriciaNode<K, V>(
                         config = config,
                         ownPrefix = remainingNewKey.toString(),
                         value = newValue,
@@ -160,16 +168,16 @@ data class PatriciaNode<V : Any>(
             ).flatMapZeroOrOne { it.tryMerge() }
     }
 
-    fun split(commonPrefix: CharSequence): PatriciaNode<V> {
+    fun split(commonPrefix: CharSequence): PatriciaNode<K, V> {
         val remainingPrefix = this.ownPrefix.drop(commonPrefix.length)
-        return PatriciaNode<V>(
+        return PatriciaNode<K, V>(
             config = config,
             ownPrefix = commonPrefix.toString(),
             value = null,
             firstChars = remainingPrefix.take(1),
             children = listOf(
                 config.graph.fromCreated(
-                    PatriciaNode<V>(
+                    PatriciaNode<K, V>(
                         config = config,
                         ownPrefix = remainingPrefix,
                         firstChars = this.firstChars,
@@ -191,24 +199,24 @@ data class PatriciaNode<V : Any>(
     }
 
     override fun getDeserializer(): IObjectDeserializer<*> {
-        return Deserializer(config)
+        return Deserializer<K, V>(config)
     }
 
     override fun getContainmentReferences(): List<ObjectReference<IObjectData>> {
         return children + (value?.let { config.valueConfig.getContainmentReferences(it) } ?: emptyList())
     }
 
-    class Deserializer<V : Any>(val config: (IObjectGraph) -> PatriciaTrieConfig<*, V>) : IObjectDeserializer<PatriciaNode<V>> {
-        constructor(config: PatriciaTrieConfig<*, V>) : this({ config })
+    class Deserializer<K, V : Any>(val config: (IObjectGraph) -> PatriciaTrieConfig<K, V>) : IObjectDeserializer<PatriciaNode<K, V>> {
+        constructor(config: PatriciaTrieConfig<K, V>) : this({ config })
         override fun deserialize(
             serialized: String,
             referenceFactory: IObjectReferenceFactory,
-        ): PatriciaNode<V> {
+        ): PatriciaNode<K, V> {
             val S1 = SplitJoinSerializer.SEPARATORS[0]
             val S2 = SplitJoinSerializer.SEPARATORS[1]
             val parts = serialized.split(S1, limit = 4)
             val config = config(referenceFactory as IObjectGraph)
-            return PatriciaNode<V>(
+            return PatriciaNode<K, V>(
                 config,
                 parts[0].urlDecode()!!,
                 parts[1].urlDecode()!!,

@@ -1,24 +1,30 @@
 package org.modelix.datastructures.hamt
 
+import org.modelix.datastructures.IPersistentMap
+import org.modelix.datastructures.IPersistentMapRootData
 import org.modelix.datastructures.MapChangeEvent
 import org.modelix.datastructures.btree.BTree
 import org.modelix.datastructures.btree.BTreeConfig
 import org.modelix.datastructures.btree.BTreeNode
 import org.modelix.datastructures.objects.IDataTypeConfiguration
-import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.IObjectReferenceFactory
 import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.hash
+import org.modelix.datastructures.objects.upcast
 import org.modelix.streams.IStream
 import kotlin.jvm.JvmName
 
 /**
  * Implementation of a hash array mapped trie.
  */
-sealed class HamtNode<K, V : Any> : IObjectData {
+sealed class HamtNode<K, V : Any> : IPersistentMapRootData<K, V> {
     abstract val config: Config<K, V>
+
+    override fun createMapInstance(self: Object<IPersistentMapRootData<K, V>>): IPersistentMap<K, V> {
+        return HamtTree(self.upcast<HamtNode<K, V>>())
+    }
 
     protected operator fun V.compareTo(other: V): Int = config.valueConfig.compare(this, other)
 

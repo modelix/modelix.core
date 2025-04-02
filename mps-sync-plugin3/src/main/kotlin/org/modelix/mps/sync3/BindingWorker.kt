@@ -79,7 +79,7 @@ class BindingWorker(
         invalidatingListener = null
     }
 
-    private fun ModelSynchronizer.executeSync() {
+    private fun ModelSynchronizer.synchronizeAndStoreInstance() {
         try {
             activeSynchronizer = this
             synchronize()
@@ -94,10 +94,17 @@ class BindingWorker(
         val current = synchronizer.getCurrentSyncStack()
         val previous = previousSyncStack
         previousSyncStack = current
+
+        // The user should just have enough details to understand where the sync is spending its time.
         val firstChange = current.zip(previous).indexOfFirst { it.first != it.second }
-        val busyPath = current.take(firstChange + 1)
-        return busyPath.joinToString(" > ") {
-            it.getName() ?: it.tryGetConcept()?.getShortName() ?: it.getNodeReference().serialize()
+        val path = current.take(firstChange + 1).drop(1)
+
+        return path.joinToString(" > ") { node ->
+            runCatching { node.getName() }.getOrNull()?.takeIf { it.isNotEmpty() }
+                ?: runCatching { node.tryGetConcept()?.getShortName() }.getOrNull()?.takeIf { it.isNotEmpty() }
+                ?: runCatching { node.getNodeReference().serialize() }.getOrNull()
+                ?: runCatching { node.toString() }.getOrNull()
+                ?: (node::class.java.simpleName + "@" + System.identityHashCode(node))
         }
     }
 
@@ -279,7 +286,7 @@ class BindingWorker(
                         if (!continueOnError()) throw it
                         getMPSListener().synchronizationErrorHappened()
                     },
-                ).executeSync()
+                ).synchronizeAndStoreInstance()
             }
         }
     }
@@ -340,7 +347,7 @@ class BindingWorker(
                             sourceMask = MPSProjectSyncMask(listOf(mpsProject), true),
                             targetMask = MPSProjectSyncMask(listOf(mpsProject), false),
                             onException = { if (!continueOnError()) throw it },
-                        ).executeSync()
+                        ).synchronizeAndStoreInstance()
                     }
                 }
             }

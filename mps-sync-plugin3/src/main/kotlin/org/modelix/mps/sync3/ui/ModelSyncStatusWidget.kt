@@ -41,11 +41,18 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
     companion object {
         const val ID = "ModelixSyncStatus"
         val ICON = IconManager.getInstance().getIcon("org/modelix/mps/sync3/modelix16.svg", this::class.java)
+        private val LOG = mu.KotlinLogging.logger { }
     }
 
     private val component: JLabel = JLabel("", ICON, JLabel.LEFT)
     private val timer = EdtExecutorService.getScheduledExecutorInstance()
-        .scheduleWithFixedDelay({ updateComponent() }, 1000, 500, TimeUnit.MILLISECONDS)
+        .scheduleWithFixedDelay({
+            try {
+                updateComponent()
+            } catch (ex: Throwable) {
+                LOG.error(ex) { "Widget update failed" }
+            }
+        }, 1000, 500, TimeUnit.MILLISECONDS)
     private var disposed = false
     private var highlighted = false
 

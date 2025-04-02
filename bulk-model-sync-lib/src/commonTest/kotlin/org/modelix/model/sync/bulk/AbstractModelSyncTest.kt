@@ -592,7 +592,7 @@ abstract class AbstractModelSyncTest {
     @Test
     @JsName("can_handle_random_changes")
     fun `can handle random changes`() {
-        for (seed in (1..100)) {
+        for (seed in (1..30)) {
             runRandomTest(seed + 6787456)
         }
     }

@@ -79,7 +79,7 @@ class ModelReplicationServer(
     }
 
     private val stores: StoreManager get() = repositoriesManager.getStoreManager()
-    private val indexPersistence = CacheBuilder.newBuilder().softValues().build<RepositoryId?, InMemoryMemoizationPersistence>()
+    private val indexPersistence = CacheBuilder.newBuilder().softValues().build<RepositoryId, InMemoryMemoizationPersistence>()
 
     fun init(application: Application) {
         application.routing {

@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinMultiplatformPluginWrapper
-import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformJvmPlugin
+import org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 import org.modelix.MODELIX_JDK_VERSION
@@ -36,7 +36,7 @@ tasks.withType<KotlinJvmCompile>().configureEach {
     }
 }
 
-plugins.withType<KotlinPlatformJvmPlugin> {
+plugins.withType<KotlinPluginWrapper> {
     extensions.configure<KotlinJvmProjectExtension> {
         jvmToolchain(MODELIX_JDK_VERSION)
         compilerOptions {

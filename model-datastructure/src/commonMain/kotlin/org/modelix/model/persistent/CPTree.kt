@@ -32,11 +32,16 @@ class CPTree(
     val trieWithNodeRefIds: ObjectReference<IPersistentMapRootData<INodeReference, ObjectReference<NodeObjectData<INodeReference>>>>?,
     val usesRoleIds: Boolean,
 ) : IObjectData {
+
+    init {
+        require(int64Hamt != null || trieWithNodeRefIds != null) { "No tree data provided" }
+    }
+
     fun getTreeReference() = checkNotNull(trieWithNodeRefIds ?: int64Hamt) { "Not tree hash provided" }
 
     fun getLegacyModelTree(): IModelTree<Long> {
         if (trieWithNodeRefIds != null) {
-            trieWithNodeRefIds.resolveNow().createMapInstance().autoResolveValues().asModelTree(id).withIdTranslation()
+            return trieWithNodeRefIds.resolveNow().createMapInstance().autoResolveValues().asModelTree(id).withIdTranslation()
         }
         if (int64Hamt != null) {
             return int64Hamt.resolveNow().createMapInstance().autoResolveValues().asModelTree(id)

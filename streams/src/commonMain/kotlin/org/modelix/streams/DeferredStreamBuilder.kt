@@ -348,6 +348,11 @@ class DeferredStreamBuilder : IStreamBuilder {
         }
 
         @DelicateModelixApi
+        override fun iterateBlocking(visitor: (E) -> Unit) {
+            iterateSynchronous(visitor)
+        }
+
+        @DelicateModelixApi
         override suspend fun iterateSuspending(visitor: suspend (E) -> Unit) {
             FlowStreamBuilder.INSTANCE.convert(this).collect(visitor)
         }

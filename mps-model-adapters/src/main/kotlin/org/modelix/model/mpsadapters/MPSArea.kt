@@ -25,7 +25,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
 
     private fun resolveMPSModelReference(ref: INodeReference): INode? {
         if (ref is MPSModelReference) {
-            return ref.modelReference.resolve(repository).let { MPSModelAsNode(it).asLegacyNode() }
+            return ref.modelReference.resolve(repository)?.let { MPSModelAsNode(it).asLegacyNode() }
         }
 
         val serialized = ref.serialize().substringAfter("${MPSModelReference.PREFIX}:")

@@ -24,6 +24,16 @@ data class MPSModelReference(val modelReference: SModelReference) : INodeReferen
 
     companion object {
         internal const val PREFIX = "mps-model"
+
+        fun tryConvert(ref: INodeReference): MPSModelReference? {
+            if (ref is MPSModelReference) return ref
+            val serialized = ref.serialize()
+            val serializedMPSRef = when {
+                serialized.startsWith("mps-model:") -> serialized.substringAfter("mps-model:")
+                else -> return null
+            }
+            return MPSModelReference(MPSReferenceParser.parseSModelReference(serializedMPSRef))
+        }
     }
 
     override fun serialize(): String {

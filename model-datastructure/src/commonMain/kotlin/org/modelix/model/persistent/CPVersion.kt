@@ -39,7 +39,7 @@ data class CPVersion(
 ) : IObjectData {
 
     init {
-        if ((operations == null) == (operationsHash == null)) {
+        if (operations != null && operationsHash != null) {
             throw RuntimeException("Only one of 'operations' and 'operationsHash' can be provided")
         }
         if (previousVersion != null && baseVersion != null) {
@@ -57,7 +57,7 @@ data class CPVersion(
 
     override fun serialize(): String {
         val opsPart: String = operationsHash?.getHash()?.toString()
-            ?: if (operations!!.isEmpty()) {
+            ?: if (operations.isNullOrEmpty()) {
                 ""
             } else {
                 operations.joinToString(Separators.OPS) { OperationSerializer.INSTANCE.serialize(it) }

@@ -61,7 +61,7 @@ abstract class ModelTreeBuilder<NodeId> private constructor(protected val common
                 keyConfig = nodeIdType,
                 valueConfig = ObjectReferenceDataTypeConfiguration(common.graph, NodeObjectData.Deserializer(nodeIdType, common.treeId)),
             )
-            return PatriciaTrie(config).also { it.put(root.data.id, root.ref) }.autoResolveValues().asModelTree(common.treeId)
+            return PatriciaTrie(config).put(root.data.id, root.ref).getSynchronous().autoResolveValues().asModelTree(common.treeId)
         }
     }
 

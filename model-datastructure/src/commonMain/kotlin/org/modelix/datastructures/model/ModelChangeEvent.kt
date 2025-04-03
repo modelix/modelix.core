@@ -9,8 +9,8 @@ sealed class ModelChangeEvent<NodeId>
 sealed class NodeChangeEvent<NodeId> : ModelChangeEvent<NodeId>() {
     abstract val nodeId: NodeId
 }
-sealed class RoleChangeEvent<NodeId> : ModelChangeEvent<NodeId>() {
-    abstract val nodeId: NodeId
+sealed class RoleChangeEvent<NodeId> : NodeChangeEvent<NodeId>() {
+    abstract override val nodeId: NodeId
     abstract val role: IRoleReference
 }
 data class ContainmentChangedEvent<NodeId>(override val nodeId: NodeId) : NodeChangeEvent<NodeId>()

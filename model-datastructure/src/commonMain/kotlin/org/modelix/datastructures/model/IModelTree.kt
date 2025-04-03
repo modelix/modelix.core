@@ -1,5 +1,6 @@
 package org.modelix.datastructures.model
 
+import org.modelix.datastructures.objects.IDataTypeConfiguration
 import org.modelix.datastructures.objects.Object
 import org.modelix.model.TreeId
 import org.modelix.model.api.ConceptReference
@@ -30,8 +31,10 @@ import org.modelix.streams.plus
  */
 interface IModelTree<NodeId> : IStreamExecutorProvider {
     fun asObject(): Object<CPTree>
+    fun getNodeIdType(): IDataTypeConfiguration<NodeId>
 
     fun getId(): TreeId
+    fun getRootNodeId(): NodeId
     fun createNodeReference(nodeId: NodeId): INodeReference
 
     fun containsNode(nodeId: NodeId): IStream.One<Boolean>

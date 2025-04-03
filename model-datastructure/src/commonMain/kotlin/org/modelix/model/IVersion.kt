@@ -1,12 +1,19 @@
 package org.modelix.model
 
+import org.modelix.datastructures.model.IModelTree
+import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITree
 import kotlin.jvm.JvmInline
 
 interface IVersion {
     fun getContentHash(): String
+
+    @Deprecated("Use getModelTree()")
     fun getTree(): ITree
+
     fun getTrees(): Map<TreeType, ITree>
+
+    fun getModelTree(): IModelTree<INodeReference>
 }
 
 @JvmInline

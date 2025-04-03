@@ -1,5 +1,7 @@
 package org.modelix.datastructures.model
 
+import org.modelix.datastructures.objects.IDataTypeConfiguration
+import org.modelix.datastructures.objects.LongDataTypeConfiguration
 import org.modelix.datastructures.objects.Object
 import org.modelix.model.TreeId
 import org.modelix.model.api.IChildLinkReference
@@ -17,16 +19,9 @@ import kotlin.jvm.JvmName
 
 class NodeReferenceAsLongModelTree(tree: IModelTree<INodeReference>) : IdTranslatingModelTree<Long, INodeReference>(tree) {
     override fun Long.toInternal(): INodeReference = PNodeReference(this, getId().id)
-    override fun INodeReference.toExternal(): Long {
-        return when (this) {
-            is LocalPNodeReference -> this.id
-            is PNodeReference -> {
-                require(this.treeId == getId().id) { "Not part of this tree (${getId()}): $this" }
-                this.id
-            }
-            else -> throw IllegalArgumentException("Unsupported node ID type: $this")
-        }
-    }
+    override fun INodeReference.toExternal(): Long = extractInt64Id(getId())
+    override fun getNodeIdType(): IDataTypeConfiguration<Long> = LongDataTypeConfiguration()
+    override fun getRootNodeId() = tree.getRootNodeId().toExternal()
 
     override fun wrap(newTree: IModelTree<INodeReference>): IdTranslatingModelTree<Long, INodeReference> {
         return NodeReferenceAsLongModelTree(newTree)
@@ -38,20 +33,11 @@ class NodeReferenceAsLongModelTree(tree: IModelTree<INodeReference>) : IdTransla
 }
 
 class LongAsNodeReferenceModelTree(tree: IModelTree<Long>) : IdTranslatingModelTree<INodeReference, Long>(tree) {
-    override fun INodeReference.toInternal(): Long {
-        return when (this) {
-            is LocalPNodeReference -> this.id
-            is PNodeReference -> {
-                require(this.treeId == getId().id) { "Not part of this tree (${getId()}): $this" }
-                this.id
-            }
-            else -> throw IllegalArgumentException("Unsupported node ID type: $this")
-        }
-    }
+    override fun INodeReference.toInternal(): Long = extractInt64Id(getId())
+    override fun Long.toExternal(): INodeReference = PNodeReference(this, getId().id)
 
-    override fun Long.toExternal(): INodeReference {
-        return PNodeReference(this, getId().id)
-    }
+    override fun getNodeIdType(): IDataTypeConfiguration<INodeReference> = NodeReferenceDataTypeConfig()
+    override fun getRootNodeId() = tree.getRootNodeId().toExternal()
 
     override fun wrap(newTree: IModelTree<Long>): IdTranslatingModelTree<INodeReference, Long> {
         return LongAsNodeReferenceModelTree(newTree)
@@ -196,4 +182,15 @@ fun IModelTree<INodeReference>.withIdTranslation(): IModelTree<Long> {
 @JvmName("withIdTranslationToNodeReferences")
 fun IModelTree<Long>.withIdTranslation(): IModelTree<INodeReference> {
     return LongAsNodeReferenceModelTree(this)
+}
+
+fun INodeReference.extractInt64Id(expectedTree: TreeId): Long {
+    if (this is LocalPNodeReference) return id
+    val converted = PNodeReference.tryConvert(this)
+    if (converted != null) {
+        require(converted.treeId == expectedTree.id) { "Not part of this tree ($expectedTree): $this" }
+        return converted.id
+    }
+    this.serialize().toULongOrNull(16)?.let { return it.toLong() }
+    throw IllegalArgumentException("Cannot access the node using the legacy API. Unsupported node ID type: $this")
 }

@@ -36,6 +36,10 @@ abstract class INodeReference {
     final override fun hashCode(): Int {
         return serialize().hashCode()
     }
+
+    override fun toString(): String {
+        return serialize()
+    }
 }
 
 fun INodeReference.resolveInCurrentContext(): INode? {

@@ -36,21 +36,40 @@ class PatriciaTrie<K, V : Any>(
         return PatriciaTrie(config, (newRoot ?: PatriciaNode(config)).asObject(config.graph))
     }
 
+    private fun IStream.ZeroOrOne<PatriciaNode<K, V>>.withNewRoot() = orNull().map { withNewRoot(it) }
+
     override fun get(key: K): IStream.ZeroOrOne<V> {
         return root.data.get(keyAsString(key))
     }
 
     override fun put(key: K, value: V): IStream.One<PatriciaTrie<K, V>> {
         val keyString = keyAsString(key)
-        return root.data.put(keyString, value).orNull().map { withNewRoot(it) }
+        return root.data.put(keyString, value).withNewRoot()
     }
 
+    /**
+     * Returns a copy of the tree that contains only those entries starting with the given prefix.
+     */
     fun slice(prefix: CharSequence): IStream.One<PatriciaTrie<K, V>> {
-        return root.data.slice(prefix).orNull().map { withNewRoot(it) }
+        return root.data.slice(prefix).withNewRoot()
+    }
+
+    /**
+     * Removes all entries starting with the given [prefix] and adds all entries from [newEntries] starting with the
+     * same prefix.
+     * This allows efficiently updating a whole subtree from an external source without having to compare the new and
+     * existing data. It can just be reimported and then compared by using the builtin diff support of this
+     * data structure.
+     */
+    fun replaceSlice(prefix: CharSequence, newEntries: PatriciaTrie<K, V>): IStream.One<PatriciaTrie<K, V>> {
+        if (prefix.isEmpty()) return IStream.of(newEntries)
+        return newEntries.root.data.getSubtree(prefix).orNull().flatMapOne { replacement ->
+            root.data.replaceSubtree(prefix, replacement).withNewRoot()
+        }
     }
 
     override fun remove(key: K): IStream.One<PatriciaTrie<K, V>> {
-        return root.data.put(keyAsString(key), null).orNull().map { withNewRoot(it) }
+        return root.data.put(keyAsString(key), null).withNewRoot()
     }
 
     override fun getAllValues(): IStream.Many<V> {
@@ -66,7 +85,8 @@ class PatriciaTrie<K, V : Any>(
     }
 
     override fun getAll(keys: Iterable<K>): IStream.Many<Pair<K, V>> {
-        TODO("Not yet implemented")
+        // TODO performance
+        return IStream.many(keys).flatMap { key -> get(key).map { key to it } }
     }
 
     override fun putAll(entries: Iterable<Pair<K, V>>): IStream.One<IPersistentMap<K, V>> {
@@ -75,7 +95,8 @@ class PatriciaTrie<K, V : Any>(
     }
 
     override fun removeAll(keys: Iterable<K>): IStream.One<IPersistentMap<K, V>> {
-        TODO("Not yet implemented")
+        // TODO performance
+        return keys.fold(IStream.of(this)) { acc, key -> acc.flatMapOne { it.remove(key) } }
     }
 
     override fun removeAllEntries(entries: Iterable<Pair<K, V>>): IStream.One<IPersistentMap<K, V>> {
@@ -86,7 +107,8 @@ class PatriciaTrie<K, V : Any>(
         oldMap: IPersistentMap<K, V>,
         changesOnly: Boolean,
     ): IStream.Many<MapChangeEvent<K, V>> {
-        TODO("Not yet implemented")
+        oldMap as PatriciaTrie<K, V>
+        return root.data.getChanges("", oldMap.root.data, changesOnly)
     }
 
     override fun equals(other: Any?): Boolean {

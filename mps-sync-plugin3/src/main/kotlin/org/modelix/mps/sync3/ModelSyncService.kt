@@ -15,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import mu.KotlinLogging
 import org.jdom.Element
 import org.modelix.model.IVersion
 import org.modelix.model.client2.IModelClientV2
@@ -25,7 +26,7 @@ import org.modelix.model.oauth.OAuthConfigBuilder
 import org.modelix.model.oauth.TokenProvider
 import kotlin.time.ExperimentalTime
 
-private val LOG = mu.KotlinLogging.logger { }
+private val LOG = KotlinLogging.logger { }
 
 @Service(Service.Level.PROJECT)
 @State(name = "modelix-sync", storages = [Storage(value = "modelix.xml")])

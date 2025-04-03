@@ -11,22 +11,22 @@ import kotlinx.coroutines.withTimeout
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.junit.Assert
+import org.modelix.datastructures.model.ModelChangeEvent
 import org.modelix.model.IVersion
-import org.modelix.model.api.TreePointer
-import org.modelix.model.api.async.PropertyChangedEvent
-import org.modelix.model.api.async.TreeChangeEvent
+import org.modelix.model.api.INodeReference
 import org.modelix.model.api.getDescendants
-import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.ModelClientV2
-import org.modelix.model.client2.runWriteOnBranch
+import org.modelix.model.client2.runWriteOnModel
 import org.modelix.model.data.NodeData
 import org.modelix.model.data.asData
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.mpsadapters.MPSIdGenerator
 import org.modelix.model.mpsadapters.MPSModuleAsNode
+import org.modelix.model.mpsadapters.MPSNodeReference
 import org.modelix.model.mpsadapters.MPSProperty
-import org.modelix.model.mpsadapters.tryDecodeModelixReference
+import org.modelix.model.mutable.asModel
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.images.builder.ImageFromDockerfile
@@ -81,7 +81,7 @@ class ProjectSyncTest : MPSTestBase() {
 
         val client = ModelClientV2.builder().url("http://localhost:$port").build()
         val version = client.pull(branchRef, null)
-        val rootNode = TreePointer(version.getTree()).getRootNode()
+        val rootNode = version.getModelTree().asModel().getRootNode()
         val allNodes = rootNode.getDescendants(true)
         assertEquals(221, allNodes.count())
     }
@@ -165,14 +165,14 @@ class ProjectSyncTest : MPSTestBase() {
         println("Version 2: $version2")
 
         // ... which should result in a new version on the server with a single property change operation
-        val changes: List<TreeChangeEvent> = version2.getTree().asAsyncTree().let {
-            it.getStreamExecutor().query { it.getChanges(version1.getTree().asAsyncTree(), false).toList() }
+        val changes: List<ModelChangeEvent<INodeReference>> = version2.getModelTree().let {
+            it.getStreamExecutor().query { it.getChanges(version1.getModelTree(), false).toList() }
         }
         assertEquals(1, changes.size)
-        val change = changes.single() as PropertyChangedEvent
+        val change = changes.single() as org.modelix.datastructures.model.PropertyChangedEvent<INodeReference>
         assertEquals(MPSProperty(nameProperty).getUID(), change.role.getUID())
-        assertEquals("MyClass", version1.getTree().getProperty(change.nodeId, change.role.stringForLegacyApi()))
-        assertEquals("Changed", version2.getTree().getProperty(change.nodeId, change.role.stringForLegacyApi()))
+        assertEquals("MyClass", version1.getModelTree().getProperty(change.nodeId, change.role).getSynchronous())
+        assertEquals("Changed", version2.getModelTree().getProperty(change.nodeId, change.role).getSynchronous())
     }
 
     fun `test descendants of new node are synchronized`() = runChangeInMpsTest { classNode ->
@@ -256,10 +256,10 @@ class ProjectSyncTest : MPSTestBase() {
 
         // ... and then some non-MPS client changes a property ...
         val client = ModelClientV2.builder().url("http://localhost:$port").build().also { it.init() }
-        client.runWriteOnBranch(branchRef) { branch ->
-            val node = branch.getRootNode().getDescendants(true)
-                .first { it.getPropertyValue(nameProperty) == "MyClass" }
-            node.setPropertyValue(nameProperty, "Changed")
+        client.runWriteOnModel(branchRef) { rootNode ->
+            val node = rootNode.getDescendants(true)
+                .first { it.getPropertyValue(nameProperty.toReference()) == "MyClass" }
+            node.setPropertyValue(nameProperty.toReference(), "Changed")
         }
         val version2 = binding.flush()
 
@@ -289,10 +289,9 @@ class ProjectSyncTest : MPSTestBase() {
 
         // ... and then a non-MPS client adds a new node ...
         val client = ModelClientV2.builder().url("http://localhost:$port").build().also { it.init() }
-        val newNodeIdOnServer = client.runWriteOnBranch(branchRef) { branch ->
-            val node = branch.getRootNode().getDescendants(true)
-                .first { it.getPropertyValue(nameProperty) == "MyClass" }
-                .asWritableNode()
+        val newNodeIdOnServer = client.runWriteOnModel(branchRef, { MPSIdGenerator(client.getIdGenerator(), it) }) { rootNode ->
+            val node = rootNode.getDescendants(true)
+                .first { it.getPropertyValue(nameProperty.toReference()) == "MyClass" }
             val node2 = node.getParent()!!.addNewChild(node.getContainmentLink(), -1, node.getConceptReference())
             node2.setPropertyValue(nameProperty.toReference(), "NewClass")
             node2.getNodeReference().serialize()
@@ -305,7 +304,7 @@ class ProjectSyncTest : MPSTestBase() {
             val newNode = siblings.first { it.getProperty(nameProperty.property) == "NewClass" }
             assertEquals("NewClass", newNode.getProperty(nameProperty.property))
             // ... and have an ID that isn't a random one generated by MPS
-            assertEquals(newNodeIdOnServer, newNode.nodeId.tryDecodeModelixReference()?.serialize())
+            assertEquals(newNodeIdOnServer, MPSNodeReference(newNode.reference).serialize())
         }
     }
 
@@ -576,11 +575,13 @@ class ProjectSyncTest : MPSTestBase() {
     }
 
     private fun IVersion.asNormalizedJson(): String {
-        return getTree()
-            .let { TreePointer(it) }
+        return getModelTree()
+            .asModel()
             .getRootNode()
+            .asLegacyNode()
             .asData()
-            .normalizeIds()
+            .copy(id = "root")
+//            .normalizeIds()
             .sortChildren()
             .toJson()
     }

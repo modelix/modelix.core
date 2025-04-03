@@ -1,7 +1,11 @@
 package org.modelix.datastructures.patricia
 
+import org.modelix.datastructures.EntryAddedEvent
+import org.modelix.datastructures.EntryChangedEvent
+import org.modelix.datastructures.EntryRemovedEvent
 import org.modelix.datastructures.IPersistentMap
 import org.modelix.datastructures.IPersistentMapRootData
+import org.modelix.datastructures.MapChangeEvent
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
 import org.modelix.datastructures.objects.IObjectGraph
@@ -14,11 +18,18 @@ import org.modelix.datastructures.serialization.SplitJoinSerializer
 import org.modelix.kotlin.utils.urlDecode
 import org.modelix.kotlin.utils.urlEncode
 import org.modelix.streams.IStream
+import org.modelix.streams.flatten
+import org.modelix.streams.ifEmpty
 import org.modelix.streams.plus
 
 data class PatriciaNode<K, V : Any>(
     val config: PatriciaTrieConfig<K, V>,
     val ownPrefix: String,
+
+    /**
+     * Equivalent to `children.map { it.ownPrefix.first() }.join("")`, just allows choosing the correct child without
+     * resolving all of them. Sorted.
+     */
     val firstChars: String,
     val children: List<ObjectReference<PatriciaNode<K, V>>>,
 
@@ -72,6 +83,10 @@ data class PatriciaNode<K, V : Any>(
 
     fun withValue(newValue: V?) = copy(value = newValue)
 
+    /**
+     * Returns all entries.
+     * @param prefix the prefix from the root to this node. Required to assemble the key.
+     */
     fun getEntries(prefix: CharSequence): IStream.Many<Pair<CharSequence, V>> {
         val fullPrefix = prefix + ownPrefix
         val descendants = IStream.Companion.many(children).flatMap { it.resolveData() }
@@ -135,40 +150,61 @@ data class PatriciaNode<K, V : Any>(
         }
     }
 
-    fun put(newKey: CharSequence, newValue: V?): IStream.ZeroOrOne<PatriciaNode<K, V>> {
+    fun updateSubtree(newKey: CharSequence, updater: (PatriciaNode<K, V>) -> IStream.ZeroOrOne<PatriciaNode<K, V>>): IStream.ZeroOrOne<PatriciaNode<K, V>> {
         val commonPrefix = newKey.commonPrefixWith(this.ownPrefix)
         val remainingNewKey = newKey.drop(commonPrefix.length)
         val remainingOwnPrefix = this.ownPrefix.drop(commonPrefix.length)
         return (
             if (remainingOwnPrefix.isEmpty() && remainingNewKey.isEmpty()) {
-                // key references this node -> overwrite the value
-                IStream.of(withValue(newValue))
+                // key references this node
+                updater(this)
             } else if (remainingOwnPrefix.isEmpty()) {
                 // key is longer -> insert into children
                 val index = firstChars.binarySearch(remainingNewKey.first())
                 if (index >= 0) {
                     children[index].resolveData()
-                        .flatMapOne { it.put(remainingNewKey, newValue).orNull() }
+                        .flatMapOne { it.updateSubtree(remainingNewKey, updater).orNull() }
                         .mapNotNull { withChildReplacedNullable(index, it) }
                 } else {
                     val insertionIndex = (-index) - 1
-                    val newChild = PatriciaNode<K, V>(
+                    PatriciaNode<K, V>(
                         config = config,
                         ownPrefix = remainingNewKey.toString(),
-                        value = newValue,
+                        value = null,
                         firstChars = "",
                         children = emptyList(),
-                    )
-                    IStream.of(withChildInserted(insertionIndex, remainingNewKey.first(), newChild))
+                    ).let { updater(it) }
+                        .map { withChildInserted(insertionIndex, remainingNewKey.first(), it) }
+                        .ifEmpty {
+                            // updater returned an empty node, and since this part is about inserting, nothing changed
+                            this
+                        }
                 }
             } else {
                 // key is shorter -> need to split into a node with a shorter prefix
-                split(commonPrefix).put(newKey, newValue)
+                split(commonPrefix).updateSubtree(newKey, updater)
             }
             ).flatMapZeroOrOne { it.tryMerge() }
     }
 
-    fun split(commonPrefix: CharSequence): PatriciaNode<K, V> {
+    fun put(newKey: CharSequence, newValue: V?): IStream.ZeroOrOne<PatriciaNode<K, V>> {
+        return updateSubtree(newKey) {
+            IStream.of(it.copy(value = newValue))
+        }
+    }
+
+    fun replaceSubtree(prefix: CharSequence, newSubtree: PatriciaNode<K, V>?): IStream.ZeroOrOne<PatriciaNode<K, V>> {
+        return updateSubtree(prefix) {
+            IStream.ofNotNull(newSubtree?.copy(ownPrefix = it.ownPrefix))
+        }
+    }
+
+    /**
+     * Shortens the prefix of this node to the given one as a preparation for inserting children or setting a value.
+     */
+    private fun split(commonPrefix: CharSequence): PatriciaNode<K, V> {
+        require(ownPrefix.startsWith(commonPrefix))
+        if (ownPrefix.length == commonPrefix.length) return this
         val remainingPrefix = this.ownPrefix.drop(commonPrefix.length)
         return PatriciaNode<K, V>(
             config = config,
@@ -195,7 +231,7 @@ data class PatriciaNode<K, V : Any>(
         return ownPrefix.urlEncode() +
             S1 + firstChars.urlEncode() +
             S1 + children.joinToString(S2.toString()) { it.getHashString() } +
-            S1 + value
+            S1 + value?.let { config.valueConfig.serialize(it) }.urlEncode()
     }
 
     override fun getDeserializer(): IObjectDeserializer<*> {
@@ -204,6 +240,79 @@ data class PatriciaNode<K, V : Any>(
 
     override fun getContainmentReferences(): List<ObjectReference<IObjectData>> {
         return children + (value?.let { config.valueConfig.getContainmentReferences(it) } ?: emptyList())
+    }
+
+    fun getChanges(path: CharSequence, oldNode: PatriciaNode<K, V>?, changesOnly: Boolean): IStream.Many<MapChangeEvent<K, V>> {
+        if (oldNode == null) {
+            return if (changesOnly) {
+                IStream.empty()
+            } else {
+                getEntries(path).map { EntryAddedEvent(config.keyConfig.deserialize(it.first.toString()), it.second) }
+            }
+        }
+        return if (ownPrefix == oldNode.ownPrefix) {
+            val pathForChildren = path + ownPrefix
+            val matchingChildren = if (firstChars == oldNode.firstChars) {
+                children.zip(oldNode.children)
+            } else {
+                val newChildren = firstChars.asSequence().zip(children.asSequence()).toMap()
+                val oldChildren = oldNode.firstChars.asSequence().zip(oldNode.children.asSequence()).toMap()
+                val allFirstChars = newChildren.keys.plus(oldChildren.keys).distinct()
+                allFirstChars.map { newChildren[it] to oldChildren[it] }
+            }
+            val changesFromChildren = IStream.many(matchingChildren).flatMap { (newChildRef, oldChildRef) ->
+                val newChild = newChildRef?.resolveData() ?: IStream.of(null)
+                val oldChild = oldChildRef?.resolveData() ?: IStream.of(null)
+
+                newChild.zipWith(oldChild) { newChild, oldChild ->
+                    if (newChild == null) {
+                        if (oldChild == null) {
+                            IStream.empty()
+                        } else {
+                            if (changesOnly) {
+                                IStream.empty()
+                            } else {
+                                oldChild.getEntries(pathForChildren).map {
+                                    EntryRemovedEvent(config.keyConfig.deserialize(it.first.toString()), it.second)
+                                }
+                            }
+                        }
+                    } else {
+                        newChild.getChanges(pathForChildren, oldChild, changesOnly)
+                    }
+                }
+            }.flatten()
+
+            fun ownKey() = config.keyConfig.deserialize(pathForChildren.toString())
+            val ownChange = if (this.value == null) {
+                if (oldNode.value == null) {
+                    IStream.empty()
+                } else {
+                    IStream.of(EntryRemovedEvent(ownKey(), oldNode.value))
+                }
+            } else {
+                if (oldNode.value == null) {
+                    IStream.of(EntryAddedEvent(ownKey(), this.value))
+                } else {
+                    if (config.equal(this.value, oldNode.value)) {
+                        IStream.empty()
+                    } else {
+                        IStream.of(
+                            EntryChangedEvent(
+                                key = config.keyConfig.deserialize(pathForChildren.toString()),
+                                oldValue = oldNode.value,
+                                newValue = this.value,
+                            ),
+                        )
+                    }
+                }
+            }
+
+            ownChange + changesFromChildren
+        } else {
+            val commonPrefix = ownPrefix.commonPrefixWith(oldNode.ownPrefix)
+            split(commonPrefix).getChanges(path, oldNode.split(commonPrefix), changesOnly)
+        }
     }
 
     class Deserializer<K, V : Any>(val config: (IObjectGraph) -> PatriciaTrieConfig<K, V>) : IObjectDeserializer<PatriciaNode<K, V>> {
@@ -221,7 +330,7 @@ data class PatriciaNode<K, V : Any>(
                 parts[0].urlDecode()!!,
                 parts[1].urlDecode()!!,
                 parts[2].split(S2).filter { it.isNotEmpty() }.map { referenceFactory.fromHashString(it, this) },
-                config.valueConfig.deserialize(parts[3]),
+                parts[3].urlDecode()?.let { config.valueConfig.deserialize(it) },
             )
         }
     }

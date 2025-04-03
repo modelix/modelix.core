@@ -23,6 +23,9 @@ interface IStream<out E> {
     @DelicateModelixApi
     fun iterateSynchronous(visitor: (E) -> Unit)
 
+    @DelicateModelixApi
+    fun iterateBlocking(visitor: (E) -> Unit) = iterateSynchronous(visitor)
+
     /**
      * Should only be used inside implementations of [IStreamExecutor].
      * Use [IStreamExecutor] instead.
@@ -110,6 +113,9 @@ interface IStream<out E> {
          */
         @DelicateModelixApi
         fun getSynchronous(): E? = orNull().getSynchronous()
+
+        fun getBlocking(): E? = orNull().getBlocking()
+
         override fun onErrorReturn(valueSupplier: (Throwable) -> @UnsafeVariance E): ZeroOrOne<E>
         override fun doOnBeforeError(consumer: (Throwable) -> Unit): ZeroOrOne<E>
         override fun assertNotEmpty(message: () -> String): One<E>
@@ -126,6 +132,14 @@ interface IStream<out E> {
          */
         @DelicateModelixApi
         override fun getSynchronous(): E
+
+        /**
+         * If no suspending requests are necessary it will behave like getSynchronous
+         *
+         * See documentation of [getSuspending]
+         */
+        @DelicateModelixApi
+        override fun getBlocking(): E = getSynchronous()
 
         /**
          * See documentation of [iterateSuspending].

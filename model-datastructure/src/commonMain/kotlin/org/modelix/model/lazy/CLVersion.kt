@@ -14,7 +14,6 @@ import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.datastructures.objects.asObject
 import org.modelix.datastructures.objects.getDescendantsAndSelf
-import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.model.IVersion
 import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.TreeType
@@ -29,6 +28,9 @@ import org.modelix.model.api.TreePointer
 import org.modelix.model.api.getRootNode
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.async.ObjectRequest
+import org.modelix.model.mutable.INodeIdGenerator
+import org.modelix.model.mutable.SingleThreadMutableModelTree
+import org.modelix.model.mutable.getRootNode
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.SetReferenceOp
@@ -97,6 +99,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
     fun getTreeReference(): ObjectReference<CPTree> = data.getTree(TreeType.MAIN)
 
     fun getModelTree(type: TreeType): IModelTree<INodeReference> = data.getTree(type).resolveNow().data.getModelTree()
+    override fun getModelTree(): IModelTree<INodeReference> = getModelTree(TreeType.MAIN)
 
     override fun getTrees(): Map<TreeType, ITree> {
         return graph.getStreamExecutor().query {
@@ -171,6 +174,8 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
     companion object {
         val INLINED_OPS_LIMIT = 10
 
+        fun builder(): VersionBuilder = VersionBuilder()
+
         private fun localizeNodeRef(ref: INodeReference?, tree: Object<CPTree>): INodeReference? {
             return if (ref is PNodeReference && ref.treeId == tree.data.id.id) ref.toLocal() else ref
         }
@@ -184,6 +189,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
             }
         }
 
+        @Deprecated("Use builder()")
         fun createAutoMerge(
             id: Long,
             tree: ITree,
@@ -193,32 +199,16 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
             operations: Array<IOperation>,
             graph: IObjectGraph? = null,
         ): CLVersion {
-            val treeObject = tree.asObject() as Object<CPTree>
-            val graph = graph ?: run {
-                val graphs = setOf(baseVersion.obj.graph, mergedVersion1.obj.graph, mergedVersion2.obj.graph)
-                require(graphs.size == 1) { "Versions are part of different object graphs: $graphs" }
-                graphs.single()
-            }
-            @OptIn(DelicateModelixApi::class) // this is a new object
-            return CLVersion(
-                CPVersion(
-                    id = id,
-                    time = Clock.System.now().epochSeconds.toString(),
-                    author = null,
-                    treeRefs = mapOf(TreeType.MAIN to treeObject.ref),
-                    previousVersion = null,
-                    originalVersion = null,
-                    baseVersion = baseVersion.obj.ref,
-                    mergedVersion1 = mergedVersion1.obj.ref,
-                    mergedVersion2 = mergedVersion2.obj.ref,
-                    operations = emptyList(),
-                    operationsHash = null,
-                    numberOfOperations = 0,
-                ).withOperations(localizeOps(operations.toList(), treeObject), graph)
-                    .asObject(graph),
-            )
+            return builder()
+                .graph(graph)
+                .id(id)
+                .tree(tree)
+                .autoMerge(baseVersion.obj.ref, mergedVersion1.obj.ref, mergedVersion2.obj.ref)
+                .operations(operations)
+                .build()
         }
 
+        @Deprecated("Use builder()")
         fun createRegularVersion(
             id: Long,
             time: String?,
@@ -228,30 +218,18 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
             operations: Array<IOperation>,
             graph: IObjectGraph? = null,
         ): CLVersion {
-            val obj = tree.asObject() as Object<CPTree>
-            val compressedOps = OperationsCompressor(obj)
-                .compressOperations(operations)
-            val localizedOps = localizeOps(compressedOps.toList(), obj)
-            val graph = graph ?: baseVersion?.obj?.graph ?: obj.graph
-            @OptIn(DelicateModelixApi::class) // this is a new object
-            return CLVersion(
-                CPVersion(
-                    id = id,
-                    time = time,
-                    author = author,
-                    treeRefs = mapOf(TreeType.MAIN to obj.ref),
-                    previousVersion = null,
-                    originalVersion = null,
-                    baseVersion = baseVersion?.obj?.ref,
-                    mergedVersion1 = null,
-                    mergedVersion2 = null,
-                    operations = emptyList(),
-                    operationsHash = null,
-                    numberOfOperations = 0,
-                ).withOperations(localizedOps, graph).asObject(graph),
-            )
+            return builder()
+                .graph(graph)
+                .id(id)
+                .time(time)
+                .author(author)
+                .tree(tree)
+                .also { if (baseVersion != null) it.regularUpdate(baseVersion.obj.ref) }
+                .operations(operations)
+                .build()
         }
 
+        @Deprecated("Use builder()")
         fun createRegularVersion(
             id: Long,
             time: Instant = Clock.System.now(),
@@ -260,14 +238,14 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
             baseVersion: CLVersion?,
             operations: Array<IOperation>,
         ): CLVersion {
-            return createRegularVersion(
-                id = id,
-                time = time.epochSeconds.toString(),
-                author = author,
-                tree = tree,
-                baseVersion = baseVersion,
-                operations = operations,
-            )
+            return builder()
+                .id(id)
+                .time(time)
+                .author(author)
+                .tree(tree)
+                .also { if (baseVersion != null) it.regularUpdate(baseVersion.obj.ref) }
+                .operations(operations)
+                .build()
         }
 
         fun loadFromHash(hash: String, store: IDeserializingKeyValueStore): CLVersion {
@@ -318,12 +296,25 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
     }
 }
 
+/**
+ * Assuming one peer already has all the data of [baseVersion], this method return those objects that missing in the
+ * object graph to fully load [this] version.
+ */
 fun CLVersion.fullDiff(baseVersion: CLVersion?): IStream.Many<Object<IObjectData>> {
+    if (baseVersion?.getObjectHash() == this.getObjectHash()) return IStream.empty()
+
     val commonBase = baseVersion?.let { commonBaseVersion(it) }
 
     if (commonBase?.getObjectHash() == this.getObjectHash()) {
-        // base version is newer than this version
-        TODO()
+        /**
+         *  Base version is newer than this version.
+         *  There are two cases in which this method is used.
+         *  - The client uploads a version to the server:
+         *    No need to upload anything. The server already knows this version.
+         *  - The server verifies that all objects of a new version exist in the key value store:
+         *    It already verified the version before. Also, nothing needs to be traversed.
+         */
+        return IStream.empty()
     }
 
     return diff(
@@ -470,4 +461,27 @@ fun CLVersion.runWriteWithNode(idGenerator: IIdGenerator, author: String?, body:
         baseVersion = this,
         operations = ops.map { it.getOriginalOp() }.toTypedArray(),
     )
+}
+
+fun IVersion.runWriteOnModel(
+    versionIdGenerator: IIdGenerator,
+    nodeIdGenerator: INodeIdGenerator<INodeReference>,
+    author: String?,
+    body: (IWritableNode) -> Unit,
+): IVersion {
+    val baseVersion = this as CLVersion
+
+    val baseTree = getModelTree(TreeType.MAIN)
+    val mutableTree = SingleThreadMutableModelTree(baseTree, nodeIdGenerator)
+    mutableTree.runWrite {
+        body(mutableTree.getRootNode())
+    }
+    val updatedTree = mutableTree.tree.asObject()
+    if (updatedTree.getHash() == baseTree.asObject().getHash()) return this
+    return CLVersion.builder()
+        .id(versionIdGenerator.generate())
+        .author(author)
+        .tree(updatedTree)
+        .regularUpdate(baseVersion)
+        .build()
 }

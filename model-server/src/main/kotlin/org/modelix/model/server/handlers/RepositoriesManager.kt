@@ -3,6 +3,9 @@ package org.modelix.model.server.handlers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.datetime.Clock
+import org.modelix.datastructures.model.IModelTree
+import org.modelix.datastructures.model.asLegacyTree
+import org.modelix.datastructures.model.withIdTranslation
 import org.modelix.model.ModelMigrations
 import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.VersionMerger
@@ -11,8 +14,8 @@ import org.modelix.model.api.IReadTransaction
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IdGeneratorDummy
 import org.modelix.model.api.PBranch
+import org.modelix.model.async.LazyLoadingObjectGraph
 import org.modelix.model.lazy.BranchReference
-import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.commonBaseVersion
@@ -154,15 +157,25 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
             false,
         )
         stores.genericStore.put(branchListKey(repositoryId, isolated), masterBranch.branchName, false)
-        val initialVersion = CLVersion.createRegularVersion(
-            id = stores.idGenerator.generate(),
-            time = Clock.System.now().epochSeconds.toString(),
-            author = userName,
-            tree = CLTree.builder(stores.getAsyncStore(repositoryId.takeIf { isolated }))
-                .useRoleIds(!config.legacyNameBasedRoles).build(),
-            baseVersion = null,
-            operations = emptyArray(),
-        )
+
+        val tree = IModelTree.builder()
+            .treeId(config.modelId)
+            .graph(LazyLoadingObjectGraph(stores.getAsyncStore(repositoryId.takeIf { isolated })))
+            .let {
+                when (config.nodeIdType) {
+                    RepositoryConfig.NodeIdType.INT64 -> it.withInt64Ids().build().asLegacyTree()
+                    RepositoryConfig.NodeIdType.STRING -> it.withNodeReferenceIds().build().withIdTranslation().asLegacyTree()
+                }
+            }
+
+        val initialVersion = CLVersion.builder()
+            .id(stores.idGenerator.generate())
+            .time(Clock.System.now())
+            .author(userName)
+            .tree(tree)
+            .build()
+        initialVersion.write()
+        validateVersion(initialVersion, null)
         putVersionHash(masterBranch, initialVersion.getContentHash())
         return initialVersion
     }
@@ -272,7 +285,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         } else {
             val legacyObjectStore = getLegacyObjectStore(repositoryId)
             val headVersion = CLVersion.loadFromHash(headHash, legacyObjectStore)
-            require(headVersion.getTree().getId() == newVersion.getTree().getId()) {
+            require(headVersion.getModelTree().getId() == newVersion.getModelTree().getId()) {
                 "Attempt to merge a model with ID '${newVersion.getTree().getId()}'" +
                     " into one with ID '${headVersion.getTree().getId()}'"
             }
@@ -287,6 +300,9 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
     private fun validateVersion(newVersion: CLVersion, oldVersion: CLVersion?) {
         // ensure there are no missing objects
         newVersion.graph.getStreamExecutor().iterate({ newVersion.fullDiff(oldVersion) }) { }
+
+        val mainTree = newVersion.getModelTree()
+        check(mainTree.containsNode(mainTree.getRootNodeId()).getBlocking())
 
         // TODO check invariants of the model (consistent parent-child relations, single root, containment cycles)
     }

@@ -10,28 +10,38 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.module.SRepository
+import org.modelix.datastructures.model.ContainmentChangedEvent
+import org.modelix.datastructures.model.NodeAddedEvent
+import org.modelix.datastructures.model.NodeChangeEvent
+import org.modelix.datastructures.model.NodeObjectData
+import org.modelix.datastructures.model.NodeRemovedEvent
+import org.modelix.datastructures.model.toNodeObjectData
+import org.modelix.datastructures.objects.ObjectReference
+import org.modelix.datastructures.patricia.PatriciaTrie
 import org.modelix.model.IVersion
 import org.modelix.model.api.BuiltinLanguages
-import org.modelix.model.api.IBranch
+import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.NodeReference
-import org.modelix.model.api.TreePointer
+import org.modelix.model.api.getDescendants
 import org.modelix.model.api.getName
 import org.modelix.model.api.getOriginalReference
-import org.modelix.model.api.getRootNode
-import org.modelix.model.client2.runWrite
+import org.modelix.model.area.PArea
 import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.runWriteOnModel
 import org.modelix.model.mpsadapters.MPSProjectAsNode
 import org.modelix.model.mpsadapters.MPSProjectReference
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import org.modelix.model.mpsadapters.computeRead
 import org.modelix.model.mpsadapters.writeName
+import org.modelix.model.mutable.DummyIdGenerator
+import org.modelix.model.mutable.asModel
+import org.modelix.model.mutable.getRootNode
+import org.modelix.model.sync.bulk.DefaultInvalidationTree
 import org.modelix.model.sync.bulk.FullSyncFilter
-import org.modelix.model.sync.bulk.InvalidatingVisitor
-import org.modelix.model.sync.bulk.InvalidationTree
+import org.modelix.model.sync.bulk.IdentityPreservingNodeAssociation
 import org.modelix.model.sync.bulk.ModelSynchronizer
-import org.modelix.model.sync.bulk.NodeAssociationFromModelServer
 import org.modelix.model.sync.bulk.NodeAssociationToModelServer
 import org.modelix.mps.api.ModelixMpsApi
 import org.modelix.mps.model.sync.bulk.MPSProjectSyncMask
@@ -243,12 +253,21 @@ class BindingWorker(
 
         val baseVersion = oldVersion
         val filter = if (baseVersion != null && incremental) {
-            val invalidationTree = InvalidationTree(100_000)
-            val newTree = newVersion.getTree()
-            newTree.visitChanges(
-                baseVersion.getTree(),
-                InvalidatingVisitor(newTree, invalidationTree),
-            )
+            val newTree = newVersion.getModelTree()
+            val model = newTree.asModel()
+            val invalidationTree = DefaultInvalidationTree(newTree.getRootNodeId(), 100_000)
+            fun invalidateNode(nodeId: INodeReference) {
+                val node = model.resolveNode(nodeId) ?: return
+                invalidationTree.invalidate(node, false)
+            }
+            newTree.getChanges(baseVersion.getModelTree(), changesOnly = true).iterateSuspending { event ->
+                when (event) {
+                    is ContainmentChangedEvent<INodeReference>, is NodeRemovedEvent<INodeReference>, is NodeAddedEvent<INodeReference> -> {
+                        // There will be a ChildrenChangedEvent that indirectly handles these cases.
+                    }
+                    is NodeChangeEvent<INodeReference> -> invalidateNode(event.nodeId)
+                }
+            }
             invalidationTree
         } else {
             FullSyncFilter()
@@ -264,10 +283,11 @@ class BindingWorker(
             }
 
             getMPSListener().runSync {
-                val branch = TreePointer(newVersion.getTree())
+                val sourceModel = newVersion.getModelTree().asModel()
+                val sourceRoot = sourceModel.getRootNode()
 
                 // handle renamed projects
-                val projectNode: IReadableNode? = branch.computeRead { findMatchingProjectNode(branch) }
+                val projectNode: IReadableNode? = findMatchingProjectNode(sourceRoot)
                 if (projectNode != null) {
                     val projectId = getProjectId(projectNode)
                     if (projectId != getProjectId(MPSProjectAsNode(mpsProject))) {
@@ -275,11 +295,17 @@ class BindingWorker(
                     }
                 }
 
+                // val nodeAssociation = NodeAssociationFromModelServer(branch, targetRoot.getModel())
+                val nodeAssociation = IdentityPreservingNodeAssociation(
+                    targetRoot.getModel(),
+                    mapOf(sourceRoot.getNodeReference() to targetRoot.getNodeReference()),
+                )
+
                 ModelSynchronizer(
                     filter = filter,
-                    sourceRoot = branch.getRootNode().asWritableNode(),
+                    sourceRoot = sourceRoot,
                     targetRoot = targetRoot,
-                    nodeAssociation = NodeAssociationFromModelServer(branch, targetRoot.getModel()),
+                    nodeAssociation = nodeAssociation,
                     sourceMask = MPSProjectSyncMask(listOf(mpsProject), false),
                     targetMask = MPSProjectSyncMask(listOf(mpsProject), true),
                     onException = {
@@ -328,20 +354,34 @@ class BindingWorker(
         val client = client()
         val newVersion = repository.computeRead {
             fun sync(invalidationTree: ModelSynchronizer.IIncrementalUpdateInformation): IVersion? {
-                return oldVersion.runWrite(client) { branch ->
+                return oldVersion.runWriteOnModel(
+                    versionIdGenerator = client.getIdGenerator(),
+                    nodeIdGenerator = DummyIdGenerator<INodeReference>(),
+                    author = client.getUserId(),
+                ) { targetRoot ->
                     ModelixMpsApi.runWithProject(mpsProject) {
-                        val nodeAssociation = NodeAssociationToModelServer(branch)
+                        val sourceRoot = MPSRepositoryAsNode(mpsProject.repository)
+
+                        val legacyMutableTree = (targetRoot.getModel().asArea() as? PArea)?.branch
+
+                        val nodeAssociation = if (legacyMutableTree != null) {
+                            NodeAssociationToModelServer(legacyMutableTree)
+                        } else {
+                            IdentityPreservingNodeAssociation(
+                                targetRoot.getModel(),
+                                mapOf(sourceRoot.getNodeReference() to targetRoot.getNodeReference()),
+                            )
+                        }
 
                         // handled renamed projects
-                        val targetRoot = branch.getRootNode().asWritableNode()
-                        val projectNode: IWritableNode? = findMatchingProjectNode(branch)
+                        val projectNode: IWritableNode? = findMatchingProjectNode(targetRoot) as IWritableNode?
                         if (projectNode != null && !nodeAssociation.matches(MPSProjectAsNode(mpsProject), projectNode)) {
                             nodeAssociation.associate(MPSProjectAsNode(mpsProject), projectNode)
                         }
 
                         ModelSynchronizer(
                             filter = invalidationTree,
-                            sourceRoot = MPSRepositoryAsNode(ModelixMpsApi.getRepository()),
+                            sourceRoot = sourceRoot,
                             targetRoot = targetRoot,
                             nodeAssociation = nodeAssociation,
                             sourceMask = MPSProjectSyncMask(listOf(mpsProject), true),
@@ -387,8 +427,8 @@ class BindingWorker(
      * Projects in MPS don't have an ID. MPSProjectReference uses the name, but that can change.
      * Try to find the best matching project.
      */
-    private fun findMatchingProjectNode(branch: IBranch): IWritableNode? {
-        val projectNodes = branch.getRootNode().asWritableNode()
+    private fun findMatchingProjectNode(targetRoot: IReadableNode): IReadableNode? {
+        val projectNodes = targetRoot
             .getChildren(BuiltinLanguages.MPSRepositoryConcepts.Repository.projects.toReference())
         return when (projectNodes.size) {
             0 -> null
@@ -405,5 +445,14 @@ class BindingWorker(
             ?.projectName
             ?: node.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())
             ?: "0"
+    }
+
+    private fun bulkUpdate(rootNode: IReadableNode, tree: PatriciaTrie<INodeReference, ObjectReference<NodeObjectData<INodeReference>>>) {
+        val graph = tree.root.graph
+        var newTree = PatriciaTrie(tree.config)
+        for (descendant in rootNode.getDescendants(true)) {
+            val nodeData = descendant.toNodeObjectData()
+            newTree = newTree.put(nodeData.id, graph.fromCreated(nodeData)).getSynchronous()
+        }
     }
 }

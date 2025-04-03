@@ -173,7 +173,7 @@ data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
             // Either use the original SNodeId that it had before it was synchronized to the model server
             // or if the node was created outside of MPS, generate an ID based on the ID on the model server.
             // The goal is to create a node with the same ID on all clients.
-            val preferredId = spec.getPreferredSNodeId()
+            val preferredId = spec.getPreferredSNodeId(node.model?.reference)
 
             val newChild = if (model == null) {
                 if (preferredId == null) {

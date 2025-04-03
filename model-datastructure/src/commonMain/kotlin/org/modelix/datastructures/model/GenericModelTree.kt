@@ -26,7 +26,7 @@ abstract class GenericModelTree<NodeId>(
     private val treeId: TreeId,
 ) : IModelTree<NodeId>, IStreamExecutorProvider by nodesMap {
     protected abstract fun withNewMap(newNodesMap: IPersistentMap<NodeId, NodeObjectData<NodeId>>): GenericModelTree<NodeId>
-    protected abstract fun getRootNodeId(): NodeId
+    abstract override fun getRootNodeId(): NodeId
     protected fun toGlobalNodeReference(ref: INodeReference): INodeReference = when (ref) {
         is LocalPNodeReference -> PNodeReference(ref.id, treeId.id)
         else -> ref

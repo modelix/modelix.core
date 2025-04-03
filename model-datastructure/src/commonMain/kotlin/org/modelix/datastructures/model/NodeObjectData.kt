@@ -176,7 +176,7 @@ data class LegacyCompatibleFormat<NodeId, ReferenceType>(
 )
 
 fun IReadableNode.toNodeObjectData(): NodeObjectData<INodeReference> {
-    // persist ID only to prevent ObjectHash changes when metamodel elements are renamed
+    // usage of getIdOrName: persist ID only to prevent ObjectHash changes when metamodel elements are renamed
     @OptIn(DelicateModelixApi::class)
     return NodeObjectData(
         deserializer = NodeObjectData.Deserializer(NodeReferenceDataTypeConfig(), getTreeId()),

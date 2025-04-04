@@ -59,11 +59,11 @@ class DefaultModelTree(nodesMap: IPersistentMap<INodeReference, NodeObjectData<I
 class NodeNotFoundException(nodeId: Any?) : RuntimeException("Node doesn't exist: $nodeId")
 
 @JvmName("asModelTreeWithNodeReferences")
-fun IPersistentMap<INodeReference, NodeObjectData<INodeReference>>.asModelTree(treeId: TreeId): IModelTree<INodeReference> {
+fun IPersistentMap<INodeReference, NodeObjectData<INodeReference>>.asModelTree(treeId: TreeId): IGenericModelTree<INodeReference> {
     return DefaultModelTree(this, treeId)
 }
 
 @JvmName("asModelTreeWithInt64")
-fun IPersistentMap<Long, NodeObjectData<Long>>.asModelTree(treeId: TreeId): IModelTree<Long> {
+fun IPersistentMap<Long, NodeObjectData<Long>>.asModelTree(treeId: TreeId): IGenericModelTree<Long> {
     return Int64ModelTree(this, treeId)
 }

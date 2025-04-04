@@ -4,7 +4,7 @@ import org.modelix.model.api.IMutableModel
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IWritableNode
 
-class MutableModelTreeAsModel(val tree: IMutableModelTree<INodeReference>) : IMutableModel {
+class MutableModelTreeAsModel(val tree: IMutableModelTree) : IMutableModel {
     override fun getRootNode(): IWritableNode {
         return tree.getRootNode()
     }
@@ -13,7 +13,7 @@ class MutableModelTreeAsModel(val tree: IMutableModelTree<INodeReference>) : IMu
         return listOf(getRootNode())
     }
 
-    override fun resolveNode(ref: INodeReference): IWritableNode? {
+    override fun tryResolveNode(ref: INodeReference): IWritableNode? {
         return NodeInMutableModel(tree, ref).takeIf { it.isValid() }
     }
 
@@ -47,4 +47,4 @@ class MutableModelTreeAsModel(val tree: IMutableModelTree<INodeReference>) : IMu
     }
 }
 
-fun IMutableModelTree<INodeReference>.asModel(): IMutableModel = MutableModelTreeAsModel(this)
+fun IMutableModelTree.asModel(): IMutableModel = MutableModelTreeAsModel(this)

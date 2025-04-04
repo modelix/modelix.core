@@ -22,7 +22,7 @@ import org.modelix.streams.filterNotNull
 import org.modelix.streams.ifEmpty
 
 @Deprecated("There aren't any real implementations of IAsyncMutableTree anymore and this adapter should be unnecessary.")
-private class LegacyAsyncTreeAsModelTree(val tree: IAsyncMutableTree) : IModelTree<Long>, IStreamExecutorProvider by tree {
+private class LegacyAsyncTreeAsModelTree(val tree: IAsyncMutableTree) : IGenericModelTree<Long>, IStreamExecutorProvider by tree {
     override fun asObject(): Object<CPTree> = tree.asObject() as Object<CPTree>
 
     override fun getNodeIdType(): IDataTypeConfiguration<Long> = LongDataTypeConfiguration()
@@ -107,8 +107,8 @@ private class LegacyAsyncTreeAsModelTree(val tree: IAsyncMutableTree) : IModelTr
 
     private fun IStream.One<IAsyncMutableTree>.wrap() = map { LegacyAsyncTreeAsModelTree(it) }
 
-    override fun mutate(operations: Iterable<MutationParameters<Long>>): IStream.One<IModelTree<Long>> {
-        return operations.fold<MutationParameters<Long>, IStream.One<IModelTree<Long>>>(IStream.of(this)) { acc, op ->
+    override fun mutate(operations: Iterable<MutationParameters<Long>>): IStream.One<IGenericModelTree<Long>> {
+        return operations.fold<MutationParameters<Long>, IStream.One<IGenericModelTree<Long>>>(IStream.of(this)) { acc, op ->
             acc.flatMapOne { it.mutate(op) }
         }
     }
@@ -133,7 +133,7 @@ private class LegacyAsyncTreeAsModelTree(val tree: IAsyncMutableTree) : IModelTr
     }
 
     override fun getChanges(
-        oldVersion: IModelTree<Long>,
+        oldVersion: IGenericModelTree<Long>,
         changesOnly: Boolean,
     ): IStream.Many<ModelChangeEvent<Long>> {
         TODO("Not yet implemented")

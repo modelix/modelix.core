@@ -1,15 +1,21 @@
 package org.modelix.model.operations
 
-import org.modelix.model.api.IConceptReference
-import org.modelix.model.api.ITree
-import org.modelix.model.api.IWriteTransaction
-import org.modelix.model.persistent.SerializationUtil
+import org.modelix.datastructures.model.IModelTree
+import org.modelix.datastructures.model.MutationParameters
+import org.modelix.datastructures.model.toGlobal
+import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.INodeReference
+import org.modelix.model.mutable.IMutableModelTree
 
-class AddNewChildOp(position: PositionInRole, childId: Long, concept: IConceptReference?) : AddNewChildrenOp(position, longArrayOf(childId), arrayOf(concept)) {
-    val childId: Long get() = childIds[0]
-    val concept: IConceptReference? get() = concepts[0]
+class AddNewChildOp(
+    position: PositionInRole,
+    childId: INodeReference,
+    concept: ConceptReference,
+) : AddNewChildrenOp(position, listOf(childId to concept)) {
+    val childId: INodeReference get() = childIdsAndConcepts[0].first
+    val concept: ConceptReference get() = childIdsAndConcepts[0].second
 
-    fun withConcept(newConcept: IConceptReference?): AddNewChildOp {
+    fun withConcept(newConcept: ConceptReference): AddNewChildOp {
         return if (concept == newConcept) this else AddNewChildOp(position, childId, newConcept)
     }
 
@@ -18,44 +24,49 @@ class AddNewChildOp(position: PositionInRole, childId: Long, concept: IConceptRe
     }
 
     override fun toString(): String {
-        return "AddNewChildOp ${SerializationUtil.longToHex(childId)}, $position, $concept"
+        return "AddNewChildOp $childId, $position, $concept"
     }
 }
 
-open class AddNewChildrenOp(val position: PositionInRole, val childIds: LongArray, val concepts: Array<IConceptReference?>) : AbstractOperation() {
+open class AddNewChildrenOp(val position: PositionInRole, val childIdsAndConcepts: List<Pair<INodeReference, ConceptReference>>) : AbstractOperation() {
 
     open fun withPosition(newPos: PositionInRole): AddNewChildrenOp {
-        return if (newPos == position) this else AddNewChildrenOp(newPos, childIds, concepts)
+        return if (newPos == position) this else AddNewChildrenOp(newPos, childIdsAndConcepts)
     }
 
-    override fun apply(transaction: IWriteTransaction): IAppliedOperation {
-        transaction.addNewChildren(position.nodeId, position.role.stringForLegacyApi(), position.index, childIds, concepts)
+    override fun apply(tree: IMutableModelTree): IAppliedOperation {
+        tree.getWriteTransaction().mutate(
+            MutationParameters.AddNew(
+                nodeId = position.nodeId.toGlobal(tree.getId()),
+                role = position.role,
+                index = position.index,
+                newIdAndConcept = childIdsAndConcepts.map { it.first.toGlobal(tree.getId()) to it.second },
+            ),
+        )
         return Applied()
     }
 
     override fun toString(): String {
-        return "AddNewChildrenOp ${childIds.map { SerializationUtil.longToHex(it) }}, $position, ${concepts.map { it?.getUID() }}"
+        return "AddNewChildrenOp ${childIdsAndConcepts.map { it.first }}, $position, ${childIdsAndConcepts.map { it.second }}"
     }
 
     inner class Applied : AbstractOperation.Applied(), IAppliedOperation {
         override fun getOriginalOp() = this@AddNewChildrenOp
 
         override fun invert(): List<IOperation> {
-            return childIds.map { DeleteNodeOp(it) }
+            return childIdsAndConcepts.map { DeleteNodeOp(it.first) }
         }
     }
 
-    override fun captureIntend(tree: ITree): IOperationIntend {
-        val children = tree.getChildren(position.nodeId, position.role.stringForLegacyApi())
-        return Intend(
-            CapturedInsertPosition(position.index, children.toList().toLongArray()),
-        )
+    override fun captureIntend(tree: IModelTree): IOperationIntend {
+        val children = tree.getChildren(position.nodeId.toGlobal(tree.getId()), position.role).toList().getBlocking()
+        return Intend(CapturedInsertPosition(position.index, children.toList()))
     }
 
     inner class Intend(val capturedPosition: CapturedInsertPosition) : IOperationIntend {
-        override fun restoreIntend(tree: ITree): List<IOperation> {
-            if (tree.containsNode(position.nodeId)) {
-                val newIndex = capturedPosition.findIndex(tree.getChildren(position.nodeId, position.role.stringForLegacyApi()).toList().toLongArray())
+        override fun restoreIntend(tree: IModelTree): List<IOperation> {
+            if (tree.containsNode(position.nodeId.toGlobal(tree.getId())).getBlocking()) {
+                val newIndex = capturedPosition.findIndex(tree.getChildren(position.nodeId.toGlobal(tree.getId()), position.role).toList().getBlocking())
                 return listOf(withPosition(position.withIndex(newIndex)))
             } else {
                 return listOf(withPosition(getDetachedNodesEndPosition(tree)))

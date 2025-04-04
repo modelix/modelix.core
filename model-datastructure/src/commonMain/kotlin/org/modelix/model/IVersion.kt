@@ -1,6 +1,6 @@
 package org.modelix.model
 
-import org.modelix.datastructures.model.IModelTree
+import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITree
 import kotlin.jvm.JvmInline
@@ -13,7 +13,7 @@ interface IVersion {
 
     fun getTrees(): Map<TreeType, ITree>
 
-    fun getModelTree(): IModelTree<INodeReference>
+    fun getModelTree(): IGenericModelTree<INodeReference>
 }
 
 @JvmInline

@@ -1,5 +1,6 @@
 import org.modelix.model.api.PBranch
 import org.modelix.model.operations.IAppliedOperation
+import org.modelix.model.operations.LegacyBranchAsMutableModelTree
 import org.modelix.model.operations.OTBranch
 import kotlin.test.Test
 
@@ -26,7 +27,7 @@ class OTBranchTest : TreeTestBase() {
     private fun applyOps(branch: OTBranch, ops: List<IAppliedOperation>) {
         branch.runWrite {
             ops.forEach {
-                it.getOriginalOp().apply(branch.writeTransaction)
+                it.getOriginalOp().apply(LegacyBranchAsMutableModelTree(branch))
             }
         }
     }

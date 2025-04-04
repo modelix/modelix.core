@@ -5,7 +5,7 @@ import org.modelix.datastructures.autoResolveValues
 import org.modelix.datastructures.createMapInstance
 import org.modelix.datastructures.hamt.HamtInternalNode
 import org.modelix.datastructures.hamt.HamtNode
-import org.modelix.datastructures.model.IModelTree
+import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.datastructures.model.NodeObjectData
 import org.modelix.datastructures.model.asLegacyTree
 import org.modelix.datastructures.model.fromNodeReference
@@ -140,7 +140,7 @@ class CLTree private constructor(val resolvedData: Object<CPTree>) :
     }
 
     class Builder(graph: IObjectGraph) {
-        private val modelBuilder = IModelTree.builder().graph(graph)
+        private val modelBuilder = IGenericModelTree.builder().graph(graph)
 
         fun useRoleIds(value: Boolean = true): Builder {
             modelBuilder.storeRoleNames(!value)

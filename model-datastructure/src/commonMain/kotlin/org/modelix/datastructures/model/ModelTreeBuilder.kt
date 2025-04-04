@@ -24,7 +24,7 @@ abstract class ModelTreeBuilder<NodeId> private constructor(protected val common
     }
 
     private class Int64Builder(common: Common) : ModelTreeBuilder<Long>(common) {
-        override fun build(): IModelTree<Long> {
+        override fun build(): IGenericModelTree<Long> {
             val nodeIdType = LongDataTypeConfiguration()
             val root = NodeObjectData<Long>(
                 deserializer = NodeObjectData.Deserializer(nodeIdType, common.treeId),
@@ -48,7 +48,7 @@ abstract class ModelTreeBuilder<NodeId> private constructor(protected val common
         }
     }
     private class NodeRefBuilder(common: Common) : ModelTreeBuilder<INodeReference>(common) {
-        override fun build(): IModelTree<INodeReference> {
+        override fun build(): IGenericModelTree<INodeReference> {
             val nodeIdType = NodeReferenceDataTypeConfig()
             val root = NodeObjectData<INodeReference>(
                 deserializer = NodeObjectData.Deserializer(nodeIdType, common.treeId),
@@ -88,7 +88,7 @@ abstract class ModelTreeBuilder<NodeId> private constructor(protected val common
 
     fun withNodeReferenceIds(): ModelTreeBuilder<INodeReference> = NodeRefBuilder(common)
 
-    abstract fun build(): IModelTree<NodeId>
+    abstract fun build(): IGenericModelTree<NodeId>
 
     companion object {
         internal fun newWithNodeReferenceIds(): ModelTreeBuilder<INodeReference> = NodeRefBuilder(Common())

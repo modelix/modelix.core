@@ -13,18 +13,13 @@ import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.datastructures.model.ContainmentChangedEvent
 import org.modelix.datastructures.model.NodeAddedEvent
 import org.modelix.datastructures.model.NodeChangeEvent
-import org.modelix.datastructures.model.NodeObjectData
 import org.modelix.datastructures.model.NodeRemovedEvent
-import org.modelix.datastructures.model.toNodeObjectData
-import org.modelix.datastructures.objects.ObjectReference
-import org.modelix.datastructures.patricia.PatriciaTrie
 import org.modelix.model.IVersion
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.NodeReference
-import org.modelix.model.api.getDescendants
 import org.modelix.model.api.getName
 import org.modelix.model.api.getOriginalReference
 import org.modelix.model.area.PArea
@@ -36,8 +31,7 @@ import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import org.modelix.model.mpsadapters.computeRead
 import org.modelix.model.mpsadapters.writeName
 import org.modelix.model.mutable.DummyIdGenerator
-import org.modelix.model.mutable.asModel
-import org.modelix.model.mutable.getRootNode
+import org.modelix.model.mutable.asModelSingleThreaded
 import org.modelix.model.sync.bulk.DefaultInvalidationTree
 import org.modelix.model.sync.bulk.FullSyncFilter
 import org.modelix.model.sync.bulk.IdentityPreservingNodeAssociation
@@ -254,10 +248,10 @@ class BindingWorker(
         val baseVersion = oldVersion
         val filter = if (baseVersion != null && incremental) {
             val newTree = newVersion.getModelTree()
-            val model = newTree.asModel()
+            val model = newTree.asModelSingleThreaded()
             val invalidationTree = DefaultInvalidationTree(newTree.getRootNodeId(), 100_000)
             fun invalidateNode(nodeId: INodeReference) {
-                val node = model.resolveNode(nodeId) ?: return
+                val node = model.tryResolveNode(nodeId) ?: return
                 invalidationTree.invalidate(node, false)
             }
             newTree.getChanges(baseVersion.getModelTree(), changesOnly = true).iterateSuspending { event ->
@@ -283,7 +277,7 @@ class BindingWorker(
             }
 
             getMPSListener().runSync {
-                val sourceModel = newVersion.getModelTree().asModel()
+                val sourceModel = newVersion.getModelTree().asModelSingleThreaded()
                 val sourceRoot = sourceModel.getRootNode()
 
                 // handle renamed projects
@@ -445,14 +439,5 @@ class BindingWorker(
             ?.projectName
             ?: node.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())
             ?: "0"
-    }
-
-    private fun bulkUpdate(rootNode: IReadableNode, tree: PatriciaTrie<INodeReference, ObjectReference<NodeObjectData<INodeReference>>>) {
-        val graph = tree.root.graph
-        var newTree = PatriciaTrie(tree.config)
-        for (descendant in rootNode.getDescendants(true)) {
-            val nodeData = descendant.toNodeObjectData()
-            newTree = newTree.put(nodeData.id, graph.fromCreated(nodeData)).getSynchronous()
-        }
     }
 }

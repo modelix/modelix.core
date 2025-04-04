@@ -3,8 +3,9 @@ package org.modelix.model.server.handlers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.datetime.Clock
-import org.modelix.datastructures.model.IModelTree
+import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.datastructures.model.asLegacyTree
+import org.modelix.datastructures.model.getHash
 import org.modelix.datastructures.model.withIdTranslation
 import org.modelix.model.ModelMigrations
 import org.modelix.model.ObjectDeltaFilter
@@ -21,6 +22,7 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.commonBaseVersion
 import org.modelix.model.lazy.diff
 import org.modelix.model.lazy.fullDiff
+import org.modelix.model.mutable.asMutableSingleThreaded
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.SerializationUtil
 import org.modelix.model.server.api.RepositoryConfig
@@ -158,7 +160,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         )
         stores.genericStore.put(branchListKey(repositoryId, isolated), masterBranch.branchName, false)
 
-        val tree = IModelTree.builder()
+        val tree = IGenericModelTree.builder()
             .treeId(config.modelId)
             .graph(LazyLoadingObjectGraph(stores.getAsyncStore(repositoryId.takeIf { isolated })))
             .let {
@@ -305,6 +307,21 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         check(mainTree.containsNode(mainTree.getRootNodeId()).getBlocking())
 
         // TODO check invariants of the model (consistent parent-child relations, single root, containment cycles)
+
+        // check that the operations actually reproduce the model
+        val baseVersion = newVersion.baseVersion
+        if (baseVersion == null) {
+            check(newVersion.numberOfOperations == 0)
+            check(newVersion.operations.count() == 0)
+        } else {
+            val mutableTree = baseVersion.getModelTree().asMutableSingleThreaded()
+            newVersion.operationsAsStream().iterateBlocking { op ->
+                op.apply(mutableTree)
+            }
+            check(mutableTree.getTransaction().tree.getHash() == newVersion.getModelTree().getHash()) {
+                "Recorded operations don't produce the provided result"
+            }
+        }
     }
 
     @RequiresTransaction

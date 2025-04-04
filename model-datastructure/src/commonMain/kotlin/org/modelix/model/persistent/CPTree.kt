@@ -4,7 +4,7 @@ import org.modelix.datastructures.IPersistentMapRootData
 import org.modelix.datastructures.autoResolveValues
 import org.modelix.datastructures.createMapInstance
 import org.modelix.datastructures.hamt.HamtNode
-import org.modelix.datastructures.model.IModelTree
+import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.datastructures.model.NodeObjectData
 import org.modelix.datastructures.model.NodeReferenceDataTypeConfig
 import org.modelix.datastructures.model.asModelTree
@@ -39,7 +39,7 @@ class CPTree(
 
     fun getTreeReference() = checkNotNull(trieWithNodeRefIds ?: int64Hamt) { "Not tree hash provided" }
 
-    fun getLegacyModelTree(): IModelTree<Long> {
+    fun getLegacyModelTree(): IGenericModelTree<Long> {
         if (trieWithNodeRefIds != null) {
             return trieWithNodeRefIds.resolveNow().createMapInstance().autoResolveValues().asModelTree(id).withIdTranslation()
         }
@@ -49,7 +49,7 @@ class CPTree(
         throw IllegalStateException("Doesn't contain any tree data")
     }
 
-    fun getModelTree(): IModelTree<INodeReference> {
+    fun getModelTree(): IGenericModelTree<INodeReference> {
         if (trieWithNodeRefIds != null) {
             return trieWithNodeRefIds.resolveNow().createMapInstance().autoResolveValues().asModelTree(id)
         }

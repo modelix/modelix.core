@@ -1,6 +1,6 @@
 package org.modelix.model.mutable
 
-import org.modelix.datastructures.model.IModelTree
+import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.datastructures.model.MutationParameters
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
@@ -20,7 +20,7 @@ import org.modelix.streams.mapSecond
 import org.modelix.streams.query
 
 class NodeInMutableModel(
-    val tree: IMutableModelTree<INodeReference>,
+    val tree: IGenericMutableModelTree<INodeReference>,
     private val nodeId: INodeReference,
 ) : IWritableNode, ISyncTargetNode {
 
@@ -29,7 +29,7 @@ class NodeInMutableModel(
     private fun IStream.Many<INodeReference>.wrap() = map { it.wrap() }
     private fun IStream.ZeroOrOne<INodeReference>.wrap() = map { it.wrap() }
     private fun IStream.One<INodeReference>.wrap() = map { it.wrap() }
-    private fun <R> query(body: (IModelTree<INodeReference>) -> IStream.One<R>): R {
+    private fun <R> query(body: (IGenericModelTree<INodeReference>) -> IStream.One<R>): R {
         val persistentTree = tree.getTransaction().tree
         return persistentTree.query { body(persistentTree) }
     }
@@ -191,6 +191,6 @@ class NodeInMutableModel(
     }
 }
 
-fun IMutableModelTree<INodeReference>.getRootNode(): IWritableNode {
+fun IGenericMutableModelTree<INodeReference>.getRootNode(): IWritableNode {
     return NodeInMutableModel(this, getTransaction().tree.getRootNodeId())
 }

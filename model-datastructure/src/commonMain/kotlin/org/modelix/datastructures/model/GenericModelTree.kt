@@ -24,7 +24,7 @@ import org.modelix.streams.plus
 abstract class GenericModelTree<NodeId>(
     val nodesMap: IPersistentMap<NodeId, NodeObjectData<NodeId>>,
     private val treeId: TreeId,
-) : IModelTree<NodeId>, IStreamExecutorProvider by nodesMap {
+) : IGenericModelTree<NodeId>, IStreamExecutorProvider by nodesMap {
     protected abstract fun withNewMap(newNodesMap: IPersistentMap<NodeId, NodeObjectData<NodeId>>): GenericModelTree<NodeId>
     abstract override fun getRootNodeId(): NodeId
     protected fun toGlobalNodeReference(ref: INodeReference): INodeReference = when (ref) {
@@ -117,7 +117,7 @@ abstract class GenericModelTree<NodeId>(
         }
     }
 
-    override fun getChanges(oldVersion: IModelTree<NodeId>, changesOnly: Boolean): IStream.Many<ModelChangeEvent<NodeId>> {
+    override fun getChanges(oldVersion: IGenericModelTree<NodeId>, changesOnly: Boolean): IStream.Many<ModelChangeEvent<NodeId>> {
         require(oldVersion is GenericModelTree<NodeId>)
         if (nodesMap.asObject().getHash() == oldVersion.nodesMap.asObject().getHash()) return IStream.empty()
         return getChanges(oldVersion, nodesMap, oldVersion.nodesMap, changesOnly)

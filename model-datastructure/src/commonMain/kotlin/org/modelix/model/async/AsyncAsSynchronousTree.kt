@@ -1,6 +1,7 @@
 package org.modelix.model.async
 
 import org.modelix.datastructures.model.ModelTreeAsLegacyAsyncTree
+import org.modelix.model.TreeId
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -216,3 +217,5 @@ internal class AsyncAsSynchronousTree(val asyncTree: IAsyncMutableTree) : ITree 
         return queryTree { asyncTree.setConcept(nodeId, (concept ?: NullConcept.getReference()) as ConceptReference) }
     }
 }
+
+fun ITree.getTreeId() = TreeId.fromLegacyId(getId())

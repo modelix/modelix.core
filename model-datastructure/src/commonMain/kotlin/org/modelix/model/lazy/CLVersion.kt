@@ -5,7 +5,7 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
-import org.modelix.datastructures.model.IModelTree
+import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.datastructures.model.asLegacyTree
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectGraph
@@ -29,7 +29,7 @@ import org.modelix.model.api.getRootNode
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.async.ObjectRequest
 import org.modelix.model.mutable.INodeIdGenerator
-import org.modelix.model.mutable.SingleThreadMutableModelTree
+import org.modelix.model.mutable.VersionedModelTree
 import org.modelix.model.mutable.getRootNode
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.OTBranch
@@ -98,8 +98,8 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
     fun getTreeReference(type: TreeType): ObjectReference<CPTree> = data.getTree(type)
     fun getTreeReference(): ObjectReference<CPTree> = data.getTree(TreeType.MAIN)
 
-    fun getModelTree(type: TreeType): IModelTree<INodeReference> = data.getTree(type).resolveNow().data.getModelTree()
-    override fun getModelTree(): IModelTree<INodeReference> = getModelTree(TreeType.MAIN)
+    fun getModelTree(type: TreeType): IGenericModelTree<INodeReference> = data.getTree(type).resolveNow().data.getModelTree()
+    override fun getModelTree(): IGenericModelTree<INodeReference> = getModelTree(TreeType.MAIN)
 
     override fun getTrees(): Map<TreeType, ITree> {
         return graph.getStreamExecutor().query {
@@ -110,7 +110,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
     fun getTreesLater(): IStream.Many<Pair<TreeType, ITree>> {
         return IStream.many(data.treeRefs.entries).flatMap { entry ->
             entry.value.resolve().map { tree ->
-                entry.key to (tree as IModelTree<Long>).asLegacyTree()
+                entry.key to (tree as IGenericModelTree<Long>).asLegacyTree()
             }
         }
     }
@@ -134,6 +134,16 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
                 ?: emptyList()
             return globalizeOps(ops)
         }
+
+    fun operationsAsStream(): IStream.Many<IOperation> {
+        val operationsHash = data.operationsHash
+        val operations = if (operationsHash != null) {
+            operationsHash.resolveData().flatMap { it.getOperations() }
+        } else {
+            IStream.many(obj.data.operations?.toList() ?: emptyList())
+        }
+        return operations.map { globalizeOp(it) }
+    }
 
     val numberOfOperations: Int
         get() = data.numberOfOperations
@@ -270,11 +280,13 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
     }
 
     private fun globalizeOps(ops: List<IOperation>): List<IOperation> {
-        return ops.map {
-            when (it) {
-                is SetReferenceOp -> it.withTarget(globalizeNodeRef(it.target))
-                else -> it
-            }
+        return ops.map { globalizeOp(it) }
+    }
+
+    private fun globalizeOp(op: IOperation): IOperation {
+        return when (op) {
+            is SetReferenceOp -> op.withTarget(globalizeNodeRef(op.target))
+            else -> op
         }
     }
 
@@ -470,18 +482,9 @@ fun IVersion.runWriteOnModel(
     body: (IWritableNode) -> Unit,
 ): IVersion {
     val baseVersion = this as CLVersion
-
-    val baseTree = getModelTree(TreeType.MAIN)
-    val mutableTree = SingleThreadMutableModelTree(baseTree, nodeIdGenerator)
+    val mutableTree = VersionedModelTree(baseVersion, nodeIdGenerator)
     mutableTree.runWrite {
         body(mutableTree.getRootNode())
     }
-    val updatedTree = mutableTree.tree.asObject()
-    if (updatedTree.getHash() == baseTree.asObject().getHash()) return this
-    return CLVersion.builder()
-        .id(versionIdGenerator.generate())
-        .author(author)
-        .tree(updatedTree)
-        .regularUpdate(baseVersion)
-        .build()
+    return mutableTree.createVersion(versionIdGenerator.generate(), author) ?: baseVersion
 }

@@ -34,7 +34,7 @@ class DefaultInvalidationTree(val root: INodeReference, sizeLimit: Int = 100_000
         model: IModel,
         nodeId: INodeReference,
     ): List<INodeReference> {
-        return model.resolveNode(nodeId)
+        return model.tryResolveNode(nodeId)
             ?.ancestors(includeSelf = true)
             ?.map { it.getNodeReference().toSerialized() }
             ?.toList()

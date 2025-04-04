@@ -13,6 +13,8 @@ import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutorProvider
 import org.modelix.streams.plus
 
+typealias IModelTree = IGenericModelTree<INodeReference>
+
 /**
  * Persistent model implementation that supports bulk requests, bulk updates and non-Long node IDs.
  * Consistently using the streams API enables efficient lazy loading of model data.
@@ -22,14 +24,14 @@ import org.modelix.streams.plus
  * as the primary ID. This makes importing and updating models from source such as MPS easier and more efficient. No
  * need for maintaining a mapping between the MPS ID and the Modelix ID. Also, since there is no generated ID that has
  * a different value for each import, we don't have to check if a node already exists and reuse it. We can just run a
- * fresh import and then do a diff. All the data stored in the [IModelTree] also exists in the original source and if it
+ * fresh import and then do a diff. All the data stored in the [IGenericModelTree] also exists in the original source and if it
  * didn't change, we will end up with the same hash.
  * With a prefix tree like the [org.modelix.datastructures.patricia.PatriciaTrie] we can even re-run the import for
  * individual MPS models very efficiently, because all the nodes in the same model have the same model ID as a common
  * prefix of their node ID and will end up in the same subtree of the trie data structure, giving us a single hash for
  * the imported MPS model.
  */
-interface IModelTree<NodeId> : IStreamExecutorProvider {
+interface IGenericModelTree<NodeId> : IStreamExecutorProvider {
     fun asObject(): Object<CPTree>
     fun getNodeIdType(): IDataTypeConfiguration<NodeId>
 
@@ -57,16 +59,18 @@ interface IModelTree<NodeId> : IStreamExecutorProvider {
     fun getChildRoles(parentId: NodeId): IStream.Many<IChildLinkReference>
     fun getChildrenAndRoles(parentId: NodeId): IStream.Many<Pair<IChildLinkReference, IStream.Many<NodeId>>>
 
-    fun getChanges(oldVersion: IModelTree<NodeId>, changesOnly: Boolean): IStream.Many<ModelChangeEvent<NodeId>>
+    fun getChanges(oldVersion: IGenericModelTree<NodeId>, changesOnly: Boolean): IStream.Many<ModelChangeEvent<NodeId>>
 
-    fun mutate(operations: Iterable<MutationParameters<NodeId>>): IStream.One<IModelTree<NodeId>>
+    fun mutate(operations: Iterable<MutationParameters<NodeId>>): IStream.One<IGenericModelTree<NodeId>>
 
-    fun mutate(operation: MutationParameters<NodeId>): IStream.One<IModelTree<NodeId>> = mutate(listOf(operation))
+    fun mutate(operation: MutationParameters<NodeId>): IStream.One<IGenericModelTree<NodeId>> = mutate(listOf(operation))
 
     companion object {
         fun builder(): ModelTreeBuilder<Long> = ModelTreeBuilder.newWithInt64Ids()
     }
 }
+
+fun IGenericModelTree<*>.getHash() = asObject().getHash()
 
 sealed class MutationParameters<NodeId> {
     sealed class Node<NodeId> : MutationParameters<NodeId>() {
@@ -112,7 +116,7 @@ sealed class MutationParameters<NodeId> {
     data class Remove<NodeId>(override val nodeId: NodeId) : Node<NodeId>()
 }
 
-fun <NodeId> IModelTree<NodeId>.getDescendants(nodeId: NodeId, includeSelf: Boolean): IStream.Many<NodeId> {
+fun <NodeId> IGenericModelTree<NodeId>.getDescendants(nodeId: NodeId, includeSelf: Boolean): IStream.Many<NodeId> {
     return if (includeSelf) {
         IStream.of(nodeId).plus(getDescendants(nodeId, false))
     } else {
@@ -120,7 +124,7 @@ fun <NodeId> IModelTree<NodeId>.getDescendants(nodeId: NodeId, includeSelf: Bool
     }
 }
 
-fun <NodeId> IModelTree<NodeId>.getAncestors(nodeId: NodeId, includeSelf: Boolean): IStream.Many<NodeId> {
+fun <NodeId> IGenericModelTree<NodeId>.getAncestors(nodeId: NodeId, includeSelf: Boolean): IStream.Many<NodeId> {
     return if (includeSelf) {
         IStream.of(nodeId).plus(getAncestors(nodeId, false))
     } else {
@@ -128,20 +132,20 @@ fun <NodeId> IModelTree<NodeId>.getAncestors(nodeId: NodeId, includeSelf: Boolea
     }
 }
 
-fun <NodeId> IModelTree<NodeId>.setProperty(nodeId: NodeId, role: IPropertyReference, value: String?): IStream.One<IModelTree<NodeId>> =
+fun <NodeId> IGenericModelTree<NodeId>.setProperty(nodeId: NodeId, role: IPropertyReference, value: String?): IStream.One<IGenericModelTree<NodeId>> =
     mutate(MutationParameters.Property(nodeId, role, value))
 
-fun <NodeId> IModelTree<NodeId>.setReferenceTarget(sourceId: NodeId, role: IReferenceLinkReference, target: INodeReference): IStream.One<IModelTree<NodeId>> =
+fun <NodeId> IGenericModelTree<NodeId>.setReferenceTarget(sourceId: NodeId, role: IReferenceLinkReference, target: INodeReference): IStream.One<IGenericModelTree<NodeId>> =
     mutate(MutationParameters.Reference(sourceId, role, target))
 
-fun <NodeId> IModelTree<NodeId>.moveNode(newParentId: NodeId, newRole: IChildLinkReference, newIndex: Int, childId: NodeId): IStream.One<IModelTree<NodeId>> =
+fun <NodeId> IGenericModelTree<NodeId>.moveNode(newParentId: NodeId, newRole: IChildLinkReference, newIndex: Int, childId: NodeId): IStream.One<IGenericModelTree<NodeId>> =
     mutate(MutationParameters.Move(newParentId, newRole, newIndex, listOf(childId)))
 
-fun <NodeId> IModelTree<NodeId>.addNewChild(parentId: NodeId, role: IChildLinkReference, index: Int, childId: NodeId, concept: ConceptReference): IStream.One<IModelTree<NodeId>> =
+fun <NodeId> IGenericModelTree<NodeId>.addNewChild(parentId: NodeId, role: IChildLinkReference, index: Int, childId: NodeId, concept: ConceptReference): IStream.One<IGenericModelTree<NodeId>> =
     mutate(MutationParameters.AddNew(parentId, role, index, listOf(childId to concept)))
 
-fun <NodeId> IModelTree<NodeId>.removeNode(nodeId: NodeId): IStream.One<IModelTree<NodeId>> =
+fun <NodeId> IGenericModelTree<NodeId>.removeNode(nodeId: NodeId): IStream.One<IGenericModelTree<NodeId>> =
     mutate(MutationParameters.Remove(nodeId))
 
-fun <NodeId> IModelTree<NodeId>.changeConcept(nodeId: NodeId, concept: ConceptReference): IStream.One<IModelTree<NodeId>> =
+fun <NodeId> IGenericModelTree<NodeId>.changeConcept(nodeId: NodeId, concept: ConceptReference): IStream.One<IGenericModelTree<NodeId>> =
     mutate(MutationParameters.Concept(nodeId, concept))

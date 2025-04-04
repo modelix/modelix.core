@@ -17,7 +17,7 @@ class IdentityPreservingNodeAssociation(
     override fun resolveTarget(sourceNode: IReadableNode): IWritableNode? {
         val sourceReference = sourceNode.getNodeReference()
         val targetReference = overrides[sourceReference] ?: sourceReference
-        return targetModel.resolveNode(targetReference)
+        return targetModel.tryResolveNode(targetReference)
     }
 
     override fun associate(

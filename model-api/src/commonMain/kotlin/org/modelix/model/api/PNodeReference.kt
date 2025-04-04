@@ -16,10 +16,6 @@ data class PNodeReference(val id: Long, val treeId: String) : INodeReference() {
         return "modelix:$branchId/${id.toString(16)}"
     }
 
-    override fun toString(): String {
-        return serialize()
-    }
-
     companion object {
         fun deserialize(serialized: String): PNodeReference {
             return requireNotNull(tryDeserialize(serialized)) {

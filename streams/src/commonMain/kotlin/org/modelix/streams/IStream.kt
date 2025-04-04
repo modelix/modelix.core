@@ -187,3 +187,6 @@ fun <A, B, R> IStream.Many<Pair<A, B>>.mapFirst(mapper: (A) -> R) = map { mapper
 fun <A, B, R> IStream.ZeroOrOne<Pair<A, B>>.mapSecond(mapper: (B) -> R) = map { it.first to mapper(it.second) }
 fun <A, B, R> IStream.One<Pair<A, B>>.mapSecond(mapper: (B) -> R) = map { it.first to mapper(it.second) }
 fun <A, B, R> IStream.Many<Pair<A, B>>.mapSecond(mapper: (B) -> R) = map { it.first to mapper(it.second) }
+
+fun IStream.Many<*>.isNotEmpty() = isEmpty().map { !it }
+fun <T> IStream.Many<T>.contains(element: T): IStream.One<Boolean> = this.filter { it == element }.isNotEmpty()

@@ -1,6 +1,7 @@
 package org.modelix.model.lazy
 
 import kotlinx.datetime.Instant
+import org.modelix.datastructures.model.IModelTree
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectReference
@@ -39,6 +40,7 @@ class VersionBuilder {
     }
     fun tree(value: Object<CPTree>) = tree(TreeType.Companion.MAIN, value)
     fun tree(value: ITree) = tree(value.asObject() as Object<CPTree>)
+    fun tree(value: IModelTree) = tree(value.asObject() as Object<CPTree>)
     fun graph(value: IObjectGraph?) = also { it.graph = value }
 
     fun regularUpdate(baseVersion: IVersion) = regularUpdate((baseVersion as CLVersion).obj.ref)
@@ -56,6 +58,8 @@ class VersionBuilder {
         it.mergedVersion2 = version2
         if (it.graph == null) it.graph = commonBase.graph
     }
+
+    fun operations(operations: List<IOperation>) = operations(operations.toList().toTypedArray())
 
     fun operations(operations: Array<IOperation>) = also {
         val tree = checkNotNull(treeRefs[TreeType.Companion.MAIN]) { "Specify the tree data first" }

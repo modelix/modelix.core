@@ -9,6 +9,7 @@ import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.createObjectStoreCache
+import org.modelix.model.operations.LegacyBranchAsMutableModelTree
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.MapBaseStore
 import kotlin.test.Test
@@ -321,7 +322,7 @@ class TreeSerializationTest {
         val branch = PBranch(CLTree.builder(createObjectStoreCache(MapBaseStore())).repositoryId("tree01").useRoleIds(true).build(), IdGenerator.newInstance(2))
         branch.runWrite {
             for (operation in deserializedVersion.operations) {
-                operation.apply(branch.writeTransaction)
+                operation.apply(LegacyBranchAsMutableModelTree(branch))
             }
         }
         val treeFromOps = branch.computeRead { branch.transaction.tree }

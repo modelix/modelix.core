@@ -1,34 +1,39 @@
 package org.modelix.model.operations
 
-import org.modelix.datastructures.model.asModelTree
-import org.modelix.model.api.IConceptReference
+import org.modelix.datastructures.model.IModelTree
+import org.modelix.datastructures.model.toGlobal
 import org.modelix.model.api.INodeReference
-import org.modelix.model.api.ITree
-import org.modelix.model.api.IWriteTransaction
-import org.modelix.model.persistent.SerializationUtil
+import org.modelix.model.api.remove
+import org.modelix.model.mutable.IMutableModelTree
+import org.modelix.model.mutable.asModel
 
-class DeleteNodeOp(val childId: Long) : AbstractOperation(), IOperationIntend {
-
-    override fun apply(t: IWriteTransaction): IAppliedOperation {
-        if (t.getAllChildren(childId).count() != 0) {
-            throw RuntimeException("Attempt to delete non-leaf node: ${childId.toString(16)}")
-        }
-
-        val concept = t.getConceptReference(childId)
-        val position = getNodePosition(t.tree.asModelTree(), childId)
-        val properties = t.getPropertyRoles(childId).associateWith { t.getProperty(childId, it) }
-        val references = t.getReferenceRoles(childId).associateWith { t.getReferenceTarget(childId, it) }
-        t.deleteNode(childId)
-        return Applied(position, concept, properties, references)
+/**
+ * Deletes the node and all its descendants.
+ */
+class DeleteNodeOp(val childId: INodeReference) : AbstractOperation(), IOperationIntend {
+    override fun apply(tree: IMutableModelTree): IAppliedOperation {
+        val treeBeforeDelete = tree.getTransaction().tree
+        val node = tree.asModel().resolveNode(childId.toGlobal(tree.getId()))
+        val concept = node.getConceptReference()
+        val position = getNodePosition(node)
+        node.remove()
+        return Applied(
+            AddNewChildSubtreeOp(
+                treeBeforeDelete.asObject().ref,
+                position,
+                childId,
+                concept,
+            ),
+        )
     }
 
     override fun toString(): String {
-        return "DeleteNodeOp ${SerializationUtil.longToHex(childId)}"
+        return "DeleteNodeOp $childId"
     }
 
-    override fun restoreIntend(tree: ITree): List<IOperation> {
-        if (!tree.containsNode(childId)) return listOf(NoOp())
-        val allChildren = tree.getAllChildren(childId).toList()
+    override fun restoreIntend(tree: IModelTree): List<IOperation> {
+        if (!tree.containsNode(childId.toGlobal(tree.getId())).getBlocking()) return listOf(NoOp())
+        val allChildren = tree.getChildren(childId.toGlobal(tree.getId())).toList().getBlocking()
         if (allChildren.isNotEmpty()) {
             val targetPos = getDetachedNodesEndPosition(tree)
             return allChildren
@@ -39,28 +44,19 @@ class DeleteNodeOp(val childId: Long) : AbstractOperation(), IOperationIntend {
         return listOf(this)
     }
 
-    override fun captureIntend(tree: ITree): IOperationIntend {
+    override fun captureIntend(tree: IModelTree): IOperationIntend {
         return this
     }
 
     override fun getOriginalOp() = this
 
     inner class Applied(
-        val position: PositionInRole,
-        val concept: IConceptReference?,
-        val properties: Map<String, String?>,
-        val references: Map<String, INodeReference?>,
+        val inverseOp: AddNewChildSubtreeOp,
     ) : AbstractOperation.Applied(), IAppliedOperation {
         override fun getOriginalOp() = this@DeleteNodeOp
 
         override fun invert(): List<IOperation> {
-            return listOf(AddNewChildOp(position, childId, concept)) +
-                properties.map { SetPropertyOp(childId, it.key, it.value) } +
-                references.map { SetReferenceOp(childId, it.key, it.value) }
-        }
-
-        override fun toString(): String {
-            return super.toString() + ", concept: " + concept
+            return listOf(inverseOp)
         }
     }
 }

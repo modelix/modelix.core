@@ -26,7 +26,7 @@ import org.modelix.model.mpsadapters.MPSIdGenerator
 import org.modelix.model.mpsadapters.MPSModuleAsNode
 import org.modelix.model.mpsadapters.MPSNodeReference
 import org.modelix.model.mpsadapters.MPSProperty
-import org.modelix.model.mutable.asModel
+import org.modelix.model.mutable.asModelSingleThreaded
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.images.builder.ImageFromDockerfile
@@ -81,7 +81,7 @@ class ProjectSyncTest : MPSTestBase() {
 
         val client = ModelClientV2.builder().url("http://localhost:$port").build()
         val version = client.pull(branchRef, null)
-        val rootNode = version.getModelTree().asModel().getRootNode()
+        val rootNode = version.getModelTree().asModelSingleThreaded().getRootNode()
         val allNodes = rootNode.getDescendants(true)
         assertEquals(221, allNodes.count())
     }
@@ -576,7 +576,7 @@ class ProjectSyncTest : MPSTestBase() {
 
     private fun IVersion.asNormalizedJson(): String {
         return getModelTree()
-            .asModel()
+            .asModelSingleThreaded()
             .getRootNode()
             .asLegacyNode()
             .asData()

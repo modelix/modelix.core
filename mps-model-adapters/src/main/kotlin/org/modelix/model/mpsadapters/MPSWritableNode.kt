@@ -205,7 +205,7 @@ data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
         role: IReferenceLinkReference,
         target: INodeReference?,
     ) {
-        setReferenceTarget(role, target?.let { checkNotNull(getModel().resolveNode(it)) { "Target not found: $target" } })
+        setReferenceTarget(role, target?.let { checkNotNull(getModel().tryResolveNode(it)) { "Target not found: $target" } })
     }
 
     override fun isValid(): Boolean {

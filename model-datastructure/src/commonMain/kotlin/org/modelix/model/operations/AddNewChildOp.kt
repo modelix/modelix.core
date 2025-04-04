@@ -6,6 +6,7 @@ import org.modelix.datastructures.model.toGlobal
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.INodeReference
 import org.modelix.model.mutable.IMutableModelTree
+import org.modelix.streams.getBlocking
 
 class AddNewChildOp(
     position: PositionInRole,
@@ -59,14 +60,14 @@ open class AddNewChildrenOp(val position: PositionInRole, val childIdsAndConcept
     }
 
     override fun captureIntend(tree: IModelTree): IOperationIntend {
-        val children = tree.getChildren(position.nodeId.toGlobal(tree.getId()), position.role).toList().getBlocking()
+        val children = tree.getChildren(position.nodeId.toGlobal(tree.getId()), position.role).toList().getBlocking(tree)
         return Intend(CapturedInsertPosition(position.index, children.toList()))
     }
 
     inner class Intend(val capturedPosition: CapturedInsertPosition) : IOperationIntend {
         override fun restoreIntend(tree: IModelTree): List<IOperation> {
-            if (tree.containsNode(position.nodeId.toGlobal(tree.getId())).getBlocking()) {
-                val newIndex = capturedPosition.findIndex(tree.getChildren(position.nodeId.toGlobal(tree.getId()), position.role).toList().getBlocking())
+            if (tree.containsNode(position.nodeId.toGlobal(tree.getId())).getBlocking(tree)) {
+                val newIndex = capturedPosition.findIndex(tree.getChildren(position.nodeId.toGlobal(tree.getId()), position.role).toList().getBlocking(tree))
                 return listOf(withPosition(position.withIndex(newIndex)))
             } else {
                 return listOf(withPosition(getDetachedNodesEndPosition(tree)))

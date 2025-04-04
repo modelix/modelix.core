@@ -39,6 +39,7 @@ import org.modelix.model.sync.bulk.ModelSynchronizer
 import org.modelix.model.sync.bulk.NodeAssociationToModelServer
 import org.modelix.mps.api.ModelixMpsApi
 import org.modelix.mps.model.sync.bulk.MPSProjectSyncMask
+import org.modelix.streams.iterateSuspending
 import java.util.concurrent.atomic.AtomicBoolean
 
 class BindingWorker(
@@ -254,7 +255,7 @@ class BindingWorker(
                 val node = model.tryResolveNode(nodeId) ?: return
                 invalidationTree.invalidate(node, false)
             }
-            newTree.getChanges(baseVersion.getModelTree(), changesOnly = true).iterateSuspending { event ->
+            newTree.getChanges(baseVersion.getModelTree(), changesOnly = true).iterateSuspending(newTree.asObject().graph) { event ->
                 when (event) {
                     is ContainmentChangedEvent<INodeReference>, is NodeRemovedEvent<INodeReference>, is NodeAddedEvent<INodeReference> -> {
                         // There will be a ChildrenChangedEvent that indirectly handles these cases.

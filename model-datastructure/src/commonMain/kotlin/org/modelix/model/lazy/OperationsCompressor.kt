@@ -16,6 +16,7 @@ import org.modelix.model.operations.SetPropertyOp
 import org.modelix.model.operations.SetReferenceOp
 import org.modelix.model.operations.UndoOp
 import org.modelix.model.persistent.CPTree
+import org.modelix.streams.getBlocking
 
 class OperationsCompressor(val resultTree: Object<CPTree>) {
 
@@ -55,7 +56,7 @@ class OperationsCompressor(val resultTree: Object<CPTree>) {
         }
 
         for (id in createdNodes) {
-            if (!resultTree.data.getModelTree().containsNode(id).getSynchronous()) {
+            if (!resultTree.data.getModelTree().containsNode(id).getBlocking(resultTree.graph)) {
                 throw RuntimeException("Tree expected to contain node $id")
             }
         }

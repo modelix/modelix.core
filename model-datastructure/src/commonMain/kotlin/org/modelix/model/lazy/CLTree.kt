@@ -29,6 +29,7 @@ import org.modelix.model.persistent.CPTree
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
 import org.modelix.streams.IStreamExecutorProvider
+import org.modelix.streams.getBlocking
 
 private fun createNewTreeData(
     graph: IObjectGraph,
@@ -53,7 +54,7 @@ private fun createNewTreeData(
             HamtInternalNode.createEmpty(config)
                 .put(root.id, graph.fromCreated(root), graph)
                 .orNull()
-                .getSynchronous()!!,
+                .getBlocking(graph)!!,
         ),
         trieWithNodeRefIds = null,
         usesRoleIds = useRoleIds,

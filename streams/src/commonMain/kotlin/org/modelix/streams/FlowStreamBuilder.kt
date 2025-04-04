@@ -56,12 +56,12 @@ class FlowStreamBuilder() : IStreamBuilder {
         return Wrapper(flow<IStream.ZeroOrOne<T>> { emit(supplier()) }).flatten()
     }
 
-    override fun zero(): IStream.Zero {
-        return Zero(emptyFlow())
+    override fun zero(): IStream.Completable {
+        return Completable(emptyFlow())
     }
 
     override fun <T, R> zip(
-        input: Iterable<IStream.One<T>>,
+        input: List<IStream.One<T>>,
         mapper: (List<T>) -> R,
     ): IStream.One<R> {
         return Wrapper(
@@ -84,7 +84,7 @@ class FlowStreamBuilder() : IStreamBuilder {
     }
 
     override fun <T, R> zip(
-        input: Iterable<IStream.Many<T>>,
+        input: List<IStream.Many<T>>,
         mapper: (List<T>) -> R,
     ): IStream.Many<R> {
         TODO("Not yet implemented")
@@ -105,26 +105,18 @@ class FlowStreamBuilder() : IStreamBuilder {
         }
     }
 
-    inner class Zero(wrapped: Flow<Any?>) : WrapperBase<Any?>(wrapped), IStream.Zero {
-        override fun convert(converter: IStreamBuilder): IStream.Zero {
+    inner class Completable(wrapped: Flow<Any?>) : WrapperBase<Any?>(wrapped), IStream.Completable {
+        override fun convert(converter: IStreamBuilder): IStream.Completable {
             require(converter == this@FlowStreamBuilder)
             return this
         }
 
-        override fun onAfterSubscribe(action: () -> Unit): IStream<Any?> {
-            return Zero(
-                flow {
-                    action()
-                    wrapped.collect()
-                },
-            )
-        }
         override fun executeSynchronous() {
             runBlockingIfJvm { wrapped.collect() }
         }
 
-        override fun andThen(other: IStream.Zero): IStream.Zero {
-            return Zero(
+        override fun andThen(other: IStream.Completable): IStream.Completable {
+            return Completable(
                 flow {
                     wrapped.collect { }
                     other.asFlow().collect { }
@@ -228,25 +220,16 @@ class FlowStreamBuilder() : IStreamBuilder {
             return Wrapper(flow { wrapped.fold(initial) { acc, value -> operation(acc, value) } })
         }
 
-        override fun onAfterSubscribe(action: () -> Unit): IStream.One<E> {
-            return Wrapper(
-                flow {
-                    action()
-                    emitAll(wrapped)
-                },
-            )
-        }
-
         override fun distinct(): IStream.OneOrMany<E> {
             return Wrapper(wrapped.distinctUntilChanged())
         }
 
-        override fun assertEmpty(message: (E) -> String): IStream.Zero {
-            return Zero(wrapped.onEach { throw StreamAssertionError(message(it)) })
+        override fun assertEmpty(message: (E) -> String): IStream.Completable {
+            return Completable(wrapped.onEach { throw StreamAssertionError(message(it)) })
         }
 
-        override fun drainAll(): IStream.Zero {
-            return Zero(wrapped.filter { false })
+        override fun drainAll(): IStream.Completable {
+            return Completable(wrapped.filter { false })
         }
 
         override fun <K, V> toMap(

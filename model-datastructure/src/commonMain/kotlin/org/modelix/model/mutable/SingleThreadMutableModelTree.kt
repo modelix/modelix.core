@@ -5,6 +5,7 @@ import org.modelix.datastructures.model.MutationParameters
 import org.modelix.model.TreeId
 import org.modelix.model.api.IModel
 import org.modelix.model.api.INodeReference
+import org.modelix.streams.getBlocking
 
 class SingleThreadMutableModelTree<NodeId>(
     override var tree: IGenericModelTree<NodeId>,
@@ -51,7 +52,7 @@ class SingleThreadMutableModelTree<NodeId>(
     }
 
     override fun mutate(parameters: MutationParameters<NodeId>) {
-        tree = tree.mutate(parameters).getBlocking()
+        tree = tree.mutate(parameters).getBlocking(tree)
     }
 }
 

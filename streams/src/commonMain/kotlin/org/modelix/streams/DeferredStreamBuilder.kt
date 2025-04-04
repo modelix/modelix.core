@@ -6,16 +6,16 @@ import kotlinx.coroutines.flow.single
 import org.modelix.kotlin.utils.DelicateModelixApi
 
 class DeferredStreamBuilder : IStreamBuilder {
-    override fun zero(): IStream.Zero {
-        return ConvertibleZero { it.zero() }
+    override fun zero(): IStream.Completable {
+        return EmptyCompletableStream()
     }
 
     override fun <T> empty(): IStream.ZeroOrOne<T> {
-        return ConvertibleZeroOrOne { it.empty() }
+        return EmptyStream()
     }
 
     override fun <T> of(element: T): IStream.One<T> {
-        return ConvertibleOne { it.of(element) }
+        return SingleValueStream(element)
     }
 
     override fun <T> deferZeroOrOne(supplier: () -> IStream.ZeroOrOne<T>): IStream.ZeroOrOne<T> {
@@ -23,7 +23,19 @@ class DeferredStreamBuilder : IStreamBuilder {
     }
 
     override fun <T> many(elements: Sequence<T>): IStream.Many<T> {
-        return ConvertibleMany { it.many(elements) }
+        return SequenceAsStream(elements)
+    }
+
+    override fun <T> many(elements: Iterable<T>): IStream.Many<T> {
+        return SequenceAsStream(elements.asSequence())
+    }
+
+    override fun <T> many(elements: Array<T>): IStream.Many<T> {
+        return ListAsStream(elements.asList())
+    }
+
+    override fun many(elements: LongArray): IStream.Many<Long> {
+        return ListAsStream(elements.asList())
     }
 
     override fun <T> fromFlow(flow: Flow<T>): IStream.Many<T> {
@@ -31,16 +43,19 @@ class DeferredStreamBuilder : IStreamBuilder {
     }
 
     override fun <T, R> zip(
-        input: Iterable<IStream.Many<T>>,
+        input: List<IStream.Many<T>>,
         mapper: (List<T>) -> R,
     ): IStream.Many<R> {
         return ConvertibleMany { it.zip(input, mapper) }
     }
 
     override fun <T, R> zip(
-        input: Iterable<IStream.One<T>>,
+        input: List<IStream.One<T>>,
         mapper: (List<T>) -> R,
     ): IStream.One<R> {
+        if (input.all { it is SingleValueStream }) {
+            return SingleValueStream(mapper(input.map { (it as SingleValueStream).value }))
+        }
         return ConvertibleOne { c ->
             c.zip(input.map { it.convert(c) }, mapper)
         }
@@ -60,10 +75,6 @@ class DeferredStreamBuilder : IStreamBuilder {
 
         @DelicateModelixApi
         override suspend fun getSuspending(): E = FlowStreamBuilder.INSTANCE.convert(this).single()
-
-        override fun onAfterSubscribe(action: () -> Unit): IStream.One<E> {
-            TODO("Not yet implemented")
-        }
 
         override fun <R> map(mapper: (E) -> R): IStream.One<R> {
             return ConvertibleOne { convert(it).map(mapper) }
@@ -93,10 +104,6 @@ class DeferredStreamBuilder : IStreamBuilder {
     open class ConvertibleZeroOrOne<E>(conversion: (IStreamBuilder) -> IStream.ZeroOrOne<E>) : ConvertibleMany<E>(conversion), IStream.ZeroOrOne<E> {
         override fun convert(converter: IStreamBuilder): IStream.ZeroOrOne<E> {
             return super.convert(converter) as IStream.ZeroOrOne<E>
-        }
-
-        override fun onAfterSubscribe(action: () -> Unit): IStream.ZeroOrOne<E> {
-            return ConvertibleZeroOrOne { convert(it).onAfterSubscribe(action) }
         }
 
         override fun filter(predicate: (E) -> Boolean): IStream.ZeroOrOne<E> {
@@ -143,10 +150,6 @@ class DeferredStreamBuilder : IStreamBuilder {
             return super.convert(converter) as IStream.Many<E>
         }
 
-        override fun onAfterSubscribe(action: () -> Unit): IStream.Many<E> {
-            return ConvertibleMany { convert(it).onAfterSubscribe(action) }
-        }
-
         override fun filter(predicate: (E) -> Boolean): IStream.Many<E> {
             return ConvertibleMany { convert(it).filter(predicate) }
         }
@@ -173,16 +176,16 @@ class DeferredStreamBuilder : IStreamBuilder {
             return ConvertibleMany { convert(it).distinct() }
         }
 
-        override fun assertEmpty(message: (E) -> String): IStream.Zero {
-            return ConvertibleZero { convert(it).assertEmpty(message) }
+        override fun assertEmpty(message: (E) -> String): IStream.Completable {
+            return ConvertibleCompletable { convert(it).assertEmpty(message) }
         }
 
         override fun assertNotEmpty(message: () -> String): IStream.OneOrMany<E> {
             return ConvertibleOneOrMany { convert(it).assertNotEmpty(message) }
         }
 
-        override fun drainAll(): IStream.Zero {
-            return ConvertibleZero { convert(it).drainAll() }
+        override fun drainAll(): IStream.Completable {
+            return ConvertibleCompletable { convert(it).drainAll() }
         }
 
         override fun <R> fold(initial: R, operation: (R, E) -> R): IStream.One<R> {
@@ -263,10 +266,6 @@ class DeferredStreamBuilder : IStreamBuilder {
             return super.convert(converter) as IStream.OneOrMany<E>
         }
 
-        override fun onAfterSubscribe(action: () -> Unit): IStream.OneOrMany<E> {
-            return ConvertibleOneOrMany { convert(it).onAfterSubscribe(action) }
-        }
-
         override fun <R> map(mapper: (E) -> R): IStream.OneOrMany<R> {
             return ConvertibleOneOrMany { convert(it).map(mapper) }
         }
@@ -288,15 +287,15 @@ class DeferredStreamBuilder : IStreamBuilder {
         }
     }
 
-    class ConvertibleZero(conversion: (IStreamBuilder) -> IStream.Zero) : ConvertibleBase<Any?>(conversion), IStream.Zero {
-        override fun convert(converter: IStreamBuilder): IStream.Zero {
-            return super.convert(converter) as IStream.Zero
+    class ConvertibleCompletable(conversion: (IStreamBuilder) -> IStream.Completable) : ConvertibleBase<Any?>(conversion), IStream.Completable {
+        override fun convert(converter: IStreamBuilder): IStream.Completable {
+            return super.convert(converter) as IStream.Completable
         }
 
         @DelicateModelixApi
         override fun executeSynchronous() = SequenceStreamBuilder.INSTANCE.convert(this).forEach { }
-        override fun andThen(other: IStream.Zero): IStream.Zero {
-            return ConvertibleZero { convert(it).andThen(other.convert(it)) }
+        override fun andThen(other: IStream.Completable): IStream.Completable {
+            return ConvertibleCompletable { convert(it).andThen(other.convert(it)) }
         }
         override fun <R> plus(other: IStream.Many<R>): IStream.Many<R> {
             return ConvertibleMany { convert(it).plus(other.convert(it)) }
@@ -309,10 +308,6 @@ class DeferredStreamBuilder : IStreamBuilder {
         }
         override fun <R> plus(other: IStream.OneOrMany<R>): IStream.OneOrMany<R> {
             return ConvertibleOneOrMany { convert(it).plus(other.convert(it)) }
-        }
-
-        override fun onAfterSubscribe(action: () -> Unit): IStream.Zero {
-            return ConvertibleZero { convert(it).onAfterSubscribe(action) as IStream.Zero }
         }
     }
 

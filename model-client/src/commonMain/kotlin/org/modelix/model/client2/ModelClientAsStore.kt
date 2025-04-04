@@ -54,7 +54,7 @@ class ModelClientAsStore(client: IModelClientV2, val repositoryId: RepositoryId)
         ).exactlyOne()
     }
 
-    override fun putAll(entries: Map<ObjectRequest<*>, IObjectData>): IStream.Zero {
+    override fun putAll(entries: Map<ObjectRequest<*>, IObjectData>): IStream.Completable {
         return IStream.fromFlow<Nothing>(
             flow {
                 client.pushObjects(

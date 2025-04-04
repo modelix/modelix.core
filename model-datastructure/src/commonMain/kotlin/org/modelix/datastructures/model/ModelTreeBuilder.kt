@@ -15,6 +15,7 @@ import org.modelix.model.TreeId
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeReference
+import org.modelix.streams.getBlocking
 
 abstract class ModelTreeBuilder<NodeId> private constructor(protected val common: Common = Common()) {
     protected class Common {
@@ -35,13 +36,13 @@ abstract class ModelTreeBuilder<NodeId> private constructor(protected val common
 
             val config = HamtNode.Config(
                 graph = common.graph,
-                keyConfig = nodeIdType!!,
+                keyConfig = nodeIdType,
                 valueConfig = ObjectReferenceDataTypeConfiguration(common.graph, NodeObjectData.Deserializer(nodeIdType, common.treeId)),
             )
             return HamtInternalNode.createEmpty(config)
                 .put(root.data.id, root.ref, common.graph)
                 .orNull()
-                .getSynchronous()!!
+                .getBlocking(common.graph)!!
                 .let { HamtTree(it) }
                 .autoResolveValues()
                 .asModelTree(common.treeId)
@@ -61,7 +62,7 @@ abstract class ModelTreeBuilder<NodeId> private constructor(protected val common
                 keyConfig = nodeIdType,
                 valueConfig = ObjectReferenceDataTypeConfiguration(common.graph, NodeObjectData.Deserializer(nodeIdType, common.treeId)),
             )
-            return PatriciaTrie(config).put(root.data.id, root.ref).getSynchronous().autoResolveValues().asModelTree(common.treeId)
+            return PatriciaTrie(config).put(root.data.id, root.ref).getBlocking(common.graph).autoResolveValues().asModelTree(common.treeId)
         }
     }
 

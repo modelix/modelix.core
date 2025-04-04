@@ -1,8 +1,8 @@
 package org.modelix.datastructures.btree
 
 import org.modelix.datastructures.objects.IObjectGraph
-import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.streams.IStream
+import org.modelix.streams.getBlocking
 
 data class BTree<K, V>(val root: BTreeNode<K, V>) {
     constructor(config: BTreeConfig<K, V>) : this(BTreeNodeLeaf(config, emptyList()))
@@ -12,11 +12,10 @@ data class BTree<K, V>(val root: BTreeNode<K, V>) {
     fun validate() {
         graph.getStreamExecutor().query {
             root.validate(true)
-            @OptIn(DelicateModelixApi::class)
-            check(root.getEntries().toList().getSynchronous().map { it.key }.toSet().size == root.getEntries().map { it.key }.count().getSynchronous()) {
+            check(root.getEntries().toList().getBlocking(graph).map { it.key }.toSet().size == root.getEntries().map { it.key }.count().getBlocking(graph)) {
                 "duplicate entries: $root"
             }
-            check(root.getEntries().map { it.key }.toList().getSynchronous().sortedWith(root.config.keyConfiguration) == root.getEntries().map { it.key }.toList().getSynchronous()) {
+            check(root.getEntries().map { it.key }.toList().getBlocking(graph).sortedWith(root.config.keyConfiguration) == root.getEntries().map { it.key }.toList().getBlocking(graph)) {
                 "not sorted: $this"
             }
             IStream.of(Unit)

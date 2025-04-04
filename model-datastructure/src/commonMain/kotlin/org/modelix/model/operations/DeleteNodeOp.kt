@@ -6,6 +6,7 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.remove
 import org.modelix.model.mutable.IMutableModelTree
 import org.modelix.model.mutable.asModel
+import org.modelix.streams.getBlocking
 
 /**
  * Deletes the node and all its descendants.
@@ -32,8 +33,8 @@ class DeleteNodeOp(val childId: INodeReference) : AbstractOperation(), IOperatio
     }
 
     override fun restoreIntend(tree: IModelTree): List<IOperation> {
-        if (!tree.containsNode(childId.toGlobal(tree.getId())).getBlocking()) return listOf(NoOp())
-        val allChildren = tree.getChildren(childId.toGlobal(tree.getId())).toList().getBlocking()
+        if (!tree.containsNode(childId.toGlobal(tree.getId())).getBlocking(tree)) return listOf(NoOp())
+        val allChildren = tree.getChildren(childId.toGlobal(tree.getId())).toList().getBlocking(tree)
         if (allChildren.isNotEmpty()) {
             val targetPos = getDetachedNodesEndPosition(tree)
             return allChildren

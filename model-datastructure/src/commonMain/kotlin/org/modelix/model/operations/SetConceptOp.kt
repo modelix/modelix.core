@@ -7,6 +7,7 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.mutable.IMutableModelTree
 import org.modelix.model.mutable.asModel
+import org.modelix.streams.getBlocking
 
 /**
  * Operation to set the concept of a node.
@@ -30,7 +31,7 @@ class SetConceptOp(val nodeId: INodeReference, val concept: ConceptReference?) :
     override fun getOriginalOp(): IOperation = this
 
     override fun restoreIntend(tree: IModelTree): List<IOperation> {
-        return if (tree.containsNode(nodeId.toGlobal(tree.getId())).getBlocking()) listOf(this) else listOf(NoOp())
+        return if (tree.containsNode(nodeId.toGlobal(tree.getId())).getBlocking(tree)) listOf(this) else listOf(NoOp())
     }
 
     override fun captureIntend(tree: IModelTree) = this

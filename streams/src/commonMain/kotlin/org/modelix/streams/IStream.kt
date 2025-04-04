@@ -35,17 +35,15 @@ interface IStream<out E> {
     @DelicateModelixApi
     suspend fun iterateSuspending(visitor: suspend (E) -> Unit)
 
-    fun onAfterSubscribe(action: () -> Unit): IStream<E>
-
-    interface Zero : IStream<Any?> {
-        override fun convert(converter: IStreamBuilder): IStream.Zero
+    interface Completable : IStream<Any?> {
+        override fun convert(converter: IStreamBuilder): IStream.Completable
 
         /**
          * See documentation of [iterateSynchronous].
          */
         @DelicateModelixApi
         fun executeSynchronous()
-        fun andThen(other: Zero): Zero
+        fun andThen(other: Completable): Completable
         operator fun <R> plus(other: Many<R>): Many<R>
         operator fun <R> plus(other: ZeroOrOne<R>): ZeroOrOne<R>
         operator fun <R> plus(other: One<R>): One<R>
@@ -63,11 +61,10 @@ interface IStream<out E> {
         fun concat(other: Many<@UnsafeVariance E>): Many<E>
         fun concat(other: OneOrMany<@UnsafeVariance E>): OneOrMany<E>
         fun distinct(): Many<E>
-        fun assertEmpty(message: (E) -> String): Zero
+        fun assertEmpty(message: (E) -> String): Completable
         fun assertNotEmpty(message: () -> String): OneOrMany<E>
-        fun drainAll(): Zero
+        fun drainAll(): Completable
         fun <R> fold(initial: R, operation: (R, E) -> R): One<R>
-        override fun onAfterSubscribe(action: () -> Unit): Many<E>
         fun <K, V> toMap(keySelector: (E) -> K, valueSelector: (E) -> V): One<Map<K, V>>
         fun <R> splitMerge(predicate: (E) -> Boolean, merger: (Many<E>, Many<E>) -> Many<R>): Many<R>
         fun skip(count: Long): Many<E>
@@ -92,7 +89,6 @@ interface IStream<out E> {
         override fun <R> map(mapper: (E) -> R): OneOrMany<R>
         fun <R> flatMapOne(mapper: (E) -> One<R>): OneOrMany<R>
         override fun distinct(): OneOrMany<E>
-        override fun onAfterSubscribe(action: () -> Unit): OneOrMany<E>
         override fun onErrorReturn(valueSupplier: (Throwable) -> @UnsafeVariance E): OneOrMany<E>
         override fun doOnBeforeError(consumer: (Throwable) -> Unit): OneOrMany<E>
     }
@@ -106,7 +102,6 @@ interface IStream<out E> {
         fun exceptionIfEmpty(exception: () -> Throwable = { NoSuchElementException() }): One<E>
         fun orNull(): One<E?>
         fun <R> flatMapZeroOrOne(mapper: (E) -> ZeroOrOne<R>): ZeroOrOne<R>
-        override fun onAfterSubscribe(action: () -> Unit): ZeroOrOne<E>
 
         /**
          * See documentation of [iterateSynchronous].
@@ -114,6 +109,7 @@ interface IStream<out E> {
         @DelicateModelixApi
         fun getSynchronous(): E? = orNull().getSynchronous()
 
+        @DelicateModelixApi
         fun getBlocking(): E? = orNull().getBlocking()
 
         override fun onErrorReturn(valueSupplier: (Throwable) -> @UnsafeVariance E): ZeroOrOne<E>
@@ -146,7 +142,6 @@ interface IStream<out E> {
          */
         @DelicateModelixApi
         suspend fun getSuspending(): E
-        override fun onAfterSubscribe(action: () -> Unit): One<E>
         fun cached(): One<E>
         override fun onErrorReturn(valueSupplier: (Throwable) -> @UnsafeVariance E): One<E>
         override fun doOnBeforeError(consumer: (Throwable) -> Unit): One<E>

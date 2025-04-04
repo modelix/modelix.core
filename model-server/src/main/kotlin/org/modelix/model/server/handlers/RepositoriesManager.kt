@@ -36,6 +36,8 @@ import org.modelix.model.server.store.pollEntry
 import org.modelix.model.server.store.runReadIO
 import org.modelix.streams.IExecutableStream
 import org.modelix.streams.IStream
+import org.modelix.streams.getBlocking
+import org.modelix.streams.iterateBlocking
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
@@ -304,7 +306,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         newVersion.graph.getStreamExecutor().iterate({ newVersion.fullDiff(oldVersion) }) { }
 
         val mainTree = newVersion.getModelTree()
-        check(mainTree.containsNode(mainTree.getRootNodeId()).getBlocking())
+        check(mainTree.containsNode(mainTree.getRootNodeId()).getBlocking(mainTree))
 
         // TODO check invariants of the model (consistent parent-child relations, single root, containment cycles)
 
@@ -315,7 +317,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
             check(newVersion.operations.count() == 0)
         } else {
             val mutableTree = baseVersion.getModelTree().asMutableSingleThreaded()
-            newVersion.operationsAsStream().iterateBlocking { op ->
+            newVersion.operationsAsStream().iterateBlocking(mainTree) { op ->
                 op.apply(mutableTree)
             }
             check(mutableTree.getTransaction().tree.getHash() == newVersion.getModelTree().getHash()) {

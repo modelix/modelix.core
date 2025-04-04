@@ -7,6 +7,7 @@ import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.model.api.INodeReference
 import org.modelix.model.mutable.IMutableModelTree
 import org.modelix.model.persistent.CPTree
+import org.modelix.streams.getBlocking
 
 class BulkUpdateOp(
     val resultTreeHash: ObjectReference<CPTree>,
@@ -55,7 +56,7 @@ class BulkUpdateOp(
         override fun restoreIntend(tree: IModelTree): List<IOperation> {
             // The intended change is to put the model into the given state. Any concurrent change can just be
             // overwritten as long as the subtree root as the starting point still exists.
-            return if (tree.containsNode(subtreeRootId.toGlobal(tree.getId())).getBlocking()) {
+            return if (tree.containsNode(subtreeRootId.toGlobal(tree.getId())).getBlocking(tree)) {
                 listOf(getOriginalOp())
             } else {
                 listOf(NoOp())

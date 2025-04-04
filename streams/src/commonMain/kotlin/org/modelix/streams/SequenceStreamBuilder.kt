@@ -30,8 +30,8 @@ class SequenceStreamBuilder() : IStreamBuilder {
         return Wrapper(sequence<IStream.ZeroOrOne<T>> { yield(supplier()) }).flatten()
     }
 
-    override fun zero(): IStream.Zero {
-        return Zero(emptySequence())
+    override fun zero(): IStream.Completable {
+        return Completable(emptySequence())
     }
 
     override fun <T1, T2, R> zip(
@@ -47,7 +47,7 @@ class SequenceStreamBuilder() : IStreamBuilder {
     }
 
     override fun <T, R> zip(
-        input: Iterable<IStream.Many<T>>,
+        input: List<IStream.Many<T>>,
         mapper: (List<T>) -> R,
     ): Wrapper<R> {
         val input = input.toList()
@@ -62,10 +62,10 @@ class SequenceStreamBuilder() : IStreamBuilder {
     }
 
     override fun <T, R> zip(
-        input: Iterable<IStream.One<T>>,
+        input: List<IStream.One<T>>,
         mapper: (List<T>) -> R,
     ): IStream.One<R> {
-        return zip(input.map { it.assertNotEmpty { "Empty" } } as Iterable<IStream.Many<T>>, mapper)
+        return zip(input.map { it.assertNotEmpty { "Empty" } } as List<IStream.Many<T>>, mapper)
     }
 
     abstract inner class WrapperBase<E>(val wrapped: Sequence<E>) : IStream<E> {
@@ -82,19 +82,10 @@ class SequenceStreamBuilder() : IStreamBuilder {
         }
     }
 
-    inner class Zero(wrapped: Sequence<Any?>) : WrapperBase<Any?>(wrapped), IStream.Zero {
-        override fun convert(converter: IStreamBuilder): IStream.Zero {
+    inner class Completable(wrapped: Sequence<Any?>) : WrapperBase<Any?>(wrapped), IStream.Completable {
+        override fun convert(converter: IStreamBuilder): IStream.Completable {
             require(converter == this@SequenceStreamBuilder)
             return this
-        }
-        override fun onAfterSubscribe(action: () -> Unit): IStream<Any?> {
-            return Zero(
-                sequence {
-                    action()
-                    @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
-                    executeSynchronous()
-                },
-            )
         }
 
         @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
@@ -102,8 +93,8 @@ class SequenceStreamBuilder() : IStreamBuilder {
             wrapped.forEach { }
         }
 
-        override fun andThen(other: IStream.Zero): IStream.Zero {
-            return Zero(
+        override fun andThen(other: IStream.Completable): IStream.Completable {
+            return Completable(
                 sequence {
                     executeSynchronous()
                     @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
@@ -216,25 +207,16 @@ class SequenceStreamBuilder() : IStreamBuilder {
             return Wrapper(sequenceOf(wrapped.fold(initial, operation)))
         }
 
-        override fun onAfterSubscribe(action: () -> Unit): IStream.One<E> {
-            return Wrapper(
-                sequence {
-                    action()
-                    yieldAll(wrapped)
-                },
-            )
-        }
-
         override fun distinct(): IStream.OneOrMany<E> {
             return Wrapper(wrapped.distinct())
         }
 
-        override fun assertEmpty(message: (E) -> String): IStream.Zero {
-            return Zero(wrapped.onEach { throw StreamAssertionError(message(it)) })
+        override fun assertEmpty(message: (E) -> String): IStream.Completable {
+            return Completable(wrapped.onEach { throw StreamAssertionError(message(it)) })
         }
 
-        override fun drainAll(): IStream.Zero {
-            return Zero(wrapped.filter { false })
+        override fun drainAll(): IStream.Completable {
+            return Completable(wrapped.filter { false })
         }
 
         override fun <K, V> toMap(

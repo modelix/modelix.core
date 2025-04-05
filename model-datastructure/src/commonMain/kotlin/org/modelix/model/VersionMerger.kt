@@ -1,12 +1,11 @@
 package org.modelix.model
 
-import org.modelix.model.api.IBranch
 import org.modelix.model.api.IIdGenerator
-import org.modelix.model.api.TreePointer
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.commonBaseVersion
+import org.modelix.model.mutable.asMutableSingleThreaded
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.IOperationIntend
 import org.modelix.model.operations.UndoOp
@@ -72,14 +71,13 @@ class VersionMerger(private val idGenerator: IIdGenerator) {
 
         val operationsToApply = versionsToApply.flatMap { captureIntend(it) }
         var mergedVersion: CLVersion? = null
-        var baseTree = commonBase.getTree()
-        val branch: IBranch = TreePointer(baseTree)
-        branch.runWrite {
-            val t = branch.writeTransaction
+        var baseTree = commonBase.getModelTree()
+        val mutableTree = baseTree.asMutableSingleThreaded()
+        mutableTree.runWrite {
             val appliedOps = operationsToApply.flatMap {
                 val transformed: List<IOperation>
                 try {
-                    transformed = it.restoreIntend(t.tree)
+                    transformed = it.restoreIntend(mutableTree.getTransaction().tree)
                     logger.trace {
                         if (transformed.size != 1 || transformed[0] != it.getOriginalOp()) {
                             "transformed: ${it.getOriginalOp()} --> $transformed"
@@ -92,20 +90,18 @@ class VersionMerger(private val idGenerator: IIdGenerator) {
                 }
                 transformed.map { o ->
                     try {
-                        o.apply(t)
+                        o.apply(mutableTree)
                     } catch (ex: Exception) {
                         throw RuntimeException("Operation failed: $o", ex)
                     }
                 }
             }
-            mergedVersion = CLVersion.createAutoMerge(
-                idGenerator.generate(),
-                t.tree,
-                commonBase,
-                leftVersion,
-                rightVersion,
-                appliedOps.map { it.getOriginalOp() }.toTypedArray(),
-            )
+            mergedVersion = CLVersion.builder()
+                .id(idGenerator.generate())
+                .tree(mutableTree.getTransaction().tree)
+                .autoMerge(commonBase.obj.ref, leftVersion.obj.ref, rightVersion.obj.ref)
+                .operations(appliedOps.map { it.getOriginalOp() })
+                .build()
         }
         if (mergedVersion == null) {
             throw RuntimeException("Failed to merge ${leftVersion.hash} and ${rightVersion.hash}")
@@ -136,12 +132,12 @@ class VersionMerger(private val idGenerator: IIdGenerator) {
         if (operations.isEmpty()) return listOf()
         val baseVersion = version.baseVersion
             ?: throw RuntimeException("Version ${version.hash} has operations but no baseVersion")
-        val tree = baseVersion.tree
-        val branch = TreePointer(tree)
-        return branch.computeWrite {
+        val tree = baseVersion.getModelTree()
+        val mutableTree = tree.asMutableSingleThreaded()
+        return mutableTree.runWrite {
             operations.map {
-                val intend = it.captureIntend(branch.transaction.tree)
-                it.apply(branch.writeTransaction)
+                val intend = it.captureIntend(mutableTree.getTransaction().tree)
+                it.apply(mutableTree)
                 intend
             }
         }

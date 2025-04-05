@@ -1,5 +1,7 @@
 package org.modelix.datastructures.model
 
+import org.modelix.datastructures.objects.IDataTypeConfiguration
+import org.modelix.datastructures.objects.LongDataTypeConfiguration
 import org.modelix.datastructures.objects.Object
 import org.modelix.model.TreeId
 import org.modelix.model.api.ConceptReference
@@ -7,6 +9,7 @@ import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
+import org.modelix.model.api.ITree
 import org.modelix.model.api.NodeReference
 import org.modelix.model.api.NullChildLinkReference
 import org.modelix.model.api.PNodeReference
@@ -19,8 +22,14 @@ import org.modelix.streams.filterNotNull
 import org.modelix.streams.ifEmpty
 
 @Deprecated("There aren't any real implementations of IAsyncMutableTree anymore and this adapter should be unnecessary.")
-private class LegacyAsyncTreeAsModelTree(val tree: IAsyncMutableTree) : IModelTree<Long>, IStreamExecutorProvider by tree {
+private class LegacyAsyncTreeAsModelTree(val tree: IAsyncMutableTree) : IGenericModelTree<Long>, IStreamExecutorProvider by tree {
     override fun asObject(): Object<CPTree> = tree.asObject() as Object<CPTree>
+
+    override fun getNodeIdType(): IDataTypeConfiguration<Long> = LongDataTypeConfiguration()
+
+    override fun getRootNodeId(): Long {
+        return ITree.ROOT_ID
+    }
 
     override fun getId(): TreeId {
         return TreeId.fromLegacyId(tree.asSynchronousTree().getId()!!)
@@ -98,8 +107,8 @@ private class LegacyAsyncTreeAsModelTree(val tree: IAsyncMutableTree) : IModelTr
 
     private fun IStream.One<IAsyncMutableTree>.wrap() = map { LegacyAsyncTreeAsModelTree(it) }
 
-    override fun mutate(operations: Iterable<MutationParameters<Long>>): IStream.One<IModelTree<Long>> {
-        return operations.fold<MutationParameters<Long>, IStream.One<IModelTree<Long>>>(IStream.of(this)) { acc, op ->
+    override fun mutate(operations: Iterable<MutationParameters<Long>>): IStream.One<IGenericModelTree<Long>> {
+        return operations.fold<MutationParameters<Long>, IStream.One<IGenericModelTree<Long>>>(IStream.of(this)) { acc, op ->
             acc.flatMapOne { it.mutate(op) }
         }
     }
@@ -124,7 +133,7 @@ private class LegacyAsyncTreeAsModelTree(val tree: IAsyncMutableTree) : IModelTr
     }
 
     override fun getChanges(
-        oldVersion: IModelTree<Long>,
+        oldVersion: IGenericModelTree<Long>,
         changesOnly: Boolean,
     ): IStream.Many<ModelChangeEvent<Long>> {
         TODO("Not yet implemented")

@@ -30,8 +30,8 @@ class SequenceStreamBuilder() : IStreamBuilder {
         return Wrapper(sequence<IStream.ZeroOrOne<T>> { yield(supplier()) }).flatten()
     }
 
-    override fun zero(): IStream.Zero {
-        return Zero(emptySequence())
+    override fun zero(): IStream.Completable {
+        return Completable(emptySequence())
     }
 
     override fun <T1, T2, R> zip(
@@ -47,7 +47,7 @@ class SequenceStreamBuilder() : IStreamBuilder {
     }
 
     override fun <T, R> zip(
-        input: Iterable<IStream.Many<T>>,
+        input: List<IStream.Many<T>>,
         mapper: (List<T>) -> R,
     ): Wrapper<R> {
         val input = input.toList()
@@ -62,18 +62,18 @@ class SequenceStreamBuilder() : IStreamBuilder {
     }
 
     override fun <T, R> zip(
-        input: Iterable<IStream.One<T>>,
+        input: List<IStream.One<T>>,
         mapper: (List<T>) -> R,
     ): IStream.One<R> {
-        return zip(input.map { it.assertNotEmpty { "Empty" } } as Iterable<IStream.Many<T>>, mapper)
+        return zip(input.map { it.assertNotEmpty { "Empty" } } as List<IStream.Many<T>>, mapper)
     }
 
-    abstract inner class WrapperBase<E>(val wrapped: Sequence<E>) : IStream<E> {
+    abstract inner class WrapperBase<E>(val wrapped: Sequence<E>) : IStreamInternal<E> {
         override fun asFlow(): Flow<E> = wrapped.asFlow()
         override fun toList(): IStream.One<List<E>> = Wrapper(sequence { yield(wrapped.toList()) })
         override fun asSequence(): Sequence<E> = wrapped
 
-        override fun iterateSynchronous(visitor: (E) -> Unit) {
+        override fun iterateBlocking(visitor: (E) -> Unit) {
             wrapped.forEach(visitor)
         }
 
@@ -82,32 +82,28 @@ class SequenceStreamBuilder() : IStreamBuilder {
         }
     }
 
-    inner class Zero(wrapped: Sequence<Any?>) : WrapperBase<Any?>(wrapped), IStream.Zero {
-        override fun convert(converter: IStreamBuilder): IStream.Zero {
+    inner class Completable(wrapped: Sequence<Any?>) : WrapperBase<Any?>(wrapped), IStreamInternal.Completable {
+        override fun convert(converter: IStreamBuilder): IStream.Completable {
             require(converter == this@SequenceStreamBuilder)
             return this
         }
-        override fun onAfterSubscribe(action: () -> Unit): IStream<Any?> {
-            return Zero(
-                sequence {
-                    action()
-                    @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
-                    executeSynchronous()
-                },
-            )
-        }
 
         @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
-        override fun executeSynchronous() {
+        override fun executeBlocking() {
             wrapped.forEach { }
         }
 
-        override fun andThen(other: IStream.Zero): IStream.Zero {
-            return Zero(
+        @DelicateModelixApi
+        override suspend fun executeSuspending() {
+            wrapped.forEach { }
+        }
+
+        override fun andThen(other: IStream.Completable): IStream.Completable {
+            return Completable(
                 sequence {
-                    executeSynchronous()
+                    executeBlocking()
                     @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
-                    other.executeSynchronous()
+                    (other as IStreamInternal.Completable).executeBlocking()
                 },
             )
         }
@@ -132,7 +128,7 @@ class SequenceStreamBuilder() : IStreamBuilder {
             return Wrapper(
                 sequence {
                     @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
-                    executeSynchronous()
+                    executeBlocking()
                     yieldAll(other.asSequence())
                 },
             )
@@ -142,14 +138,14 @@ class SequenceStreamBuilder() : IStreamBuilder {
             return Wrapper(
                 sequence {
                     @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
-                    executeSynchronous()
+                    executeBlocking()
                     yieldAll(other)
                 },
             )
         }
     }
 
-    inner class Wrapper<E>(wrapped: Sequence<E>) : WrapperBase<E>(wrapped), IStream.One<E> {
+    inner class Wrapper<E>(wrapped: Sequence<E>) : WrapperBase<E>(wrapped), IStreamInternal.One<E> {
         override fun convert(converter: IStreamBuilder): IStream.One<E> {
             require(converter == this@SequenceStreamBuilder)
             return this
@@ -204,7 +200,7 @@ class SequenceStreamBuilder() : IStreamBuilder {
             return Wrapper(wrapped + convert(other))
         }
 
-        override fun getSynchronous(): E {
+        override fun getBlocking(): E {
             return wrapped.single()
         }
 
@@ -216,25 +212,16 @@ class SequenceStreamBuilder() : IStreamBuilder {
             return Wrapper(sequenceOf(wrapped.fold(initial, operation)))
         }
 
-        override fun onAfterSubscribe(action: () -> Unit): IStream.One<E> {
-            return Wrapper(
-                sequence {
-                    action()
-                    yieldAll(wrapped)
-                },
-            )
-        }
-
         override fun distinct(): IStream.OneOrMany<E> {
             return Wrapper(wrapped.distinct())
         }
 
-        override fun assertEmpty(message: (E) -> String): IStream.Zero {
-            return Zero(wrapped.onEach { throw StreamAssertionError(message(it)) })
+        override fun assertEmpty(message: (E) -> String): IStream.Completable {
+            return Completable(wrapped.onEach { throw StreamAssertionError(message(it)) })
         }
 
-        override fun drainAll(): IStream.Zero {
-            return Zero(wrapped.filter { false })
+        override fun drainAll(): IStream.Completable {
+            return Completable(wrapped.filter { false })
         }
 
         override fun <K, V> toMap(
@@ -278,6 +265,10 @@ class SequenceStreamBuilder() : IStreamBuilder {
 
         override fun count(): IStream.One<Int> {
             return Wrapper(sequence { yield(wrapped.count()) })
+        }
+
+        override fun indexOf(element: E): IStream.One<Int> {
+            return Wrapper(sequence { yield(wrapped.indexOf(element)) })
         }
 
         override fun filterBySingle(condition: (E) -> IStream.One<Boolean>): IStream.Many<E> {

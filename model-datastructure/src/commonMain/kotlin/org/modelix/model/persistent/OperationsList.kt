@@ -3,7 +3,9 @@ package org.modelix.model.persistent
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
 import org.modelix.datastructures.objects.IObjectReferenceFactory
+import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectReference
+import org.modelix.datastructures.objects.getDescendantsAndSelf
 import org.modelix.datastructures.objects.getHashString
 import org.modelix.model.operations.IOperation
 import org.modelix.streams.IStream
@@ -44,6 +46,10 @@ abstract class OperationsList() : IObjectData {
     }
 
     abstract fun getOperations(): IStream.Many<IOperation>
+
+    override fun objectDiff(self: Object<*>, oldObject: Object<*>?): IStream.Many<Object<*>> {
+        return self.getDescendantsAndSelf()
+    }
 }
 
 class LargeOperationsList(val subLists: Array<out ObjectReference<OperationsList>>) : OperationsList() {

@@ -80,7 +80,7 @@ class CachingAsyncStore(val store: IAsyncObjectStore, cacheSize: Int = 100_000) 
         }
     }
 
-    override fun putAll(entries: Map<ObjectRequest<*>, IObjectData>): IStream.Zero {
+    override fun putAll(entries: Map<ObjectRequest<*>, IObjectData>): IStream.Completable {
         runSynchronized(cache) {
             for (entry in entries) {
                 cache.set(entry.key, entry.value)

@@ -2,6 +2,7 @@ package org.modelix.model.mpsadapters
 
 import jetbrains.mps.smodel.MPSModuleRepository
 import org.jetbrains.mps.openapi.language.SConcept
+import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.model.SNodeId
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.ConceptReference
@@ -109,7 +110,7 @@ abstract class MPSGenericNodeAdapter<E> : IWritableNode, ISyncTargetNode {
     }
 
     override fun setReferenceTargetRef(role: IReferenceLinkReference, target: INodeReference?) {
-        setReferenceTarget(role, target?.let { checkNotNull(getModel().resolveNode(it)) { "Target not found: $target" } })
+        setReferenceTarget(role, target?.let { checkNotNull(getModel().tryResolveNode(it)) { "Target not found: $target" } })
     }
 
     override fun isValid(): Boolean {
@@ -165,10 +166,14 @@ abstract class MPSGenericNodeAdapter<E> : IWritableNode, ISyncTargetNode {
     }
 }
 
-fun NewNodeSpec.getPreferredSNodeId(): SNodeId? {
+fun NewNodeSpec.getPreferredSNodeId(contextModel: SModelReference?): SNodeId? {
     // Either use the original SNodeId that it had before it was synchronized to the model server
     // or if the node was created outside of MPS, generate an ID based on the ID on the model server.
     // The goal is to create a node with the same ID on all clients.
-    return preferredNodeReference?.let { MPSNodeReference.tryConvert(it) }?.ref?.nodeId
-        ?: node?.getNodeReference()?.encodeAsForeignId()
+    return preferredOrCurrentRef
+        ?.let { MPSNodeReference.tryConvert(it) }
+        ?.takeIf { contextModel == null || it.ref.modelReference == contextModel }
+        ?.ref
+        ?.nodeId
+        ?: preferredOrCurrentRef?.encodeAsForeignId()
 }

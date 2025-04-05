@@ -61,7 +61,7 @@ class NodeAssociationFromModelServer(val branch: IBranch, val targetModel: IMuta
 
     override fun resolveTarget(sourceNode: IReadableNode): IWritableNode? {
         return (pendingAssociations[nodeId(sourceNode)] ?: sourceNode.getOriginalReference())
-            ?.let { targetModel.resolveNode(NodeReference(it)) }
+            ?.let { targetModel.tryResolveNode(NodeReference(it)) }
     }
 
     override fun associate(sourceNode: IReadableNode, targetNode: IWritableNode) {

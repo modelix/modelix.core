@@ -12,6 +12,10 @@ interface IModelMask {
             .toSet()
         return children.filter { included.contains(it) }
     }
+
+    fun <T : IReadableNode> getFilteredChildren(parent: T): List<T> {
+        return filterChildren(parent, parent.getAllChildren() as List<T>)
+    }
 }
 
 class UnfilteredModelMask : IModelMask {

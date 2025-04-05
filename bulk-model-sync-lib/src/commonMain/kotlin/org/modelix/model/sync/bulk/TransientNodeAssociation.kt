@@ -30,7 +30,7 @@ class TransientNodeAssociation(val writeOriginalIds: Boolean, val targetModel: I
     override fun resolveTarget(sourceNode: IReadableNode): IWritableNode? {
         val ref = sourceNode.getOriginalOrCurrentReference()
         return associations[ref]
-            ?: targetModel.resolveNode(NodeReference(ref))
+            ?: targetModel.tryResolveNode(NodeReference(ref))
     }
 
     override fun associate(

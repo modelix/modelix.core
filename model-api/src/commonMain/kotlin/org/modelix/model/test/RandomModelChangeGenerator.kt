@@ -6,6 +6,7 @@ import org.modelix.model.api.async.IAsyncNode
 import org.modelix.model.api.async.asAsyncNode
 import org.modelix.model.api.getAncestors
 import org.modelix.streams.IStream
+import org.modelix.streams.getBlocking
 import org.modelix.streams.plus
 import kotlin.random.Random
 
@@ -99,7 +100,7 @@ class RandomModelChangeGenerator(val rootNode: INode, private val rand: Random) 
             .map { it.asRegularNode() }
             .filter(condition)
             .firstOrNull()
-            .getSynchronous()
+            .getBlocking(rootNode.asAsyncNode())
     }
 }
 

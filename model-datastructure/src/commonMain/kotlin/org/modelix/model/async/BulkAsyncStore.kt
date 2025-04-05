@@ -58,7 +58,7 @@ class BulkAsyncStore(
         return getAllAsStream(IStream.many(keys)).toMap({ it.first }, { it.second })
     }
 
-    override fun putAll(entries: Map<ObjectRequest<*>, IObjectData>): IStream.Zero {
+    override fun putAll(entries: Map<ObjectRequest<*>, IObjectData>): IStream.Completable {
         return store.putAll(entries)
     }
 }

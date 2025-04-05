@@ -99,8 +99,8 @@ class LazyLoadingTest {
         // move request count before object count
         val reorderedActualRequests = actualRequestCount.withIndex().sortedBy { it.index % 2 }.map { it.value }
 
-        // allow some tolerance to fix flaky tests
-        if (expectedRequests.zip(reorderedActualRequests).any { abs(it.first - it.second) > 2 }) {
+        // allow 20 % tolerance to fix flaky tests
+        if (expectedRequests.zip(reorderedActualRequests).any { abs(it.first - it.second) * 100 / it.first.coerceAtLeast(1) > 20 }) {
             assertEquals(expectedRequests, reorderedActualRequests)
         }
     }

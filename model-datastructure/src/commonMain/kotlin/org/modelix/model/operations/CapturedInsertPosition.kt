@@ -1,13 +1,15 @@
 package org.modelix.model.operations
 
-class CapturedInsertPosition(val siblingsBefore: LongArray, val siblingsAfter: LongArray) {
-    constructor(index: Int, children: LongArray) : this(
-        children.take(index).toLongArray(),
-        children.drop(index).toLongArray(),
+import org.modelix.model.api.INodeReference
+
+class CapturedInsertPosition(val siblingsBefore: List<INodeReference>, val siblingsAfter: List<INodeReference>) {
+    constructor(index: Int, children: List<INodeReference>) : this(
+        children.take(index),
+        children.drop(index),
     )
 
-    fun findIndex(children: LongArray): Int {
-        if (children.contentEquals(siblingsBefore + siblingsAfter)) return siblingsBefore.size
+    fun findIndex(children: List<INodeReference>): Int {
+        if (children == (siblingsBefore + siblingsAfter)) return siblingsBefore.size
 
         var leftIndex = 0
         var rightIndex = children.size

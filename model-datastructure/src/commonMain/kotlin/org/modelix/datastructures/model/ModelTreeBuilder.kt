@@ -15,6 +15,7 @@ import org.modelix.model.TreeId
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeReference
+import org.modelix.streams.getBlocking
 
 abstract class ModelTreeBuilder<NodeId> private constructor(protected val common: Common = Common()) {
     protected class Common {
@@ -24,10 +25,10 @@ abstract class ModelTreeBuilder<NodeId> private constructor(protected val common
     }
 
     private class Int64Builder(common: Common) : ModelTreeBuilder<Long>(common) {
-        override fun build(): IModelTree<Long> {
+        override fun build(): IGenericModelTree<Long> {
             val nodeIdType = LongDataTypeConfiguration()
             val root = NodeObjectData<Long>(
-                deserializer = NodeObjectData.Deserializer(nodeIdType, common.treeId),
+                deserializer = NodeObjectData.Deserializer(common.graph, nodeIdType, common.treeId),
                 id = ITree.ROOT_ID,
                 concept = null,
                 containment = null,
@@ -35,23 +36,23 @@ abstract class ModelTreeBuilder<NodeId> private constructor(protected val common
 
             val config = HamtNode.Config(
                 graph = common.graph,
-                keyConfig = nodeIdType!!,
-                valueConfig = ObjectReferenceDataTypeConfiguration(common.graph, NodeObjectData.Deserializer(nodeIdType, common.treeId)),
+                keyConfig = nodeIdType,
+                valueConfig = ObjectReferenceDataTypeConfiguration(common.graph, NodeObjectData.Deserializer(common.graph, nodeIdType, common.treeId)),
             )
             return HamtInternalNode.createEmpty(config)
                 .put(root.data.id, root.ref, common.graph)
                 .orNull()
-                .getSynchronous()!!
+                .getBlocking(common.graph)!!
                 .let { HamtTree(it) }
                 .autoResolveValues()
                 .asModelTree(common.treeId)
         }
     }
     private class NodeRefBuilder(common: Common) : ModelTreeBuilder<INodeReference>(common) {
-        override fun build(): IModelTree<INodeReference> {
+        override fun build(): IGenericModelTree<INodeReference> {
             val nodeIdType = NodeReferenceDataTypeConfig()
             val root = NodeObjectData<INodeReference>(
-                deserializer = NodeObjectData.Deserializer(nodeIdType, common.treeId),
+                deserializer = NodeObjectData.Deserializer(common.graph, nodeIdType, common.treeId),
                 id = PNodeReference(ITree.ROOT_ID, common.treeId.id),
                 concept = null,
                 containment = null,
@@ -59,9 +60,9 @@ abstract class ModelTreeBuilder<NodeId> private constructor(protected val common
             val config = PatriciaTrieConfig(
                 graph = common.graph,
                 keyConfig = nodeIdType,
-                valueConfig = ObjectReferenceDataTypeConfiguration(common.graph, NodeObjectData.Deserializer(nodeIdType, common.treeId)),
+                valueConfig = ObjectReferenceDataTypeConfiguration(common.graph, NodeObjectData.Deserializer(common.graph, nodeIdType, common.treeId)),
             )
-            return PatriciaTrie(config).also { it.put(root.data.id, root.ref) }.autoResolveValues().asModelTree(common.treeId)
+            return PatriciaTrie(config).put(root.data.id, root.ref).getBlocking(common.graph).autoResolveValues().asModelTree(common.treeId)
         }
     }
 
@@ -88,7 +89,7 @@ abstract class ModelTreeBuilder<NodeId> private constructor(protected val common
 
     fun withNodeReferenceIds(): ModelTreeBuilder<INodeReference> = NodeRefBuilder(common)
 
-    abstract fun build(): IModelTree<NodeId>
+    abstract fun build(): IGenericModelTree<NodeId>
 
     companion object {
         internal fun newWithNodeReferenceIds(): ModelTreeBuilder<INodeReference> = NodeRefBuilder(Common())

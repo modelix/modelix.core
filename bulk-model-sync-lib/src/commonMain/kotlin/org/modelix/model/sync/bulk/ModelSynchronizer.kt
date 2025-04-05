@@ -119,7 +119,7 @@ class ModelSynchronizer(
                 syncChildren(sourceNode, conceptCorrectedTargetNode, forceSyncDescendants)
             }
         } else if (filter.needsDescentIntoSubtree(sourceNode)) {
-            for (sourceChild in sourceMask.filterChildren(sourceNode, sourceNode.getAllChildren())) {
+            for (sourceChild in sourceMask.getFilteredChildren(sourceNode)) {
                 runSafe {
                     val targetChild = nodeAssociation.resolveTarget(sourceChild)
                         ?: error("Expected target node was not found. sourceChild=${sourceChild.getNodeReference()}, originalId=${sourceChild.getOriginalReference()}")
@@ -173,8 +173,8 @@ class ModelSynchronizer(
 
     private fun syncChildren(sourceParent: IReadableNode, targetParent: IWritableNode, forceSyncDescendants: Boolean) {
         iterateMergedRoles(
-            sourceParent.getAllChildren().map { it.getContainmentLink() }.distinct(),
-            targetParent.getAllChildren().map { it.getContainmentLink() }.distinct(),
+            sourceMask.getFilteredChildren(sourceParent).map { it.getContainmentLink() }.distinct(),
+            targetMask.getFilteredChildren(targetParent).map { it.getContainmentLink() }.distinct(),
         ) { role ->
             runSafe {
                 syncChildrenInRole(sourceParent, role, targetParent, forceSyncDescendants)

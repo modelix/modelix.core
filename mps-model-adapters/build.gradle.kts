@@ -7,6 +7,7 @@ plugins {
 
 dependencies {
     api(project(":model-api"))
+    implementation(project(":model-datastructure"))
     implementation(libs.modelix.incremental)
 
     compileOnly(

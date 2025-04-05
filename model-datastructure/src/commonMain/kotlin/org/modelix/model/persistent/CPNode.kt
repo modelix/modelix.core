@@ -3,6 +3,7 @@ package org.modelix.model.persistent
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
 import org.modelix.datastructures.objects.IObjectReferenceFactory
+import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.model.lazy.COWArrays.copy
 import org.modelix.model.lazy.COWArrays.insert
@@ -14,6 +15,7 @@ import org.modelix.model.persistent.SerializationUtil.escape
 import org.modelix.model.persistent.SerializationUtil.longFromHex
 import org.modelix.model.persistent.SerializationUtil.longToHex
 import org.modelix.model.persistent.SerializationUtil.unescape
+import org.modelix.streams.IStream
 import kotlin.jvm.JvmStatic
 
 class CPNode(
@@ -50,6 +52,10 @@ class CPNode(
             sb.append(escape(role)).append(Separators.MAPPING).append(escape(referenceTargets[index].toString()))
         }
         return sb.toString()
+    }
+
+    override fun objectDiff(self: Object<*>, oldObject: Object<*>?): IStream.Many<Object<*>> {
+        return IStream.of(self)
     }
 
     fun getChildrenIds(): Iterable<Long> {

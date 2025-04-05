@@ -10,6 +10,7 @@ import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.MapBaseStore
 import org.modelix.streams.IStream
+import org.modelix.streams.getBlocking
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -34,25 +35,25 @@ class HamtTest {
                 // add entry
                 val key = rand.nextInt(1000).toLong()
                 val value = rand.nextLong()
-                hamt = hamt!!.put(key, createEntry(value, graph)).getSynchronous()
+                hamt = hamt.put(key, createEntry(value, graph)).getBlocking(hamt)
                 expectedMap[key] = value
             } else {
                 val keys: List<Long> = ArrayList(expectedMap.keys)
                 val key = keys[rand.nextInt(keys.size)]
                 if (rand.nextBoolean()) {
                     // remove entry
-                    hamt = hamt!!.remove(key).getSynchronous()
+                    hamt = hamt.remove(key).getBlocking(hamt)
                     expectedMap.remove(key)
                 } else {
                     // replace entry
                     val value = rand.nextLong()
-                    hamt = hamt!!.put(key, createEntry(value, graph)).getSynchronous()
+                    hamt = hamt.put(key, createEntry(value, graph)).getBlocking(hamt)
                     expectedMap[key] = value
                 }
             }
             storeCache.clearCache()
             for ((key, value) in expectedMap) {
-                assertEquals(value, hamt!!.get(key).flatMapZeroOrOne { it.resolve() }.getSynchronous()!!.data.id)
+                assertEquals(value, hamt.get(key).flatMapZeroOrOne { it.resolve() }.getBlocking(hamt)!!.data.id)
             }
         }
     }
@@ -82,21 +83,21 @@ class HamtTest {
             valueConfig = ObjectReferenceDataTypeConfiguration(graph, CPNode),
         )
         var hamt = HamtTree(HamtInternalNode.createEmpty(config))
-        var getId = { e: IStream.ZeroOrOne<ObjectReference<CPNode>> -> e.flatMapZeroOrOne { it.resolve() }.getSynchronous()!!.data.id }
+        var getId = { e: IStream.ZeroOrOne<ObjectReference<CPNode>> -> e.flatMapZeroOrOne { it.resolve() }.getBlocking(hamt)!!.data.id }
 
-        hamt = hamt!!.put(965L, createEntry(-6579471327666419615, graph)).getSynchronous()
-        hamt = hamt!!.put(949L, createEntry(4912341421267007347, graph)).getSynchronous()
-        assertEquals(4912341421267007347, getId(hamt!!.get(949L)))
-        hamt = hamt!!.put(260L, createEntry(4166750678024106842, graph)).getSynchronous()
-        assertEquals(4166750678024106842, getId(hamt!!.get(260L)))
-        hamt = hamt!!.put(794L, createEntry(5492533034562136353, graph)).getSynchronous()
-        hamt = hamt!!.put(104L, createEntry(-6505928823483070382, graph)).getSynchronous()
-        hamt = hamt!!.put(47L, createEntry(3122507882718949737, graph)).getSynchronous()
-        hamt = hamt!!.put(693L, createEntry(-2086105010854963537, graph)).getSynchronous()
+        hamt = hamt.put(965L, createEntry(-6579471327666419615, graph)).getBlocking(hamt)
+        hamt = hamt.put(949L, createEntry(4912341421267007347, graph)).getBlocking(hamt)
+        assertEquals(4912341421267007347, getId(hamt.get(949L)))
+        hamt = hamt.put(260L, createEntry(4166750678024106842, graph)).getBlocking(hamt)
+        assertEquals(4166750678024106842, getId(hamt.get(260L)))
+        hamt = hamt.put(794L, createEntry(5492533034562136353, graph)).getBlocking(hamt)
+        hamt = hamt.put(104L, createEntry(-6505928823483070382, graph)).getBlocking(hamt)
+        hamt = hamt.put(47L, createEntry(3122507882718949737, graph)).getBlocking(hamt)
+        hamt = hamt.put(693L, createEntry(-2086105010854963537, graph)).getBlocking(hamt)
         storeCache.clearCache()
         // assertEquals(69239088, (hamt!!.getData() as CPHamtInternal).bitmap)
         // assertEquals(6, (hamt!!.getData() as CPHamtInternal).children.count())
-        assertEquals(-2086105010854963537, getId(hamt!!.get(693L)))
+        assertEquals(-2086105010854963537, getId(hamt.get(693L)))
     }
 
     /**
@@ -129,8 +130,8 @@ class HamtTest {
 
         for (i in 1..10) {
             var map = emptyMap
-            entries.entries.shuffled(rand).forEach { map = map.put(it.key, it.value).getSynchronous()!! }
-            keysToRemove.forEach { map = map.remove(it).getSynchronous()!! }
+            entries.entries.shuffled(rand).forEach { map = map.put(it.key, it.value).getBlocking(map) }
+            keysToRemove.forEach { map = map.remove(it).getBlocking(map) }
             val hash = map.asObject().getHashString()
             if (i == 1) {
                 expectedHash = hash

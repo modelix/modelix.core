@@ -19,10 +19,7 @@ interface IObjectData {
      * Callers should compare the hashes of the old and new object before calling this method.
      * It assumes that the [oldObject] is different from this one and calling it anyway will result in a bigger diff.
      */
-    fun objectDiff(self: Object<*>, oldObject: Object<*>?): IStream.Many<Object<*>> {
-        requireDifferentHash(oldObject?.data)
-        return self.getDescendantsAndSelf()
-    }
+    fun objectDiff(self: Object<*>, oldObject: Object<*>?): IStream.Many<Object<*>>
 }
 
 @Deprecated("Just don't use it and assume they are different")

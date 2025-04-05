@@ -1,26 +1,31 @@
 package org.modelix.model.operations
 
+import org.modelix.datastructures.model.IModelTree
+import org.modelix.datastructures.model.toGlobal
 import org.modelix.model.api.INodeReference
-import org.modelix.model.api.ITree
-import org.modelix.model.api.IWriteTransaction
-import org.modelix.model.persistent.SerializationUtil
+import org.modelix.model.api.IReferenceLinkReference
+import org.modelix.model.mutable.IMutableModelTree
+import org.modelix.model.mutable.asModel
+import org.modelix.streams.getBlocking
 
-class SetReferenceOp(val sourceId: Long, val role: String, val target: INodeReference?) : AbstractOperation(), IOperationIntend {
-    override fun apply(transaction: IWriteTransaction): IAppliedOperation {
-        val oldValue = transaction.getReferenceTarget(sourceId, role)
-        transaction.setReferenceTarget(sourceId, role, target)
+class SetReferenceOp(val sourceId: INodeReference, val role: IReferenceLinkReference, val target: INodeReference?) : AbstractOperation(), IOperationIntend {
+
+    override fun apply(tree: IMutableModelTree): IAppliedOperation {
+        val sourceNode = tree.asModel().resolveNode(sourceId.toGlobal(tree.getId()))
+        val oldValue = sourceNode.getReferenceTargetRef(role)
+        sourceNode.setReferenceTargetRef(role, target)
         return Applied(oldValue)
     }
 
     override fun toString(): String {
-        return "SetReferenceOp ${SerializationUtil.longToHex(sourceId)}.$role = $target"
+        return "SetReferenceOp $sourceId.$role = $target"
     }
 
-    override fun restoreIntend(tree: ITree): List<IOperation> {
-        return if (tree.containsNode(sourceId)) listOf(this) else listOf(NoOp())
+    override fun restoreIntend(tree: IModelTree): List<IOperation> {
+        return if (tree.containsNode(sourceId.toGlobal(tree.getId())).getBlocking(tree)) listOf(this) else listOf(NoOp())
     }
 
-    override fun captureIntend(tree: ITree) = this
+    override fun captureIntend(tree: IModelTree) = this
 
     override fun getOriginalOp() = this
 

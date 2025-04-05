@@ -1,5 +1,7 @@
 package org.modelix.model.operations
 
+import org.modelix.datastructures.model.asModelTree
+import org.modelix.datastructures.model.withIdTranslation
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IBranchListener
 import org.modelix.model.api.IIdGenerator
@@ -7,11 +9,13 @@ import org.modelix.model.api.IReadTransaction
 import org.modelix.model.api.ITransaction
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
+import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.persistent.getTreeObject
 
+@Deprecated("Use VersionedModelTree")
 class OTBranch(
-    private val branch: IBranch,
+    val branch: IBranch,
     private val idGenerator: IIdGenerator,
 ) : IBranch {
     private var bulkUpdateMode: Boolean = false
@@ -35,7 +39,8 @@ class OTBranch(
             val baseTree = branch.transaction.tree
             body()
             val resultTree = branch.transaction.tree
-            currentOperations += BulkUpdateOp(resultTree.getTreeObject().ref, subtreeRootNodeId).afterApply(baseTree)
+            currentOperations += BulkUpdateOp(resultTree.getTreeObject().ref, LocalPNodeReference(subtreeRootNodeId))
+                .afterApply(baseTree.asModelTree().withIdTranslation())
         } finally {
             bulkUpdateMode = false
         }

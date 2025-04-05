@@ -14,7 +14,10 @@ data class LocalPNodeReference(val id: Long) : INodeReference() {
         return id.toULong().toString(16)
     }
 
-    override fun toString(): String {
-        return "LocalPNodeReference_${id.toString(16)}"
+    companion object {
+        fun tryConvert(ref: INodeReference): LocalPNodeReference? {
+            if (ref is LocalPNodeReference) return ref
+            return ref.serialize().toULongOrNull(16)?.let { LocalPNodeReference(it.toLong()) }
+        }
     }
 }

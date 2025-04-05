@@ -27,7 +27,8 @@ interface IReadableNode {
     fun getAllProperties(): List<Pair<IPropertyReference, String>>
 
     /**
-     * Is allowed to be null, even if getReferenceTargetRef is not null.
+     * Is allowed to be null, even if getReferenceTargetRef is not null. Target nodes are only resolved if they are part
+     * of the same model. For cross model references use `getReferenceTargetRef(role).resolve()`.
      */
     fun getReferenceTarget(role: IReferenceLinkReference): IReadableNode?
     fun getReferenceTargetRef(role: IReferenceLinkReference): INodeReference?
@@ -94,12 +95,14 @@ fun IWritableNode.syncNewChild(role: IChildLinkReference, index: Int, sourceNode
     }
 }
 
-class NewNodeSpec(
+data class NewNodeSpec(
     val conceptRef: ConceptReference,
     val node: IReadableNode? = null,
     val preferredNodeReference: INodeReference? = null,
 ) {
     constructor(node: IReadableNode) : this(node.getConceptReference(), node, node.getOriginalReference()?.let { NodeReference(it) })
+
+    val preferredOrCurrentRef: INodeReference? get() = preferredNodeReference ?: node?.getNodeReference()
 }
 
 fun <T : IReadableNode> T.ancestors(includeSelf: Boolean = false): Sequence<T> {

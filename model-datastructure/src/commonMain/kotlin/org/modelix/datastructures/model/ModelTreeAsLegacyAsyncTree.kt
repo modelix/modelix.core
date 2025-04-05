@@ -15,10 +15,10 @@ import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutorProvider
 import org.modelix.streams.ifEmpty
 
-class ModelTreeAsLegacyAsyncTree(val tree: IModelTree<Long>) : IAsyncMutableTree, IStreamExecutorProvider by tree {
+class ModelTreeAsLegacyAsyncTree(val tree: IGenericModelTree<Long>) : IAsyncMutableTree, IStreamExecutorProvider by tree {
     override fun asObject(): Any = tree.asObject()
 
-    private fun IStream.One<IModelTree<Long>>.wrap() = map { ModelTreeAsLegacyAsyncTree(it) }
+    private fun IStream.One<IGenericModelTree<Long>>.wrap() = map { ModelTreeAsLegacyAsyncTree(it) }
 
     override fun asSynchronousTree(): ITree {
         return AsyncAsSynchronousTree(this)
@@ -134,11 +134,11 @@ class ModelTreeAsLegacyAsyncTree(val tree: IModelTree<Long>) : IAsyncMutableTree
 
 fun ITree.asModelTree() = asAsyncTree().asModelTree()
 
-fun IAsyncTree.asModelTree(): IModelTree<Long> = when (this) {
+fun IAsyncTree.asModelTree(): IGenericModelTree<Long> = when (this) {
     is ModelTreeAsLegacyAsyncTree -> tree
     else -> error("Unknown tree type: $this")
 }
 
-fun IModelTree<Long>.asLegacyAsyncTree(): IAsyncMutableTree = ModelTreeAsLegacyAsyncTree(this)
+fun IGenericModelTree<Long>.asLegacyAsyncTree(): IAsyncMutableTree = ModelTreeAsLegacyAsyncTree(this)
 
-fun IModelTree<Long>.asLegacyTree(): ITree = asLegacyAsyncTree().asSynchronousTree()
+fun IGenericModelTree<Long>.asLegacyTree(): ITree = asLegacyAsyncTree().asSynchronousTree()

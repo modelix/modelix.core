@@ -1,10 +1,10 @@
 package org.modelix.model.operations
 
-import org.modelix.model.api.ITree
-import org.modelix.model.api.IWriteTransaction
+import org.modelix.datastructures.model.IModelTree
+import org.modelix.model.mutable.IMutableModelTree
 
 class NoOp : AbstractOperation(), IAppliedOperation, IOperationIntend {
-    override fun apply(transaction: IWriteTransaction): IAppliedOperation {
+    override fun apply(tree: IMutableModelTree): IAppliedOperation {
         return this
     }
 
@@ -16,9 +16,9 @@ class NoOp : AbstractOperation(), IAppliedOperation, IOperationIntend {
         return "NoOp"
     }
 
-    override fun captureIntend(tree: ITree) = this
+    override fun captureIntend(tree: IModelTree) = this
 
     override fun getOriginalOp() = this
 
-    override fun restoreIntend(tree: ITree) = listOf(this)
+    override fun restoreIntend(tree: IModelTree) = listOf(this)
 }

@@ -18,7 +18,7 @@ interface IAsyncObjectStore : IStreamExecutorProvider {
 
     fun getAllAsStream(keys: IStream.Many<ObjectRequest<*>>): IStream.Many<Pair<ObjectRequest<*>, IObjectData?>>
     fun getAllAsMap(keys: List<ObjectRequest<*>>): IStream.One<Map<ObjectRequest<*>, IObjectData?>>
-    fun putAll(entries: Map<ObjectRequest<*>, IObjectData>): IStream.Zero
+    fun putAll(entries: Map<ObjectRequest<*>, IObjectData>): IStream.Completable
 
     fun clearCache()
 

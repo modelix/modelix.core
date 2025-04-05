@@ -41,11 +41,13 @@
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="dataStorageConfiguration">
             <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+                <property name="pageSize" value="16384" />
                 <property name="defaultDataRegionConfiguration">
                     <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
                         <property name="maxSize" value="${ignite.cache.size}"/>
                         <property name="pageEvictionMode" value="RANDOM_LRU" />
-                        <property name="emptyPagesPoolSize" value="2000" />
+                        <property name="emptyPagesPoolSize" value="630" />
+                        <property name="evictionThreshold" value="0.8" />
                     </bean>
                 </property>
             </bean>

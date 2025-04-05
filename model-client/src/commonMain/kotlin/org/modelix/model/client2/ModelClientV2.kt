@@ -48,6 +48,8 @@ import org.modelix.model.TreeId
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INode
+import org.modelix.model.api.INodeReference
+import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.IdGeneratorDummy
 import org.modelix.model.api.TreePointer
 import org.modelix.model.api.getRootNode
@@ -59,6 +61,9 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.fullDiff
+import org.modelix.model.lazy.runWriteOnModel
+import org.modelix.model.mutable.INodeIdGenerator
+import org.modelix.model.mutable.ModelixIdGenerator
 import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.oauth.IAuthRequestHandler
 import org.modelix.model.oauth.ModelixAuthClient
@@ -833,6 +838,32 @@ suspend fun <T> IModelClientV2.runWriteOnBranch(branchRef: BranchReference, body
         result = body(it)
     }
     if (newVersion != null) {
+        client.push(branchRef, newVersion, baseVersion)
+    }
+    return result as T
+}
+
+suspend fun <T> IModelClientV2.runWriteOnModel(
+    branchRef: BranchReference,
+    nodeIdGenerator: (TreeId) -> INodeIdGenerator<INodeReference> = { ModelixIdGenerator(getIdGenerator(), it) },
+    body: (IWritableNode) -> T,
+): T {
+    val client = this
+    val masterBranch = branchRef.repositoryId.getBranchReference()
+    val baseVersion = client.pullIfExists(branchRef)
+        ?: masterBranch.takeIf { it != branchRef }
+            ?.let { client.pullIfExists(it) }
+        ?: client.initRepository(branchRef.repositoryId)
+
+    var result: T? = null
+    val newVersion = baseVersion.runWriteOnModel(
+        versionIdGenerator = getIdGenerator(),
+        nodeIdGenerator = nodeIdGenerator(baseVersion.getModelTree().getId()),
+        author = getUserId(),
+    ) { rootNode ->
+        result = body(rootNode)
+    }
+    if (newVersion != baseVersion) {
         client.push(branchRef, newVersion, baseVersion)
     }
     return result as T

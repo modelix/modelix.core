@@ -1,25 +1,30 @@
 package org.modelix.model.operations
 
-import org.modelix.model.api.ITree
-import org.modelix.model.api.IWriteTransaction
-import org.modelix.model.persistent.SerializationUtil
+import org.modelix.datastructures.model.IModelTree
+import org.modelix.datastructures.model.toGlobal
+import org.modelix.model.api.INodeReference
+import org.modelix.model.api.IPropertyReference
+import org.modelix.model.mutable.IMutableModelTree
+import org.modelix.model.mutable.asModel
+import org.modelix.streams.getBlocking
 
-class SetPropertyOp(val nodeId: Long, val role: String, val value: String?) : AbstractOperation(), IOperationIntend {
-    override fun apply(transaction: IWriteTransaction): IAppliedOperation {
-        val oldValue = transaction.getProperty(nodeId, role)
-        transaction.setProperty(nodeId, role, value)
+class SetPropertyOp(val nodeId: INodeReference, val role: IPropertyReference, val value: String?) : AbstractOperation(), IOperationIntend {
+    override fun apply(tree: IMutableModelTree): IAppliedOperation {
+        val node = tree.asModel().resolveNode(nodeId.toGlobal(tree.getId()))
+        val oldValue = node.getPropertyValue(role)
+        node.setPropertyValue(role, value)
         return Applied(oldValue)
     }
 
     override fun toString(): String {
-        return "SetPropertOp ${SerializationUtil.longToHex(nodeId)}.$role = $value"
+        return "SetPropertOp $nodeId.$role = $value"
     }
 
-    override fun restoreIntend(tree: ITree): List<IOperation> {
-        return if (tree.containsNode(nodeId)) listOf(this) else listOf(NoOp())
+    override fun restoreIntend(tree: IModelTree): List<IOperation> {
+        return if (tree.containsNode(nodeId.toGlobal(tree.getId())).getBlocking(tree)) listOf(this) else listOf(NoOp())
     }
 
-    override fun captureIntend(tree: ITree) = this
+    override fun captureIntend(tree: IModelTree) = this
 
     override fun getOriginalOp() = this
 

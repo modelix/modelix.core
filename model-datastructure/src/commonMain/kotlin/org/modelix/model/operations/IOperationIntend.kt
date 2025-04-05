@@ -1,8 +1,8 @@
 package org.modelix.model.operations
 
-import org.modelix.model.api.ITree
+import org.modelix.datastructures.model.IModelTree
 
 interface IOperationIntend {
     fun getOriginalOp(): IOperation
-    fun restoreIntend(tree: ITree): List<IOperation>
+    fun restoreIntend(tree: IModelTree): List<IOperation>
 }

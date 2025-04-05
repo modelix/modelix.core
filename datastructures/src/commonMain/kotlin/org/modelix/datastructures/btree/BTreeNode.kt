@@ -3,6 +3,8 @@ package org.modelix.datastructures.btree
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
 import org.modelix.datastructures.objects.IObjectReferenceFactory
+import org.modelix.datastructures.objects.Object
+import org.modelix.datastructures.objects.getDescendantsAndSelf
 import org.modelix.datastructures.serialization.SerializationSeparators
 import org.modelix.streams.IStream
 
@@ -32,6 +34,11 @@ sealed class BTreeNode<K, V> : IObjectData {
     abstract fun split(): Replacement.Splitted<K, V>
     fun splitIfNecessary(): Replacement<K, V> = if (isOverfilled()) split() else Replacement.Single(this)
     abstract fun mergeWithSibling(knownSeparator: K, right: BTreeNode<K, V>): BTreeNode<K, V>
+
+    override fun objectDiff(self: Object<*>, oldObject: Object<*>?): IStream.Many<Object<*>> {
+        // TODO performance
+        return self.getDescendantsAndSelf()
+    }
 
     class Deserializer<K, V>(val config: BTreeConfig<K, V>) : IObjectDeserializer<BTreeNode<K, V>> {
         override fun deserialize(

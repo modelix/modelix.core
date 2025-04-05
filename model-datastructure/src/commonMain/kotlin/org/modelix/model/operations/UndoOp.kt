@@ -1,59 +1,53 @@
 package org.modelix.model.operations
 
+import org.modelix.datastructures.model.IModelTree
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.ObjectReference
-import org.modelix.model.api.ITree
-import org.modelix.model.api.IWriteTransaction
-import org.modelix.model.api.TreePointer
 import org.modelix.model.lazy.CLVersion
+import org.modelix.model.mutable.IMutableModelTree
+import org.modelix.model.mutable.asMutableSingleThreaded
 import org.modelix.model.persistent.CPVersion
 
 class UndoOp(val versionHash: ObjectReference<CPVersion>) : AbstractOperation() {
     override fun getObjectReferences(): List<ObjectReference<IObjectData>> = listOf(versionHash)
 
-    override fun apply(transaction: IWriteTransaction): IAppliedOperation {
+    override fun apply(tree: IMutableModelTree): IAppliedOperation {
         return Applied(
-            captureIntend(transaction.tree)
-                .restoreIntend(transaction.tree)
-                .map { it.apply(transaction) },
+            captureIntend(tree.getTransaction().tree)
+                .restoreIntend(tree.getTransaction().tree)
+                .map { it.apply(tree) },
         )
     }
 
-    override fun captureIntend(tree: ITree): IOperationIntend {
+    override fun captureIntend(tree: IModelTree): IOperationIntend {
         val versionToUndo = CLVersion(versionHash.resolveLater().query())
         val originalAppliedOps = getAppliedOps(versionToUndo)
         val invertedOps = originalAppliedOps.reversed().flatMap { it.invert() }
-        val invertedOpIntends = captureIntend(versionToUndo.getTree(), invertedOps)
+        val invertedOpIntends = captureIntend(versionToUndo.getModelTree(), invertedOps)
         return Intend(invertedOpIntends)
     }
 
     private fun getAppliedOps(version: CLVersion): List<IAppliedOperation> {
-        val tree = version.baseVersion!!.getTree()
-        val branch = TreePointer(tree)
-        return branch.computeWrite {
-            version.operations.map { it.apply(branch.writeTransaction) }
+        val tree = version.baseVersion!!.getModelTree()
+        val mutableTree = tree.asMutableSingleThreaded()
+        return version.operations.map { it.apply(mutableTree) }
+    }
+
+    private fun captureIntend(tree: IModelTree, ops: List<IOperation>): List<IOperationIntend> {
+        val mutableTree = tree.asMutableSingleThreaded()
+        return ops.map { it ->
+            val intend = it.captureIntend(mutableTree.getTransaction().tree)
+            it.apply(mutableTree)
+            intend
         }
     }
 
-    private fun captureIntend(tree: ITree, ops: List<IOperation>): List<IOperationIntend> {
-        val branch = TreePointer(tree)
-        return branch.computeWrite {
-            ops.map {
-                val intend = it.captureIntend(branch.transaction.tree)
-                it.apply(branch.writeTransaction)
-                intend
-            }
-        }
-    }
-
-    private fun restoreIntend(tree: ITree, opIntends: List<IOperationIntend>): List<IOperation> {
-        val branch = TreePointer(tree)
-        return branch.computeWrite {
-            opIntends.flatMap {
-                val restoredOps = it.restoreIntend(branch.transaction.tree)
-                restoredOps.forEach { restoredOp -> restoredOp.apply(branch.writeTransaction) }
-                restoredOps
-            }
+    private fun restoreIntend(tree: IModelTree, opIntends: List<IOperationIntend>): List<IOperation> {
+        val mutableTree = tree.asMutableSingleThreaded()
+        return opIntends.flatMap {
+            val restoredOps = it.restoreIntend(mutableTree.getTransaction().tree)
+            restoredOps.forEach { restoredOp -> restoredOp.apply(mutableTree) }
+            restoredOps
         }
     }
 
@@ -66,7 +60,7 @@ class UndoOp(val versionHash: ObjectReference<CPVersion>) : AbstractOperation() 
             return this@UndoOp
         }
 
-        override fun restoreIntend(tree: ITree): List<IOperation> {
+        override fun restoreIntend(tree: IModelTree): List<IOperation> {
             return restoreIntend(tree, intends)
         }
     }

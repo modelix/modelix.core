@@ -62,7 +62,7 @@ class StoreClientAsAsyncStore(val store: IStoreClient) : IAsyncObjectStore {
         )
     }
 
-    override fun putAll(entries: Map<ObjectRequest<*>, IObjectData>): IStream.Zero {
+    override fun putAll(entries: Map<ObjectRequest<*>, IObjectData>): IStream.Completable {
         @OptIn(RequiresTransaction::class) // store is immutable and doesn't require transactions
         store.putAll(entries.entries.associate { it.key.hash to it.value.serialize() })
         return IStream.zero()

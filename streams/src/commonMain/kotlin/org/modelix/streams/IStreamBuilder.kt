@@ -12,6 +12,7 @@ interface IStreamBuilder {
 
     fun <T> deferZeroOrOne(supplier: () -> IStream.ZeroOrOne<T>): IStream.ZeroOrOne<T>
 
+    fun <T> many(elements: Collection<T>): IStream.Many<T> = many(elements.asSequence())
     fun <T> many(elements: Iterable<T>): IStream.Many<T> = many(elements.asSequence())
     fun <T> many(elements: Array<T>): IStream.Many<T> = many(elements.asSequence())
     fun many(elements: LongArray): IStream.Many<Long> = many(elements.asSequence())

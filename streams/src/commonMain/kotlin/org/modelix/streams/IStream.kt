@@ -53,6 +53,7 @@ interface IStream<out E> {
         fun withIndex(): Many<IndexedValue<E>>
         fun onErrorReturn(valueSupplier: (Throwable) -> @UnsafeVariance E): Many<E>
         fun doOnBeforeError(consumer: (Throwable) -> Unit): Many<E>
+        fun indexOf(element: @UnsafeVariance E): One<Int>
     }
 
     interface OneOrMany<out E> : IStream<E>, Many<E> {
@@ -94,6 +95,10 @@ interface IStream<out E> {
 
 operator fun <R> IStream.Many<R>.plus(other: IStream.Many<R>): IStream.Many<R> {
     return this.concat(other)
+}
+
+operator fun <R> IStream.Many<R>.plus(other: Iterable<R>): IStream.Many<R> {
+    return this.concat(IStream.many(other))
 }
 
 operator fun <R> IStream.Many<R>.plus(other: IStream.OneOrMany<R>): IStream.OneOrMany<R> {

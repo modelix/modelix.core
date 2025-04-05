@@ -117,6 +117,10 @@ open class SequenceAsStream<E>(val wrapped: Sequence<E>) : IStream.Many<E>, IStr
         return SingleValueStream(wrapped.count())
     }
 
+    override fun indexOf(element: E): IStream.One<Int> {
+        return SingleValueStream(wrapped.indexOf(element))
+    }
+
     override fun filterBySingle(condition: (E) -> IStream.One<Boolean>): IStream.Many<E> {
         return convertLater().filterBySingle(condition)
     }

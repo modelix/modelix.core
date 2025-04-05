@@ -150,4 +150,8 @@ class EmptyStream<E> : IStreamInternal.ZeroOrOne<E> {
     override fun withIndex(): IStream.Many<IndexedValue<E>> {
         return EmptyStream()
     }
+
+    override fun indexOf(element: E): IStream.One<Int> {
+        return SingleValueStream(-1)
+    }
 }

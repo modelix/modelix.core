@@ -92,7 +92,7 @@ abstract class GenericModelTree<NodeId>(
     }
 
     override fun getChildren(parentId: NodeId): IStream.Many<NodeId> {
-        return resolveNode(parentId).flatMapIterable { it.children }.map { it }
+        return resolveNode(parentId).flatMap { it.getChildIds() }.map { it }
     }
 
     private fun getRoleOfChild(childId: NodeId): IStream.One<IChildLinkReference> {
@@ -194,8 +194,8 @@ abstract class GenericModelTree<NodeId>(
                 }
             }
 
-        val newChildren = IStream.many(newNode.children).flatMap { getNode(it) }.toList()
-        val oldChildren = IStream.many(oldNode.children).flatMap { oldTree.getNode(it) }.toList()
+        val newChildren = newNode.getChildIds().flatMap { getNode(it) }.toList()
+        val oldChildren = oldNode.getChildIds().flatMap { oldTree.getNode(it) }.toList()
         val childrenChanges: IStream.Many<ChildrenChangedEvent<NodeId>> = newChildren.zipWith(oldChildren) { newChildrenList, oldChildrenList ->
             val oldChildren: MutableMap<String?, MutableList<NodeObjectData<NodeId>>> = HashMap()
             val newChildren: MutableMap<String?, MutableList<NodeObjectData<NodeId>>> = HashMap()
@@ -296,7 +296,7 @@ abstract class GenericModelTree<NodeId>(
     ): IStream.One<IPersistentMap<NodeId, NodeObjectData<NodeId>>> {
         val newNodes = newIds.zip(concepts).map { (childId, concept) ->
             childId to NodeObjectData<NodeId>(
-                deserializer = NodeObjectData.Deserializer(this.nodesMap.getKeyTypeConfig(), getId()),
+                deserializer = NodeObjectData.Deserializer(graph, this.nodesMap.getKeyTypeConfig(), getId()),
                 id = childId,
                 concept = concept.takeIf { it != NullConcept.getReference() },
                 containment = parentId to role,
@@ -320,19 +320,21 @@ abstract class GenericModelTree<NodeId>(
 
     private fun insertChildrenIntoParentData(parentData: NodeObjectData<NodeId>, index: Int, newIds: Iterable<NodeId>, role: IChildLinkReference): IStream.One<NodeObjectData<NodeId>> {
         return if (index == -1) {
-            IStream.Companion.of(parentData.children + newIds)
+            parentData.getChildIds() + IStream.many(newIds)
         } else {
-            this.getChildren(parentData.id, role).toList().map { childrenInRole ->
+            this.getChildren(parentData.id, role).toList().flatMap { childrenInRole ->
                 if (index > childrenInRole.size) throw RuntimeException("Invalid index $index. There are only ${childrenInRole.size} nodes in ${parentData.id}.$role")
                 if (index == childrenInRole.size) {
-                    parentData.children + newIds
+                    parentData.getChildIds() + newIds
                 } else {
-                    val indexInAll = parentData.children.indexOf(childrenInRole[index])
-                    parentData.children.take(indexInAll) + newIds + parentData.children.drop(indexInAll)
+                    parentData.getChildIds().toList().flatMapIterable { children ->
+                        val indexInAll = children.indexOf(childrenInRole[index])
+                        children.take(indexInAll) + newIds + children.drop(indexInAll)
+                    }
                 }
             }
-        }.map { newChildrenArray ->
-            parentData.copy(children = newChildrenArray)
+        }.toList().map { newChildrenArray ->
+            parentData.withChildren(newChildrenArray)
         }
     }
 
@@ -383,7 +385,7 @@ abstract class GenericModelTree<NodeId>(
 
         val newTree: IStream.One<GenericModelTree<NodeId>> = oldParent.zipWith(adjustedIndex) { oldParentId, adjustedIndex ->
             val withChildRemoved = updateNode(oldParentId) {
-                IStream.of(it.withChildRemoved(childId))
+                it.withChildRemoved(childId)
             }.wrap()
             val withChildAdded = withChildRemoved.flatMapOne { tree ->
                 tree.updateNode(newParentId) {
@@ -414,7 +416,7 @@ abstract class GenericModelTree<NodeId>(
         val parent: IStream.One<NodeId> = getParent(nodeId).exceptionIfEmpty { IllegalArgumentException("Cannot delete node without parent: $nodeId") }
 
         return parent.zipWith(mapWithoutRemovedNodes) { parentId, mapWithoutRemovedNodes ->
-            updateNodeInMap(mapWithoutRemovedNodes, parentId) { IStream.of(it.withChildRemoved(nodeId)) }
+            updateNodeInMap(mapWithoutRemovedNodes, parentId) { it.withChildRemoved(nodeId) }
         }.flatten().wrap()
     }
 }

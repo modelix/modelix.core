@@ -12,6 +12,7 @@ import com.badoo.reaktive.maybe.asCompletable
 import com.badoo.reaktive.maybe.asObservable
 import com.badoo.reaktive.maybe.asSingle
 import com.badoo.reaktive.maybe.asSingleOrError
+import com.badoo.reaktive.maybe.defaultIfEmpty
 import com.badoo.reaktive.maybe.doOnBeforeError
 import com.badoo.reaktive.maybe.filter
 import com.badoo.reaktive.maybe.flatMap
@@ -333,6 +334,10 @@ class ReaktiveStreamBuilder() : IStreamBuilder {
         override fun doOnBeforeError(consumer: (Throwable) -> Unit): IStream.Many<E> {
             return WrapperMany(wrapped.doOnBeforeError(consumer))
         }
+
+        override fun indexOf(element: E): IStream.One<Int> {
+            return WrapperSingle(wrapped.withIndex().firstOrNull().map { it?.index ?: -1 })
+        }
     }
 
     inner class WrapperOneOrMany<E>(wrapped: Observable<E>) :
@@ -515,6 +520,10 @@ class ReaktiveStreamBuilder() : IStreamBuilder {
         override fun doOnBeforeError(consumer: (Throwable) -> Unit): IStream.One<E> {
             return WrapperSingle(wrapped.doOnBeforeError(consumer))
         }
+
+        override fun indexOf(element: E): IStream.One<Int> {
+            return WrapperSingle(wrapped.map { if (it == element) 0 else -1 })
+        }
     }
 
     inner class WrapperMaybe<E>(override val wrapped: Maybe<E>) : ReaktiveWrapper<E>(), IStream.ZeroOrOne<E> {
@@ -636,6 +645,10 @@ class ReaktiveStreamBuilder() : IStreamBuilder {
 
         override fun doOnBeforeError(consumer: (Throwable) -> Unit): IStream.ZeroOrOne<E> {
             return WrapperMaybe(wrapped.doOnBeforeError(consumer))
+        }
+
+        override fun indexOf(element: E): IStream.One<Int> {
+            return WrapperSingle(wrapped.map { if (it == element) 0 else -1 }.defaultIfEmpty(-1))
         }
     }
     fun <R> IStream.One<R>.toReaktive() = this@ReaktiveStreamBuilder.convert(this)

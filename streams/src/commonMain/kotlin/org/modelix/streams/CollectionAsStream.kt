@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import org.modelix.kotlin.utils.DelicateModelixApi
 
-open class ColectionAsStream<E>(val collection: Collection<E>) : IStream.Many<E>, IStreamInternal<E> {
+open class CollectionAsStream<E>(val collection: Collection<E>) : IStream.Many<E>, IStreamInternal<E> {
     protected open fun convertLater() = DeferredStreamBuilder.ConvertibleMany { convert(it) }
 
     override fun convert(converter: IStreamBuilder): IStream.Many<E> {
@@ -12,15 +12,15 @@ open class ColectionAsStream<E>(val collection: Collection<E>) : IStream.Many<E>
     }
 
     override fun filter(predicate: (E) -> Boolean): IStream.Many<E> {
-        return ColectionAsStream(collection.filter(predicate))
+        return CollectionAsStream(collection.filter(predicate))
     }
 
     override fun <R> map(mapper: (E) -> R): IStream.Many<R> {
-        return ColectionAsStream(collection.map(mapper))
+        return CollectionAsStream(collection.map(mapper))
     }
 
     override fun <R : Any> mapNotNull(mapper: (E) -> R?): IStream.Many<R> {
-        return ColectionAsStream(collection.mapNotNull(mapper))
+        return CollectionAsStream(collection.mapNotNull(mapper))
     }
 
     override fun firstOrNull(): IStream.One<E?> {
@@ -37,25 +37,25 @@ open class ColectionAsStream<E>(val collection: Collection<E>) : IStream.Many<E>
 
     override fun concat(other: IStream.Many<E>): IStream.Many<E> {
         return when (other) {
-            is SingleValueStream<E> -> ColectionAsStream(collection + other.value)
+            is SingleValueStream<E> -> CollectionAsStream(collection + other.value)
             is SequenceAsStream<E> -> SequenceAsStream(collection.asSequence() + other.wrapped)
             is EmptyStream<E> -> this
-            is ColectionAsStream<E> -> ColectionAsStream(collection + other.collection)
+            is CollectionAsStream<E> -> CollectionAsStream(collection + other.collection)
             else -> convertLater().concat(other)
         }
     }
 
     override fun concat(other: IStream.OneOrMany<E>): IStream.OneOrMany<E> {
         return when (other) {
-            is SingleValueStream<E> -> ColectionAsStreamOneOrMany(collection + other.value)
+            is SingleValueStream<E> -> CollectionAsStreamOneOrMany(collection + other.value)
             is SequenceAsStreamOneOrMany<E> -> SequenceAsStreamOneOrMany(collection.asSequence() + other.wrapped)
-            is ColectionAsStreamOneOrMany<E> -> ColectionAsStreamOneOrMany(collection + other.collection)
+            is CollectionAsStreamOneOrMany<E> -> CollectionAsStreamOneOrMany(collection + other.collection)
             else -> convertLater().concat(other)
         }
     }
 
     override fun distinct(): IStream.Many<E> {
-        return ColectionAsStream(collection.distinct())
+        return CollectionAsStream(collection.distinct())
     }
 
     override fun assertEmpty(message: (E) -> String): IStream.Completable {
@@ -65,7 +65,7 @@ open class ColectionAsStream<E>(val collection: Collection<E>) : IStream.Many<E>
 
     override fun assertNotEmpty(message: () -> String): IStream.OneOrMany<E> {
         if (collection.isEmpty()) throw NoSuchElementException("Empty stream")
-        return ColectionAsStreamOneOrMany(collection)
+        return CollectionAsStreamOneOrMany(collection)
     }
 
     override fun drainAll(): IStream.Completable {
@@ -88,11 +88,11 @@ open class ColectionAsStream<E>(val collection: Collection<E>) : IStream.Many<E>
         merger: (IStream.Many<E>, IStream.Many<E>) -> IStream.Many<R>,
     ): IStream.Many<R> {
         val (a, b) = collection.partition(predicate)
-        return merger(ColectionAsStream(a), ColectionAsStream(b))
+        return merger(CollectionAsStream(a), CollectionAsStream(b))
     }
 
     override fun skip(count: Long): IStream.Many<E> {
-        return ColectionAsStream(collection.drop(count.toInt()))
+        return CollectionAsStream(collection.drop(count.toInt()))
     }
 
     override fun exactlyOne(): IStream.One<E> {
@@ -116,7 +116,7 @@ open class ColectionAsStream<E>(val collection: Collection<E>) : IStream.Many<E>
     }
 
     override fun take(n: Int): IStream.Many<E> {
-        return ColectionAsStream(collection.take(n))
+        return CollectionAsStream(collection.take(n))
     }
 
     override fun firstOrEmpty(): IStream.ZeroOrOne<E> {
@@ -132,7 +132,7 @@ open class ColectionAsStream<E>(val collection: Collection<E>) : IStream.Many<E>
     }
 
     override fun ifEmpty_(alternative: () -> E): IStream.OneOrMany<E> {
-        return if (collection.isEmpty()) SingleValueStream(alternative()) else ColectionAsStreamOneOrMany(collection)
+        return if (collection.isEmpty()) SingleValueStream(alternative()) else CollectionAsStreamOneOrMany(collection)
     }
 
     override fun withIndex(): IStream.Many<IndexedValue<E>> {
@@ -159,6 +159,10 @@ open class ColectionAsStream<E>(val collection: Collection<E>) : IStream.Many<E>
         return SingleValueStream((collection as? List<E>) ?: collection.toList())
     }
 
+    override fun indexOf(element: E): IStream.One<Int> {
+        return SingleValueStream(collection.indexOf(element))
+    }
+
     @DelicateModelixApi
     override fun iterateBlocking(visitor: (E) -> Unit) {
         collection.forEach(visitor)
@@ -170,7 +174,7 @@ open class ColectionAsStream<E>(val collection: Collection<E>) : IStream.Many<E>
     }
 }
 
-class ColectionAsStreamOneOrMany<E>(list: Collection<E>) : ColectionAsStream<E>(list), IStream.OneOrMany<E> {
+class CollectionAsStreamOneOrMany<E>(list: Collection<E>) : CollectionAsStream<E>(list), IStream.OneOrMany<E> {
     protected override fun convertLater() = DeferredStreamBuilder.ConvertibleOneOrMany { convert(it) }
 
     override fun convert(converter: IStreamBuilder): IStream.OneOrMany<E> {
@@ -178,11 +182,11 @@ class ColectionAsStreamOneOrMany<E>(list: Collection<E>) : ColectionAsStream<E>(
     }
 
     override fun <R> map(mapper: (E) -> R): IStream.OneOrMany<R> {
-        return ColectionAsStreamOneOrMany(collection.map(mapper))
+        return CollectionAsStreamOneOrMany(collection.map(mapper))
     }
 
     override fun distinct(): IStream.OneOrMany<E> {
-        return ColectionAsStreamOneOrMany(collection.distinct())
+        return CollectionAsStreamOneOrMany(collection.distinct())
     }
 
     override fun onErrorReturn(valueSupplier: (Throwable) -> E): IStream.OneOrMany<E> {

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -277,6 +278,10 @@ class FlowStreamBuilder() : IStreamBuilder {
 
         override fun count(): IStream.One<Int> {
             return Wrapper(flow { emit(wrapped.count()) })
+        }
+
+        override fun indexOf(element: E): IStream.One<Int> {
+            return Wrapper(flow { emit(wrapped.withIndex().firstOrNull { it == element }?.index ?: -1) })
         }
 
         override fun filterBySingle(condition: (E) -> IStream.One<Boolean>): IStream.Many<E> {

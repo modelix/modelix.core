@@ -97,19 +97,19 @@ class SingleValueStream<E>(val value: E) : IStreamInternal.One<E> {
 
     override fun concat(other: IStream.Many<E>): IStream.Many<E> {
         return when (other) {
-            is SingleValueStream<E> -> ColectionAsStream(listOf(value, other.value))
+            is SingleValueStream<E> -> CollectionAsStream(listOf(value, other.value))
             is SequenceAsStream<E> -> SequenceAsStream(sequenceOf(value) + other.wrapped)
             is EmptyStream<E> -> this
-            is ColectionAsStream<E> -> ColectionAsStream(listOf(value) + other.collection)
+            is CollectionAsStream<E> -> CollectionAsStream(listOf(value) + other.collection)
             else -> convertLater().concat(other)
         }
     }
 
     override fun concat(other: IStream.OneOrMany<E>): IStream.OneOrMany<E> {
         return when (other) {
-            is SingleValueStream<E> -> ColectionAsStreamOneOrMany(listOf(value, other.value))
+            is SingleValueStream<E> -> CollectionAsStreamOneOrMany(listOf(value, other.value))
             is SequenceAsStreamOneOrMany<E> -> SequenceAsStreamOneOrMany(sequenceOf(value) + other.wrapped)
-            is ColectionAsStreamOneOrMany<E> -> ColectionAsStreamOneOrMany(listOf(value) + other.collection)
+            is CollectionAsStreamOneOrMany<E> -> CollectionAsStreamOneOrMany(listOf(value) + other.collection)
             else -> convertLater().concat(other)
         }
     }
@@ -196,5 +196,9 @@ class SingleValueStream<E>(val value: E) : IStreamInternal.One<E> {
 
     override fun withIndex(): IStream.Many<IndexedValue<E>> {
         return SingleValueStream(IndexedValue(0, value))
+    }
+
+    override fun indexOf(element: E): IStream.One<Int> {
+        return SingleValueStream(if (element == value) 0 else -1)
     }
 }

@@ -22,6 +22,10 @@ class DeferredStreamBuilder : IStreamBuilder {
         return ConvertibleZeroOrOne { it.deferZeroOrOne(supplier) }
     }
 
+    override fun <T> many(elements: Collection<T>): IStream.Many<T> {
+        return CollectionAsStream(elements)
+    }
+
     override fun <T> many(elements: Sequence<T>): IStream.Many<T> {
         return SequenceAsStream(elements)
     }
@@ -31,11 +35,11 @@ class DeferredStreamBuilder : IStreamBuilder {
     }
 
     override fun <T> many(elements: Array<T>): IStream.Many<T> {
-        return ColectionAsStream(elements.asList())
+        return CollectionAsStream(elements.asList())
     }
 
     override fun many(elements: LongArray): IStream.Many<Long> {
-        return ColectionAsStream(elements.asList())
+        return CollectionAsStream(elements.asList())
     }
 
     override fun <T> fromFlow(flow: Flow<T>): IStream.Many<T> {
@@ -218,6 +222,10 @@ class DeferredStreamBuilder : IStreamBuilder {
 
         override fun count(): IStream.One<Int> {
             return ConvertibleOne { convert(it).count() }
+        }
+
+        override fun indexOf(element: E): IStream.One<Int> {
+            return ConvertibleOne { convert(it).indexOf(element) }
         }
 
         override fun filterBySingle(condition: (E) -> IStream.One<Boolean>): IStream.Many<E> {

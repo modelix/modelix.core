@@ -1,7 +1,6 @@
 package org.modelix.streams
 
 import kotlinx.coroutines.flow.Flow
-import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.streams.IStream.Many
 import org.modelix.streams.IStream.One
 import org.modelix.streams.IStream.OneOrMany
@@ -13,36 +12,8 @@ interface IStream<out E> {
 
     fun toList(): One<List<E>>
 
-    /**
-     * Should only be used inside implementations of [IStreamExecutor].
-     * Use [IStreamExecutor] instead.
-     *
-     * Will only succeed if all the input data is available locally and there isn't any asynchronous request necessary.
-     *
-     */
-    @DelicateModelixApi
-    fun iterateSynchronous(visitor: (E) -> Unit)
-
-    @DelicateModelixApi
-    fun iterateBlocking(visitor: (E) -> Unit) = iterateSynchronous(visitor)
-
-    /**
-     * Should only be used inside implementations of [IStreamExecutor].
-     * Use [IStreamExecutor] instead.
-     *
-     * If called directly it may bypass performance optimizations of the [IStreamExecutor] (bulk requests).
-     */
-    @DelicateModelixApi
-    suspend fun iterateSuspending(visitor: suspend (E) -> Unit)
-
     interface Completable : IStream<Any?> {
         override fun convert(converter: IStreamBuilder): IStream.Completable
-
-        /**
-         * See documentation of [iterateSynchronous].
-         */
-        @DelicateModelixApi
-        fun executeSynchronous()
         fun andThen(other: Completable): Completable
         operator fun <R> plus(other: Many<R>): Many<R>
         operator fun <R> plus(other: ZeroOrOne<R>): ZeroOrOne<R>
@@ -102,16 +73,6 @@ interface IStream<out E> {
         fun exceptionIfEmpty(exception: () -> Throwable = { NoSuchElementException() }): One<E>
         fun orNull(): One<E?>
         fun <R> flatMapZeroOrOne(mapper: (E) -> ZeroOrOne<R>): ZeroOrOne<R>
-
-        /**
-         * See documentation of [iterateSynchronous].
-         */
-        @DelicateModelixApi
-        fun getSynchronous(): E? = orNull().getSynchronous()
-
-        @DelicateModelixApi
-        fun getBlocking(): E? = orNull().getBlocking()
-
         override fun onErrorReturn(valueSupplier: (Throwable) -> @UnsafeVariance E): ZeroOrOne<E>
         override fun doOnBeforeError(consumer: (Throwable) -> Unit): ZeroOrOne<E>
         override fun assertNotEmpty(message: () -> String): One<E>
@@ -122,26 +83,6 @@ interface IStream<out E> {
         override fun <R> flatMapOne(mapper: (E) -> One<R>): One<R>
         override fun <R> map(mapper: (E) -> R): One<R>
         fun <T, R> zipWith(other: One<T>, mapper: (E, T) -> R): One<R> = IStream.zip(this, other, mapper)
-
-        /**
-         * See documentation of [iterateSynchronous].
-         */
-        @DelicateModelixApi
-        override fun getSynchronous(): E
-
-        /**
-         * If no suspending requests are necessary it will behave like getSynchronous
-         *
-         * See documentation of [getSuspending]
-         */
-        @DelicateModelixApi
-        override fun getBlocking(): E = getSynchronous()
-
-        /**
-         * See documentation of [iterateSuspending].
-         */
-        @DelicateModelixApi
-        suspend fun getSuspending(): E
         fun cached(): One<E>
         override fun onErrorReturn(valueSupplier: (Throwable) -> @UnsafeVariance E): One<E>
         override fun doOnBeforeError(consumer: (Throwable) -> Unit): One<E>

@@ -2,9 +2,10 @@ package org.modelix.datastructures.btree
 
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.streams.IStream
+import org.modelix.streams.IStreamExecutorProvider
 import org.modelix.streams.getBlocking
 
-data class BTree<K, V>(val root: BTreeNode<K, V>) {
+data class BTree<K, V>(val root: BTreeNode<K, V>) : IStreamExecutorProvider by root.config.graph {
     constructor(config: BTreeConfig<K, V>) : this(BTreeNodeLeaf(config, emptyList()))
 
     val graph: IObjectGraph get() = root.config.graph

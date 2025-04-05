@@ -68,12 +68,12 @@ class SequenceStreamBuilder() : IStreamBuilder {
         return zip(input.map { it.assertNotEmpty { "Empty" } } as List<IStream.Many<T>>, mapper)
     }
 
-    abstract inner class WrapperBase<E>(val wrapped: Sequence<E>) : IStream<E> {
+    abstract inner class WrapperBase<E>(val wrapped: Sequence<E>) : IStreamInternal<E> {
         override fun asFlow(): Flow<E> = wrapped.asFlow()
         override fun toList(): IStream.One<List<E>> = Wrapper(sequence { yield(wrapped.toList()) })
         override fun asSequence(): Sequence<E> = wrapped
 
-        override fun iterateSynchronous(visitor: (E) -> Unit) {
+        override fun iterateBlocking(visitor: (E) -> Unit) {
             wrapped.forEach(visitor)
         }
 
@@ -82,23 +82,28 @@ class SequenceStreamBuilder() : IStreamBuilder {
         }
     }
 
-    inner class Completable(wrapped: Sequence<Any?>) : WrapperBase<Any?>(wrapped), IStream.Completable {
+    inner class Completable(wrapped: Sequence<Any?>) : WrapperBase<Any?>(wrapped), IStreamInternal.Completable {
         override fun convert(converter: IStreamBuilder): IStream.Completable {
             require(converter == this@SequenceStreamBuilder)
             return this
         }
 
         @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
-        override fun executeSynchronous() {
+        override fun executeBlocking() {
+            wrapped.forEach { }
+        }
+
+        @DelicateModelixApi
+        override suspend fun executeSuspending() {
             wrapped.forEach { }
         }
 
         override fun andThen(other: IStream.Completable): IStream.Completable {
             return Completable(
                 sequence {
-                    executeSynchronous()
+                    executeBlocking()
                     @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
-                    other.executeSynchronous()
+                    (other as IStreamInternal.Completable).executeBlocking()
                 },
             )
         }
@@ -123,7 +128,7 @@ class SequenceStreamBuilder() : IStreamBuilder {
             return Wrapper(
                 sequence {
                     @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
-                    executeSynchronous()
+                    executeBlocking()
                     yieldAll(other.asSequence())
                 },
             )
@@ -133,14 +138,14 @@ class SequenceStreamBuilder() : IStreamBuilder {
             return Wrapper(
                 sequence {
                     @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
-                    executeSynchronous()
+                    executeBlocking()
                     yieldAll(other)
                 },
             )
         }
     }
 
-    inner class Wrapper<E>(wrapped: Sequence<E>) : WrapperBase<E>(wrapped), IStream.One<E> {
+    inner class Wrapper<E>(wrapped: Sequence<E>) : WrapperBase<E>(wrapped), IStreamInternal.One<E> {
         override fun convert(converter: IStreamBuilder): IStream.One<E> {
             require(converter == this@SequenceStreamBuilder)
             return this
@@ -195,7 +200,7 @@ class SequenceStreamBuilder() : IStreamBuilder {
             return Wrapper(wrapped + convert(other))
         }
 
-        override fun getSynchronous(): E {
+        override fun getBlocking(): E {
             return wrapped.single()
         }
 

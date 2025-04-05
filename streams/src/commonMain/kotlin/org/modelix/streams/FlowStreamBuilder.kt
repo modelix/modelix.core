@@ -90,12 +90,12 @@ class FlowStreamBuilder() : IStreamBuilder {
         TODO("Not yet implemented")
     }
 
-    abstract inner class WrapperBase<E>(val wrapped: Flow<E>) : IStream<E> {
+    abstract inner class WrapperBase<E>(val wrapped: Flow<E>) : IStreamInternal<E> {
         override fun asFlow(): Flow<E> = wrapped
         override fun toList(): IStream.One<List<E>> = Wrapper(flow { emit(wrapped.toList()) })
         override fun asSequence(): Sequence<E> = throw UnsupportedOperationException()
 
-        override fun iterateSynchronous(visitor: (E) -> Unit) {
+        override fun iterateBlocking(visitor: (E) -> Unit) {
             runBlockingIfJvm {
                 wrapped.collect { visitor(it) }
             }
@@ -105,14 +105,19 @@ class FlowStreamBuilder() : IStreamBuilder {
         }
     }
 
-    inner class Completable(wrapped: Flow<Any?>) : WrapperBase<Any?>(wrapped), IStream.Completable {
+    inner class Completable(wrapped: Flow<Any?>) : WrapperBase<Any?>(wrapped), IStreamInternal.Completable {
         override fun convert(converter: IStreamBuilder): IStream.Completable {
             require(converter == this@FlowStreamBuilder)
             return this
         }
 
-        override fun executeSynchronous() {
+        override fun executeBlocking() {
             runBlockingIfJvm { wrapped.collect() }
+        }
+
+        @DelicateModelixApi
+        override suspend fun executeSuspending() {
+            wrapped.collect { }
         }
 
         override fun andThen(other: IStream.Completable): IStream.Completable {
@@ -144,14 +149,14 @@ class FlowStreamBuilder() : IStreamBuilder {
             return Wrapper(
                 flow {
                     @OptIn(DelicateModelixApi::class) // usage inside IStreamExecutor is allowed
-                    executeSynchronous()
+                    executeSuspending()
                     emitAll(other)
                 },
             )
         }
     }
 
-    inner class Wrapper<E>(wrapped: Flow<E>) : WrapperBase<E>(wrapped), IStream.One<E> {
+    inner class Wrapper<E>(wrapped: Flow<E>) : WrapperBase<E>(wrapped), IStreamInternal.One<E> {
         override fun convert(converter: IStreamBuilder): IStream.One<E> {
             require(converter == this@FlowStreamBuilder)
             return this
@@ -208,8 +213,8 @@ class FlowStreamBuilder() : IStreamBuilder {
             return Wrapper(wrapped + convert(other))
         }
 
-        override fun getSynchronous(): E {
-            return runBlockingIfJvm { wrapped.toList().single() }
+        override fun getBlocking(): E {
+            return runBlockingIfJvm { wrapped.single() }
         }
 
         override suspend fun getSuspending(): E {

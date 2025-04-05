@@ -27,6 +27,7 @@ import org.modelix.model.mpsadapters.MPSModuleAsNode
 import org.modelix.model.mpsadapters.MPSNodeReference
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mutable.asModelSingleThreaded
+import org.modelix.streams.getBlocking
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.images.builder.ImageFromDockerfile
@@ -171,8 +172,8 @@ class ProjectSyncTest : MPSTestBase() {
         assertEquals(1, changes.size)
         val change = changes.single() as org.modelix.datastructures.model.PropertyChangedEvent<INodeReference>
         assertEquals(MPSProperty(nameProperty).getUID(), change.role.getUID())
-        assertEquals("MyClass", version1.getModelTree().getProperty(change.nodeId, change.role).getSynchronous())
-        assertEquals("Changed", version2.getModelTree().getProperty(change.nodeId, change.role).getSynchronous())
+        assertEquals("MyClass", version1.getModelTree().getProperty(change.nodeId, change.role).getBlocking(version1.getModelTree()))
+        assertEquals("Changed", version2.getModelTree().getProperty(change.nodeId, change.role).getBlocking(version1.getModelTree()))
     }
 
     fun `test descendants of new node are synchronized`() = runChangeInMpsTest { classNode ->

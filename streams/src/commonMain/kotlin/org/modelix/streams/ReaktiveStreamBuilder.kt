@@ -55,6 +55,7 @@ import com.badoo.reaktive.single.subscribe
 import com.badoo.reaktive.single.zipWith
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.streams.IStream.OneOrMany
 
 class ReaktiveStreamBuilder() : IStreamBuilder {
@@ -123,9 +124,9 @@ class ReaktiveStreamBuilder() : IStreamBuilder {
         abstract fun wrappedAsCompletable(): Completable
     }
 
-    abstract inner class ReaktiveWrapper<E> : Wrapper<E>(), IStream.Many<E> {
+    abstract inner class ReaktiveWrapper<E> : Wrapper<E>(), IStream.Many<E>, IStreamInternal<E> {
         abstract val wrapped: Source<*>
-        override fun iterateSynchronous(visitor: (E) -> Unit) {
+        override fun iterateBlocking(visitor: (E) -> Unit) {
             throw UnsupportedOperationException("Use IStreamExecutor.iterate")
         }
         override suspend fun iterateSuspending(visitor: suspend (E) -> Unit) {
@@ -163,7 +164,7 @@ class ReaktiveStreamBuilder() : IStreamBuilder {
     }
 
     inner class WrapperCompletable(val wrapped: Completable) :
-        Wrapper<Unit>(), IStream.Completable {
+        Wrapper<Unit>(), IStreamInternal.Completable {
         override fun convert(converter: IStreamBuilder): IStream.Completable {
             require(converter == this@ReaktiveStreamBuilder)
             return this
@@ -173,7 +174,7 @@ class ReaktiveStreamBuilder() : IStreamBuilder {
         override fun wrappedAsObservable(): Observable<Unit> = wrapped.asObservable()
         override fun wrappedAsCompletable(): Completable = wrapped
 
-        override fun executeSynchronous() {
+        override fun executeBlocking() {
             throw UnsupportedOperationException("Use IStreamExecutor.query")
         }
 
@@ -213,8 +214,13 @@ class ReaktiveStreamBuilder() : IStreamBuilder {
             return WrapperSingle(wrapped.asObservable().toList())
         }
 
-        override fun iterateSynchronous(visitor: (Any?) -> Unit) {
+        override fun iterateBlocking(visitor: (Any?) -> Unit) {
             throw UnsupportedOperationException("Use IStreamExecutor.iterate")
+        }
+
+        @DelicateModelixApi
+        override suspend fun executeSuspending() {
+            throw UnsupportedOperationException("Use IStreamExecutor.iterateSuspending")
         }
     }
 
@@ -250,7 +256,7 @@ class ReaktiveStreamBuilder() : IStreamBuilder {
             throw UnsupportedOperationException("Use IStreamExecutor.iterate")
         }
 
-        override fun iterateSynchronous(visitor: (E) -> Unit) {
+        override fun iterateBlocking(visitor: (E) -> Unit) {
             throw UnsupportedOperationException("Use IStreamExecutor.iterate")
         }
 
@@ -361,7 +367,7 @@ class ReaktiveStreamBuilder() : IStreamBuilder {
         }
     }
 
-    inner class WrapperSingle<E>(override val wrapped: Single<E>) : ReaktiveWrapper<E>(), IStream.One<E> {
+    inner class WrapperSingle<E>(override val wrapped: Single<E>) : ReaktiveWrapper<E>(), IStreamInternal.One<E> {
         override fun convert(converter: IStreamBuilder): IStream.One<E> {
             require(converter == this@ReaktiveStreamBuilder)
             return this
@@ -387,7 +393,7 @@ class ReaktiveStreamBuilder() : IStreamBuilder {
             return WrapperSingle(wrapped.map(mapper))
         }
 
-        override fun getSynchronous(): E {
+        override fun getBlocking(): E {
             throw UnsupportedOperationException("Use IStreamExecutor.query")
         }
 
@@ -408,7 +414,7 @@ class ReaktiveStreamBuilder() : IStreamBuilder {
             return WrapperSingle(wrapped.map { listOf(it) })
         }
 
-        override fun iterateSynchronous(visitor: (E) -> Unit) {
+        override fun iterateBlocking(visitor: (E) -> Unit) {
             throw UnsupportedOperationException("Use IStreamExecutor.iterate")
         }
 
@@ -554,7 +560,7 @@ class ReaktiveStreamBuilder() : IStreamBuilder {
             throw UnsupportedOperationException("Use IStreamExecutor.iterate")
         }
 
-        override fun iterateSynchronous(visitor: (E) -> Unit) {
+        override fun iterateBlocking(visitor: (E) -> Unit) {
             throw UnsupportedOperationException("Use IStreamExecutor.iterate")
         }
 

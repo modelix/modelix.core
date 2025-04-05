@@ -4,14 +4,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import org.modelix.kotlin.utils.DelicateModelixApi
 
-class EmptyCompletableStream() : IStream.Completable {
+class EmptyCompletableStream() : IStreamInternal.Completable {
 
     override fun convert(converter: IStreamBuilder): IStream.Completable {
         return converter.zero()
-    }
-
-    @DelicateModelixApi
-    override fun executeSynchronous() {
     }
 
     override fun andThen(other: IStream.Completable): IStream.Completable {
@@ -47,10 +43,14 @@ class EmptyCompletableStream() : IStream.Completable {
     }
 
     @DelicateModelixApi
-    override fun iterateSynchronous(visitor: (Any?) -> Unit) {
-    }
+    override fun iterateBlocking(visitor: (Any?) -> Unit) {}
 
     @DelicateModelixApi
-    override suspend fun iterateSuspending(visitor: suspend (Any?) -> Unit) {
-    }
+    override suspend fun iterateSuspending(visitor: suspend (Any?) -> Unit) {}
+
+    @DelicateModelixApi
+    override fun executeBlocking() {}
+
+    @DelicateModelixApi
+    override suspend fun executeSuspending() {}
 }

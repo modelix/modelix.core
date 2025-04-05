@@ -3,6 +3,7 @@ package org.modelix.datastructures
 import org.modelix.datastructures.btree.BTree
 import org.modelix.datastructures.btree.BTreeConfig
 import org.modelix.datastructures.objects.IObjectGraph
+import org.modelix.streams.getBlocking
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -71,7 +72,7 @@ class BTreeTest {
 
         assertEquals(
             (100L..200L).map { it to it * 2 },
-            tree.getAll((100L..200L)).toList().getSynchronous(),
+            tree.getAll((100L..200L)).toList().getBlocking(tree),
         )
     }
 }

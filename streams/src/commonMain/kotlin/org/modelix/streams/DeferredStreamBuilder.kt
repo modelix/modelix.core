@@ -31,11 +31,11 @@ class DeferredStreamBuilder : IStreamBuilder {
     }
 
     override fun <T> many(elements: Array<T>): IStream.Many<T> {
-        return ListAsStream(elements.asList())
+        return ColectionAsStream(elements.asList())
     }
 
     override fun many(elements: LongArray): IStream.Many<Long> {
-        return ListAsStream(elements.asList())
+        return ColectionAsStream(elements.asList())
     }
 
     override fun <T> fromFlow(flow: Flow<T>): IStream.Many<T> {
@@ -65,13 +65,13 @@ class DeferredStreamBuilder : IStreamBuilder {
         return ConvertibleOne { it.singleFromCoroutine(block) }
     }
 
-    class ConvertibleOne<E>(conversion: (IStreamBuilder) -> IStream.One<E>) : ConvertibleZeroOrOne<E>(conversion), IStream.One<E> {
+    class ConvertibleOne<E>(conversion: (IStreamBuilder) -> IStream.One<E>) : ConvertibleZeroOrOne<E>(conversion), IStreamInternal.One<E> {
         override fun convert(converter: IStreamBuilder): IStream.One<E> {
             return super.convert(converter) as IStream.One<E>
         }
 
         @DelicateModelixApi
-        override fun getSynchronous(): E = SequenceStreamBuilder.INSTANCE.convert(this).single()
+        override fun getBlocking(): E = SequenceStreamBuilder.INSTANCE.convert(this).single()
 
         @DelicateModelixApi
         override suspend fun getSuspending(): E = FlowStreamBuilder.INSTANCE.convert(this).single()
@@ -287,13 +287,29 @@ class DeferredStreamBuilder : IStreamBuilder {
         }
     }
 
-    class ConvertibleCompletable(conversion: (IStreamBuilder) -> IStream.Completable) : ConvertibleBase<Any?>(conversion), IStream.Completable {
+    class ConvertibleCompletable(conversion: (IStreamBuilder) -> IStream.Completable) : ConvertibleBase<Any?>(conversion), IStreamInternal.Completable {
         override fun convert(converter: IStreamBuilder): IStream.Completable {
             return super.convert(converter) as IStream.Completable
         }
 
         @DelicateModelixApi
-        override fun executeSynchronous() = SequenceStreamBuilder.INSTANCE.convert(this).forEach { }
+        override fun executeBlocking() = SequenceStreamBuilder.INSTANCE.convert(this).forEach { }
+
+        @DelicateModelixApi
+        override fun iterateBlocking(visitor: (Any?) -> Unit) {
+            executeBlocking()
+        }
+
+        @DelicateModelixApi
+        override suspend fun iterateSuspending(visitor: suspend (Any?) -> Unit) {
+            executeSuspending()
+        }
+
+        @DelicateModelixApi
+        override suspend fun executeSuspending() {
+            FlowStreamBuilder.INSTANCE.convert(this).collect {}
+        }
+
         override fun andThen(other: IStream.Completable): IStream.Completable {
             return ConvertibleCompletable { convert(it).andThen(other.convert(it)) }
         }
@@ -311,7 +327,7 @@ class DeferredStreamBuilder : IStreamBuilder {
         }
     }
 
-    abstract class ConvertibleBase<E>(private val conversion: (IStreamBuilder) -> IStream<E>) : IStream<E> {
+    abstract class ConvertibleBase<E>(private val conversion: (IStreamBuilder) -> IStream<E>) : IStreamInternal<E> {
         private var converter: IStreamBuilder? = null
 
         /**
@@ -338,13 +354,8 @@ class DeferredStreamBuilder : IStreamBuilder {
         override fun toList(): IStream.One<List<E>> = ConvertibleOne { convert(it).toList() }
 
         @DelicateModelixApi
-        override fun iterateSynchronous(visitor: (E) -> Unit) {
-            SequenceStreamBuilder.INSTANCE.convert(this).forEach(visitor)
-        }
-
-        @DelicateModelixApi
         override fun iterateBlocking(visitor: (E) -> Unit) {
-            iterateSynchronous(visitor)
+            SequenceStreamBuilder.INSTANCE.convert(this).forEach(visitor)
         }
 
         @DelicateModelixApi

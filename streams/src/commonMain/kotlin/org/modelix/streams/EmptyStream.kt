@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import org.modelix.kotlin.utils.DelicateModelixApi
 
-class EmptyStream<E> : IStream.ZeroOrOne<E> {
+class EmptyStream<E> : IStreamInternal.ZeroOrOne<E> {
     override fun convert(converter: IStreamBuilder): IStream.ZeroOrOne<E> {
         return converter.empty()
     }
@@ -58,12 +58,16 @@ class EmptyStream<E> : IStream.ZeroOrOne<E> {
     }
 
     @DelicateModelixApi
-    override fun iterateSynchronous(visitor: (E) -> Unit) {
-    }
+    override suspend fun iterateSuspending(visitor: suspend (E) -> Unit) {}
 
     @DelicateModelixApi
-    override suspend fun iterateSuspending(visitor: suspend (E) -> Unit) {
-    }
+    override suspend fun getSuspending(): E? = null
+
+    @DelicateModelixApi
+    override fun getBlocking(): E? = null
+
+    @DelicateModelixApi
+    override fun iterateBlocking(visitor: (E) -> Unit) {}
 
     override fun <R> flatMap(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
         return EmptyStream()

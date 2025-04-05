@@ -8,7 +8,7 @@ import org.modelix.kotlin.utils.DelicateModelixApi
  * Runs operations eagerly, if they return a single value.
  * If an operation returns many values, it remains a lazy sequence to avoid unnecessary memory consumption.
  */
-open class SequenceAsStream<E>(val wrapped: Sequence<E>) : IStream.Many<E> {
+open class SequenceAsStream<E>(val wrapped: Sequence<E>) : IStream.Many<E>, IStreamInternal<E> {
     protected open fun convertLater() = DeferredStreamBuilder.ConvertibleMany { convert(it) }
 
     override fun convert(converter: IStreamBuilder): IStream.Many<E> {
@@ -32,7 +32,7 @@ open class SequenceAsStream<E>(val wrapped: Sequence<E>) : IStream.Many<E> {
     }
 
     @DelicateModelixApi
-    override fun iterateSynchronous(visitor: (E) -> Unit) {
+    override fun iterateBlocking(visitor: (E) -> Unit) {
         wrapped.forEach(visitor)
     }
 

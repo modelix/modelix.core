@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.modelix.kotlin.utils.DelicateModelixApi
 
-class SingleValueStream<E>(val value: E) : IStream.One<E> {
+class SingleValueStream<E>(val value: E) : IStreamInternal.One<E> {
     protected fun convertLater() = DeferredStreamBuilder.ConvertibleOne { convert(it) }
 
     override fun convert(converter: IStreamBuilder): IStream.One<E> {
@@ -20,7 +20,7 @@ class SingleValueStream<E>(val value: E) : IStream.One<E> {
     }
 
     @DelicateModelixApi
-    override fun getSynchronous(): E {
+    override fun getBlocking(): E {
         return value
     }
 
@@ -54,7 +54,7 @@ class SingleValueStream<E>(val value: E) : IStream.One<E> {
     }
 
     @DelicateModelixApi
-    override fun iterateSynchronous(visitor: (E) -> Unit) {
+    override fun iterateBlocking(visitor: (E) -> Unit) {
         visitor(value)
     }
 
@@ -97,19 +97,19 @@ class SingleValueStream<E>(val value: E) : IStream.One<E> {
 
     override fun concat(other: IStream.Many<E>): IStream.Many<E> {
         return when (other) {
-            is SingleValueStream<E> -> ListAsStream(listOf(value, other.value))
+            is SingleValueStream<E> -> ColectionAsStream(listOf(value, other.value))
             is SequenceAsStream<E> -> SequenceAsStream(sequenceOf(value) + other.wrapped)
             is EmptyStream<E> -> this
-            is ListAsStream<E> -> ListAsStream(listOf(value) + other.list)
+            is ColectionAsStream<E> -> ColectionAsStream(listOf(value) + other.collection)
             else -> convertLater().concat(other)
         }
     }
 
     override fun concat(other: IStream.OneOrMany<E>): IStream.OneOrMany<E> {
         return when (other) {
-            is SingleValueStream<E> -> ListAsStreamOneOrMany(listOf(value, other.value))
+            is SingleValueStream<E> -> ColectionAsStreamOneOrMany(listOf(value, other.value))
             is SequenceAsStreamOneOrMany<E> -> SequenceAsStreamOneOrMany(sequenceOf(value) + other.wrapped)
-            is ListAsStreamOneOrMany<E> -> ListAsStreamOneOrMany(listOf(value) + other.list)
+            is ColectionAsStreamOneOrMany<E> -> ColectionAsStreamOneOrMany(listOf(value) + other.collection)
             else -> convertLater().concat(other)
         }
     }

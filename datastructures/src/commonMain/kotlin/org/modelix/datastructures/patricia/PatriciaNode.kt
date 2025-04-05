@@ -12,6 +12,8 @@ import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.IObjectReferenceFactory
 import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectReference
+import org.modelix.datastructures.objects.asObject
+import org.modelix.datastructures.objects.getDescendantsAndSelf
 import org.modelix.datastructures.objects.getHashString
 import org.modelix.datastructures.objects.upcast
 import org.modelix.datastructures.serialization.SplitJoinSerializer
@@ -313,6 +315,60 @@ data class PatriciaNode<K, V : Any>(
             val commonPrefix = ownPrefix.commonPrefixWith(oldNode.ownPrefix)
             split(commonPrefix).getChanges(path, oldNode.split(commonPrefix), changesOnly)
         }
+    }
+
+    override fun objectDiff(self: Object<*>, oldObject: Object<*>?): IStream.Many<Object<*>> {
+        return objectDiff(self, oldObject, "")
+    }
+
+    fun objectDiff(self: Object<*>, oldObject: Object<*>?, path: CharSequence): IStream.Many<Object<*>> {
+        if (oldObject == null) {
+            return self.getDescendantsAndSelf()
+        }
+        self as Object<PatriciaNode<K, V>>
+        oldObject as Object<PatriciaNode<K, V>>
+        val oldNode: PatriciaNode<K, V> = oldObject.data as PatriciaNode<K, V>
+        return if (ownPrefix == oldNode.ownPrefix) {
+            val pathForChildren = path + ownPrefix
+            val matchingChildren = if (firstChars == oldNode.firstChars) {
+                children.zip(oldNode.children)
+            } else {
+                val newChildren = firstChars.asSequence().zip(children.asSequence()).toMap()
+                val oldChildren = oldNode.firstChars.asSequence().zip(oldNode.children.asSequence()).toMap()
+                val allFirstChars = newChildren.keys.plus(oldChildren.keys).distinct()
+                allFirstChars.map { newChildren[it] to oldChildren[it] }
+            }
+            val changesFromChildren = IStream.many(matchingChildren).flatMap { (newChildRef, oldChildRef) ->
+                if (newChildRef == null) {
+                    IStream.empty()
+                } else {
+                    if (oldChildRef == null) {
+                        newChildRef.resolve().flatMap { it.getDescendantsAndSelf() }
+                    } else {
+                        if (newChildRef.getHash() == oldChildRef.getHash()) {
+                            IStream.empty()
+                        } else {
+                            newChildRef.resolve().zipWith(oldChildRef.resolve()) { newChild, oldChild ->
+                                newChild.data.objectDiff(newChild, oldChild, pathForChildren)
+                            }.flatten()
+                        }
+                    }
+                }
+            }
+
+            IStream.of(self) + changesFromChildren
+        } else {
+            val commonPrefix = ownPrefix.commonPrefixWith(oldNode.ownPrefix)
+            self.split(commonPrefix).let {
+                it.data.objectDiff(it, oldObject.split(commonPrefix), path).filter { it.graph == config.graph }
+            }
+        }
+    }
+
+    private fun <K, V : Any> Object<PatriciaNode<K, V>>.split(commonPrefix: CharSequence): Object<PatriciaNode<K, V>> {
+        val splitted = data.split(commonPrefix)
+        if (splitted === data) return this
+        return splitted.asObject(IObjectGraph.FREE_FLOATING)
     }
 
     class Deserializer<K, V : Any>(val config: (IObjectGraph) -> PatriciaTrieConfig<K, V>) : IObjectDeserializer<PatriciaNode<K, V>> {

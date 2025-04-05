@@ -1,7 +1,6 @@
 package org.modelix.model.mpsadapters
 
-import jetbrains.mps.project.structure.modules.ModuleReference
-import jetbrains.mps.smodel.SNodePointer
+import jetbrains.mps.util.StringUtil
 import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.model.SNodeReference
 import org.jetbrains.mps.openapi.module.SModuleId
@@ -13,6 +12,16 @@ data class MPSModuleReference(val moduleReference: SModuleReference) : INodeRefe
 
     companion object {
         internal const val PREFIX = "mps-module"
+        internal const val PREFIX_COLON = "$PREFIX:"
+
+        fun tryConvert(ref: INodeReference): MPSModuleReference? {
+            if (ref is MPSModuleReference) return ref
+            val serialized = ref.serialize()
+            if (!serialized.startsWith(PREFIX_COLON)) return null
+            val withoutPrefix = serialized.substringAfter(PREFIX_COLON)
+            val moduleRef = MPSReferenceParser.parseSModuleReference(withoutPrefix)
+            return MPSModuleReference(moduleRef)
+        }
     }
 
     override fun serialize(): String {
@@ -63,22 +72,25 @@ data class MPSNodeReference(val ref: SNodeReference) : INodeReference() {
     }
 }
 
-fun SNodeReference.withoutNames(): SNodeReference {
-    return SNodePointer(modelReference?.withoutNames(), nodeId)
+fun SNodeReference.withoutNames(): String {
+    val modelPrefix = modelReference?.let { it.withoutNames() + "/" } ?: ""
+    return modelPrefix + StringUtil.escapeRefChars(nodeId?.toString() ?: "")
 }
 
-fun SModelReference.withoutNames(): SModelReference {
+fun SModelReference.withoutNames(): String {
     // MPS often omits the module reference, if the model ID is globally unique.
     // The module reference is ignored here, even if one is provided, to generate a consistent ID.
-    return jetbrains.mps.smodel.SModelReference(
-        moduleReference?.takeIf { !modelId.isGloballyUnique },
-        modelId,
-        "",
-    )
+
+    val modulePrefix = if (modelId.isGloballyUnique) {
+        ""
+    } else {
+        moduleReference?.let { it.withoutNames() + "/" } ?: ""
+    }
+    return modulePrefix + StringUtil.escapeRefChars(modelId.toString())
 }
 
-fun SModuleReference.withoutNames(): SModuleReference {
-    return ModuleReference("", this.moduleId)
+fun SModuleReference.withoutNames(): String {
+    return StringUtil.escapeRefChars(moduleId.toString())
 }
 
 data class MPSDevKitDependencyReference(

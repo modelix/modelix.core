@@ -176,12 +176,18 @@ abstract class IdTranslatingModelTree<ExternalId, InternalId>(val tree: IGeneric
 
 @JvmName("withIdTranslationToInt64")
 fun IGenericModelTree<INodeReference>.withIdTranslation(): IGenericModelTree<Long> {
-    return NodeReferenceAsLongModelTree(this)
+    return when (this) {
+        is LongAsNodeReferenceModelTree -> this.tree
+        else -> NodeReferenceAsLongModelTree(this)
+    }
 }
 
 @JvmName("withIdTranslationToNodeReferences")
 fun IGenericModelTree<Long>.withIdTranslation(): IGenericModelTree<INodeReference> {
-    return LongAsNodeReferenceModelTree(this)
+    return when (this) {
+        is NodeReferenceAsLongModelTree -> this.tree
+        else -> LongAsNodeReferenceModelTree(this)
+    }
 }
 
 fun INodeReference.extractInt64Id(expectedTree: TreeId): Long {

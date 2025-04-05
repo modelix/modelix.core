@@ -5,6 +5,7 @@ import jetbrains.mps.util.StringUtil
 import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.model.SNodeId
 import org.jetbrains.mps.openapi.model.SNodeReference
+import org.jetbrains.mps.openapi.module.SModuleReference
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade.IncorrectModelReferenceFormatException
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade.IncorrectNodeIdFormatException
@@ -13,6 +14,15 @@ import org.jetbrains.mps.openapi.persistence.PersistenceFacade.IncorrectNodeIdFo
  * Implementations in MPS expect a model name to be present in the reference.
  */
 object MPSReferenceParser {
+    fun parseSModuleReference(serialized: String): SModuleReference {
+        return if (serialized.contains('(') && serialized.contains(')')) {
+            PersistenceFacade.getInstance().createModuleReference(serialized)
+        } else {
+            val moduleId = PersistenceFacade.getInstance().createModuleId(serialized)
+            PersistenceFacade.getInstance().createModuleReference(moduleId, null)
+        }
+    }
+
     fun parseSModelReference(serialized: String): SModelReference {
         val modelRefParts = parseReferenceInternal(serialized)
         val pf = PersistenceFacade.getInstance()

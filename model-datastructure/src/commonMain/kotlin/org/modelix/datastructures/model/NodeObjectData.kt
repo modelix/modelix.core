@@ -9,6 +9,7 @@ import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
 import org.modelix.datastructures.objects.IObjectReferenceFactory
 import org.modelix.datastructures.objects.LongDataTypeConfiguration
+import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.datastructures.objects.asKSerializer
 import org.modelix.datastructures.serialization.SplitJoinFormat
@@ -23,6 +24,7 @@ import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.NullChildLinkReference
 import org.modelix.model.api.meta.NullConcept
+import org.modelix.streams.IStream
 
 @Serializable
 data class NodeObjectData<NodeId>(
@@ -107,6 +109,10 @@ data class NodeObjectData<NodeId>(
 
     fun withChildRemoved(childId: NodeId): NodeObjectData<NodeId> {
         return copy(children = children.filterNot { deserializer!!.nodeIdTypeConfig.equal(it, childId) })
+    }
+
+    override fun objectDiff(self: Object<*>, oldObject: Object<*>?): IStream.Many<Object<*>> {
+        return IStream.of(self)
     }
 
     class Deserializer<NodeId>(

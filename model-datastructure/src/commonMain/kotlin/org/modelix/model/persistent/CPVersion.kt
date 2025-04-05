@@ -4,6 +4,7 @@ import org.modelix.datastructures.hamt.HamtNode
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
 import org.modelix.datastructures.objects.IObjectReferenceFactory
+import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.datastructures.objects.getHashString
 import org.modelix.datastructures.patricia.PatriciaNode
@@ -14,6 +15,7 @@ import org.modelix.model.persistent.SerializationUtil.escape
 import org.modelix.model.persistent.SerializationUtil.longFromHex
 import org.modelix.model.persistent.SerializationUtil.longToHex
 import org.modelix.model.persistent.SerializationUtil.unescape
+import org.modelix.streams.IStream
 
 data class CPVersion(
     val id: Long,
@@ -229,5 +231,9 @@ data class CPVersion(
             previousVersion = previousVersion?.asUnloaded(),
             originalVersion = originalVersion?.asUnloaded(),
         )
+    }
+
+    override fun objectDiff(self: Object<*>, oldObject: Object<*>?): IStream.Many<Object<*>> {
+        throw UnsupportedOperationException("CLVersion.diff")
     }
 }

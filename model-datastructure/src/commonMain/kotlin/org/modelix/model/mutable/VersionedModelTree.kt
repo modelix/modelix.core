@@ -171,12 +171,18 @@ class VersionedModelTree(
         override fun mutate(parameters: MutationParameters<INodeReference>) {
             when (parameters) {
                 is MutationParameters.AddNew<INodeReference> -> {
-                    apply(
-                        AddNewChildrenOp(
-                            position = PositionInRole(parameters.nodeId, parameters.role, parameters.index),
-                            childIdsAndConcepts = parameters.newIdAndConcept.toList(),
-                        ),
-                    )
+                    // split operation into smaller chunks to avoid large operation objects
+                    var indexOffset = 0
+                    for (chunk in parameters.newIdAndConcept.asSequence().chunked(100)) {
+                        val index = if (parameters.index >= 0) parameters.index + indexOffset else parameters.index
+                        apply(
+                            AddNewChildrenOp(
+                                position = PositionInRole(parameters.nodeId, parameters.role, index),
+                                childIdsAndConcepts = chunk,
+                            ),
+                        )
+                        indexOffset += chunk.size
+                    }
                 }
                 is MutationParameters.Move<INodeReference> -> {
                     val targetPosition = PositionInRole(parameters.nodeId, parameters.role, parameters.index)

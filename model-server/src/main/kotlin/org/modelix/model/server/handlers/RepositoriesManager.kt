@@ -302,11 +302,19 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
     }
 
     private fun validateVersion(newVersion: CLVersion, oldVersion: CLVersion?) {
-        // ensure there are no missing objects
-        newVersion.graph.getStreamExecutor().iterate({ newVersion.fullDiff(oldVersion) }) { }
+        if (newVersion.getObjectHash() == oldVersion?.getObjectHash()) return
 
+        // Deleting the root node isn't allowed
         val mainTree = newVersion.getModelTree()
         check(mainTree.containsNode(mainTree.getRootNodeId()).getBlocking(mainTree))
+
+        // ensure there are no missing objects
+        newVersion.graph.getStreamExecutor().iterate({ newVersion.fullDiff(oldVersion) }) { }
+        if (oldVersion != null) {
+            // If the object diff is buggy, client and server will skip over the same objects.
+            // The model diff should also iterate over all new objects and is used for additional validation.
+            newVersion.getModelTree().getChanges(oldVersion.getModelTree(), false).iterateBlocking(newVersion.getModelTree()) { }
+        }
 
         // TODO check invariants of the model (consistent parent-child relations, single root, containment cycles)
 

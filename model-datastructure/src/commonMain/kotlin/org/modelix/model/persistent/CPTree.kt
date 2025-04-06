@@ -24,6 +24,7 @@ import org.modelix.model.TreeId
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITree
 import org.modelix.streams.IStream
+import org.modelix.streams.flatten
 import org.modelix.streams.plus
 
 class CPTree(
@@ -78,7 +79,9 @@ class CPTree(
         val oldData = oldObject?.data
         return when (oldData) {
             is CPTree -> {
-                IStream.of(self) + getTreeReference().diff(oldData.int64Hamt)
+                IStream.of(self) + getTreeReference().resolve().zipWith(oldData.getTreeReference().resolve()) { newTree, oldTree ->
+                    newTree.objectDiff(oldTree)
+                }.flatten()
             }
             else -> self.getDescendantsAndSelf()
         }

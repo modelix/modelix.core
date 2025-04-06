@@ -13,7 +13,7 @@ class PatriciaTrieTest {
     fun `same content produces same tree`() {
         val alphabet = "abcdefghijklmnopqrstuvwxyz"
         val rand = Random(5465)
-        fun randomString(length: Int) = (0 until length).joinToString("") { alphabet.random().toString() }
+        fun randomString(length: Int) = (0 until length).joinToString("") { alphabet.random(rand).toString() }
 
         val initialTree = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
 
@@ -36,13 +36,13 @@ class PatriciaTrieTest {
 
         repeat(1_000) {
             if (removedEntries.size > addedEntries.size) {
-                val key = removedEntries.random()
+                val key = removedEntries.random(rand)
                 removedEntries.remove(key)
                 addedEntries.add(key)
                 tree = tree.put(key, values[key]!!).getBlocking(tree)
                 assertTree()
             } else {
-                val key = addedEntries.random()
+                val key = addedEntries.random(rand)
                 removedEntries.add(key)
                 addedEntries.remove(key)
                 tree = tree.remove(key).getBlocking(tree)

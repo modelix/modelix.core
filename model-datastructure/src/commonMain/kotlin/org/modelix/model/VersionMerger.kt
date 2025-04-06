@@ -119,7 +119,7 @@ class VersionMerger(private val idGenerator: IIdGenerator) {
             val v0 = filtered[i]
             val v1 = filtered.getOrNull(i + 1) ?: continue
 
-            if (v1.numberOfOperations == 1 && (v1.operations.single() as? UndoOp)?.versionHash?.getHash() == v0.getObjectHash()) {
+            if (v1.numberOfOperations == 1 && (v1.operations.singleOrNull() as? UndoOp)?.versionHash?.getHash() == v0.getObjectHash()) {
                 filtered.removeAt(i)
                 filtered.removeAt(i)
             }

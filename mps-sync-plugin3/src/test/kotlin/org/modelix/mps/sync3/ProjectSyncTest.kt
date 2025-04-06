@@ -524,6 +524,26 @@ class ProjectSyncTest : MPSTestBase() {
         assertEquals(expectedSnapshot, project.captureSnapshot())
     }
 
+    fun `test no change at startup doesn't create a new version`(): Unit = runWithModelServer { port ->
+        // A client was previously in sync with the server ...
+        val branchRef = RepositoryId("sync-test").getBranchReference()
+        val version1 = syncProjectToServer("initial", port, branchRef)
+        val expectedSnapshot = lastSnapshotBeforeSync
+
+        // ... and then MPS is restart. No change happened.
+        openTestProject("initial")
+        val binding = IModelSyncService.getInstance(mpsProject)
+            .addServer("http://localhost:$port")
+            .bind(branchRef, version1.getContentHash())
+        val version2 = binding.flush()
+
+        // The client shouldn't push any changes ...
+        assertEquals(version1.getContentHash(), version2.getContentHash())
+
+        // ... and it shouldn't pull any changes.
+        assertEquals(expectedSnapshot, project.captureSnapshot())
+    }
+
     private fun runWithModelServer(body: suspend (port: Int) -> Unit) = runBlocking {
         @OptIn(ExperimentalTime::class)
         withTimeout(5.minutes) {

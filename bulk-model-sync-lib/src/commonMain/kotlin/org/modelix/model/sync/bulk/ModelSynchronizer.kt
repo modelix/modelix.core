@@ -215,7 +215,7 @@ class ModelSynchronizer(
             }
         }
 
-        val isOrdered = targetParent.isOrdered(role)
+        val isOrdered = targetParent.isOrdered(role) && sourceParent.isOrdered(role)
 
         // optimization for when there is no change in the child list
         if (associatedChildren.all { it.alreadyMatches(isOrdered) }) {

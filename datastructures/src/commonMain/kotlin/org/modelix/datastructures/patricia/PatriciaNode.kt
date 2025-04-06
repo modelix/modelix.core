@@ -126,7 +126,7 @@ data class PatriciaNode<K, V : Any>(
             return if (ownPrefix.length == prefix.length) {
                 IStream.of(this.copy(ownPrefix = ""))
             } else {
-                split(prefix).children.single().resolveData()
+                split(prefix, config.graph).children.single().resolveData()
             }
         }
         if (!prefix.startsWith(ownPrefix)) return IStream.empty()
@@ -184,7 +184,7 @@ data class PatriciaNode<K, V : Any>(
                 }
             } else {
                 // key is shorter -> need to split into a node with a shorter prefix
-                split(commonPrefix).updateSubtree(newKey, updater)
+                split(commonPrefix, config.graph).updateSubtree(newKey, updater)
             }
             ).flatMapZeroOrOne { it.tryMerge() }
     }
@@ -204,7 +204,7 @@ data class PatriciaNode<K, V : Any>(
     /**
      * Shortens the prefix of this node to the given one as a preparation for inserting children or setting a value.
      */
-    private fun split(commonPrefix: CharSequence): PatriciaNode<K, V> {
+    private fun split(commonPrefix: CharSequence, graph: IObjectGraph): PatriciaNode<K, V> {
         require(ownPrefix.startsWith(commonPrefix))
         if (ownPrefix.length == commonPrefix.length) return this
         val remainingPrefix = this.ownPrefix.drop(commonPrefix.length)
@@ -214,7 +214,7 @@ data class PatriciaNode<K, V : Any>(
             value = null,
             firstChars = remainingPrefix.take(1),
             children = listOf(
-                config.graph.fromCreated(
+                graph.fromCreated(
                     PatriciaNode<K, V>(
                         config = config,
                         ownPrefix = remainingPrefix,
@@ -313,7 +313,7 @@ data class PatriciaNode<K, V : Any>(
             ownChange + changesFromChildren
         } else {
             val commonPrefix = ownPrefix.commonPrefixWith(oldNode.ownPrefix)
-            split(commonPrefix).getChanges(path, oldNode.split(commonPrefix), changesOnly)
+            split(commonPrefix, IObjectGraph.FREE_FLOATING).getChanges(path, oldNode.split(commonPrefix, IObjectGraph.FREE_FLOATING), changesOnly)
         }
     }
 
@@ -345,7 +345,12 @@ data class PatriciaNode<K, V : Any>(
                     if (oldChildRef == null) {
                         newChildRef.resolve().flatMap { it.getDescendantsAndSelf() }
                     } else {
-                        if (newChildRef.getHash() == oldChildRef.getHash()) {
+                        // If they are part of the FREE_FLOATING graph it means they are the result of a split
+                        // and aren't actually available at the other replica.
+                        if (newChildRef.getHash() == oldChildRef.getHash() &&
+                            newChildRef.graph != IObjectGraph.FREE_FLOATING &&
+                            oldChildRef.graph != IObjectGraph.FREE_FLOATING
+                        ) {
                             IStream.empty()
                         } else {
                             newChildRef.resolve().zipWith(oldChildRef.resolve()) { newChild, oldChild ->
@@ -356,17 +361,34 @@ data class PatriciaNode<K, V : Any>(
                 }
             }
 
-            IStream.of(self) + changesFromChildren
+            val newValueReferences = value?.let { config.valueConfig.getContainmentReferences(it) } ?: emptyList()
+            val oldValueReferences = oldNode.value?.let { config.valueConfig.getContainmentReferences(it) } ?: emptyList()
+            val changesFromValue = when (newValueReferences.size) {
+                0 -> IStream.empty()
+                1 -> when (oldValueReferences.size) {
+                    0 -> newValueReferences.single().diff(null)
+                    1 -> newValueReferences.single().diff(oldValueReferences.single())
+                    else -> TODO()
+                }
+                else -> TODO()
+            }
+
+            IStream.of(self) + changesFromValue + changesFromChildren
         } else {
             val commonPrefix = ownPrefix.commonPrefixWith(oldNode.ownPrefix)
-            self.split(commonPrefix).let {
-                it.data.objectDiff(it, oldObject.split(commonPrefix), path).filter { it.graph == config.graph }
+            (
+                IStream.of(self) + self.split(commonPrefix).let {
+                    it.data.objectDiff(it, oldObject.split(commonPrefix), path).filter { it.graph == config.graph }
+                }
+                ).filter {
+                // filter out the split result, which isn't part of the real object graph
+                it.graph == config.graph
             }
         }
     }
 
     private fun <K, V : Any> Object<PatriciaNode<K, V>>.split(commonPrefix: CharSequence): Object<PatriciaNode<K, V>> {
-        val splitted = data.split(commonPrefix)
+        val splitted = data.split(commonPrefix, IObjectGraph.FREE_FLOATING)
         if (splitted === data) return this
         return splitted.asObject(IObjectGraph.FREE_FLOATING)
     }

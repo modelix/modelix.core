@@ -17,10 +17,10 @@ import io.ktor.server.testing.testApplication
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.select.Evaluator
+import org.modelix.kotlin.utils.urlEncode
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.ITree
 import org.modelix.model.api.NodeReference
-import org.modelix.model.api.PNodeAdapter
 import org.modelix.model.api.addNewChild
 import org.modelix.model.client.successful
 import org.modelix.model.client2.ModelClientV2
@@ -81,7 +81,8 @@ class ContentExplorerTest {
         val refLinkName = "myUnresolvableRef"
         val refLinkTargetRef = NodeReference("notAResolvableId")
 
-        modelClient.initRepository(repoId)
+        val initialVersion = modelClient.initRepository(repoId)
+        val rootNodeId = initialVersion.getModelTree().getRootNodeId()
 
         modelClient.runWrite(branchRef) { root ->
             root.setReferenceTarget(IReferenceLink.fromName(refLinkName), refLinkTargetRef)
@@ -89,15 +90,13 @@ class ContentExplorerTest {
 
         val versionHash = modelClient.pullHash(branchRef)
 
-        val response = client.get("/content/repositories/${repoId.id}/versions/$versionHash/${ITree.ROOT_ID}/")
+        val response = client.get("/content/repositories/${repoId.id}/versions/$versionHash/${rootNodeId.serialize().urlEncode()}/")
         val html = Jsoup.parse(response.bodyAsText())
         val nameCell = html.selectXpath("""//td[text()="$refLinkName"]""").first() ?: error("table cell not found")
         val row = checkNotNull(nameCell.parent()) { "table row not found" }
-        val targetNodeIdCell = row.allElements[2] // index 0 is the row itself and 1 the nameCell
-        val targetRefCell = row.allElements[3]
+        val targetRefCell = row.allElements[2] // index 0 is the row itself and 1 the nameCell
 
         assertTrue(response.successful)
-        assertEquals("null", targetNodeIdCell.text())
         assertEquals(refLinkTargetRef.serialize(), targetRefCell.text())
     }
 
@@ -145,7 +144,7 @@ class ContentExplorerTest {
                     .addNewChild(null)
             }
             val versionHash = modelClient.pullHash(branchRef)
-            val expandToId = (newestChild as PNodeAdapter).nodeId
+            val expandToId = newestChild.reference.serialize()
 
             val response = client.get("/content/repositories/${branchRef.repositoryId}/versions/$versionHash/") {
                 parameter("expandTo", expandToId)

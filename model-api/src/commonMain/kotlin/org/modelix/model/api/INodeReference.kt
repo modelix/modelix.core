@@ -37,7 +37,7 @@ abstract class INodeReference {
         return serialize().hashCode()
     }
 
-    override fun toString(): String {
+    final override fun toString(): String {
         return serialize()
     }
 }

@@ -35,7 +35,7 @@ class ObjectReferenceImpl<E : IObjectData> private constructor(
         return if (oldRef == null) {
             resolve().flatMap { it.getDescendantsAndSelf() }
         } else if (getHash() == oldRef.getHash()) {
-            IStream.Companion.empty()
+            IStream.empty()
         } else {
             resolve().zipWith(oldRef.resolve()) { newObj, oldObj ->
                 newObj.objectDiff(oldObj)

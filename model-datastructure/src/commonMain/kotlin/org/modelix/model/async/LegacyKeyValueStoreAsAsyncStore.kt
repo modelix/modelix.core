@@ -50,7 +50,7 @@ class LegacyKeyValueStoreAsAsyncStore(val store: IKeyValueStore) : IAsyncObjectS
         )
     }
 
-    override fun putAll(entries: Map<ObjectRequest<*>, IObjectData>): IStream.Zero {
+    override fun putAll(entries: Map<ObjectRequest<*>, IObjectData>): IStream.Completable {
         store.putAll(entries.entries.associate { it.key.hash to it.value.serialize() })
         return IStream.zero()
     }

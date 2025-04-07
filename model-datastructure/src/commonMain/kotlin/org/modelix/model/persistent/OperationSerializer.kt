@@ -2,12 +2,18 @@ package org.modelix.model.persistent
 
 import org.modelix.datastructures.objects.IObjectReferenceFactory
 import org.modelix.datastructures.objects.getHashString
+import org.modelix.kotlin.utils.urlDecode
+import org.modelix.kotlin.utils.urlEncode
+import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INodeReference
+import org.modelix.model.api.IPropertyReference
+import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.NodeReference
 import org.modelix.model.api.PNodeReference
+import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.operations.AddNewChildOp
 import org.modelix.model.operations.AddNewChildSubtreeOp
 import org.modelix.model.operations.AddNewChildrenOp
@@ -38,12 +44,18 @@ class OperationSerializer private constructor() {
         val INSTANCE = OperationSerializer()
         private const val SEPARATOR = Separators.OP_PARTS
         fun serializeConcept(concept: IConceptReference?): String {
-            return escape(concept?.serialize())
+            return escape(concept?.takeIf { it != NullConcept.getReference() }?.serialize())
         }
 
-        fun deserializeConcept(serialized: String?): IConceptReference? {
-            return IConceptReference.deserialize(unescape(serialized))
+        fun deserializeConcept(serialized: String?): ConceptReference {
+            return unescape(serialized)?.let { ConceptReference(it) } ?: NullConcept.getReference()
         }
+
+        fun deserializeNode(serialized: String?): INodeReference {
+            return NodeReference(serialized?.urlDecode()!!)
+        }
+
+        fun serializeNode(ref: INodeReference) = ref.serialize().urlEncode()
 
         fun serializeReference(obj: INodeReference?): String {
             return when (obj) {
@@ -80,13 +92,13 @@ class OperationSerializer private constructor() {
                 AddNewChildOp::class,
                 object : Serializer<AddNewChildOp> {
                     override fun serialize(op: AddNewChildOp): String {
-                        return longToHex(op.position.nodeId) +
+                        return serializeNode(op.position.nodeId) +
                             SEPARATOR +
                             escape(op.position.role.stringForLegacyApi()) +
                             SEPARATOR +
                             op.position.index +
                             SEPARATOR +
-                            longToHex(op.childId) +
+                            serializeNode(op.childId) +
                             SEPARATOR +
                             serializeConcept(op.concept)
                     }
@@ -95,11 +107,11 @@ class OperationSerializer private constructor() {
                         val parts = serialized.split(SEPARATOR).toTypedArray()
                         return AddNewChildOp(
                             PositionInRole(
-                                longFromHex(parts[0]),
+                                deserializeNode(parts[0]),
                                 IChildLinkReference.fromLegacyApi(unescape(parts[1])),
                                 parts[2].toInt(),
                             ),
-                            longFromHex(parts[3]),
+                            deserializeNode(parts[3]),
                             deserializeConcept(parts[4]),
                         )
                     }
@@ -109,9 +121,9 @@ class OperationSerializer private constructor() {
                 AddNewChildrenOp::class,
                 object : Serializer<AddNewChildrenOp> {
                     override fun serialize(op: AddNewChildrenOp): String {
-                        val ids = op.childIds.joinToString(Separators.LEVEL4) { longToHex(it) }
-                        val concepts = op.concepts.joinToString(Separators.LEVEL4) { serializeConcept(it) }
-                        return longToHex(op.position.nodeId) +
+                        val ids = op.childIdsAndConcepts.joinToString(Separators.LEVEL4) { serializeNode(it.first) }
+                        val concepts = op.childIdsAndConcepts.joinToString(Separators.LEVEL4) { serializeConcept(it.second) }
+                        return serializeNode(op.position.nodeId) +
                             SEPARATOR +
                             escape(op.position.role.stringForLegacyApi()) +
                             SEPARATOR +
@@ -124,16 +136,15 @@ class OperationSerializer private constructor() {
 
                     override fun deserialize(serialized: String, referenceFactory: IObjectReferenceFactory): AddNewChildrenOp {
                         val parts = serialized.split(SEPARATOR).toTypedArray()
-                        val ids = parts[3].split(Separators.LEVEL4).filter { it.isNotEmpty() }.map { longFromHex(it) }.toLongArray()
+                        val ids = parts[3].split(Separators.LEVEL4).filter { it.isNotEmpty() }.map { deserializeNode(it) }
                         val concepts = parts[4].split(Separators.LEVEL4).map { deserializeConcept(it) }.toTypedArray()
                         return AddNewChildrenOp(
                             PositionInRole(
-                                longFromHex(parts[0]),
+                                deserializeNode(parts[0]),
                                 IChildLinkReference.fromLegacyApi(unescape(parts[1])),
                                 parts[2].toInt(),
                             ),
-                            ids,
-                            concepts,
+                            ids.zip(concepts),
                         )
                     }
                 },
@@ -142,7 +153,17 @@ class OperationSerializer private constructor() {
                 AddNewChildSubtreeOp::class,
                 object : Serializer<AddNewChildSubtreeOp> {
                     override fun serialize(op: AddNewChildSubtreeOp): String {
-                        return longToHex(op.position.nodeId) + SEPARATOR + escape(op.position.role.stringForLegacyApi()) + SEPARATOR + op.position.index + SEPARATOR + longToHex(op.childId) + SEPARATOR + serializeConcept(op.concept) + SEPARATOR + op.resultTreeHash.getHash()
+                        return serializeNode(op.position.nodeId) +
+                            SEPARATOR +
+                            escape(op.position.role.stringForLegacyApi()) +
+                            SEPARATOR +
+                            op.position.index +
+                            SEPARATOR +
+                            serializeNode(op.childId) +
+                            SEPARATOR +
+                            serializeConcept(op.concept) +
+                            SEPARATOR +
+                            op.resultTreeHash.getHash()
                     }
 
                     override fun deserialize(serialized: String, referenceFactory: IObjectReferenceFactory): AddNewChildSubtreeOp {
@@ -150,11 +171,11 @@ class OperationSerializer private constructor() {
                         return AddNewChildSubtreeOp(
                             referenceFactory.fromHashString(parts[5], CPTree.DESERIALIZER),
                             PositionInRole(
-                                longFromHex(parts[0]),
+                                deserializeNode(parts[0]),
                                 IChildLinkReference.fromLegacyApi(unescape(parts[1])),
                                 parts[2].toInt(),
                             ),
-                            longFromHex(parts[3]),
+                            deserializeNode(parts[3]),
                             deserializeConcept(parts[4]),
                         )
                     }
@@ -164,12 +185,12 @@ class OperationSerializer private constructor() {
                 BulkUpdateOp::class,
                 object : Serializer<BulkUpdateOp> {
                     override fun serialize(op: BulkUpdateOp): String {
-                        return longToHex(op.subtreeRootId) + SEPARATOR + op.resultTreeHash.getHash()
+                        return serializeNode(op.subtreeRootId) + SEPARATOR + op.resultTreeHash.getHash()
                     }
 
                     override fun deserialize(serialized: String, referenceFactory: IObjectReferenceFactory): BulkUpdateOp {
                         val parts = serialized.split(SEPARATOR).toTypedArray()
-                        return BulkUpdateOp(referenceFactory(parts[1], CPTree.DESERIALIZER), longFromHex(parts[0]))
+                        return BulkUpdateOp(referenceFactory(parts[1], CPTree.DESERIALIZER), deserializeNode(parts[0]))
                     }
                 },
             )
@@ -177,15 +198,15 @@ class OperationSerializer private constructor() {
                 DeleteNodeOp::class,
                 object : Serializer<DeleteNodeOp> {
                     override fun serialize(op: DeleteNodeOp): String {
-                        return longToHex(op.childId)
+                        return serializeNode(op.childId)
                     }
 
                     override fun deserialize(serialized: String, referenceFactory: IObjectReferenceFactory): DeleteNodeOp {
                         val parts = serialized.split(SEPARATOR)
                         return if (parts.size == 1) {
-                            DeleteNodeOp(longFromHex(parts[0]))
+                            DeleteNodeOp(deserializeNode(parts[0]))
                         } else {
-                            DeleteNodeOp(longFromHex(parts[3]))
+                            DeleteNodeOp(deserializeNode(parts[3]))
                         }
                     }
                 },
@@ -194,8 +215,8 @@ class OperationSerializer private constructor() {
                 MoveNodeOp::class,
                 object : Serializer<MoveNodeOp> {
                     override fun serialize(op: MoveNodeOp): String {
-                        return longToHex(op.childId) + SEPARATOR +
-                            longToHex(op.targetPosition.nodeId) + SEPARATOR +
+                        return serializeNode(op.childId) + SEPARATOR +
+                            serializeNode(op.targetPosition.nodeId) + SEPARATOR +
                             escape(op.targetPosition.role.stringForLegacyApi()) + SEPARATOR +
                             op.targetPosition.index
                     }
@@ -204,13 +225,13 @@ class OperationSerializer private constructor() {
                         val parts = serialized.split(SEPARATOR)
                         return if (parts.size == 4) {
                             MoveNodeOp(
-                                longFromHex(parts[0]),
-                                PositionInRole(longFromHex(parts[1]), IChildLinkReference.fromLegacyApi(unescape(parts[2])), parts[3].toInt()),
+                                deserializeNode(parts[0]),
+                                PositionInRole(deserializeNode(parts[1]), IChildLinkReference.fromLegacyApi(unescape(parts[2])), parts[3].toInt()),
                             )
                         } else {
                             MoveNodeOp(
-                                longFromHex(parts[0]),
-                                PositionInRole(longFromHex(parts[4]), IChildLinkReference.fromLegacyApi(unescape(parts[5])), parts[6].toInt()),
+                                deserializeNode(parts[0]),
+                                PositionInRole(deserializeNode(parts[4]), IChildLinkReference.fromLegacyApi(unescape(parts[5])), parts[6].toInt()),
                             )
                         }
                     }
@@ -232,12 +253,12 @@ class OperationSerializer private constructor() {
                 SetPropertyOp::class,
                 object : Serializer<SetPropertyOp> {
                     override fun serialize(op: SetPropertyOp): String {
-                        return longToHex(op.nodeId) + SEPARATOR + escape(op.role) + SEPARATOR + escape(op.value)
+                        return serializeNode(op.nodeId) + SEPARATOR + escape(op.role.stringForLegacyApi()) + SEPARATOR + escape(op.value)
                     }
 
                     override fun deserialize(serialized: String, referenceFactory: IObjectReferenceFactory): SetPropertyOp {
                         val parts = serialized.split(SEPARATOR).toTypedArray()
-                        return SetPropertyOp(longFromHex(parts[0]), unescape(parts[1])!!, unescape(parts[2]))
+                        return SetPropertyOp(deserializeNode(parts[0]), IPropertyReference.fromString(unescape(parts[1])!!), unescape(parts[2]))
                     }
                 },
             )
@@ -245,12 +266,12 @@ class OperationSerializer private constructor() {
                 SetReferenceOp::class,
                 object : Serializer<SetReferenceOp> {
                     override fun serialize(op: SetReferenceOp): String {
-                        return longToHex(op.sourceId) + SEPARATOR + escape(op.role) + SEPARATOR + serializeReference(op.target)
+                        return serializeNode(op.sourceId) + SEPARATOR + escape(op.role.stringForLegacyApi()) + SEPARATOR + serializeReference(op.target)
                     }
 
                     override fun deserialize(serialized: String, referenceFactory: IObjectReferenceFactory): SetReferenceOp {
                         val parts = serialized.split(SEPARATOR).toTypedArray()
-                        return SetReferenceOp(longFromHex(parts[0]), unescape(parts[1])!!, deserializeReference(parts[2]))
+                        return SetReferenceOp(deserializeNode(parts[0]), IReferenceLinkReference.fromString(unescape(parts[1])!!), deserializeReference(parts[2]))
                     }
                 },
             )
@@ -258,12 +279,12 @@ class OperationSerializer private constructor() {
                 SetConceptOp::class,
                 object : Serializer<SetConceptOp> {
                     override fun serialize(op: SetConceptOp): String {
-                        return longToHex(op.nodeId) + SEPARATOR + serializeConcept(op.concept)
+                        return serializeNode(op.nodeId) + SEPARATOR + serializeConcept(op.concept)
                     }
 
                     override fun deserialize(serialized: String, referenceFactory: IObjectReferenceFactory): SetConceptOp {
                         val parts = serialized.split(SEPARATOR)
-                        return SetConceptOp(nodeId = longFromHex(parts[0]), concept = deserializeConcept(parts[1]))
+                        return SetConceptOp(nodeId = deserializeNode(parts[0]), concept = deserializeConcept(parts[1]))
                     }
                 },
             )

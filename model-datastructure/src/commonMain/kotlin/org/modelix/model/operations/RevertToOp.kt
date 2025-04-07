@@ -1,48 +1,44 @@
 package org.modelix.model.operations
 
+import org.modelix.datastructures.model.IModelTree
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.model.VersionMerger
-import org.modelix.model.api.ITree
-import org.modelix.model.api.IWriteTransaction
-import org.modelix.model.api.TreePointer
 import org.modelix.model.lazy.CLVersion
+import org.modelix.model.mutable.IMutableModelTree
+import org.modelix.model.mutable.asMutableSingleThreaded
 import org.modelix.model.persistent.CPVersion
 
 class RevertToOp(val latestKnownVersionRef: ObjectReference<CPVersion>, val versionToRevertToRef: ObjectReference<CPVersion>) : AbstractOperation() {
     override fun getObjectReferences(): List<ObjectReference<IObjectData>> = listOf(latestKnownVersionRef, versionToRevertToRef)
 
-    override fun apply(transaction: IWriteTransaction): IAppliedOperation {
+    override fun apply(tree: IMutableModelTree): IAppliedOperation {
         return Applied(
-            captureIntend(transaction.tree)
-                .restoreIntend(transaction.tree)
-                .map { it.apply(transaction) },
+            captureIntend(tree.getTransaction().tree)
+                .restoreIntend(tree.getTransaction().tree)
+                .map { it.apply(tree) },
         )
     }
 
-    override fun captureIntend(tree: ITree): IOperationIntend {
+    override fun captureIntend(tree: IModelTree): IOperationIntend {
         return Intend(captureIntend(tree, collectUndoOps()))
     }
 
-    private fun captureIntend(tree: ITree, ops: List<IOperation>): List<IOperationIntend> {
-        val branch = TreePointer(tree)
-        return branch.computeWrite {
-            ops.map {
-                val intend = it.captureIntend(branch.transaction.tree)
-                it.apply(branch.writeTransaction)
-                intend
-            }
+    private fun captureIntend(tree: IModelTree, ops: List<IOperation>): List<IOperationIntend> {
+        val mutableTree = tree.asMutableSingleThreaded()
+        return ops.map {
+            val intend = it.captureIntend(mutableTree.getTransaction().tree)
+            it.apply(mutableTree)
+            intend
         }
     }
 
-    private fun restoreIntend(tree: ITree, opIntends: List<IOperationIntend>): List<IOperation> {
-        val branch = TreePointer(tree)
-        return branch.computeWrite {
-            opIntends.flatMap {
-                val restoredOps = it.restoreIntend(branch.transaction.tree)
-                restoredOps.forEach { restoredOp -> restoredOp.apply(branch.writeTransaction) }
-                restoredOps
-            }
+    private fun restoreIntend(tree: IModelTree, opIntends: List<IOperationIntend>): List<IOperation> {
+        val mutableTree = tree.asMutableSingleThreaded()
+        return opIntends.flatMap {
+            val restoredOps = it.restoreIntend(mutableTree.getTransaction().tree)
+            restoredOps.forEach { restoredOp -> restoredOp.apply(mutableTree) }
+            restoredOps
         }
     }
 
@@ -52,7 +48,7 @@ class RevertToOp(val latestKnownVersionRef: ObjectReference<CPVersion>, val vers
         val result = mutableListOf<IOperation>()
         val commonBase = VersionMerger.commonBaseVersion(latestKnownVersion, versionToRevertTo)
         result += getPath(latestKnownVersion, commonBase).map { UndoOp(it.resolvedData.ref) }
-        if (commonBase == null || commonBase.hash != versionToRevertTo.hash) {
+        if (commonBase == null || commonBase.getObjectHash() != versionToRevertTo.getObjectHash()) {
             // redo operations on a branch
             result += getPath(versionToRevertTo, commonBase).reversed().flatMap { it.operations }
         }
@@ -62,7 +58,7 @@ class RevertToOp(val latestKnownVersionRef: ObjectReference<CPVersion>, val vers
     private fun getPath(newerVersion: CLVersion, olderVersionExclusive: CLVersion?): List<CLVersion> {
         val result = mutableListOf<CLVersion>()
         var v = newerVersion
-        while (olderVersionExclusive == null || v.hash != olderVersionExclusive.hash) {
+        while (olderVersionExclusive == null || v.getObjectHash() != olderVersionExclusive.getObjectHash()) {
             result += v
             v = v.baseVersion ?: break
         }
@@ -78,7 +74,7 @@ class RevertToOp(val latestKnownVersionRef: ObjectReference<CPVersion>, val vers
             return this@RevertToOp
         }
 
-        override fun restoreIntend(tree: ITree): List<IOperation> {
+        override fun restoreIntend(tree: IModelTree): List<IOperation> {
             return restoreIntend(tree, intends)
         }
     }

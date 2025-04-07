@@ -75,7 +75,12 @@ class BulkRequestStreamExecutor<K, V>(private val bulkExecutor: IBulkExecutor<K,
     override fun getStreamExecutor(): IStreamExecutor = this
 
     fun enqueue(key: K): IStream.ZeroOrOne<V> {
-        return requestQueue.getValue().query(key)
+        val currentQueue = requestQueue.getValueOrNull()
+        return if (currentQueue == null) {
+            IStream.deferZeroOrOne { requestQueue.getValue().query(key) }
+        } else {
+            currentQueue.query(key)
+        }
     }
 
     override fun <T> query(body: () -> IStream.One<T>): T {

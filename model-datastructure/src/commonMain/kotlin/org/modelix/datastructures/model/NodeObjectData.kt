@@ -2,15 +2,20 @@ package org.modelix.datastructures.model
 
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 import kotlinx.serialization.modules.SerializersModule
+import org.modelix.datastructures.list.LargeList
+import org.modelix.datastructures.list.LargeListConfig
+import org.modelix.datastructures.list.LargeListKSerializer
 import org.modelix.datastructures.objects.IDataTypeConfiguration
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
+import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.IObjectReferenceFactory
 import org.modelix.datastructures.objects.LongDataTypeConfiguration
+import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.datastructures.objects.asKSerializer
+import org.modelix.datastructures.objects.getDescendantsAndSelf
 import org.modelix.datastructures.serialization.SplitJoinFormat
 import org.modelix.datastructures.serialization.TransformingSerializer
 import org.modelix.kotlin.utils.DelicateModelixApi
@@ -23,16 +28,16 @@ import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.NullChildLinkReference
 import org.modelix.model.api.meta.NullConcept
+import org.modelix.streams.IStream
 
-@Serializable
 data class NodeObjectData<NodeId>(
-    @Transient val deserializer: Deserializer<NodeId>? = null,
+    val deserializer: Deserializer<NodeId>? = null,
     val id: NodeId,
     val concept: ConceptReference? = null,
     val containment: Pair<NodeId, IChildLinkReference>? = null,
-    val children: List<NodeId> = emptyList(),
+    val children: LargeList<NodeId>? = null,
     val properties: List<Pair<String, String>> = emptyList(),
-    val references: List<Pair<String, @Contextual INodeReference>> = emptyList(),
+    val references: List<Pair<String, INodeReference>> = emptyList(),
 ) : IObjectData {
 
     init {
@@ -43,6 +48,8 @@ data class NodeObjectData<NodeId>(
     val parentId: NodeId? get() = containment?.first
     val roleInParent: IChildLinkReference get() = containment?.second ?: NullChildLinkReference
 
+    fun getChildIds(): IStream.Many<NodeId> = children?.getElements() ?: IStream.empty()
+
     override fun serialize(): String {
         return deserializer!!.serialFormat.encodeToString(deserializer.kSerializer, this)
     }
@@ -52,7 +59,7 @@ data class NodeObjectData<NodeId>(
     }
 
     override fun getContainmentReferences(): List<ObjectReference<IObjectData>> {
-        return emptyList()
+        return children?.getContainmentReferences() ?: emptyList()
     }
 
     fun getProperty(role: IPropertyReference): String? {
@@ -105,18 +112,29 @@ data class NodeObjectData<NodeId>(
         }
     }
 
-    fun withChildRemoved(childId: NodeId): NodeObjectData<NodeId> {
-        return copy(children = children.filterNot { deserializer!!.nodeIdTypeConfig.equal(it, childId) })
+    fun withChildRemoved(childId: NodeId): IStream.One<NodeObjectData<NodeId>> {
+        return getChildIds().filter { !deserializer!!.nodeIdTypeConfig.equal(it, childId) }.toList().map { newChildren ->
+            withChildren(newChildren)
+        }
+    }
+
+    fun withChildren(newChildren: List<NodeId>) = copy(children = deserializer!!.largeListConfig.createList(newChildren))
+
+    override fun objectDiff(self: Object<*>, oldObject: Object<*>?): IStream.Many<Object<*>> {
+        return self.getDescendantsAndSelf()
     }
 
     class Deserializer<NodeId>(
+        val graph: IObjectGraph,
         val nodeIdTypeConfig: IDataTypeConfiguration<NodeId>,
         val treeId: TreeId,
     ) : IObjectDeserializer<NodeObjectData<NodeId>> {
         val referenceTypeConfig = LegacyNodeReferenceDataTypeConfig(treeId)
+        val largeListConfig = LargeListConfig(graph, nodeIdTypeConfig)
         val serialFormat = SplitJoinFormat(
             SerializersModule {
                 contextual(INodeReference::class, referenceTypeConfig.asKSerializer())
+                contextual(LargeList::class) { LargeListKSerializer(largeListConfig) }
             },
         )
 
@@ -136,7 +154,7 @@ data class NodeObjectData<NodeId>(
                     concept = value.concept?.takeIf { it != NullConcept.getReference() },
                     parent = encodeNullId(value.parentId),
                     role = value.roleInParent.getIdOrNameOrNull(),
-                    children = value.children,
+                    children = value.children ?: largeListConfig.createEmptyList(),
                     properties = value.properties.toMap(),
                     references = value.references.toMap(),
                 )
@@ -170,20 +188,23 @@ data class LegacyCompatibleFormat<NodeId, ReferenceType>(
     val concept: ConceptReference?,
     val parent: NodeId?,
     val role: String?,
-    val children: List<NodeId>,
+    @Contextual
+    val children: LargeList<NodeId>,
     val properties: Map<String, String>,
     val references: Map<String, ReferenceType>,
 )
 
-fun IReadableNode.toNodeObjectData(): NodeObjectData<INodeReference> {
-    // persist ID only to prevent ObjectHash changes when metamodel elements are renamed
+fun IReadableNode.toNodeObjectData(graph: IObjectGraph): NodeObjectData<INodeReference> {
+    val nodeDataDeserializer = NodeObjectData.Deserializer(graph, NodeReferenceDataTypeConfig(), getTreeId())
+
+    // usage of getIdOrName: persist ID only to prevent ObjectHash changes when metamodel elements are renamed
     @OptIn(DelicateModelixApi::class)
     return NodeObjectData(
-        deserializer = NodeObjectData.Deserializer(NodeReferenceDataTypeConfig(), getTreeId()),
+        deserializer = nodeDataDeserializer,
         id = getNodeReference(),
         concept = getConceptReference(),
         containment = getParent()?.let { it.getNodeReference() to getContainmentLink() },
-        children = getAllChildren().map { it.getNodeReference() },
+        children = nodeDataDeserializer.largeListConfig.createList(getAllChildren().map { it.getNodeReference() }),
         properties = getAllProperties().map { it.first.getIdOrName() to it.second },
         references = getAllReferenceTargetRefs().map { it.first.getIdOrName() to it.second },
     )

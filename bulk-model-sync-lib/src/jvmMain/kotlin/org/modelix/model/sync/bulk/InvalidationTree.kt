@@ -1,6 +1,7 @@
 package org.modelix.model.sync.bulk
 
 import org.modelix.model.api.IModel
+import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.ITree
 import org.modelix.model.api.NodeReference
@@ -27,13 +28,13 @@ class InvalidationTree(sizeLimit: Int = 100_000) : GenericInvalidationTree<Long,
     }
 }
 
-class DefaultInvalidationTree(val root: NodeReference, sizeLimit: Int = 100_000) :
-    GenericInvalidationTree<NodeReference, IModel>(root, sizeLimit = sizeLimit) {
+class DefaultInvalidationTree(val root: INodeReference, sizeLimit: Int = 100_000) :
+    GenericInvalidationTree<INodeReference, IModel>(root, sizeLimit = sizeLimit) {
     override fun ancestorsAndSelf(
         model: IModel,
-        nodeId: NodeReference,
-    ): List<NodeReference> {
-        return model.resolveNode(nodeId)
+        nodeId: INodeReference,
+    ): List<INodeReference> {
+        return model.tryResolveNode(nodeId)
             ?.ancestors(includeSelf = true)
             ?.map { it.getNodeReference().toSerialized() }
             ?.toList()

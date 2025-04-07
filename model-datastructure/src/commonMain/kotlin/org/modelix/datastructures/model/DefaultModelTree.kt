@@ -1,6 +1,8 @@
 package org.modelix.datastructures.model
 
 import org.modelix.datastructures.IPersistentMap
+import org.modelix.datastructures.objects.IDataTypeConfiguration
+import org.modelix.datastructures.objects.LongDataTypeConfiguration
 import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.asObject
 import org.modelix.datastructures.objects.upcast
@@ -27,6 +29,7 @@ class Int64ModelTree(nodesMap: IPersistentMap<Long, NodeObjectData<Long>>, treeI
             usesRoleIds = true,
         ).asObject(graph)
     }
+    override fun getNodeIdType(): IDataTypeConfiguration<Long> = LongDataTypeConfiguration()
     override fun withNewMap(newNodesMap: IPersistentMap<Long, NodeObjectData<Long>>) = Int64ModelTree(newNodesMap, getId())
     override fun createNodeReference(nodeId: Long): INodeReference {
         return PNodeReference(nodeId, getId().id)
@@ -44,6 +47,7 @@ class DefaultModelTree(nodesMap: IPersistentMap<INodeReference, NodeObjectData<I
             usesRoleIds = true,
         ).asObject(graph)
     }
+    override fun getNodeIdType(): IDataTypeConfiguration<INodeReference> = NodeReferenceDataTypeConfig()
     override fun withNewMap(newNodesMap: IPersistentMap<INodeReference, NodeObjectData<INodeReference>>) =
         DefaultModelTree(newNodesMap, getId())
 
@@ -55,11 +59,11 @@ class DefaultModelTree(nodesMap: IPersistentMap<INodeReference, NodeObjectData<I
 class NodeNotFoundException(nodeId: Any?) : RuntimeException("Node doesn't exist: $nodeId")
 
 @JvmName("asModelTreeWithNodeReferences")
-fun IPersistentMap<INodeReference, NodeObjectData<INodeReference>>.asModelTree(treeId: TreeId): IModelTree<INodeReference> {
+fun IPersistentMap<INodeReference, NodeObjectData<INodeReference>>.asModelTree(treeId: TreeId): IGenericModelTree<INodeReference> {
     return DefaultModelTree(this, treeId)
 }
 
 @JvmName("asModelTreeWithInt64")
-fun IPersistentMap<Long, NodeObjectData<Long>>.asModelTree(treeId: TreeId): IModelTree<Long> {
+fun IPersistentMap<Long, NodeObjectData<Long>>.asModelTree(treeId: TreeId): IGenericModelTree<Long> {
     return Int64ModelTree(this, treeId)
 }

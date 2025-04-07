@@ -2,6 +2,7 @@ package org.modelix.datastructures
 
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.patricia.PatriciaTrie
+import org.modelix.streams.getBlocking
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -9,39 +10,10 @@ import kotlin.test.assertEquals
 class PatriciaTrieTest {
 
     @Test
-    fun t() {
-        val nodeIds = listOf(
-            "mps:34cea670-b8fe-4267-a02b-fb909cbaed73/r:f215f833-19b2-45fc-9e67-5529135b4321/50355284",
-            "mps:34cea670-b8fe-4267-a02b-fb909cbaed73/r:f215f833-19b2-45fc-9e67-5529135b4321/18438666",
-            "mps:34cea670-b8fe-4267-a02b-fb909cbaed73/r:a59f48ad-7ba8-4416-8c08-47a9de87b215/62364071",
-            "mps:34cea670-b8fe-4267-a02b-fb909cbaed73/r:a59f48ad-7ba8-4416-8c08-47a9de87b215",
-            "mps:34cea670-b8fe-4267-a02b-fb909cbaed73/r:a59f48ad-7ba8-4416-8c08-47a9de87b215/27454692",
-            "mps:50b60877-0622-4237-aefa-34e7398b7a85/r:4be074c1-e97e-49ca-993e-fa98633f4af9/22431072",
-            "mps:50b60877-0622-4237-aefa-34e7398b7a85/r:4be074c1-e97e-49ca-993e-fa98633f4af9/60219668",
-            "mps:50b60877-0622-4237-aefa-34e7398b7a85/r:4be074c1-e97e-49ca-993e-fa98633f4af9/51334973",
-            "mps:50b60877-0622-4237-aefa-34e7398b7a85/r:4be074c1-e97e-49ca-993e-fa98633f4af9/52699726",
-            "mps:50b60877-0622-4237-aefa-34e7398b7a85/r:5e9fda19-032b-4c60-85b8-4104775f7e0d/28517075",
-            "mps:50b60877-0622-4237-aefa-34e7398b7a85/r:5e9fda19-032b-4c60-85b8-4104775f7e0d/13232611",
-        )
-
-        var tree = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
-        println(tree)
-
-        for (id in nodeIds.drop(1)) {
-            tree = tree.put(id, id).getSynchronous()
-            println(tree)
-        }
-
-        println(tree)
-
-        println(tree.slice("mps:50b"))
-    }
-
-    @Test
     fun `same content produces same tree`() {
         val alphabet = "abcdefghijklmnopqrstuvwxyz"
         val rand = Random(5465)
-        fun randomString(length: Int) = (0 until length).joinToString("") { alphabet.random().toString() }
+        fun randomString(length: Int) = (0 until length).joinToString("") { alphabet.random(rand).toString() }
 
         val initialTree = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
 
@@ -53,10 +25,10 @@ class PatriciaTrieTest {
 
         fun assertTree() {
             val expectedEntries = addedEntries.associateWith { values[it]!! }
-            val actualEntries = tree.getAll().toList().getSynchronous().toMap()
+            val actualEntries = tree.getAll().toList().getBlocking(tree).toMap()
             assertEquals(expectedEntries, actualEntries)
 
-            val expectedTree = addedEntries.fold(initialTree) { acc, it -> acc.put(it, values[it]!!).getSynchronous() }
+            val expectedTree = addedEntries.fold(initialTree) { acc, it -> acc.put(it, values[it]!!).getBlocking(tree) }
             assertEquals(expectedTree, tree)
 
             assertEquals(expectedTree.asObject().getHash(), tree.asObject().getHash())
@@ -64,16 +36,16 @@ class PatriciaTrieTest {
 
         repeat(1_000) {
             if (removedEntries.size > addedEntries.size) {
-                val key = removedEntries.random()
+                val key = removedEntries.random(rand)
                 removedEntries.remove(key)
                 addedEntries.add(key)
-                tree = tree.put(key, values[key]!!).getSynchronous()
+                tree = tree.put(key, values[key]!!).getBlocking(tree)
                 assertTree()
             } else {
-                val key = addedEntries.random()
+                val key = addedEntries.random(rand)
                 removedEntries.add(key)
                 addedEntries.remove(key)
-                tree = tree.remove(key).getSynchronous()
+                tree = tree.remove(key).getBlocking(tree)
                 assertTree()
             }
         }
@@ -84,54 +56,111 @@ class PatriciaTrieTest {
     @Test
     fun `slice with shorter prefix and single entry`() {
         var tree: PatriciaTrie<String, String> = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
-        tree = tree.put("abcdef", "1").getSynchronous()
+        tree = tree.put("abcdef", "1").getBlocking(tree)
 
-        assertEquals("1", tree.slice("abc").flatMapZeroOrOne { it.get("abcdef") }.getSynchronous())
+        assertEquals("1", tree.slice("abc").flatMapZeroOrOne { it.get("abcdef") }.getBlocking(tree))
     }
 
     @Test
     fun `slice with shorter prefix and two entries`() {
         var tree: PatriciaTrie<String, String> = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
-        tree = tree.put("abcdef", "1").getSynchronous()
-        tree = tree.put("abcdeg", "2").getSynchronous()
+        tree = tree.put("abcdef", "1").getBlocking(tree)
+        tree = tree.put("abcdeg", "2").getBlocking(tree)
 
-        assertEquals("1", tree.slice("abc").flatMapZeroOrOne { it.get("abcdef") }.getSynchronous())
-        assertEquals("2", tree.slice("abc").flatMapZeroOrOne { it.get("abcdeg") }.getSynchronous())
+        assertEquals("1", tree.slice("abc").flatMapZeroOrOne { it.get("abcdef") }.getBlocking(tree))
+        assertEquals("2", tree.slice("abc").flatMapZeroOrOne { it.get("abcdeg") }.getBlocking(tree))
     }
 
     @Test
     fun `slice with prefix between two entries`() {
         var tree: PatriciaTrie<String, String> = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
-        tree = tree.put("ab", "1").getSynchronous()
-        tree = tree.put("abcdef", "2").getSynchronous()
+        tree = tree.put("ab", "1").getBlocking(tree)
+        tree = tree.put("abcdef", "2").getBlocking(tree)
 
-        assertEquals(null, tree.slice("abcd").flatMapZeroOrOne { it.get("ab") }.getSynchronous())
-        assertEquals("2", tree.slice("abcd").flatMapZeroOrOne { it.get("abcdef") }.getSynchronous())
+        assertEquals(null, tree.slice("abcd").flatMapZeroOrOne { it.get("ab") }.getBlocking(tree))
+        assertEquals("2", tree.slice("abcd").flatMapZeroOrOne { it.get("abcdef") }.getBlocking(tree))
     }
 
     @Test
     fun `slice with one before and two after`() {
         var tree: PatriciaTrie<String, String> = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
-        tree = tree.put("ab", "1").getSynchronous()
-        tree = tree.put("abcdef", "2").getSynchronous()
-        tree = tree.put("abcdeg", "3").getSynchronous()
+        tree = tree.put("ab", "1").getBlocking(tree)
+        tree = tree.put("abcdef", "2").getBlocking(tree)
+        tree = tree.put("abcdeg", "3").getBlocking(tree)
 
-        assertEquals(null, tree.slice("abcd").flatMapZeroOrOne { it.get("ab") }.getSynchronous())
-        assertEquals("2", tree.slice("abcd").flatMapZeroOrOne { it.get("abcdef") }.getSynchronous())
-        assertEquals("3", tree.slice("abcd").flatMapZeroOrOne { it.get("abcdeg") }.getSynchronous())
+        assertEquals(null, tree.slice("abcd").flatMapZeroOrOne { it.get("ab") }.getBlocking(tree))
+        assertEquals("2", tree.slice("abcd").flatMapZeroOrOne { it.get("abcdef") }.getBlocking(tree))
+        assertEquals("3", tree.slice("abcd").flatMapZeroOrOne { it.get("abcdeg") }.getBlocking(tree))
     }
 
     @Test
     fun `slice with two before and two after at existing split`() {
         var tree: PatriciaTrie<String, String> = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
-        tree = tree.put("a", "0").getSynchronous()
-        tree = tree.put("ab", "1").getSynchronous()
-        tree = tree.put("abcdef", "2").getSynchronous()
-        tree = tree.put("abcdeg", "3").getSynchronous()
+        tree = tree.put("a", "0").getBlocking(tree)
+        tree = tree.put("ab", "1").getBlocking(tree)
+        tree = tree.put("abcdef", "2").getBlocking(tree)
+        tree = tree.put("abcdeg", "3").getBlocking(tree)
 
-        assertEquals(null, tree.slice("ab").flatMapZeroOrOne { it.get("a") }.getSynchronous())
-        assertEquals("1", tree.slice("ab").flatMapZeroOrOne { it.get("ab") }.getSynchronous())
-        assertEquals("2", tree.slice("ab").flatMapZeroOrOne { it.get("abcdef") }.getSynchronous())
-        assertEquals("3", tree.slice("ab").flatMapZeroOrOne { it.get("abcdeg") }.getSynchronous())
+        assertEquals(null, tree.slice("ab").flatMapZeroOrOne { it.get("a") }.getBlocking(tree))
+        assertEquals("1", tree.slice("ab").flatMapZeroOrOne { it.get("ab") }.getBlocking(tree))
+        assertEquals("2", tree.slice("ab").flatMapZeroOrOne { it.get("abcdef") }.getBlocking(tree))
+        assertEquals("3", tree.slice("ab").flatMapZeroOrOne { it.get("abcdeg") }.getBlocking(tree))
+    }
+
+    @Test
+    fun `can replace subtree`() {
+        var tree: PatriciaTrie<String, String> = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
+
+        val initialKeys = listOf(
+            "a",
+            "ab",
+            "abc",
+            "abcd",
+            "abcdA",
+            "abcdB1",
+            "abcdB11",
+            "abcdB2",
+            "abcdB21",
+            "abcdB22",
+            "abcdB23",
+            "abcdB3",
+            "abcdC",
+        )
+        for (key in initialKeys) {
+            tree = tree.put(key, "value of $key").getBlocking(tree)
+        }
+
+        assertEquals(
+            initialKeys.associateWith { "value of $it" },
+            tree.getAll().toList().getBlocking(tree).toMap(),
+        )
+
+        for (key in initialKeys) {
+            assertEquals("value of $key", tree.get(key).getBlocking(tree))
+        }
+
+        var replacementTree = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
+        val replacementKeys = listOf(
+            "abcdB1",
+            "abcdB22",
+            "abcdB81",
+            "abcdB911",
+            "abcdB92",
+            "abcdB921",
+            "abcdB922",
+            "abcdB93",
+        )
+        for (key in replacementKeys) {
+            replacementTree = replacementTree.put(key, "new value of $key").getBlocking(tree)
+        }
+        tree = tree.replaceSlice("abcdB", replacementTree).getBlocking(tree)
+
+        assertEquals(
+            initialKeys.filterNot { it.startsWith("abcdB") }.map { it to "value of $it" }
+                .plus(replacementKeys.map { it to "new value of $it" })
+                .sortedBy { it.first }
+                .joinToString("\n") { "${it.first} -> ${it.second}" },
+            tree.getAll().toList().getBlocking(tree).sortedBy { it.first }.joinToString("\n") { "${it.first} -> ${it.second}" },
+        )
     }
 }

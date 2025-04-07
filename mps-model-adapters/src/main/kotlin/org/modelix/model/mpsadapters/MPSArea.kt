@@ -3,7 +3,6 @@ package org.modelix.model.mpsadapters
 import jetbrains.mps.ide.ThreadUtils
 import jetbrains.mps.project.ProjectBase
 import jetbrains.mps.project.facets.JavaModuleFacet
-import jetbrains.mps.project.structure.modules.ModuleReference
 import jetbrains.mps.smodel.GlobalModelAccess
 import jetbrains.mps.smodel.ModelImports
 import org.jetbrains.mps.openapi.model.SNodeReference
@@ -25,7 +24,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
 
     private fun resolveMPSModelReference(ref: INodeReference): INode? {
         if (ref is MPSModelReference) {
-            return ref.modelReference.resolve(repository).let { MPSModelAsNode(it).asLegacyNode() }
+            return ref.modelReference.resolve(repository)?.let { MPSModelAsNode(it).asLegacyNode() }
         }
 
         val serialized = ref.serialize().substringAfter("${MPSModelReference.PREFIX}:")
@@ -149,27 +148,11 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
     }
 
     private fun resolveMPSModuleReference(ref: INodeReference): MPSModuleAsNode<*>? {
-        val moduleRef = if (ref is MPSModuleReference) {
-            ref.moduleReference
-        } else {
-            val serializedRef = ref.serialize().substringAfter("${MPSModuleReference.PREFIX}:")
-            ModuleReference.parseReference(serializedRef)
-        }
-
-        return moduleRef.resolve(repository)?.let { MPSModuleAsNode(it) }
+        return MPSModuleReference.tryConvert(ref)?.moduleReference?.resolve(repository)?.let { MPSModuleAsNode(it) }
     }
 
     private fun resolveMPSNodeReference(ref: INodeReference): INode? {
-        if (ref is MPSNodeReference) {
-            return resolveSNodeReferenceToMPSNode(ref.ref)
-        }
-        val serialized = ref.serialize()
-        val serializedMPSRef = when {
-            serialized.startsWith("mps-node:") -> serialized.substringAfter("mps-node:")
-            serialized.startsWith("mps:") -> serialized.substringAfter("mps:")
-            else -> return null
-        }
-        return resolveSNodeReferenceToMPSNode(MPSReferenceParser.parseSNodeReference(serializedMPSRef))
+        return MPSNodeReference.tryConvert(ref)?.ref?.let { resolveSNodeReferenceToMPSNode(it) }
     }
 
     private fun resolveSNodeReferenceToMPSNode(sNodeReference: SNodeReference): INode? {
@@ -208,7 +191,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
         } else {
             val serialized = ref.serialize()
             val serializedModuleRef = serialized.substringAfter("${MPSJavaModuleFacetReference.PREFIX}:")
-            ModuleReference.parseReference(serializedModuleRef)
+            MPSReferenceParser.parseSModuleReference(serializedModuleRef)
         }
 
         val facet = moduleRef.resolve(repository)?.getFacetOfType(JavaModuleFacet.FACET_TYPE)
@@ -254,7 +237,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
             ref.userModuleReference
         } else {
             val serializedModuleRef = serialized.substringAfter(MPSModuleDependencyReference.SEPARATOR)
-            ModuleReference.parseReference(serializedModuleRef)
+            MPSReferenceParser.parseSModuleReference(serializedModuleRef)
         }
 
         return userModuleReference.resolve(repository)
@@ -297,7 +280,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
             val serializedModuleRef = serialized
                 .substringAfter("${MPSProjectModuleReference.PREFIX}:")
                 .substringBefore(MPSProjectModuleReference.SEPARATOR)
-            ModuleReference.parseReference(serializedModuleRef)
+            MPSReferenceParser.parseSModuleReference(serializedModuleRef)
         }
 
         val projectRef = if (ref is MPSProjectModuleReference) {

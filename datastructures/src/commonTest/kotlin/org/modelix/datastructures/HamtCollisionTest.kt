@@ -7,6 +7,7 @@ import org.modelix.datastructures.objects.IDataTypeConfiguration
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.LongDataTypeConfiguration
 import org.modelix.datastructures.objects.StringDataTypeConfiguration
+import org.modelix.streams.getBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -26,19 +27,19 @@ class HamtCollisionTest {
         )
         var tree: HamtTree<Long, String> = HamtTree(HamtInternalNode.createEmpty(config))
 
-        tree = tree.put(0b000000000, "a").getSynchronous()
-        tree = tree.put(0b000000001, "b").getSynchronous()
-        tree = tree.put(0b000000011, "c").getSynchronous()
-        tree = tree.put(0b100000000, "d").getSynchronous()
-        tree = tree.put(0b100000001, "e").getSynchronous()
-        tree = tree.put(0b100000011, "f").getSynchronous()
+        tree = tree.put(0b000000000, "a").getBlocking(tree)
+        tree = tree.put(0b000000001, "b").getBlocking(tree)
+        tree = tree.put(0b000000011, "c").getBlocking(tree)
+        tree = tree.put(0b100000000, "d").getBlocking(tree)
+        tree = tree.put(0b100000001, "e").getBlocking(tree)
+        tree = tree.put(0b100000011, "f").getBlocking(tree)
 
-        assertEquals("a", tree.get(0b000000000).getSynchronous())
-        assertEquals("b", tree.get(0b000000001).getSynchronous())
-        assertEquals("c", tree.get(0b000000011).getSynchronous())
-        assertEquals("d", tree.get(0b100000000).getSynchronous())
-        assertEquals("e", tree.get(0b100000001).getSynchronous())
-        assertEquals("f", tree.get(0b100000011).getSynchronous())
+        assertEquals("a", tree.get(0b000000000).getBlocking(tree))
+        assertEquals("b", tree.get(0b000000001).getBlocking(tree))
+        assertEquals("c", tree.get(0b000000011).getBlocking(tree))
+        assertEquals("d", tree.get(0b100000000).getBlocking(tree))
+        assertEquals("e", tree.get(0b100000001).getBlocking(tree))
+        assertEquals("f", tree.get(0b100000011).getBlocking(tree))
     }
 
     /**
@@ -59,22 +60,22 @@ class HamtCollisionTest {
         )
         var tree: HamtTree<Long, String> = HamtTree(HamtInternalNode.createEmpty(config))
 
-        tree = tree.put(0b00, "a").getSynchronous()
-        tree = tree.put(0b01, "b").getSynchronous()
-        tree = tree.put(0b10, "c").getSynchronous()
-        tree = tree.put(0b11, "d").getSynchronous()
+        tree = tree.put(0b00, "a").getBlocking(tree)
+        tree = tree.put(0b01, "b").getBlocking(tree)
+        tree = tree.put(0b10, "c").getBlocking(tree)
+        tree = tree.put(0b11, "d").getBlocking(tree)
 
-        assertEquals("a", tree.get(0b00).getSynchronous())
-        assertEquals("b", tree.get(0b01).getSynchronous())
-        assertEquals("c", tree.get(0b10).getSynchronous())
-        assertEquals("d", tree.get(0b11).getSynchronous())
+        assertEquals("a", tree.get(0b00).getBlocking(tree))
+        assertEquals("b", tree.get(0b01).getBlocking(tree))
+        assertEquals("c", tree.get(0b10).getBlocking(tree))
+        assertEquals("d", tree.get(0b11).getBlocking(tree))
 
-        tree = tree.put(0b01, "changed").getSynchronous()
+        tree = tree.put(0b01, "changed").getBlocking(tree)
 
-        assertEquals("a", tree.get(0b00).getSynchronous())
-        assertEquals("changed", tree.get(0b01).getSynchronous())
-        assertEquals("c", tree.get(0b10).getSynchronous())
-        assertEquals("d", tree.get(0b11).getSynchronous())
+        assertEquals("a", tree.get(0b00).getBlocking(tree))
+        assertEquals("changed", tree.get(0b01).getBlocking(tree))
+        assertEquals("c", tree.get(0b10).getBlocking(tree))
+        assertEquals("d", tree.get(0b11).getBlocking(tree))
     }
 }
 

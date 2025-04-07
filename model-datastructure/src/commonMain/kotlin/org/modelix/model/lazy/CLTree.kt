@@ -5,7 +5,7 @@ import org.modelix.datastructures.autoResolveValues
 import org.modelix.datastructures.createMapInstance
 import org.modelix.datastructures.hamt.HamtInternalNode
 import org.modelix.datastructures.hamt.HamtNode
-import org.modelix.datastructures.model.IModelTree
+import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.datastructures.model.NodeObjectData
 import org.modelix.datastructures.model.asLegacyTree
 import org.modelix.datastructures.model.fromNodeReference
@@ -29,6 +29,7 @@ import org.modelix.model.persistent.CPTree
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
 import org.modelix.streams.IStreamExecutorProvider
+import org.modelix.streams.getBlocking
 
 private fun createNewTreeData(
     graph: IObjectGraph,
@@ -36,7 +37,7 @@ private fun createNewTreeData(
     useRoleIds: Boolean = true,
 ): Object<CPTree> {
     val root = NodeObjectData<Long>(
-        deserializer = NodeObjectData.Deserializer(LongDataTypeConfiguration(), treeId),
+        deserializer = NodeObjectData.Deserializer(graph, LongDataTypeConfiguration(), treeId),
         id = ITree.ROOT_ID,
         concept = null,
         containment = null,
@@ -44,7 +45,7 @@ private fun createNewTreeData(
     val config = HamtNode.Config(
         graph = graph,
         keyConfig = LongDataTypeConfiguration(),
-        valueConfig = ObjectReferenceDataTypeConfiguration(graph, NodeObjectData.Deserializer(LongDataTypeConfiguration(), treeId)),
+        valueConfig = ObjectReferenceDataTypeConfiguration(graph, NodeObjectData.Deserializer(graph, LongDataTypeConfiguration(), treeId)),
     )
     @OptIn(DelicateModelixApi::class) // this is a new object
     return CPTree(
@@ -53,7 +54,7 @@ private fun createNewTreeData(
             HamtInternalNode.createEmpty(config)
                 .put(root.id, graph.fromCreated(root), graph)
                 .orNull()
-                .getSynchronous()!!,
+                .getBlocking(graph)!!,
         ),
         trieWithNodeRefIds = null,
         usesRoleIds = useRoleIds,
@@ -140,7 +141,7 @@ class CLTree private constructor(val resolvedData: Object<CPTree>) :
     }
 
     class Builder(graph: IObjectGraph) {
-        private val modelBuilder = IModelTree.builder().graph(graph)
+        private val modelBuilder = IGenericModelTree.builder().graph(graph)
 
         fun useRoleIds(value: Boolean = true): Builder {
             modelBuilder.storeRoleNames(!value)

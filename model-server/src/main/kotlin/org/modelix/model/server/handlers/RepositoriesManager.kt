@@ -3,6 +3,10 @@ package org.modelix.model.server.handlers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.datetime.Clock
+import org.modelix.datastructures.model.IGenericModelTree
+import org.modelix.datastructures.model.asLegacyTree
+import org.modelix.datastructures.model.getHash
+import org.modelix.datastructures.model.withIdTranslation
 import org.modelix.model.ModelMigrations
 import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.VersionMerger
@@ -11,13 +15,14 @@ import org.modelix.model.api.IReadTransaction
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IdGeneratorDummy
 import org.modelix.model.api.PBranch
+import org.modelix.model.async.LazyLoadingObjectGraph
 import org.modelix.model.lazy.BranchReference
-import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.commonBaseVersion
 import org.modelix.model.lazy.diff
 import org.modelix.model.lazy.fullDiff
+import org.modelix.model.mutable.asMutableSingleThreaded
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.SerializationUtil
 import org.modelix.model.server.api.RepositoryConfig
@@ -31,6 +36,8 @@ import org.modelix.model.server.store.pollEntry
 import org.modelix.model.server.store.runReadIO
 import org.modelix.streams.IExecutableStream
 import org.modelix.streams.IStream
+import org.modelix.streams.getBlocking
+import org.modelix.streams.iterateBlocking
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
@@ -154,15 +161,25 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
             false,
         )
         stores.genericStore.put(branchListKey(repositoryId, isolated), masterBranch.branchName, false)
-        val initialVersion = CLVersion.createRegularVersion(
-            id = stores.idGenerator.generate(),
-            time = Clock.System.now().epochSeconds.toString(),
-            author = userName,
-            tree = CLTree.builder(stores.getAsyncStore(repositoryId.takeIf { isolated }))
-                .useRoleIds(!config.legacyNameBasedRoles).build(),
-            baseVersion = null,
-            operations = emptyArray(),
-        )
+
+        val tree = IGenericModelTree.builder()
+            .treeId(config.modelId)
+            .graph(LazyLoadingObjectGraph(stores.getAsyncStore(repositoryId.takeIf { isolated })))
+            .let {
+                when (config.nodeIdType) {
+                    RepositoryConfig.NodeIdType.INT64 -> it.withInt64Ids().build().asLegacyTree()
+                    RepositoryConfig.NodeIdType.STRING -> it.withNodeReferenceIds().build().withIdTranslation().asLegacyTree()
+                }
+            }
+
+        val initialVersion = CLVersion.builder()
+            .id(stores.idGenerator.generate())
+            .time(Clock.System.now())
+            .author(userName)
+            .tree(tree)
+            .build()
+        initialVersion.write()
+        validateVersion(initialVersion, null)
         putVersionHash(masterBranch, initialVersion.getContentHash())
         return initialVersion
     }
@@ -272,7 +289,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         } else {
             val legacyObjectStore = getLegacyObjectStore(repositoryId)
             val headVersion = CLVersion.loadFromHash(headHash, legacyObjectStore)
-            require(headVersion.getTree().getId() == newVersion.getTree().getId()) {
+            require(headVersion.getModelTree().getId() == newVersion.getModelTree().getId()) {
                 "Attempt to merge a model with ID '${newVersion.getTree().getId()}'" +
                     " into one with ID '${headVersion.getTree().getId()}'"
             }
@@ -285,10 +302,36 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
     }
 
     private fun validateVersion(newVersion: CLVersion, oldVersion: CLVersion?) {
+        if (newVersion.getObjectHash() == oldVersion?.getObjectHash()) return
+
+        // Deleting the root node isn't allowed
+        val mainTree = newVersion.getModelTree()
+        check(mainTree.containsNode(mainTree.getRootNodeId()).getBlocking(mainTree))
+
         // ensure there are no missing objects
         newVersion.graph.getStreamExecutor().iterate({ newVersion.fullDiff(oldVersion) }) { }
+        if (oldVersion != null) {
+            // If the object diff is buggy, client and server will skip over the same objects.
+            // The model diff should also iterate over all new objects and is used for additional validation.
+            newVersion.getModelTree().getChanges(oldVersion.getModelTree(), false).iterateBlocking(newVersion.getModelTree()) { }
+        }
 
         // TODO check invariants of the model (consistent parent-child relations, single root, containment cycles)
+
+        // check that the operations actually reproduce the model
+        val baseVersion = newVersion.baseVersion
+        if (baseVersion == null) {
+            check(newVersion.numberOfOperations == 0)
+            check(newVersion.operations.count() == 0)
+        } else {
+            val mutableTree = baseVersion.getModelTree().asMutableSingleThreaded()
+            newVersion.operationsAsStream().iterateBlocking(mainTree) { op ->
+                op.apply(mutableTree)
+            }
+            check(mutableTree.getTransaction().tree.getHash() == newVersion.getModelTree().getHash()) {
+                "Recorded operations don't produce the provided result"
+            }
+        }
     }
 
     @RequiresTransaction

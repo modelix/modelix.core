@@ -1,24 +1,37 @@
 package org.modelix.datastructures.patricia
 
+import org.modelix.datastructures.EntryAddedEvent
+import org.modelix.datastructures.EntryChangedEvent
+import org.modelix.datastructures.EntryRemovedEvent
 import org.modelix.datastructures.IPersistentMap
 import org.modelix.datastructures.IPersistentMapRootData
+import org.modelix.datastructures.MapChangeEvent
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.IObjectReferenceFactory
 import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectReference
+import org.modelix.datastructures.objects.asObject
+import org.modelix.datastructures.objects.getDescendantsAndSelf
 import org.modelix.datastructures.objects.getHashString
 import org.modelix.datastructures.objects.upcast
 import org.modelix.datastructures.serialization.SplitJoinSerializer
 import org.modelix.kotlin.utils.urlDecode
 import org.modelix.kotlin.utils.urlEncode
 import org.modelix.streams.IStream
+import org.modelix.streams.flatten
+import org.modelix.streams.ifEmpty
 import org.modelix.streams.plus
 
 data class PatriciaNode<K, V : Any>(
     val config: PatriciaTrieConfig<K, V>,
     val ownPrefix: String,
+
+    /**
+     * Equivalent to `children.map { it.ownPrefix.first() }.join("")`, just allows choosing the correct child without
+     * resolving all of them. Sorted.
+     */
     val firstChars: String,
     val children: List<ObjectReference<PatriciaNode<K, V>>>,
 
@@ -72,6 +85,10 @@ data class PatriciaNode<K, V : Any>(
 
     fun withValue(newValue: V?) = copy(value = newValue)
 
+    /**
+     * Returns all entries.
+     * @param prefix the prefix from the root to this node. Required to assemble the key.
+     */
     fun getEntries(prefix: CharSequence): IStream.Many<Pair<CharSequence, V>> {
         val fullPrefix = prefix + ownPrefix
         val descendants = IStream.Companion.many(children).flatMap { it.resolveData() }
@@ -109,7 +126,7 @@ data class PatriciaNode<K, V : Any>(
             return if (ownPrefix.length == prefix.length) {
                 IStream.of(this.copy(ownPrefix = ""))
             } else {
-                split(prefix).children.single().resolveData()
+                split(prefix, config.graph).children.single().resolveData()
             }
         }
         if (!prefix.startsWith(ownPrefix)) return IStream.empty()
@@ -135,40 +152,61 @@ data class PatriciaNode<K, V : Any>(
         }
     }
 
-    fun put(newKey: CharSequence, newValue: V?): IStream.ZeroOrOne<PatriciaNode<K, V>> {
+    fun updateSubtree(newKey: CharSequence, updater: (PatriciaNode<K, V>) -> IStream.ZeroOrOne<PatriciaNode<K, V>>): IStream.ZeroOrOne<PatriciaNode<K, V>> {
         val commonPrefix = newKey.commonPrefixWith(this.ownPrefix)
         val remainingNewKey = newKey.drop(commonPrefix.length)
         val remainingOwnPrefix = this.ownPrefix.drop(commonPrefix.length)
         return (
             if (remainingOwnPrefix.isEmpty() && remainingNewKey.isEmpty()) {
-                // key references this node -> overwrite the value
-                IStream.of(withValue(newValue))
+                // key references this node
+                updater(this)
             } else if (remainingOwnPrefix.isEmpty()) {
                 // key is longer -> insert into children
                 val index = firstChars.binarySearch(remainingNewKey.first())
                 if (index >= 0) {
                     children[index].resolveData()
-                        .flatMapOne { it.put(remainingNewKey, newValue).orNull() }
+                        .flatMapOne { it.updateSubtree(remainingNewKey, updater).orNull() }
                         .mapNotNull { withChildReplacedNullable(index, it) }
                 } else {
                     val insertionIndex = (-index) - 1
-                    val newChild = PatriciaNode<K, V>(
+                    PatriciaNode<K, V>(
                         config = config,
                         ownPrefix = remainingNewKey.toString(),
-                        value = newValue,
+                        value = null,
                         firstChars = "",
                         children = emptyList(),
-                    )
-                    IStream.of(withChildInserted(insertionIndex, remainingNewKey.first(), newChild))
+                    ).let { updater(it) }
+                        .map { withChildInserted(insertionIndex, remainingNewKey.first(), it) }
+                        .ifEmpty {
+                            // updater returned an empty node, and since this part is about inserting, nothing changed
+                            this
+                        }
                 }
             } else {
                 // key is shorter -> need to split into a node with a shorter prefix
-                split(commonPrefix).put(newKey, newValue)
+                split(commonPrefix, config.graph).updateSubtree(newKey, updater)
             }
             ).flatMapZeroOrOne { it.tryMerge() }
     }
 
-    fun split(commonPrefix: CharSequence): PatriciaNode<K, V> {
+    fun put(newKey: CharSequence, newValue: V?): IStream.ZeroOrOne<PatriciaNode<K, V>> {
+        return updateSubtree(newKey) {
+            IStream.of(it.copy(value = newValue))
+        }
+    }
+
+    fun replaceSubtree(prefix: CharSequence, newSubtree: PatriciaNode<K, V>?): IStream.ZeroOrOne<PatriciaNode<K, V>> {
+        return updateSubtree(prefix) {
+            IStream.ofNotNull(newSubtree?.copy(ownPrefix = it.ownPrefix))
+        }
+    }
+
+    /**
+     * Shortens the prefix of this node to the given one as a preparation for inserting children or setting a value.
+     */
+    private fun split(commonPrefix: CharSequence, graph: IObjectGraph): PatriciaNode<K, V> {
+        require(ownPrefix.startsWith(commonPrefix))
+        if (ownPrefix.length == commonPrefix.length) return this
         val remainingPrefix = this.ownPrefix.drop(commonPrefix.length)
         return PatriciaNode<K, V>(
             config = config,
@@ -176,7 +214,7 @@ data class PatriciaNode<K, V : Any>(
             value = null,
             firstChars = remainingPrefix.take(1),
             children = listOf(
-                config.graph.fromCreated(
+                graph.fromCreated(
                     PatriciaNode<K, V>(
                         config = config,
                         ownPrefix = remainingPrefix,
@@ -195,7 +233,7 @@ data class PatriciaNode<K, V : Any>(
         return ownPrefix.urlEncode() +
             S1 + firstChars.urlEncode() +
             S1 + children.joinToString(S2.toString()) { it.getHashString() } +
-            S1 + value
+            S1 + value?.let { config.valueConfig.serialize(it) }.urlEncode()
     }
 
     override fun getDeserializer(): IObjectDeserializer<*> {
@@ -204,6 +242,155 @@ data class PatriciaNode<K, V : Any>(
 
     override fun getContainmentReferences(): List<ObjectReference<IObjectData>> {
         return children + (value?.let { config.valueConfig.getContainmentReferences(it) } ?: emptyList())
+    }
+
+    fun getChanges(path: CharSequence, oldNode: PatriciaNode<K, V>?, changesOnly: Boolean): IStream.Many<MapChangeEvent<K, V>> {
+        if (oldNode == null) {
+            return if (changesOnly) {
+                IStream.empty()
+            } else {
+                getEntries(path).map { EntryAddedEvent(config.keyConfig.deserialize(it.first.toString()), it.second) }
+            }
+        }
+        return if (ownPrefix == oldNode.ownPrefix) {
+            val pathForChildren = path + ownPrefix
+            val matchingChildren = if (firstChars == oldNode.firstChars) {
+                children.zip(oldNode.children)
+            } else {
+                val newChildren = firstChars.asSequence().zip(children.asSequence()).toMap()
+                val oldChildren = oldNode.firstChars.asSequence().zip(oldNode.children.asSequence()).toMap()
+                val allFirstChars = newChildren.keys.plus(oldChildren.keys).distinct()
+                allFirstChars.map { newChildren[it] to oldChildren[it] }
+            }
+            val changesFromChildren = IStream.many(matchingChildren).flatMap { (newChildRef, oldChildRef) ->
+                val newChild = newChildRef?.resolveData() ?: IStream.of(null)
+                val oldChild = oldChildRef?.resolveData() ?: IStream.of(null)
+
+                newChild.zipWith(oldChild) { newChild, oldChild ->
+                    if (newChild == null) {
+                        if (oldChild == null) {
+                            IStream.empty()
+                        } else {
+                            if (changesOnly) {
+                                IStream.empty()
+                            } else {
+                                oldChild.getEntries(pathForChildren).map {
+                                    EntryRemovedEvent(config.keyConfig.deserialize(it.first.toString()), it.second)
+                                }
+                            }
+                        }
+                    } else {
+                        newChild.getChanges(pathForChildren, oldChild, changesOnly)
+                    }
+                }
+            }.flatten()
+
+            fun ownKey() = config.keyConfig.deserialize(pathForChildren.toString())
+            val ownChange = if (this.value == null) {
+                if (oldNode.value == null) {
+                    IStream.empty()
+                } else {
+                    IStream.of(EntryRemovedEvent(ownKey(), oldNode.value))
+                }
+            } else {
+                if (oldNode.value == null) {
+                    IStream.of(EntryAddedEvent(ownKey(), this.value))
+                } else {
+                    if (config.equal(this.value, oldNode.value)) {
+                        IStream.empty()
+                    } else {
+                        IStream.of(
+                            EntryChangedEvent(
+                                key = config.keyConfig.deserialize(pathForChildren.toString()),
+                                oldValue = oldNode.value,
+                                newValue = this.value,
+                            ),
+                        )
+                    }
+                }
+            }
+
+            ownChange + changesFromChildren
+        } else {
+            val commonPrefix = ownPrefix.commonPrefixWith(oldNode.ownPrefix)
+            split(commonPrefix, IObjectGraph.FREE_FLOATING).getChanges(path, oldNode.split(commonPrefix, IObjectGraph.FREE_FLOATING), changesOnly)
+        }
+    }
+
+    override fun objectDiff(self: Object<*>, oldObject: Object<*>?): IStream.Many<Object<*>> {
+        return objectDiff(self, oldObject, "")
+    }
+
+    fun objectDiff(self: Object<*>, oldObject: Object<*>?, path: CharSequence): IStream.Many<Object<*>> {
+        if (oldObject == null) {
+            return self.getDescendantsAndSelf()
+        }
+        self as Object<PatriciaNode<K, V>>
+        oldObject as Object<PatriciaNode<K, V>>
+        val oldNode: PatriciaNode<K, V> = oldObject.data as PatriciaNode<K, V>
+        return if (ownPrefix == oldNode.ownPrefix) {
+            val pathForChildren = path + ownPrefix
+            val matchingChildren = if (firstChars == oldNode.firstChars) {
+                children.zip(oldNode.children)
+            } else {
+                val newChildren = firstChars.asSequence().zip(children.asSequence()).toMap()
+                val oldChildren = oldNode.firstChars.asSequence().zip(oldNode.children.asSequence()).toMap()
+                val allFirstChars = newChildren.keys.plus(oldChildren.keys).distinct()
+                allFirstChars.map { newChildren[it] to oldChildren[it] }
+            }
+            val changesFromChildren = IStream.many(matchingChildren).flatMap { (newChildRef, oldChildRef) ->
+                if (newChildRef == null) {
+                    IStream.empty()
+                } else {
+                    if (oldChildRef == null) {
+                        newChildRef.resolve().flatMap { it.getDescendantsAndSelf() }
+                    } else {
+                        // If they are part of the FREE_FLOATING graph it means they are the result of a split
+                        // and aren't actually available at the other replica.
+                        if (newChildRef.getHash() == oldChildRef.getHash() &&
+                            newChildRef.graph != IObjectGraph.FREE_FLOATING &&
+                            oldChildRef.graph != IObjectGraph.FREE_FLOATING
+                        ) {
+                            IStream.empty()
+                        } else {
+                            newChildRef.resolve().zipWith(oldChildRef.resolve()) { newChild, oldChild ->
+                                newChild.data.objectDiff(newChild, oldChild, pathForChildren)
+                            }.flatten()
+                        }
+                    }
+                }
+            }
+
+            val newValueReferences = value?.let { config.valueConfig.getContainmentReferences(it) } ?: emptyList()
+            val oldValueReferences = oldNode.value?.let { config.valueConfig.getContainmentReferences(it) } ?: emptyList()
+            val changesFromValue = when (newValueReferences.size) {
+                0 -> IStream.empty()
+                1 -> when (oldValueReferences.size) {
+                    0 -> newValueReferences.single().diff(null)
+                    1 -> newValueReferences.single().diff(oldValueReferences.single())
+                    else -> TODO()
+                }
+                else -> TODO()
+            }
+
+            IStream.of(self) + changesFromValue + changesFromChildren
+        } else {
+            val commonPrefix = ownPrefix.commonPrefixWith(oldNode.ownPrefix)
+            (
+                IStream.of(self) + self.split(commonPrefix).let {
+                    it.data.objectDiff(it, oldObject.split(commonPrefix), path).filter { it.graph == config.graph }
+                }
+                ).filter {
+                // filter out the split result, which isn't part of the real object graph
+                it.graph == config.graph
+            }
+        }
+    }
+
+    private fun <K, V : Any> Object<PatriciaNode<K, V>>.split(commonPrefix: CharSequence): Object<PatriciaNode<K, V>> {
+        val splitted = data.split(commonPrefix, IObjectGraph.FREE_FLOATING)
+        if (splitted === data) return this
+        return splitted.asObject(IObjectGraph.FREE_FLOATING)
     }
 
     class Deserializer<K, V : Any>(val config: (IObjectGraph) -> PatriciaTrieConfig<K, V>) : IObjectDeserializer<PatriciaNode<K, V>> {
@@ -221,7 +408,7 @@ data class PatriciaNode<K, V : Any>(
                 parts[0].urlDecode()!!,
                 parts[1].urlDecode()!!,
                 parts[2].split(S2).filter { it.isNotEmpty() }.map { referenceFactory.fromHashString(it, this) },
-                config.valueConfig.deserialize(parts[3]),
+                parts[3].urlDecode()?.let { config.valueConfig.deserialize(it) },
             )
         }
     }

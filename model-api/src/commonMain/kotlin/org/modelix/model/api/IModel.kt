@@ -7,21 +7,25 @@ import org.modelix.model.area.IAreaReference
 interface IModel : ITransactionManager {
     fun getRootNode(): IReadableNode
     fun getRootNodes(): List<IReadableNode>
-    fun resolveNode(ref: INodeReference): IReadableNode?
+    fun tryResolveNode(ref: INodeReference): IReadableNode?
+    fun resolveNode(ref: INodeReference): IReadableNode = tryResolveNode(ref) ?: throw NodeNotFoundException(ref, this)
 }
 
 interface IMutableModel : IModel {
     fun asArea(): IArea = ModelAsArea(this)
     override fun getRootNode(): IWritableNode
     override fun getRootNodes(): List<IWritableNode>
-    override fun resolveNode(ref: INodeReference): IWritableNode?
+    override fun tryResolveNode(ref: INodeReference): IWritableNode?
+    override fun resolveNode(ref: INodeReference): IWritableNode {
+        return super.resolveNode(ref) as IWritableNode
+    }
 }
 
 data class AreaAsModel(val area: IArea) : IMutableModel {
     override fun asArea(): IArea = area
     override fun getRootNode(): IWritableNode = area.getRoot().asWritableNode()
     override fun getRootNodes(): List<IWritableNode> = listOf(getRootNode())
-    override fun resolveNode(ref: INodeReference): IWritableNode? = area.resolveNode(ref)?.asWritableNode()
+    override fun tryResolveNode(ref: INodeReference): IWritableNode? = area.resolveNode(ref)?.asWritableNode()
     override fun <R> executeRead(body: () -> R): R = area.executeRead(body)
     override fun <R> executeWrite(body: () -> R): R = area.executeWrite(body)
     override fun canRead(): Boolean = area.canRead()
@@ -35,7 +39,7 @@ data class ModelAsArea(val model: IMutableModel) : IArea, IAreaReference {
 
     override fun resolveConcept(ref: IConceptReference): IConcept? = ILanguageRepository.resolveConcept(ref)
 
-    override fun resolveNode(ref: INodeReference): INode? = model.resolveNode(ref)?.asLegacyNode()
+    override fun resolveNode(ref: INodeReference): INode? = model.tryResolveNode(ref)?.asLegacyNode()
 
     override fun resolveOriginalNode(ref: INodeReference): INode? = resolveNode(ref)
 
@@ -63,3 +67,5 @@ data class ModelAsArea(val model: IMutableModel) : IArea, IAreaReference {
         throw UnsupportedOperationException()
     }
 }
+
+class NodeNotFoundException(nodeRef: INodeReference, model: IModel) : NoSuchElementException("Node not found: $nodeRef")

@@ -23,6 +23,7 @@ dependencies {
     implementation(project(":bulk-model-sync-mps"), excludeMPSLibraries)
     implementation(project(":mps-model-adapters"), excludeMPSLibraries)
     implementation(project(":model-client"), excludeMPSLibraries)
+    implementation(project(":datastructures"), excludeMPSLibraries)
     implementation(libs.modelix.mpsApi, excludeMPSLibraries)
     implementation(libs.kotlin.logging, excludeMPSLibraries)
     implementation(libs.kotlin.html, excludeMPSLibraries)

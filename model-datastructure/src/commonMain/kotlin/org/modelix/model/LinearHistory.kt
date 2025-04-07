@@ -24,7 +24,7 @@ class LinearHistory(private val baseVersionHash: String?) {
     private val byVersionDistanceFromGlobalRoot = mutableMapOf<CLVersion, Int>()
 
     /**
-     * Returns all versions between the [fromVersions] (inclusive) and a common version (inclusive).
+     * Returns all versions between the [fromVersions] (inclusive) and a common version (exclusive).
      * The common version may be identified by [baseVersionHash].
      * If no [baseVersionHash] is given, the common version will be the first version
      * aka the version without a [CLVersion.baseVersion].
@@ -70,7 +70,7 @@ class LinearHistory(private val baseVersionHash: String?) {
         // Sorting the subtree roots by distance from base ensures topological order.
         val comparator = compareBy(byVersionDistanceFromGlobalRoot::getValue)
             // Sorting the subtree roots by distance from base and then by id ensures "monotonic" order.
-            .thenBy(CLVersion::id)
+            .thenBy(CLVersion::getObjectHash)
         val rootsOfSubtreesToVisit = globalRoot + byVersionDistanceFromGlobalRoot.keys.filter(CLVersion::isMerge)
         val orderedRootsOfSubtree = rootsOfSubtreesToVisit.distinct().sortedWith(comparator)
 
@@ -85,7 +85,7 @@ class LinearHistory(private val baseVersionHash: String?) {
                 val childrenWithoutMerges = children.filterNot(CLVersion::isMerge)
                 // Order so that child with the lowest id is processed first
                 // and comes first in the history.
-                stack.addAll(childrenWithoutMerges.sortedByDescending(CLVersion::id))
+                stack.addAll(childrenWithoutMerges.sortedByDescending(CLVersion::getObjectHash))
             }
             historyOfSubtree
         }
@@ -102,11 +102,11 @@ class LinearHistory(private val baseVersionHash: String?) {
             while (stack.isNotEmpty()) {
                 val version = stack.last()
                 val parents = version.getParents()
-                // Version is the base version or the first version and therfore a root.
+                // Version is the base version or the first version and therefore a root.
                 if (parents.isEmpty()) {
                     stack.removeLast()
                     globalRoot.add(version)
-                    byVersionDistanceFromGlobalRoot[version] = 0
+                    byVersionDistanceFromGlobalRoot[version] = if (version.getObjectHash().toString() == baseVersionHash) 0 else 1
                 } else {
                     parents.forEach { parent ->
                         byVersionChildren.getOrPut(parent, ::mutableSetOf).add(version)

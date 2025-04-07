@@ -4,6 +4,7 @@ import org.modelix.datastructures.hamt.HamtNode
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.IObjectDeserializer
 import org.modelix.datastructures.objects.IObjectReferenceFactory
+import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.datastructures.objects.getHashString
 import org.modelix.datastructures.patricia.PatriciaNode
@@ -14,9 +15,17 @@ import org.modelix.model.persistent.SerializationUtil.escape
 import org.modelix.model.persistent.SerializationUtil.longFromHex
 import org.modelix.model.persistent.SerializationUtil.longToHex
 import org.modelix.model.persistent.SerializationUtil.unescape
+import org.modelix.streams.IStream
 
 data class CPVersion(
+    /**
+     * This ID was used in earlier versions where merges were done by rebasing.
+     * After supporting a non-linear history where the two merged versions are recorded and stay part of the history
+     * with their original ObjectHash, this ID isn't necessary anymore.
+     */
+    @Deprecated("Use the ObjectHash instead")
     val id: Long,
+
     val time: String?,
     val author: String?,
 
@@ -39,7 +48,7 @@ data class CPVersion(
 ) : IObjectData {
 
     init {
-        if ((operations == null) == (operationsHash == null)) {
+        if (operations != null && operationsHash != null) {
             throw RuntimeException("Only one of 'operations' and 'operationsHash' can be provided")
         }
         if (previousVersion != null && baseVersion != null) {
@@ -57,7 +66,7 @@ data class CPVersion(
 
     override fun serialize(): String {
         val opsPart: String = operationsHash?.getHash()?.toString()
-            ?: if (operations!!.isEmpty()) {
+            ?: if (operations.isNullOrEmpty()) {
                 ""
             } else {
                 operations.joinToString(Separators.OPS) { OperationSerializer.INSTANCE.serialize(it) }
@@ -229,5 +238,9 @@ data class CPVersion(
             previousVersion = previousVersion?.asUnloaded(),
             originalVersion = originalVersion?.asUnloaded(),
         )
+    }
+
+    override fun objectDiff(self: Object<*>, oldObject: Object<*>?): IStream.Many<Object<*>> {
+        throw UnsupportedOperationException("CLVersion.diff")
     }
 }

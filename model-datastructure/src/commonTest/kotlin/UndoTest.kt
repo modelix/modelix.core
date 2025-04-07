@@ -124,7 +124,7 @@ class UndoTest {
 
     fun printHistory(version: CLVersion, store: IAsyncObjectStore) {
         LinearHistory(null).load(version).forEach {
-            println("Version ${it.id.toString(16)} ${it.hash} ${it.author}")
+            println("Version ${it.getObjectHash()} ${it.author}")
             for (op in it.operations) {
                 println("    $op")
             }

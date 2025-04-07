@@ -4,7 +4,7 @@ import org.modelix.datastructures.IPersistentMapRootData
 import org.modelix.datastructures.autoResolveValues
 import org.modelix.datastructures.createMapInstance
 import org.modelix.datastructures.hamt.HamtNode
-import org.modelix.datastructures.model.IModelTree
+import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.datastructures.model.NodeObjectData
 import org.modelix.datastructures.model.NodeReferenceDataTypeConfig
 import org.modelix.datastructures.model.asModelTree
@@ -24,6 +24,7 @@ import org.modelix.model.TreeId
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITree
 import org.modelix.streams.IStream
+import org.modelix.streams.flatten
 import org.modelix.streams.plus
 
 class CPTree(
@@ -32,11 +33,16 @@ class CPTree(
     val trieWithNodeRefIds: ObjectReference<IPersistentMapRootData<INodeReference, ObjectReference<NodeObjectData<INodeReference>>>>?,
     val usesRoleIds: Boolean,
 ) : IObjectData {
+
+    init {
+        require(int64Hamt != null || trieWithNodeRefIds != null) { "No tree data provided" }
+    }
+
     fun getTreeReference() = checkNotNull(trieWithNodeRefIds ?: int64Hamt) { "Not tree hash provided" }
 
-    fun getLegacyModelTree(): IModelTree<Long> {
+    fun getLegacyModelTree(): IGenericModelTree<Long> {
         if (trieWithNodeRefIds != null) {
-            trieWithNodeRefIds.resolveNow().createMapInstance().autoResolveValues().asModelTree(id).withIdTranslation()
+            return trieWithNodeRefIds.resolveNow().createMapInstance().autoResolveValues().asModelTree(id).withIdTranslation()
         }
         if (int64Hamt != null) {
             return int64Hamt.resolveNow().createMapInstance().autoResolveValues().asModelTree(id)
@@ -44,7 +50,7 @@ class CPTree(
         throw IllegalStateException("Doesn't contain any tree data")
     }
 
-    fun getModelTree(): IModelTree<INodeReference> {
+    fun getModelTree(): IGenericModelTree<INodeReference> {
         if (trieWithNodeRefIds != null) {
             return trieWithNodeRefIds.resolveNow().createMapInstance().autoResolveValues().asModelTree(id)
         }
@@ -73,7 +79,9 @@ class CPTree(
         val oldData = oldObject?.data
         return when (oldData) {
             is CPTree -> {
-                IStream.of(self) + getTreeReference().diff(oldData.int64Hamt)
+                IStream.of(self) + getTreeReference().resolve().zipWith(oldData.getTreeReference().resolve()) { newTree, oldTree ->
+                    newTree.objectDiff(oldTree)
+                }.flatten()
             }
             else -> self.getDescendantsAndSelf()
         }
@@ -99,7 +107,7 @@ class CPTree(
             val config = PatriciaTrieConfig(
                 graph = graph,
                 keyConfig = nodeIdType,
-                valueConfig = ObjectReferenceDataTypeConfiguration(graph, NodeObjectData.Deserializer(nodeIdType, treeId)),
+                valueConfig = ObjectReferenceDataTypeConfiguration(graph, NodeObjectData.Deserializer(graph, nodeIdType, treeId)),
             )
             return PatriciaNode.Deserializer(config)
         }
@@ -111,7 +119,7 @@ class CPTree(
                 keyConfig = nodeIdType,
                 valueConfig = ObjectReferenceDataTypeConfiguration(
                     graph = graph,
-                    deserializer = NodeObjectData.Deserializer(nodeIdType, treeId),
+                    deserializer = NodeObjectData.Deserializer(graph, nodeIdType, treeId),
                 ),
             ).deserializer
         }

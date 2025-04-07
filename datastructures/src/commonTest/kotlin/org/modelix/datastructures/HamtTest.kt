@@ -5,6 +5,7 @@ import org.modelix.datastructures.hamt.HamtNode
 import org.modelix.datastructures.hamt.HamtTree
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.StringDataTypeConfiguration
+import org.modelix.streams.getBlocking
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -32,7 +33,7 @@ class HamtTest {
                     if (expected.isNotEmpty()) {
                         val key = expected.keys.random(rand)
                         // println("remove $key")
-                        tree = tree.remove(key).getSynchronous()
+                        tree = tree.remove(key).getBlocking(tree)
                         expected.remove(key)
                     }
                 }
@@ -40,13 +41,13 @@ class HamtTest {
                     val key = "k" + rand.nextInt(keyRange).toString()
                     val value = "v" + rand.nextInt(valueRange).toString()
                     // println("insert $key -> $value")
-                    tree = tree.put(key, value).getSynchronous()
+                    tree = tree.put(key, value).getBlocking(tree)
                     expected[key] = value
                 }
             }
 
             for (entry in expected.entries) {
-                assertEquals(entry.value, tree.get(entry.key).getSynchronous(), "for key ${entry.key}")
+                assertEquals(entry.value, tree.get(entry.key).getBlocking(tree), "for key ${entry.key}")
             }
         }
     }

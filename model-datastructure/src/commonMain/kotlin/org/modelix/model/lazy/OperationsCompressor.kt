@@ -1,6 +1,7 @@
 package org.modelix.model.lazy
 
 import org.modelix.datastructures.objects.Object
+import org.modelix.model.api.INodeReference
 import org.modelix.model.operations.AddNewChildOp
 import org.modelix.model.operations.AddNewChildSubtreeOp
 import org.modelix.model.operations.AddNewChildrenOp
@@ -15,6 +16,7 @@ import org.modelix.model.operations.SetPropertyOp
 import org.modelix.model.operations.SetReferenceOp
 import org.modelix.model.operations.UndoOp
 import org.modelix.model.persistent.CPTree
+import org.modelix.streams.getBlocking
 
 class OperationsCompressor(val resultTree: Object<CPTree>) {
 
@@ -29,7 +31,7 @@ class OperationsCompressor(val resultTree: Object<CPTree>) {
         if (ops.size <= CLVersion.INLINED_OPS_LIMIT) return ops
 
         val compressedOps: MutableList<IOperation> = ArrayList()
-        val createdNodes: MutableSet<Long> = HashSet()
+        val createdNodes: MutableSet<INodeReference> = HashSet()
 
         for (op in ops) {
             when (op) {
@@ -54,7 +56,9 @@ class OperationsCompressor(val resultTree: Object<CPTree>) {
         }
 
         for (id in createdNodes) {
-            if (!resultTree.data.getLegacyModelTree().containsNode(id).getSynchronous()) throw RuntimeException("Tree expected to contain node $id")
+            if (!resultTree.data.getModelTree().containsNode(id).getBlocking(resultTree.graph)) {
+                throw RuntimeException("Tree expected to contain node $id")
+            }
         }
 
         // if we save less than 10 operations then it's probably not worth doing the replacement

@@ -11,6 +11,7 @@ import org.modelix.model.lazy.CLTree
 import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.persistent.getTreeObject
+import org.modelix.streams.getBlocking
 import org.modelix.streams.plus
 import kotlin.random.Random
 import kotlin.test.Test
@@ -86,9 +87,9 @@ class ObjectDiffTest {
             newTree = changeGenerator2.applyRandomChange(newTree, null)
         }
 
-        val diff = newTree.getTreeObject().objectDiff(initialTree.getTreeObject()).toList().getSynchronous()
-        val initialObjects = initialTree.getTreeObject().getDescendantsAndSelf().toList().getSynchronous()
-        val newObjects = newTree.getTreeObject().getDescendantsAndSelf().toList().getSynchronous()
+        val diff = newTree.getTreeObject().objectDiff(initialTree.getTreeObject()).toList().getBlocking(store1)
+        val initialObjects = initialTree.getTreeObject().getDescendantsAndSelf().toList().getBlocking(store1)
+        val newObjects = newTree.getTreeObject().getDescendantsAndSelf().toList().getBlocking(store1)
         val unnecessaryObjects = (diff.associateBy { it.getHashString() } - newObjects.map { it.getHashString() }.toSet()).values.toSet()
 
         assertEquals(emptySet(), unnecessaryObjects)

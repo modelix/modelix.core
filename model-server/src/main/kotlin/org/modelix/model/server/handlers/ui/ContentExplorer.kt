@@ -2,7 +2,6 @@ package org.modelix.model.server.handlers.ui
 
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
-import io.ktor.server.application.call
 import io.ktor.server.html.respondHtml
 import io.ktor.server.html.respondHtmlTemplate
 import io.ktor.server.request.receive
@@ -24,6 +23,7 @@ import kotlinx.html.div
 import kotlinx.html.getForm
 import kotlinx.html.h1
 import kotlinx.html.h3
+import kotlinx.html.i
 import kotlinx.html.id
 import kotlinx.html.label
 import kotlinx.html.li
@@ -45,13 +45,16 @@ import kotlinx.html.ul
 import kotlinx.html.unsafe
 import org.modelix.authorization.checkPermission
 import org.modelix.authorization.requiresLogin
+import org.modelix.kotlin.utils.urlDecode
+import org.modelix.kotlin.utils.urlEncode
 import org.modelix.model.api.BuiltinLanguages
-import org.modelix.model.api.INodeResolutionScope
-import org.modelix.model.api.ITree
-import org.modelix.model.api.PNodeAdapter
-import org.modelix.model.api.TreePointer
+import org.modelix.model.api.INodeReference
+import org.modelix.model.api.IReadableNode
+import org.modelix.model.api.NodeReference
+import org.modelix.model.api.ancestors
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.mutable.asModelSingleThreaded
 import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.model.server.handlers.IRepositoriesManager
 import org.modelix.model.server.handlers.NodeNotFoundException
@@ -110,7 +113,7 @@ class ContentExplorer(private val repoManager: IRepositoriesManager) {
                     // IMPORTANT Do not let `expandTo` be an arbitrary string to avoid code injection.
                     // The value of `expandTo` is expanded into JavaScript.
                     val expandTo = call.request.queryParameters["expandTo"]?.let {
-                        it.toLongOrNull() ?: return@get call.respondText("Invalid expandTo value. Provide a node id.", status = HttpStatusCode.BadRequest)
+                        NodeReference(it)
                     }
 
                     val version = repoManager.getTransactionManager().runReadIO {
@@ -120,10 +123,21 @@ class ContentExplorer(private val repoManager: IRepositoriesManager) {
                         call.respondText("version $versionHash not found", status = HttpStatusCode.NotFound)
                         return@get
                     }
-                    val tree = version.getTree()
-                    val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
+                    val tree = version.getModelTree()
+                    val model = tree.asModelSingleThreaded()
+                    val rootNode = model.getRootNode()
 
-                    val expandedNodes = expandTo?.let { nodeId -> getAncestorsAndSelf(nodeId, tree) }.orEmpty()
+                    val expandedNodes = expandTo?.let {
+                        try {
+                            model.tryResolveNode(it)
+                        } catch (ex: IllegalArgumentException) {
+                            return@get call.respondText("Invalid expandTo value. Provide a node id.", status = HttpStatusCode.BadRequest)
+                        } ?: throw NodeNotFoundException("Node not found: $it")
+                    }
+                        ?.ancestors(true)
+                        .orEmpty()
+                        .map { it.getNodeReference() }
+                        .toSet()
 
                     call.respondHtmlTemplate(PageWithMenuBar("repos/", "../../../../..")) {
                         headContent {
@@ -168,12 +182,12 @@ class ContentExplorer(private val repoManager: IRepositoriesManager) {
                         call.respondText("version $versionHash not found", status = HttpStatusCode.NotFound)
                         return@post
                     }
-                    val tree = version.getTree()
-                    val rootNode = PNodeAdapter(ITree.ROOT_ID, TreePointer(tree))
+                    val tree = version.getModelTree()
+                    val rootNode = tree.asModelSingleThreaded().getRootNode()
 
-                    var expandedNodeIds = expandedNodes.expandedNodeIds
+                    var expandedNodeIds: List<INodeReference> = expandedNodes.expandedNodeIds.mapNotNull { it.urlDecode() }.map { NodeReference(it) }
                     if (expandedNodes.expandAll) {
-                        expandedNodeIds = expandedNodeIds + collectExpandableChildNodes(rootNode, expandedNodes.expandedNodeIds.toSet())
+                        expandedNodeIds = expandedNodeIds + collectExpandableChildNodes(rootNode, expandedNodes.expandedNodeIds.map { NodeReference(it) }.toSet())
                     }
 
                     call.respondText(
@@ -185,7 +199,7 @@ class ContentExplorer(private val repoManager: IRepositoriesManager) {
                     )
                 }
                 get("/content/repositories/{repository}/versions/{versionHash}/{nodeId}") {
-                    val id = call.parameters["nodeId"]?.toLongOrNull()
+                    val id = call.parameters["nodeId"]?.urlDecode()?.let { NodeReference(it) }
                         ?: return@get call.respondText("node id not found", status = HttpStatusCode.NotFound)
 
                     val versionHash = call.parameters["versionHash"]
@@ -203,7 +217,7 @@ class ContentExplorer(private val repoManager: IRepositoriesManager) {
                         call.respondText("version $versionHash not found", status = HttpStatusCode.NotFound)
                         return@get
                     }
-                    val node = PNodeAdapter(id, TreePointer(version.getTree())).takeIf { it.isValid }
+                    val node = version.getModelTree().asModelSingleThreaded().tryResolveNode(id)
 
                     if (node != null) {
                         call.respondHtml { body { nodeInspector(node) } }
@@ -215,40 +229,29 @@ class ContentExplorer(private val repoManager: IRepositoriesManager) {
         }
     }
 
-    private fun getAncestorsAndSelf(expandTo: Long, tree: ITree): Set<String> {
-        val seq = generateSequence(expandTo) { id ->
-            try {
-                tree.getParent(id).takeIf { it != 0L } // getParent returns 0L for root node
-            } catch (e: org.modelix.datastructures.model.NodeNotFoundException) {
-                throw NodeNotFoundException(id, e)
-            }
-        }
-        return seq.map { it.toString() }.toSet()
-    }
-
     // The method traverses the expanded tree based on the alreadyExpandedNodeIds and
     // collects the expandable (not empty) nodes which are not expanded yet
-    private fun collectExpandableChildNodes(under: PNodeAdapter, alreadyExpandedNodeIds: Set<String>): Set<String> {
-        if (alreadyExpandedNodeIds.contains(under.nodeId.toString())) {
-            val expandableIds = mutableSetOf<String>()
-            for (child in under.allChildren) {
-                expandableIds.addAll(collectExpandableChildNodes(child as PNodeAdapter, alreadyExpandedNodeIds))
+    private fun collectExpandableChildNodes(under: IReadableNode, alreadyExpandedNodeIds: Set<INodeReference>): Set<INodeReference> {
+        if (alreadyExpandedNodeIds.contains(under.getNodeReference())) {
+            val expandableIds = mutableSetOf<INodeReference>()
+            for (child in under.getAllChildren()) {
+                expandableIds.addAll(collectExpandableChildNodes(child, alreadyExpandedNodeIds))
             }
             return expandableIds
         }
 
-        if (under.allChildren.toList().isNotEmpty()) {
+        if (under.getAllChildren().isNotEmpty()) {
             // Node is collected if it is expandable
-            return setOf(under.nodeId.toString())
+            return setOf(under.getNodeReference())
         }
         return emptySet()
     }
 
     private fun FlowContent.contentPageBody(
-        rootNode: PNodeAdapter,
+        rootNode: IReadableNode,
         versionHash: String,
-        expandedNodeIds: Set<String>,
-        expandTo: Long?,
+        expandedNodeIds: Set<INodeReference>,
+        expandTo: INodeReference?,
     ) {
         h1 { +"Model Server Content" }
         small {
@@ -291,45 +294,37 @@ class ContentExplorer(private val repoManager: IRepositoriesManager) {
         }
     }
 
-    private fun UL.nodeItem(node: PNodeAdapter, expandedNodeIds: Set<String>, expandTo: Long? = null) {
+    private fun UL.nodeItem(node: IReadableNode, expandedNodeIds: Set<INodeReference>, expandTo: INodeReference? = null) {
         li("nodeItem") {
-            id = node.nodeId.toString()
-            val expanded = expandedNodeIds.contains(node.nodeId.toString())
-            if (node.allChildren.toList().isNotEmpty()) {
+            id = node.getNodeReference().serialize()
+            val expanded = expandedNodeIds.contains(node.getNodeReference())
+            if (node.getAllChildren().toList().isNotEmpty()) {
                 div(if (expanded) "expander expander-expanded" else "expander") { unsafe { +"&#x25B6;" } }
             }
             div("nameField") {
-                if (expandTo == node.nodeId) {
+                if (expandTo == node.getNodeReference()) {
                     classes += "expandedToNameField"
                 }
-                attributes["data-nodeid"] = node.nodeId.toString()
-                b {
-                    val namePropertyUID = BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.getUID()
-                    val namedConceptName = node.getPropertyValue(namePropertyUID)
-                    if (namedConceptName != null) {
-                        +namedConceptName
-                    } else if (node.getPropertyRoles().contains("name")) {
-                        +"${node.getPropertyValue("name")}"
-                    } else {
-                        +"Unnamed Node"
-                    }
+                attributes["data-nodeid"] = node.getNodeReference().serialize().urlEncode()
+                val namePropertyUID = BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference()
+                val nodeName = node.getPropertyValue(namePropertyUID)
+                if (nodeName != null) {
+                    b { +nodeName }
+                } else {
+                    i { +"<no name>" }
                 }
-                small { +" | ${node.nodeId} | $node" }
+                small { +" | ${node.getNodeReference().serialize()}" }
                 br { }
-                val conceptRef = node.getConceptReference()
                 small {
-                    if (conceptRef != null) {
-                        +conceptRef.getUID()
-                    } else {
-                        +"No concept reference"
-                    }
+                    +"Concept: "
+                    +node.getConceptReference().getUID()
                 }
             }
             div(if (expanded) "nested active" else "nested") {
                 if (expanded) {
                     ul("nodeTree") {
-                        for (child in node.allChildren) {
-                            nodeItem(child as PNodeAdapter, expandedNodeIds, expandTo)
+                        for (child in node.getAllChildren()) {
+                            nodeItem(child, expandedNodeIds, expandTo)
                         }
                     }
                 }
@@ -337,16 +332,16 @@ class ContentExplorer(private val repoManager: IRepositoriesManager) {
         }
     }
 
-    private fun BODY.nodeInspector(node: PNodeAdapter) {
+    private fun BODY.nodeInspector(node: IReadableNode) {
         div {
             h3 { +"Node Details" }
         }
-        val nodeEmpty = node.getReferenceRoles().isEmpty() && node.getPropertyRoles().isEmpty()
+        val nodeEmpty = node.getAllReferenceTargetRefs().isEmpty() && node.getAllProperties().isEmpty()
         if (nodeEmpty) {
             div { +"No roles." }
             return
         }
-        if (node.getPropertyRoles().isEmpty()) {
+        if (node.getAllProperties().isEmpty()) {
             div { +"No properties." }
         } else {
             table {
@@ -357,43 +352,36 @@ class ContentExplorer(private val repoManager: IRepositoriesManager) {
                     }
                 }
                 tbody {
-                    for (propertyRole in node.getPropertyRoles()) {
+                    for (property in node.getAllProperties()) {
                         tr {
-                            td { +propertyRole }
-                            td { +"${node.getPropertyValue(propertyRole)}" }
+                            td { +property.first.getNameOrId() }
+                            td { +property.second }
                         }
                     }
                 }
             }
         }
-        if (node.getReferenceRoles().isEmpty()) {
+        if (node.getAllReferenceTargetRefs().isEmpty()) {
             div { +"No references." }
         } else {
             table {
                 thead {
                     tr {
                         th { +"ReferenceRole" }
-                        th { +"Target NodeId" }
                         th { +"Target Reference" }
                     }
                 }
                 tbody {
-                    INodeResolutionScope.runWithAdditionalScope(node.getArea()) {
-                        for (referenceRole in node.getReferenceRoles()) {
-                            tr {
-                                td { +referenceRole }
-                                td {
-                                    val nodeId = (node.getReferenceTarget(referenceRole) as? PNodeAdapter)?.nodeId
-                                    if (nodeId != null) {
-                                        a("?expandTo=$nodeId") {
-                                            +"$nodeId"
-                                        }
-                                    } else {
-                                        +"null"
+                    for ((referenceRole, targetId) in node.getAllReferenceTargetRefs()) {
+                        tr {
+                            td { +referenceRole.getNameOrId() }
+                            td {
+                                if (node.getModel().tryResolveNode(targetId) == null) {
+                                    +targetId.serialize()
+                                } else {
+                                    a("?expandTo=${targetId.serialize().urlEncode()}") {
+                                        +targetId.serialize()
                                     }
-                                }
-                                td {
-                                    +"${node.getReferenceTargetRef(referenceRole)?.serialize()}"
                                 }
                             }
                         }

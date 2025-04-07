@@ -22,7 +22,6 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.html.br
 import kotlinx.html.div
 import kotlinx.html.stream.createHTML
-import kotlinx.html.style
 import kotlinx.html.table
 import kotlinx.html.td
 import kotlinx.html.tr
@@ -41,11 +40,18 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
     companion object {
         const val ID = "ModelixSyncStatus"
         val ICON = IconManager.getInstance().getIcon("org/modelix/mps/sync3/modelix16.svg", this::class.java)
+        private val LOG = mu.KotlinLogging.logger { }
     }
 
     private val component: JLabel = JLabel("", ICON, JLabel.LEFT)
     private val timer = EdtExecutorService.getScheduledExecutorInstance()
-        .scheduleWithFixedDelay({ updateComponent() }, 1000, 500, TimeUnit.MILLISECONDS)
+        .scheduleWithFixedDelay({
+            try {
+                updateComponent()
+            } catch (ex: Throwable) {
+                LOG.error(ex) { "Widget update failed" }
+            }
+        }, 1000, 500, TimeUnit.MILLISECONDS)
     private var disposed = false
     private var highlighted = false
 
@@ -129,15 +135,15 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
             for (connection in service.getServerConnections()) {
                 div {
                     div {
-                        style = "font-weight: bold; text-decoration: underline;"
+                        styleX = "font-weight: bold; text-decoration: underline;"
                         +"Connection"
                     }
                     div {
-                        style = "padding-left: 20px"
+                        styleX = "padding-left: 20px"
                         table {
                             tr {
                                 td {
-                                    style = "font-weight: bold"
+                                    styleX = "font-weight: bold"
                                     +"URL: "
                                 }
                                 td {
@@ -146,7 +152,7 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
                             }
                             tr {
                                 td {
-                                    style = "font-weight: bold"
+                                    styleX = "font-weight: bold"
                                     +"Status: "
                                 }
                                 td {
@@ -156,7 +162,7 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
                             connection.getPendingAuthRequest()?.let { url ->
                                 tr {
                                     td {
-                                        style = "font-weight: bold"
+                                        styleX = "font-weight: bold"
                                         +"Authorization URL: "
                                     }
                                     td {
@@ -167,15 +173,15 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
                         }
                         for (binding in connection.getBindings()) {
                             div {
-                                style = "font-weight: bold; text-decoration: underline;"
+                                styleX = "font-weight: bold; text-decoration: underline;"
                                 +"Project Binding"
                             }
                             div {
-                                style = "padding-left: 20px"
+                                styleX = "padding-left: 20px"
                                 table {
                                     tr {
                                         td {
-                                            style = "font-weight: bold"
+                                            styleX = "font-weight: bold"
                                             +"Repository:"
                                         }
                                         td {
@@ -184,7 +190,7 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
                                     }
                                     tr {
                                         td {
-                                            style = "font-weight: bold"
+                                            styleX = "font-weight: bold"
                                             +"Branch:"
                                         }
                                         td {
@@ -193,7 +199,7 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
                                     }
                                     tr {
                                         td {
-                                            style = "font-weight: bold"
+                                            styleX = "font-weight: bold"
                                             +"Enabled:"
                                         }
                                         td {
@@ -202,7 +208,7 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
                                     }
                                     tr {
                                         td {
-                                            style = "font-weight: bold"
+                                            styleX = "font-weight: bold"
                                             +"Version:"
                                         }
                                         td {
@@ -251,3 +257,12 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
         return result ?: "Not Synchronized"
     }
 }
+
+/**
+ * Workaround for fixing
+ *
+ * `java.lang.NoSuchMethodError: 'void kotlinx.html.Gen_attr_traitsKt.setStyle(kotlinx.html.CommonAttributeGroupFacade, java.lang.String)'`
+ */
+var kotlinx.html.HTMLTag.styleX: String
+    get() = attributes.get("style") ?: ""
+    set(value) = attributes.set("style", value)

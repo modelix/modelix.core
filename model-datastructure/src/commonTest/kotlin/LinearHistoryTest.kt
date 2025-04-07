@@ -43,7 +43,7 @@ class LinearHistoryTest {
         val v20 = version(20, null)
         val v21 = version(21, null)
 
-        assertHistory(v20, v21, listOf(v20, v21))
+        assertHistory(v20, v21, listOf(v21, v20))
     }
 
     @Test
@@ -52,7 +52,7 @@ class LinearHistoryTest {
         val v20 = version(20, v10)
         val v21 = version(21, v10)
 
-        assertHistory(v20, v21, listOf(v20, v21))
+        assertHistory(v20, v21, listOf(v21, v20))
     }
 
     @Test
@@ -69,6 +69,18 @@ class LinearHistoryTest {
 
     @Test
     fun correctHistoryIfIdsAreNotAscending() {
+        /**
+         *           v1
+         *          /  \
+         *        v2    v3
+         *       /  \  /
+         *     v9   v4
+         *     |    |
+         *    v8    |
+         *     \   /
+         *       x
+         */
+
         val v1 = version(1, null)
         val v2 = version(2, v1)
         val v3 = version(3, v1)
@@ -76,7 +88,7 @@ class LinearHistoryTest {
         val v4 = merge(4, v2, v3)
         val v8 = version(8, v9)
 
-        val expected = listOf(v2, v9, v8, v3)
+        val expected = listOf(v3, v2, v9, v8)
         assertHistory(v4, v8, expected)
     }
 
@@ -132,14 +144,11 @@ class LinearHistoryTest {
     }
 
     private fun version(id: Long, base: CLVersion?): CLVersion {
-        return CLVersion.createRegularVersion(
-            id,
-            null,
-            null,
-            initialTree,
-            base,
-            emptyArray(),
-        )
+        return CLVersion.builder()
+            .id(id)
+            .tree(initialTree)
+            .baseVersion(base)
+            .build()
     }
 
     private fun merge(id: Long, v1: CLVersion, v2: CLVersion): CLVersion {

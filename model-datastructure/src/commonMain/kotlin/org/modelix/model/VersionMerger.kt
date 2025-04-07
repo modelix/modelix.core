@@ -1,5 +1,6 @@
 package org.modelix.model
 
+import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.CLVersion
@@ -24,7 +25,7 @@ class VersionMerger(private val idGenerator: IIdGenerator) {
         require(lastMergedVersion.graph == newVersion.graph) {
             "Versions are part of different object graphs: $lastMergedVersion, $newVersion"
         }
-        if (newVersion.hash == lastMergedVersion.hash) {
+        if (newVersion.getObjectHash() == lastMergedVersion.getObjectHash()) {
             return lastMergedVersion
         }
         checkRepositoryIds(lastMergedVersion, newVersion)
@@ -40,31 +41,31 @@ class VersionMerger(private val idGenerator: IIdGenerator) {
         }
     }
 
-    private fun collectLatestNonMerges(version: CLVersion?, visited: MutableSet<String>, result: MutableSet<Long>) {
+    private fun collectLatestNonMerges(version: CLVersion?, visited: MutableSet<ObjectHash>, result: MutableSet<ObjectHash>) {
         if (version == null) return
-        if (!visited.add(version.getContentHash())) return
+        if (!visited.add(version.getObjectHash())) return
         if (version.isMerge()) {
             collectLatestNonMerges(version.getMergedVersion1(), visited, result)
             collectLatestNonMerges(version.getMergedVersion2(), visited, result)
         } else {
-            result.add(version.id)
+            result.add(version.getObjectHash())
         }
     }
 
     protected fun mergeHistory(leftVersion: CLVersion, rightVersion: CLVersion): CLVersion {
-        if (leftVersion.hash == rightVersion.hash) return leftVersion
+        if (leftVersion.getObjectHash() == rightVersion.getObjectHash()) return leftVersion
         val commonBase = requireNotNull(commonBaseVersion(leftVersion, rightVersion)) {
             "Cannot merge versions without a common base: $leftVersion, $rightVersion"
         }
         if (commonBase.getContentHash() == leftVersion.getContentHash()) return rightVersion
         if (commonBase.getContentHash() == rightVersion.getContentHash()) return leftVersion
 
-        val leftNonMerges = HashSet<Long>().also { collectLatestNonMerges(leftVersion, HashSet(), it) }
-        val rightNonMerges = HashSet<Long>().also { collectLatestNonMerges(rightVersion, HashSet(), it) }
+        val leftNonMerges = HashSet<ObjectHash>().also { collectLatestNonMerges(leftVersion, HashSet(), it) }
+        val rightNonMerges = HashSet<ObjectHash>().also { collectLatestNonMerges(rightVersion, HashSet(), it) }
         if (leftNonMerges == rightNonMerges) {
             // If there is no actual change on both sides, but they just did the same merge, we have to pick one
             // of them, otherwise both sides will continue creating merges forever.
-            return if (leftVersion.id < rightVersion.id) leftVersion else rightVersion
+            return if (leftVersion.getObjectHash() < rightVersion.getObjectHash()) leftVersion else rightVersion
         }
 
         val versionsToApply = filterUndo(LinearHistory(commonBase.getContentHash()).load(leftVersion, rightVersion))
@@ -104,7 +105,7 @@ class VersionMerger(private val idGenerator: IIdGenerator) {
                 .build()
         }
         if (mergedVersion == null) {
-            throw RuntimeException("Failed to merge ${leftVersion.hash} and ${rightVersion.hash}")
+            throw RuntimeException("Failed to merge ${leftVersion.getObjectHash()} and ${rightVersion.getObjectHash()}")
         }
         return mergedVersion
     }
@@ -131,7 +132,7 @@ class VersionMerger(private val idGenerator: IIdGenerator) {
         val operations = version.operations.toList()
         if (operations.isEmpty()) return listOf()
         val baseVersion = version.baseVersion
-            ?: throw RuntimeException("Version ${version.hash} has operations but no baseVersion")
+            ?: throw RuntimeException("Version ${version.getObjectHash()} has operations but no baseVersion")
         val tree = baseVersion.getModelTree()
         val mutableTree = tree.asMutableSingleThreaded()
         return mutableTree.runWrite {

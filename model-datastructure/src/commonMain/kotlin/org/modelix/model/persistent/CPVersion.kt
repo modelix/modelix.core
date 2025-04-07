@@ -18,7 +18,14 @@ import org.modelix.model.persistent.SerializationUtil.unescape
 import org.modelix.streams.IStream
 
 data class CPVersion(
+    /**
+     * This ID was used in earlier versions where merges were done by rebasing.
+     * After supporting a non-linear history where the two merged versions are recorded and stay part of the history
+     * with their original ObjectHash, this ID isn't necessary anymore.
+     */
+    @Deprecated("Use the ObjectHash instead")
     val id: Long,
+
     val time: String?,
     val author: String?,
 

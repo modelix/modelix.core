@@ -92,7 +92,7 @@ class TreeSerializationTest {
         assertTree(tree)
         assertEquals(expectedVersionHash, versionHash) // ensures that JVM and JS targets produce the same serialized data
 
-        val deserializedVersion = CLVersion.loadFromHash(version.hash, store)
+        val deserializedVersion = CLVersion.loadFromHash(version.getObjectHash().toString(), store)
         assertTree(deserializedVersion.tree)
     }
 

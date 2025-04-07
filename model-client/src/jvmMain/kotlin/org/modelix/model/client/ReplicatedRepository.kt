@@ -124,9 +124,9 @@ actual open class ReplicatedRepository actual constructor(
                             LOG.debug {
                                 String.format(
                                     "Merged local %s with remote %s -> %s",
-                                    newLocalVersion.hash,
-                                    remoteBase!!.hash,
-                                    mergedVersion.hash,
+                                    newLocalVersion.getObjectHash().toString(),
+                                    remoteBase!!.getObjectHash().toString(),
+                                    mergedVersion.getObjectHash().toString(),
                                 )
                             }
                         } catch (ex: Exception) {
@@ -163,7 +163,7 @@ actual open class ReplicatedRepository actual constructor(
 
     protected fun writeRemoteVersion(newVersion: CLVersion) {
         synchronized(mergeLock) {
-            if (remoteVersion!!.hash != newVersion.hash) {
+            if (remoteVersion!!.getObjectHash() != newVersion.getObjectHash()) {
                 remoteVersion = newVersion
                 client.asyncStore.put(branchReference.getKey(), newVersion.getContentHash())
             }
@@ -271,9 +271,9 @@ actual open class ReplicatedRepository actual constructor(
                                 LOG.debug(
                                     String.format(
                                         "Merged remote %s with local %s -> %s",
-                                        newRemoteVersion.hash,
-                                        localBase.value!!.hash,
-                                        mergedVersion.hash,
+                                        newRemoteVersion.getObjectHash().toString(),
+                                        localBase.value!!.getObjectHash().toString(),
+                                        mergedVersion.getObjectHash().toString(),
                                     ),
                                 )
                             }

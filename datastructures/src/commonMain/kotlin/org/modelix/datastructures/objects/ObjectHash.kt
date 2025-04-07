@@ -5,13 +5,17 @@ import org.modelix.kotlin.utils.base64UrlEncoded
 import kotlin.jvm.JvmInline
 
 @JvmInline
-value class ObjectHash(private val hash: String) {
+value class ObjectHash(private val hash: String) : Comparable<ObjectHash> {
     init {
         require(isValidHashString(hash)) { "Not an object hash: $hash" }
     }
 
     override fun toString(): String {
         return hash
+    }
+
+    override fun compareTo(other: ObjectHash): Int {
+        return hash.compareTo(other.hash)
     }
 
     companion object {

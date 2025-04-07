@@ -155,7 +155,6 @@ class HistoryHandler(private val repositoriesManager: IRepositoriesManager) {
                       padding-left: 15px;
                     }
                     .hash {
-                      color: #888;
                       white-space: nowrap;
                     }
                     .BtnGroup {
@@ -242,8 +241,6 @@ class HistoryHandler(private val repositoriesManager: IRepositoriesManager) {
             thead {
                 tr {
                     th {
-                        +"ID"
-                        br { }
                         +"Hash"
                     }
                     th { +"Author" }
@@ -288,8 +285,6 @@ class HistoryHandler(private val repositoriesManager: IRepositoriesManager) {
     private fun TBODY.createTableRow(repositoryId: RepositoryId, version: CLVersion, nextVersion: CLVersion?, latestVersion: CLVersion) {
         tr {
             td {
-                +version.id.toString(16)
-                br { }
                 span(classes = "hash") { +version.getContentHash() }
 
                 if (nextVersion != null && version.baseVersion?.getContentHash() != nextVersion.getContentHash()) {

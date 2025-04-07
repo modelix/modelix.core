@@ -1,5 +1,6 @@
 package org.modelix.model.lazy
 
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.modelix.datastructures.model.IModelTree
 import org.modelix.datastructures.objects.IObjectGraph
@@ -30,10 +31,13 @@ class VersionBuilder {
     private var numberOfOperations: Int = 0
     private var graph: IObjectGraph? = null
 
+    @Deprecated("Not mandatory anymore. Usages of the ID should be replaced by the ObjectHash.")
     fun id(value: Long) = also { this.id = value }
+
     fun author(value: String?) = also { this.author = value }
     fun time(value: String?) = also { this.time = value }
     fun time(value: Instant) = time(value.epochSeconds.toString())
+    fun currentTime() = time(Clock.System.now())
     fun tree(type: TreeType, value: Object<CPTree>) = also {
         this.treeRefs[type] = value
         if (it.graph == null) it.graph = value.graph
@@ -44,12 +48,13 @@ class VersionBuilder {
     fun graph(value: IObjectGraph?) = also { it.graph = value }
 
     fun regularUpdate(baseVersion: IVersion) = regularUpdate((baseVersion as CLVersion).obj.ref)
+    fun baseVersion(baseVersion: IVersion?) = regularUpdate((baseVersion as CLVersion?)?.obj?.ref)
 
-    fun regularUpdate(baseVersion: ObjectReference<CPVersion>) = also {
+    fun regularUpdate(baseVersion: ObjectReference<CPVersion>?) = also {
         it.baseVersion = baseVersion
         it.mergedVersion1 = null
         it.mergedVersion2 = null
-        if (it.graph == null) it.graph = baseVersion.graph
+        if (baseVersion != null && it.graph == null) it.graph = baseVersion.graph
     }
 
     fun autoMerge(commonBase: ObjectReference<CPVersion>, version1: ObjectReference<CPVersion>, version2: ObjectReference<CPVersion>) = also {
@@ -80,7 +85,7 @@ class VersionBuilder {
     }
 
     fun buildData() = CPVersion(
-        id = checkNotNull(id) { "id not specified" },
+        id = id ?: 0,
         time = time,
         author = author,
         treeRefs = treeRefs.also {

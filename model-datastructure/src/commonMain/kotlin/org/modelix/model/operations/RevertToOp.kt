@@ -48,7 +48,7 @@ class RevertToOp(val latestKnownVersionRef: ObjectReference<CPVersion>, val vers
         val result = mutableListOf<IOperation>()
         val commonBase = VersionMerger.commonBaseVersion(latestKnownVersion, versionToRevertTo)
         result += getPath(latestKnownVersion, commonBase).map { UndoOp(it.resolvedData.ref) }
-        if (commonBase == null || commonBase.hash != versionToRevertTo.hash) {
+        if (commonBase == null || commonBase.getObjectHash() != versionToRevertTo.getObjectHash()) {
             // redo operations on a branch
             result += getPath(versionToRevertTo, commonBase).reversed().flatMap { it.operations }
         }
@@ -58,7 +58,7 @@ class RevertToOp(val latestKnownVersionRef: ObjectReference<CPVersion>, val vers
     private fun getPath(newerVersion: CLVersion, olderVersionExclusive: CLVersion?): List<CLVersion> {
         val result = mutableListOf<CLVersion>()
         var v = newerVersion
-        while (olderVersionExclusive == null || v.hash != olderVersionExclusive.hash) {
+        while (olderVersionExclusive == null || v.getObjectHash() != olderVersionExclusive.getObjectHash()) {
             result += v
             v = v.baseVersion ?: break
         }

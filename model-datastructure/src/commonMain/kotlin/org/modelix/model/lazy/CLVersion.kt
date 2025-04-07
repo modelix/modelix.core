@@ -61,6 +61,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
     val author: String?
         get() = data.author
 
+    @Deprecated("Use the ObjectHash instead. New versions of Modelix may set this to 0 and not generate actual IDs.")
     val id: Long
         get() = data.id
 
@@ -79,7 +80,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
         return null
     }
 
-    @Deprecated("Use getContentHash()", ReplaceWith("getContentHash()"))
+    @Deprecated("Use getObjectHash()", ReplaceWith("getObjectHash()"))
     val hash: String
         get() = getContentHash()
 

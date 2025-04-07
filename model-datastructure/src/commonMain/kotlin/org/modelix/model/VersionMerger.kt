@@ -102,7 +102,7 @@ class VersionMerger(private val idGenerator: IIdGenerator) {
                 .tree(mutableTree.getTransaction().tree)
                 .autoMerge(commonBase.obj.ref, leftVersion.obj.ref, rightVersion.obj.ref)
                 .operations(appliedOps.map { it.getOriginalOp() })
-                .build()
+                .buildLegacy()
         }
         if (mergedVersion == null) {
             throw RuntimeException("Failed to merge ${leftVersion.getObjectHash()} and ${rightVersion.getObjectHash()}")

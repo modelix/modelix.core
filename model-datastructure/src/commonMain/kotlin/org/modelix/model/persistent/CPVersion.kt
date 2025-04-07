@@ -8,6 +8,8 @@ import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.datastructures.objects.getHashString
 import org.modelix.datastructures.patricia.PatriciaNode
+import org.modelix.kotlin.utils.urlDecode
+import org.modelix.kotlin.utils.urlEncode
 import org.modelix.model.TreeType
 import org.modelix.model.lazy.CLVersion.Companion.INLINED_OPS_LIMIT
 import org.modelix.model.operations.IOperation
@@ -45,6 +47,11 @@ data class CPVersion(
     val operations: List<IOperation>?,
     val operationsHash: ObjectReference<OperationsList>?,
     val numberOfOperations: Int,
+
+    /**
+     * Additional information such as the Git commit ID that was imported.
+     */
+    val attributes: Map<String, String> = emptyMap(),
 ) : IObjectData {
 
     init {
@@ -93,6 +100,14 @@ data class CPVersion(
         }
 
         val s = Separators.LEVEL1
+        val attributesPart = if (attributes.isEmpty()) {
+            ""
+        } else {
+            s + attributes.entries.sortedBy { it.key }.joinToString(Separators.LEVEL2) {
+                it.key.urlEncode() + Separators.MAPPING + it.value.urlEncode()
+            }
+        }
+
         return longToHex(id) +
             s + escape(time) +
             s + escape(author) +
@@ -101,7 +116,8 @@ data class CPVersion(
             s + nullAsEmptyString(mergedVersion1?.getHashString()) +
             s + nullAsEmptyString(mergedVersion2?.getHashString()) +
             s + numberOfOperations +
-            s + opsPart
+            s + opsPart +
+            attributesPart
     }
 
     override fun getContainmentReferences(): List<ObjectReference<out IObjectData>> {
@@ -130,7 +146,8 @@ data class CPVersion(
         ): CPVersion {
             try {
                 val parts = serialized.split(Separators.LEVEL1).toTypedArray()
-                if (parts.size == 9) {
+                if (parts.size >= 9) {
+                    // <id>/<time>/<author>/<tree>/<baseVersion>/<mergedVersion1>/<mergedVersion2>/<numOps>/<ops>[/attributes]
                     var opsHash: String? = null
                     var ops: List<IOperation>? = null
                     if (HashUtil.isSha256(parts[8])) {
@@ -153,10 +170,17 @@ data class CPVersion(
                             }
                         }
 
+                    val attributes = parts.getOrNull(9)?.let {
+                        it.split(Separators.LEVEL2).mapNotNull {
+                            val (key, value) = it.split(Separators.MAPPING)
+                            (key.urlDecode() ?: return@mapNotNull null) to (value.urlDecode() ?: return@mapNotNull null)
+                        }.toMap()
+                    } ?: emptyMap()
+
                     val data = CPVersion(
-                        longFromHex(parts[0]),
-                        unescape(parts[1]),
-                        unescape(parts[2]),
+                        id = longFromHex(parts[0]),
+                        time = unescape(parts[1]),
+                        author = unescape(parts[2]),
                         treeRefs = treeHashes,
                         previousVersion = null,
                         originalVersion = null,
@@ -166,10 +190,12 @@ data class CPVersion(
                         operations = ops,
                         operationsHash = opsHash?.let { referenceFactory(it, OperationsList.DESERIALIZER) },
                         numberOfOperations = parts[7].toInt(),
+                        attributes = attributes,
                     )
                     return data
                 } else {
                     // legacy serialization format
+                    // <id>/<time>/<author>/<tree>/<previousVersion>/<ops>/<numOps>/<originalVersion>
 
                     var opsHash: String? = null
                     var ops: List<IOperation>? = null

@@ -2,7 +2,7 @@ package org.modelix.model.lazy
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import org.modelix.datastructures.model.IModelTree
+import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectReference
@@ -30,6 +30,7 @@ class VersionBuilder {
     private var operationsHash: ObjectReference<OperationsList>? = null
     private var numberOfOperations: Int = 0
     private var graph: IObjectGraph? = null
+    private var attributes: Map<String, String> = emptyMap()
 
     @Deprecated("Not mandatory anymore. Usages of the ID should be replaced by the ObjectHash.")
     fun id(value: Long) = also { this.id = value }
@@ -44,7 +45,7 @@ class VersionBuilder {
     }
     fun tree(value: Object<CPTree>) = tree(TreeType.Companion.MAIN, value)
     fun tree(value: ITree) = tree(value.asObject() as Object<CPTree>)
-    fun tree(value: IModelTree) = tree(value.asObject() as Object<CPTree>)
+    fun tree(value: IGenericModelTree<*>) = tree(value.asObject() as Object<CPTree>)
     fun graph(value: IObjectGraph?) = also { it.graph = value }
 
     fun regularUpdate(baseVersion: IVersion) = regularUpdate((baseVersion as CLVersion).obj.ref)
@@ -84,6 +85,10 @@ class VersionBuilder {
         }
     }
 
+    fun attribute(key: String, value: String) = also {
+        attributes += key to value
+    }
+
     fun buildData() = CPVersion(
         id = id ?: 0,
         time = time,
@@ -99,9 +104,14 @@ class VersionBuilder {
         operations = operations,
         operationsHash = operationsHash,
         numberOfOperations = numberOfOperations,
+        attributes = attributes,
     )
 
-    fun build(): CLVersion {
+    fun build(): IVersion {
+        return buildLegacy()
+    }
+
+    fun buildLegacy(): CLVersion {
         return CLVersion(buildData().asObject(checkNotNull(graph) { "object graph not specified" }))
     }
 

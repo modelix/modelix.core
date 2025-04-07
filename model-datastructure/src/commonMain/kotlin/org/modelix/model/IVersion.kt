@@ -1,8 +1,11 @@
 package org.modelix.model
 
 import org.modelix.datastructures.model.IGenericModelTree
+import org.modelix.datastructures.objects.Object
+import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITree
+import org.modelix.model.lazy.VersionBuilder
 import kotlin.jvm.JvmInline
 
 interface IVersion {
@@ -14,6 +17,16 @@ interface IVersion {
     fun getTrees(): Map<TreeType, ITree>
 
     fun getModelTree(): IGenericModelTree<INodeReference>
+
+    fun getAttributes(): Map<String, String>
+
+    fun asObject(): Object<*>
+
+    fun getObjectHash(): ObjectHash = asObject().getHash()
+
+    companion object {
+        fun builder(): VersionBuilder = VersionBuilder()
+    }
 }
 
 @JvmInline

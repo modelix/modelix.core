@@ -177,7 +177,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
             .time(Clock.System.now())
             .author(userName)
             .tree(tree)
-            .build()
+            .buildLegacy()
         initialVersion.write()
         validateVersion(initialVersion, null)
         putVersionHash(masterBranch, initialVersion.getContentHash())

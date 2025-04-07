@@ -85,7 +85,8 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
         get() = getContentHash()
 
     override fun getContentHash(): String = getObjectHash().toString()
-    fun getObjectHash(): ObjectHash = resolvedData.ref.getHash()
+    override fun getObjectHash(): ObjectHash = resolvedData.ref.getHash()
+    override fun asObject() = obj
 
     @Deprecated("Use getTree()", ReplaceWith("getTree()"))
     @get:JvmName("getTree_()")
@@ -153,6 +154,8 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
         return data.operations != null
     }
 
+    override fun getAttributes(): Map<String, String> = obj.data.attributes
+
     fun isMerge() = this.data.mergedVersion1 != null
 
     fun getMergedVersion1() = obj.data.mergedVersion1?.let { CLVersion(it.resolveLater().query()) }
@@ -216,7 +219,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
                 .tree(tree)
                 .autoMerge(baseVersion.obj.ref, mergedVersion1.obj.ref, mergedVersion2.obj.ref)
                 .operations(operations)
-                .build()
+                .buildLegacy()
         }
 
         @Deprecated("Use builder()")
@@ -237,7 +240,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
                 .tree(tree)
                 .also { if (baseVersion != null) it.regularUpdate(baseVersion.obj.ref) }
                 .operations(operations)
-                .build()
+                .buildLegacy()
         }
 
         @Deprecated("Use builder()")
@@ -256,7 +259,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
                 .tree(tree)
                 .also { if (baseVersion != null) it.regularUpdate(baseVersion.obj.ref) }
                 .operations(operations)
-                .build()
+                .buildLegacy()
         }
 
         fun loadFromHash(hash: String, store: IDeserializingKeyValueStore): CLVersion {

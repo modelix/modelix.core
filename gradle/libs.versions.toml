@@ -42,6 +42,7 @@ kotest = "5.9.1"
 reaktive = "2.2.0"
 testcontainers = "1.20.6"
 keycloak = "26.0.4"
+arrow = "2.0.1"
 
 [libraries]
 
@@ -130,7 +131,7 @@ dokka-base = { group = "org.jetbrains.dokka", name = "dokka-base", version.ref="
 
 modelix-buildtools-gradle = { group = "org.modelix.mps", name = "build-tools-gradle", version.ref = "modelixBuildtools"}
 modelix-buildtools-lib = { group = "org.modelix.mps", name = "build-tools-lib", version.ref = "modelixBuildtools"}
-modelix-mpsApi = { group = "org.modelix.mps", name = "stable-api", version = "1.1.1" }
+modelix-mpsApi = { group = "org.modelix.mps", name = "stable-api", version = "1.2.0" }
 
 micrometer-registry-prometheus = { group = "io.micrometer", name = "micrometer-registry-prometheus", version.ref = "micrometer"}
 
@@ -152,3 +153,20 @@ nimbus-jose-jwt = { group = "com.nimbusds", name = "nimbus-jose-jwt", version = 
 bouncycastle-bcpkix = { group = "org.bouncycastle", name = "bcpkix-lts8on", version = "2.73.7" }
 
 kotlincrypto-sha2 = { module = "org.kotlincrypto.hash:sha2", version = "0.7.0" }
+
+arrow-core = { group = "io.arrow-kt", name = "arrow-core", version.ref = "arrow" }
+arrow-fx-coroutines = { group = "io.arrow-kt", name = "arrow-fx-coroutines", version.ref = "arrow" }
+arrow-arrow-stack = { group = "io.arrow-kt", name = "arrow-stack", version.ref = "arrow" }
+arrow-optics = { group = "io.arrow-kt", name = "arrow-optics", version.ref = "arrow" }
+arrow-optics-ksp-plugin = { group = "io.arrow-kt", name = "arrow-optics-ksp-plugin", version.ref = "arrow" }
+arrow-autoclose = { group = "io.arrow-kt", name = "arrow-autoclose", version.ref = "arrow" }
+arrow-resilience = { group = "io.arrow-kt", name = "arrow-resilience", version.ref = "arrow" }
+arrow-fx-stm = { group = "io.arrow-kt", name = "arrow-fx-stm", version.ref = "arrow" }
+arrow-atomic = { group = "io.arrow-kt", name = "arrow-atomic", version.ref = "arrow" }
+arrow-collectors = { group = "io.arrow-kt", name = "arrow-collectors", version.ref = "arrow" }
+arrow-eval = { group = "io.arrow-kt", name = "arrow-eval", version.ref = "arrow" }
+arrow-functions = { group = "io.arrow-kt", name = "arrow-functions", version.ref = "arrow" }
+arrow-core-high-arity = { group = "io.arrow-kt", name = "arrow-core-high-arity", version.ref = "arrow" }
+arrow-core-serialization = { group = "io.arrow-kt", name = "arrow-core-serialization", version.ref = "arrow" }
+arrow-cache4k = { group = "io.arrow-kt", name = "arrow-cache4k", version.ref = "arrow" }
+arrow-optics-compose = { group = "io.arrow-kt", name = "arrow-optics-compose", version.ref = "arrow" }

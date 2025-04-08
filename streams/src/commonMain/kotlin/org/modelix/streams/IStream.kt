@@ -41,7 +41,11 @@ interface IStream<out E> {
         fun skip(count: Long): Many<E>
         fun exactlyOne(): One<E>
         fun count(): One<Int>
-        fun filterBySingle(condition: (E) -> One<Boolean>): Many<E>
+        fun filterBySingle(condition: (E) -> One<Boolean>): Many<E> {
+            return flatMap { element ->
+                condition(element).map { included -> element to included }
+            }.filter { it.second }.map { it.first }
+        }
         fun firstOrDefault(defaultValue: () -> @UnsafeVariance E): One<E>
         fun firstOrDefault(defaultValue: @UnsafeVariance E): One<E> = firstOrDefault { defaultValue }
         fun take(n: Int): Many<E>

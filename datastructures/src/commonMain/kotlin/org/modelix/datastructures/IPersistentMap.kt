@@ -3,6 +3,7 @@ package org.modelix.datastructures
 import org.modelix.datastructures.objects.IDataTypeConfiguration
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.datastructures.objects.Object
+import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutorProvider
 
@@ -36,4 +37,8 @@ interface IPersistentMapRootData<K, V> : IObjectData {
 
 fun <K, V> Object<IPersistentMapRootData<K, V>>.createMapInstance(): IPersistentMap<K, V> {
     return data.createMapInstance(this)
+}
+
+fun <K, V> ObjectReference<IPersistentMapRootData<K, V>>.createMapInstance(): IStream.One<IPersistentMap<K, V>> {
+    return resolve().map { it.createMapInstance() }
 }

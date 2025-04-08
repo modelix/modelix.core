@@ -284,10 +284,6 @@ class FlowStreamBuilder() : IStreamBuilder {
             return Wrapper(flow { emit(wrapped.withIndex().firstOrNull { it == element }?.index ?: -1) })
         }
 
-        override fun filterBySingle(condition: (E) -> IStream.One<Boolean>): IStream.Many<E> {
-            return Wrapper(wrapped.filter { convert(condition(it)).single() })
-        }
-
         override fun firstOrDefault(defaultValue: () -> E): IStream.One<E> {
             return Wrapper(wrapped.onEmpty { emit(defaultValue()) }.take(1))
         }

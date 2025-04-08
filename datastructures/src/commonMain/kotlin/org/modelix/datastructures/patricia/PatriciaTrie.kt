@@ -5,10 +5,13 @@ import org.modelix.datastructures.MapChangeEvent
 import org.modelix.datastructures.objects.IDataTypeConfiguration
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.Object
+import org.modelix.datastructures.objects.ObjectReference
 import org.modelix.datastructures.objects.StringDataTypeConfiguration
 import org.modelix.datastructures.objects.asObject
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutorProvider
+
+typealias PatriciaTrieRef<K, V> = ObjectReference<PatriciaNode<K, V>>
 
 /**
  * Entries with the same prefix are put into the same subtree. The prefix has a variable length.

@@ -71,6 +71,7 @@ class ModelClientGraph(
 
     fun withUnloadedHistory(version: Object<CPVersion>): Object<CPVersion> {
         val withoutHistory = version.data.withUnloadedHistory()
+        dataDedupeCache.put(version.getHash(), withoutHistory)
         return Object(withoutHistory, ObjectReferenceImpl(this, version.getHash(), withoutHistory))
     }
 
@@ -78,7 +79,10 @@ class ModelClientGraph(
         ref: ObjectReference<T>,
     ): Object<T>? {
         ref.getObjectIfLoaded()?.let { return it }
-        val serialized = eagerLoadingObjects?.get(ref.getHash()) ?: return null
+        val serialized = eagerLoadingObjects?.get(ref.getHash())
+        if (serialized == null) {
+            return findData(ref)?.let { Object(it, ref) }
+        }
         val deserialized: T = dataDedupeCache.getOrPut(ref.getHash()) {
             ref.getDeserializer().deserialize(serialized, this)
         }.upcast()

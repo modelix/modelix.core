@@ -66,4 +66,49 @@ class TreeDiffTest {
 
         assertTree()
     }
+
+    @Test
+    fun `diff returns no duplicate objects`() {
+        val graph = FullyLoadedObjectGraph()
+        var tree = PatriciaTrie.withStrings(graph)
+        var previousTrees: MutableList<PatriciaTrie<String, String>> = mutableListOf()
+
+        val alphabet = "abcd"
+        val rand = Random(5465)
+        fun randomString(length: Int) = (0 until length).joinToString("") { alphabet.random(rand).toString() }
+
+        val removedEntries = (1..1000).map { randomString(rand.nextInt(0, 6)) }.toMutableSet()
+        val values = removedEntries.associateWith { "value_of_$it" }
+        val addedEntries = mutableSetOf<String>()
+
+        fun assertTree() {
+            for (previousTree in (1..5).map { previousTrees.random(rand) }) {
+                val diff = tree.asObject().objectDiff(previousTree.asObject())
+                    .map { it.getHash() to it.data.serialize() }
+                    .toList().getBlocking(tree)
+
+                val duplicateObjects = diff.groupBy { it.first }.filter { it.value.size > 1 }.map { it.value.first() }
+                assertEquals(emptyList(), duplicateObjects)
+            }
+        }
+
+        repeat(1_000) {
+            previousTrees.add(tree)
+            if (removedEntries.size > addedEntries.size) {
+                val key = removedEntries.random(rand)
+                removedEntries.remove(key)
+                addedEntries.add(key)
+                tree = tree.put(key, values[key]!!).getBlocking(tree)
+                assertTree()
+            } else {
+                val key = addedEntries.random(rand)
+                removedEntries.add(key)
+                addedEntries.remove(key)
+                tree = tree.remove(key).getBlocking(tree)
+                assertTree()
+            }
+        }
+
+        assertTree()
+    }
 }

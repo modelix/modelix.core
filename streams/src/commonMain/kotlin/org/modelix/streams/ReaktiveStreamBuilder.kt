@@ -303,10 +303,6 @@ class ReaktiveStreamBuilder() : IStreamBuilder {
             return merger(WrapperMany(a), WrapperMany(b))
         }
 
-        override fun filterBySingle(condition: (E) -> IStream.One<Boolean>): IStream.Many<E> {
-            return WrapperMany(wrapped.filterBySingle { condition(it).toReaktive() })
-        }
-
         override fun firstOrDefault(defaultValue: () -> E): IStream.One<E> {
             return WrapperSingle(wrapped.firstOrDefault(defaultValue))
         }
@@ -489,10 +485,6 @@ class ReaktiveStreamBuilder() : IStreamBuilder {
             return this
         }
 
-        override fun filterBySingle(condition: (E) -> IStream.One<Boolean>): IStream.Many<E> {
-            return WrapperMany(wrapped.asObservable().filterBySingle { condition(it).toReaktive() })
-        }
-
         override fun firstOrDefault(defaultValue: () -> E): IStream.One<E> {
             return this // there is always a first element
         }
@@ -617,10 +609,6 @@ class ReaktiveStreamBuilder() : IStreamBuilder {
             merger: (IStream.Many<E>, IStream.Many<E>) -> IStream.Many<R>,
         ): IStream.Many<R> {
             TODO("Not yet implemented")
-        }
-
-        override fun filterBySingle(condition: (E) -> IStream.One<Boolean>): IStream.Many<E> {
-            return WrapperMany(wrapped.asObservable().filterBySingle { condition(it).toReaktive() })
         }
 
         override fun firstOrDefault(defaultValue: () -> E): IStream.One<E> {

@@ -27,6 +27,8 @@ import org.modelix.streams.IStream
 import org.modelix.streams.flatten
 import org.modelix.streams.plus
 
+typealias ModelTreeRef = ObjectReference<CPTree>
+
 class CPTree(
     val id: TreeId,
     val int64Hamt: ObjectReference<IPersistentMapRootData<Long, ObjectReference<NodeObjectData<Long>>>>?,

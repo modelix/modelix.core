@@ -6,8 +6,6 @@ import jetbrains.mps.smodel.adapter.ids.SConceptId
 import jetbrains.mps.smodel.adapter.ids.SContainmentLinkId
 import jetbrains.mps.smodel.adapter.structure.concept.SConceptAdapterById
 import jetbrains.mps.smodel.adapter.structure.link.SContainmentLinkAdapterById
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.junit.Assert
@@ -28,22 +26,11 @@ import org.modelix.model.mpsadapters.MPSNodeReference
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mutable.asModelSingleThreaded
 import org.modelix.streams.getBlocking
-import org.testcontainers.containers.GenericContainer
-import org.testcontainers.containers.wait.strategy.Wait
-import org.testcontainers.images.builder.ImageFromDockerfile
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicLong
-import kotlin.io.path.absolute
 import kotlin.io.path.readText
 import kotlin.io.path.writeText
 import kotlin.test.assertFailsWith
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.ExperimentalTime
-import kotlin.time.toJavaDuration
-
-private val modelServerDir = Path.of("../model-server").absolute().normalize()
-private val modelServerImage = ImageFromDockerfile()
-    .withDockerfile(modelServerDir.resolve("Dockerfile"))
 
 class ProjectSyncTest : MPSTestBase() {
 
@@ -542,26 +529,6 @@ class ProjectSyncTest : MPSTestBase() {
 
         // ... and it shouldn't pull any changes.
         assertEquals(expectedSnapshot, project.captureSnapshot())
-    }
-
-    private fun runWithModelServer(body: suspend (port: Int) -> Unit) = runBlocking {
-        @OptIn(ExperimentalTime::class)
-        withTimeout(5.minutes) {
-            val modelServer: GenericContainer<*> = GenericContainer(modelServerImage)
-                .withExposedPorts(28101)
-                .withCommand("-inmemory")
-                .waitingFor(Wait.forListeningPort().withStartupTimeout(3.minutes.toJavaDuration()))
-                .withLogConsumer {
-                    println(it.utf8StringWithoutLineEnding)
-                }
-
-            modelServer.start()
-            try {
-                body(modelServer.firstMappedPort)
-            } finally {
-                modelServer.stop()
-            }
-        }
     }
 
     private fun NodeData.normalizeIds(): NodeData {

@@ -61,7 +61,7 @@ abstract class GenericModelTree<NodeId>(
 
     override fun getContainment(nodeId: NodeId): IStream.ZeroOrOne<Pair<NodeId, IChildLinkReference>> {
         return resolveNode(nodeId).mapNotNull {
-            (it.parentId ?: return@mapNotNull null) to (it.roleInParent ?: return@mapNotNull null)
+            (it.parentId ?: return@mapNotNull null) to it.roleInParent
         }
     }
 

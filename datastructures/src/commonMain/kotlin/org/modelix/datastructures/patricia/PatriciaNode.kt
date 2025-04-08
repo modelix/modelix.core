@@ -376,13 +376,13 @@ data class PatriciaNode<K, V : Any>(
             IStream.of(self) + changesFromValue + changesFromChildren
         } else {
             val commonPrefix = ownPrefix.commonPrefixWith(oldNode.ownPrefix)
-            (
-                IStream.of(self) + self.split(commonPrefix).let {
-                    it.data.objectDiff(it, oldObject.split(commonPrefix), path).filter { it.graph == config.graph }
+            IStream.of(self) + (
+                self.split(commonPrefix).let {
+                    it.data.objectDiff(it, oldObject.split(commonPrefix), path)
                 }
                 ).filter {
                 // filter out the split result, which isn't part of the real object graph
-                it.graph == config.graph
+                it.graph == config.graph && it.getHash() != self.getHash()
             }
         }
     }
@@ -416,7 +416,7 @@ data class PatriciaNode<K, V : Any>(
 
 private class CharSequenceConcatenation(val a: CharSequence, val b: CharSequence) : CharSequence {
     override fun get(index: Int): Char {
-        return if (index < a.length) a.get(index) else b.get(index + a.length)
+        return if (index < a.length) a.get(index) else b.get(index - a.length)
     }
 
     override fun subSequence(startIndex: Int, endIndex: Int): CharSequence {

@@ -40,6 +40,12 @@ data class CPVersion(
     @Deprecated("A merge doesn't replace the version anymore, but stores references to the two merged versions")
     val originalVersion: ObjectReference<CPVersion>?,
 
+    /**
+     * The base version for the list of operations. When you start with the [baseVersion] and apply the list of
+     * operations in the correct order, you should get [this] version as the result.
+     * In case of a merge commit, it can be one of the two merged version, their common base or any other version in the
+     * history.
+     */
     val baseVersion: ObjectReference<CPVersion>?,
     val mergedVersion1: ObjectReference<CPVersion>?,
     val mergedVersion2: ObjectReference<CPVersion>?,
@@ -257,6 +263,14 @@ data class CPVersion(
     }
 
     fun withUnloadedHistory(): CPVersion {
+        if (baseVersion?.isLoaded() != true &&
+            mergedVersion1?.isLoaded() != true &&
+            mergedVersion2?.isLoaded() != true &&
+            previousVersion?.isLoaded() != true &&
+            originalVersion?.isLoaded() != true
+        ) {
+            return this
+        }
         return copy(
             baseVersion = baseVersion?.asUnloaded(),
             mergedVersion1 = mergedVersion1?.asUnloaded(),

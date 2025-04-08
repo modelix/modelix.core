@@ -194,8 +194,8 @@ data class LegacyCompatibleFormat<NodeId, ReferenceType>(
     val references: Map<String, ReferenceType>,
 )
 
-fun IReadableNode.toNodeObjectData(graph: IObjectGraph): NodeObjectData<INodeReference> {
-    val nodeDataDeserializer = NodeObjectData.Deserializer(graph, NodeReferenceDataTypeConfig(), getTreeId())
+fun IReadableNode.toNodeObjectData(graph: IObjectGraph, treeId: TreeId = getTreeId()): NodeObjectData<INodeReference> {
+    val nodeDataDeserializer = NodeObjectData.Deserializer(graph, NodeReferenceDataTypeConfig(), treeId)
 
     // usage of getIdOrName: persist ID only to prevent ObjectHash changes when metamodel elements are renamed
     @OptIn(DelicateModelixApi::class)

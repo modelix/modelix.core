@@ -19,6 +19,7 @@ module.exports = {
         "model-server",
         "model-server-openapi",
         "modelql",
+        "mps-git-import-plugin",
         "mps-model-adapters",
         "mps-model-server",
         "mps-sync-plugin",

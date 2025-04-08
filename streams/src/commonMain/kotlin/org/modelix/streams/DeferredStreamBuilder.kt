@@ -228,10 +228,6 @@ class DeferredStreamBuilder : IStreamBuilder {
             return ConvertibleOne { convert(it).indexOf(element) }
         }
 
-        override fun filterBySingle(condition: (E) -> IStream.One<Boolean>): IStream.Many<E> {
-            return ConvertibleMany { c -> convert(c).filterBySingle { condition(it).convert(c) } }
-        }
-
         override fun firstOrDefault(defaultValue: () -> E): IStream.One<E> {
             return ConvertibleOne { convert(it).firstOrDefault(defaultValue) }
         }

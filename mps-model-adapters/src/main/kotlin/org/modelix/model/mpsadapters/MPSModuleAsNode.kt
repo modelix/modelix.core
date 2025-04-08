@@ -15,6 +15,7 @@ import jetbrains.mps.smodel.SModelId
 import jetbrains.mps.smodel.adapter.ids.SLanguageId
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import jetbrains.mps.workbench.actions.model.DeleteModelHelper
+import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.FacetsFacade
 import org.jetbrains.mps.openapi.module.SModule
@@ -378,7 +379,7 @@ data class MPSGeneratorAsNode(override val module: Generator) : MPSModuleAsNode<
     }
 
     override fun getParent(): IWritableNode? {
-        return module.sourceLanguage().sourceModule?.let { MPSModuleAsNode.create(it) }
+        return module.sourceLanguage().resolveSourceModule()?.let { MPSModuleAsNode.create(it) }
     }
 }
 data class MPSLanguageAsNode(override val module: Language) : MPSModuleAsNode<Language>() {
@@ -529,3 +530,5 @@ private fun SModule.getCompileInMPS(): Boolean {
     @Suppress("removal")
     return module.moduleDescriptor.compileInMPS
 }
+
+fun SLanguage.resolveSourceModule() = sourceModuleReference.resolve(ModelixMpsApi.getRepository())

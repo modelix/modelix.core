@@ -64,7 +64,7 @@ fun INodeReference.toSerialized(): NodeReference = if (this is NodeReference) th
 class NodeReferenceKSerializer : KSerializer<INodeReference> {
     override fun deserialize(decoder: Decoder): INodeReference {
         val serialized = decoder.decodeString()
-        return INodeReferenceSerializer.tryDeserialize(serialized) ?: SerializedNodeReference(serialized)
+        return NodeReference(serialized)
     }
 
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("modelix.INodeReference", PrimitiveKind.STRING)

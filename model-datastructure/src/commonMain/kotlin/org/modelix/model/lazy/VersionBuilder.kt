@@ -58,11 +58,15 @@ class VersionBuilder {
         if (baseVersion != null && it.graph == null) it.graph = baseVersion.graph
     }
 
-    fun autoMerge(commonBase: ObjectReference<CPVersion>, version1: ObjectReference<CPVersion>, version2: ObjectReference<CPVersion>) = also {
-        it.baseVersion = commonBase
+    fun autoMerge(base: IVersion, version1: IVersion, version2: IVersion) = also {
+        autoMerge((base as CLVersion).obj.ref, (version1 as CLVersion).obj.ref, (version2 as CLVersion).obj.ref)
+    }
+
+    fun autoMerge(base: ObjectReference<CPVersion>, version1: ObjectReference<CPVersion>, version2: ObjectReference<CPVersion>) = also {
+        it.baseVersion = base
         it.mergedVersion1 = version1
         it.mergedVersion2 = version2
-        if (it.graph == null) it.graph = commonBase.graph
+        if (it.graph == null) it.graph = base.graph
     }
 
     fun operations(operations: List<IOperation>) = operations(operations.toList().toTypedArray())

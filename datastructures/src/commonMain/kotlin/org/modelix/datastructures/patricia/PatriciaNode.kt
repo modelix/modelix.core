@@ -376,13 +376,13 @@ data class PatriciaNode<K, V : Any>(
             IStream.of(self) + changesFromValue + changesFromChildren
         } else {
             val commonPrefix = ownPrefix.commonPrefixWith(oldNode.ownPrefix)
-            (
-                IStream.of(self) + self.split(commonPrefix).let {
-                    it.data.objectDiff(it, oldObject.split(commonPrefix), path).filter { it.graph == config.graph }
+            IStream.of(self) + (
+                self.split(commonPrefix).let {
+                    it.data.objectDiff(it, oldObject.split(commonPrefix), path)
                 }
                 ).filter {
                 // filter out the split result, which isn't part of the real object graph
-                it.graph == config.graph
+                it.graph == config.graph && it.getHash() != self.getHash()
             }
         }
     }

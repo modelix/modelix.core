@@ -360,7 +360,7 @@ class ModelClientV2(
         }
     }
 
-    override suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?): IVersion {
+    override suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?, force: Boolean): IVersion {
         LOG.debug { "${clientId.toString(16)}.push($branch, $version, $baseVersion)" }
         require(version is CLVersion)
         val delta = if (version.getContentHash() == baseVersion?.getContentHash()) {
@@ -381,6 +381,9 @@ class ModelClientV2(
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
+                if (force) {
+                    parameters["force"] = force.toString()
+                }
             }
             useVersionStreamFormat()
             contentType(ContentType.Application.Json)

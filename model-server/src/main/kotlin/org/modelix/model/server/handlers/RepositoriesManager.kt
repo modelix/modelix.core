@@ -258,6 +258,18 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
     }
 
     @RequiresTransaction
+    override fun forcePush(branch: BranchReference, newVersionHash: String) {
+        val headHash = getVersionHash(branch)
+        if (headHash == newVersionHash) return
+        val asyncStore = getAsyncStore(branch.repositoryId)
+        val newVersion = CLVersion.loadFromHash(newVersionHash, asyncStore)
+        val headVersion = headHash?.let { CLVersion.loadFromHash(it, asyncStore) }
+        validateVersion(newVersion, headVersion)
+        ensureBranchInList(branch)
+        putVersionHash(branch, newVersionHash)
+    }
+
+    @RequiresTransaction
     override fun mergeChanges(branch: BranchReference, newVersionHash: String): String {
         val headHash = getVersionHash(branch)
         if (headHash == newVersionHash) return headHash
@@ -302,6 +314,8 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
     }
 
     private fun validateVersion(newVersion: CLVersion, oldVersion: CLVersion?) {
+        if (System.getenv("MODELIX_VALIDATE_VERSIONS") != "true") return
+
         if (newVersion.getObjectHash() == oldVersion?.getObjectHash()) return
 
         // Deleting the root node isn't allowed

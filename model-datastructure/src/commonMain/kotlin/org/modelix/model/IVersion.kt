@@ -1,5 +1,6 @@
 package org.modelix.model
 
+import kotlinx.datetime.Instant
 import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectHash
@@ -24,6 +25,10 @@ interface IVersion {
 
     fun getObjectHash(): ObjectHash = asObject().getHash()
 
+    fun getParentVersions(): List<IVersion>
+
+    fun getTimestamp(): Instant?
+
     companion object {
         fun builder(): VersionBuilder = VersionBuilder()
     }
@@ -44,5 +49,35 @@ value class TreeType(val name: String) {
     companion object {
         val MAIN = TreeType("")
         val META = TreeType("meta")
+    }
+}
+
+/**
+ * Sorts commits as described at https://git-scm.com/docs/http-protocol#_the_negotiation_algorithm
+ *
+ *     Start a queue, c_pending, ordered by commit time (popping newest first).
+ *     Add all client refs.
+ *     When a commit is popped from the queue its parents SHOULD be automatically inserted back.
+ *     Commits MUST only enter the queue once.
+ *
+ * It's basically the order that you will see in a git-log output.
+ */
+fun IVersion.historyAsSequence(): Sequence<IVersion> = sequence {
+    val queue: MutableList<IVersion> = ArrayList()
+    val visited = HashSet<ObjectHash>()
+
+    fun addToQueue(v: IVersion) {
+        if (visited.contains(v.getObjectHash())) return
+        visited.add(v.getObjectHash())
+        queue.add(v)
+        queue.sortByDescending { it.getTimestamp() }
+    }
+
+    addToQueue(this@historyAsSequence)
+
+    while (queue.isNotEmpty()) {
+        val removed = queue.removeFirst()
+        removed.getParentVersions().forEach { addToQueue(it) }
+        yield(removed)
     }
 }

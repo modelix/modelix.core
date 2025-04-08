@@ -69,7 +69,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
     val time: String?
         get() = data.time
 
-    fun getTimestamp(): Instant? {
+    override fun getTimestamp(): Instant? {
         val dateTimeStr = data.time ?: return null
         try {
             return Instant.fromEpochSeconds(dateTimeStr.toLong())
@@ -160,6 +160,10 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
 
     fun getMergedVersion1() = obj.data.mergedVersion1?.let { CLVersion(it.resolveLater().query()) }
     fun getMergedVersion2() = obj.data.mergedVersion2?.let { CLVersion(it.resolveLater().query()) }
+
+    override fun getParentVersions(): List<IVersion> {
+        return if (isMerge()) listOfNotNull(getMergedVersion1(), getMergedVersion2()) else listOfNotNull(baseVersion)
+    }
 
     fun write(): String {
         obj.write()
@@ -316,7 +320,10 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
  * Assuming one peer already has all the data of [baseVersion], this method return those objects that missing in the
  * object graph to fully load [this] version.
  */
-fun CLVersion.fullDiff(baseVersion: CLVersion?): IStream.Many<Object<IObjectData>> {
+fun IVersion.fullDiff(baseVersion: IVersion?): IStream.Many<Object<IObjectData>> {
+    this as CLVersion
+    baseVersion as CLVersion?
+
     if (baseVersion?.getObjectHash() == this.getObjectHash()) return IStream.empty()
 
     val commonBase = baseVersion?.let { commonBaseVersion(it) }
@@ -339,7 +346,10 @@ fun CLVersion.fullDiff(baseVersion: CLVersion?): IStream.Many<Object<IObjectData
     )
 }
 
-fun CLVersion.diff(filter: ObjectDeltaFilter, commonBase: CLVersion?): IStream.Many<Object<IObjectData>> {
+fun IVersion.diff(filter: ObjectDeltaFilter, commonBase: IVersion?): IStream.Many<Object<IObjectData>> {
+    this as CLVersion
+    commonBase as CLVersion?
+
     if (this.getObjectHash() == commonBase?.getObjectHash()) {
         TODO()
     }
@@ -377,7 +387,10 @@ fun CLVersion.diff(filter: ObjectDeltaFilter, commonBase: CLVersion?): IStream.M
 /**
  * @param commonBase The common base version of this version and all versions mentioned in the filter.
  */
-fun CLVersion.historyDiff(filter: ObjectDeltaFilter, commonBase: CLVersion?): IStream.Many<Object<CPVersion>> {
+fun IVersion.historyDiff(filter: ObjectDeltaFilter, commonBase: IVersion?): IStream.Many<Object<CPVersion>> {
+    this as CLVersion
+    commonBase as CLVersion?
+
     if (this.getObjectHash() == commonBase?.getObjectHash()) {
         TODO()
     }
@@ -398,9 +411,9 @@ fun CLVersion.historyDiff(filter: ObjectDeltaFilter, commonBase: CLVersion?): IS
     }
 }
 
-fun CLVersion.commonBaseVersion(other: CLVersion): CLVersion? {
-    var leftVersion: CLVersion? = this
-    var rightVersion: CLVersion? = other
+fun IVersion.commonBaseVersion(other: IVersion): CLVersion? {
+    var leftVersion: CLVersion? = this as CLVersion?
+    var rightVersion: CLVersion? = other as CLVersion?
     val leftVersions: MutableSet<ObjectHash> = HashSet()
     val rightVersions: MutableSet<ObjectHash> = HashSet()
     leftVersions.add(this.getObjectHash())

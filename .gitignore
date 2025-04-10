@@ -11,3 +11,9 @@ kotlin_gen
 **/.ideaconfig
 **/.mpsconfig
 .kotlin
+
+**/classes_gen/
+**/source_gen/
+**/source_gen.caches/
+**/.mps-caches/
+/.intellijPlatform/

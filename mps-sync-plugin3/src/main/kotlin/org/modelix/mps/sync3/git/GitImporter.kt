@@ -37,7 +37,6 @@ import org.modelix.model.sync.bulk.DefaultInvalidationTree
 import org.modelix.model.sync.bulk.FullSyncFilter
 import org.modelix.model.sync.bulk.IdentityPreservingNodeAssociation
 import org.modelix.model.sync.bulk.ModelSynchronizer
-import org.modelix.model.sync.bulk.ModelSynchronizer.IIncrementalUpdateInformation
 import org.modelix.model.sync.bulk.UnfilteredModelMask
 import org.modelix.mps.api.ModelixMpsApi
 import java.io.File
@@ -126,34 +125,30 @@ class GitImporter(
         client.push(targetBranch, importedVersion, lastPushedVersion, force = true)
     }
 
-    private class BaseVersionAlternative(
-        val version: IVersion,
-        val syncFilter: IIncrementalUpdateInformation,
-        val deltaSize: Int,
-    )
-
+    /**
+     * To keep the number of change operations low, for merge commits the import is executed with both parent versions
+     * as the base version and the one that is already closer to the result and needs fewer operations is chosen.
+     */
     private fun runImport(parentModelixVersions: List<IVersion>, gitCommit: RevCommit, gitRepo: Repository, mpsRepo: DummyRepo): IVersion {
-        @Suppress("SimplifiableCallChain")
-        val baseVersion = parentModelixVersions.map { baseModelixVersion ->
-            val baseGitCommitId = baseModelixVersion.gitCommit
+        val alternatives = parentModelixVersions.map {
+            runImport(parentModelixVersions, it, gitCommit, gitRepo, mpsRepo)
+        }.sortedBy { (it as CLVersion).numberOfOperations }
+        val first = alternatives.first()
+        if (alternatives.size > 1) {
+            println("For merge commit ${gitCommit.name} using ${(first as CLVersion).baseVersion?.gitCommit} (${first.numberOfOperations}) as the base instead of " + alternatives.drop(1).joinToString(", ") { "${(it as CLVersion).baseVersion?.gitCommit} (${it.numberOfOperations})" })
+        }
+        return first
+    }
 
-            if (baseGitCommitId != null) {
-                val invalidations = DefaultInvalidationTree(MPSRepositoryAsNode(mpsRepo).getNodeReference()).also {
-                    loadInvalidations(gitCommit, gitRepo.parseCommit(ObjectId.fromString(baseGitCommitId)), gitRepo, it)
-                }
-                BaseVersionAlternative(
-                    version = baseModelixVersion,
-                    syncFilter = invalidations,
-                    deltaSize = 0,
-                )
-            } else {
-                BaseVersionAlternative(
-                    version = baseModelixVersion,
-                    syncFilter = FullSyncFilter(),
-                    deltaSize = Int.MAX_VALUE,
-                )
+    private fun runImport(parentModelixVersions: List<IVersion>, baseModelixVersion: IVersion, gitCommit: RevCommit, gitRepo: Repository, mpsRepo: DummyRepo): IVersion {
+        val baseGitCommitId = baseModelixVersion.gitCommit
+        val syncFilter = if (baseGitCommitId != null) {
+            DefaultInvalidationTree(MPSRepositoryAsNode(mpsRepo).getNodeReference()).also {
+                loadInvalidations(gitCommit, gitRepo.parseCommit(ObjectId.fromString(baseGitCommitId)), gitRepo, it)
             }
-        }.sortedBy { it.deltaSize }.first()
+        } else {
+            FullSyncFilter()
+        }
 
         val rootDir = GitObjectAsVirtualFile(
             parent = null,
@@ -179,11 +174,11 @@ class GitImporter(
 
         val sourceRoot = MPSRepositoryAsNode(mpsRepo)
 
-        val mutableTree = VersionedModelTree(baseVersion.version, DummyIdGenerator<INodeReference>())
+        val mutableTree = VersionedModelTree(baseModelixVersion, DummyIdGenerator<INodeReference>())
         mutableTree.runWrite {
             val targetRoot = mutableTree.getRootNode()
             ModelSynchronizer(
-                filter = baseVersion.syncFilter,
+                filter = syncFilter,
                 sourceRoot = sourceRoot,
                 targetRoot = targetRoot,
                 nodeAssociation = IdentityPreservingNodeAssociation(
@@ -204,8 +199,8 @@ class GitImporter(
             .tree(newTree)
             .let { builder ->
                 when (parentModelixVersions.size) {
-                    1 -> builder.regularUpdate(baseVersion.version)
-                    2 -> builder.autoMerge(baseVersion.version, parentModelixVersions[0], parentModelixVersions[1])
+                    1 -> builder.regularUpdate(baseModelixVersion)
+                    2 -> builder.autoMerge(baseModelixVersion, parentModelixVersions[0], parentModelixVersions[1])
                     else -> TODO()
                 }
             }

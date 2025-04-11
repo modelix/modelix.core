@@ -18,6 +18,7 @@ import org.modelix.model.mutable.asModelSingleThreaded
 import org.modelix.mps.sync3.git.GitImporter
 import org.modelix.mps.sync3.git.gitCommit
 import org.modelix.streams.getBlocking
+import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.collections.groupBy
@@ -545,11 +546,12 @@ class GitImportTest : MPSTestBase() {
     /**
      * For the import performance it's important that the diff is minimal.
      */
-    fun `ignore test diff doesn't return unnecessary objects`() = runWithImportResult { latestVersion ->
+    fun `test diff doesn't return unnecessary objects`() = runWithImportResult { latestVersion ->
         for (version in latestVersion.historyAsSequence()) {
             for (parentVersion in version.getParentVersions()) {
                 val baseObjects = parentVersion.getModelTree().asObject().getDescendantsAndSelf().map { it.getHash() }.toList()
                     .getBlocking(parentVersion.asObject().graph)
+                val baseObjectsSet = baseObjects.toSet()
 
                 // no object is returned twice
                 assertEquals(baseObjects.toSet().size, baseObjects.size)
@@ -559,23 +561,35 @@ class GitImportTest : MPSTestBase() {
                     includeHistory = false,
                     includeOperations = false,
                 )
-                val deltaObjects = version.diff(filter, parentVersion).toList()
+                val deltaObjects = version.diff(parentVersion, filter)
+                    .map {
+                        check(!baseObjectsSet.contains(it.getHash())) {
+                            "Unnecessary: $it"
+                        }
+                        it
+                    }
+                    .toList()
                     .getBlocking(parentVersion.asObject().graph)
 
                 // also the delta itself doesn't contain duplicate objects
                 val duplicateObjects: List<Object<IObjectData>> = deltaObjects.groupBy { it.getHash() }.filter { it.value.size > 1 }.map { it.value.first() }
                 if (duplicateObjects.isNotEmpty()) {
-                    val deltaObjects2 = version.diff(filter, parentVersion).toList()
-                        .getBlocking(parentVersion.asObject().graph)
+                    // place breakpoint here for debugging
+                    version.diff(parentVersion, filter).toList().getBlocking(parentVersion.asObject().graph)
                 }
                 assertEquals(emptyList<Object<IObjectData>>(), duplicateObjects)
 
                 // the delta doesn't contain any objects that are already part of the parent
-                val baseObjectsSet = baseObjects.toSet()
                 val unnecessaryObjects = deltaObjects.filter { baseObjectsSet.contains(it.getHash()) }
                 if (unnecessaryObjects.isNotEmpty()) {
-                    val deltaObjects2 = version.diff(filter, parentVersion).toList()
-                        .getBlocking(parentVersion.asObject().graph)
+                    // just for debugging
+                    parentVersion.getModelTree().asObject().getDescendantsAndSelf().toList()
+                        .getBlocking(parentVersion.asObject().graph).joinToString("\n") { it.toString() }
+                        .let { File("oldVersion.txt").writeText(it) }
+                    version.getModelTree().asObject().getDescendantsAndSelf().toList()
+                        .getBlocking(parentVersion.asObject().graph).joinToString("\n") { it.toString() }
+                        .let { File("newVersion.txt").writeText(it) }
+                    version.diff(parentVersion, filter).toList().getBlocking(parentVersion.asObject().graph)
                 }
                 assertEquals(emptyList<Object<IObjectData>>(), unnecessaryObjects)
             }

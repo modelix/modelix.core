@@ -62,18 +62,21 @@ value class TreeType(val name: String) {
  *
  * It's basically the order that you will see in a git-log output.
  */
-fun IVersion.historyAsSequence(): Sequence<IVersion> = sequence {
+fun Iterable<IVersion>.historyAsSequence(knownVersions: Iterable<ObjectHash>, sortByTime: Boolean = true): Sequence<IVersion> = sequence {
     val queue: MutableList<IVersion> = ArrayList()
-    val visited = HashSet<ObjectHash>()
+    val wasInQueue = HashSet<ObjectHash>()
+    wasInQueue.addAll(knownVersions)
 
     fun addToQueue(v: IVersion) {
-        if (visited.contains(v.getObjectHash())) return
-        visited.add(v.getObjectHash())
+        if (wasInQueue.contains(v.getObjectHash())) return
+        wasInQueue.add(v.getObjectHash())
         queue.add(v)
-        queue.sortByDescending { it.getTimestamp() }
+        if (sortByTime) {
+            queue.sortByDescending { it.getTimestamp() }
+        }
     }
 
-    addToQueue(this@historyAsSequence)
+    this@historyAsSequence.forEach { addToQueue(it) }
 
     while (queue.isNotEmpty()) {
         val removed = queue.removeFirst()
@@ -81,3 +84,53 @@ fun IVersion.historyAsSequence(): Sequence<IVersion> = sequence {
         yield(removed)
     }
 }
+
+fun IVersion.historyAsSequence(knownVersions: Iterable<ObjectHash> = emptyList(), sortByTime: Boolean = true): Sequence<IVersion> {
+    return listOf(this).historyAsSequence(knownVersions, sortByTime)
+}
+
+fun IVersion.historyAsSequence(knownVersion: ObjectHash, sortByTime: Boolean = true): Sequence<IVersion> {
+    return historyAsSequence(listOf(knownVersion), sortByTime)
+}
+
+/**
+ * Returns all versions that are reachable from [this], but not from [knownVersions]
+ */
+fun IVersion.historyDiff(knownVersions: List<IVersion>): List<IVersion> {
+    val commonVersions = HashSet<ObjectHash>()
+
+    /**
+     * We first assume that the [commonVersions] set is complete, meaning it will cut off the [historyAsSequence]
+     * traversal so that it doesn't return any versions that are reachable from [knownVersions].
+     * We traverse the history of [knownVersions] at the same time until we find prove that the initial assumption is
+     * wrong. Then we update [commonVersions] and restart the process with the same assumption.
+     */
+
+    mainLoop@while (true) {
+        val unknownHistoryItr = this.historyAsSequence(commonVersions, sortByTime = false).iterator()
+        val knownHistoryItr = knownVersions.historyAsSequence(commonVersions, sortByTime = false).iterator()
+
+        var unknownHistory = LinkedHashMap<ObjectHash, IVersion>()
+        val knownHistory = HashSet<ObjectHash>()
+
+        while (unknownHistoryItr.hasNext() || knownHistoryItr.hasNext()) {
+            val unknownVersion = unknownHistoryItr.nextOrNull()?.also { unknownHistory.put(it.getObjectHash(), it) }?.getObjectHash()
+            val knownVersion = knownHistoryItr.nextOrNull()?.getObjectHash()?.also { knownHistory.add(it) }
+
+            if (unknownVersion != null && knownHistory.contains(unknownVersion)) {
+                commonVersions.add(unknownVersion)
+                continue@mainLoop
+            }
+
+            if (knownVersion != null && unknownHistory.contains(knownVersion)) {
+                commonVersions.add(knownVersion)
+                continue@mainLoop
+            }
+        }
+
+        // assumption was correct
+        return unknownHistory.values.toList()
+    }
+}
+
+private fun <T> Iterator<T>.nextOrNull() = if (hasNext()) next() else null

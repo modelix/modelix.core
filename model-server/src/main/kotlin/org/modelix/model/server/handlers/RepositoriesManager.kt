@@ -19,9 +19,7 @@ import org.modelix.model.async.LazyLoadingObjectGraph
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.lazy.commonBaseVersion
 import org.modelix.model.lazy.diff
-import org.modelix.model.lazy.fullDiff
 import org.modelix.model.mutable.asMutableSingleThreaded
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.SerializationUtil
@@ -323,7 +321,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         check(mainTree.containsNode(mainTree.getRootNodeId()).getBlocking(mainTree))
 
         // ensure there are no missing objects
-        newVersion.graph.getStreamExecutor().iterate({ newVersion.fullDiff(oldVersion) }) { }
+        // newVersion.graph.getStreamExecutor().iterate({ newVersion.diff(oldVersion) }) { }
         if (oldVersion != null) {
             // If the object diff is buggy, client and server will skip over the same objects.
             // The model diff should also iterate over all new objects and is used for additional validation.
@@ -392,15 +390,9 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         val store = stores.getAsyncStore(repository?.takeIf { isIsolated(it) ?: false })
         return store.getStreamExecutor().queryManyLater {
             val version = CLVersion.loadFromHash(versionHash, store)
-
-            if (filter.knownVersions.isNotEmpty()) {
-                val commonBase = IStream.many(filter.knownVersions).flatMap {
-                    CLVersion.tryLoadFromHash(it, store)
-                }.fold<CLVersion?>(version) { acc, it -> acc?.commonBaseVersion(it) }
-                commonBase.flatMap { commonBase -> version.diff(filter, commonBase) }
-            } else {
-                version.diff(filter, null)
-            }.map { it.getHashString() to it.data.serialize() }
+            IStream.many(filter.knownVersions).flatMap { CLVersion.tryLoadFromHash(it, store) }.toList().flatMap { knownVersions ->
+                version.diff(knownVersions, filter).map { it.getHashString() to it.data.serialize() }
+            }
         }.let { ObjectDataFlow(it) }
     }
 

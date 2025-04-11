@@ -416,7 +416,7 @@ data class PatriciaNode<K, V : Any>(
 
 private class CharSequenceConcatenation(val a: CharSequence, val b: CharSequence) : CharSequence {
     override fun get(index: Int): Char {
-        return if (index < a.length) a.get(index) else b.get(index + a.length)
+        return if (index < a.length) a.get(index) else b.get(index - a.length)
     }
 
     override fun subSequence(startIndex: Int, endIndex: Int): CharSequence {

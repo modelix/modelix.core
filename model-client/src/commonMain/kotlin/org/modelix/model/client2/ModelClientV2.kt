@@ -60,7 +60,7 @@ import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.lazy.fullDiff
+import org.modelix.model.lazy.diff
 import org.modelix.model.lazy.runWriteOnModel
 import org.modelix.model.mutable.INodeIdGenerator
 import org.modelix.model.mutable.ModelixIdGenerator
@@ -370,7 +370,7 @@ class ModelClientV2(
             checkCreatedByThisClient(version, branch.repositoryId)
             checkCreatedByThisClient(baseVersion, branch.repositoryId)
             val objects = version.graph.getStreamExecutor().queryManyLater {
-                version.fullDiff(baseVersion).map { it.getHashString() to it.data.serialize() }
+                version.diff(baseVersion).map { it.getHashString() to it.data.serialize() }
             }
             // large HTTP requests and large Json objects don't scale well
             val lastChunk = pushObjects(branch.repositoryId, objects, returnLastChunk = true)

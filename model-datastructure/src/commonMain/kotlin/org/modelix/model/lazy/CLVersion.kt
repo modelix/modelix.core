@@ -348,7 +348,7 @@ fun IVersion.diff(knownVersions: List<IVersion>, filter: ObjectDeltaFilter = Obj
         .toMutableMap()
 
     val includedVersions = if (filter.includeHistory) unknownHistory else listOf(this)
-    return IStream.many(includedVersions).flatMap { version ->
+    return IStream.many(includedVersions.reversed()).flatMap { version ->
         var result: IStream.Many<Object<IObjectData>> = IStream.of(version.asObject())
         if (filter.includeTrees) {
             /**

@@ -130,7 +130,7 @@ dokka-base = { group = "org.jetbrains.dokka", name = "dokka-base", version.ref="
 
 modelix-buildtools-gradle = { group = "org.modelix.mps", name = "build-tools-gradle", version.ref = "modelixBuildtools"}
 modelix-buildtools-lib = { group = "org.modelix.mps", name = "build-tools-lib", version.ref = "modelixBuildtools"}
-modelix-mpsApi = { group = "org.modelix.mps", name = "stable-api", version = "1.1.1" }
+modelix-mpsApi = { group = "org.modelix.mps", name = "stable-api", version = "1.2.0" }
 
 micrometer-registry-prometheus = { group = "io.micrometer", name = "micrometer-registry-prometheus", version.ref = "micrometer"}
 

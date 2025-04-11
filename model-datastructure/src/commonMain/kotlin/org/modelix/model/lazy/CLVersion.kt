@@ -335,6 +335,10 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
 fun IVersion.diff(knownVersions: List<IVersion>, filter: ObjectDeltaFilter = ObjectDeltaFilter()): IStream.Many<Object<IObjectData>> {
     this as CLVersion
 
+    if (knownVersions.isEmpty()) {
+        return IStream.of(this.obj) + IStream.many(this.data.treeRefs.values).flatMap { it.resolve() }.flatMap { it.getDescendantsAndSelf() }
+    }
+
     val unknownHistory: List<CLVersion> = historyDiff(knownVersions).toList().map { it as CLVersion }
 
     if (unknownHistory.isEmpty()) return IStream.empty()

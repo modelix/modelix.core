@@ -361,16 +361,21 @@ class ModelClientV2(
     }
 
     override suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?, force: Boolean): IVersion {
-        LOG.debug { "${clientId.toString(16)}.push($branch, $version, $baseVersion)" }
+        return push(branch, version, listOfNotNull(baseVersion), force)
+    }
+
+    override suspend fun push(branch: BranchReference, version: IVersion, knownVersions: List<IVersion>, force: Boolean): IVersion {
+        LOG.debug { "${clientId.toString(16)}.push($branch, $version, ${knownVersions.joinToString(", ").take(200)})" }
         require(version is CLVersion)
-        val delta = if (version.getContentHash() == baseVersion?.getContentHash()) {
+        val delta = if (knownVersions.map { it.getObjectHash() }.contains(version.getObjectHash())) {
             VersionDelta(version.getContentHash(), null)
         } else {
-            require(baseVersion is CLVersion?)
             checkCreatedByThisClient(version, branch.repositoryId)
-            checkCreatedByThisClient(baseVersion, branch.repositoryId)
+            for (knownVersion in knownVersions) {
+                checkCreatedByThisClient(knownVersion, branch.repositoryId)
+            }
             val objects = version.graph.getStreamExecutor().queryManyLater {
-                version.diff(baseVersion).map { it.getHashString() to it.data.serialize() }
+                version.diff(knownVersions).map { it.getHashString() to it.data.serialize() }
             }
             // large HTTP requests and large Json objects don't scale well
             val lastChunk = pushObjects(branch.repositoryId, objects, returnLastChunk = true)
@@ -595,7 +600,7 @@ abstract class ModelClientV2Builder {
     protected var authConfig: IAuthConfig? = null
     protected var userId: String? = null
     protected var connectTimeout: Duration = 1.seconds
-    protected var requestTimeout: Duration = 30.seconds
+    protected var requestTimeout: Duration = 300.seconds
 
     // 0 and 1 mean "disable retries"
     protected var retries: UInt = 3U

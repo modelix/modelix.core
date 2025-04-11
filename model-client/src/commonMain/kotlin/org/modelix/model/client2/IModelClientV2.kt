@@ -69,6 +69,7 @@ interface IModelClientV2 {
      *                    Is used for optimizing the amount of data sent to the server.
      */
     suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?, force: Boolean = false): IVersion
+    suspend fun push(branch: BranchReference, version: IVersion, baseVersions: List<IVersion>, force: Boolean = false): IVersion
 
     suspend fun pull(
         branch: BranchReference,

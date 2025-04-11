@@ -89,7 +89,9 @@ class GitImporter(
                 val existingVersionHash = versionIndex.findByGitCommitId(gitCommitId.name)
                 if (existingVersionHash != null) {
                     return@DeepRecursiveFunction runBlocking {
-                        client.loadVersion(repositoryId, existingVersionHash.toString(), null)
+                        client.loadVersion(repositoryId, existingVersionHash.toString(), null).also { v ->
+                            (v as CLVersion).gitCommit?.let { c -> existingImports[c] = v }
+                        }
                     }
                 }
 
@@ -103,12 +105,12 @@ class GitImporter(
                     }
                 }
 
-                existingImports[gitCommit.name] = importedVersion
-
                 runBlocking {
                     println("Pushing $importedVersion")
-                    lastPushedVersion = client.push(targetBranch, importedVersion, lastPushedVersion, force = true)
+                    lastPushedVersion = client.push(targetBranch, importedVersion, existingImports.values + lastPushedVersion, force = true)
                 }
+
+                existingImports[gitCommit.name] = importedVersion
 
                 importedVersion
             } catch (ex: Exception) {

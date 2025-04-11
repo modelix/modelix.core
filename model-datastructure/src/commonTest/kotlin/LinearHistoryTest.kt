@@ -148,7 +148,7 @@ class LinearHistoryTest {
             .id(id)
             .tree(initialTree)
             .baseVersion(base)
-            .build()
+            .buildLegacy()
     }
 
     private fun merge(id: Long, v1: CLVersion, v2: CLVersion): CLVersion {

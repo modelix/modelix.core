@@ -60,7 +60,7 @@ import org.modelix.model.client.IdGenerator
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.lazy.fullDiff
+import org.modelix.model.lazy.diff
 import org.modelix.model.lazy.runWriteOnModel
 import org.modelix.model.mutable.INodeIdGenerator
 import org.modelix.model.mutable.ModelixIdGenerator
@@ -360,17 +360,22 @@ class ModelClientV2(
         }
     }
 
-    override suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?): IVersion {
-        LOG.debug { "${clientId.toString(16)}.push($branch, $version, $baseVersion)" }
+    override suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?, force: Boolean): IVersion {
+        return push(branch, version, listOfNotNull(baseVersion), force)
+    }
+
+    override suspend fun push(branch: BranchReference, version: IVersion, knownVersions: List<IVersion>, force: Boolean): IVersion {
+        LOG.debug { "${clientId.toString(16)}.push($branch, $version, ${knownVersions.joinToString(", ").take(200)})" }
         require(version is CLVersion)
-        val delta = if (version.getContentHash() == baseVersion?.getContentHash()) {
+        val delta = if (knownVersions.map { it.getObjectHash() }.contains(version.getObjectHash())) {
             VersionDelta(version.getContentHash(), null)
         } else {
-            require(baseVersion is CLVersion?)
             checkCreatedByThisClient(version, branch.repositoryId)
-            checkCreatedByThisClient(baseVersion, branch.repositoryId)
+            for (knownVersion in knownVersions) {
+                checkCreatedByThisClient(knownVersion, branch.repositoryId)
+            }
             val objects = version.graph.getStreamExecutor().queryManyLater {
-                version.fullDiff(baseVersion).map { it.getHashString() to it.data.serialize() }
+                version.diff(knownVersions).map { it.getHashString() to it.data.serialize() }
             }
             // large HTTP requests and large Json objects don't scale well
             val lastChunk = pushObjects(branch.repositoryId, objects, returnLastChunk = true)
@@ -381,6 +386,9 @@ class ModelClientV2(
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
+                if (force) {
+                    parameters["force"] = force.toString()
+                }
             }
             useVersionStreamFormat()
             contentType(ContentType.Application.Json)
@@ -592,7 +600,7 @@ abstract class ModelClientV2Builder {
     protected var authConfig: IAuthConfig? = null
     protected var userId: String? = null
     protected var connectTimeout: Duration = 1.seconds
-    protected var requestTimeout: Duration = 30.seconds
+    protected var requestTimeout: Duration = 300.seconds
 
     // 0 and 1 mean "disable retries"
     protected var retries: UInt = 3U

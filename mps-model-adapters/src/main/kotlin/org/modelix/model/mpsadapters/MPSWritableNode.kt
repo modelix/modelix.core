@@ -1,5 +1,6 @@
 package org.modelix.model.mpsadapters
 
+import jetbrains.mps.smodel.DynamicReference
 import jetbrains.mps.smodel.MPSModuleRepository
 import jetbrains.mps.smodel.SNodeId
 import jetbrains.mps.smodel.SNodeUtil
@@ -10,6 +11,8 @@ import org.jetbrains.mps.openapi.language.SContainmentLink
 import org.jetbrains.mps.openapi.language.SProperty
 import org.jetbrains.mps.openapi.language.SReferenceLink
 import org.jetbrains.mps.openapi.model.SNode
+import org.jetbrains.mps.openapi.model.SNodeReference
+import org.jetbrains.mps.openapi.model.SReference
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.incremental.DependencyTracking
 import org.modelix.model.api.BuiltinLanguages
@@ -267,8 +270,24 @@ data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
 
     override fun getReferenceTargetRef(role: IReferenceLinkReference): INodeReference? {
         DependencyTracking.accessed(MPSReferenceLink.tryFromReference(role)?.let { MPSReferenceDependency(node, it.link) } ?: MPSAllReferencesDependency(node))
-        return node.references.firstOrNull { MPSReferenceLink(it.link).toReference().matches(role) }
-            ?.targetNodeReference?.let { MPSNodeReference(it) }
+        return node.references.filterNot { it is DynamicReference }.firstOrNull { MPSReferenceLink(it.link).toReference().matches(role) }
+            ?.let { getTargetRefSafe(it) }?.let { MPSNodeReference(it) }
+    }
+
+    private fun getTargetRefSafe(ref: SReference): SNodeReference? {
+        return if (ref is DynamicReference) {
+            // Dynamic references only store the name and resolve the target on demand by using scopes.
+            // They are mostly used in the generator, where reference macros can return a string instead of a node.
+            // They are almost always a bad idea and a performance bottleneck.
+            // In some cases it seems that there is a way that dynamic references get persisted and then not just appear
+            // in the generator, but also during a git import for example. The necessary languages are probably not
+            // built in that case and the resolution will very likely fail.
+            // The import result then depends on the environment and not just the file itself.
+            // For consistency reasons they are completely ignored here.
+            null
+        } else {
+            ref.targetNodeReference
+        }
     }
 
     override fun getReferenceLinks(): List<IReferenceLinkReference> {

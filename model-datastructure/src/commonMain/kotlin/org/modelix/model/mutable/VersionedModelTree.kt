@@ -1,6 +1,7 @@
 package org.modelix.model.mutable
 
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.datastructures.model.IModelTree
 import org.modelix.datastructures.model.MutationParameters
@@ -127,7 +128,7 @@ class VersionedModelTree(
     /**
      * @return the operations applied to the tree since the last call of this function.
      */
-    private fun getPendingChanges(): Pair<List<IAppliedOperation>, IModelTree> {
+    fun getPendingChanges(): Pair<List<IAppliedOperation>, IModelTree> {
         return runSynchronized(completedChanges) {
             val result = when (completedChanges.size) {
                 0 -> OpsAndTree(emptyList(), runRead { it.tree })
@@ -142,7 +143,7 @@ class VersionedModelTree(
     /**
      * @return null if there are no changes
      */
-    fun createVersion(versionId: Long, author: String?): IVersion? {
+    fun createVersion(versionId: Long, author: String?, time: Instant = Clock.System.now()): IVersion? {
         runSynchronized(completedChanges) {
             val (ops, newTree) = getPendingChanges()
             val oldTreeHash = baseVersion.getModelTree().asObject().getHash()
@@ -154,7 +155,7 @@ class VersionedModelTree(
                 .regularUpdate(baseVersion)
                 .operations(ops.map { it.getOriginalOp() })
                 .author(author)
-                .time(Clock.System.now())
+                .time(time)
                 .build()
             this.baseVersion = newVersion
             return newVersion

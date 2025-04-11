@@ -54,6 +54,9 @@ interface IRepositoriesManager {
     suspend fun pollVersionHash(branch: BranchReference, lastKnown: String?): String
 
     @RequiresTransaction
+    fun forcePush(branch: BranchReference, newVersionHash: String)
+
+    @RequiresTransaction
     fun mergeChanges(branch: BranchReference, newVersionHash: String): String
     suspend fun mergeChangesWithoutPush(branch: BranchReference, newVersionHash: String): String
     suspend fun computeDelta(repository: RepositoryId?, versionHash: String, baseVersionHash: String?): ObjectData =

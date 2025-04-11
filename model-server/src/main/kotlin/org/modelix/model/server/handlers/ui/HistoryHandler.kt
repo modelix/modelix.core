@@ -36,8 +36,8 @@ import kotlinx.html.unsafe
 import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.requiresLogin
-import org.modelix.model.LinearHistory
 import org.modelix.model.api.PBranch
+import org.modelix.model.historyAsSequence
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.CLVersion.Companion.createRegularVersion
@@ -253,20 +253,7 @@ class HistoryHandler(private val repositoriesManager: IRepositoriesManager) {
                 }
             }
             tbody {
-                val versions = sequence<CLVersion> {
-                    var version: CLVersion? = headVersion
-                    while (version != null) {
-                        yield(version)
-                        if (version.isMerge()) {
-                            for (v in LinearHistory(version.baseVersion!!.getContentHash()).load(version.getMergedVersion1()!!, version.getMergedVersion2()!!)) {
-                                yield(v)
-                                v.baseVersion?.let { yield(it) } // to include merge commits
-                            }
-                        }
-                        version = version.baseVersion
-                    }
-                }.distinct().drop(skip).take(limit)
-
+                val versions = headVersion.historyAsSequence().map { it as CLVersion }.drop(skip).take(limit)
                 var previous: CLVersion? = null
                 for (version in versions) {
                     if (previous != null) {

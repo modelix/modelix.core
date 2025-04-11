@@ -28,6 +28,7 @@ import org.modelix.model.api.TreePointer
 import org.modelix.model.api.getRootNode
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.async.ObjectRequest
+import org.modelix.model.historyDiff
 import org.modelix.model.mutable.INodeIdGenerator
 import org.modelix.model.mutable.VersionedModelTree
 import org.modelix.model.mutable.getRootNode
@@ -37,6 +38,7 @@ import org.modelix.model.operations.SetReferenceOp
 import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.CPVersion
 import org.modelix.streams.IStream
+import org.modelix.streams.getBlocking
 import org.modelix.streams.plus
 import org.modelix.streams.query
 import kotlin.jvm.JvmName
@@ -55,7 +57,6 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
     @Deprecated("Use obj", ReplaceWith("obj"))
     val resolvedData: Object<CPVersion> get() = obj
 
-    @Deprecated("Use obj.data", ReplaceWith("obj.data"))
     val data: CPVersion get() = resolvedData.data
 
     val author: String?
@@ -69,7 +70,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
     val time: String?
         get() = data.time
 
-    fun getTimestamp(): Instant? {
+    override fun getTimestamp(): Instant? {
         val dateTimeStr = data.time ?: return null
         try {
             return Instant.fromEpochSeconds(dateTimeStr.toLong())
@@ -85,7 +86,8 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
         get() = getContentHash()
 
     override fun getContentHash(): String = getObjectHash().toString()
-    fun getObjectHash(): ObjectHash = resolvedData.ref.getHash()
+    override fun getObjectHash(): ObjectHash = resolvedData.ref.getHash()
+    override fun asObject() = obj
 
     @Deprecated("Use getTree()", ReplaceWith("getTree()"))
     @get:JvmName("getTree_()")
@@ -153,10 +155,16 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
         return data.operations != null
     }
 
+    override fun getAttributes(): Map<String, String> = obj.data.attributes
+
     fun isMerge() = this.data.mergedVersion1 != null
 
     fun getMergedVersion1() = obj.data.mergedVersion1?.let { CLVersion(it.resolveLater().query()) }
     fun getMergedVersion2() = obj.data.mergedVersion2?.let { CLVersion(it.resolveLater().query()) }
+
+    override fun getParentVersions(): List<IVersion> {
+        return if (isMerge()) listOfNotNull(getMergedVersion1(), getMergedVersion2()) else listOfNotNull(baseVersion)
+    }
 
     fun write(): String {
         obj.write()
@@ -216,7 +224,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
                 .tree(tree)
                 .autoMerge(baseVersion.obj.ref, mergedVersion1.obj.ref, mergedVersion2.obj.ref)
                 .operations(operations)
-                .build()
+                .buildLegacy()
         }
 
         @Deprecated("Use builder()")
@@ -237,7 +245,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
                 .tree(tree)
                 .also { if (baseVersion != null) it.regularUpdate(baseVersion.obj.ref) }
                 .operations(operations)
-                .build()
+                .buildLegacy()
         }
 
         @Deprecated("Use builder()")
@@ -256,7 +264,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
                 .tree(tree)
                 .also { if (baseVersion != null) it.regularUpdate(baseVersion.obj.ref) }
                 .operations(operations)
-                .build()
+                .buildLegacy()
         }
 
         fun loadFromHash(hash: String, store: IDeserializingKeyValueStore): CLVersion {
@@ -277,6 +285,14 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
             val graph = store.asObjectGraph()
             return store.get(ObjectRequest(hash, CPVersion.DESERIALIZER, graph))
                 .map { CLVersion(it.asObject(ObjectHash(hash), graph)) }
+        }
+
+        fun loadFromHash(hash: ObjectHash, graph: IObjectGraph): CLVersion {
+            return requestFromHash(hash, graph).getBlocking(graph)
+        }
+
+        fun requestFromHash(hash: ObjectHash, graph: IObjectGraph): IStream.One<CLVersion> {
+            return graph.fromHash(hash, CPVersion).resolve().map { CLVersion(it) }
         }
     }
 
@@ -310,55 +326,52 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
 }
 
 /**
- * Assuming one peer already has all the data of [baseVersion], this method return those objects that missing in the
- * object graph to fully load [this] version.
+ * Assuming one peer already has all the data of [knownVersions], this method return those objects that are missing in
+ * the object graph to fully load [this] version.
+ *
+ * The values in [ObjectDeltaFilter.knownVersions] are ignored and expected to be resolved and included in
+ * [knownVersions] before calling this method.
  */
-fun CLVersion.fullDiff(baseVersion: CLVersion?): IStream.Many<Object<IObjectData>> {
-    if (baseVersion?.getObjectHash() == this.getObjectHash()) return IStream.empty()
+fun IVersion.diff(knownVersions: List<IVersion>, filter: ObjectDeltaFilter = ObjectDeltaFilter()): IStream.Many<Object<IObjectData>> {
+    this as CLVersion
 
-    val commonBase = baseVersion?.let { commonBaseVersion(it) }
-
-    if (commonBase?.getObjectHash() == this.getObjectHash()) {
-        /**
-         *  Base version is newer than this version.
-         *  There are two cases in which this method is used.
-         *  - The client uploads a version to the server:
-         *    No need to upload anything. The server already knows this version.
-         *  - The server verifies that all objects of a new version exist in the key value store:
-         *    It already verified the version before. Also, nothing needs to be traversed.
-         */
-        return IStream.empty()
+    if (knownVersions.isEmpty()) {
+        return IStream.of(this.obj) + IStream.many(this.data.treeRefs.values).flatMap { it.resolve() }.flatMap { it.getDescendantsAndSelf() }
     }
 
-    return diff(
-        ObjectDeltaFilter(knownVersions = setOfNotNull(baseVersion?.getContentHash())),
-        commonBase,
-    )
-}
+    val unknownHistory: List<CLVersion> = historyDiff(knownVersions).toList().map { it as CLVersion }
 
-fun CLVersion.diff(filter: ObjectDeltaFilter, commonBase: CLVersion?): IStream.Many<Object<IObjectData>> {
-    if (this.getObjectHash() == commonBase?.getObjectHash()) {
-        TODO()
-    }
+    if (unknownHistory.isEmpty()) return IStream.empty()
 
-    val history = historyDiff(filter, commonBase)
-    return history.flatMap { version ->
-        var result: IStream.Many<Object<IObjectData>> = IStream.of(version)
+    val allKnownVersions: MutableMap<ObjectHash, CLVersion> = knownVersions
+        .associate { it.getObjectHash() to (it as CLVersion) }
+        .toMutableMap()
+
+    val includedVersions = if (filter.includeHistory) unknownHistory else listOf(this)
+    return IStream.many(includedVersions.reversed()).flatMap { version ->
+        var result: IStream.Many<Object<IObjectData>> = IStream.of(version.asObject())
         if (filter.includeTrees) {
-            val baseVersion = version.data.baseVersion
+            /**
+             * For the tree diff it is valid to use any tree as the base that is known to the other side.
+             * That can be one of the versions directly mentioned in [ObjectDeltaFilter.knownVersions] or one of the
+             * versions also included in this diff.
+             *
+             * Use the version closest to [this] version as the base because that one should produce the smallest diff.
+             */
+            val baseVersion = unknownHistory.mapNotNull { it.baseVersion }
+                .find { allKnownVersions.contains(it.getObjectHash()) }
+                ?: allKnownVersions.values.firstOrNull()
             result += if (baseVersion == null) {
                 IStream.many(version.data.treeRefs.values)
                     .flatMap { it.resolve() }
                     .flatMap { it.getDescendantsAndSelf() }
             } else {
-                baseVersion.resolve().flatMap { baseVersion ->
-                    IStream.many(version.data.treeRefs.entries).flatMap { (type, newTree) ->
-                        val oldTree = baseVersion.data.treeRefs[type]
-                        if (oldTree == null) {
-                            newTree.resolve().flatMap { it.getDescendantsAndSelf() }
-                        } else {
-                            newTree.diff(oldTree)
-                        }
+                IStream.many(version.data.treeRefs.entries).flatMap { (type, newTree) ->
+                    val oldTree = baseVersion.data.treeRefs[type]
+                    if (oldTree == null) {
+                        newTree.resolve().flatMap { it.getDescendantsAndSelf() }
+                    } else {
+                        newTree.diff(oldTree)
                     }
                 }
             }
@@ -367,83 +380,14 @@ fun CLVersion.diff(filter: ObjectDeltaFilter, commonBase: CLVersion?): IStream.M
         if (filter.includeOperations && operationsRef != null) {
             result += operationsRef.resolve().flatMap { it.getDescendantsAndSelf() }
         }
+
+        allKnownVersions.put(version.getObjectHash(), version)
+
         result
     }
 }
 
-/**
- * @param commonBase The common base version of this version and all versions mentioned in the filter.
- */
-fun CLVersion.historyDiff(filter: ObjectDeltaFilter, commonBase: CLVersion?): IStream.Many<Object<CPVersion>> {
-    if (this.getObjectHash() == commonBase?.getObjectHash()) {
-        TODO()
-    }
-
-    if (filter.includeHistory) {
-        val history = LinkedHashMap<String, CLVersion>()
-        collectAncestors(
-            stopAt = filter.knownVersions + setOfNotNull(
-                commonBase?.takeIf {
-                    filter.knownVersions.isNotEmpty()
-                }?.getContentHash(),
-            ),
-            result = history,
-        )
-        return IStream.many(history.values.map { it.resolvedData })
-    } else {
-        return IStream.of(this.resolvedData)
-    }
-}
-
-fun CLVersion.commonBaseVersion(other: CLVersion): CLVersion? {
-    var leftVersion: CLVersion? = this
-    var rightVersion: CLVersion? = other
-    val leftVersions: MutableSet<ObjectHash> = HashSet()
-    val rightVersions: MutableSet<ObjectHash> = HashSet()
-    leftVersions.add(this.getObjectHash())
-    rightVersions.add(other.getObjectHash())
-
-    while (leftVersion != null || rightVersion != null) {
-        val leftBaseRef = leftVersion?.obj?.data?.baseVersion
-        val rightBaseRef = rightVersion?.obj?.data?.baseVersion
-        leftBaseRef?.let { leftVersions.add(it.getHash()) }
-        rightBaseRef?.let { rightVersions.add(it.getHash()) }
-
-        if (leftVersion != null) {
-            if (rightVersions.contains(leftVersion.getObjectHash())) {
-                return leftVersion
-            }
-        }
-        if (rightVersion != null) {
-            if (leftVersions.contains(rightVersion.getObjectHash())) {
-                return rightVersion
-            }
-        }
-
-        val leftLoadedBase = leftBaseRef?.getLoadedData()
-        val rightLoadedBase = rightBaseRef?.getLoadedData()
-
-        if (leftLoadedBase != null || rightLoadedBase != null) {
-            // As long as one of the versions is available without sending a query, follow that path. The probability
-            // is high that the common base is found in there, and we don't have to send any queries at all.
-
-            if (leftLoadedBase != null) {
-                leftVersion = CLVersion(Object(leftLoadedBase, leftBaseRef))
-            }
-            if (rightLoadedBase != null) {
-                rightVersion = CLVersion(Object(rightLoadedBase, rightBaseRef))
-            }
-        } else {
-            if (leftVersion != null) {
-                leftVersion = leftVersion.baseVersion
-            }
-            if (rightVersion != null) {
-                rightVersion = rightVersion.baseVersion
-            }
-        }
-    }
-    return null
-}
+fun IVersion.diff(knownVersion: IVersion?, filter: ObjectDeltaFilter = ObjectDeltaFilter()) = diff(listOfNotNull(knownVersion), filter)
 
 @Suppress("UNCHECKED_CAST")
 fun <K, V> Map<K, V?>.filterNotNullValues(): Map<K, V> = filterValues { it != null } as Map<K, V>

@@ -8,7 +8,6 @@ import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IRoleReference
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.NewNodeSpec
-import org.modelix.model.api.getOriginalReference
 import org.modelix.model.api.isOrdered
 import org.modelix.model.api.matches
 import org.modelix.model.api.mergeWith
@@ -100,34 +99,46 @@ class ModelSynchronizer(
     ): Unit = withPushSyncStack(sourceNode) {
         nodeAssociation.associate(sourceNode, targetNode)
         if (forceSyncDescendants || filter.needsSynchronization(sourceNode)) {
-            LOG.trace { "Synchronizing changed node. sourceNode = $sourceNode" }
-            runSafe { synchronizeProperties(sourceNode, targetNode) }
-            runSafe { synchronizeReferences(sourceNode, targetNode) }
-
-            val conceptCorrectedTargetNode = runSafe {
-                val sourceConcept = sourceNode.getConceptReference()
-                val targetConcept = targetNode.getConceptReference()
-
-                if (sourceConcept != targetConcept) {
-                    targetNode.changeConcept(sourceConcept)
-                } else {
-                    targetNode
-                }
-            }.getOrDefault(targetNode)
-
-            runSafe {
-                syncChildren(sourceNode, conceptCorrectedTargetNode, forceSyncDescendants)
-            }
+            synchronizeNodeAndChildren(sourceNode, targetNode, forceSyncDescendants)
         } else if (filter.needsDescentIntoSubtree(sourceNode)) {
-            for (sourceChild in sourceMask.getFilteredChildren(sourceNode)) {
-                runSafe {
-                    val targetChild = nodeAssociation.resolveTarget(sourceChild)
-                        ?: error("Expected target node was not found. sourceChild=${sourceChild.getNodeReference()}, originalId=${sourceChild.getOriginalReference()}")
-                    synchronizeNode(sourceChild, targetChild, forceSyncDescendants)
+            val matchingChildren = sourceMask.getFilteredChildren(sourceNode).map { it to nodeAssociation.resolveTarget(it) }
+            if (matchingChildren.any { it.second == null }) {
+                // Inconsistent information provided by filter. Apparently, the node itself needs synchronization.
+                synchronizeNodeAndChildren(sourceNode, targetNode, forceSyncDescendants)
+            } else {
+                for ((sourceChild, targetChild) in matchingChildren) {
+                    runSafe {
+                        synchronizeNode(sourceChild, targetChild!!, forceSyncDescendants)
+                    }
                 }
             }
         } else {
             LOG.trace { "Skipping subtree due to filter. root = $sourceNode" }
+        }
+    }
+
+    private fun synchronizeNodeAndChildren(
+        sourceNode: IReadableNode,
+        targetNode: IWritableNode,
+        forceSyncDescendants: Boolean,
+    ) {
+        LOG.trace { "Synchronizing changed node. sourceNode = $sourceNode" }
+        runSafe { synchronizeProperties(sourceNode, targetNode) }
+        runSafe { synchronizeReferences(sourceNode, targetNode) }
+
+        val conceptCorrectedTargetNode = runSafe {
+            val sourceConcept = sourceNode.getConceptReference()
+            val targetConcept = targetNode.getConceptReference()
+
+            if (sourceConcept != targetConcept) {
+                targetNode.changeConcept(sourceConcept)
+            } else {
+                targetNode
+            }
+        }.getOrDefault(targetNode)
+
+        runSafe {
+            syncChildren(sourceNode, conceptCorrectedTargetNode, forceSyncDescendants)
         }
     }
 

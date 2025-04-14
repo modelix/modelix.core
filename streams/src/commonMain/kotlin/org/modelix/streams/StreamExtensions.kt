@@ -6,7 +6,6 @@ import com.badoo.reaktive.completable.CompletableCallbacks
 import com.badoo.reaktive.disposable.Disposable
 import com.badoo.reaktive.maybe.Maybe
 import com.badoo.reaktive.maybe.asCompletable
-import com.badoo.reaktive.maybe.asObservable
 import com.badoo.reaktive.maybe.defaultIfEmpty
 import com.badoo.reaktive.maybe.map
 import com.badoo.reaktive.observable.Observable
@@ -24,12 +23,10 @@ import com.badoo.reaktive.observable.observable
 import com.badoo.reaktive.observable.replay
 import com.badoo.reaktive.observable.switchIfEmpty
 import com.badoo.reaktive.observable.toList
-import com.badoo.reaktive.observable.zipWith
 import com.badoo.reaktive.single.Single
 import com.badoo.reaktive.single.asObservable
 import com.badoo.reaktive.single.flatMap
 import com.badoo.reaktive.single.map
-import com.badoo.reaktive.single.subscribe
 
 class StreamAssertionError(message: String) : IllegalArgumentException(message)
 
@@ -43,7 +40,11 @@ fun <T> Observable<T>.exactlyOne(): Single<T> = toList().map { it.single() }
 fun <T> Observable<T>.firstOrNull(): Single<T?> = firstOrDefault(null)
 fun Observable<*>.isEmpty(): Single<Boolean> = map { false }.firstOrDefault(true)
 fun <T> Observable<T>.filterBySingle(condition: (T) -> Single<Boolean>): Observable<T> {
-    return this.zipWith(this.flatMapSingle { condition(it) }) { it, c -> it to c }.filter { it.second }.map { it.first }
+    return this.flatMapSingle { element ->
+        condition(element).map { included ->
+            element to included
+        }
+    }.filter { it.second }.map { it.first }
 }
 fun <T> Observable<T>.withIndex(): Observable<IndexedValue<T>> {
     var index = 0

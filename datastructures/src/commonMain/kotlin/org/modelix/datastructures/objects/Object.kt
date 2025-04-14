@@ -35,6 +35,10 @@ open class Object<out E : IObjectData>(val data: E, val ref: ObjectReference<E>)
     override fun hashCode(): Int {
         error("Use .getHash() for comparing objects")
     }
+
+    override fun toString(): String {
+        return getHashString() + " -> " + data.serialize()
+    }
 }
 
 /**

@@ -103,10 +103,6 @@ open class CollectionAsStream<E>(val collection: Collection<E>) : IStream.Many<E
         return SingleValueStream(collection.size)
     }
 
-    override fun filterBySingle(condition: (E) -> IStream.One<Boolean>): IStream.Many<E> {
-        return convertLater().filterBySingle(condition)
-    }
-
     override fun firstOrDefault(defaultValue: () -> E): IStream.One<E> {
         return SingleValueStream(if (collection.isEmpty()) defaultValue() else collection.first())
     }

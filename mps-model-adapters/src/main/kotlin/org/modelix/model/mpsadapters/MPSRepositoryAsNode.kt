@@ -127,7 +127,7 @@ internal fun SModule.delete() {
     // Without saving first, MPS might detect a conflict that can result in data loss and prevents it.
     saveModuleAndModels()
     if (this is Generator) {
-        val language = this.sourceLanguage().sourceModule as? Language
+        val language = this.sourceLanguage().resolveSourceModule() as? Language
         if (language != null) {
             language.saveModuleAndModels()
             language.generators.forEach { it.saveModuleAndModels() }

@@ -59,7 +59,7 @@ abstract class GenericInvalidationTree<ID, M>(root: ID, val sizeLimit: Int = 100
      */
     fun invalidate(containmentPath: List<ID>, includingDescendants: Boolean = false) {
         require(containmentPath[0] == rootNode.id) { "Path must start with the root node. Expected: ${rootNode.id}, was: $containmentPath" }
-        rootNode.invalidate(containmentPath, 0, includingDescendants)
+        rootNode.invalidate(containmentPath, 1, includingDescendants)
         rootNode.rebalance(sizeLimit)
     }
 
@@ -80,12 +80,24 @@ abstract class GenericInvalidationTree<ID, M>(root: ID, val sizeLimit: Int = 100
     fun hasAnyInvalidations(): Boolean = rootNode.hasAnyInvalidations()
 
     override fun needsDescentIntoSubtree(subtreeRoot: IReadableNode): Boolean {
-        return rootNode.needsDescentIntoSubtree(getContainmentPath(subtreeRoot), 0)
+        return needsDescentIntoSubtree(getContainmentPath(subtreeRoot))
+    }
+
+    fun needsDescentIntoSubtree(containmentPath: List<ID>): Boolean {
+        require(containmentPath[0] == rootNode.id) { "Path must start with the root node. Expected: ${rootNode.id}, was: $containmentPath" }
+        return rootNode.needsDescentIntoSubtree(containmentPath, 1)
     }
 
     override fun needsSynchronization(node: IReadableNode): Boolean {
-        return rootNode.nodeNeedsUpdate(getContainmentPath(node), 0)
+        return needsSynchronization(getContainmentPath(node))
     }
+
+    fun needsSynchronization(containmentPath: List<ID>): Boolean {
+        require(containmentPath[0] == rootNode.id) { "Path must start with the root node. Expected: ${rootNode.id}, was: $containmentPath" }
+        return rootNode.nodeNeedsUpdate(containmentPath, 1)
+    }
+
+    fun size() = rootNode.size()
 
     private class Node<E>(val id: E) {
         private var subtreeSize = 1
@@ -94,6 +106,8 @@ abstract class GenericInvalidationTree<ID, M>(root: ID, val sizeLimit: Int = 100
         private var invalidChildren: MutableMap<E, Node<E>> = HashMap()
 
         fun hasAnyInvalidations() = nodeNeedsUpdate || allDescendantsNeedUpdate || invalidChildren.isNotEmpty()
+
+        fun size() = subtreeSize
 
         fun reset() {
             subtreeSize = 1

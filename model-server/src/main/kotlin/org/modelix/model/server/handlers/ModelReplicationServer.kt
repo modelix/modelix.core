@@ -242,8 +242,11 @@ class ModelReplicationServer(
     override suspend fun RoutingContext.postRepositoryBranch(
         repository: String,
         branch: String,
+        force: Boolean?,
     ) {
-        checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).push)
+        val force = force == true
+        checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).run { if (force) forcePush else push })
+
         val branchRef = repositoryId(repository).getBranchReference(branch)
         val deltaFromClient = call.receive<VersionDelta>()
         deltaFromClient.checkObjectHashes()
@@ -253,15 +256,23 @@ class ModelReplicationServer(
             repositoriesManager.getStoreClient(RepositoryId(repository), true).putAll(objectsFromClient)
         }
 
-        // Run a merge outside a transaction to keep the transaction for the actual merge smaller.
-        // If there are no concurrent pushes on the same branch, then all the work is done here.
-        val preMergedVersion = repositoriesManager.mergeChangesWithoutPush(branchRef, deltaFromClient.versionHash)
+        if (force) {
+            @OptIn(RequiresTransaction::class)
+            runWrite {
+                repositoriesManager.forcePush(branchRef, deltaFromClient.versionHash)
+            }
+            call.respondDelta(RepositoryId(repository), deltaFromClient.versionHash, ObjectDeltaFilter(deltaFromClient.versionHash))
+        } else {
+            // Run a merge outside a transaction to keep the transaction for the actual merge smaller.
+            // If there are no concurrent pushes on the same branch, then all the work is done here.
+            val preMergedVersion = repositoriesManager.mergeChangesWithoutPush(branchRef, deltaFromClient.versionHash)
 
-        @OptIn(RequiresTransaction::class)
-        val mergedHash = runWrite {
-            repositoriesManager.mergeChanges(branchRef, preMergedVersion)
+            @OptIn(RequiresTransaction::class)
+            val mergedHash = runWrite {
+                repositoriesManager.mergeChanges(branchRef, preMergedVersion)
+            }
+            call.respondDelta(RepositoryId(repository), mergedHash, ObjectDeltaFilter(deltaFromClient.versionHash))
         }
-        call.respondDelta(RepositoryId(repository), mergedHash, ObjectDeltaFilter(deltaFromClient.versionHash))
     }
 
     override suspend fun RoutingContext.pollRepositoryBranch(
@@ -320,7 +331,15 @@ class ModelReplicationServer(
         if (repositoriesManager.getVersion(repositoryId(repository), versionHash) == null) {
             throw VersionNotFoundException(versionHash)
         }
-        call.respondDelta(RepositoryId(repository), versionHash, ObjectDeltaFilter(lastKnown))
+        call.respondDelta(
+            RepositoryId(repository),
+            versionHash,
+            ObjectDeltaFilter(
+                knownVersions = setOfNotNull(lastKnown),
+                includeHistory = false,
+                includeOperations = false,
+            ),
+        )
     }
 
     override suspend fun RoutingContext.postRepositoryBranchQuery(

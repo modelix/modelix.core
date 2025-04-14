@@ -47,7 +47,7 @@ data class MPSJavaModuleFacetAsNode(val facet: JavaModuleFacet) : MPSGenericNode
 
                 private fun JavaModuleFacet.macroHelper(): MacroHelper {
                     return module
-                        .let { if (it is Generator) it.sourceLanguage().sourceModule else it }
+                        .let { if (it is Generator) it.sourceLanguage().resolveSourceModule() else it }
                         .let { MacrosFactory().module(it) }
                 }
             },

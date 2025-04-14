@@ -156,10 +156,6 @@ class SingleValueStream<E>(val value: E) : IStreamInternal.One<E> {
         return SingleValueStream(1)
     }
 
-    override fun filterBySingle(condition: (E) -> IStream.One<Boolean>): IStream.Many<E> {
-        return convertLater().filterBySingle(condition)
-    }
-
     override fun firstOrDefault(defaultValue: () -> E): IStream.One<E> {
         return this
     }

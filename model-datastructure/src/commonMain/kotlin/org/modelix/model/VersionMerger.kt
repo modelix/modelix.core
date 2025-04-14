@@ -1,11 +1,11 @@
 package org.modelix.model
 
+import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.IDeserializingKeyValueStore
-import org.modelix.model.lazy.commonBaseVersion
 import org.modelix.model.mutable.asMutableSingleThreaded
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.IOperationIntend
@@ -102,7 +102,7 @@ class VersionMerger(private val idGenerator: IIdGenerator) {
                 .tree(mutableTree.getTransaction().tree)
                 .autoMerge(commonBase.obj.ref, leftVersion.obj.ref, rightVersion.obj.ref)
                 .operations(appliedOps.map { it.getOriginalOp() })
-                .build()
+                .buildLegacy()
         }
         if (mergedVersion == null) {
             throw RuntimeException("Failed to merge ${leftVersion.getObjectHash()} and ${rightVersion.getObjectHash()}")
@@ -151,4 +151,58 @@ class VersionMerger(private val idGenerator: IIdGenerator) {
             return leftVersion.commonBaseVersion(rightVersion)
         }
     }
+}
+
+/**
+ * Should only be used for conflict resolution to find out which operations need to be applied to which versions.
+ * There is no guarantee that the base version is part of both branches of a merge.
+ */
+private fun IVersion.commonBaseVersion(other: IVersion): CLVersion? {
+    var leftVersion: CLVersion? = this as CLVersion?
+    var rightVersion: CLVersion? = other as CLVersion?
+    val leftVersions: MutableSet<ObjectHash> = HashSet()
+    val rightVersions: MutableSet<ObjectHash> = HashSet()
+    leftVersions.add(this.getObjectHash())
+    rightVersions.add(other.getObjectHash())
+
+    while (leftVersion != null || rightVersion != null) {
+        val leftBaseRef = leftVersion?.obj?.data?.baseVersion
+        val rightBaseRef = rightVersion?.obj?.data?.baseVersion
+        leftBaseRef?.let { leftVersions.add(it.getHash()) }
+        rightBaseRef?.let { rightVersions.add(it.getHash()) }
+
+        if (leftVersion != null) {
+            if (rightVersions.contains(leftVersion.getObjectHash())) {
+                return leftVersion
+            }
+        }
+        if (rightVersion != null) {
+            if (leftVersions.contains(rightVersion.getObjectHash())) {
+                return rightVersion
+            }
+        }
+
+        val leftLoadedBase = leftBaseRef?.getLoadedData()
+        val rightLoadedBase = rightBaseRef?.getLoadedData()
+
+        if (leftLoadedBase != null || rightLoadedBase != null) {
+            // As long as one of the versions is available without sending a query, follow that path. The probability
+            // is high that the common base is found in there, and we don't have to send any queries at all.
+
+            if (leftLoadedBase != null) {
+                leftVersion = CLVersion(Object(leftLoadedBase, leftBaseRef))
+            }
+            if (rightLoadedBase != null) {
+                rightVersion = CLVersion(Object(rightLoadedBase, rightBaseRef))
+            }
+        } else {
+            if (leftVersion != null) {
+                leftVersion = leftVersion.baseVersion
+            }
+            if (rightVersion != null) {
+                rightVersion = rightVersion.baseVersion
+            }
+        }
+    }
+    return null
 }

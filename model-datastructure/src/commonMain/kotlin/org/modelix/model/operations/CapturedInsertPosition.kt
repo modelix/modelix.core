@@ -4,8 +4,8 @@ import org.modelix.model.api.INodeReference
 
 class CapturedInsertPosition(val siblingsBefore: List<INodeReference>, val siblingsAfter: List<INodeReference>) {
     constructor(index: Int, children: List<INodeReference>) : this(
-        children.take(index),
-        children.drop(index),
+        if (index >= 0) children.take(index) else children,
+        if (index >= 0) children.drop(index) else emptyList(),
     )
 
     fun findIndex(children: List<INodeReference>): Int {

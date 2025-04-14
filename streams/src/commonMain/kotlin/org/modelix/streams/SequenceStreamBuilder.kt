@@ -271,10 +271,6 @@ class SequenceStreamBuilder() : IStreamBuilder {
             return Wrapper(sequence { yield(wrapped.indexOf(element)) })
         }
 
-        override fun filterBySingle(condition: (E) -> IStream.One<Boolean>): IStream.Many<E> {
-            return Wrapper(wrapped.filter { convert(condition(it)).single() })
-        }
-
         override fun firstOrDefault(defaultValue: () -> E): IStream.One<E> {
             return Wrapper(wrapped.ifEmpty { sequenceOf(defaultValue()) }.take(1))
         }

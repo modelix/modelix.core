@@ -97,7 +97,7 @@ kotest-assertions-core = { group = "io.kotest", name = "kotest-assertions-core",
 kotest-assertions-coreJvm = { group = "io.kotest", name = "kotest-assertions-core-jvm", version.ref = "kotest" }
 kotest-assertions-ktor = { group = "io.kotest.extensions", name = "kotest-assertions-ktor", version = "2.0.0" }
 
-guava = { group = "com.google.guava", name = "guava", version = "33.4.7-jre" }
+guava = { group = "com.google.guava", name = "guava", version = "33.4.8-jre" }
 org-json = { group = "org.json", name = "json", version = "20250107" }
 google-oauth-client = { group = "com.google.oauth-client", name = "google-oauth-client", version = "1.39.0" }
 google-oauth-clientjetty = { group = "com.google.oauth-client", name = "google-oauth-client-jetty", version = "1.39.0" }

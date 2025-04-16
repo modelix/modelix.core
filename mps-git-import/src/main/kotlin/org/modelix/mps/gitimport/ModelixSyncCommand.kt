@@ -15,7 +15,7 @@ import org.modelix.model.lazy.RepositoryId
 
 class ModelixSyncCommand : CliktCommand() {
     init {
-        subcommands(GitImport())
+        subcommands(GitImport(), SelfTest())
     }
 
     override fun run() {}
@@ -23,6 +23,7 @@ class ModelixSyncCommand : CliktCommand() {
     class GitImport : CliktCommand(name = "git-import") {
         val gitDir by argument().file(mustExist = true, canBeFile = false, canBeDir = true).help("Path to a Git repository")
         val modelServer by option().default("http://localhost:28101").help("URL of the Modelix model server")
+        val token by option().help("JWT token for the model server access")
         val repository by option().required().help("Name of the target repository on the model server")
         val branch by option().default("git-import").help("Name of the target branch on the model server")
         val rev by option().default("HEAD").help("Git revision, which can a branch name, a tag or a commit ID")
@@ -35,8 +36,15 @@ class ModelixSyncCommand : CliktCommand() {
                 baseBranch = RepositoryId(repository).getBranchReference(branch),
                 targetBranchName = branch,
                 gitRevision = rev,
+                token = token,
             )
             runBlocking { importer.runSuspending() }
+        }
+    }
+
+    class SelfTest : CliktCommand(name = "self-test") {
+        override fun run() {
+            println("OK")
         }
     }
 }

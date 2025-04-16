@@ -48,6 +48,7 @@ class GitImporter(
     val baseBranch: BranchReference,
     val targetBranchName: String?,
     val gitRevision: String,
+    val token: String? = null,
 ) {
     @OptIn(ExperimentalStdlibApi::class)
     suspend fun runSuspending() {
@@ -62,7 +63,9 @@ class GitImporter(
         val resolvedCommit = git.repository.parseCommit(git.repository.resolve(gitRevision))
         val targetBranch = repositoryId.getBranchReference(targetBranchName ?: "git-import-${resolvedCommit.name}")
 
-        val client = ModelClientV2.builder().url(modelServerUrl).build()
+        val client = ModelClientV2.builder().url(modelServerUrl).also {
+            if (token != null) it.authToken { token }
+        }.build()
         client.init()
 
         println("Finding existing imports")

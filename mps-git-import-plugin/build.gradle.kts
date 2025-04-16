@@ -19,6 +19,7 @@ dependencies {
         exclude("org.slf4j", "slf4j-api")
     }
 
+    implementation(project(":mps-git-import"), excludeMPSLibraries)
     implementation(project(":bulk-model-sync-lib"), excludeMPSLibraries)
     implementation(project(":bulk-model-sync-mps"), excludeMPSLibraries)
     implementation(project(":mps-model-adapters"), excludeMPSLibraries)
@@ -26,7 +27,6 @@ dependencies {
     implementation(project(":datastructures"), excludeMPSLibraries)
     implementation(libs.modelix.mpsApi, excludeMPSLibraries)
     implementation(libs.kotlin.logging, excludeMPSLibraries)
-    implementation(libs.kotlin.html, excludeMPSLibraries)
     implementation(libs.kotlin.datetime, excludeMPSLibraries)
     implementation("org.eclipse.jgit:org.eclipse.jgit:7.2.0.202503040940-r")
     implementation("com.github.ajalt.clikt:clikt:5.0.3")

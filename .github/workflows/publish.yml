@@ -60,6 +60,16 @@ jobs:
             type=raw,value=${{ steps.version.outputs.VERSION }},enable=true
             type=raw,value=latest,enable=${{ github.event_name == 'push' }}
 
+      - name: Determine Docker metadata
+        id: meta_import
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5
+        with:
+          images: |
+            modelix/mps-git-import
+          tags: |
+            type=raw,value=${{ steps.version.outputs.VERSION }},enable=true
+            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
+
         # Perform the build in a separate call to avoid trying to publish
         # something where the build already failed partially. This could happen
         # due to the use of the --continue flag in the publish step.
@@ -128,5 +138,5 @@ jobs:
           file: ./mps-git-import-cli/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: ${{ env.PUSH }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta_import.outputs.tags }}
+          labels: ${{ steps.meta_import.outputs.labels }}

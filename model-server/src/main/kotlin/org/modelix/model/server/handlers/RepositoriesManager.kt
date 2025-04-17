@@ -36,6 +36,7 @@ import org.modelix.streams.IExecutableStream
 import org.modelix.streams.IStream
 import org.modelix.streams.getBlocking
 import org.modelix.streams.iterateBlocking
+import org.modelix.streams.plus
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
@@ -390,9 +391,16 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         val store = stores.getAsyncStore(repository?.takeIf { isIsolated(it) ?: false })
         return store.getStreamExecutor().queryManyLater {
             val version = CLVersion.loadFromHash(versionHash, store)
-            IStream.many(filter.knownVersions).flatMap { CLVersion.tryLoadFromHash(it, store) }.toList().flatMap { knownVersions ->
-                version.diff(knownVersions, filter).map { it.getHashString() to it.data.serialize() }
-            }
+
+            val diff = IStream.many(filter.knownVersions).flatMap { CLVersion.tryLoadFromHash(it, store) }.toList()
+                .flatMap { knownVersions ->
+                    version.diff(knownVersions, filter)
+                }
+            val versionHash = version.getObjectHash()
+            // The version itself is always included, because version objects on the client are weakly referenced,
+            // and it may already be garbage collected.
+            (IStream.of(version.asObject()) + diff.filter { it.getHash() != versionHash })
+                .map { it.getHashString() to it.data.serialize() }
         }.let { ObjectDataFlow(it) }
     }
 

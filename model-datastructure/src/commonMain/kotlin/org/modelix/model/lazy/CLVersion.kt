@@ -358,9 +358,8 @@ fun IVersion.diff(knownVersions: List<IVersion>, filter: ObjectDeltaFilter = Obj
              *
              * Use the version closest to [this] version as the base because that one should produce the smallest diff.
              */
-            val baseVersion = unknownHistory.mapNotNull { it.baseVersion }
-                .find { allKnownVersions.contains(it.getObjectHash()) }
-                ?: allKnownVersions.values.firstOrNull()
+            val baseVersion = version.baseVersion?.takeIf { allKnownVersions.contains(it.getObjectHash()) }
+                ?: allKnownVersions.values.lastOrNull()
             result += if (baseVersion == null) {
                 IStream.many(version.data.treeRefs.values)
                     .flatMap { it.resolve() }

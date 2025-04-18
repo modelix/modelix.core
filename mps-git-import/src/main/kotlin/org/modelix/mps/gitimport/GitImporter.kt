@@ -39,7 +39,6 @@ import org.modelix.model.sync.bulk.ModelSynchronizer
 import org.modelix.model.sync.bulk.UnfilteredModelMask
 import org.modelix.mps.api.ModelixMpsApi
 import java.io.File
-import kotlin.invoke
 import kotlin.system.exitProcess
 
 class GitImporter(
@@ -81,51 +80,71 @@ class GitImporter(
         val versionIndex = VersionIndex(initialRemoteVersion)
         var lastPushedVersion = initialRemoteVersion
 
-        val existingImports = HashMap<String, IVersion>()
+        val importQueue = LinkedHashMap<String, PendingImport>()
+        val fillQueue = DeepRecursiveFunction<ObjectId, PendingImport> { gitCommitId ->
+            val gitCommit = git.repository.parseCommit(gitCommitId)
+            importQueue[gitCommit.name]?.let { return@DeepRecursiveFunction it }
 
-        val importVersion = DeepRecursiveFunction<ObjectId, IVersion> { gitCommitId ->
+            val existingVersionHash = versionIndex.findByGitCommitId(gitCommitId.name)
+            val queueElement = if (existingVersionHash != null) {
+                PendingImport(
+                    gitCommit = gitCommit,
+                    parentImports = null,
+                    importedVersion = null,
+                    existingVersionHash = existingVersionHash,
+                )
+            } else {
+                PendingImport(
+                    gitCommit = gitCommit,
+                    parentImports = gitCommit.parents?.map { callRecursive(it) }.orEmpty(),
+                    importedVersion = null,
+                    existingVersionHash = null,
+                )
+            }
+            importQueue[gitCommit.name] = queueElement
+            queueElement
+        }
+        fillQueue(resolvedCommit)
+
+        println("Starting import")
+        for (commitId in importQueue.keys.toList()) {
+            val queueElement = importQueue.remove(commitId)!!
             try {
-                val gitCommit = git.repository.parseCommit(gitCommitId)
-                existingImports[gitCommit.name]?.let { return@DeepRecursiveFunction it }
+                when {
+                    queueElement.importedVersion != null -> continue
+                    queueElement.existingVersionHash != null -> {
+                        val version = client.loadVersion(repositoryId, queueElement.existingVersionHash!!.toString(), null)
+                        queueElement.success(version)
+                    }
+                    else -> {
+                        val parentImports = queueElement.parentImports.orEmpty().map { it.importedVersion!! }
+                        DummyRepo().use { mpsRepo ->
+                            val gitCommit = queueElement.gitCommit
+                            val importedVersion = ModelixMpsApi.runWithRepository(mpsRepo) {
+                                when (parentImports.size) {
+                                    0 -> runImport(listOf(versionIndex.getInitialVersion()), gitCommit, git.repository, mpsRepo)
+                                    1, 2 -> runImport(parentImports, gitCommit, git.repository, mpsRepo)
+                                    else -> TODO()
+                                }
+                            }
 
-                val existingVersionHash = versionIndex.findByGitCommitId(gitCommitId.name)
-                if (existingVersionHash != null) {
-                    return@DeepRecursiveFunction runBlocking {
-                        client.loadVersion(repositoryId, existingVersionHash.toString(), null).also { v ->
-                            (v as CLVersion).gitCommit?.let { c -> existingImports[c] = v }
+                            runBlocking {
+                                println("Pushing $importedVersion")
+                                lastPushedVersion = client.push(targetBranch, importedVersion, importedVersion.getParentVersions(), force = true)
+                            }
+
+                            queueElement.success(importedVersion)
                         }
                     }
                 }
-
-                val parentImports = gitCommit.parents?.map { callRecursive(it) }.orEmpty()
-                val mpsRepo = DummyRepo() // TODO dispose
-                val importedVersion = ModelixMpsApi.runWithRepository(mpsRepo) {
-                    when (parentImports.size) {
-                        0 -> runImport(listOf(versionIndex.getInitialVersion()), gitCommit, git.repository, mpsRepo)
-                        1, 2 -> runImport(parentImports, gitCommit, git.repository, mpsRepo)
-                        else -> TODO()
-                    }
-                }
-
-                runBlocking {
-                    println("Pushing $importedVersion")
-                    lastPushedVersion = client.push(targetBranch, importedVersion, importedVersion.getParentVersions(), force = true)
-                }
-
-                existingImports[gitCommit.name] = importedVersion
-
-                importedVersion
             } catch (ex: Exception) {
-                println("Import failed for ${gitCommitId.name}")
+                println("Import failed for ${queueElement.gitCommit.name}")
                 ex.printStackTrace()
                 throw ex
             }
         }
 
-        println("Starting import")
-        val importedVersion = importVersion(resolvedCommit)
-        println("Uploading new versions")
-        client.push(targetBranch, importedVersion, lastPushedVersion, force = true)
+        println("Import done")
     }
 
     /**
@@ -268,6 +287,22 @@ class GitImporter(
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * The purpose of this class is to build a queue of to be imported versions and keep the result only as long as
+     * necessary in memory. As soon as the result is consumed by all child imports, the result can be garbage collected.
+     */
+    private class PendingImport(
+        val gitCommit: RevCommit,
+        var parentImports: List<PendingImport>?,
+        var importedVersion: IVersion? = null,
+        var existingVersionHash: ObjectHash? = null,
+    ) {
+        fun success(version: IVersion) {
+            importedVersion = version
+            parentImports = null
         }
     }
 }

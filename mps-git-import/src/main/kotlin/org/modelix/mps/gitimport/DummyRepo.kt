@@ -10,8 +10,9 @@ import org.jetbrains.mps.openapi.module.SRepositoryListener
 import org.jetbrains.mps.openapi.repository.CommandListener
 import org.jetbrains.mps.openapi.repository.ReadActionListener
 import org.jetbrains.mps.openapi.repository.WriteActionListener
+import java.lang.AutoCloseable
 
-class DummyRepo : SRepository {
+class DummyRepo : SRepository, AutoCloseable {
     private val modelAccess = DummyModelAccess()
     private val registeredModules: MutableMap<SModuleId, SModule> = LinkedHashMap()
 
@@ -33,6 +34,16 @@ class DummyRepo : SRepository {
 
     override fun getParent(): SRepository? {
         return null
+    }
+
+    fun dispose() {
+        for (entry in registeredModules) {
+            (entry.value as AbstractModule).dispose()
+        }
+    }
+
+    override fun close() {
+        dispose()
     }
 
     override fun getModule(id: SModuleId): SModule? = registeredModules[id]

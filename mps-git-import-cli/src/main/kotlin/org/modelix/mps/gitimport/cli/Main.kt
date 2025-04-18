@@ -15,7 +15,7 @@ fun main(args: Array<String>) {
         mainMethodName = "runFromAnt",
         mpsHome = File("/mps"),
         jarFolders = listOf(File("/mps-git-import-cli/lib")),
-        jvmArgs = args.mapIndexed { index, arg -> "-Dmodelix.git.import.args.$index=$arg" },
+        jvmArgs = listOf("-Xmx2048m") + args.mapIndexed { index, arg -> "-Dmodelix.git.import.args.$index=$arg" },
         moduleId = UUID.randomUUID(),
         buildDir = buildDir,
         workDir = workDir,

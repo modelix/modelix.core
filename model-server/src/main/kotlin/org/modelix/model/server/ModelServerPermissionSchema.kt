@@ -87,9 +87,6 @@ object ModelServerPermissionSchema {
                         includedIn(REPOSITORY, REWRITE)
                         description("Destructive write operations that change the history and loses previously pushed changes.")
 
-                        permission(FORCE_PUSH) {
-                            description("Overwrite the current version. Don't do any merges and don't prevent losing history.")
-                        }
                         permission(DELETE)
                         permission(WRITE) {
                             description("Non-destructive write operations that preserve the history.")
@@ -100,6 +97,7 @@ object ModelServerPermissionSchema {
                             }
                             permission(PUSH) {
                                 description("Add changes to a branch and merge it with the current version.")
+                                includes(OBJECTS, ADD)
                             }
                             permission(READ) {
                                 includes(LEGACY_USER_DEFINED_ENTRIES, READ)
@@ -115,6 +113,11 @@ object ModelServerPermissionSchema {
                                     description("Allows the execution of ModelQL queries.")
                                 }
                             }
+                        }
+
+                        permission(FORCE_PUSH) {
+                            description("Overwrite the current version. Don't do any merges and don't prevent losing history.")
+                            includes(PUSH)
                         }
                     }
                 }
@@ -168,6 +171,7 @@ object ModelServerPermissionSchema {
         val resource: PermissionParts get() = Repository(branchRef.repositoryId).resource + BRANCH + branchRef.branchName
         val read: PermissionParts get() = resource + READ
         val write: PermissionParts get() = resource + WRITE
+        val rewrite: PermissionParts get() = resource + REWRITE
         val push: PermissionParts get() = resource + PUSH
         val pull: PermissionParts get() = resource + PULL
         val forcePush: PermissionParts get() = resource + FORCE_PUSH

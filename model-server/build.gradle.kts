@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.shadow)
     `modelix-kotlin-jvm-with-junit`
     kotlin("plugin.serialization")
+    alias(libs.plugins.jib)
 }
 
 description = "Model Server offering access to model storage"
@@ -140,4 +141,29 @@ tasks.test {
     // See https://stackoverflow.com/questions/76387714/apache-ignite-failing-on-startup
     environment("IGNITE_OVERRIDE_CONSISTENT_ID", "node00")
     environment("KEYCLOAK_VERSION", libs.versions.keycloak.get())
+}
+
+jib {
+//    from {
+//        platforms {
+//            platform {
+//                architecture = "arm64"
+//                os = "linux"
+//            }
+//            platform {
+//                architecture = "amd64"
+//                os = "linux"
+//            }
+//        }
+//    }
+    to {
+        image = "modelix/model-server"
+    }
+    container {
+        ports = listOf("28101")
+//        jvmFlags = listOf(
+//            "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5071",
+//            "-XX:MaxRAMPercentage=75",
+//        )
+    }
 }

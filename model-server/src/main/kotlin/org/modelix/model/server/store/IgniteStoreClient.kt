@@ -74,6 +74,18 @@ class IgniteStoreClient(jdbcProperties: Properties? = null, private val inmemory
                 System.setProperty(propertyName, jdbcProperties.getProperty(propertyName))
             }
         }
+
+        listOf(
+            "jdbc.url" to "MODELIX_JDBC_URL",
+            "jdbc.user" to "MODELIX_JDBC_USER",
+            "jdbc.pw" to "MODELIX_JDBC_PW",
+            "jdbc.schema" to "MODELIX_JDBC_SCHEMA",
+        ).forEach { (propName, envName) ->
+            if (System.getProperty(propName).isNullOrEmpty()) {
+                System.getenv(envName)?.let { System.setProperty(propName, it) }
+            }
+        }
+
         if (!inmemory) updateDatabaseSchema()
 
         // When running tests, Ignite complains about an already running instance, if we don't provide a unique name.

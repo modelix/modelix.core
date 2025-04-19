@@ -287,13 +287,14 @@ object Main {
 
         install(StatusPages) {
             suspend fun ApplicationCall.respondProblem(problem: Problem) {
-                requireNotNull(problem.status) { "Status code must exist as it is use for the HTTP response" }
+                val status = problem.status
+                requireNotNull(status) { "Status code must exist as it is use for the HTTP response" }
 
                 // No easy way found to override the content type when directly responding with serializable objects.
                 respondText(
                     Json.encodeToString(problem),
                     problemJsonContentType,
-                    HttpStatusCode.fromValue(problem.status),
+                    HttpStatusCode.fromValue(status),
                 )
             }
 

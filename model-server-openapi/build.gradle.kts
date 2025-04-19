@@ -1,8 +1,23 @@
 import com.github.gradle.node.npm.task.NpxTask
+import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
     base
     alias(libs.plugins.node)
+
+    `maven-publish`
+    `modelix-kotlin-jvm`
+    `modelix-project-repositories`
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.openapi.generator)
+}
+
+dependencies {
+    implementation(kotlin("stdlib"))
+    api(libs.ktor.server.core)
+    api(libs.ktor.server.resources)
+    implementation(libs.ktor.serialization.json)
+    api(libs.ktor.server.content.negotiation)
 }
 
 description = "OpenAPI specification for the model-server"
@@ -58,14 +73,82 @@ val joinSpecs = tasks.register<NpxTask>("joinSpecs") {
     )
 }
 
-// This provides the resulting joined OpenAPI specification to the model-server project to be declared as a dependency.
-// Cf. https://docs.gradle.org/current/userguide/cross_project_publications.html#cross_project_publications
-val openApiSpec by configurations.creating {
-    isCanBeConsumed = true
-    isCanBeResolved = false
+// copies the openAPI specifications from the api folder into a resource
+// folder so that they are packaged and deployed with the model-server
+val specSourceDir = project.layout.buildDirectory.dir("openapi/src/main/resources")
+val copyApi = tasks.register<Copy>("copyApi") {
+    dependsOn(joinSpecs)
+
+    from(joinedFile)
+    into(specSourceDir.get().dir("api"))
 }
-artifacts {
-    add(openApiSpec.name, joinedFile) {
-        builtBy(joinSpecs)
+sourceSets["main"].resources.srcDir(specSourceDir)
+
+tasks.named("processResources") {
+    dependsOn(copyApi)
+}
+
+// OpenAPI integration
+val openApiGenerationPath = project.layout.buildDirectory.get().dir("generated/openapi")
+val restApiPackage = "org.modelix.model.server.handlers"
+val openApiGenerate = tasks.register<GenerateTask>("openApiGenerateModelServer") {
+    dependsOn(joinSpecs)
+
+    // we let the Gradle OpenAPI generator plugin build data classes and API interfaces based on the provided
+    // OpenAPI specification. That way, the code is forced to stay in sync with the API specification.
+    generatorName.set("kotlin-server")
+    inputSpec.set(joinedFile.asFile.absolutePath)
+    outputDir.set(openApiGenerationPath.toString())
+    packageName.set(restApiPackage)
+    apiPackage.set(restApiPackage)
+    modelPackage.set(restApiPackage)
+    // We use patched mustache so that only the necessary parts (i.e. resources and models)
+    // are generated. additionally we patch the used serialization framework as the `ktor` plugin
+    // uses a different one than we do in the model-server. The templates are based on
+    // https://github.com/OpenAPITools/openapi-generator/tree/809b3331a95b3c3b7bcf025d16ae09dc0682cd69/modules/openapi-generator/src/main/resources/kotlin-server
+    templateDir.set("${layout.projectDirectory.dir("templates")}")
+    configOptions.set(
+        mapOf(
+            // we use the ktor generator to generate server side resources and model (i.e. data classes)
+            "library" to "ktor",
+            // the generated artifacts are not built independently, thus no dedicated build files have to be generated
+            "omitGradleWrapper" to "true",
+            // the path to resource generation we need
+            "featureResources" to "true",
+            // disable features we do not use
+            "featureAutoHead" to "false",
+            "featureCompression" to "false",
+            "featureHSTS" to "false",
+            "featureMetrics" to "false",
+        ),
+    )
+    // generate only Paths and Models - only this set will produce the intended Paths.kt as well as the models
+    // the openapi generator is generally very picky and configuring it is rather complex
+    globalProperties.putAll(
+        mapOf(
+            "models" to "",
+            "apis" to "",
+            "supportingFiles" to "Paths.kt",
+        ),
+    )
+}
+
+// Ensure that the OpenAPI generator runs before starting to compile
+tasks.named("compileKotlin") {
+    dependsOn(openApiGenerate)
+}
+
+// add openAPI generated artifacts to the sourceSets
+sourceSets["main"].kotlin.srcDir("$openApiGenerationPath/src/main/kotlin")
+
+publishing {
+    publications {
+        create<MavenPublication>("modelServerOpenApi") {
+            groupId = project.group as String
+            artifactId = "model-server-openapi"
+            version = project.version as String
+
+            from(components["java"])
+        }
     }
 }

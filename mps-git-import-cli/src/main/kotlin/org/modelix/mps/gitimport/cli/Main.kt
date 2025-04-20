@@ -14,7 +14,7 @@ fun main(args: Array<String>) {
         mainClassName = "org.modelix.mps.gitimport.MainKt",
         mainMethodName = "runFromAnt",
         mpsHome = File("/mps"),
-        jarFolders = listOf(File("/mps-git-import-cli/lib")),
+        jarFolders = listOf(File("/app/libs")),
         jvmArgs = listOf("-Xmx2048m") + args.mapIndexed { index, arg -> "-Dmodelix.git.import.args.$index=$arg" },
         moduleId = UUID.randomUUID(),
         buildDir = buildDir,

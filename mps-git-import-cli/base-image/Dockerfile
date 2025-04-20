@@ -1,7 +1,7 @@
-FROM eclipse-temurin:21
+FROM eclipse-temurin:21 AS downloader
 ARG MPS_VERSION="2024.1.3"
 
-RUN apt update && apt install wget ant -y
+RUN apt update && apt install wget -y
 
 # download MPS and extract into /mps
 RUN set -e \
@@ -15,9 +15,8 @@ RUN set -e \
     && rm -rf /mpstmp \
     && rm -rf /mps/jbr
 
-COPY build/install/mps-git-import-cli /mps-git-import-cli
+FROM eclipse-temurin:21
 
-#RUN /mps-git-import-cli/bin/mps-git-import-cli self-test
+RUN apt update && apt install ant git -y
 
-ENTRYPOINT ["/mps-git-import-cli/bin/mps-git-import-cli"]
-CMD ["self-test"]
+COPY --from=downloader /mps /mps

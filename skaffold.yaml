@@ -8,3 +8,11 @@ build:
     - image: modelix/model-server
       jib:
         project: model-server
+    - image: modelix/mps-git-import-base
+      context: mps-git-import-cli/base-image
+    - image: modelix/mps-git-import
+      jib:
+        project: mps-git-import-cli
+        fromImage: modelix/mps-git-import-base
+      requires:
+        - image: modelix/mps-git-import-base

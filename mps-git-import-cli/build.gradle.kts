@@ -2,9 +2,7 @@ import org.modelix.mpsHomeDir
 
 plugins {
     `modelix-kotlin-jvm-with-junit`
-    `maven-publish`
-    application
-    alias(libs.plugins.modelix.mps.buildtools)
+    alias(libs.plugins.jib)
 }
 
 dependencies {
@@ -18,10 +16,11 @@ dependencies {
     )
 }
 
-application {
-    mainClass.set("org.modelix.mps.gitimport.cli.MainKt")
-}
-
-tasks.assemble {
-    dependsOn(tasks.installDist)
+jib {
+    from {
+        image = "modelix/mps-git-import-base"
+    }
+    to {
+        image = "modelix/mps-git-import"
+    }
 }

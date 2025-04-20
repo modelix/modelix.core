@@ -144,26 +144,8 @@ tasks.test {
 }
 
 jib {
-//    from {
-//        platforms {
-//            platform {
-//                architecture = "arm64"
-//                os = "linux"
-//            }
-//            platform {
-//                architecture = "amd64"
-//                os = "linux"
-//            }
-//        }
-//    }
-    to {
-        image = "modelix/model-server"
-    }
+    from.image = "registry.access.redhat.com/ubi8/openjdk-11:1.21-1.1736337912"
     container {
         ports = listOf("28101")
-//        jvmFlags = listOf(
-//            "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5071",
-//            "-XX:MaxRAMPercentage=75",
-//        )
     }
 }

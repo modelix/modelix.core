@@ -4,15 +4,16 @@ metadata:
   name: core
 build:
   local: {}
+  platforms: ["linux/amd64", "linux/arm64"]
   artifacts:
-    - image: modelix/model-server
+    - image: model-server
       jib:
         project: model-server
-    - image: modelix/mps-git-import-base
-      context: mps-git-import-cli/base-image
-    - image: modelix/mps-git-import
+    - image: mps-git-import-base
+      context: mps-base-image
+    - image: mps-git-import
       jib:
         project: mps-git-import-cli
-        fromImage: modelix/mps-git-import-base
+        fromImage: mps-git-import-base
       requires:
-        - image: modelix/mps-git-import-base
+        - image: mps-git-import-base

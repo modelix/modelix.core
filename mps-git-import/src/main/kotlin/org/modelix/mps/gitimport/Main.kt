@@ -2,6 +2,7 @@ package org.modelix.mps.gitimport
 
 import com.github.ajalt.clikt.core.main
 
+@Suppress("unused")
 fun runFromAnt() {
     val args = sequence {
         var i = 0

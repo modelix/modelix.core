@@ -110,35 +110,6 @@ allprojects {
                     password = project.findProperty("artifacts.itemis.cloud.pw").toString()
                 }
             }
-            maven {
-                name = "GitHubPackages"
-                // we moved some components from modelix/modelix to modelix/modelix.core but github packages
-                // cannot handle this situation. basically we suffer from what is described here:
-                //     https://github.com/orgs/community/discussions/23474
-                // this is a simple workaround for the affected components.
-                // consequently, when obtaining these dependencies, the repo url is the old modelix/modelix one...
-                if (project.name in arrayOf(
-                        "model-client",
-                        "model-client-js",
-                        "model-client-jvm",
-                        "model-server",
-                        "model-server-api",
-                    )
-                ) {
-                    url = uri("https://maven.pkg.github.com/modelix/modelix")
-                    credentials {
-                        username = project.findProperty("gpr.user") as? String ?: System.getenv("GITHUB_ACTOR")
-                        password =
-                            project.findProperty("gpr.universalkey") as? String ?: System.getenv("GHP_UNIVERSAL_TOKEN")
-                    }
-                } else {
-                    url = uri("https://maven.pkg.github.com/modelix/modelix.core")
-                    credentials {
-                        username = project.findProperty("gpr.user") as? String ?: System.getenv("GITHUB_ACTOR")
-                        password = project.findProperty("gpr.key") as? String ?: System.getenv("GITHUB_TOKEN")
-                    }
-                }
-            }
         }
     }
 

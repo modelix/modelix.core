@@ -1,4 +1,6 @@
-FROM eclipse-temurin:21 AS downloader
+FROM eclipse-temurin:21@sha256:1d70e8e91f3916f56bd73581f6ba293077490a7ac273af2afead66cfecfee7cf AS base
+
+FROM base AS downloader
 ARG MPS_VERSION="2024.1.3"
 
 RUN apt update && apt install wget -y
@@ -15,7 +17,7 @@ RUN set -e \
     && rm -rf /mpstmp \
     && rm -rf /mps/jbr
 
-FROM eclipse-temurin:21
+FROM base
 
 RUN apt update && apt install ant git -y
 

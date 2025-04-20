@@ -85,6 +85,20 @@ tasks {
     }
 }
 
+// make the zip consumable in a composite build
+val pluginZipElements by configurations.creating {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+    attributes {
+        attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, ArtifactTypeDefinition.ZIP_TYPE)
+    }
+}
+artifacts {
+    add(pluginZipElements.name, tasks.buildPlugin) {
+        this.builtBy(tasks.buildPlugin)
+    }
+}
+
 group = "org.modelix.mps"
 
 publishing {

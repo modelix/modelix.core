@@ -9,11 +9,6 @@ build:
     - image: model-server
       jib:
         project: model-server
-    - image: mps-git-import-base
-      context: mps-base-image
     - image: mps-git-import
       jib:
         project: mps-git-import-cli
-        fromImage: mps-git-import-base
-      requires:
-        - image: mps-git-import-base

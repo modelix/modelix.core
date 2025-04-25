@@ -263,7 +263,7 @@ object MPSBulkSynchronizer {
         val branchRef = repositoryId.getBranchReference(branchName)
         val versionHash: String? = System.getProperty("modelix.mps.model.sync.bulk.server.version.hash")
         val baseVersionHash = requireNotNull(System.getProperty("modelix.mps.model.sync.bulk.server.version.base.hash")) { "modelix.mps.model.sync.bulk.server.version.base.hash not specified" }
-        val client = ModelClientV2.builder().url(modelServerUrl).build()
+        val client = ModelClientV2.builder().url(modelServerUrl).lazyAndBlockingQueries().build()
         val version = runBlocking {
             if (versionHash == null) client.lazyLoadVersion(branchRef) else client.lazyLoadVersion(repositoryId, versionHash)
         }

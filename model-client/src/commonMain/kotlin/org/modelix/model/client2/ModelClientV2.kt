@@ -95,6 +95,7 @@ class ModelClientV2(
     private val httpClient: HttpClient,
     val baseUrl: String,
     private var clientProvidedUserId: String?,
+    var defaultGraphConfig: ModelClientGraphConfig,
 ) : IModelClientV2, IModelClientV2Internal, Closable {
     private var clientId: Int = 0
     private var idGenerator: IIdGenerator = IdGeneratorDummy()
@@ -111,7 +112,7 @@ class ModelClientV2(
         return runSynchronized(objectGraphs) {
             val repositoryId = repository ?: RepositoryId("")
             objectGraphs.getOrPut(repositoryId) {
-                ModelClientGraph(this, repositoryId)
+                ModelClientGraph(this, repositoryId, defaultGraphConfig)
             }
         }
     }
@@ -313,7 +314,7 @@ class ModelClientV2(
         repositoryId: RepositoryId,
         versionHash: String,
     ): IVersion {
-        val graph = getObjectGraph(repositoryId)
+        val graph = getObjectGraph(repositoryId).also { it.config = it.config.copy(lazyLoadingEnabled = true) }
         return graph.getStreamExecutor().querySuspending {
             graph.fromHashString(versionHash, CPVersion).resolve()
         }.let { CLVersion(it) }
@@ -601,17 +602,29 @@ abstract class ModelClientV2Builder {
     protected var userId: String? = null
     protected var connectTimeout: Duration = 1.seconds
     protected var requestTimeout: Duration = 300.seconds
+    protected var defaultGraphConfig = ModelClientGraphConfig()
 
     // 0 and 1 mean "disable retries"
     protected var retries: UInt = 3U
 
     fun build(): ModelClientV2 {
         return ModelClientV2(
-            httpClient?.config { configureHttpClient(this) } ?: createHttpClient(),
-            baseUrl,
-            userId,
+            httpClient = httpClient?.config { configureHttpClient(this) } ?: createHttpClient(),
+            baseUrl = baseUrl,
+            clientProvidedUserId = userId,
+            defaultGraphConfig = defaultGraphConfig,
         )
     }
+
+    fun lazyLoadingAllowed(allowed: Boolean = true) = also {
+        defaultGraphConfig = defaultGraphConfig.copy(lazyLoadingEnabled = allowed)
+    }
+
+    fun blockingQueriesAllowed(allowed: Boolean = true) = also {
+        defaultGraphConfig = defaultGraphConfig.copy(blockingQueriesAllowed = allowed)
+    }
+
+    fun lazyAndBlockingQueries() = lazyLoadingAllowed().blockingQueriesAllowed()
 
     fun url(url: String): ModelClientV2Builder {
         baseUrl = normalizeUrl(url)

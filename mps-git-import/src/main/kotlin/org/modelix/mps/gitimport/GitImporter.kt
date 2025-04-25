@@ -62,7 +62,7 @@ class GitImporter(
         val resolvedCommit = git.repository.parseCommit(git.repository.resolve(gitRevision))
         val targetBranch = repositoryId.getBranchReference(targetBranchName ?: "git-import-${resolvedCommit.name}")
 
-        val client = ModelClientV2.builder().url(modelServerUrl).also {
+        val client = ModelClientV2.builder().url(modelServerUrl).lazyAndBlockingQueries().also {
             if (token != null) it.authToken { token }
         }.build()
         client.init()

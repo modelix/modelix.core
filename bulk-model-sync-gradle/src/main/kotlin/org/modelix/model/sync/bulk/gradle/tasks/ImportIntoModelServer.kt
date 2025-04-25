@@ -80,6 +80,7 @@ abstract class ImportIntoModelServer : DefaultTask() {
         val client = ModelClientV2.builder()
             .url(url.get())
             .requestTimeout(requestTimeoutSeconds.get().seconds)
+            .lazyAndBlockingQueries()
             .build()
         client.use {
             logger.info("Initializing client...")

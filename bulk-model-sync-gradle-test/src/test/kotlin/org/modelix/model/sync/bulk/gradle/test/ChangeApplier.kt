@@ -17,7 +17,7 @@ import org.modelix.model.ModelFacade
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.getDescendants
-import org.modelix.model.client2.ModelClientV2PlatformSpecificBuilder
+import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.runWrite
 import org.modelix.model.lazy.RepositoryId
 import kotlin.test.Test
@@ -32,7 +32,7 @@ class ChangeApplier {
     fun applyChangesForPullTest() {
         val url = "http://0.0.0.0:28309/v2"
         val branchRef = ModelFacade.createBranchReference(RepositoryId("ci-test"), "master")
-        val client = ModelClientV2PlatformSpecificBuilder().url(url).build().apply { runBlocking { init() } }
+        val client = ModelClientV2.builder().lazyAndBlockingQueries().url(url).build().apply { runBlocking { init() } }
 
         TypedLanguagesRegistry.register(L_GraphLang)
         TypedLanguagesRegistry.register(L_jetbrains_mps_lang_core)

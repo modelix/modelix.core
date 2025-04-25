@@ -46,7 +46,7 @@ abstract class GetRevisionInfo : DefaultTask() {
         }
 
         logger.info("Pulling versionHash from server...")
-        val modelClient = ModelClientV2.builder().url(serverUrl.get()).build()
+        val modelClient = ModelClientV2.builder().url(serverUrl.get()).lazyAndBlockingQueries().build()
         val branchRef = RepositoryId(repositoryId.get()).getBranchReference(branchName.get())
 
         return runBlocking {

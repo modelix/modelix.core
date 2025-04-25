@@ -4,6 +4,7 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import mu.KotlinLogging
 import org.modelix.datastructures.objects.IObjectData
+import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.ITree
@@ -265,7 +266,16 @@ class ModelClientV2Test {
         }
 
         // Act
-        val versionPulled = modelClientForAssert.pullIfExists(branchId)!! as CLVersion
+        val versionPulled = modelClientForAssert.pull(
+            branchId,
+            null,
+            ObjectDeltaFilter(
+                knownVersions = emptySet(),
+                includeOperations = true,
+                includeHistory = true,
+                includeTrees = true,
+            ),
+        ) as CLVersion
 
         // Assert
         fun checkAllReferencedEntriesExistInStore(referencingEntry: IObjectData) {

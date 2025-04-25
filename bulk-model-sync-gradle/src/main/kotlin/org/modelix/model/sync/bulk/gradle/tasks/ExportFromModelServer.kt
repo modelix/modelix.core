@@ -56,6 +56,7 @@ abstract class ExportFromModelServer : DefaultTask() {
         val modelClient = ModelClientV2PlatformSpecificBuilder()
             .url(url.get())
             .requestTimeout(requestTimeoutSeconds.get().seconds)
+            .lazyAndBlockingQueries()
             .build()
 
         val revision = revisionFile.get().asFile.readText()

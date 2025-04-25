@@ -5,7 +5,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -27,7 +26,6 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.flow.zip
 import org.modelix.kotlin.utils.DelicateModelixApi
-import org.modelix.kotlin.utils.runBlockingIfJvm
 
 class FlowStreamBuilder() : IStreamBuilder {
 
@@ -97,9 +95,7 @@ class FlowStreamBuilder() : IStreamBuilder {
         override fun asSequence(): Sequence<E> = throw UnsupportedOperationException()
 
         override fun iterateBlocking(visitor: (E) -> Unit) {
-            runBlockingIfJvm {
-                wrapped.collect { visitor(it) }
-            }
+            throw UnsupportedOperationException("Use suspendable queries")
         }
         override suspend fun iterateSuspending(visitor: suspend (E) -> Unit) {
             wrapped.collect(visitor)
@@ -113,7 +109,7 @@ class FlowStreamBuilder() : IStreamBuilder {
         }
 
         override fun executeBlocking() {
-            runBlockingIfJvm { wrapped.collect() }
+            throw UnsupportedOperationException("Use suspendable queries")
         }
 
         @DelicateModelixApi
@@ -162,17 +158,6 @@ class FlowStreamBuilder() : IStreamBuilder {
             require(converter == this@FlowStreamBuilder)
             return this
         }
-        fun getAsync(onError: ((Throwable) -> Unit)?, onSuccess: ((E) -> Unit)?) {
-            runBlockingIfJvm {
-                try {
-                    wrapped.collect {
-                        onSuccess?.invoke(it)
-                    }
-                } catch (ex: Throwable) {
-                    onError?.invoke(ex)
-                }
-            }
-        }
 
         override fun <R> flatMapOne(mapper: (E) -> IStream.One<R>): IStream.One<R> {
             return Wrapper(wrapped.flatMapConcat { convert(mapper(it)) })
@@ -215,7 +200,7 @@ class FlowStreamBuilder() : IStreamBuilder {
         }
 
         override fun getBlocking(): E {
-            return runBlockingIfJvm { wrapped.single() }
+            throw UnsupportedOperationException("Use suspendable queries")
         }
 
         override suspend fun getSuspending(): E {

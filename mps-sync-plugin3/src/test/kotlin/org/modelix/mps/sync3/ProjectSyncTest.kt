@@ -67,7 +67,7 @@ class ProjectSyncTest : MPSTestBase() {
         val branchRef = RepositoryId("sync-test").getBranchReference()
         syncProjectToServer("initial", port, branchRef)
 
-        val client = ModelClientV2.builder().url("http://localhost:$port").build()
+        val client = ModelClientV2.builder().url("http://localhost:$port").lazyAndBlockingQueries().build()
         val version = client.pull(branchRef, null)
         val rootNode = version.getModelTree().asModelSingleThreaded().getRootNode()
         val allNodes = rootNode.getDescendants(true)
@@ -243,7 +243,7 @@ class ProjectSyncTest : MPSTestBase() {
         assertEquals("MyClass", readAction { mpsNode.getProperty(nameProperty.property) })
 
         // ... and then some non-MPS client changes a property ...
-        val client = ModelClientV2.builder().url("http://localhost:$port").build().also { it.init() }
+        val client = ModelClientV2.builder().url("http://localhost:$port").lazyAndBlockingQueries().build().also { it.init() }
         client.runWriteOnModel(branchRef) { rootNode ->
             val node = rootNode.getDescendants(true)
                 .first { it.getPropertyValue(nameProperty.toReference()) == "MyClass" }
@@ -276,7 +276,7 @@ class ProjectSyncTest : MPSTestBase() {
         assertEquals("MyClass", readAction { mpsNode.getProperty(nameProperty.property) })
 
         // ... and then a non-MPS client adds a new node ...
-        val client = ModelClientV2.builder().url("http://localhost:$port").build().also { it.init() }
+        val client = ModelClientV2.builder().url("http://localhost:$port").lazyAndBlockingQueries().build().also { it.init() }
         val newNodeIdOnServer = client.runWriteOnModel(branchRef, { MPSIdGenerator(client.getIdGenerator(), it) }) { rootNode ->
             val node = rootNode.getDescendants(true)
                 .first { it.getPropertyValue(nameProperty.toReference()) == "MyClass" }
@@ -365,7 +365,7 @@ class ProjectSyncTest : MPSTestBase() {
         println("initial two versions pushed")
 
         val branchRef2 = branchRef.repositoryId.getBranchReference("branchB")
-        val client = ModelClientV2.builder().url("http://localhost:$port").build()
+        val client = ModelClientV2.builder().url("http://localhost:$port").lazyAndBlockingQueries().build()
         client.push(branchRef2, version1, null)
 
         // The second client then reconnects ...

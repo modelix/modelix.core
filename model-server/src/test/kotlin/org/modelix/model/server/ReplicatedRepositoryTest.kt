@@ -68,8 +68,8 @@ class ReplicatedRepositoryTest {
     @Test
     fun `sequential write from multiple clients`() = runTest {
         val url = "http://localhost/v2"
-        val modelClient = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
-        val modelClient2 = ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+        val modelClient = ModelClientV2.builder().url(url).client(client).lazyAndBlockingQueries().build().also { it.init() }
+        val modelClient2 = ModelClientV2.builder().url(url).client(client).lazyAndBlockingQueries().build().also { it.init() }
         val repositoryId = RepositoryId("repo1")
         modelClient.initRepository(repositoryId)
 
@@ -122,7 +122,7 @@ class ReplicatedRepositoryTest {
     fun concurrentWrite(repetitionInfo: RepetitionInfo) = runTest { scope ->
         val url = "http://localhost/v2"
         val clients = (1..3).map {
-            ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+            ModelClientV2.builder().url(url).client(client).lazyAndBlockingQueries().build().also { it.init() }
         }
 
         val repositoryId = RepositoryId("repo1")
@@ -195,7 +195,7 @@ class ReplicatedRepositoryTest {
     fun deterministicConcurrentWrite(repetitionInfo: RepetitionInfo) = runTest {
         val url = "http://localhost/v2"
         val clients = (1..3).map {
-            ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+            ModelClientV2.builder().url(url).client(client).lazyAndBlockingQueries().build().also { it.init() }
         }
 
         val repositoryId = RepositoryId("repo1")

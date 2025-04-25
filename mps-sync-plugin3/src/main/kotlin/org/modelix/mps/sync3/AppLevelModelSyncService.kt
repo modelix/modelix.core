@@ -63,6 +63,7 @@ class AppLevelModelSyncService() : Disposable {
                 it ?: ModelClientV2.builder()
                     .url(url)
                     .authConfig(authConfig)
+                    .lazyAndBlockingQueries()
                     .build()
                     .also { it.init() }
             }

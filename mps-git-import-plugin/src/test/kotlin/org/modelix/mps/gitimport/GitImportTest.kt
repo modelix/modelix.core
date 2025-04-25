@@ -668,7 +668,7 @@ class GitImportTest : MPSTestBase() {
 
         importer.runSuspending()
 
-        val client = ModelClientV2.builder().url(modelServerUrl).build()
+        val client = ModelClientV2.builder().url(modelServerUrl).lazyAndBlockingQueries().build()
         assertEquals(setOf(repositoryId), client.listRepositories().toSet())
         assertEquals(
             setOf(repositoryId.getBranchReference(), targetBranch),

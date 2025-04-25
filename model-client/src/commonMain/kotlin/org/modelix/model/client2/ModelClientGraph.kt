@@ -20,7 +20,13 @@ import org.modelix.streams.BulkRequestStreamExecutor
 import org.modelix.streams.IBulkExecutor
 import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
+import org.modelix.streams.SimpleStreamExecutor
 import kotlin.jvm.Synchronized
+
+data class ModelClientGraphConfig(
+    val lazyLoadingEnabled: Boolean = false,
+    val blockingQueriesAllowed: Boolean = false,
+)
 
 /**
  * Versions received via [IModelClientV2.pull] are fully loaded. History is loaded on demand.
@@ -28,14 +34,19 @@ import kotlin.jvm.Synchronized
 class ModelClientGraph(
     val client: IModelClientV2Internal,
     val repositoryId: RepositoryId,
+    var config: ModelClientGraphConfig = ModelClientGraphConfig(),
 ) : IObjectGraph {
     private val dataDedupeCache = WeakValueMap<ObjectHash, IObjectData>()
 
     private var eagerLoadingObjects: Map<ObjectHash, String>? = null
     private val streamExecutor = BulkRequestStreamExecutor(object : IBulkExecutor<String, String> {
         override fun execute(keys: List<String>): Map<String, String> {
-            return runBlockingIfJvm {
-                client.getObjects(repositoryId, keys.asSequence())
+            if (config.blockingQueriesAllowed) {
+                return runBlockingIfJvm {
+                    client.getObjects(repositoryId, keys.asSequence())
+                }
+            } else {
+                throw UnsupportedOperationException("Use suspendable queries")
             }
         }
         override suspend fun executeSuspending(keys: List<String>): Map<String, String> {
@@ -129,7 +140,7 @@ class ModelClientGraph(
     }
 
     override fun getStreamExecutor(): IStreamExecutor {
-        return streamExecutor
+        return if (config.lazyLoadingEnabled) streamExecutor else SimpleStreamExecutor
     }
 
     private fun <T : IObjectData> findData(ref: ObjectReference<T>): T? {
@@ -158,16 +169,18 @@ class ModelClientGraph(
 
     @Synchronized
     override fun <T : IObjectData> request(ref: ObjectReference<T>): IStream.One<T> {
-        return findData(ref)?.let { IStream.of(it) }
-            ?: streamExecutor.enqueue(ref.getHashString()).orNull().map { serialized ->
-                if (serialized == null) throw MissingEntryException(ref.getHashString())
-                lazyLoadingCache[ref.getHash()] = serialized
-                loadFromSerialized(ref, serialized).data
-            }
+        findData(ref)?.let { IStream.of(it) }?.let { return it }
+        if (!config.lazyLoadingEnabled) throw LazyLoadingDisabledException(ref.getHashString())
+        return streamExecutor.enqueue(ref.getHashString()).orNull().map { serialized ->
+            if (serialized == null) throw MissingEntryException(ref.getHashString())
+            lazyLoadingCache[ref.getHash()] = serialized
+            loadFromSerialized(ref, serialized).data
+        }
     }
 
     override fun <T : IObjectData> requestNow(ref: ObjectReference<T>): Object<T> {
         ref.getLoadedData()?.let { return Object(it, ref) }
+        if (!config.lazyLoadingEnabled) throw LazyLoadingDisabledException(ref.getHashString())
         return Object(streamExecutor.query { request(ref) }, ref)
     }
 
@@ -178,3 +191,5 @@ class ModelClientGraph(
         dataDedupeCache.put(obj.getHash(), obj.data)
     }
 }
+
+class LazyLoadingDisabledException(hash: String) : MissingEntryException(hash)

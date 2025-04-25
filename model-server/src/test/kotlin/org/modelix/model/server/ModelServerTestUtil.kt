@@ -12,7 +12,7 @@ import org.modelix.model.client2.ModelClientV2
 
 suspend fun ApplicationTestBuilder.createModelClient(): ModelClientV2 {
     val url = "http://localhost/v2"
-    return ModelClientV2.builder().url(url).client(client).build().also { it.init() }
+    return ModelClientV2.builder().url(url).client(client).lazyAndBlockingQueries().build().also { it.init() }
 }
 
 /**

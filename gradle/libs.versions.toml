@@ -121,7 +121,7 @@ jcommander = { group = "com.beust", name = "jcommander", version = "1.82" }
 junit = { group = "junit", name = "junit", version = "4.13.2" }
 xmlunit-core = { group = "org.xmlunit", name = "xmlunit-core", version.ref="xmlunit"}
 xmlunit-matchers = { group = "org.xmlunit", name = "xmlunit-matchers", version.ref="xmlunit"}
-jsoup = { group = "org.jsoup", name = "jsoup", version = "1.19.1" }
+jsoup = { group = "org.jsoup", name = "jsoup", version = "1.20.1" }
 mockk = { group = "io.mockk", name = "mockk", version = "1.14.2"}
 
 apache-cxf-sse = { group = "org.apache.cxf", name = "cxf-rt-rs-sse", version.ref = "apacheCxf" }

@@ -28,7 +28,7 @@ jib = { id = "com.google.cloud.tools.jib", version = "3.4.5" }
 [versions]
 kotlin = "2.1.20"
 kotlinCoroutines="1.10.2"
-ktor="3.1.2"
+ktor="3.1.3"
 kotlinSerialization="1.8.1"
 ignite="2.17.0"
 apacheCxf="3.6.6"

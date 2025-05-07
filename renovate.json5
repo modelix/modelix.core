@@ -1,31 +1,29 @@
 {
-  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   extends: [
-    "config:best-practices",
-    // Opt-in to beta support for pre-commit.
-    // See https://docs.renovatebot.com/modules/manager/pre-commit/
-    ":enablePreCommit",
-    // Use the same commit type as with Dependabot.
-    ":semanticCommitTypeAll(build)"
+    'config:best-practices',
+    ':enablePreCommit',
+    ':semanticCommitTypeAll(build)',
   ],
   enabledManagers: [
-    "pre-commit",
-    "gradle-wrapper",
-    "nvm",
-    "github-actions",
-    "custom.regex"
+    'pre-commit',
+    'gradle-wrapper',
+    'nvm',
+    'github-actions',
+    'custom.regex',
   ],
   customManagers: [
     {
-      depNameTemplate: "Node.js",
-      // Custom manager for Docker image version in version.properties
-      customType: "regex",
-      fileMatch: ["^gradle/libs.versions.toml$"],
-      matchStrings: [
-        'node="(?<currentValue>.*?)"'
+      depNameTemplate: 'Node.js',
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^gradle/libs.versions.toml$/',
       ],
-      datasourceTemplate: "node-version",
-      versioningTemplate: "node"
-    }
-  ]
+      matchStrings: [
+        'node="(?<currentValue>.*?)"',
+      ],
+      datasourceTemplate: 'node-version',
+      versioningTemplate: 'node',
+    },
+  ],
 }

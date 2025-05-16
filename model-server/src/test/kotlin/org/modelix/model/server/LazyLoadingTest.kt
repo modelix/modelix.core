@@ -67,7 +67,7 @@ class LazyLoadingTest {
         val branchRef = RepositoryId("my-repo").getBranchReference()
         createModel(createModelClient(), branchRef, numberOfNodes)
 
-        val version = createModelClient().lazyLoadVersion(
+        val version = createModelClient(lazyAndBlocking = true).lazyLoadVersion(
             branchRef,
 //            CacheConfiguration().also {
 //                it.cacheSize = cacheSize

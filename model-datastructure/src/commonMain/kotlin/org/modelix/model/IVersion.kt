@@ -9,6 +9,8 @@ import org.modelix.model.api.ITree
 import org.modelix.model.lazy.VersionBuilder
 import kotlin.jvm.JvmInline
 
+class VersionAndHash(val hash: ObjectHash, val version: Result<IVersion>)
+
 interface IVersion {
     fun getContentHash(): String
 
@@ -26,6 +28,7 @@ interface IVersion {
     fun getObjectHash(): ObjectHash = asObject().getHash()
 
     fun getParentVersions(): List<IVersion>
+    fun tryGetParentVersions(): List<VersionAndHash>
 
     fun getTimestamp(): Instant?
 
@@ -62,25 +65,33 @@ value class TreeType(val name: String) {
  *
  * It's basically the order that you will see in a git-log output.
  */
-fun Iterable<IVersion>.historyAsSequence(knownVersions: Iterable<ObjectHash>, sortByTime: Boolean = true): Sequence<IVersion> = sequence {
-    val queue: MutableList<IVersion> = ArrayList()
+fun Iterable<IVersion>.historyAsSequence(knownVersions: Iterable<ObjectHash>, sortByTime: Boolean = true): Sequence<IVersion> {
+    return tryGetHistoryAsSequence(knownVersions, sortByTime).map { it.version.getOrThrow() }
+}
+
+/**
+ * If a version isn't available locally and lazy loading is disabled (trying to access it throws an exception), at least
+ * the hash is returned so that a history diff is more likely to succeed.
+ */
+fun Iterable<IVersion>.tryGetHistoryAsSequence(knownVersions: Iterable<ObjectHash>, sortByTime: Boolean = true): Sequence<VersionAndHash> = sequence {
+    val queue: MutableList<VersionAndHash> = ArrayList()
     val wasInQueue = HashSet<ObjectHash>()
     wasInQueue.addAll(knownVersions)
 
-    fun addToQueue(v: IVersion) {
-        if (wasInQueue.contains(v.getObjectHash())) return
-        wasInQueue.add(v.getObjectHash())
+    fun addToQueue(v: VersionAndHash) {
+        if (wasInQueue.contains(v.hash)) return
+        wasInQueue.add(v.hash)
         queue.add(v)
         if (sortByTime) {
-            queue.sortByDescending { it.getTimestamp() }
+            queue.sortByDescending { it.version.getOrNull()?.getTimestamp() }
         }
     }
 
-    this@historyAsSequence.forEach { addToQueue(it) }
+    this@tryGetHistoryAsSequence.forEach { addToQueue(VersionAndHash(it.getObjectHash(), Result.success(it))) }
 
     while (queue.isNotEmpty()) {
         val removed = queue.removeFirst()
-        removed.getParentVersions().forEach { addToQueue(it) }
+        removed.version.getOrNull()?.tryGetParentVersions()?.forEach { addToQueue(it) }
         yield(removed)
     }
 }
@@ -107,15 +118,17 @@ fun IVersion.historyDiff(knownVersions: List<IVersion>): List<IVersion> {
      */
 
     mainLoop@while (true) {
-        val unknownHistoryItr = this.historyAsSequence(commonVersions, sortByTime = false).iterator()
-        val knownHistoryItr = knownVersions.historyAsSequence(commonVersions, sortByTime = false).iterator()
+        val unknownHistoryItr = listOf(this).tryGetHistoryAsSequence(commonVersions, sortByTime = false).iterator()
+        val knownHistoryItr = knownVersions.tryGetHistoryAsSequence(commonVersions, sortByTime = false).iterator()
 
         var unknownHistory = LinkedHashMap<ObjectHash, IVersion>()
         val knownHistory = HashSet<ObjectHash>()
 
         while (unknownHistoryItr.hasNext() || knownHistoryItr.hasNext()) {
-            val unknownVersion = unknownHistoryItr.nextOrNull()?.also { unknownHistory.put(it.getObjectHash(), it) }?.getObjectHash()
-            val knownVersion = knownHistoryItr.nextOrNull()?.getObjectHash()?.also { knownHistory.add(it) }
+            val unknownVersion = unknownHistoryItr.nextOrNull()?.also { versionAndHash ->
+                versionAndHash.version.getOrNull()?.let { unknownHistory.put(versionAndHash.hash, it) }
+            }?.hash
+            val knownVersion = knownHistoryItr.nextOrNull()?.hash?.also { knownHistory.add(it) }
 
             if (unknownVersion != null && knownHistory.contains(unknownVersion)) {
                 commonVersions.add(unknownVersion)

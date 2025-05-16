@@ -17,6 +17,7 @@ import org.modelix.datastructures.objects.getDescendantsAndSelf
 import org.modelix.model.IVersion
 import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.TreeType
+import org.modelix.model.VersionAndHash
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITree
@@ -164,6 +165,27 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
 
     override fun getParentVersions(): List<IVersion> {
         return if (isMerge()) listOfNotNull(getMergedVersion1(), getMergedVersion2()) else listOfNotNull(baseVersion)
+    }
+
+    override fun tryGetParentVersions(): List<VersionAndHash> {
+        return if (isMerge()) {
+            listOfNotNull(
+                obj.data.mergedVersion1?.tryResolve(),
+                obj.data.mergedVersion2?.tryResolve(),
+            )
+        } else {
+            listOfNotNull(
+                obj.data.baseVersion?.tryResolve(),
+            )
+        }
+    }
+
+    fun getParentHashes(): List<ObjectHash> {
+        return if (isMerge()) {
+            listOf(obj.data.mergedVersion1!!.getHash(), obj.data.mergedVersion2!!.getHash())
+        } else {
+            listOfNotNull(obj.data.baseVersion?.getHash())
+        }
     }
 
     fun write(): String {
@@ -335,10 +357,6 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
 fun IVersion.diff(knownVersions: List<IVersion>, filter: ObjectDeltaFilter = ObjectDeltaFilter()): IStream.Many<Object<IObjectData>> {
     this as CLVersion
 
-    if (knownVersions.isEmpty()) {
-        return IStream.of(this.obj) + IStream.many(this.data.treeRefs.values).flatMap { it.resolve() }.flatMap { it.getDescendantsAndSelf() }
-    }
-
     val unknownHistory: List<CLVersion> = historyDiff(knownVersions).toList().map { it as CLVersion }
 
     if (unknownHistory.isEmpty()) return IStream.empty()
@@ -358,7 +376,9 @@ fun IVersion.diff(knownVersions: List<IVersion>, filter: ObjectDeltaFilter = Obj
              *
              * Use the version closest to [this] version as the base because that one should produce the smallest diff.
              */
-            val baseVersion = version.baseVersion?.takeIf { allKnownVersions.contains(it.getObjectHash()) }
+            val baseVersion = version.data.baseVersion
+                ?.takeIf { allKnownVersions.contains(it.getHash()) }
+                ?.tryResolve()?.version?.getOrNull()?.let { it as CLVersion }
                 ?: allKnownVersions.values.lastOrNull()
             result += if (baseVersion == null) {
                 IStream.many(version.data.treeRefs.values)
@@ -431,4 +451,8 @@ fun IVersion.runWriteOnModel(
         body(mutableTree.getRootNode())
     }
     return mutableTree.createVersion(versionIdGenerator.generate(), author) ?: baseVersion
+}
+
+fun ObjectReference<CPVersion>.tryResolve(): VersionAndHash {
+    return VersionAndHash(getHash(), runCatching { CLVersion(resolveNow()) })
 }

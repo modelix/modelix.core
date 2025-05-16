@@ -10,9 +10,9 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import kotlinx.coroutines.runBlocking
 import org.modelix.model.client2.ModelClientV2
 
-suspend fun ApplicationTestBuilder.createModelClient(): ModelClientV2 {
+suspend fun ApplicationTestBuilder.createModelClient(lazyAndBlocking: Boolean = false): ModelClientV2 {
     val url = "http://localhost/v2"
-    return ModelClientV2.builder().url(url).client(client).lazyAndBlockingQueries().build().also { it.init() }
+    return ModelClientV2.builder().url(url).client(client).also { if (lazyAndBlocking) it.lazyAndBlockingQueries() }.build().also { it.init() }
 }
 
 /**

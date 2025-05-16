@@ -1,16 +1,17 @@
 package org.modelix.model.client2
 
 import io.ktor.utils.io.core.Closeable
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import org.modelix.datastructures.model.asModelTree
+import mu.KotlinLogging
 import org.modelix.model.IVersion
+import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IBranchListener
@@ -21,8 +22,35 @@ import org.modelix.model.api.runSynchronized
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.operations.OTBranch
+import org.modelix.model.persistent.getTreeObject
 
 /**
+ * Keeps a local replica of the model in sync with the remote model.
+ * Changes can be made concurrently and are merged with changes made by other clients.
+ *
+ * # Algorithm
+ * When local changes are made, they are pushed to the server and the server merges them into the remote model.
+ * In contrast to Git, a push will not be rejected if the client didn't pull the latest remote version first,
+ * but the server will just handle the merge and respond with the merged version.
+ *
+ * When the response from the server is received there are two cases:
+ * - 1. nothing changed locally and the local copy can just be replaced with the received version
+ * - 2. the local copy changed again, in which case we have to options:
+ *   - A. merge the received version with the local version
+ *   - B. ignore the received version and just push the new local changes, hoping that case 1 will apply this time.
+ *
+ * Option A potentially has to fetch additional data from the server to do a correct merge. This can result in a bigger
+ * delay than just letting the server do the merge (option B). The server is located closer to the data and usually can
+ * do the merge faster.
+ * In case of a JavaScript client it's especially preferred to avoid additional requests. It doesn't support blocking
+ * calls and not all code is consistently using async/stream APIs yet.
+ *
+ * Option B can be problematic in scenarios with a high frequency of concurrent changes. Then the merge algorithm will
+ * repeatedly enter case 2 and continue to diverge. It relies on a large enough delay between local changes.
+ * This is mostly theoretical and not expected cause any issues in practice.
+ *
+ * A previous implementation used strategy A, but was changed to strategy B to fix issues in the JS client.
+ *
  * Dispose should be called on this, as otherwise a regular polling will go on.
  *
  * @property client the model client to connect to the model server
@@ -66,22 +94,23 @@ class ReplicatedModel(
         // receive changes from the server
         pollingJob = scope.launch {
             var nextDelayMs: Long = 0
-            while (state != State.Disposed) {
+            while (state != State.Disposed && isActive) {
                 if (nextDelayMs > 0) delay(nextDelayMs)
                 try {
                     val newRemoteVersion = remoteVersion.poll()
-                    remoteVersionReceived(newRemoteVersion)
+                    remoteVersionReceived(newRemoteVersion, null)
                     nextDelayMs = 0
-                } catch (ex: kotlinx.coroutines.CancellationException) {
-                    LOG.debug { "Stop to poll branch $branchRef after disposing." }
+                } catch (ex: CancellationException) {
+                    LOG.debug { "Stop polling branch $branchRef after disposing." }
                     throw ex
                 } catch (ex: Throwable) {
-                    LOG.error(ex) { "Failed to poll branch $branchRef" }
+                    LOG.error(ex) { "Failed polling branch $branchRef" }
                     nextDelayMs = (nextDelayMs * 3 / 2).coerceIn(1000, 30000)
                 }
             }
         }
 
+        // send changes to the server
         getLocalModel().rawBranch.addListener(object : IBranchListener {
             override fun treeChanged(oldTree: ITree?, newTree: ITree) {
                 if (isDisposed()) return
@@ -118,11 +147,11 @@ class ReplicatedModel(
         dispose()
     }
 
-    private suspend fun remoteVersionReceived(newRemoteVersion: CLVersion) {
+    private suspend fun remoteVersionReceived(newRemoteVersion: CLVersion, responseOf: CLVersion?) {
         if (isDisposed()) return
 
         val mergedVersion = try {
-            getLocalModel().mergeRemoteVersion(newRemoteVersion)
+            getLocalModel().mergeRemoteVersion(newRemoteVersion, responseOf)
         } catch (ex: Exception) {
             val currentLocalVersion = getLocalModel().getCurrentVersion()
             LOG.warn(ex) { "Failed to merge remote version $newRemoteVersion into local version $currentLocalVersion. Resetting to remote version." }
@@ -133,7 +162,7 @@ class ReplicatedModel(
         if (mergedVersion.getContentHash() != newRemoteVersion.getContentHash()) {
             val received = remoteVersion.push(mergedVersion)
             if (received.getContentHash() != mergedVersion.getContentHash()) {
-                remoteVersionReceived(received)
+                remoteVersionReceived(received, responseOf = mergedVersion)
             }
         }
     }
@@ -141,14 +170,15 @@ class ReplicatedModel(
     private suspend fun pushLocalChanges() {
         if (isDisposed()) return
 
-        val version = getLocalModel().createNewLocalVersion() ?: getLocalModel().getCurrentVersion()
-        val received = remoteVersion.push(version)
-        if (received.getContentHash() != version.getContentHash()) {
-            remoteVersionReceived(received)
+        for (attempt in 0..10) {
+            val version = getLocalModel().createNewLocalVersion() ?: getLocalModel().getCurrentVersion()
+            val received = remoteVersion.push(version)
+            if (received.getContentHash() == version.getContentHash()) break
+            remoteVersionReceived(received, version)
         }
     }
 
-    suspend fun getCurrentVersion(): CLVersion {
+    fun getCurrentVersion(): CLVersion {
         return getLocalModel().getCurrentVersion()
     }
 
@@ -160,7 +190,7 @@ class ReplicatedModel(
     }
 
     companion object {
-        private val LOG = mu.KotlinLogging.logger { }
+        private val LOG = KotlinLogging.logger { }
     }
 }
 
@@ -187,12 +217,10 @@ private class LocalModel(initialVersion: CLVersion, val idGenerator: IIdGenerato
      */
     private var localVersion: CLVersion = initialVersion
         get() {
-            check(mutex.isLocked)
             return field
         }
         set(value) {
-            check(mutex.isLocked)
-            check(otBranch.canWrite()) { "Write transaction required to update the localVersion field" }
+            checkInWriteTransaction()
             field = value
         }
 
@@ -200,69 +228,70 @@ private class LocalModel(initialVersion: CLVersion, val idGenerator: IIdGenerato
     val otBranch = OTBranch(rawBranch, idGenerator)
     private val merger = VersionMerger(idGenerator)
 
-    private val mutex = Mutex()
+    private fun checkInWriteTransaction() {
+        check(otBranch.canWrite()) { "Write transaction required to update the localVersion field" }
+    }
 
-    suspend fun resetToVersion(version: CLVersion) {
-        mutex.withLock {
-            otBranch.computeWrite { // write transaction ensures there are no active changes done on an outdated version
-                otBranch.getPendingChanges() // discard any pending changes
-                localVersion = version
-                rawBranch.writeTransaction.tree = version.getTree()
-            }
+    fun resetToVersion(version: CLVersion) {
+        otBranch.computeWrite { // write transaction ensures there are no active changes done on an outdated version
+            otBranch.getPendingChanges() // discard any pending changes
+            localVersion = version
+            rawBranch.writeTransaction.tree = version.getTree()
         }
     }
 
-    suspend fun getCurrentVersion() = mutex.withLock { localVersion }
+    fun getCurrentVersion() = localVersion
 
-    suspend fun mergeRemoteVersion(remoteVersion: CLVersion): CLVersion {
-        return mutex.withLock {
-            // Avoid triggering branch listeners (causing endless loops) if there is no change.
-            if (localVersion.getContentHash() == remoteVersion.getContentHash()) return localVersion
+    /**
+     * @return null, if the version couldn't be merged and the local version has to be pushed to the server first.
+     */
+    fun mergeRemoteVersion(remoteVersion: CLVersion, responseOf: CLVersion?): CLVersion {
+        // Avoid triggering branch listeners (causing endless loops) if there is no change.
+        if (localVersion.getContentHash() == remoteVersion.getContentHash()) return remoteVersion
 
-            otBranch.computeWrite {
-                // Writing to localVersion requires that there are no pending operations in OTBranch. By creating a new
-                // local version first, the pending operations become part of it.
-                // Creating it inside a write transaction, guarantees that the list of pending changes stays empty util
-                // we are done.
-                doCreateNewLocalVersion()
+        return otBranch.computeWrite {
+            // Writing to localVersion requires that there are no pending operations in OTBranch. By creating a new
+            // local version first, the pending operations become part of it.
+            // Creating it inside a write transaction, guarantees that the list of pending changes stays empty util
+            // we are done.
+            doCreateNewLocalVersion()
 
-                // Now we can merge the remote version update the localVersion field without losing local changes.
-                // TODO run the (potentially expensive) merge algorithm outside a write transaction to avoid blocking
-                //      the branch for too long. This requires to rerun the merge if new local changes were created in
-                //      the meantime.
-                val mergedVersion = merger.mergeChange(localVersion, remoteVersion)
-
-                // The mutex guarantees that the localVersion field didn't change and the write transaction guarantees
-                // that there are no local changes that would get lost. We are in a consistent state again.
-                rawBranch.writeTransaction.tree = mergedVersion.getTree()
-                localVersion = mergedVersion
-
-                // Return the new localVersion just for convenience.
-                mergedVersion
+            // Handle the most common and simple cases. All other cases are delegated to the server.
+            if (canFastForward(remoteVersion, responseOf)) {
+                localVersion = remoteVersion
+                rawBranch.writeTransaction.tree = remoteVersion.getTree()
             }
+
+            localVersion
         }
+    }
+
+    private fun canFastForward(remoteVersion: CLVersion, responseOf: CLVersion?): Boolean {
+        if (remoteVersion == localVersion) return true
+        if (responseOf == localVersion) return true
+        if (remoteVersion.getParentHashes().contains(localVersion.getObjectHash())) return true
+        return false
     }
 
     /**
      * @return null, if there are no pending changes and no new version was created.
      */
-    suspend fun createNewLocalVersion(): CLVersion? {
-        return mutex.withLock { otBranch.computeWrite { doCreateNewLocalVersion() } }
+    fun createNewLocalVersion(): CLVersion? {
+        return otBranch.computeWrite { doCreateNewLocalVersion() }
     }
 
     private fun doCreateNewLocalVersion(): CLVersion? {
-        check(mutex.isLocked)
+        checkInWriteTransaction()
         val (ops, tree) = otBranch.getPendingChanges()
         val baseVersion = localVersion
 
-        if (ops.isEmpty() && baseVersion.getTreeReference().getHash() == tree.asModelTree().asObject().getHash()) return null
-        val newVersion = CLVersion.createRegularVersion(
-            id = idGenerator.generate(),
-            author = author(),
-            tree = tree,
-            baseVersion = baseVersion,
-            operations = ops.map { it.getOriginalOp() }.toTypedArray(),
-        )
+        if (ops.isEmpty() && baseVersion.getTreeReference().getHash() == tree.getTreeObject().getHash()) return null
+        val newVersion = CLVersion.builder()
+            .regularUpdate(baseVersion)
+            .author(author())
+            .tree(tree)
+            .operations(ops.map { it.getOriginalOp() })
+            .buildLegacy()
         localVersion = newVersion
         return newVersion
     }
@@ -278,7 +307,18 @@ private class RemoteVersion(
     fun getNumberOfUnconfirmed() = runSynchronized(unconfirmedVersions) { unconfirmedVersions.size }
 
     suspend fun pull(): CLVersion {
-        return versionReceived(client.pull(branchRef, lastKnownVersion = lastKnownRemoteVersion).upcast())
+        return versionReceived(
+            client.pull(
+                branchRef,
+                lastKnownVersion = null,
+                filter = ObjectDeltaFilter(
+                    knownVersions = setOfNotNull(lastKnownRemoteVersion?.getContentHash()),
+                    includeOperations = false,
+                    includeHistory = false,
+                    includeTrees = true,
+                ),
+            ).upcast(),
+        )
     }
 
     suspend fun poll(): CLVersion {

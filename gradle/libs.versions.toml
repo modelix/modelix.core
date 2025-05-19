@@ -104,7 +104,7 @@ google-oauth-client = { group = "com.google.oauth-client", name = "google-oauth-
 google-oauth-clientjetty = { group = "com.google.oauth-client", name = "google-oauth-client-jetty", version = "1.39.0" }
 
 modelix-incremental = { group = "org.modelix", name = "incremental", version = "0.3.4" }
-kotlinpoet = { group = "com.squareup", name = "kotlinpoet", version = "2.1.0" }
+kotlinpoet = { group = "com.squareup", name = "kotlinpoet", version = "2.2.0" }
 vavr = { group = "io.vavr", name = "vavr", version = "0.10.6" }
 apache-commons-lang = { group = "org.apache.commons", name = "commons-lang3", version = "3.17.0" }
 apache-commons-io = { group = "commons-io", name = "commons-io", version = "2.19.0" }

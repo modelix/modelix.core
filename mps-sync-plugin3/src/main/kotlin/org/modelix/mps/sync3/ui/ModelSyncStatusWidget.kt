@@ -11,7 +11,6 @@ import com.intellij.openapi.wm.CustomStatusBarWidget
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.ui.ClickListener
-import com.intellij.ui.IconManager
 import com.intellij.ui.JBColor
 import com.intellij.ui.awt.RelativePoint
 import com.intellij.ui.popup.PopupFactoryImpl
@@ -26,6 +25,7 @@ import kotlinx.html.table
 import kotlinx.html.td
 import kotlinx.html.tr
 import org.modelix.model.lazy.CLVersion
+import org.modelix.mps.api.ModelixMpsApi
 import org.modelix.mps.sync3.IModelSyncService
 import org.modelix.mps.sync3.IServerConnection
 import java.awt.Desktop
@@ -33,14 +33,17 @@ import java.awt.Point
 import java.awt.event.MouseEvent
 import java.net.URI
 import java.util.concurrent.TimeUnit
+import javax.swing.Icon
 import javax.swing.JComponent
 import javax.swing.JLabel
 
 class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, StatusBarWidget.WidgetPresentation {
     companion object {
-        const val ID = "ModelixSyncStatus"
-        val ICON = IconManager.getInstance().getIcon("org/modelix/mps/sync3/modelix16.svg", this::class.java)
         private val LOG = mu.KotlinLogging.logger { }
+        const val ID = "ModelixSyncStatus"
+        val ICON: Icon? = runCatching { ModelixMpsApi.loadIcon("org/modelix/mps/sync3/modelix16.svg", this::class.java) }
+            .onFailure { LOG.error(it) { "Failed to load icon" } }
+            .getOrNull()
     }
 
     private val component: JLabel = JLabel("", ICON, JLabel.LEFT)
@@ -132,7 +135,13 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
         val service = IModelSyncService.Companion.getInstance(project)
 
         return createHTML().apply {
-            for (connection in service.getServerConnections()) {
+            val connections = service.getServerConnections()
+            if (connections.isEmpty()) {
+                div {
+                    +"No connections configured"
+                }
+            }
+            for (connection in connections) {
                 div {
                     div {
                         styleX = "font-weight: bold; text-decoration: underline;"

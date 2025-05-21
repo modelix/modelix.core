@@ -208,7 +208,11 @@ class FlowStreamBuilder() : IStreamBuilder {
         }
 
         override fun <R> fold(initial: R, operation: (R, E) -> R): IStream.One<R> {
-            return Wrapper(flow { wrapped.fold(initial) { acc, value -> operation(acc, value) } })
+            return Wrapper(
+                flow {
+                    emit(wrapped.fold(initial) { acc, value -> operation(acc, value) })
+                },
+            )
         }
 
         override fun distinct(): IStream.OneOrMany<E> {

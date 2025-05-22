@@ -24,6 +24,7 @@ import org.modelix.streams.plus
 abstract class GenericModelTree<NodeId>(
     val nodesMap: IPersistentMap<NodeId, NodeObjectData<NodeId>>,
     private val treeId: TreeId,
+    val useRoleIds: Boolean,
 ) : IGenericModelTree<NodeId>, IStreamExecutorProvider by nodesMap {
     protected abstract fun withNewMap(newNodesMap: IPersistentMap<NodeId, NodeObjectData<NodeId>>): GenericModelTree<NodeId>
     abstract override fun getRootNodeId(): NodeId
@@ -296,10 +297,11 @@ abstract class GenericModelTree<NodeId>(
     ): IStream.One<IPersistentMap<NodeId, NodeObjectData<NodeId>>> {
         val newNodes = newIds.zip(concepts).map { (childId, concept) ->
             childId to NodeObjectData<NodeId>(
-                deserializer = NodeObjectData.Deserializer(graph, this.nodesMap.getKeyTypeConfig(), getId()),
+                deserializer = NodeObjectData.Deserializer(graph, this.nodesMap.getKeyTypeConfig(), getId(), useRoleIds = useRoleIds),
                 id = childId,
                 concept = concept.takeIf { it != NullConcept.getReference() },
                 containment = parentId to role,
+                useRoleIds = useRoleIds,
             )
         }
 

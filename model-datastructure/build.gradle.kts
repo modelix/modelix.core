@@ -27,6 +27,7 @@ kotlin {
                 implementation(libs.trove4j)
                 implementation(libs.apache.commons.collections)
                 implementation(libs.kotlin.coroutines.core)
+                implementation(libs.logback.classic)
             }
         }
         val jsMain by getting {

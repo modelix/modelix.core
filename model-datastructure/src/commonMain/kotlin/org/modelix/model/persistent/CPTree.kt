@@ -44,20 +44,20 @@ class CPTree(
 
     fun getLegacyModelTree(): IGenericModelTree<Long> {
         if (trieWithNodeRefIds != null) {
-            return trieWithNodeRefIds.resolveNow().createMapInstance().autoResolveValues().asModelTree(id).withIdTranslation()
+            return trieWithNodeRefIds.resolveNow().createMapInstance().autoResolveValues().asModelTree(id, usesRoleIds).withIdTranslation()
         }
         if (int64Hamt != null) {
-            return int64Hamt.resolveNow().createMapInstance().autoResolveValues().asModelTree(id)
+            return int64Hamt.resolveNow().createMapInstance().autoResolveValues().asModelTree(id, usesRoleIds)
         }
         throw IllegalStateException("Doesn't contain any tree data")
     }
 
     fun getModelTree(): IGenericModelTree<INodeReference> {
         if (trieWithNodeRefIds != null) {
-            return trieWithNodeRefIds.resolveNow().createMapInstance().autoResolveValues().asModelTree(id)
+            return trieWithNodeRefIds.resolveNow().createMapInstance().autoResolveValues().asModelTree(id, usesRoleIds)
         }
         if (int64Hamt != null) {
-            return int64Hamt.resolveNow().createMapInstance().autoResolveValues().asModelTree(id).withIdTranslation()
+            return int64Hamt.resolveNow().createMapInstance().autoResolveValues().asModelTree(id, usesRoleIds).withIdTranslation()
         }
         throw IllegalStateException("Doesn't contain any tree data")
     }
@@ -68,7 +68,7 @@ class CPTree(
             usesRoleIds -> INT64_WITH_ROLE_IDS
             else -> INT64_WITH_ROLE_NAMES
         }
-        return "$id/$pv/${getTreeReference().getHash()}"
+        return "$id/$pv/${getTreeReference().getHash()}/${if (usesRoleIds) "i" else "n"}"
     }
 
     override fun getDeserializer(): IObjectDeserializer<CPTree> = DESERIALIZER
@@ -104,24 +104,24 @@ class CPTree(
         val CURRENT_PERSISTENCE_VERSION = STRING_IDS
         val DESERIALIZER: IObjectDeserializer<CPTree> = this
 
-        private fun patriciaDeserializer(graph: IObjectGraph, treeId: TreeId): PatriciaNode.Deserializer<INodeReference, ObjectReference<NodeObjectData<INodeReference>>> {
+        private fun patriciaDeserializer(graph: IObjectGraph, treeId: TreeId, usesRoleIds: Boolean): PatriciaNode.Deserializer<INodeReference, ObjectReference<NodeObjectData<INodeReference>>> {
             val nodeIdType = NodeReferenceDataTypeConfig()
             val config = PatriciaTrieConfig(
                 graph = graph,
                 keyConfig = nodeIdType,
-                valueConfig = ObjectReferenceDataTypeConfiguration(graph, NodeObjectData.Deserializer(graph, nodeIdType, treeId)),
+                valueConfig = ObjectReferenceDataTypeConfiguration(graph, NodeObjectData.Deserializer(graph, nodeIdType, treeId, usesRoleIds)),
             )
             return PatriciaNode.Deserializer(config)
         }
 
-        private fun hamtDeserializer(graph: IObjectGraph, treeId: TreeId): IObjectDeserializer<HamtNode<Long, ObjectReference<NodeObjectData<Long>>>> {
+        private fun hamtDeserializer(graph: IObjectGraph, treeId: TreeId, usesRoleIds: Boolean): IObjectDeserializer<HamtNode<Long, ObjectReference<NodeObjectData<Long>>>> {
             val nodeIdType = LongDataTypeConfiguration()
             return HamtNode.Config(
                 graph = graph,
                 keyConfig = nodeIdType,
                 valueConfig = ObjectReferenceDataTypeConfiguration(
                     graph = graph,
-                    deserializer = NodeObjectData.Deserializer(graph, nodeIdType, treeId),
+                    deserializer = NodeObjectData.Deserializer(graph, nodeIdType, treeId, usesRoleIds),
                 ),
             ).deserializer
         }
@@ -133,17 +133,18 @@ class CPTree(
             val graph = referenceFactory as IObjectGraph
             return when (persistenceVersion) {
                 STRING_IDS -> {
+                    val usesRoleIds = parts.getOrNull(3) != "n"
                     CPTree(
                         id = treeId,
                         int64Hamt = null,
-                        trieWithNodeRefIds = referenceFactory.fromHashString(parts[2], patriciaDeserializer(graph, treeId)),
-                        usesRoleIds = true,
+                        trieWithNodeRefIds = referenceFactory.fromHashString(parts[2], patriciaDeserializer(graph, treeId, usesRoleIds = usesRoleIds)),
+                        usesRoleIds = usesRoleIds,
                     )
                 }
                 INT64_WITH_ROLE_IDS -> {
                     CPTree(
                         id = treeId,
-                        int64Hamt = referenceFactory.fromHashString(parts[2], hamtDeserializer(graph, treeId)),
+                        int64Hamt = referenceFactory.fromHashString(parts[2], hamtDeserializer(graph, treeId, usesRoleIds = true)),
                         trieWithNodeRefIds = null,
                         usesRoleIds = true,
                     )
@@ -151,7 +152,7 @@ class CPTree(
                 INT64_WITH_ROLE_NAMES -> {
                     CPTree(
                         id = treeId,
-                        int64Hamt = referenceFactory.fromHashString(parts[2], hamtDeserializer(graph, treeId)),
+                        int64Hamt = referenceFactory.fromHashString(parts[2], hamtDeserializer(graph, treeId, usesRoleIds = false)),
                         trieWithNodeRefIds = null,
                         usesRoleIds = false,
                     )

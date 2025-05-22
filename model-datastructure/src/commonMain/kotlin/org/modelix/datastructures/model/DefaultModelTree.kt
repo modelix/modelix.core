@@ -18,8 +18,8 @@ import kotlin.jvm.JvmName
  * With the previous API, the ID type was only hidden at the mutable nodes API layer, but for persistent model trees
  * there was only an interface that used 64-bit integers.
  */
-class Int64ModelTree(nodesMap: IPersistentMap<Long, NodeObjectData<Long>>, treeId: TreeId) :
-    GenericModelTree<Long>(nodesMap, treeId) {
+class Int64ModelTree(nodesMap: IPersistentMap<Long, NodeObjectData<Long>>, treeId: TreeId, useRoleIds: Boolean) :
+    GenericModelTree<Long>(nodesMap, treeId, useRoleIds) {
     override fun getRootNodeId(): Long = ITree.ROOT_ID
     override fun asObject(): Object<CPTree> {
         return CPTree(
@@ -30,14 +30,19 @@ class Int64ModelTree(nodesMap: IPersistentMap<Long, NodeObjectData<Long>>, treeI
         ).asObject(graph)
     }
     override fun getNodeIdType(): IDataTypeConfiguration<Long> = LongDataTypeConfiguration()
-    override fun withNewMap(newNodesMap: IPersistentMap<Long, NodeObjectData<Long>>) = Int64ModelTree(newNodesMap, getId())
+    override fun withNewMap(newNodesMap: IPersistentMap<Long, NodeObjectData<Long>>): Int64ModelTree {
+        return Int64ModelTree(newNodesMap, getId(), useRoleIds = useRoleIds)
+    }
     override fun createNodeReference(nodeId: Long): INodeReference {
         return PNodeReference(nodeId, getId().id)
     }
 }
 
-class DefaultModelTree(nodesMap: IPersistentMap<INodeReference, NodeObjectData<INodeReference>>, treeId: TreeId) :
-    GenericModelTree<INodeReference>(nodesMap, treeId) {
+class DefaultModelTree(
+    nodesMap: IPersistentMap<INodeReference, NodeObjectData<INodeReference>>,
+    treeId: TreeId,
+    useRoleIds: Boolean,
+) : GenericModelTree<INodeReference>(nodesMap, treeId, useRoleIds) {
     override fun getRootNodeId(): INodeReference = PNodeReference(ITree.ROOT_ID, getId().id)
     override fun asObject(): Object<CPTree> {
         return CPTree(
@@ -49,7 +54,7 @@ class DefaultModelTree(nodesMap: IPersistentMap<INodeReference, NodeObjectData<I
     }
     override fun getNodeIdType(): IDataTypeConfiguration<INodeReference> = NodeReferenceDataTypeConfig()
     override fun withNewMap(newNodesMap: IPersistentMap<INodeReference, NodeObjectData<INodeReference>>) =
-        DefaultModelTree(newNodesMap, getId())
+        DefaultModelTree(newNodesMap, getId(), useRoleIds = useRoleIds)
 
     override fun createNodeReference(nodeId: INodeReference): INodeReference {
         return nodeId
@@ -59,11 +64,11 @@ class DefaultModelTree(nodesMap: IPersistentMap<INodeReference, NodeObjectData<I
 class NodeNotFoundException(nodeId: Any?) : RuntimeException("Node doesn't exist: $nodeId")
 
 @JvmName("asModelTreeWithNodeReferences")
-fun IPersistentMap<INodeReference, NodeObjectData<INodeReference>>.asModelTree(treeId: TreeId): IGenericModelTree<INodeReference> {
-    return DefaultModelTree(this, treeId)
+fun IPersistentMap<INodeReference, NodeObjectData<INodeReference>>.asModelTree(treeId: TreeId, useRoleIds: Boolean): IGenericModelTree<INodeReference> {
+    return DefaultModelTree(this, treeId, useRoleIds = useRoleIds)
 }
 
 @JvmName("asModelTreeWithInt64")
-fun IPersistentMap<Long, NodeObjectData<Long>>.asModelTree(treeId: TreeId): IGenericModelTree<Long> {
-    return Int64ModelTree(this, treeId)
+fun IPersistentMap<Long, NodeObjectData<Long>>.asModelTree(treeId: TreeId, useRoleIds: Boolean): IGenericModelTree<Long> {
+    return Int64ModelTree(this, treeId, useRoleIds = useRoleIds)
 }

@@ -37,15 +37,19 @@ private fun createNewTreeData(
     useRoleIds: Boolean = true,
 ): Object<CPTree> {
     val root = NodeObjectData<Long>(
-        deserializer = NodeObjectData.Deserializer(graph, LongDataTypeConfiguration(), treeId),
+        deserializer = NodeObjectData.Deserializer(graph, LongDataTypeConfiguration(), treeId, useRoleIds = useRoleIds),
         id = ITree.ROOT_ID,
         concept = null,
         containment = null,
+        useRoleIds = useRoleIds,
     )
     val config = HamtNode.Config(
         graph = graph,
         keyConfig = LongDataTypeConfiguration(),
-        valueConfig = ObjectReferenceDataTypeConfiguration(graph, NodeObjectData.Deserializer(graph, LongDataTypeConfiguration(), treeId)),
+        valueConfig = ObjectReferenceDataTypeConfiguration(
+            graph,
+            NodeObjectData.Deserializer(graph, LongDataTypeConfiguration(), treeId, useRoleIds = useRoleIds),
+        ),
     )
     @OptIn(DelicateModelixApi::class) // this is a new object
     return CPTree(

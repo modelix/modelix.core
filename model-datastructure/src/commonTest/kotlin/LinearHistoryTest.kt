@@ -43,7 +43,7 @@ class LinearHistoryTest {
         val v20 = version(20, null)
         val v21 = version(21, null)
 
-        assertHistory(v20, v21, listOf(v21, v20))
+        assertHistory(v20, v21, listOf(v20, v21))
     }
 
     @Test
@@ -52,7 +52,7 @@ class LinearHistoryTest {
         val v20 = version(20, v10)
         val v21 = version(21, v10)
 
-        assertHistory(v20, v21, listOf(v21, v20))
+        assertHistory(v20, v21, listOf(v20, v21))
     }
 
     @Test
@@ -63,7 +63,7 @@ class LinearHistoryTest {
         val v21 = version(21, v10)
 
         val actual = LinearHistory(null).load(v20, v21).map { it.id }
-        val expected = listOf(1L, 10L, 20, 21)
+        val expected = listOf(1L, 10L, 21, 20)
         assertEquals(expected, actual)
     }
 
@@ -88,7 +88,7 @@ class LinearHistoryTest {
         val v4 = merge(4, v2, v3)
         val v8 = version(8, v9)
 
-        val expected = listOf(v3, v2, v9, v8)
+        val expected = listOf(v2, v9, v8, v3)
         assertHistory(v4, v8, expected)
     }
 

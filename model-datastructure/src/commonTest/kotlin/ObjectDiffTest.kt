@@ -41,7 +41,7 @@ class ObjectDiffTest {
         tree3.asAsyncTree().getDescendantsAndSelf(ITree.ROOT_ID).asSequence()
 
         val expected = """
-            MJFEu*_hdxrmyX2F8pWUh8pHO5Meoivd5BsZCOd04OmE -> test/3/BRS9r*d8eT0RP6Uadz--7yzhhyOO14NiQB0uykMibl_E
+            DfDyt*efVYCyae6FET-iU_34HXLmuyr0RUJjxC0LKDsg -> test/3/BRS9r*d8eT0RP6Uadz--7yzhhyOO14NiQB0uykMibl_E/i
             BRS9r*d8eT0RP6Uadz--7yzhhyOO14NiQB0uykMibl_E -> S/11/0/aWYDj*Aovk93dr7BCZLE26G6SVscuCObD2Zih1j5_35I
             aWYDj*Aovk93dr7BCZLE26G6SVscuCObD2Zih1j5_35I -> I/41/IED_Q*pDKY2iEbzd_FIQJW1E8L4rMTGjW3Nt2fztvnbU,3wS1-*vioMR3Oecn25uZWTCfvi6_hjjHqVg0LGZGKJ1E
             3wS1-*vioMR3Oecn25uZWTCfvi6_hjjHqVg0LGZGKJ1E -> I/1500/bQ1qn*eX7Tet6eTq54-59MKY2-B45VlApKU9MG5cCTSs,0t8kq*t8nrdkZ0vh9JUgcbQQzwGWLwAwY-K8ZqyOs6Dc,wQKjH*0HeK2QG_Xa3sOsqNKddgYBRomqqr18JRSP7N1U

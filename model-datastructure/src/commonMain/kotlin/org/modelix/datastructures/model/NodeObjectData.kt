@@ -26,6 +26,7 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.IReferenceLinkReference
+import org.modelix.model.api.IRoleReference
 import org.modelix.model.api.NullChildLinkReference
 import org.modelix.model.api.meta.NullConcept
 import org.modelix.streams.IStream
@@ -38,6 +39,7 @@ data class NodeObjectData<NodeId>(
     val children: LargeList<NodeId>? = null,
     val properties: List<Pair<String, String>> = emptyList(),
     val references: List<Pair<String, INodeReference>> = emptyList(),
+    val useRoleIds: Boolean,
 ) : IObjectData {
 
     init {
@@ -47,6 +49,8 @@ data class NodeObjectData<NodeId>(
 
     val parentId: NodeId? get() = containment?.first
     val roleInParent: IChildLinkReference get() = containment?.second ?: NullChildLinkReference
+
+    private fun getRoleInParentAsString(): String? = roleInParent.chooseIdOrNameOrNull()
 
     fun getChildIds(): IStream.Many<NodeId> = children?.getElements() ?: IStream.empty()
 
@@ -82,9 +86,9 @@ data class NodeObjectData<NodeId>(
             // persist ID only to prevent ObjectHash changes when metamodel elements are renamed
             @OptIn(DelicateModelixApi::class)
             val newProperties = if (index < 0) {
-                properties + (role.getIdOrName() to value)
+                properties + (role.chooseIdOrName() to value)
             } else {
-                properties.take(index) + (role.getIdOrName() to value) + properties.drop(index + 1)
+                properties.take(index) + (role.chooseIdOrName() to value) + properties.drop(index + 1)
             }
             // sorted to get a stable ObjectHash and avoid non-determinism in algorithms working with the model (e.g. sync)
             copy(properties = newProperties.sortedBy { it.first })
@@ -103,14 +107,17 @@ data class NodeObjectData<NodeId>(
             // persist ID only to prevent ObjectHash changes when metamodel elements are renamed
             @OptIn(DelicateModelixApi::class)
             val newReferences = if (index < 0) {
-                references + (role.getIdOrName() to value)
+                references + (role.chooseIdOrName() to value)
             } else {
-                references.take(index) + (role.getIdOrName() to value) + references.drop(index + 1)
+                references.take(index) + (role.chooseIdOrName() to value) + references.drop(index + 1)
             }
             // sorted to get a stable ObjectHash and avoid non-determinism in algorithms working with the model (e.g. sync)
             copy(references = newReferences.sortedBy { it.first })
         }
     }
+
+    private fun IRoleReference.chooseIdOrName() = if (useRoleIds) getIdOrName() else getNameOrId()
+    private fun IChildLinkReference.chooseIdOrNameOrNull() = if (useRoleIds) getIdOrNameOrNull() else getNameOrIdOrNull()
 
     fun withChildRemoved(childId: NodeId): IStream.One<NodeObjectData<NodeId>> {
         return getChildIds().filter { !deserializer!!.nodeIdTypeConfig.equal(it, childId) }.toList().map { newChildren ->
@@ -128,6 +135,7 @@ data class NodeObjectData<NodeId>(
         val graph: IObjectGraph,
         val nodeIdTypeConfig: IDataTypeConfiguration<NodeId>,
         val treeId: TreeId,
+        val useRoleIds: Boolean,
     ) : IObjectDeserializer<NodeObjectData<NodeId>> {
         val referenceTypeConfig = LegacyNodeReferenceDataTypeConfig(treeId)
         val largeListConfig = LargeListConfig(graph, nodeIdTypeConfig)
@@ -153,7 +161,7 @@ data class NodeObjectData<NodeId>(
                     id = value.id,
                     concept = value.concept?.takeIf { it != NullConcept.getReference() },
                     parent = encodeNullId(value.parentId),
-                    role = value.roleInParent.getIdOrNameOrNull(),
+                    role = value.getRoleInParentAsString(),
                     children = value.children ?: largeListConfig.createEmptyList(),
                     properties = value.properties.toMap(),
                     references = value.references.toMap(),
@@ -169,6 +177,7 @@ data class NodeObjectData<NodeId>(
                     children = value.children,
                     properties = value.properties.toList(),
                     references = value.references.toList(),
+                    useRoleIds = useRoleIds,
                 )
             }
         }
@@ -193,22 +202,6 @@ data class LegacyCompatibleFormat<NodeId, ReferenceType>(
     val properties: Map<String, String>,
     val references: Map<String, ReferenceType>,
 )
-
-fun IReadableNode.toNodeObjectData(graph: IObjectGraph, treeId: TreeId = getTreeId()): NodeObjectData<INodeReference> {
-    val nodeDataDeserializer = NodeObjectData.Deserializer(graph, NodeReferenceDataTypeConfig(), treeId)
-
-    // usage of getIdOrName: persist ID only to prevent ObjectHash changes when metamodel elements are renamed
-    @OptIn(DelicateModelixApi::class)
-    return NodeObjectData(
-        deserializer = nodeDataDeserializer,
-        id = getNodeReference(),
-        concept = getConceptReference(),
-        containment = getParent()?.let { it.getNodeReference() to getContainmentLink() },
-        children = nodeDataDeserializer.largeListConfig.createList(getAllChildren().map { it.getNodeReference() }),
-        properties = getAllProperties().map { it.first.getIdOrName() to it.second },
-        references = getAllReferenceTargetRefs().map { it.first.getIdOrName() to it.second },
-    )
-}
 
 fun IReadableNode.getTreeId(): TreeId {
     return when (this) {

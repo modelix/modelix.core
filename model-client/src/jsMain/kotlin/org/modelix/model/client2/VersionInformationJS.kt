@@ -18,4 +18,9 @@ data class VersionInformationJS(
      * Creation time of the version.
      */
     val time: Date?,
+
+    /**
+     * hash string of the version
+     */
+    val versionHash: String?,
 )

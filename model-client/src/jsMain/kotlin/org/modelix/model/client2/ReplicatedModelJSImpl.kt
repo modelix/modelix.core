@@ -23,7 +23,7 @@ internal class ReplicatedModelJSImpl(private val model: ReplicatedModel) : Repli
             val currentVersion = model.getCurrentVersion()
             val currentVersionAuthor = currentVersion.author
             val currentVersionTime = currentVersion.getTimestamp()?.toJSDate()
-            return@promise VersionInformationJS(currentVersionAuthor, currentVersionTime)
+            return@promise VersionInformationJS(currentVersionAuthor, currentVersionTime, currentVersion.getContentHash())
         }
     }
 }

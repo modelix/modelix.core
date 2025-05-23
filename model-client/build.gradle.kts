@@ -164,6 +164,7 @@ tasks.withType(NodeExecTask::class) {
 }
 
 tasks.jvmTest {
-    dependsOn(":model-server:assemble")
+    dependsOn(":model-server:jibDockerBuild")
+    jvmArgs("-Dmodelix.model.server.image=modelix/model-server:$version")
     environment("KEYCLOAK_VERSION", libs.versions.keycloak.get())
 }

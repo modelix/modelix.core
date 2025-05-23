@@ -59,7 +59,8 @@ tasks {
     }
 
     test {
-        dependsOn(":model-server:assemble")
+        dependsOn(":model-server:jibDockerBuild")
+        jvmArgs("-Dmodelix.model.server.image=modelix/model-server:$version")
         onlyIf {
             mpsMajorVersion == "2024.1"
         }

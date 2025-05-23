@@ -145,6 +145,7 @@ tasks.test {
 
 jib {
     from.image = "registry.access.redhat.com/ubi8/openjdk-11:1.21-1.1736337912"
+    to.image = "modelix/model-server:$version"
     container {
         ports = listOf("28101")
     }

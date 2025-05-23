@@ -20,19 +20,12 @@ import org.modelix.model.oauth.IAuthRequestHandler
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.Network
 import org.testcontainers.containers.wait.strategy.Wait
-import org.testcontainers.images.builder.ImageFromDockerfile
 import org.testcontainers.utility.MountableFile
-import java.nio.file.Path
-import kotlin.io.path.absolute
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.ExperimentalTime
 import kotlin.time.toJavaDuration
-
-private val modelServerDir = Path.of("../model-server").absolute().normalize()
-private val modelServerImage = ImageFromDockerfile()
-    .withDockerfile(modelServerDir.resolve("Dockerfile"))
 
 class OAuthTest {
 
@@ -106,7 +99,7 @@ class OAuthTest {
             keycloak.start()
             val keycloakPort = keycloak.getMappedPort(8080)
 
-            val modelServer: GenericContainer<*> = GenericContainer(modelServerImage)
+            val modelServer: GenericContainer<*> = GenericContainer(System.getProperty("modelix.model.server.image"))
                 .withExposedPorts(28101)
                 .withCommand("--inmemory")
                 .withEnv("MODELIX_AUTHORIZATION_URI", "http://localhost:$keycloakPort/realms/modelix/protocol/openid-connect/auth")

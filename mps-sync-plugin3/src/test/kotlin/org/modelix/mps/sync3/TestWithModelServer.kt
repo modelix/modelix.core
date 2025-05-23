@@ -4,21 +4,14 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
-import org.testcontainers.images.builder.ImageFromDockerfile
-import java.nio.file.Path
-import kotlin.io.path.absolute
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.ExperimentalTime
 import kotlin.time.toJavaDuration
 
-private val modelServerDir = Path.of("../model-server").absolute().normalize()
-private val modelServerImage = ImageFromDockerfile()
-    .withDockerfile(modelServerDir.resolve("Dockerfile"))
-
 fun runWithModelServer(body: suspend (port: Int) -> Unit) = runBlocking {
     @OptIn(ExperimentalTime::class)
     withTimeout(5.minutes) {
-        val modelServer: GenericContainer<*> = GenericContainer(modelServerImage)
+        val modelServer: GenericContainer<*> = GenericContainer(System.getProperty("modelix.model.server.image"))
             .withExposedPorts(28101)
             .withCommand("-inmemory")
             .withEnv("MODELIX_VALIDATE_VERSIONS", "true")

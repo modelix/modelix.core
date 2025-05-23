@@ -10,7 +10,7 @@ interface ReplicatedModelJS {
     /**
      * Returns the live replicated branch on which further operation on the model can be done.
      */
-    fun getBranch(): BranchJS
+    fun getBranch(): MutableModelTreeJs
 
     /**
      * Queries information about the latest written version.

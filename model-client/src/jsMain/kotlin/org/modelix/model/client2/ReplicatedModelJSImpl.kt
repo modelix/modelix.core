@@ -6,7 +6,6 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.promise
 import kotlinx.datetime.toJSDate
-import org.modelix.model.withAutoTransactions
 import kotlin.js.Promise
 
 internal class ReplicatedModelJSImpl(private val model: ReplicatedModel) : ReplicatedModelJS {
@@ -14,8 +13,8 @@ internal class ReplicatedModelJSImpl(private val model: ReplicatedModel) : Repli
         model.dispose()
     }
 
-    override fun getBranch(): BranchJS {
-        return BranchJSImpl(model.getBranch().withAutoTransactions())
+    override fun getBranch(): MutableModelTreeJs {
+        return MutableModelTreeJsImpl(model.getVersionedModelTree())
     }
 
     override fun getCurrentVersionInformation(): Promise<VersionInformationJS> {

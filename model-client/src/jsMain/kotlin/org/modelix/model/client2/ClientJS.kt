@@ -8,16 +8,22 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.promise
-import org.modelix.model.ModelFacade
+import org.modelix.datastructures.model.IGenericModelTree
+import org.modelix.model.TreeId
 import org.modelix.model.api.INode
+import org.modelix.model.api.INodeReference
 import org.modelix.model.api.JSNodeConverter
 import org.modelix.model.data.ModelData
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.withAutoTransactions
+import org.modelix.model.lazy.createObjectStoreCache
+import org.modelix.model.mutable.INodeIdGenerator
+import org.modelix.model.mutable.asMutableThreadSafe
+import org.modelix.model.mutable.load
+import org.modelix.model.persistent.MapBasedStore
 import kotlin.js.Promise
 
 /**
- * Same as [loadModelsFromJsonAsBranch] but directly returns the [BranchJS.rootNode] of the created branch.
+ * Same as [loadModelsFromJsonAsBranch] but directly returns the [MutableModelTreeJs.rootNode] of the created branch.
  */
 @JsExport
 fun loadModelsFromJson(json: Array<String>): INodeJS {
@@ -28,13 +34,17 @@ fun loadModelsFromJson(json: Array<String>): INodeJS {
 /**
  * Load data from JSON strings into an in-memory branch.
  *
- * Each JSON string will be added as child of the [BranchJS.rootNode] the created [BranchJS].
+ * Each JSON string will be added as child of the [MutableModelTreeJs.rootNode] the created [MutableModelTreeJs].
  */
 @JsExport
-fun loadModelsFromJsonAsBranch(json: Array<String>): BranchJS {
-    val branch = ModelFacade.toLocalBranch(ModelFacade.newLocalTree())
-    json.forEach { ModelData.fromJson(it).load(branch) }
-    return BranchJSImpl(branch.withAutoTransactions())
+fun loadModelsFromJsonAsBranch(json: Array<String>): MutableModelTreeJs {
+    val tree = IGenericModelTree.builder()
+        .graph(createObjectStoreCache(MapBasedStore()).asObjectGraph())
+        .withNodeReferenceIds()
+        .build()
+        .asMutableThreadSafe()
+    json.forEach { ModelData.fromJson(it).load(tree) }
+    return MutableModelTreeJsImpl(tree)
 }
 
 /**
@@ -108,7 +118,7 @@ interface ClientJS {
      * @param repositoryId Repository ID of the branch to replicate.
      * @param branchId ID of the branch to replicate.
      */
-    fun startReplicatedModel(repositoryId: String, branchId: String): Promise<ReplicatedModelJS>
+    fun startReplicatedModel(repositoryId: String, branchId: String, idGenerator: (TreeId) -> INodeIdGenerator<INodeReference>): Promise<ReplicatedModelJS>
 
     /**
      * Dispose the client by closing the underlying connection to the model server.
@@ -146,10 +156,10 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
         }
     }
 
-    override fun startReplicatedModel(repositoryId: String, branchId: String): Promise<ReplicatedModelJS> {
+    override fun startReplicatedModel(repositoryId: String, branchId: String, idGenerator: (TreeId) -> INodeIdGenerator<INodeReference>): Promise<ReplicatedModelJS> {
         val modelClient = modelClient
         val branchReference = RepositoryId(repositoryId).getBranchReference(branchId)
-        val model: ReplicatedModel = modelClient.getReplicatedModel(branchReference)
+        val model: ReplicatedModel = modelClient.getReplicatedModel(branchReference, idGenerator)
         return GlobalScope.promise {
             model.start()
             return@promise ReplicatedModelJSImpl(model)
@@ -164,14 +174,14 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
 typealias ChangeHandler = (ChangeJS) -> Unit
 
 /**
- * JS-API for [IBranch].
+ * JS-API for [MutableModelTree].
  * Can be used to read and write model data.
  *
  * The full version data of an [ModelClientV2] is not exposed because most parts model API are not exposed to JS yet.
  * See https://issues.modelix.org/issue/MODELIX-962
  */
 @JsExport
-interface BranchJS {
+interface MutableModelTreeJs {
     /**
      * Get root in the branch.
      * The root node can be used to read and write model data.

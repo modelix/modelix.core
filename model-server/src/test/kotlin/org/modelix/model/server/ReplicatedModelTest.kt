@@ -8,17 +8,19 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.junit.Assert.assertFalse
-import org.modelix.model.api.ChildLinkFromName
+import org.modelix.model.api.ChildLinkReferenceByName
 import org.modelix.model.api.ConceptReference
-import org.modelix.model.api.IBranch
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
-import org.modelix.model.api.getRootNode
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.ReplicatedModel
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.mutable.DummyIdGenerator
+import org.modelix.model.mutable.IMutableModelTree
+import org.modelix.model.mutable.ModelixIdGenerator
+import org.modelix.model.mutable.getRootNode
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.ModelReplicationServer
@@ -51,9 +53,9 @@ class ReplicatedModelTest {
         // we do not provide an initial version, so we expect to fetch the latest one (with one "hello" child)
         coroutineScope {
             val scope = this
-            ReplicatedModel(newClient, defaultBranchReference, scope).use { replicatedModel ->
+            ReplicatedModel(newClient, defaultBranchReference, { DummyIdGenerator() }, scope).use { replicatedModel ->
                 try {
-                    replicatedModel.getBranch()
+                    replicatedModel.getModel()
                     // if we get here, then we missed an expected exception
                     assertFalse(true)
                 } catch (ex: Exception) {
@@ -64,12 +66,12 @@ class ReplicatedModelTest {
                     assertTrue(ex.instanceOf(IllegalStateException::class))
                 }
 
-                val branch = replicatedModel.start()
+                val model = replicatedModel.start()
                 // Step 3: wait a bit so replicated model can fetch the new versions from the server
-                waitUntilChildArrives(branch, scope, 500)
+                waitUntilChildArrives(model, scope, 500)
 
                 // Step 4: check, eventually we must have the one "hello" child
-                val children = getHelloChildrenOfRootNode(branch)
+                val children = getHelloChildrenOfRootNode(model)
                 assertEquals(1, children.size)
             }
         }
@@ -100,20 +102,21 @@ class ReplicatedModelTest {
             newClient,
             defaultBranchReference,
             providedScope = scope,
+            idGenerator = { ModelixIdGenerator(newClient.getIdGenerator(), it) },
             initialRemoteVersion = initialVersionClone as CLVersion,
         ).use { replicatedModel ->
-            val branch = replicatedModel.getBranch()
+            val tree = replicatedModel.getVersionedModelTree()
 
             // Step 3: check, here we must have 0 "hello" child
-            val emptyChildren = getHelloChildrenOfRootNode(branch)
+            val emptyChildren = getHelloChildrenOfRootNode(tree)
             assertTrue(emptyChildren.isEmpty())
 
             replicatedModel.start()
             // Step 4: wait a bit so replicated model can fetch the new versions from the server
-            waitUntilChildArrives(branch, scope, 500)
+            waitUntilChildArrives(tree, scope, 500)
 
             // Step 5: check, eventually we must have 1 "hello" child
-            val children = getHelloChildrenOfRootNode(branch)
+            val children = getHelloChildrenOfRootNode(tree)
             assertEquals(1, children.size)
         }
     }
@@ -128,12 +131,12 @@ class ReplicatedModelTest {
         block()
     }
 
-    private fun waitUntilChildArrives(branch: IBranch, scope: CoroutineScope, timeout: Long) {
+    private fun waitUntilChildArrives(modelTree: IMutableModelTree, scope: CoroutineScope, timeout: Long) {
         val barrier = CountDownLatch(1)
         scope.launch {
             var childArrived = false
             while (!childArrived) {
-                childArrived = getHelloChildrenOfRootNode(branch).isNotEmpty()
+                childArrived = getHelloChildrenOfRootNode(modelTree).isNotEmpty()
             }
             barrier.countDown()
         }
@@ -166,6 +169,6 @@ class ReplicatedModelTest {
         return client.push(branchReference, newVersion, baseVersion) as CLVersion
     }
 
-    private fun getHelloChildrenOfRootNode(branch: IBranch) =
-        branch.computeReadT { it.branch.getRootNode().getChildren(ChildLinkFromName("hello")).toList() }
+    private fun getHelloChildrenOfRootNode(tree: IMutableModelTree): List<Any> =
+        tree.runRead { tree.getRootNode().getChildren(ChildLinkReferenceByName("hello")).toList() }
 }

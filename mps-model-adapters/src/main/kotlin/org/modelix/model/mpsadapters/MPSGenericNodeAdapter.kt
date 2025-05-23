@@ -16,6 +16,7 @@ import org.modelix.model.api.ISyncTargetNode
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.NewNodeSpec
 import org.modelix.model.api.upcast
+import org.modelix.mps.multiplatform.model.MPSNodeReference
 
 abstract class MPSGenericNodeAdapter<E> : IWritableNode, ISyncTargetNode {
 
@@ -172,8 +173,8 @@ fun NewNodeSpec.getPreferredSNodeId(contextModel: SModelReference?): SNodeId? {
     // The goal is to create a node with the same ID on all clients.
     return preferredOrCurrentRef
         ?.let { MPSNodeReference.tryConvert(it) }
-        ?.takeIf { contextModel == null || it.ref.modelReference == contextModel }
-        ?.ref
+        ?.takeIf { contextModel == null || it.toMPS().modelReference == contextModel }
+        ?.toMPS()
         ?.nodeId
         ?: preferredOrCurrentRef?.encodeAsForeignId()
 }

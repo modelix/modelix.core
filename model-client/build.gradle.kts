@@ -25,6 +25,7 @@ kotlin {
                 api(project(":model-server-api"))
                 implementation(project(":modelql-client"))
                 api(project(":modelql-core"))
+                implementation(project(":mps-multiplatform-lib"))
                 implementation(kotlin("stdlib-common"))
                 implementation(libs.modelix.incremental)
                 implementation(libs.kotlin.coroutines.core)
@@ -47,6 +48,7 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
+                implementation(project(":mps-model-adapters"))
 
                 implementation(libs.vavr)
                 implementation(libs.apache.commons.lang)

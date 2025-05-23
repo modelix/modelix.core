@@ -217,7 +217,7 @@ data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
 
     override fun getNodeReference(): INodeReference {
         // no dependency tracking because it's immutable
-        return MPSNodeReference(node.reference)
+        return node.reference.toModelix()
     }
 
     override fun getConcept(): IConcept {
@@ -271,7 +271,7 @@ data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
     override fun getReferenceTargetRef(role: IReferenceLinkReference): INodeReference? {
         DependencyTracking.accessed(MPSReferenceLink.tryFromReference(role)?.let { MPSReferenceDependency(node, it.link) } ?: MPSAllReferencesDependency(node))
         return node.references.filterNot { it is DynamicReference }.firstOrNull { MPSReferenceLink(it.link).toReference().matches(role) }
-            ?.let { getTargetRefSafe(it) }?.let { MPSNodeReference(it) }
+            ?.let { getTargetRefSafe(it) }?.toModelix()
     }
 
     private fun getTargetRefSafe(ref: SReference): SNodeReference? {
@@ -298,7 +298,7 @@ data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
     override fun getAllReferenceTargetRefs(): List<Pair<IReferenceLinkReference, INodeReference>> {
         DependencyTracking.accessed(MPSAllReferencesDependency(node))
         return node.references.mapNotNull {
-            MPSReferenceLink(it.link).toReference() to MPSNodeReference(it.targetNodeReference ?: return@mapNotNull null)
+            MPSReferenceLink(it.link).toReference() to (it.targetNodeReference ?: return@mapNotNull null).toModelix()
         }
     }
 

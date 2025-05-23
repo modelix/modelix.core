@@ -302,7 +302,7 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
     }
 
     override fun getNodeReference(): INodeReference {
-        return MPSModuleReference(module.moduleReference)
+        return module.moduleReference.toModelix()
     }
 
     override fun getContainmentLink(): IChildLinkReference {

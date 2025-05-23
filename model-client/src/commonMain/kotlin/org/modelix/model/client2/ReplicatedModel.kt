@@ -10,19 +10,21 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
+import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.model.IVersion
 import org.modelix.model.ObjectDeltaFilter
-import org.modelix.model.VersionMerger
-import org.modelix.model.api.IBranch
-import org.modelix.model.api.IBranchListener
+import org.modelix.model.TreeId
 import org.modelix.model.api.IIdGenerator
-import org.modelix.model.api.ITree
-import org.modelix.model.api.PBranch
+import org.modelix.model.api.IMutableModel
+import org.modelix.model.api.INodeReference
 import org.modelix.model.api.runSynchronized
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
-import org.modelix.model.operations.OTBranch
-import org.modelix.model.persistent.getTreeObject
+import org.modelix.model.mutable.IGenericMutableModelTree
+import org.modelix.model.mutable.IMutableModelTree
+import org.modelix.model.mutable.INodeIdGenerator
+import org.modelix.model.mutable.VersionedModelTree
+import org.modelix.model.mutable.asModel
 
 /**
  * Keeps a local replica of the model in sync with the remote model.
@@ -61,6 +63,7 @@ import org.modelix.model.persistent.getTreeObject
 class ReplicatedModel(
     val client: IModelClientV2,
     val branchRef: BranchReference,
+    val idGenerator: (TreeId) -> INodeIdGenerator<INodeReference>,
     private val providedScope: CoroutineScope? = null,
     initialRemoteVersion: CLVersion? = null,
 ) : Closeable {
@@ -72,23 +75,25 @@ class ReplicatedModel(
 
     init {
         if (initialRemoteVersion != null) {
-            localModel = LocalModel(initialRemoteVersion, client.getIdGenerator()) { client.getUserId() }
+            localModel = LocalModel(initialRemoteVersion, client.getIdGenerator(), idGenerator(initialRemoteVersion.getModelTree().getId())) { client.getUserId() }
         }
     }
 
     private fun getLocalModel(): LocalModel = checkNotNull(localModel) { "Model is not initialized yet" }
 
-    fun getBranch(): IBranch {
-        return getLocalModel().otBranch
+    fun getModel(): IMutableModel {
+        return getLocalModel().versionedModelTree.asModel()
     }
 
-    suspend fun start(): IBranch {
+    fun getVersionedModelTree(): IMutableModelTree = getLocalModel().versionedModelTree
+
+    suspend fun start(): IMutableModelTree {
         if (state != State.New) throw IllegalStateException("already started")
         state = State.Starting
 
         if (localModel == null) {
             val initialVersion = remoteVersion.pull()
-            localModel = LocalModel(initialVersion, client.getIdGenerator()) { client.getUserId() }
+            localModel = LocalModel(initialVersion, client.getIdGenerator(), idGenerator(initialVersion.getModelTree().getId())) { client.getUserId() }
         }
 
         // receive changes from the server
@@ -111,8 +116,12 @@ class ReplicatedModel(
         }
 
         // send changes to the server
-        getLocalModel().rawBranch.addListener(object : IBranchListener {
-            override fun treeChanged(oldTree: ITree?, newTree: ITree) {
+        getLocalModel().versionedModelTree.addListener(object : IGenericMutableModelTree.Listener<INodeReference> {
+
+            override fun treeChanged(
+                oldTree: IGenericModelTree<INodeReference>,
+                newTree: IGenericModelTree<INodeReference>,
+            ) {
                 if (isDisposed()) return
                 scope.launch {
                     pushLocalChanges()
@@ -121,7 +130,7 @@ class ReplicatedModel(
         })
 
         state = State.Started
-        return getBranch()
+        return getVersionedModelTree()
     }
 
     suspend fun resetToServerVersion() {
@@ -196,18 +205,18 @@ class ReplicatedModel(
     }
 }
 
-fun IModelClientV2.getReplicatedModel(branchRef: BranchReference): ReplicatedModel {
-    return ReplicatedModel(this, branchRef)
+fun IModelClientV2.getReplicatedModel(branchRef: BranchReference, idGenerator: (TreeId) -> INodeIdGenerator<INodeReference>): ReplicatedModel {
+    return ReplicatedModel(this, branchRef, idGenerator)
 }
 
-fun IModelClientV2.getReplicatedModel(branchRef: BranchReference, scope: CoroutineScope): ReplicatedModel {
-    return ReplicatedModel(this, branchRef, scope)
+fun IModelClientV2.getReplicatedModel(branchRef: BranchReference, idGenerator: (TreeId) -> INodeIdGenerator<INodeReference>, scope: CoroutineScope): ReplicatedModel {
+    return ReplicatedModel(this, branchRef, idGenerator, scope)
 }
 
 /**
  * Manages the locks during the creation and merge of versions.
  */
-private class LocalModel(initialVersion: CLVersion, val idGenerator: IIdGenerator, val author: () -> String?) {
+private class LocalModel(initialVersion: CLVersion, val versionIdGenerator: IIdGenerator, val idGenerator: INodeIdGenerator<INodeReference>, val author: () -> String?) {
 
     /**
      * The state of the local model is the state of localVersion.getTree() plus the pending changes in
@@ -226,19 +235,18 @@ private class LocalModel(initialVersion: CLVersion, val idGenerator: IIdGenerato
             field = value
         }
 
-    val rawBranch: IBranch = PBranch(initialVersion.getTree(), idGenerator)
-    val otBranch = OTBranch(rawBranch, idGenerator)
-    private val merger = VersionMerger(idGenerator)
+    val versionedModelTree = VersionedModelTree(initialVersion, idGenerator)
 
     private fun checkInWriteTransaction() {
-        check(otBranch.canWrite()) { "Write transaction required to update the localVersion field" }
+        check(versionedModelTree.canWrite()) { "Write transaction required to update the localVersion field" }
     }
 
     fun resetToVersion(version: CLVersion) {
-        otBranch.computeWrite { // write transaction ensures there are no active changes done on an outdated version
-            otBranch.getPendingChanges() // discard any pending changes
+        versionedModelTree.runWrite { // write transaction ensures there are no active changes done on an outdated version
+            versionedModelTree.getPendingChanges() // discard any pending changes
             localVersion = version
-            rawBranch.writeTransaction.tree = version.getTree()
+
+            (it as VersionedModelTree.VersionedWriteTransaction).t.tree = version.getModelTree()
         }
     }
 
@@ -251,7 +259,7 @@ private class LocalModel(initialVersion: CLVersion, val idGenerator: IIdGenerato
         // Avoid triggering branch listeners (causing endless loops) if there is no change.
         if (localVersion.getContentHash() == remoteVersion.getContentHash()) return remoteVersion
 
-        return otBranch.computeWrite {
+        return versionedModelTree.runWrite {
             // Writing to localVersion requires that there are no pending operations in OTBranch. By creating a new
             // local version first, the pending operations become part of it.
             // Creating it inside a write transaction, guarantees that the list of pending changes stays empty util
@@ -261,7 +269,7 @@ private class LocalModel(initialVersion: CLVersion, val idGenerator: IIdGenerato
             // Handle the most common and simple cases. All other cases are delegated to the server.
             if (canFastForward(remoteVersion, responseOf)) {
                 localVersion = remoteVersion
-                rawBranch.writeTransaction.tree = remoteVersion.getTree()
+                (it as VersionedModelTree.VersionedWriteTransaction).t.tree = localVersion.getModelTree()
             }
 
             localVersion
@@ -279,15 +287,15 @@ private class LocalModel(initialVersion: CLVersion, val idGenerator: IIdGenerato
      * @return null, if there are no pending changes and no new version was created.
      */
     fun createNewLocalVersion(): CLVersion? {
-        return otBranch.computeWrite { doCreateNewLocalVersion() }
+        return versionedModelTree.runWrite { doCreateNewLocalVersion() }
     }
 
     private fun doCreateNewLocalVersion(): CLVersion? {
         checkInWriteTransaction()
-        val (ops, tree) = otBranch.getPendingChanges()
+        val (ops, tree) = versionedModelTree.getPendingChanges()
         val baseVersion = localVersion
 
-        if (ops.isEmpty() && baseVersion.getTreeReference().getHash() == tree.getTreeObject().getHash()) return null
+        if (ops.isEmpty() && baseVersion.getTreeReference().getHash() == tree.asObject().getHash()) return null
         val newVersion = CLVersion.builder()
             .regularUpdate(baseVersion)
             .author(author())

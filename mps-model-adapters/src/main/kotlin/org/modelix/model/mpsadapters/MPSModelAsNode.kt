@@ -195,7 +195,7 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
     }
 
     override fun getNodeReference(): INodeReference {
-        return MPSModelReference(model.reference)
+        return model.reference.toModelix()
     }
 
     override fun getConcept(): IConcept {

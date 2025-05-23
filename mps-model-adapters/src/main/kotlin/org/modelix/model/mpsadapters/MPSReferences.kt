@@ -1,76 +1,29 @@
 package org.modelix.model.mpsadapters
 
+import jetbrains.mps.smodel.SNodePointer
 import jetbrains.mps.util.StringUtil
 import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.model.SNodeReference
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleReference
+import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.jetbrains.mps.openapi.project.Project
 import org.modelix.model.api.INodeReference
+import org.modelix.mps.multiplatform.model.MPSModelReference
+import org.modelix.mps.multiplatform.model.MPSModuleReference
+import org.modelix.mps.multiplatform.model.MPSNodeReference
 
-data class MPSModuleReference(val moduleReference: SModuleReference) : INodeReference() {
+fun SModuleReference.toModelix() = MPSModuleReference(moduleId.toString())
+fun MPSModuleReference.toMPS() = PersistenceFacade.getInstance().createModuleReference(PersistenceFacade.getInstance().createModuleId(moduleId), null)
 
-    companion object {
-        internal const val PREFIX = "mps-module"
-        internal const val PREFIX_COLON = "$PREFIX:"
+fun SModelReference.toModelix() = MPSModelReference(moduleReference?.toModelix(), modelId.toString())
+fun MPSModelReference.toMPS() = PersistenceFacade.getInstance().createModelReference(moduleReference?.toMPS(), PersistenceFacade.getInstance().createModelId(modelId), "")
 
-        fun tryConvert(ref: INodeReference): MPSModuleReference? {
-            if (ref is MPSModuleReference) return ref
-            val serialized = ref.serialize()
-            if (!serialized.startsWith(PREFIX_COLON)) return null
-            val withoutPrefix = serialized.substringAfter(PREFIX_COLON)
-            val moduleRef = MPSReferenceParser.parseSModuleReference(withoutPrefix)
-            return MPSModuleReference(moduleRef)
-        }
-    }
-
-    override fun serialize(): String {
-        return "$PREFIX:${moduleReference.withoutNames()}"
-    }
-}
-
-data class MPSModelReference(val modelReference: SModelReference) : INodeReference() {
-
-    companion object {
-        internal const val PREFIX = "mps-model"
-
-        fun tryConvert(ref: INodeReference): MPSModelReference? {
-            if (ref is MPSModelReference) return ref
-            val serialized = ref.serialize()
-            val serializedMPSRef = when {
-                serialized.startsWith("mps-model:") -> serialized.substringAfter("mps-model:")
-                else -> return null
-            }
-            return MPSModelReference(MPSReferenceParser.parseSModelReference(serializedMPSRef))
-        }
-    }
-
-    override fun serialize(): String {
-        return "$PREFIX:${modelReference.withoutNames()}"
-    }
-}
-
-data class MPSNodeReference(val ref: SNodeReference) : INodeReference() {
-    companion object {
-
-        internal const val PREFIX = "mps"
-
-        fun tryConvert(ref: INodeReference): MPSNodeReference? {
-            if (ref is MPSNodeReference) return ref
-            val serialized = ref.serialize()
-            val serializedMPSRef = when {
-                serialized.startsWith("mps-node:") -> serialized.substringAfter("mps-node:")
-                serialized.startsWith("mps:") -> serialized.substringAfter("mps:")
-                else -> return null
-            }
-            return MPSNodeReference(MPSReferenceParser.parseSNodeReference(serializedMPSRef))
-        }
-    }
-
-    override fun serialize(): String {
-        return "$PREFIX:${ref.withoutNames()}"
-    }
-}
+fun SNodeReference.toModelix() = MPSNodeReference(
+    modelReference?.toModelix(),
+    nodeId.toString(),
+)
+fun MPSNodeReference.toMPS() = SNodePointer(modelReference?.toMPS(), PersistenceFacade.getInstance().createNodeId(nodeId))
 
 fun SNodeReference.withoutNames(): String {
     val modelPrefix = modelReference?.let { it.withoutNames() + "/" } ?: ""

@@ -9,17 +9,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.RepetitionInfo
+import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.model.IVersion
-import org.modelix.model.ModelFacade
+import org.modelix.model.TreeId
 import org.modelix.model.VersionMerger
-import org.modelix.model.api.IBranch
+import org.modelix.model.api.ChildLinkReferenceByName
 import org.modelix.model.api.IConceptReference
+import org.modelix.model.api.INodeReference
 import org.modelix.model.api.ITree
-import org.modelix.model.api.IdGeneratorDummy
 import org.modelix.model.api.PBranch
-import org.modelix.model.api.PNodeAdapter
-import org.modelix.model.api.getRootNode
-import org.modelix.model.client.IdGenerator
+import org.modelix.model.api.PNodeReference
+import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.client.ReplicatedRepository
 import org.modelix.model.client.RestWebModelClient
 import org.modelix.model.client2.IModelClientV2
@@ -29,17 +29,20 @@ import org.modelix.model.client2.getReplicatedModel
 import org.modelix.model.data.asData
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.mutable.IMutableModelTree
+import org.modelix.model.mutable.INodeIdGenerator
+import org.modelix.model.mutable.ModelixIdGenerator
+import org.modelix.model.mutable.getRootNode
 import org.modelix.model.operations.OTBranch
-import org.modelix.model.persistent.getTreeObject
 import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.KeyValueLikeModelServer
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.test.RandomModelChangeGenerator
+import org.modelix.streams.getBlocking
 import java.util.Collections
 import java.util.SortedSet
-import java.util.TreeSet
 import kotlin.random.Random
 import kotlin.test.Ignore
 import kotlin.test.Test
@@ -73,8 +76,11 @@ class ReplicatedRepositoryTest {
         val repositoryId = RepositoryId("repo1")
         modelClient.initRepository(repositoryId)
 
-        modelClient.getReplicatedModel(repositoryId.getBranchReference()).use { replicatedModel ->
-            modelClient2.getReplicatedModel(repositoryId.getBranchReference()).use { replicatedModel2 ->
+        val idGenerator: (TreeId) -> INodeIdGenerator<INodeReference> =
+            { ModelixIdGenerator(modelClient2.getIdGenerator(), it) }
+
+        modelClient.getReplicatedModel(repositoryId.getBranchReference(), idGenerator).use { replicatedModel ->
+            modelClient2.getReplicatedModel(repositoryId.getBranchReference(), idGenerator).use { replicatedModel2 ->
                 val branch1 = replicatedModel.start()
                 val branch2 = replicatedModel2.start()
 
@@ -90,11 +96,10 @@ class ReplicatedRepositoryTest {
                         branch2
                     }
                     branchToChange.runWrite {
-                        val changeGenerator = RandomModelChangeGenerator(branchToChange.getRootNode(), rand)
+                        val changeGenerator = RandomModelChangeGenerator(branchToChange.getRootNode().asLegacyNode(), rand)
                         repeat(1000) { _ ->
                             changeGenerator.applyRandomChange()
                         }
-                        println("new tree: " + (branchToChange.transaction.tree).getTreeObject().getHashString())
                     }
 
                     val syncTime = measureTime {
@@ -104,13 +109,13 @@ class ReplicatedRepositoryTest {
                         }
                     }
                     println("synced after $syncTime")
-                    val data1 = branch1.computeRead {
+                    val data1 = branch1.runRead {
                         println("reading on branch 1: " + branch1.treeHash())
-                        branch1.getRootNode().asData()
+                        branch1.getRootNode().asLegacyNode().asData()
                     }
-                    val data2 = branch2.computeRead {
+                    val data2 = branch2.runRead {
                         println("reading on branch 2: " + branch2.treeHash())
-                        branch2.getRootNode().asData()
+                        branch2.getRootNode().asLegacyNode().asData()
                     }
                     assertEquals(data1, data2)
                 }
@@ -129,10 +134,14 @@ class ReplicatedRepositoryTest {
         val initialVersion = clients[0].initRepository(repositoryId)
         val branchId = repositoryId.getBranchReference("my-branch")
         clients[0].push(branchId, initialVersion, initialVersion)
-        val models = clients.map { client -> client.getReplicatedModel(branchId, scope).also { it.start() } }
+        val models = clients.map { client ->
+            client.getReplicatedModel(branchId, { ModelixIdGenerator(client.getIdGenerator(), it) }, scope).also {
+                it.start()
+            }
+        }
 
         try {
-            val createdNodes: MutableSet<String> = Collections.synchronizedSet(TreeSet<String>())
+            val createdNodes: MutableSet<INodeReference> = Collections.synchronizedSet(HashSet<INodeReference>())
 
             coroutineScope {
                 suspend fun launchWriter(model: ReplicatedModel, seed: Int) {
@@ -140,8 +149,12 @@ class ReplicatedRepositoryTest {
                         val rand = Random(seed)
                         repeat(10) {
                             delay(rand.nextLong(50, 100))
-                            model.getBranch().runWriteT { t ->
-                                createdNodes += t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?).toString(16)
+                            model.getModel().executeWrite {
+                                createdNodes += model.getModel().getRootNode().addNewChild(
+                                    ChildLinkReferenceByName("role"),
+                                    -1,
+                                    NullConcept.getReference(),
+                                ).getNodeReference()
                             }
                         }
                     }
@@ -150,10 +163,6 @@ class ReplicatedRepositoryTest {
                     launchWriter(model, 56456 + index + repetitionInfo.currentRepetition * 100000)
                     delay(200.milliseconds)
                 }
-            }
-
-            fun getChildren(model: ReplicatedModel): SortedSet<String> {
-                return getChildren(model.getBranch())
             }
 
             assertEquals(clients.size * 10, createdNodes.size)
@@ -169,7 +178,7 @@ class ReplicatedRepositoryTest {
             // models.forEach { it.resetToServerVersion() }
 
             val serverVersion = clients[0].pull(branchId, null)
-            val childrenOnServer = getChildren(PBranch(serverVersion.getTree(), IdGeneratorDummy()))
+            val childrenOnServer = getChildren(serverVersion.getModelTree())
 
             assertEquals(createdNodes, childrenOnServer)
 
@@ -209,7 +218,7 @@ class ReplicatedRepositoryTest {
         val remoteVersions = ClientSpecificVersionMap(initiallyPulledVersions)
         val lastKnownRemoteVersion = ClientSpecificVersionMap(initiallyPulledVersions)
 
-        val createdNodes: MutableSet<String> = Collections.synchronizedSet(TreeSet<String>())
+        val createdNodes: MutableSet<INodeReference> = Collections.synchronizedSet(HashSet<INodeReference>())
         val rand = Random(repetitionInfo.currentRepetition + 8745000)
         val nodesToCreate = clients.size * 10
 
@@ -224,7 +233,9 @@ class ReplicatedRepositoryTest {
                     val baseVersion = localVersions[client]
                     val branch = OTBranch(PBranch(baseVersion.getTree(), client.getIdGenerator()), client.getIdGenerator())
                     branch.runWriteT { t ->
-                        createdNodes += t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?).toString(16)
+                        createdNodes += t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?).let {
+                            PNodeReference(it, branch.transaction.tree.getId())
+                        }
                     }
                     val (ops, tree) = branch.getPendingChanges()
                     val newVersion = CLVersion.createRegularVersion(
@@ -294,14 +305,10 @@ class ReplicatedRepositoryTest {
             applicableOps.random(rand).apply()
         }
 
-        fun getChildren(model: CLVersion): SortedSet<String> {
-            return getChildren(PBranch(model.getTree(), IdGeneratorDummy()))
-        }
-
         assertEquals(nodesToCreate, createdNodes.size)
 
         val serverVersion = clients[0].pull(branchId, null)
-        val childrenOnServer = getChildren(PBranch(serverVersion.getTree(), IdGeneratorDummy()))
+        val childrenOnServer = getChildren(serverVersion.getModelTree())
 
         assertEquals(createdNodes, childrenOnServer)
 
@@ -325,21 +332,28 @@ class ReplicatedRepositoryTest {
         val initialVersion = clients[0].initRepository(repositoryId)
         val branchId = repositoryId.getBranchReference("my-branch")
         clients[0].push(branchId, initialVersion, initialVersion)
-        val models = clients.map { client -> client.getReplicatedModel(branchId, scope).also { it.start() } }
+        val models = clients.map { client ->
+            client.getReplicatedModel(branchId, { ModelixIdGenerator(client.getIdGenerator(), it) }, scope).also {
+                it.start()
+            }
+        }
         val v1models = v1clients.map { ReplicatedRepository(it, repositoryId, branchId.branchName, { "user" }) }
 
         try {
-            val createdNodes: MutableSet<String> = Collections.synchronizedSet(TreeSet<String>())
+            val createdNodes: MutableSet<INodeReference> = Collections.synchronizedSet(HashSet<INodeReference>())
 
             coroutineScope {
-                suspend fun launchWriter(model: ReplicatedModel, seed: Int) {
-                    launch {
-                        val rand = Random(seed)
-                        repeat(10) {
-                            delay(rand.nextLong(50, 100))
-                            model.getBranch().runWriteT { t ->
-                                createdNodes += t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?).toString(16)
-                            }
+                suspend fun launchWriter(model: ReplicatedModel, seed: Int) = launch {
+                    val rand = Random(seed)
+                    repeat(10) {
+                        delay(rand.nextLong(50, 100))
+
+                        model.getModel().executeWrite {
+                            createdNodes += model.getModel().getRootNode().addNewChild(
+                                ChildLinkReferenceByName("role"),
+                                -1,
+                                NullConcept.getReference(),
+                            ).getNodeReference()
                         }
                     }
                 }
@@ -347,13 +361,15 @@ class ReplicatedRepositoryTest {
                     launchWriter(model, 56456 + index + repetitionInfo.currentRepetition * 100000)
                     delay(200.milliseconds)
                 }
-                suspend fun launchWriterv1(model: ReplicatedRepository, seed: Int) {
+                suspend fun launchWriterv1(repository: ReplicatedRepository, seed: Int) {
                     launch {
                         val rand = Random(seed)
                         repeat(10) {
                             delay(rand.nextLong(50, 100))
-                            model.branch.runWriteT { t ->
-                                createdNodes += t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?).toString(16)
+                            repository.branch.runWriteT { t ->
+                                createdNodes += t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?).let {
+                                    PNodeReference(it, repository.branch.transaction.tree.getId())
+                                }
                             }
                         }
                     }
@@ -362,13 +378,6 @@ class ReplicatedRepositoryTest {
                     launchWriterv1(model, 56456 + index + repetitionInfo.currentRepetition * 100000)
                     delay(200.milliseconds)
                 }
-            }
-
-            fun getChildren(model: ReplicatedModel): SortedSet<String> {
-                return getChildren(model.getBranch())
-            }
-            fun getChildren(model: ReplicatedRepository): SortedSet<String> {
-                return getChildren(model.branch)
             }
 
             assertEquals((clients.size + v1clients.size) * 10, createdNodes.size)
@@ -387,7 +396,7 @@ class ReplicatedRepositoryTest {
             // models.forEach { it.resetToServerVersion() }
 
             val serverVersion = clients[0].pull(branchId, null)
-            val childrenOnServer = getChildren(PBranch(serverVersion.getTree(), IdGeneratorDummy()))
+            val childrenOnServer = getChildren(serverVersion.getModelTree())
 
             assertEquals(createdNodes, childrenOnServer)
 
@@ -404,69 +413,6 @@ class ReplicatedRepositoryTest {
         }
     }
 
-    @Ignore
-    @Test
-    fun mergePerformanceTest() {
-        val rand = Random(917563)
-        val idGenerator = IdGenerator.getInstance(100)
-        val initialTree = ModelFacade.newLocalTree()
-        val initialVersion = CLVersion.createRegularVersion(
-            idGenerator.generate(),
-            null,
-            null,
-            initialTree,
-            null,
-            emptyArray(),
-        )
-        val versions: MutableList<CLVersion> = mutableListOf(initialVersion)
-        val nonMergedVersions = mutableSetOf<CLVersion>()
-        var headVersion: CLVersion = initialVersion
-        val createdNodes: MutableSet<String> = Collections.synchronizedSet(TreeSet<String>())
-
-        fun mergeVersion(versionToMerge: CLVersion) {
-            headVersion = VersionMerger(idGenerator).mergeChange(headVersion, versionToMerge)
-            nonMergedVersions.remove(versionToMerge)
-        }
-
-        repeat(100) {
-            val baseVersion = versions[rand.nextInt(versions.size)]
-            val branch = OTBranch(PBranch(baseVersion.getTree(), idGenerator), idGenerator)
-            branch.runWriteT { t ->
-                createdNodes += t.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?).toString(16)
-            }
-            val (ops, newTree) = branch.getPendingChanges()
-            val newVersion = CLVersion.createRegularVersion(
-                idGenerator.generate(),
-                null,
-                null,
-                newTree,
-                baseVersion,
-                ops.map { it.getOriginalOp() }.toTypedArray(),
-            )
-            versions += newVersion
-            nonMergedVersions -= baseVersion
-            nonMergedVersions += newVersion
-
-            while (nonMergedVersions.size > rand.nextInt(10)) {
-                mergeVersion(nonMergedVersions.random(rand))
-            }
-        }
-
-        while (nonMergedVersions.isNotEmpty()) {
-            mergeVersion(nonMergedVersions.random(rand))
-        }
-
-        val headChildren = getChildren(PBranch(headVersion.getTree(), IdGeneratorDummy()))
-
-        assertEquals(createdNodes, headChildren)
-    }
-
-    private fun getChildren(branch: IBranch): SortedSet<String> {
-        return branch.computeRead {
-            branch.getRootNode().allChildren.map { (it as PNodeAdapter).nodeId.toString(16) }.toSortedSet()
-        }
-    }
-
     @Test
     fun `used id specified for client is used in replicated model`() = runTest {
         val userId = "a_user_id"
@@ -480,12 +426,17 @@ class ReplicatedRepositoryTest {
             .also { it.init() }
         val repositoryId = RepositoryId("repo1")
         modelClient.initRepository(repositoryId)
-        modelClient.getReplicatedModel(repositoryId.getBranchReference()).use { replicatedModel ->
-            val branch = replicatedModel.start() as OTBranch
-            val initialVersion = modelClient.pull(replicatedModel.branchRef, null) as CLVersion
+        val idGenerator = { treeId: TreeId -> ModelixIdGenerator(modelClient.getIdGenerator(), treeId) }
+        modelClient.getReplicatedModel(repositoryId.getBranchReference(), idGenerator).use { replicatedModel ->
+            val tree = replicatedModel.start()
+            val initialVersion = modelClient.pull(replicatedModel.branchRef, null)
 
-            branch.computeWriteT {
-                it.addNewChild(ITree.ROOT_ID, "role", -1, null as IConceptReference?)
+            tree.runWrite {
+                tree.getRootNode().addNewChild(
+                    ChildLinkReferenceByName("role"),
+                    -1,
+                    NullConcept.getReference(),
+                ).getNodeReference()
             }
             while (replicatedModel.getCurrentVersion() == initialVersion) {
                 delay(10)
@@ -496,7 +447,17 @@ class ReplicatedRepositoryTest {
     }
 }
 
-private fun IBranch.treeHash(): String = computeReadT { t -> (t.tree).getTreeObject().getHashString() }
+private fun getChildren(version: CLVersion): SortedSet<INodeReference> = getChildren(version.getModelTree())
+private fun getChildren(repository: ReplicatedRepository): SortedSet<INodeReference> = getChildren(repository)
+private fun getChildren(model: ReplicatedModel): SortedSet<INodeReference> = getChildren(model.getVersionedModelTree())
+private fun getChildren(modelTree: IMutableModelTree): SortedSet<INodeReference> = modelTree.runRead {
+    getChildren(it.tree)
+}
+private fun getChildren(modelTree: IGenericModelTree<INodeReference>): SortedSet<INodeReference> =
+    modelTree.getChildren(modelTree.getRootNodeId()).toList().getBlocking(modelTree)
+        .toSortedSet(compareBy { it.serialize() })
+
+private fun IMutableModelTree.treeHash(): String = runRead { t -> t.tree.asObject().getHashString() }
 
 class ClientSpecificVersionMap(initialEntries: Map<IModelClientV2, IVersion>) {
     private val map = mutableMapOf<IModelClientV2, CLVersion>()

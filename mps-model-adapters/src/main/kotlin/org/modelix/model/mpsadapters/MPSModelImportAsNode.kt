@@ -25,7 +25,7 @@ data class MPSModelImportAsNode(val importedModel: SModelReference, val importin
                 }
 
                 override fun readRef(element: MPSModelImportAsNode): INodeReference? {
-                    return MPSModelReference(element.importedModel)
+                    return element.importedModel.toModelix()
                 }
 
                 override fun write(element: MPSModelImportAsNode, value: IWritableNode?) {

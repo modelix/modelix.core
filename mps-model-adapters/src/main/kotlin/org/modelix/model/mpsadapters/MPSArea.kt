@@ -19,15 +19,18 @@ import org.modelix.model.area.IArea
 import org.modelix.model.area.IAreaListener
 import org.modelix.model.area.IAreaReference
 import org.modelix.mps.api.ModelixMpsApi
+import org.modelix.mps.multiplatform.model.MPSModelReference
+import org.modelix.mps.multiplatform.model.MPSModuleReference
+import org.modelix.mps.multiplatform.model.MPSNodeReference
 
 data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
 
     private fun resolveMPSModelReference(ref: INodeReference): INode? {
         if (ref is MPSModelReference) {
-            return ref.modelReference.resolve(repository)?.let { MPSModelAsNode(it).asLegacyNode() }
+            return ref.toMPS().resolve(repository)?.let { MPSModelAsNode(it).asLegacyNode() }
         }
 
-        val serialized = ref.serialize().substringAfter("${MPSModelReference.PREFIX}:")
+        val serialized = ref.serialize().substringAfter("${org.modelix.mps.multiplatform.model.MPSModelReference.PREFIX}:")
         val modelRef = MPSReferenceParser.parseSModelReference(serialized)
 
         return modelRef.resolve(repository)?.let { MPSModelAsNode(it).asLegacyNode() }
@@ -46,7 +49,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
         // By far, the most common case is to resolve a MPSNodeReference.
         // Optimize for that case by not serializing and doing string operations.
         if (ref is MPSNodeReference) {
-            return resolveSNodeReferenceToMPSNode(ref.ref)
+            return resolveSNodeReferenceToMPSNode(ref.toMPS())
         }
         val serialized = ref.serialize()
         val prefix = serialized.substringBefore(":")
@@ -148,11 +151,11 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
     }
 
     private fun resolveMPSModuleReference(ref: INodeReference): MPSModuleAsNode<*>? {
-        return MPSModuleReference.tryConvert(ref)?.moduleReference?.resolve(repository)?.let { MPSModuleAsNode(it) }
+        return MPSModuleReference.tryConvert(ref)?.toMPS()?.resolve(repository)?.let { MPSModuleAsNode(it) }
     }
 
     private fun resolveMPSNodeReference(ref: INodeReference): INode? {
-        return MPSNodeReference.tryConvert(ref)?.ref?.let { resolveSNodeReferenceToMPSNode(it) }
+        return MPSNodeReference.tryConvert(ref)?.toMPS()?.let { resolveSNodeReferenceToMPSNode(it) }
     }
 
     private fun resolveSNodeReferenceToMPSNode(sNodeReference: SNodeReference): INode? {

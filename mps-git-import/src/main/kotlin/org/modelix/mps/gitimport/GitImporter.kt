@@ -25,10 +25,8 @@ import org.modelix.model.historyAsSequence
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.VersionBuilder
-import org.modelix.model.mpsadapters.MPSModelReference
-import org.modelix.model.mpsadapters.MPSModuleReference
-import org.modelix.model.mpsadapters.MPSReferenceParser
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
+import org.modelix.model.mpsadapters.toModelix
 import org.modelix.model.mutable.DummyIdGenerator
 import org.modelix.model.mutable.VersionedModelTree
 import org.modelix.model.mutable.getRootNode
@@ -38,6 +36,7 @@ import org.modelix.model.sync.bulk.IdentityPreservingNodeAssociation
 import org.modelix.model.sync.bulk.ModelSynchronizer
 import org.modelix.model.sync.bulk.UnfilteredModelMask
 import org.modelix.mps.api.ModelixMpsApi
+import org.modelix.mps.multiplatform.model.MPSModelReference
 import java.io.File
 import kotlin.system.exitProcess
 
@@ -262,17 +261,16 @@ class GitImporter(
                     MPSExtentions.SOLUTION, MPSExtentions.LANGUAGE, MPSExtentions.GENERATOR, MPSExtentions.DEVKIT -> {
                         file.readModuleDescriptor()?.let { descriptor ->
                             invalidations.invalidate(listOf(invalidations.root))
-                            invalidations.invalidate(listOf(invalidations.root, MPSModuleReference(descriptor.moduleReference)))
+                            invalidations.invalidate(listOf(invalidations.root, descriptor.moduleReference.toModelix()))
                         }
                     }
                     MPSExtentions.MODEL, MPSExtentions.MODEL_ROOT -> {
-                        val moduleRef = file.findModuleFile()?.readModuleDescriptor()?.moduleReference?.let { MPSModuleReference(it) }
+                        val moduleRef = file.findModuleFile()?.readModuleDescriptor()?.moduleReference?.toModelix()
                         val modelRef = file.openInputStream().bufferedReader().lineSequence().mapNotNull {
                             JDOMUtil.loadDocument(file.openInputStream())
                                 .rootElement
                                 .getAttribute("ref")?.value
-                                ?.let { MPSReferenceParser.parseSModelReference(it) }
-                                ?.let { MPSModelReference(it) }
+                                ?.let { MPSModelReference.parseSModelReference(it) }
                         }.firstOrNull()
                         if (modelRef != null) {
                             invalidations.invalidate(

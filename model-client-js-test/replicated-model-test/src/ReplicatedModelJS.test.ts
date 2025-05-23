@@ -2,6 +2,7 @@ import { org } from "@modelix/model-client";
 import { randomUUID } from "crypto";
 import { GenericContainer } from "testcontainers";
 import type { StartedTestContainer } from "testcontainers";
+import IdSchemeJS = org.modelix.model.client2.IdSchemeJS;
 
 const connectClient = org.modelix.model.client2.connectClient
 type ClientJS = org.modelix.model.client2.ClientJS
@@ -27,7 +28,7 @@ beforeEach(async () => {
   const repositoryId = randomUUID()
   client = await connectClient(`http://localhost:${container.getMappedPort(28101)}/v2`)
   await client.initRepository(repositoryId)
-  replicatedModel = await client.startReplicatedModel(repositoryId, "master")
+  replicatedModel = await client.startReplicatedModel(repositoryId, "master", IdSchemeJS.READONLY)
 })
 
 afterEach(() => {

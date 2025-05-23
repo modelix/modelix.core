@@ -192,5 +192,5 @@ class NodeInMutableModel(
 }
 
 fun IGenericMutableModelTree<INodeReference>.getRootNode(): IWritableNode {
-    return NodeInMutableModel(this, getTransaction().tree.getRootNodeId())
+    return runRead { NodeInMutableModel(this, getTransaction().tree.getRootNodeId()) }
 }

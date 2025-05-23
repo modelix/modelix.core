@@ -110,5 +110,7 @@ class ThreadSafeMutableModelTree<NodeId>(
     }
 }
 
-fun <T> IGenericModelTree<T>.asMutableThreadSafe(): IGenericMutableModelTree<T> = ThreadSafeMutableModelTree(this)
+fun <T> IGenericModelTree<T>.asMutableThreadSafe(idGenerator: INodeIdGenerator<T> = DummyIdGenerator()): IGenericMutableModelTree<T> {
+    return ThreadSafeMutableModelTree(this, idGenerator)
+}
 fun IGenericModelTree<INodeReference>.asModelThreadSafe(): IModel = asMutableThreadSafe().asModel()

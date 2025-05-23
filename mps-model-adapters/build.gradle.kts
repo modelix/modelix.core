@@ -7,6 +7,7 @@ plugins {
 
 dependencies {
     api(project(":model-api"))
+    api(project(":mps-multiplatform-lib"))
     implementation(project(":model-datastructure"))
     implementation(libs.modelix.incremental)
 

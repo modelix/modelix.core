@@ -17,6 +17,7 @@ import org.modelix.model.api.ITransactionManager
  * It's like a unix filesystem with mount points. The model inside an area can also be an MPS model that is not a
  * persistent data structure.
  */
+@Deprecated("Use IMutableModel")
 interface IArea : INodeResolutionScope, ITransactionManager {
     /**
      * The root of an area is not allowed to change

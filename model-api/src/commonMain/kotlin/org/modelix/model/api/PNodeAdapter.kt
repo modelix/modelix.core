@@ -9,6 +9,7 @@ import org.modelix.model.api.async.INodeWithAsyncSupport
 import org.modelix.model.api.async.asAsyncNode
 import org.modelix.model.area.PArea
 
+@Deprecated("Use NodeInMutableModel instead")
 open class PNodeAdapter(val nodeId: Long, val branch: IBranch) :
     INode,
     INodeEx,

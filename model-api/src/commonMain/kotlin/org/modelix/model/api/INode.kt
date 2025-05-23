@@ -12,6 +12,7 @@ import org.modelix.model.data.NodeData
 /**
  * Representation of a model element.
  */
+@Deprecated("Use IWritableNode or IReadableNode instead")
 interface INode {
 
     fun asReadableNode(): IReadableNode = if (this is IReadableNode) this else LegacyNodeAsWritableNode(this)

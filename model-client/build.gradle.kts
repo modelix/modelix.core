@@ -47,6 +47,7 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
+                implementation(project(":mps-model-adapters"))
 
                 implementation(libs.vavr)
                 implementation(libs.apache.commons.lang)

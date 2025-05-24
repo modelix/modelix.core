@@ -16,10 +16,13 @@ import org.modelix.model.api.JSNodeConverter
 import org.modelix.model.data.ModelData
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.createObjectStoreCache
+import org.modelix.model.mutable.DummyIdGenerator
 import org.modelix.model.mutable.INodeIdGenerator
+import org.modelix.model.mutable.ModelixIdGenerator
 import org.modelix.model.mutable.asMutableThreadSafe
 import org.modelix.model.mutable.load
 import org.modelix.model.persistent.MapBasedStore
+import org.modelix.model.mpsadapters.MpsIdGenerator
 import kotlin.js.Promise
 
 /**
@@ -66,6 +69,13 @@ fun connectClient(url: String, bearerTokenProvider: (() -> Promise<String?>)? = 
         client.init()
         return@promise ClientJSImpl(client)
     }
+}
+
+@JsExport
+sealed class IdSchemeJS() {
+    object MPS: IdSchemeJS()
+    object MODELIX: IdSchemeJS()
+    object READONLY: IdSchemeJS()
 }
 
 /**
@@ -118,7 +128,7 @@ interface ClientJS {
      * @param repositoryId Repository ID of the branch to replicate.
      * @param branchId ID of the branch to replicate.
      */
-    fun startReplicatedModel(repositoryId: String, branchId: String, idGenerator: (TreeId) -> INodeIdGenerator<INodeReference>): Promise<ReplicatedModelJS>
+    fun startReplicatedModel(repositoryId: String, branchId: String, idScheme: IdSchemeJS): Promise<ReplicatedModelJS>
 
     /**
      * Dispose the client by closing the underlying connection to the model server.
@@ -156,7 +166,18 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
         }
     }
 
-    override fun startReplicatedModel(repositoryId: String, branchId: String, idGenerator: (TreeId) -> INodeIdGenerator<INodeReference>): Promise<ReplicatedModelJS> {
+    override fun startReplicatedModel(
+        repositoryId: String,
+        branchId: String,
+        idScheme: IdSchemeJS,
+    ): Promise<ReplicatedModelJS> = startReplicatedModelWithIdGenerator(repositoryId, branchId,
+        when(idScheme){
+            IdSchemeJS.READONLY ->  { treeId -> DummyIdGenerator() }
+            IdSchemeJS.MODELIX ->  { treeId -> ModelixIdGenerator(modelClient.getIdGenerator(), treeId) }
+            IdSchemeJS.MPS ->  { treeId -> MpsIdGenerator(modelClient.getIdGenerator(), treeId) }
+        })
+
+    private fun startReplicatedModelWithIdGenerator(repositoryId: String, branchId: String, idGenerator: (TreeId) -> INodeIdGenerator<INodeReference>): Promise<ReplicatedModelJS> {
         val modelClient = modelClient
         val branchReference = RepositoryId(repositoryId).getBranchReference(branchId)
         val model: ReplicatedModel = modelClient.getReplicatedModel(branchReference, idGenerator)

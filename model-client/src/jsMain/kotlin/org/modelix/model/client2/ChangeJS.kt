@@ -4,7 +4,7 @@ import INodeJS
 
 /**
  * Represents a change in branch that can be handled by a [ChangeHandler].
- * See [BranchJS.addListener]
+ * See [MutableModelTreeJs.addListener]
  */
 @JsExport
 sealed interface ChangeJS {

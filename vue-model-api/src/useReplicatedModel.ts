@@ -37,6 +37,7 @@ export function useReplicatedModel(
   client: MaybeRefOrGetter<ClientJS | null>,
   repositoryId: MaybeRefOrGetter<string | null>,
   branchId: MaybeRefOrGetter<string | null>,
+  idScheme: org.modelix.model.client2.IdSchemeJS,
 ): {
   replicatedModel: Ref<ReplicatedModelJS | null>;
   rootNode: Ref<INodeJS | null>;
@@ -77,7 +78,7 @@ export function useReplicatedModel(
       }
       const cache = new Cache<ReactiveINodeJS>();
       return clientValue
-        .startReplicatedModel(repositoryIdValue, branchIdValue)
+        .startReplicatedModel(repositoryIdValue, branchIdValue, idScheme)
         .then((replicatedModel) => ({ replicatedModel, cache }));
     },
     (

@@ -12,6 +12,7 @@ import org.modelix.model.api.async.IAsyncMutableTree
 /**
  * Consists of [INode]s.
  */
+@Deprecated("Use IModelTree instead")
 interface ITree {
     fun asObject(): Any
 

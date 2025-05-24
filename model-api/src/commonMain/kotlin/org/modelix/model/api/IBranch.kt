@@ -3,6 +3,7 @@ package org.modelix.model.api
 /**
  * Representation of a branch.
  */
+@Deprecated("Use IMutableModelTree")
 interface IBranch {
     /**
      * Returns the id of this branch.

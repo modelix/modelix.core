@@ -30,6 +30,7 @@ import io.ktor.http.isSecure
 import io.ktor.http.takeFrom
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.modelix.kotlin.utils.urlEncode
 
 @Suppress("UndocumentedPublicClass") // already documented in the expected declaration
 actual object ModelixAuthClient {
@@ -102,6 +103,14 @@ actual object ModelixAuthClient {
         config: HttpClientConfig<*>,
         authConfig: OAuthConfig,
     ) {
+        fun String.fillParameters(): String {
+            return if (authConfig.repositoryId == null) {
+                this
+            } else {
+                replace("{repositoryId}", authConfig.repositoryId.id.urlEncode())
+            }
+        }
+
         config.apply {
             install(Auth) {
                 bearer {
@@ -114,8 +123,10 @@ actual object ModelixAuthClient {
 
                             if (wwwAuthenticate.parameter("error") != "invalid_token") return@let null
                             val updatedConfig = authConfig.copy(
-                                authorizationUrl = authConfig.authorizationUrl ?: useSameProtocol(wwwAuthenticate.parameter("authorization_uri") ?: return@let null),
-                                tokenUrl = authConfig.tokenUrl ?: useSameProtocol(wwwAuthenticate.parameter("token_uri") ?: return@let null),
+                                authorizationUrl = authConfig.authorizationUrl
+                                    ?: useSameProtocol(wwwAuthenticate.parameter("authorization_uri") ?: return@let null).fillParameters(),
+                                tokenUrl = authConfig.tokenUrl
+                                    ?: useSameProtocol(wwwAuthenticate.parameter("token_uri") ?: return@let null).fillParameters(),
                             )
                             val realm = wwwAuthenticate.parameter("realm")
                             val description = wwwAuthenticate.parameter("error_description")

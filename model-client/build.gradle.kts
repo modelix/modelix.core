@@ -5,6 +5,7 @@ plugins {
     `maven-publish`
     `modelix-kotlin-multiplatform`
     alias(libs.plugins.npm.publish)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 val kotlinCoroutinesVersion: String by rootProject
@@ -70,6 +71,11 @@ kotlin {
             dependencies {
                 implementation(libs.logback.classic)
                 implementation(libs.testcontainers)
+                implementation(libs.ktor.server.test.host)
+                implementation(libs.ktor.server.auth)
+                implementation(libs.ktor.server.netty)
+                implementation(libs.ktor.server.content.negotiation)
+                implementation(libs.ktor.serialization.json)
             }
         }
         val jsMain by getting {

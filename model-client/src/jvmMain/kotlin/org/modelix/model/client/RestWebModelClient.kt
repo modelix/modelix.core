@@ -148,12 +148,13 @@ class RestWebModelClient @JvmOverloads constructor(
                 },
             )
         }
+        val modelixAuthClient = ModelixAuthClient()
         install(Auth) {
             bearer {
                 loadTokens {
                     val tp = authTokenProvider
                     if (tp == null) {
-                        ModelixAuthClient.getTokens()?.let { BearerTokens(it.accessToken, it.refreshToken) }
+                        modelixAuthClient.getTokens()?.let { BearerTokens(it.accessToken, it.refreshToken) }
                     } else {
                         val token = tp()
                         if (token == null) {

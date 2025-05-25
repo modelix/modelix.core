@@ -754,7 +754,7 @@ abstract class ModelClientV2Builder {
                     }
                 }
             }
-            authConfig?.let { ModelixAuthClient.installAuth(this, it) }
+            authConfig?.let { ModelixAuthClient().installAuth(this, it) }
         }
     }
 

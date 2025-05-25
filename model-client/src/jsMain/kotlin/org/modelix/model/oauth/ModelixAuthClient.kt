@@ -3,7 +3,7 @@ package org.modelix.model.oauth
 import io.ktor.client.HttpClientConfig
 
 @Suppress("UndocumentedPublicClass") // already documented in the expected declaration
-actual object ModelixAuthClient {
+actual class ModelixAuthClient {
     @Suppress("UndocumentedPublicFunction") // already documented in the expected declaration
     actual fun installAuth(
         config: HttpClientConfig<*>,

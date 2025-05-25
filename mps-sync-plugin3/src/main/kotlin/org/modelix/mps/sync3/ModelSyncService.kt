@@ -41,8 +41,8 @@ class ModelSyncService(val project: Project) :
     private val coroutinesScope = CoroutineScope(Dispatchers.IO)
 
     @Synchronized
-    override fun addServer(url: String): Connection {
-        return AppLevelModelSyncService.getInstance().addConnection(url).let { Connection(it) }
+    override fun addServer(url: String, repositoryId: RepositoryId?): Connection {
+        return AppLevelModelSyncService.getInstance().addConnection(url, repositoryId).let { Connection(it) }
     }
 
     @Synchronized
@@ -166,7 +166,7 @@ class ModelSyncService(val project: Project) :
             BindingWorker(
                 coroutinesScope,
                 mpsProject,
-                serverConnection = addServer(id.url),
+                serverConnection = addServer(id.url, id.branchRef.repositoryId),
                 branchRef = id.branchRef,
                 initialVersionHash = state?.versionHash,
                 continueOnError = { IModelSyncService.continueOnError ?: true },

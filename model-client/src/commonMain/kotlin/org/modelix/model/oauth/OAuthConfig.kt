@@ -1,5 +1,7 @@
 package org.modelix.model.oauth
 
+import org.modelix.model.lazy.RepositoryId
+
 sealed interface IAuthConfig {
     companion object {
         fun fromTokenProvider(provider: TokenProvider): IAuthConfig {
@@ -19,6 +21,7 @@ data class OAuthConfig(
     val clientSecret: String? = null,
     val authorizationUrl: String? = null,
     val tokenUrl: String? = null,
+    val repositoryId: RepositoryId? = null,
     val scopes: Set<String> = emptySet(),
     val authRequestHandler: IAuthRequestHandler? = null,
 ) : IAuthConfig
@@ -36,6 +39,7 @@ class OAuthConfigBuilder(initial: OAuthConfig?) {
     fun additionalScope(scope: String) = additionalScopes(setOf(scope))
     fun authorizationUrl(url: String) = also { config = config.copy(authorizationUrl = url) }
     fun tokenUrl(url: String) = also { config = config.copy(tokenUrl = url) }
+    fun repositoryId(repositoryId: RepositoryId) = also { config = config.copy(repositoryId = repositoryId) }
     fun oidcUrl(url: String) = authorizationUrl(url.trimEnd('/') + "/auth").tokenUrl(url.trimEnd('/') + "/token")
     fun authRequestHandler(handler: IAuthRequestHandler?) = also { config = config.copy(authRequestHandler = handler) }
 

@@ -30,7 +30,7 @@ import kotlin.time.toJavaDuration
 class OAuthTest {
 
     @Test
-    fun test() = runWithModelServer { url ->
+    fun `client automatically authenticates using oauth`() = runWithModelServer { url ->
         val client = ModelClientV2.builder()
             .url(url)
             .retries(1U)

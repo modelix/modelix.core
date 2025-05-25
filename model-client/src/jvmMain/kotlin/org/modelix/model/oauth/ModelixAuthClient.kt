@@ -33,7 +33,7 @@ import kotlinx.coroutines.withContext
 import org.modelix.kotlin.utils.urlEncode
 
 @Suppress("UndocumentedPublicClass") // already documented in the expected declaration
-actual object ModelixAuthClient {
+actual class ModelixAuthClient {
     private var DATA_STORE_FACTORY: DataStoreFactory = MemoryDataStoreFactory()
     private val HTTP_TRANSPORT: HttpTransport = NetHttpTransport()
     private val JSON_FACTORY: JsonFactory = GsonFactory()

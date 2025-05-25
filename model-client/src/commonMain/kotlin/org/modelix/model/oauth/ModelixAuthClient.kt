@@ -9,7 +9,7 @@ import io.ktor.client.plugins.auth.providers.bearer
  * Functions and states for authenticating to a model server.
  * Configuration differs for JS and JVM.
  */
-expect object ModelixAuthClient {
+expect class ModelixAuthClient() {
     /**
      * Function to configure the authentication for an HTTP client.
      *

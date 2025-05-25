@@ -6,6 +6,7 @@ import kotlinx.coroutines.runBlocking
 import org.modelix.model.IVersion
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.oauth.OAuthConfigBuilder
 import java.io.Closeable
 
@@ -24,7 +25,7 @@ interface IModelSyncService {
         }
     }
 
-    fun addServer(url: String): IServerConnection
+    fun addServer(url: String, repositoryId: RepositoryId? = null): IServerConnection
     fun getServerConnections(): List<IServerConnection>
     fun getBindings(): List<IBinding>
 }

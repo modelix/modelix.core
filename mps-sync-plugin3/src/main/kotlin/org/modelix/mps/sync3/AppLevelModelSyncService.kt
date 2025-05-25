@@ -9,6 +9,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.client2.ModelClientV2
+import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.oauth.IAuthRequestHandler
 import org.modelix.model.oauth.OAuthConfig
@@ -41,21 +42,24 @@ class AppLevelModelSyncService() : Disposable {
     fun getConnections() = synchronized(connections) { connections.values.toList() }
 
     @Synchronized
-    fun addConnection(url: String): ServerConnection {
-        return synchronized(connections) { connections.getOrPut(url) { ServerConnection(url) } }
+    fun addConnection(url: String, repositoryId: RepositoryId?): ServerConnection {
+        return synchronized(connections) { connections.getOrPut(url) { ServerConnection(url, repositoryId) } }
     }
 
     override fun dispose() {
         coroutinesScope.cancel("disposed")
     }
 
-    class ServerConnection(val url: String) {
+    class ServerConnection(val url: String, repositoryId: RepositoryId?) {
         private var client: ValueWithMutex<IModelClientV2?> = ValueWithMutex(null)
         private var connected: Boolean = false
         private val authRequestHandler = AsyncAuthRequestHandler()
         private var authConfig: IAuthConfig = IAuthConfig.oauth {
             clientId("external-mps")
             authRequestHandler(authRequestHandler)
+            if (repositoryId != null) {
+                repositoryId(repositoryId)
+            }
         }
 
         suspend fun getClient(): IModelClientV2 {

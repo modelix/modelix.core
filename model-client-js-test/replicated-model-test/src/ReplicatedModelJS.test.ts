@@ -1,7 +1,7 @@
 import { org } from "@modelix/model-client";
 import { randomUUID } from "crypto";
-
-const MODEL_SERVER_URL = "http://localhost:28103/v2"
+import { GenericContainer } from "testcontainers";
+import type { StartedTestContainer } from "testcontainers";
 
 const connectClient = org.modelix.model.client2.connectClient
 type ClientJS = org.modelix.model.client2.ClientJS
@@ -9,12 +9,23 @@ type ReplicatedModelJS = org.modelix.model.client2.ReplicatedModelJS
 
 let client: ClientJS | undefined;
 let replicatedModel: ReplicatedModelJS | undefined;
+let container: StartedTestContainer;
 
 jest.setTimeout(60000)
 
+beforeAll(async () => {
+  container = await new GenericContainer("modelix/model-server:test")
+      .withExposedPorts(28101)
+      .withCommand(["--inmemory"])
+      .start();
+})
+afterAll(async () => {
+  await container.stop();
+})
+
 beforeEach(async () => {
   const repositoryId = randomUUID()
-  client = await connectClient(MODEL_SERVER_URL)
+  client = await connectClient(`http://localhost:${container.getMappedPort(28101)}/v2`)
   await client.initRepository(repositoryId)
   replicatedModel = await client.startReplicatedModel(repositoryId, "master")
 })

@@ -24,6 +24,7 @@ import org.modelix.model.api.getName
 import org.modelix.model.api.getOriginalReference
 import org.modelix.model.area.PArea
 import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.runWriteOnModel
 import org.modelix.model.mpsadapters.MPSProjectAsNode
 import org.modelix.model.mpsadapters.MPSProjectReference
@@ -190,10 +191,10 @@ class BindingWorker(
                 // Binding was never activated before. Overwrite local changes or do initial upload.
 
                 val remoteVersion = client().pullIfExists(branchRef)
-                if (remoteVersion == null) {
-                    LOG.debug { "Repository don't exist. Will copy the local project to the server." }
+                if (remoteVersion == null || remoteVersion.isInitialVersion()) {
+                    LOG.debug { "Repository doesn't exist. Will copy the local project to the server." }
                     // repository doesn't exist -> copy the local project to the server
-                    val emptyVersion = client().initRepository(branchRef.repositoryId)
+                    val emptyVersion = remoteVersion ?: client().initRepository(branchRef.repositoryId)
                     doSyncToServer(emptyVersion, incremental = false) ?: emptyVersion
                 } else {
                     LOG.debug { "Repository exists. Will checkout version $remoteVersion" }
@@ -441,3 +442,5 @@ class BindingWorker(
             ?: "0"
     }
 }
+
+private fun IVersion.isInitialVersion() = (this as CLVersion).baseVersion == null

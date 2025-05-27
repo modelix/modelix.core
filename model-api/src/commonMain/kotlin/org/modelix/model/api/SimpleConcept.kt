@@ -16,7 +16,7 @@ open class SimpleConcept(
 
     override fun getUID(): String = uid ?: getLongName()
 
-    override fun getReference(): IConceptReference {
+    override fun getReference(): ConceptReference {
         return ConceptReference(getUID())
     }
 

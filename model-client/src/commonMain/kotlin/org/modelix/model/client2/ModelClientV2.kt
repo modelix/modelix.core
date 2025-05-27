@@ -61,9 +61,11 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.diff
-import org.modelix.model.lazy.runWriteOnModel
+import org.modelix.model.lazy.runWriteOnTree
+import org.modelix.model.mutable.IMutableModelTree
 import org.modelix.model.mutable.INodeIdGenerator
 import org.modelix.model.mutable.ModelixIdGenerator
+import org.modelix.model.mutable.getRootNode
 import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.oauth.IAuthRequestHandler
 import org.modelix.model.oauth.ModelixAuthClient
@@ -870,6 +872,12 @@ suspend fun <T> IModelClientV2.runWriteOnModel(
     branchRef: BranchReference,
     nodeIdGenerator: (TreeId) -> INodeIdGenerator<INodeReference> = { ModelixIdGenerator(getIdGenerator(), it) },
     body: (IWritableNode) -> T,
+): T = runWriteOnTree(branchRef, nodeIdGenerator) { body(it.getRootNode()) }
+
+suspend fun <T> IModelClientV2.runWriteOnTree(
+    branchRef: BranchReference,
+    nodeIdGenerator: (TreeId) -> INodeIdGenerator<INodeReference> = { ModelixIdGenerator(getIdGenerator(), it) },
+    body: (IMutableModelTree) -> T,
 ): T {
     val client = this
     val masterBranch = branchRef.repositoryId.getBranchReference()
@@ -879,11 +887,11 @@ suspend fun <T> IModelClientV2.runWriteOnModel(
         ?: client.initRepository(branchRef.repositoryId)
 
     var result: T? = null
-    val newVersion = baseVersion.runWriteOnModel(
+    val newVersion = baseVersion.runWriteOnTree(
         nodeIdGenerator = nodeIdGenerator(baseVersion.getModelTree().getId()),
         author = getUserId(),
-    ) { rootNode ->
-        result = body(rootNode)
+    ) { tree: IMutableModelTree ->
+        result = body(tree)
     }
     if (newVersion != baseVersion) {
         client.push(branchRef, newVersion, baseVersion)

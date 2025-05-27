@@ -30,6 +30,7 @@ import org.modelix.model.api.getRootNode
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.async.ObjectRequest
 import org.modelix.model.historyDiff
+import org.modelix.model.mutable.IMutableModelTree
 import org.modelix.model.mutable.INodeIdGenerator
 import org.modelix.model.mutable.VersionedModelTree
 import org.modelix.model.mutable.getRootNode
@@ -446,10 +447,18 @@ fun IVersion.runWriteOnModel(
     author: String?,
     body: (IWritableNode) -> Unit,
 ): IVersion {
+    return runWriteOnTree(nodeIdGenerator, author) { body(it.getRootNode()) }
+}
+
+fun IVersion.runWriteOnTree(
+    nodeIdGenerator: INodeIdGenerator<INodeReference>,
+    author: String?,
+    body: (IMutableModelTree) -> Unit,
+): IVersion {
     val baseVersion = this as CLVersion
     val mutableTree = VersionedModelTree(baseVersion, nodeIdGenerator)
     mutableTree.runWrite {
-        body(mutableTree.getRootNode())
+        body(mutableTree)
     }
     return mutableTree.createVersion(author) ?: baseVersion
 }

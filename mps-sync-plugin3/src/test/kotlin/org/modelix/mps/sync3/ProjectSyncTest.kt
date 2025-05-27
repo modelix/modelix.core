@@ -10,17 +10,21 @@ import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.junit.Assert
 import org.modelix.datastructures.model.ModelChangeEvent
+import org.modelix.datastructures.model.MutationParameters
 import org.modelix.model.IVersion
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.getDescendants
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.runWriteOnModel
+import org.modelix.model.client2.runWriteOnTree
 import org.modelix.model.data.NodeData
 import org.modelix.model.data.asData
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSModuleAsNode
+import org.modelix.model.mpsadapters.MPSProjectReference
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.toModelix
 import org.modelix.model.mutable.asModelSingleThreaded
@@ -63,15 +67,59 @@ class ProjectSyncTest : MPSTestBase() {
         return version
     }
 
-    fun `test initial sync to server`(): Unit = runWithModelServer { port ->
+    fun `test initial sync with non-existing repository`(): Unit = runWithModelServer { port ->
+        // The repository doesn't exist yet.
         val branchRef = RepositoryId("sync-test").getBranchReference()
         syncProjectToServer("initial", port, branchRef)
 
+        // The initial sync should create the repository and push the MPS project to the server.
         val client = ModelClientV2.builder().url("http://localhost:$port").lazyAndBlockingQueries().build()
         val version = client.pull(branchRef, null)
         val rootNode = version.getModelTree().asModelSingleThreaded().getRootNode()
         val allNodes = rootNode.getDescendants(true)
         assertEquals(221, allNodes.count())
+    }
+
+    fun `test initial sync with existing empty repository`(): Unit = runWithModelServer { port ->
+        // The repository is already initialized, but no data was written to it yet (empty history)
+        val client = ModelClientV2.builder().url("http://localhost:$port").lazyAndBlockingQueries().build()
+        val branchRef = RepositoryId("sync-test").getBranchReference()
+        client.initRepository(branchRef.repositoryId)
+
+        syncProjectToServer("initial", port, branchRef)
+
+        // The initial sync should push the MPS project to the server.
+        val version = client.pull(branchRef, null)
+        val rootNode = version.getModelTree().asModelSingleThreaded().getRootNode()
+        val allNodes = rootNode.getDescendants(true)
+        assertEquals(221, allNodes.count())
+    }
+
+    fun `test initial sync with existing non-empty repository`(): Unit = runWithModelServer { port ->
+        // The repository already exists and also some data was already written to it.
+        val client = ModelClientV2.builder().url("http://localhost:$port").lazyAndBlockingQueries().build()
+        val branchRef = RepositoryId("sync-test").getBranchReference()
+        client.initRepository(branchRef.repositoryId)
+        client.runWriteOnTree(branchRef, nodeIdGenerator = { MPSIdGenerator(client.getIdGenerator(), it) }) { tree ->
+            val t = tree.getWriteTransaction()
+            t.mutate(MutationParameters.Concept(t.tree.getRootNodeId(), BuiltinLanguages.MPSRepositoryConcepts.Repository.getReference()))
+            t.mutate(
+                MutationParameters.AddNew(
+                    t.tree.getRootNodeId(),
+                    BuiltinLanguages.MPSRepositoryConcepts.Repository.projects.toReference(),
+                    -1,
+                    listOf(MPSProjectReference("test-project") to BuiltinLanguages.MPSRepositoryConcepts.Project.getReference()),
+                ),
+            )
+        }
+
+        syncProjectToServer("initial", port, branchRef)
+
+        // The initial sync should ignore the local data and reset the project to the remote version.
+        val version = client.pull(branchRef, null)
+        val rootNode = version.getModelTree().asModelSingleThreaded().getRootNode()
+        val allNodes = rootNode.getDescendants(true)
+        assertEquals(2, allNodes.count())
     }
 
     fun `test checkout into empty project`(): Unit = runWithModelServer { port ->

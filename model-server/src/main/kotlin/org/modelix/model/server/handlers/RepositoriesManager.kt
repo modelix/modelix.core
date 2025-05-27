@@ -173,7 +173,6 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
             }
 
         val initialVersion = CLVersion.builder()
-            .id(stores.idGenerator.generate())
             .time(Clock.System.now())
             .author(userName)
             .tree(tree)

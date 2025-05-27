@@ -350,7 +350,6 @@ class BindingWorker(
         val newVersion = repository.computeRead {
             fun sync(invalidationTree: ModelSynchronizer.IIncrementalUpdateInformation): IVersion? {
                 return oldVersion.runWriteOnModel(
-                    versionIdGenerator = client.getIdGenerator(),
                     nodeIdGenerator = DummyIdGenerator<INodeReference>(),
                     author = client.getUserId(),
                 ) { targetRoot ->

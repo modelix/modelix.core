@@ -143,14 +143,13 @@ class VersionedModelTree(
     /**
      * @return null if there are no changes
      */
-    fun createVersion(versionId: Long, author: String?, time: Instant = Clock.System.now()): IVersion? {
+    fun createVersion(author: String?, time: Instant = Clock.System.now()): IVersion? {
         runSynchronized(completedChanges) {
             val (ops, newTree) = getPendingChanges()
             val oldTreeHash = baseVersion.getModelTree().asObject().getHash()
             val newTreeHash = newTree.asObject().getHash()
             if (oldTreeHash == newTreeHash && ops.isEmpty()) return null
             val newVersion = CLVersion.builder()
-                .id(versionId)
                 .tree(newTree)
                 .regularUpdate(baseVersion)
                 .operations(ops.map { it.getOriginalOp() })

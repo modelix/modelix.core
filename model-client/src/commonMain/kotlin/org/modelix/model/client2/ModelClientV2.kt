@@ -880,7 +880,6 @@ suspend fun <T> IModelClientV2.runWriteOnModel(
 
     var result: T? = null
     val newVersion = baseVersion.runWriteOnModel(
-        versionIdGenerator = getIdGenerator(),
         nodeIdGenerator = nodeIdGenerator(baseVersion.getModelTree().getId()),
         author = getUserId(),
     ) { rootNode ->

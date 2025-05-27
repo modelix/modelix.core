@@ -442,7 +442,6 @@ fun CLVersion.runWriteWithNode(idGenerator: IIdGenerator, author: String?, body:
 }
 
 fun IVersion.runWriteOnModel(
-    versionIdGenerator: IIdGenerator,
     nodeIdGenerator: INodeIdGenerator<INodeReference>,
     author: String?,
     body: (IWritableNode) -> Unit,
@@ -452,7 +451,7 @@ fun IVersion.runWriteOnModel(
     mutableTree.runWrite {
         body(mutableTree.getRootNode())
     }
-    return mutableTree.createVersion(versionIdGenerator.generate(), author) ?: baseVersion
+    return mutableTree.createVersion(author) ?: baseVersion
 }
 
 fun ObjectReference<CPVersion>.tryResolve(): VersionAndHash {

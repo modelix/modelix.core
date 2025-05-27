@@ -4,7 +4,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.datetime.Clock
 import org.modelix.datastructures.model.IGenericModelTree
-import org.modelix.datastructures.model.asLegacyTree
 import org.modelix.datastructures.model.getHash
 import org.modelix.datastructures.model.withIdTranslation
 import org.modelix.model.ModelMigrations
@@ -167,8 +166,8 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
             .graph(LazyLoadingObjectGraph(stores.getAsyncStore(repositoryId.takeIf { isolated })))
             .let {
                 when (config.nodeIdType) {
-                    RepositoryConfig.NodeIdType.INT64 -> it.withInt64Ids().build().asLegacyTree()
-                    RepositoryConfig.NodeIdType.STRING -> it.withNodeReferenceIds().build().withIdTranslation().asLegacyTree()
+                    RepositoryConfig.NodeIdType.INT64 -> it.withInt64Ids().build()
+                    RepositoryConfig.NodeIdType.STRING -> it.withNodeReferenceIds().build().withIdTranslation()
                 }
             }
 

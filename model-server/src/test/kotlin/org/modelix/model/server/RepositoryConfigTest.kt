@@ -9,6 +9,7 @@ import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.NodeReference
 import org.modelix.model.client.IdGenerator
+import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.runWriteOnModel
 import org.modelix.model.lazy.runWriteWithNode
 import org.modelix.model.mutable.ModelixIdGenerator
@@ -133,5 +134,53 @@ class RepositoryConfigTest {
 
         val childRef = version2.getModelTree().asModelSingleThreaded().getRootNode().getAllChildren().single().getNodeReference()
         assertEquals("modelix:d9330ca8-2145-4d1f-9b50-8f5aed1804cf/100000001", childRef.serialize())
+    }
+
+    @Test
+    fun `global storage`() = runTest {
+        val repositoryManager = RepositoriesManager(InMemoryStoreClient())
+
+        @OptIn(RequiresTransaction::class)
+        val version1 = repositoryManager.getTransactionManager().runWrite {
+            repositoryManager.createRepository(
+                RepositoryConfig(
+                    legacyNameBasedRoles = false,
+                    legacyGlobalStorage = true,
+                    nodeIdType = NodeIdType.STRING,
+                    primaryTreeType = RepositoryConfig.TreeType.PATRICIA_TRIE,
+                    modelId = "d9330ca8-2145-4d1f-9b50-8f5aed1804cf",
+                    repositoryId = "d9330ca8-2145-4d1f-9b50-8f5aed1804cf",
+                    repositoryName = "my-repo",
+                    alternativeNames = emptySet(),
+                ),
+                null,
+            )
+        }
+
+        assertEquals(false, repositoryManager.isIsolated(RepositoryId("d9330ca8-2145-4d1f-9b50-8f5aed1804cf")))
+    }
+
+    @Test
+    fun `isolated storage`() = runTest {
+        val repositoryManager = RepositoriesManager(InMemoryStoreClient())
+
+        @OptIn(RequiresTransaction::class)
+        val version1 = repositoryManager.getTransactionManager().runWrite {
+            repositoryManager.createRepository(
+                RepositoryConfig(
+                    legacyNameBasedRoles = false,
+                    legacyGlobalStorage = false,
+                    nodeIdType = NodeIdType.STRING,
+                    primaryTreeType = RepositoryConfig.TreeType.PATRICIA_TRIE,
+                    modelId = "d9330ca8-2145-4d1f-9b50-8f5aed1804cf",
+                    repositoryId = "d9330ca8-2145-4d1f-9b50-8f5aed1804cf",
+                    repositoryName = "my-repo",
+                    alternativeNames = emptySet(),
+                ),
+                null,
+            )
+        }
+
+        assertEquals(true, repositoryManager.isIsolated(RepositoryId("d9330ca8-2145-4d1f-9b50-8f5aed1804cf")))
     }
 }

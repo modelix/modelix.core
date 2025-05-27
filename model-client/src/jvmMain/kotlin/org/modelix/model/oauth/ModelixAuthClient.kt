@@ -31,9 +31,13 @@ import io.ktor.http.takeFrom
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.modelix.kotlin.utils.urlEncode
+import java.net.SocketException
 
 @Suppress("UndocumentedPublicClass") // already documented in the expected declaration
 actual class ModelixAuthClient {
+    companion object {
+        private val LOG = mu.KotlinLogging.logger { }
+    }
     private var DATA_STORE_FACTORY: DataStoreFactory = MemoryDataStoreFactory()
     private val HTTP_TRANSPORT: HttpTransport = NetHttpTransport()
     private val JSON_FACTORY: JsonFactory = GsonFactory()
@@ -72,19 +76,28 @@ actual class ModelixAuthClient {
             val existingTokens = flow.loadCredential(userId)?.refreshIfExpired()
             if (existingTokens?.isExpired() == false) return@withContext existingTokens
 
-            val receiver: LocalServerReceiver = LocalServerReceiver.Builder().setHost("127.0.0.1").build()
-            val browser = config.authRequestHandler?.let {
-                object : AuthorizationCodeInstalledApp.Browser {
-                    override fun browse(url: String) {
-                        it.browse(url)
+            repeat(100) { n ->
+                val port = 26815 + n
+                try {
+                    val receiver: LocalServerReceiver = LocalServerReceiver.Builder().setHost("127.0.0.1").setPort(port).build()
+                    val browser = config.authRequestHandler?.let {
+                        object : AuthorizationCodeInstalledApp.Browser {
+                            override fun browse(url: String) {
+                                it.browse(url)
+                            }
+                        }
+                    } ?: AuthorizationCodeInstalledApp.DefaultBrowser()
+                    val tokens = AuthorizationCodeInstalledApp(flow, receiver, browser).authorize(userId)
+                    if ((tokens.expiresInSeconds ?: 0) < 60) {
+                        tokens.refreshToken()
                     }
+                    return@withContext tokens
+                } catch (ex: SocketException) {
+                    LOG.info("Port $port already in use")
+                    // Port is already in use. Try next one.
                 }
-            } ?: AuthorizationCodeInstalledApp.DefaultBrowser()
-            val tokens = AuthorizationCodeInstalledApp(flow, receiver, browser).authorize(userId)
-            if ((tokens.expiresInSeconds ?: 0) < 60) {
-                tokens.refreshToken()
             }
-            tokens
+            throw IllegalStateException("Couldn't find an available port for the redirect URL")
         }
     }
 

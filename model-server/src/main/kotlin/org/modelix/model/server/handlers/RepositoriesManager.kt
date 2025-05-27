@@ -163,6 +163,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
 
         val tree = IGenericModelTree.builder()
             .treeId(config.modelId)
+            .storeRoleNames(config.legacyNameBasedRoles)
             .graph(LazyLoadingObjectGraph(stores.getAsyncStore(repositoryId.takeIf { isolated })))
             .let {
                 when (config.nodeIdType) {

@@ -14,10 +14,17 @@ import org.modelix.mps.multiplatform.model.MPSModuleReference
 import org.modelix.mps.multiplatform.model.MPSNodeReference
 
 fun SModuleReference.toModelix() = MPSModuleReference(moduleId.toString())
-fun MPSModuleReference.toMPS() = PersistenceFacade.getInstance().createModuleReference(PersistenceFacade.getInstance().createModuleId(moduleId), null)
+fun MPSModuleReference.toMPS(): SModuleReference = PersistenceFacade.getInstance().createModuleReference(
+    PersistenceFacade.getInstance().createModuleId(moduleId),
+    null,
+)
 
 fun SModelReference.toModelix() = MPSModelReference(moduleReference?.toModelix(), modelId.toString())
-fun MPSModelReference.toMPS() = PersistenceFacade.getInstance().createModelReference(moduleReference?.toMPS(), PersistenceFacade.getInstance().createModelId(modelId), "")
+fun MPSModelReference.toMPS(): SModelReference = PersistenceFacade.getInstance().createModelReference(
+    moduleReference?.toMPS(),
+    PersistenceFacade.getInstance().createModelId(modelId),
+    "",
+)
 
 fun SNodeReference.toModelix() = MPSNodeReference(
     modelReference?.toModelix(),

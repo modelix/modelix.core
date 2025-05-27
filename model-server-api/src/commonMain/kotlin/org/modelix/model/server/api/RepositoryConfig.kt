@@ -26,6 +26,7 @@ data class RepositoryConfig(
      * Different data structures have different properties and trade-offs. That's why a different type of tree data
      * structure can be chosen for the model.
      */
+    @Deprecated("Not implemented yet. Tree type is chosen based on the nodeIdType.")
     val primaryTreeType: TreeType = TreeType.PATRICIA_TRIE,
 
     /**

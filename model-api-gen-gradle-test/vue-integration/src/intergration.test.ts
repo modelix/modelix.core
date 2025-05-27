@@ -68,7 +68,7 @@ test("change to children is reactivly updated", () => {
               // concept ID of an Attribute
               concept:
                 "mps:ceab5195-25ea-4f22-9b92-103b95ca8c0c/5169995583184591161",
-              role: "smodelAttribute",
+              role: ":ceab5195-25ea-4f22-9b92-103b95ca8c0c%2F1133920641626%2F5169995583184591170:smodelAttribute",
               properties: {
                 shortDescription: "attribute1",
               },

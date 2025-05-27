@@ -11,7 +11,11 @@ import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.IOperationIntend
 import org.modelix.model.operations.UndoOp
 
-class VersionMerger(private val idGenerator: IIdGenerator) {
+class VersionMerger
+@Deprecated("idGenerator isn't required anymore")
+constructor(private val idGenerator: IIdGenerator?) {
+    constructor() : this(null)
+
     @Deprecated("store isn't required anymore")
     constructor(store: IDeserializingKeyValueStore, idGenerator: IIdGenerator) :
         this(idGenerator)
@@ -98,7 +102,7 @@ class VersionMerger(private val idGenerator: IIdGenerator) {
                 }
             }
             mergedVersion = CLVersion.builder()
-                .id(idGenerator.generate())
+                .also { if (idGenerator != null) it.id(idGenerator.generate()) }
                 .tree(mutableTree.getTransaction().tree)
                 .autoMerge(commonBase.obj.ref, leftVersion.obj.ref, rightVersion.obj.ref)
                 .operations(appliedOps.map { it.getOriginalOp() })

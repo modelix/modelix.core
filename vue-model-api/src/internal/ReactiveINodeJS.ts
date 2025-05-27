@@ -3,6 +3,7 @@ import type { Ref } from "vue";
 import { markRaw, shallowRef } from "vue";
 import type { Cache } from "./Cache";
 import type { Nullable } from "@modelix/model-client";
+import { org } from "@modelix/model-client";
 
 export function toReactiveINodeJS(
   node: INodeJS,
@@ -40,17 +41,19 @@ function unwrapReactiveINodeJS(
 type INodeReferenceJS = any;
 
 export class ReactiveINodeJS implements INodeJS {
-  private byRoleRefToProperty: Map<string, Ref<string | undefined>> = new Map();
-  private byRoleRefToReferenceTargetNode: Map<
-    string,
-    Ref<INodeJS | undefined>
-  > = new Map();
-  private byRoleRefToReferenceTargetRef: Map<
-    string,
-    Ref<INodeReferenceJS | undefined>
-  > = new Map();
-  private byRoleRefToChildren: Map<string | undefined, Ref<INodeJS[]>> =
-    new Map();
+  private byRoleRefToProperty =
+    new org.modelix.model.api.MapWithPropertyRoleKey<Ref<string | undefined>>();
+  private byRoleRefToReferenceTargetNode =
+    new org.modelix.model.api.MapWithReferenceRoleKey<
+      Ref<INodeJS | undefined>
+    >();
+  private byRoleRefToReferenceTargetRef =
+    new org.modelix.model.api.MapWithReferenceRoleKey<
+      Ref<INodeReferenceJS | undefined>
+    >();
+  private byRoleRefToChildren = new org.modelix.model.api.MapWithChildRoleKey<
+    Ref<INodeJS[]>
+  >();
   private refForAllChildren: Ref<INodeJS[]> | undefined = undefined;
 
   constructor(
@@ -220,20 +223,14 @@ export class ReactiveINodeJS implements INodeJS {
     this.unreactiveNode.setPropertyValue(role, value);
   }
 
-  getOrCreateRefForRole<RoleT, ValueT>(
-    byRoleRefs: Map<RoleT, Ref<ValueT>>,
-    role: RoleT,
-    getValue: (role: RoleT) => ValueT,
+  getOrCreateRefForRole<ValueT>(
+    byRoleRefs: org.modelix.model.api.MapWithRoleKey<Ref<ValueT>>,
+    role: string | undefined,
+    getValue: (role: string) => ValueT,
   ): Ref<ValueT> {
-    const maybeCreatedShallowRef = byRoleRefs.get(role);
-
-    if (maybeCreatedShallowRef != undefined) {
-      return maybeCreatedShallowRef;
-    } else {
-      const newRef = shallowRef(getValue(role));
-      byRoleRefs.set(role, newRef);
-      return newRef;
-    }
+    return byRoleRefs.getOrPut(role ?? "null", () =>
+      shallowRef(getValue(role ?? "null")),
+    );
   }
 
   triggerChangeInChild(role: Nullable<string>) {
@@ -241,7 +238,7 @@ export class ReactiveINodeJS implements INodeJS {
       this.refForAllChildren.value = this.allChildrenGetter();
     }
 
-    const normalizedRole = role ?? undefined;
+    const normalizedRole = role ?? "null";
     const maybeRef = this.byRoleRefToChildren.get(normalizedRole);
     if (maybeRef) {
       maybeRef.value = this.childrenGetter(normalizedRole);

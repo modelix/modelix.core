@@ -21,7 +21,7 @@ sealed interface ChangeJS {
 data class PropertyChanged(
     override val node: INodeJS,
     /**
-     * Role of the changed property.
+     * Role of the changed property in the [org.modelix.model.api.IRoleReference.stringForLegacyApi] format.
      */
     val role: String,
 ) : ChangeJS
@@ -33,7 +33,7 @@ data class PropertyChanged(
 data class ChildrenChanged(
     override val node: INodeJS,
     /**
-     * Role of the changed children in [node].
+     * Role of the changed children in [node] in the [org.modelix.model.api.IRoleReference.stringForLegacyApi] format.
      */
     val role: String?,
 ) : ChangeJS
@@ -45,7 +45,7 @@ data class ChildrenChanged(
 data class ReferenceChanged(
     override val node: INodeJS,
     /**
-     * Role of the changed reference.
+     * Role of the changed reference  in the [org.modelix.model.api.IRoleReference.stringForLegacyApi] format.
      */
     val role: String,
 ) : ChangeJS

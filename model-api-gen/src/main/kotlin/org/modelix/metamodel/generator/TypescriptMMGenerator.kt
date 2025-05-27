@@ -1,6 +1,9 @@
 package org.modelix.metamodel.generator
 
 import com.squareup.kotlinpoet.ClassName
+import org.modelix.model.api.IChildLinkReference
+import org.modelix.model.api.IPropertyReference
+import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.data.LanguageData
 import org.modelix.model.data.Primitive
 import org.modelix.model.data.PrimitivePropertyType
@@ -125,12 +128,14 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
             when (feature) {
                 is ProcessedProperty -> {
                     val rawValueName = feature.rawValueName()
+                    val stringForLegacyApi =
+                        IPropertyReference.fromIdAndName(feature.uid, feature.originalName).stringForLegacyApi()
                     val rawPropertyText = """
                         public set $rawValueName(value: string | undefined) {
-                            this._node.setPropertyValue("${feature.originalName}", value)
+                            this._node.setPropertyValue("$stringForLegacyApi", value)
                         }
                         public get $rawValueName(): string | undefined {
-                            return this._node.getPropertyValue("${feature.originalName}")
+                            return this._node.getPropertyValue("$stringForLegacyApi")
                         }
                     """
                     val typedPropertyText = if (feature.type is PrimitivePropertyType) {
@@ -181,12 +186,14 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                     val typeRef = feature.type.resolved
                     val languagePrefix = typeRef.languagePrefix(concept.language)
                     val entityType = "$languagePrefix${typeRef.nodeWrapperInterfaceName()}"
+                    val stringForLegacyApi =
+                        IReferenceLinkReference.fromIdAndName(feature.uid, feature.originalName).stringForLegacyApi()
                     """
                     public set ${feature.generatedName}(value: $entityType | undefined) {
-                        this._node.setReferenceTargetNode("${feature.originalName}", value?.unwrap());
+                        this._node.setReferenceTargetNode("$stringForLegacyApi", value?.unwrap());
                     }
                     public get ${feature.generatedName}(): $entityType | undefined {
-                        let target = this._node.getReferenceTargetNode("${feature.originalName}");
+                        let target = this._node.getReferenceTargetNode("$stringForLegacyApi");
                         return target ? LanguageRegistry.INSTANCE.wrapNode(target) as $entityType : undefined;
                     }
                     """
@@ -195,8 +202,10 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                     val accessorClassName = if (feature.multiple) "ChildListAccessor" else "SingleChildAccessor"
                     val typeRef = feature.type.resolved
                     val languagePrefix = typeRef.languagePrefix(concept.language)
+                    val stringForLegacyApi =
+                        IChildLinkReference.fromIdAndName(feature.uid, feature.originalName).stringForLegacyApi()
                     """
-                        public ${feature.generatedName}: $accessorClassName<$languagePrefix${typeRef.nodeWrapperInterfaceName()}> = new $accessorClassName(this._node, "${feature.originalName}")
+                        public ${feature.generatedName}: $accessorClassName<$languagePrefix${typeRef.nodeWrapperInterfaceName()}> = new $accessorClassName(this._node, "$stringForLegacyApi")
                     """
                 }
                 else -> ""

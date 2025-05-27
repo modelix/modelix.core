@@ -835,6 +835,7 @@ fun HttpRequestBuilder.useVersionStreamFormat() {
  *
  * [IModelClientV2.runWriteOnBranch] can be used access to the underlying branch is needed.
  */
+@Deprecated("Use runWriteOnModel instead")
 suspend fun <T> IModelClientV2.runWrite(branchRef: BranchReference, body: (INode) -> T): T {
     return runWriteOnBranch(branchRef) {
         body(it.getRootNode())
@@ -846,6 +847,7 @@ suspend fun <T> IModelClientV2.runWrite(branchRef: BranchReference, body: (INode
  *
  * [IModelClientV2.runWrite] can be used if access to the underlying branch is not needed.
  */
+@Deprecated("Use runWriteOnModel instead")
 suspend fun <T> IModelClientV2.runWriteOnBranch(branchRef: BranchReference, body: (IBranch) -> T): T {
     val client = this
     val baseVersion = client.pullIfExists(branchRef)
@@ -890,10 +892,12 @@ suspend fun <T> IModelClientV2.runWriteOnModel(
     return result as T
 }
 
+@Deprecated("Use runWriteOnModel instead")
 fun IVersion.runWrite(client: IModelClientV2, body: (IBranch) -> Unit): IVersion? {
     return runWrite(client.getIdGenerator(), client.getUserId(), body)
 }
 
+@Deprecated("Use runWriteOnModel instead")
 fun IVersion.runWrite(idGenerator: IIdGenerator, author: String?, body: (IBranch) -> Unit): IVersion? {
     val baseVersion = this
     val branch = OTBranch(TreePointer(baseVersion.getTree(), idGenerator), idGenerator)

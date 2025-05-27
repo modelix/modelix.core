@@ -411,6 +411,7 @@ fun IVersion.diff(knownVersion: IVersion?, filter: ObjectDeltaFilter = ObjectDel
 @Suppress("UNCHECKED_CAST")
 fun <K, V> Map<K, V?>.filterNotNullValues(): Map<K, V> = filterValues { it != null } as Map<K, V>
 
+@Deprecated("Use runWriteOnModel instead")
 fun CLVersion.runWrite(idGenerator: IIdGenerator, author: String?, body: (IWriteTransaction) -> Unit): CLVersion {
     val branch = OTBranch(TreePointer(getTree(), idGenerator), idGenerator)
     branch.computeWriteT(body)
@@ -424,6 +425,7 @@ fun CLVersion.runWrite(idGenerator: IIdGenerator, author: String?, body: (IWrite
     )
 }
 
+@Deprecated("Use runWriteOnModel instead")
 fun CLVersion.runWriteWithNode(idGenerator: IIdGenerator, author: String?, body: (IWritableNode) -> Unit): CLVersion {
     val branch = OTBranch(TreePointer(getTree(), idGenerator), idGenerator)
     branch.runWrite {

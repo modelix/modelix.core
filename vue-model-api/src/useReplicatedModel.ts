@@ -12,6 +12,10 @@ type ClientJS = org.modelix.model.client2.ClientJS;
 type ReplicatedModelJS = org.modelix.model.client2.ReplicatedModelJS;
 type ChangeJS = org.modelix.model.client2.ChangeJS;
 
+function isDefined<T>(value: T | null | undefined): value is T {
+  return value !== null && value !== undefined;
+}
+
 /**
  * Creates a replicated model for a given repository and branch.
  * A replicated model exposes a branch that can be used to read and write model data.
@@ -34,10 +38,12 @@ type ChangeJS = org.modelix.model.client2.ChangeJS;
  * @returns {Ref<unknown>} values.error Reactive reference to a connection error.
  */
 export function useReplicatedModel(
-  client: MaybeRefOrGetter<ClientJS | null>,
-  repositoryId: MaybeRefOrGetter<string | null>,
-  branchId: MaybeRefOrGetter<string | null>,
-  idScheme: org.modelix.model.client2.IdSchemeJS,
+  client: MaybeRefOrGetter<ClientJS | null | undefined>,
+  repositoryId: MaybeRefOrGetter<string | null | undefined>,
+  branchId: MaybeRefOrGetter<string | null | undefined>,
+  idScheme: MaybeRefOrGetter<
+    org.modelix.model.client2.IdSchemeJS | null | undefined
+  >,
 ): {
   replicatedModel: Ref<ReplicatedModelJS | null>;
   rootNode: Ref<INodeJS | null>;
@@ -65,20 +71,24 @@ export function useReplicatedModel(
     () => {
       dispose();
       const clientValue = toValue(client);
-      if (clientValue === null) {
+      if (!isDefined(clientValue)) {
         return;
       }
       const repositoryIdValue = toValue(repositoryId);
-      if (repositoryIdValue === null) {
+      if (!isDefined(repositoryIdValue)) {
         return;
       }
       const branchIdValue = toValue(branchId);
-      if (branchIdValue === null) {
+      if (!isDefined(branchIdValue)) {
+        return;
+      }
+      const idSchemeValue = toValue(idScheme);
+      if (!isDefined(idSchemeValue)) {
         return;
       }
       const cache = new Cache<ReactiveINodeJS>();
       return clientValue
-        .startReplicatedModel(repositoryIdValue, branchIdValue, idScheme)
+        .startReplicatedModel(repositoryIdValue, branchIdValue, idSchemeValue)
         .then((replicatedModel) => ({ replicatedModel, cache }));
     },
     (

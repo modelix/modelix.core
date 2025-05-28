@@ -1,6 +1,7 @@
 package org.modelix.mps.sync3
 
 import com.intellij.openapi.components.service
+import com.intellij.openapi.project.Project
 import jetbrains.mps.ide.project.ProjectHelper
 import kotlinx.coroutines.runBlocking
 import org.modelix.model.IVersion
@@ -15,7 +16,7 @@ interface IModelSyncService {
         var continueOnError: Boolean? = null
 
         @JvmStatic
-        fun getInstance(project: com.intellij.openapi.project.Project): IModelSyncService {
+        fun getInstance(project: Project): IModelSyncService {
             return project.service<ModelSyncService>()
         }
 
@@ -25,10 +26,26 @@ interface IModelSyncService {
         }
     }
 
-    fun addServer(url: String, repositoryId: RepositoryId? = null): IServerConnection
+    fun addServer(url: String, repositoryId: RepositoryId? = null): IServerConnection = addServer(
+        ModelServerConnectionProperties(
+            url = url,
+            repositoryId = repositoryId,
+        ),
+    )
+    fun addServer(properties: ModelServerConnectionProperties): IServerConnection
     fun getServerConnections(): List<IServerConnection>
     fun getBindings(): List<IBinding>
 }
+
+data class ModelServerConnectionProperties(
+    val url: String,
+    /**
+     * Is forwarded to the token endpoint.
+     */
+    val repositoryId: RepositoryId? = null,
+    val oauthClientId: String? = null,
+    val oauthClientSecret: String? = null,
+)
 
 interface IServerConnection : Closeable {
     fun setTokenProvider(tokenProvider: (suspend () -> String?))

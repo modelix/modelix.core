@@ -156,7 +156,9 @@ actual class ModelixAuthClient {
     }
 
     fun HttpMessage.parseWWWAuthenticate(): HttpAuthHeader.Parameterized? {
-        return headers[HttpHeaders.WWWAuthenticate]
+        // The Amazon API Gateway replaced the WWW-Authenticate header with x-amzn-remapped-www-authenticate
+        // to prevent any login popup in the browser. REST clients are expected to read their non-standard header.
+        return (headers[HttpHeaders.WWWAuthenticate] ?: headers["x-amzn-remapped-www-authenticate"])
             ?.let { parseAuthorizationHeader(it) as? HttpAuthHeader.Parameterized }
     }
 

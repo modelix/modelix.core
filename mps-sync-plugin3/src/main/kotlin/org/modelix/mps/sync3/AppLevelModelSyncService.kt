@@ -9,7 +9,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.client2.ModelClientV2
-import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.oauth.IAuthRequestHandler
 import org.modelix.model.oauth.OAuthConfig
@@ -24,7 +23,7 @@ class AppLevelModelSyncService() : Disposable {
         }
     }
 
-    private val connections = LinkedHashMap<String, ServerConnection>()
+    private val connections = LinkedHashMap<ModelServerConnectionProperties, ServerConnection>()
     private val coroutinesScope = CoroutineScope(Dispatchers.Default)
     private val connectionCheckingJob = coroutinesScope.launchLoop(
         BackoffStrategy(
@@ -42,30 +41,29 @@ class AppLevelModelSyncService() : Disposable {
     fun getConnections() = synchronized(connections) { connections.values.toList() }
 
     @Synchronized
-    fun addConnection(url: String, repositoryId: RepositoryId?): ServerConnection {
-        return synchronized(connections) { connections.getOrPut(url) { ServerConnection(url, repositoryId) } }
+    fun addConnection(properties: ModelServerConnectionProperties): ServerConnection {
+        return synchronized(connections) { connections.getOrPut(properties) { ServerConnection(properties) } }
     }
 
     override fun dispose() {
         coroutinesScope.cancel("disposed")
     }
 
-    class ServerConnection(val url: String, repositoryId: RepositoryId?) {
+    class ServerConnection(val properties: ModelServerConnectionProperties) {
         private var client: ValueWithMutex<IModelClientV2?> = ValueWithMutex(null)
         private var connected: Boolean = false
         private val authRequestHandler = AsyncAuthRequestHandler()
         private var authConfig: IAuthConfig = IAuthConfig.oauth {
-            clientId("external-mps")
+            clientId(properties.oauthClientId ?: "external-mps")
+            properties.oauthClientSecret?.let { clientSecret(it) }
             authRequestHandler(authRequestHandler)
-            if (repositoryId != null) {
-                repositoryId(repositoryId)
-            }
+            properties.repositoryId?.let { repositoryId(it) }
         }
 
         suspend fun getClient(): IModelClientV2 {
             return client.getValue() ?: client.updateValue {
                 it ?: ModelClientV2.builder()
-                    .url(url)
+                    .url(properties.url)
                     .authConfig(authConfig)
                     .lazyAndBlockingQueries()
                     .build()

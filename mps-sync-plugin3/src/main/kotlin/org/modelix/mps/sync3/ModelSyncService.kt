@@ -41,8 +41,8 @@ class ModelSyncService(val project: Project) :
     private val coroutinesScope = CoroutineScope(Dispatchers.IO)
 
     @Synchronized
-    override fun addServer(url: String, repositoryId: RepositoryId?): Connection {
-        return AppLevelModelSyncService.getInstance().addConnection(url, repositoryId).let { Connection(it) }
+    override fun addServer(properties: ModelServerConnectionProperties): Connection {
+        return AppLevelModelSyncService.getInstance().addConnection(properties).let { Connection(it) }
     }
 
     @Synchronized
@@ -166,7 +166,7 @@ class ModelSyncService(val project: Project) :
             BindingWorker(
                 coroutinesScope,
                 mpsProject,
-                serverConnection = addServer(id.url, id.branchRef.repositoryId),
+                serverConnection = addServer(id.connectionProperties.copy(repositoryId = id.branchRef.repositoryId)),
                 branchRef = id.branchRef,
                 initialVersionHash = state?.versionHash,
                 continueOnError = { IModelSyncService.continueOnError ?: true },
@@ -182,7 +182,13 @@ class ModelSyncService(val project: Project) :
                 bindings.map { bindingEntry ->
                     Element("binding").also {
                         it.children.add(Element("enabled").also { it.text = bindingEntry.value.enabled.toString() })
-                        it.children.add(Element("url").also { it.text = bindingEntry.key.url })
+                        it.children.add(Element("url").also { it.text = bindingEntry.key.connectionProperties.url })
+                        bindingEntry.key.connectionProperties.oauthClientId?.let { oauthClientId ->
+                            it.children.add(Element("oauthClientId").also { it.text = oauthClientId })
+                        }
+                        bindingEntry.key.connectionProperties.oauthClientSecret?.let { oauthClientSecret ->
+                            it.children.add(Element("oauthClientSecret").also { it.text = oauthClientSecret })
+                        }
                         it.children.add(Element("repository").also { it.text = bindingEntry.key.branchRef.repositoryId.id })
                         it.children.add(Element("branch").also { it.text = bindingEntry.key.branchRef.branchName })
                         it.children.add(Element("versionHash").also { it.text = bindingEntry.value.versionHash })
@@ -194,10 +200,16 @@ class ModelSyncService(val project: Project) :
             fun fromXml(element: Element): SyncServiceState {
                 return SyncServiceState(
                     element.getChildren("binding").mapNotNull<Element, Pair<BindingId, BindingState>> { element ->
+                        val repositoryId = RepositoryId(element.getChild("repository")?.text ?: return@mapNotNull null)
                         BindingId(
-                            url = element.getChild("url")?.text ?: return@mapNotNull null,
+                            connectionProperties = ModelServerConnectionProperties(
+                                url = element.getChild("url")?.text ?: return@mapNotNull null,
+                                repositoryId = repositoryId,
+                                oauthClientId = element.getChild("oauthClientId")?.text,
+                                oauthClientSecret = element.getChild("oauthClientSecret")?.text,
+                            ),
                             branchRef = BranchReference(
-                                RepositoryId(element.getChild("repository")?.text ?: return@mapNotNull null),
+                                repositoryId,
                                 element.getChild("branch")?.text ?: return@mapNotNull null,
                             ),
                         ) to BindingState(
@@ -225,7 +237,7 @@ class ModelSyncService(val project: Project) :
         }
 
         override fun getUrl(): String {
-            return connection.url
+            return connection.properties.url
         }
 
         override suspend fun getClient(): IModelClientV2 {
@@ -263,7 +275,7 @@ class ModelSyncService(val project: Project) :
         }
 
         override fun bind(branchRef: BranchReference, lastSyncedVersionHash: String?): IBinding {
-            val id = BindingId(connection.url, branchRef)
+            val id = BindingId(connection.properties, branchRef)
             updateBindingState(id) { oldBinding ->
                 BindingState(
                     versionHash = lastSyncedVersionHash ?: oldBinding?.versionHash,
@@ -275,7 +287,7 @@ class ModelSyncService(val project: Project) :
 
         override fun getBindings(): List<IBinding> {
             return synchronized(this@ModelSyncService) {
-                loadedState.bindings.keys.map { Binding(it) }.filter { it.id.url == connection.url }
+                loadedState.bindings.keys.map { Binding(it) }.filter { it.id.connectionProperties == connection.properties }
             }
         }
 
@@ -391,8 +403,8 @@ suspend fun jobLoop(
     }
 }
 
-data class BindingId(val url: String, val branchRef: BranchReference) {
+data class BindingId(val connectionProperties: ModelServerConnectionProperties, val branchRef: BranchReference) {
     override fun toString(): String {
-        return "BindingId($url, ${branchRef.repositoryId}, ${branchRef.branchName})"
+        return "BindingId($connectionProperties, ${branchRef.repositoryId}, ${branchRef.branchName})"
     }
 }

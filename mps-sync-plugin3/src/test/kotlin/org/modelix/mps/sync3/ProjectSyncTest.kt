@@ -16,6 +16,7 @@ import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.getDescendants
 import org.modelix.model.client2.ModelClientV2
+import org.modelix.model.client2.computeWriteOnModel
 import org.modelix.model.client2.runWriteOnModel
 import org.modelix.model.client2.runWriteOnTree
 import org.modelix.model.data.NodeData
@@ -378,7 +379,7 @@ class ProjectSyncTest : MPSTestBase() {
 
         // ... and then a non-MPS client adds a new node ...
         val client = ModelClientV2.builder().url("http://localhost:$port").lazyAndBlockingQueries().build().also { it.init() }
-        val newNodeIdOnServer = client.runWriteOnModel(branchRef, { MPSIdGenerator(client.getIdGenerator(), it) }) { rootNode ->
+        val (_, newNodeIdOnServer) = client.computeWriteOnModel(branchRef, { MPSIdGenerator(client.getIdGenerator(), it) }) { rootNode ->
             val node = rootNode.getDescendants(true)
                 .first { it.getPropertyValue(nameProperty.toReference()) == "MyClass" }
             val node2 = node.getParent()!!.addNewChild(node.getContainmentLink(), -1, node.getConceptReference())

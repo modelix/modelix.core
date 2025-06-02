@@ -79,7 +79,7 @@ actual class ModelixAuthClient {
             repeat(100) { n ->
                 val port = 26815 + n
                 try {
-                    val receiver: LocalServerReceiver = LocalServerReceiver.Builder().setHost("127.0.0.1").setPort(port).build()
+                    val receiver: LocalServerReceiver = LocalServerReceiver.Builder().setHost("localhost").setPort(port).build()
                     val browser = config.authRequestHandler?.let {
                         object : AuthorizationCodeInstalledApp.Browser {
                             override fun browse(url: String) {

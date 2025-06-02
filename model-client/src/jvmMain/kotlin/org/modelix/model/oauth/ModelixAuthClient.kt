@@ -131,24 +131,29 @@ actual class ModelixAuthClient {
                         getTokens()?.let { BearerTokens(it.accessToken, it.refreshToken) }
                     }
                     refreshTokens {
-                        val tokens = response.parseWWWAuthenticate()?.let { wwwAuthenticate ->
-                            // The model server tells the client where to get a token
+                        try {
+                            val tokens = response.parseWWWAuthenticate()?.let { wwwAuthenticate ->
+                                // The model server tells the client where to get a token
 
-                            if (wwwAuthenticate.parameter("error") != "invalid_token") return@let null
-                            val updatedConfig = authConfig.copy(
-                                authorizationUrl = authConfig.authorizationUrl
-                                    ?: useSameProtocol(wwwAuthenticate.parameter("authorization_uri") ?: return@let null).fillParameters(),
-                                tokenUrl = authConfig.tokenUrl
-                                    ?: useSameProtocol(wwwAuthenticate.parameter("token_uri") ?: return@let null).fillParameters(),
-                            )
-                            val realm = wwwAuthenticate.parameter("realm")
-                            val description = wwwAuthenticate.parameter("error_description")
-                            authorize(updatedConfig)
-                        } ?: authorize(authConfig)
+                                if (wwwAuthenticate.parameter("error") != "invalid_token") return@let null
+                                val updatedConfig = authConfig.copy(
+                                    authorizationUrl = authConfig.authorizationUrl
+                                        ?: useSameProtocol(wwwAuthenticate.parameter("authorization_uri") ?: return@let null).fillParameters(),
+                                    tokenUrl = authConfig.tokenUrl
+                                        ?: useSameProtocol(wwwAuthenticate.parameter("token_uri") ?: return@let null).fillParameters(),
+                                )
+                                val realm = wwwAuthenticate.parameter("realm")
+                                val description = wwwAuthenticate.parameter("error_description")
+                                authorize(updatedConfig)
+                            } ?: authorize(authConfig)
 
-                        println("Access Token: " + tokens.accessToken)
+                            LOG.info("Access Token: " + tokens.accessToken)
 
-                        BearerTokens(tokens.accessToken, tokens.refreshToken)
+                            BearerTokens(tokens.accessToken, tokens.refreshToken)
+                        } catch (ex: Throwable) {
+                            LOG.error(ex) { "Token refresh failed" }
+                            throw ex
+                        }
                     }
                 }
             }
@@ -156,8 +161,8 @@ actual class ModelixAuthClient {
     }
 
     fun HttpMessage.parseWWWAuthenticate(): HttpAuthHeader.Parameterized? {
-        // The Amazon API Gateway replaced the WWW-Authenticate header with x-amzn-remapped-www-authenticate
-        // to prevent any login popup in the browser. REST clients are expected to read their non-standard header.
+        // The Amazon API Gateway replaces the WWW-Authenticate header with x-amzn-remapped-www-authenticate
+        // to prevent any login popup in the browser. REST clients are expected to read this non-standard header.
         return (headers[HttpHeaders.WWWAuthenticate] ?: headers["x-amzn-remapped-www-authenticate"])
             ?.let { parseAuthorizationHeader(it) as? HttpAuthHeader.Parameterized }
     }

@@ -1,12 +1,12 @@
 package org.modelix.model.data
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.INode
 import org.modelix.model.api.IPropertyReference
+import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
 import org.modelix.model.api.PNodeReference
@@ -127,6 +127,8 @@ data class NodeData(
 
         @Deprecated("Use ID_PROPERTY_KEY", replaceWith = ReplaceWith("ID_PROPERTY_KEY"))
         const val idPropertyKey = ID_PROPERTY_KEY
+
+        fun fromJson(serialized: String): NodeData = Json.decodeFromString(serialized)
     }
 }
 
@@ -136,6 +138,8 @@ fun NodeData.uid(model: ModelData): String {
         (id ?: throw IllegalArgumentException("Node has no ID"))
 }
 fun ModelData.nodeUID(node: NodeData): String = node.uid(this)
+
+fun IReadableNode.asData(): NodeData = asLegacyNode().asData()
 
 fun INode.asData(): NodeData = NodeData(
     id = reference.serialize(),

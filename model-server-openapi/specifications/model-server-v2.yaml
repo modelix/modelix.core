@@ -60,6 +60,39 @@ paths:
           $ref: '#/components/responses/200'
         default:
           $ref: '#/components/responses/GeneralError'
+  /repositories/{repository}/config:
+    get:
+      tags:
+        - v2
+      operationId: getRepositoryConfig
+      parameters:
+        - name: repository
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: '#/components/responses/200json'
+        default:
+          $ref: '#/components/responses/GeneralError'
+    post:
+      tags:
+        - v2
+      operationId: changeRepositoryConfig
+      parameters:
+        - name: repository
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: '#/components/responses/200json'
+        "403":
+          $ref: '#/components/responses/403'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/objects:
     put:
       tags:

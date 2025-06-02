@@ -39,6 +39,14 @@ interface IModelClientV2 {
     suspend fun initRepositoryWithLegacyStorage(repository: RepositoryId): IVersion
 
     suspend fun initRepository(config: RepositoryConfig): IVersion
+    suspend fun getRepositoryConfig(repository: RepositoryId): RepositoryConfig
+
+    /**
+     * Migrate the repository to a different configuration.
+     * Should only be used when there are no active clients.
+     * There are no guarantees how a client behaves during a config change.
+     */
+    suspend fun changeRepositoryConfig(config: RepositoryConfig): RepositoryConfig
 
     suspend fun listRepositories(): List<RepositoryId>
     suspend fun deleteRepository(repository: RepositoryId): Boolean

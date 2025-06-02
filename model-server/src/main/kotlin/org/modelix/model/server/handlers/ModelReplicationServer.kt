@@ -225,6 +225,28 @@ class ModelReplicationServer(
         call.respondDelta(repositoryId, initialVersion.getContentHash(), ObjectDeltaFilter())
     }
 
+    override suspend fun RoutingContext.changeRepositoryConfig(repository: String) {
+        checkPermission(ModelServerPermissionSchema.repository(repository).write)
+        val newConfig: RepositoryConfig = call.receive()
+        val updatedConfig =
+            @OptIn(RequiresTransaction::class)
+            runWrite {
+                repositoriesManager.migrateRepository(newConfig, call.getUserName())
+                repositoriesManager.getConfig(RepositoryId(repository))
+            }
+        call.respond(updatedConfig)
+    }
+
+    override suspend fun RoutingContext.getRepositoryConfig(repository: String) {
+        checkPermission(ModelServerPermissionSchema.repository(repository).read)
+        val config =
+            @OptIn(RequiresTransaction::class)
+            runRead {
+                repositoriesManager.getConfig(RepositoryId(repository))
+            }
+        call.respond(config)
+    }
+
     override suspend fun RoutingContext.deleteRepository(repository: String) {
         checkPermission(ModelServerPermissionSchema.repository(repository).delete)
 

@@ -6,19 +6,29 @@ import kotlinx.datetime.Clock
 import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.datastructures.model.getHash
 import org.modelix.datastructures.model.withIdTranslation
+import org.modelix.model.IVersion
 import org.modelix.model.ModelMigrations
 import org.modelix.model.ObjectDeltaFilter
+import org.modelix.model.TreeType
 import org.modelix.model.VersionMerger
 import org.modelix.model.api.IBranch
+import org.modelix.model.api.IMutableModel
+import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IReadTransaction
+import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.ITree
+import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.IdGeneratorDummy
+import org.modelix.model.api.NodeReference
 import org.modelix.model.api.PBranch
+import org.modelix.model.api.getOriginalOrCurrentReference
 import org.modelix.model.async.LazyLoadingObjectGraph
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.diff
+import org.modelix.model.mutable.asModel
+import org.modelix.model.mutable.asModelSingleThreaded
 import org.modelix.model.mutable.asMutableSingleThreaded
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.SerializationUtil
@@ -31,6 +41,8 @@ import org.modelix.model.server.store.StoreManager
 import org.modelix.model.server.store.assertWrite
 import org.modelix.model.server.store.pollEntry
 import org.modelix.model.server.store.runReadIO
+import org.modelix.model.sync.bulk.INodeAssociation
+import org.modelix.model.sync.bulk.ModelSynchronizer
 import org.modelix.streams.IExecutableStream
 import org.modelix.streams.IStream
 import org.modelix.streams.getBlocking
@@ -160,16 +172,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         )
         stores.genericStore.put(branchListKey(repositoryId, isolated), masterBranch.branchName, false)
 
-        val tree = IGenericModelTree.builder()
-            .treeId(config.modelId)
-            .storeRoleNames(config.legacyNameBasedRoles)
-            .graph(LazyLoadingObjectGraph(stores.getAsyncStore(repositoryId.takeIf { isolated })))
-            .let {
-                when (config.nodeIdType) {
-                    RepositoryConfig.NodeIdType.INT64 -> it.withInt64Ids().build()
-                    RepositoryConfig.NodeIdType.STRING -> it.withNodeReferenceIds().build().withIdTranslation()
-                }
-            }
+        val tree = createEmptyTree(config)
 
         val initialVersion = CLVersion.builder()
             .time(Clock.System.now())
@@ -180,6 +183,19 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         validateVersion(initialVersion, null)
         putVersionHash(masterBranch, initialVersion.getContentHash())
         return initialVersion
+    }
+
+    private fun createEmptyTree(config: RepositoryConfig): IGenericModelTree<INodeReference> {
+        return IGenericModelTree.builder()
+            .treeId(config.modelId)
+            .storeRoleNames(config.legacyNameBasedRoles)
+            .graph(LazyLoadingObjectGraph(getAsyncStore(RepositoryId(config.repositoryId))))
+            .let {
+                when (config.nodeIdType) {
+                    RepositoryConfig.NodeIdType.INT64 -> it.withInt64Ids().build().withIdTranslation()
+                    RepositoryConfig.NodeIdType.STRING -> it.withNodeReferenceIds().build()
+                }
+            }
     }
 
     @RequiresTransaction
@@ -403,6 +419,64 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         }.let { ObjectDataFlow(it) }
     }
 
+    /**
+     * Possible migrations:
+     * - name<-->id based roles: not possible without the metamodel
+     * - global-->isolated storage: copy all reachable objects
+     * - isolated storage --> global storage: possible, but no use cases for it
+     * - int64-->string node IDs: create new version with different tree implementation and copy all content
+     * - string-->int64 node IDs: bulk sync into new version with reassigned IDs
+     * - changed model ID: bulk sync into new version with reassigned IDs
+     */
+    @RequiresTransaction
+    override fun migrateRepository(
+        newConfig: RepositoryConfig,
+        author: String?,
+    ) {
+        val repositoryId = RepositoryId(newConfig.repositoryId)
+        val oldConfig = getConfig(repositoryId)
+
+        if (oldConfig.nodeIdType == RepositoryConfig.NodeIdType.INT64 && newConfig.nodeIdType == RepositoryConfig.NodeIdType.STRING) {
+            val branches = getBranches(repositoryId)
+            for (branch in branches) {
+                val oldVersion = getVersion(branch) ?: continue
+                val sourceModel = oldVersion.getModelTree().asModelSingleThreaded()
+                val targetTree = createEmptyTree(newConfig).asMutableSingleThreaded()
+                val targetModel = targetTree.asModel()
+                ModelSynchronizer(
+                    sourceRoot = sourceModel.getRootNode(),
+                    targetRoot = targetModel.getRootNode(),
+                    nodeAssociation = NodeAssociationForIdMigration(targetModel),
+                ).synchronize()
+                val newVersion = IVersion.builder()
+                    .tree(targetTree.getTransaction().tree)
+                    .baseVersion(oldVersion)
+                    .author(author)
+                    .currentTime()
+                    .build()
+                putVersionHash(branch, newVersion.getContentHash())
+            }
+        }
+    }
+
+    @RequiresTransaction
+    override fun getConfig(repositoryId: RepositoryId): RepositoryConfig {
+        val version = requireNotNull(getVersion(repositoryId.getBranchReference())) {
+            "No version found in repository $repositoryId"
+        }
+        val treeData = version.obj.data.getTree(TreeType.MAIN).resolveNow().data
+        return RepositoryConfig(
+            legacyNameBasedRoles = treeData.usesRoleIds,
+            legacyGlobalStorage = isIsolated(repositoryId) == false,
+            nodeIdType = if (treeData.trieWithNodeRefIds != null) RepositoryConfig.NodeIdType.STRING else RepositoryConfig.NodeIdType.INT64,
+            primaryTreeType = if (treeData.trieWithNodeRefIds != null) RepositoryConfig.TreeType.PATRICIA_TRIE else RepositoryConfig.TreeType.HASH_ARRAY_MAPPED_TRIE,
+            modelId = treeData.id.id,
+            repositoryId = repositoryId.id,
+            repositoryName = repositoryId.id,
+            alternativeNames = emptySet(),
+        )
+    }
+
     private fun branchKey(branch: BranchReference, isolated: Boolean = isIsolated(branch.repositoryId) ?: true): ObjectInRepository {
         return if (isolated) {
             ObjectInRepository(branch.repositoryId.id, "$KEY_PREFIX:branches:${SerializationUtil.escape(branch.branchName)}")
@@ -485,4 +559,22 @@ class ObjectDataFlow(private val hashObjectFlow: IExecutableStream.Many<Pair<Str
 
 private fun Flow<Pair<String, String>>.checkObjectHashes(): Flow<Pair<String, String>> {
     return onEach { HashUtil.checkObjectHash(it.first, it.second) }
+}
+
+private class NodeAssociationForIdMigration(val targetModel: IMutableModel) : INodeAssociation {
+    override fun resolveTarget(sourceNode: IReadableNode): IWritableNode? {
+        return targetModel.tryResolveNode(NodeReference(sourceNode.getOriginalOrCurrentReference()))
+    }
+
+    override fun associate(
+        sourceNode: IReadableNode,
+        targetNode: IWritableNode,
+    ) {
+        val sourceReference = sourceNode.getNodeReference()
+        val expectedTargetReference = NodeReference(sourceNode.getOriginalOrCurrentReference())
+        val actualTargetReference = targetNode.getNodeReference()
+        require(expectedTargetReference == actualTargetReference) {
+            "Cannot associate $sourceReference with $actualTargetReference, expected: $expectedTargetReference"
+        }
+    }
 }

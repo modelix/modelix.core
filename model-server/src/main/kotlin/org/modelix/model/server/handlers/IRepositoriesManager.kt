@@ -73,6 +73,12 @@ interface IRepositoriesManager {
 
     fun getStoreManager(): StoreManager
     fun getTransactionManager(): ITransactionManager
+
+    @RequiresTransaction
+    fun migrateRepository(newConfig: RepositoryConfig, author: String?)
+
+    @RequiresTransaction
+    fun getConfig(repositoryId: RepositoryId): RepositoryConfig
 }
 
 @Deprecated("Provide a RepositoryConfig")

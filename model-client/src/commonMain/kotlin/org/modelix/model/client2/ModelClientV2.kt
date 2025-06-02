@@ -228,6 +228,29 @@ class ModelClientV2(
         }
     }
 
+    override suspend fun changeRepositoryConfig(config: RepositoryConfig): RepositoryConfig {
+        val repositoryId = RepositoryId(config.repositoryId)
+        return httpClient.preparePost {
+            url {
+                takeFrom(baseUrl)
+                appendPathSegmentsEncodingSlash("repositories", repositoryId.id, "config")
+            }
+            contentType(ContentType.Application.Json)
+            setBody(config)
+        }.execute { response ->
+            response.body()
+        }
+    }
+
+    override suspend fun getRepositoryConfig(repository: RepositoryId): RepositoryConfig {
+        return httpClient.prepareGet {
+            url {
+                takeFrom(baseUrl)
+                appendPathSegmentsEncodingSlash("repositories", repository.id, "config")
+            }
+        }.execute { it.body<RepositoryConfig>() }
+    }
+
     override suspend fun listRepositories(): List<RepositoryId> {
         return httpClient.get {
             url {
@@ -868,17 +891,29 @@ suspend fun <T> IModelClientV2.runWriteOnBranch(branchRef: BranchReference, body
     return result as T
 }
 
-suspend fun <T> IModelClientV2.runWriteOnModel(
+suspend fun IModelClientV2.runWriteOnModel(
     branchRef: BranchReference,
     nodeIdGenerator: (TreeId) -> INodeIdGenerator<INodeReference> = { ModelixIdGenerator(getIdGenerator(), it) },
-    body: (IWritableNode) -> T,
-): T = runWriteOnTree(branchRef, nodeIdGenerator) { body(it.getRootNode()) }
+    body: (IWritableNode) -> Unit,
+): IVersion = runWriteOnTree(branchRef, nodeIdGenerator) { body(it.getRootNode()) }
 
-suspend fun <T> IModelClientV2.runWriteOnTree(
+suspend fun <R> IModelClientV2.computeWriteOnModel(
     branchRef: BranchReference,
     nodeIdGenerator: (TreeId) -> INodeIdGenerator<INodeReference> = { ModelixIdGenerator(getIdGenerator(), it) },
-    body: (IMutableModelTree) -> T,
-): T {
+    body: (IWritableNode) -> R,
+) = computeWriteOnTree(branchRef, nodeIdGenerator) { body(it.getRootNode()) }
+
+suspend fun IModelClientV2.runWriteOnTree(
+    branchRef: BranchReference,
+    nodeIdGenerator: (TreeId) -> INodeIdGenerator<INodeReference> = { ModelixIdGenerator(getIdGenerator(), it) },
+    body: (IMutableModelTree) -> Unit,
+): IVersion = computeWriteOnTree(branchRef, nodeIdGenerator) { body(it) }.first
+
+suspend fun <R> IModelClientV2.computeWriteOnTree(
+    branchRef: BranchReference,
+    nodeIdGenerator: (TreeId) -> INodeIdGenerator<INodeReference> = { ModelixIdGenerator(getIdGenerator(), it) },
+    body: (IMutableModelTree) -> R,
+): Pair<IVersion, R> {
     val client = this
     val masterBranch = branchRef.repositoryId.getBranchReference()
     val baseVersion = client.pullIfExists(branchRef)
@@ -886,7 +921,7 @@ suspend fun <T> IModelClientV2.runWriteOnTree(
             ?.let { client.pullIfExists(it) }
         ?: client.initRepository(branchRef.repositoryId)
 
-    var result: T? = null
+    var result: R? = null
     val newVersion = baseVersion.runWriteOnTree(
         nodeIdGenerator = nodeIdGenerator(baseVersion.getModelTree().getId()),
         author = getUserId(),
@@ -896,7 +931,7 @@ suspend fun <T> IModelClientV2.runWriteOnTree(
     if (newVersion != baseVersion) {
         client.push(branchRef, newVersion, baseVersion)
     }
-    return result as T
+    return newVersion to (result as R)
 }
 
 @Deprecated("Use runWriteOnModel instead")

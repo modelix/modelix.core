@@ -72,7 +72,14 @@ class BindingWorker(
 
     fun activate() {
         if (activated.getAndSet(true)) return
-        syncJob = coroutinesScope.launch { syncJob() }
+        syncJob = coroutinesScope.launch {
+            try {
+                syncJob()
+            } catch (ex: Throwable) {
+                LOG.error(ex) { "Synchronization failed" }
+                throw ex
+            }
+        }
     }
 
     fun deactivate() {
@@ -154,7 +161,7 @@ class BindingWorker(
                 break
             } catch (ex: CancellationException) {
                 break
-            } catch (ex: Exception) {
+            } catch (ex: Throwable) {
                 LOG.error(ex) { "Initial synchronization failed" }
                 delay(5_000)
             }

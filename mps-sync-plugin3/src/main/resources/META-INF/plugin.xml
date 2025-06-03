@@ -27,7 +27,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <statusBarWidgetFactory id="ModelixSyncStatus" implementation="org.modelix.mps.sync3.ui.ModelSyncStatusWidgetFactory"/>
         <backgroundPostStartupActivity implementation="org.modelix.mps.sync3.ModelSyncStartupActivity" />
-<!--        <mps.LanguageLibrary dir="/languages" />-->
+        <mps.LanguageLibrary dir="/languages" />
     </extensions>
 
     <actions>

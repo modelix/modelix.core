@@ -49,7 +49,7 @@ class ThreadSafeMutableModelTree<NodeId>(
             check(prevTransaction !is ReadTransactionImpl) { "Cannot run write from read" }
             val prevWrite = prevTransaction as WriteTransactionImpl<NodeId>?
             val oldTree = prevWrite?.tree ?: tree
-            val newWrite = WriteTransactionImpl<NodeId>(oldTree)
+            val newWrite = WriteTransactionImpl<NodeId>(oldTree, idGenerator)
             val result = runWithTransaction(newWrite) { body(newWrite) }
             val newTree = newWrite.tree
             if (prevWrite == null) {
@@ -103,7 +103,14 @@ class ThreadSafeMutableModelTree<NodeId>(
 
     private class ReadTransactionImpl<NodeId>(override val tree: IGenericModelTree<NodeId>) : IGenericMutableModelTree.Transaction<NodeId>
 
-    private class WriteTransactionImpl<NodeId>(override var tree: IGenericModelTree<NodeId>) : IGenericMutableModelTree.WriteTransaction<NodeId> {
+    private class WriteTransactionImpl<NodeId>(
+        override var tree: IGenericModelTree<NodeId>,
+        private val idGenerator: INodeIdGenerator<NodeId>,
+    ) : IGenericMutableModelTree.WriteTransaction<NodeId> {
+        override fun getIdGenerator(): INodeIdGenerator<NodeId> {
+            return idGenerator
+        }
+
         override fun mutate(parameters: MutationParameters<NodeId>) {
             tree = tree.asObject().graph.query { tree.mutate(parameters) }
         }

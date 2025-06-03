@@ -51,17 +51,18 @@ class MoveNodeOp(val childId: INodeReference, val targetPosition: PositionInRole
 
     inner class Intend(val capturedTargetPosition: CapturedInsertPosition) : IOperationIntend {
         override fun restoreIntend(tree: IModelTree): List<IOperation> {
-            if (!tree.containsNode(childId.toGlobal(tree.getId())).getBlocking(tree)) return listOf(NoOp())
+            if (!tree.containsNode(childId.toGlobal(tree.getId())).getBlocking(tree)) return emptyList()
             val newSourcePosition = getNodePosition(tree, childId.toGlobal(tree.getId()))
             if (!tree.containsNode(targetPosition.nodeId.toGlobal(tree.getId())).getBlocking(tree)) {
                 return listOf(
                     withPos(getDetachedNodesEndPosition(tree)),
                 )
             }
-            if (tree.getAncestors(targetPosition.nodeId.toGlobal(tree.getId()), false).contains(childId.toGlobal(tree.getId())).getBlocking(tree)) return listOf(NoOp())
+            if (tree.getAncestors(targetPosition.nodeId.toGlobal(tree.getId()), false).contains(childId.toGlobal(tree.getId())).getBlocking(tree)) return emptyList()
             val newTargetPosition = if (tree.containsNode(targetPosition.nodeId.toGlobal(tree.getId())).getBlocking(tree)) {
                 val newTargetIndex = capturedTargetPosition.findIndex(
                     tree.getChildren(targetPosition.nodeId.toGlobal(tree.getId()), targetPosition.role).toList().getBlocking(tree),
+                    targetPosition.index,
                 )
                 targetPosition.withIndex(newTargetIndex)
             } else {

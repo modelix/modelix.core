@@ -168,6 +168,10 @@ class VersionedModelTree(
                 throw UnsupportedOperationException()
             }
 
+        override fun getIdGenerator(): INodeIdGenerator<INodeReference> {
+            return t.getIdGenerator()
+        }
+
         override fun mutate(parameters: MutationParameters<INodeReference>) {
             when (parameters) {
                 is MutationParameters.AddNew<INodeReference> -> {

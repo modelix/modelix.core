@@ -20,6 +20,7 @@ import org.modelix.model.client2.runWriteOnModel
 import org.modelix.model.client2.runWriteOnTree
 import org.modelix.model.data.NodeData
 import org.modelix.model.data.asData
+import org.modelix.model.historyAsSequence
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
@@ -28,6 +29,7 @@ import org.modelix.model.mpsadapters.MPSProjectReference
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.toModelix
 import org.modelix.model.mutable.asModelSingleThreaded
+import org.modelix.model.operations.IOperation
 import org.modelix.mps.multiplatform.model.MPSIdGenerator
 import org.modelix.streams.getBlocking
 import java.nio.file.Path
@@ -35,6 +37,7 @@ import java.util.concurrent.atomic.AtomicLong
 import kotlin.io.path.readText
 import kotlin.io.path.writeText
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotEquals
 
 class ProjectSyncTest : MPSTestBase() {
 
@@ -120,6 +123,56 @@ class ProjectSyncTest : MPSTestBase() {
         val rootNode = version.getModelTree().asModelSingleThreaded().getRootNode()
         val allNodes = rootNode.getDescendants(true)
         assertEquals(2, allNodes.count())
+    }
+
+    fun `test merge conflict`(): Unit = runWithModelServer { port ->
+        val branchRef = RepositoryId("sync-test").getBranchReference()
+        val version1 = syncProjectToServer("initial", port, branchRef)
+        println("version 1: $version1")
+        val version2 = syncProjectToServer("change1", port, branchRef, lastSyncedVersion = version1.getContentHash())
+        println("version 2: $version2")
+
+        openTestProject("change1")
+        val service = IModelSyncService.getInstance(mpsProject)
+        val connection = service.addServer("http://localhost:$port")
+        val binding = connection.bind(branchRef, lastSyncedVersionHash = version1.getContentHash())
+        val version4 = binding.flush()
+
+        version1 as CLVersion
+        version2 as CLVersion
+        version4 as CLVersion
+
+        val version3 = version4.historyAsSequence().filterIsInstance<CLVersion>()
+            .first { it.isMerge().not() && it.baseVersion == version1 && it.getObjectHash() != version2.getObjectHash() }
+        println("version 3: $version3")
+
+        // version1 is the first one after the initial empty version
+        val initialVersion = version1.baseVersion!!
+        assertEquals(null, initialVersion.baseVersion)
+        assertEquals(emptyList<IOperation>(), initialVersion.operations.toList())
+        assertFalse(version1.isMerge())
+        assertEquals(680, version1.numberOfOperations)
+
+        // version2 applies some changes on top of version1
+        assertEquals(version1, version2.baseVersion)
+        assertFalse(version2.isMerge())
+        assertEquals(455, version2.numberOfOperations)
+
+        // version3 does the same as version2
+        assertEquals(version1, version3.baseVersion)
+        assertFalse(version3.isMerge())
+        assertEquals(455, version3.numberOfOperations)
+        assertEquals(version2.getTreeReference().getHash(), version3.getTreeReference().getHash())
+
+        assertNotEquals(version2.getObjectHash(), version3.getObjectHash())
+
+        // version4 is the result of merging version3 into version2
+        val diff = version4.getModelTree().getChanges(version2.getModelTree(), false).toList().getBlocking(version4.getModelTree())
+        assertEquals(emptyList<ModelChangeEvent<*>>(), diff)
+        assertEquals(version2.getTreeReference().getHash(), version4.getTreeReference().getHash())
+
+        assertFalse(version3.isMerge())
+        assertEquals(version1, version3.baseVersion)
     }
 
     fun `test checkout into empty project`(): Unit = runWithModelServer { port ->

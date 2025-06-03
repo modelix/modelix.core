@@ -9,7 +9,18 @@ class CapturedInsertPosition(val siblingsBefore: List<INodeReference>, val sibli
     )
 
     fun findIndex(children: List<INodeReference>): Int {
-        if (children == (siblingsBefore + siblingsAfter)) return siblingsBefore.size
+        return findIndexRange(children).last
+    }
+
+    fun findIndex(children: List<INodeReference>, preferredIndex: Int): Int {
+        val range = findIndexRange(children)
+        if (range.contains(preferredIndex)) return preferredIndex
+        if (preferredIndex <= range.first) return range.first
+        return range.last
+    }
+
+    fun findIndexRange(children: List<INodeReference>): IntRange {
+        if (children == (siblingsBefore + siblingsAfter)) return siblingsBefore.size..siblingsBefore.size
 
         var leftIndex = 0
         var rightIndex = children.size
@@ -30,6 +41,10 @@ class CapturedInsertPosition(val siblingsBefore: List<INodeReference>, val sibli
             }
         }
 
-        return if (leftIndex < rightIndex) rightIndex else leftIndex
+        return if (leftIndex < rightIndex) {
+            leftIndex..rightIndex
+        } else {
+            leftIndex..leftIndex
+        }
     }
 }

@@ -78,6 +78,10 @@ class LegacyBranchAsMutableModelTree(val branch: IBranch) : IGenericMutableModel
             get() = t.tree.asModelTree().withIdTranslation()
             set(value) { TODO() }
 
+        override fun getIdGenerator(): INodeIdGenerator<INodeReference> {
+            throw UnsupportedOperationException()
+        }
+
         override fun mutate(parameters: MutationParameters<INodeReference>) {
             when (parameters) {
                 is MutationParameters.AddNew<INodeReference> -> {

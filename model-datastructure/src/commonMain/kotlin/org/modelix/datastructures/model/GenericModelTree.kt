@@ -190,7 +190,9 @@ abstract class GenericModelTree<NodeId>(
             .distinct()
             .map { IReferenceLinkReference.fromString(it) }
             .forEach { role: IReferenceLinkReference ->
-                if (oldNode.getReferenceTarget(role) != newNode.getReferenceTarget(role)) {
+                val oldTarget = oldNode.getReferenceTarget(role)?.let { oldTree.toGlobalNodeReference(it) }
+                val newTarget = newNode.getReferenceTarget(role)?.let { toGlobalNodeReference(it) }
+                if (oldTarget != newTarget) {
                     changes += ReferenceChangedEvent(newNode.id, role)
                 }
             }

@@ -57,6 +57,10 @@ class AutoTransactionsModelTree<NodeId>(val mutableTree: IGenericMutableModelTre
             mutableTree.runWrite { it.mutate(parameters) }
         }
 
+        override fun getIdGenerator(): INodeIdGenerator<NodeId> {
+            return mutableTree.getIdGenerator()
+        }
+
         override var tree: IGenericModelTree<NodeId>
             get() = mutableTree.runRead { it.tree }
             set(value) { mutableTree.runWrite { it.tree = value } }

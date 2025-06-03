@@ -27,6 +27,10 @@ kotlin {
                 implementation(libs.trove4j)
                 implementation(libs.apache.commons.collections)
                 implementation(libs.kotlin.coroutines.core)
+            }
+        }
+        val jvmTest by getting {
+            dependencies {
                 implementation(libs.logback.classic)
             }
         }

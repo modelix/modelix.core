@@ -1,7 +1,18 @@
+import org.jetbrains.intellij.tasks.PrepareSandboxTask
+import org.modelix.buildtools.KnownModuleIds
+import org.modelix.buildtools.buildStubsSolutionJar
 import org.modelix.copyMps
 import org.modelix.mpsHomeDir
 import org.modelix.mpsMajorVersion
 import org.modelix.mpsPlatformVersion
+import kotlin.io.resolve
+import kotlin.jvm.java
+
+buildscript {
+    dependencies {
+        classpath(libs.modelix.build.tools.lib)
+    }
+}
 
 plugins {
     `modelix-kotlin-jvm`
@@ -82,6 +93,31 @@ tasks {
             dependsOn(prepareSandbox)
             from(project.layout.buildDirectory.dir("idea-sandbox/plugins/mps-sync-plugin3"))
             into(mpsPluginDir.resolve("mps-sync-plugin3"))
+        }
+    }
+
+    withType(PrepareSandboxTask::class.java) {
+        intoChild(pluginName.map { "$it/META-INF" })
+            .from(project.layout.projectDirectory.file("src/main/resources/META-INF"))
+            .exclude("plugin.xml")
+        intoChild(pluginName.map { "$it/META-INF" })
+            .from(patchPluginXml.flatMap { it.outputFiles })
+
+        doLast {
+            val ownJar: File = pluginJar.get().asFile
+            val runtimeJars = configurations.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME).resolvedConfiguration.files + ownJar
+            buildStubsSolutionJar {
+                solutionName("org.modelix.mps.sync.stubs")
+                solutionId("1dc413a4-9e7d-4996-bbda-f6b4e4e40808")
+                ideaPluginId("org.modelix.mps.sync3")
+                outputFolder(defaultDestinationDir.get().resolve(project.name).resolve("languages"))
+                runtimeJars.forEach {
+                    javaJar(it.name)
+                }
+                moduleDependency(KnownModuleIds.JDK)
+                moduleDependency(KnownModuleIds.MPS_OpenAPI)
+                moduleDependency(KnownModuleIds.MPS_IDEA)
+            }
         }
     }
 }

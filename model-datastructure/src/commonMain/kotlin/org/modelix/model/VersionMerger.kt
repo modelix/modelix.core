@@ -3,13 +3,16 @@ package org.modelix.model
 import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.model.api.IIdGenerator
+import org.modelix.model.api.ITree
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.mutable.asMutableSingleThreaded
+import org.modelix.model.operations.DeleteNodeOp
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.IOperationIntend
 import org.modelix.model.operations.UndoOp
+import org.modelix.streams.getBlocking
 
 class VersionMerger
 @Deprecated("idGenerator isn't required anymore")
@@ -25,7 +28,9 @@ constructor(private val idGenerator: IIdGenerator?) {
         this(idGenerator)
 
     private val logger = mu.KotlinLogging.logger {}
-    fun mergeChange(lastMergedVersion: CLVersion, newVersion: CLVersion): CLVersion {
+    fun mergeChange(lastMergedVersion: IVersion, newVersion: IVersion): CLVersion {
+        lastMergedVersion as CLVersion
+        newVersion as CLVersion
         require(lastMergedVersion.graph == newVersion.graph) {
             "Versions are part of different object graphs: $lastMergedVersion, $newVersion"
         }
@@ -79,10 +84,11 @@ constructor(private val idGenerator: IIdGenerator?) {
         var baseTree = commonBase.getModelTree()
         val mutableTree = baseTree.asMutableSingleThreaded()
         mutableTree.runWrite {
+            val transaction = mutableTree.getTransaction()
             val appliedOps = operationsToApply.flatMap {
                 val transformed: List<IOperation>
                 try {
-                    transformed = it.restoreIntend(mutableTree.getTransaction().tree)
+                    transformed = it.restoreIntend(transaction.tree)
                     logger.trace {
                         if (transformed.size != 1 || transformed[0] != it.getOriginalOp()) {
                             "transformed: ${it.getOriginalOp()} --> $transformed"
@@ -100,7 +106,10 @@ constructor(private val idGenerator: IIdGenerator?) {
                         throw RuntimeException("Operation failed: $o", ex)
                     }
                 }
-            }
+            } + transaction.tree.getChildren(transaction.tree.getRootNodeId(), ITree.DETACHED_NODES_LINK)
+                .toList().getBlocking(transaction.tree)
+                .map { DeleteNodeOp(it).apply(mutableTree) }
+
             mergedVersion = CLVersion.builder()
                 .also { if (idGenerator != null) it.id(idGenerator.generate()) }
                 .tree(mutableTree.getTransaction().tree)

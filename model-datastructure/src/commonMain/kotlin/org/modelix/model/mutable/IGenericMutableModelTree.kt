@@ -3,9 +3,11 @@ package org.modelix.model.mutable
 import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.datastructures.model.MutationParameters
 import org.modelix.model.TreeId
-import org.modelix.model.api.IIdGenerator
+import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INodeReference
-import org.modelix.model.api.PNodeReference
+import org.modelix.model.api.IPropertyReference
+import org.modelix.model.api.IReferenceLinkReference
 
 typealias IMutableModelTree = IGenericMutableModelTree<INodeReference>
 
@@ -27,6 +29,7 @@ interface IGenericMutableModelTree<NodeId> {
 
     interface WriteTransaction<NodeId> : Transaction<NodeId> {
         override var tree: IGenericModelTree<NodeId>
+        fun getIdGenerator(): INodeIdGenerator<NodeId>
         fun mutate(parameters: MutationParameters<NodeId>)
     }
 
@@ -35,18 +38,76 @@ interface IGenericMutableModelTree<NodeId> {
     }
 }
 
-interface INodeIdGenerator<NodeId> {
-    fun generate(parentNode: NodeId): NodeId
-}
+fun <NodeId> IGenericMutableModelTree.WriteTransaction<NodeId>.addNewChild(
+    parentId: NodeId,
+    role: IChildLinkReference,
+    index: Int,
+    childId: NodeId,
+    childConcept: ConceptReference,
+) = mutate(
+    MutationParameters.AddNew(
+        nodeId = parentId,
+        role = role,
+        index = index,
+        newIdAndConcept = listOf(childId to childConcept),
+    ),
+)
 
-class DummyIdGenerator<NodeId>() : INodeIdGenerator<NodeId> {
-    override fun generate(parentNode: NodeId): NodeId {
-        throw UnsupportedOperationException("Creating nodes with new ID is not supported")
-    }
-}
+fun <NodeId> IGenericMutableModelTree.WriteTransaction<NodeId>.moveChild(
+    parentId: NodeId,
+    role: IChildLinkReference,
+    index: Int,
+    childId: NodeId,
+) = mutate(
+    MutationParameters.Move(
+        nodeId = parentId,
+        role = role,
+        index = index,
+        existingChildIds = listOf(childId),
+    ),
+)
 
-class ModelixIdGenerator(val int64Generator: IIdGenerator, val treeId: TreeId) : INodeIdGenerator<INodeReference> {
-    override fun generate(parentNode: INodeReference): INodeReference {
-        return PNodeReference(int64Generator.generate(), treeId.id)
-    }
-}
+fun <NodeId> IGenericMutableModelTree.WriteTransaction<NodeId>.setProperty(
+    nodeId: NodeId,
+    role: IPropertyReference,
+    value: String?,
+) = mutate(
+    MutationParameters.Property(
+        nodeId = nodeId,
+        role = role,
+        value = value,
+    ),
+)
+
+fun <NodeId> IGenericMutableModelTree.WriteTransaction<NodeId>.setReferenceTarget(
+    nodeId: NodeId,
+    role: IReferenceLinkReference,
+    target: INodeReference?,
+) = mutate(
+    MutationParameters.Reference(
+        nodeId = nodeId,
+        role = role,
+        target = target,
+    ),
+)
+
+fun <NodeId> IGenericMutableModelTree.WriteTransaction<NodeId>.setConcept(
+    nodeId: NodeId,
+    concept: ConceptReference,
+) = mutate(
+    MutationParameters.Concept(
+        nodeId = nodeId,
+        concept = concept,
+    ),
+)
+
+fun <NodeId> IGenericMutableModelTree.WriteTransaction<NodeId>.removeNode(
+    nodeId: NodeId,
+) = mutate(
+    MutationParameters.Remove(
+        nodeId = nodeId,
+    ),
+)
+
+fun <NodeId> IGenericMutableModelTree.Transaction<NodeId>.getRootNodeId() = tree.getRootNodeId()
+fun IGenericMutableModelTree.Transaction<*>.treeId() = tree.getId()

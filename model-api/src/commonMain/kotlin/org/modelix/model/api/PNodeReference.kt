@@ -3,6 +3,8 @@ package org.modelix.model.api
 import org.modelix.model.area.IArea
 
 data class PNodeReference(val id: Long, val treeId: String) : INodeReference() {
+    constructor(treeId: String, nodeId: Long) : this(nodeId, treeId)
+
     @Deprecated("Renamed to treeId", ReplaceWith("treeId"))
     val branchId: String get() = treeId
 

@@ -149,7 +149,7 @@ actual class ModelixAuthClient {
 
                             LOG.info("Access Token: " + tokens.accessToken)
 
-                            BearerTokens(tokens.accessToken, tokens.refreshToken)
+                            BearerTokens(tokens.accessToken, tokens.refreshToken ?: oldTokens?.refreshToken)
                         } catch (ex: Throwable) {
                             LOG.error(ex) { "Token refresh failed" }
                             throw ex

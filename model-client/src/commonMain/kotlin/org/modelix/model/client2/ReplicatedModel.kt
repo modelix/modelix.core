@@ -299,6 +299,7 @@ private class LocalModel(initialVersion: CLVersion, val versionIdGenerator: IIdG
         val newVersion = CLVersion.builder()
             .regularUpdate(baseVersion)
             .author(author())
+            .currentTime()
             .tree(tree)
             .operations(ops.map { it.getOriginalOp() })
             .buildLegacy()

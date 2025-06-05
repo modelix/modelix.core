@@ -115,6 +115,7 @@ constructor(private val idGenerator: IIdGenerator?) {
                 .tree(mutableTree.getTransaction().tree)
                 .autoMerge(commonBase.obj.ref, leftVersion.obj.ref, rightVersion.obj.ref)
                 .operations(appliedOps.map { it.getOriginalOp() })
+                .currentTime()
                 .buildLegacy()
         }
         if (mergedVersion == null) {

@@ -47,7 +47,14 @@ class ModelSyncService(val project: Project) :
 
     @Synchronized
     override fun getServerConnections(): List<IServerConnection> {
-        return AppLevelModelSyncService.getInstance().getConnections().map { Connection(it) }
+        val enabledBindingIds = loadedState.bindings
+            .filterValues { it.enabled }
+            .keys
+            .map { it.connectionProperties }
+
+        return AppLevelModelSyncService.getInstance().getConnections()
+            .filter { con -> enabledBindingIds.contains(con.properties)}
+            .map { Connection(it) }
     }
 
     @Synchronized

@@ -83,6 +83,12 @@ class AppLevelModelSyncService() : Disposable {
 
         fun isConnected(): Boolean = connected
 
+        fun disconnect() {
+            authRequestHandler.clear()
+            runBlocking { client.updateValue { null } }
+            connected = false
+        }
+
         fun setAuthorizationConfig(config: IAuthConfig) {
             this.authConfig = config
             runBlocking { client.updateValue { null } }

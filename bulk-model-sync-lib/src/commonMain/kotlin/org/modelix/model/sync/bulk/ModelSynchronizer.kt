@@ -73,7 +73,7 @@ class ModelSynchronizer(
         for ((sourceNode, targetNode) in sourceNodes.zip(targetNodes)) {
             synchronizeNode(sourceNode, targetNode, false)
         }
-        LOG.debug { "Synchronizing pending references..." }
+        LOG.debug { "Synchronizing ${pendingReferences.size} pending references..." }
         pendingReferences.forEach {
             runSafe {
                 if (!it.trySyncReference()) {
@@ -81,7 +81,7 @@ class ModelSynchronizer(
                 }
             }
         }
-        LOG.debug { "Removing extra nodes..." }
+        LOG.debug { "Removing ${nodesToRemove.size} extra nodes..." }
         nodesToRemove.forEach {
             runSafe {
                 if (it.isValid()) {

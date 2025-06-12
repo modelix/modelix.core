@@ -256,7 +256,7 @@ class ModelSyncService(val project: Project) :
         }
 
         override fun deactivate() {
-            TODO("Not yet implemented")
+            connection.disconnect()
         }
 
         override fun remove() {

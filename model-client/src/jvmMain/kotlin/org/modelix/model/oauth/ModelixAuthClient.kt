@@ -4,6 +4,7 @@ import com.google.api.client.auth.oauth2.AuthorizationCodeFlow
 import com.google.api.client.auth.oauth2.BearerToken
 import com.google.api.client.auth.oauth2.ClientParametersAuthentication
 import com.google.api.client.auth.oauth2.Credential
+import com.google.api.client.auth.oauth2.TokenResponseException
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver
 import com.google.api.client.http.GenericUrl
@@ -11,8 +12,6 @@ import com.google.api.client.http.HttpTransport
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.JsonFactory
 import com.google.api.client.json.gson.GsonFactory
-import com.google.api.client.util.store.DataStoreFactory
-import com.google.api.client.util.store.MemoryDataStoreFactory
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BearerTokens
@@ -42,31 +41,41 @@ actual class ModelixAuthClient {
     companion object {
         private val LOG = mu.KotlinLogging.logger { }
     }
-    private var DATA_STORE_FACTORY: DataStoreFactory = MemoryDataStoreFactory()
-    private val HTTP_TRANSPORT: HttpTransport = NetHttpTransport()
-    private val JSON_FACTORY: JsonFactory = GsonFactory()
-    private val userId = "modelix-user"
+    private val httpTransport: HttpTransport = NetHttpTransport()
+    private val jsonFactory: JsonFactory = GsonFactory()
     private var lastCredentials: Credential? = null
 
     fun getTokens(): Credential? {
-        return lastCredentials?.refreshIfExpired()?.takeIf { !it.isExpired() }
+        return lastCredentials?.takeIf { !it.isExpired() }
     }
 
-    private fun Credential.isExpired() = (expiresInSeconds ?: 0) < 60
+    private fun Credential.isExpired(): Boolean {
+        return (expiresInSeconds ?: return false) < 60
+    }
 
-    private fun Credential.refreshIfExpired(): Credential {
+    private fun Credential.refreshIfExpired(): Credential? {
         if (isExpired()) {
-            refreshToken()
+            try {
+                val success = refreshToken()
+                if (success) return this
+            } catch (e: TokenResponseException) {
+                LOG.warn("Could not refresh the access token: ${e.details}")
+                return null // config?.let { authorize(it) }
+            }
         }
-        return this
+        return this.takeIf { it.accessToken != null }
     }
 
-    suspend fun authorize(config: OAuthConfig): Credential {
+    suspend fun getAndMaybeRefreshTokens(): Credential? {
+        return getTokens()?.refreshIfExpired()
+    }
+
+    suspend fun authorize(config: OAuthConfig): Credential? {
         return withContext(Dispatchers.IO) {
             val flow = AuthorizationCodeFlow.Builder(
                 BearerToken.authorizationHeaderAccessMethod(),
-                HTTP_TRANSPORT,
-                JSON_FACTORY,
+                httpTransport,
+                jsonFactory,
                 GenericUrl(config.tokenUrl),
                 ClientParametersAuthentication(config.clientId, config.clientSecret),
                 config.clientId,
@@ -74,33 +83,22 @@ actual class ModelixAuthClient {
             )
                 .setScopes(config.scopes)
                 .enablePKCE()
-                .setDataStoreFactory(DATA_STORE_FACTORY)
                 .build()
-
-            val existingTokens = flow.loadCredential(userId)?.refreshIfExpired()
-            if (existingTokens?.isExpired() == false) return@withContext existingTokens
 
             repeat(100) { n ->
                 val port = 26815 + n
                 try {
                     val receiver: LocalServerReceiver = LocalServerReceiver.Builder().setHost("localhost").setPort(port).build()
                     val browser = config.authRequestHandler?.let {
-                        object : AuthorizationCodeInstalledApp.Browser {
-                            override fun browse(url: String) {
-                                it.browse(url)
-                            }
-                        }
+                        AuthorizationCodeInstalledApp.Browser { url -> it.browse(url) }
                     } ?: AuthorizationCodeInstalledApp.DefaultBrowser()
                     val tokens = cancelable({ receiver.stop() }) {
-                        AuthorizationCodeInstalledApp(flow, receiver, browser).authorize(userId)
+                        AuthorizationCodeInstalledApp(flow, receiver, browser).authorize(null)
                     }
-                    if ((tokens.expiresInSeconds ?: 0) < 60) {
-                        tokens.refreshToken()
-                    }
+                    lastCredentials = tokens
                     return@withContext tokens
                 } catch (ex: SocketException) {
-                    LOG.info("Port $port already in use")
-                    // Port is already in use. Try next one.
+                    LOG.info("Port $port already in use. Trying next one.")
                 }
             }
             throw IllegalStateException("Couldn't find an available port for the redirect URL")
@@ -120,13 +118,15 @@ actual class ModelixAuthClient {
 
     private fun installAuthWithPKCEFlow(
         config: HttpClientConfig<*>,
-        authConfig: OAuthConfig,
+        initialAuthConfig: OAuthConfig,
     ) {
+        var currentAuthConfig = initialAuthConfig
+
         fun String.fillParameters(): String {
-            return if (authConfig.repositoryId == null) {
+            return if (initialAuthConfig.repositoryId == null) {
                 this
             } else {
-                replace("{repositoryId}", authConfig.repositoryId.id.urlEncode())
+                replace("{repositoryId}", initialAuthConfig.repositoryId.id.urlEncode())
             }
         }
 
@@ -134,28 +134,31 @@ actual class ModelixAuthClient {
             install(Auth) {
                 bearer {
                     loadTokens {
-                        getTokens()?.let { BearerTokens(it.accessToken, it.refreshToken) }
+                        // A potentially expired token is already refreshed here to avoid a 401 response.
+                        // When a 401 response is received, we always (re-)execute the PKCE flow.
+                        getAndMaybeRefreshTokens()?.let { BearerTokens(it.accessToken, it.refreshToken) }
                     }
                     refreshTokens {
                         try {
-                            val tokens = response.parseWWWAuthenticate()?.let { wwwAuthenticate ->
+                            response.parseWWWAuthenticate()?.let { wwwAuthenticate ->
                                 // The model server tells the client where to get a token
 
                                 if (wwwAuthenticate.parameter("error") != "invalid_token") return@let null
-                                val updatedConfig = authConfig.copy(
-                                    authorizationUrl = authConfig.authorizationUrl
+                                currentAuthConfig = currentAuthConfig.copy(
+                                    authorizationUrl = initialAuthConfig.authorizationUrl
                                         ?: useSameProtocol(wwwAuthenticate.parameter("authorization_uri") ?: return@let null).fillParameters(),
-                                    tokenUrl = authConfig.tokenUrl
+                                    tokenUrl = initialAuthConfig.tokenUrl
                                         ?: useSameProtocol(wwwAuthenticate.parameter("token_uri") ?: return@let null).fillParameters(),
                                 )
                                 val realm = wwwAuthenticate.parameter("realm")
                                 val description = wwwAuthenticate.parameter("error_description")
-                                authorize(updatedConfig)
-                            } ?: authorize(authConfig)
+                            }
+                            val tokens = authorize(currentAuthConfig)
+                            checkNotNull(tokens) { "No tokens received" }
 
                             LOG.info("Access Token: " + tokens.accessToken)
 
-                            BearerTokens(tokens.accessToken, tokens.refreshToken ?: oldTokens?.refreshToken)
+                            BearerTokens(tokens.accessToken, tokens.refreshToken)
                         } catch (ex: Throwable) {
                             LOG.error(ex) { "Token refresh failed" }
                             throw ex

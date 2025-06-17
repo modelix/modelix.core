@@ -31,7 +31,7 @@
     "@modelix/model-client": "file:../model-client/build/npmDevPackage/model-client.tgz"
   },
   "devDependencies": {
-    "@tsconfig/recommended": "^1.0.8",
+    "@tsconfig/recommended": "^1.0.9",
     "@types/jest": "^30.0.0",
     "dukat": "^0.5.8-rc.4",
     "jest": "^30.0.0",

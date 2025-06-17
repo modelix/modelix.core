@@ -7,7 +7,7 @@
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.9",
-    "@types/jest": "^29.5.14",
+    "@types/jest": "^30.0.0",
     "jest": "^30.0.0",
     "prettier": "3.5.3",
     "ts-jest": "^29.4.0"

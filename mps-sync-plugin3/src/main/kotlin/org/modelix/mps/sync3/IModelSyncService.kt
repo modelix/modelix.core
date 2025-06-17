@@ -34,6 +34,7 @@ interface IModelSyncService {
     )
     fun addServer(properties: ModelServerConnectionProperties): IServerConnection
     fun getServerConnections(): List<IServerConnection>
+    fun getUsedServerConnections(): List<IServerConnection>
     fun getBindings(): List<IBinding>
 }
 
@@ -77,6 +78,7 @@ interface IServerConnection : Closeable {
 
 interface IBinding : Closeable {
     fun getProject(): org.jetbrains.mps.openapi.project.Project
+    fun getConnection(): IServerConnection
     fun getBranchRef(): BranchReference
     fun isEnabled(): Boolean
     fun enable()

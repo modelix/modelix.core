@@ -520,9 +520,7 @@ class ProjectSyncTest : MPSTestBase() {
             )
         }
 
-        val binding = IModelSyncService.getInstance(mpsProject).getServerConnections()
-            .flatMap { it.getBindings() }
-            .single()
+        val binding = IModelSyncService.getInstance(mpsProject).getBindings().single()
         assertEquals(branchRef, binding.getBranchRef())
         if (enabled) {
             val version3 = binding.flush()

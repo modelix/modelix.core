@@ -42,19 +42,22 @@ class ModelSyncService(val project: Project) :
 
     @Synchronized
     override fun addServer(properties: ModelServerConnectionProperties): Connection {
-        return AppLevelModelSyncService.getInstance().addConnection(properties).let { Connection(it) }
+        return AppLevelModelSyncService.getInstance().getOrCreateConnection(properties).let { Connection(it) }
     }
 
     @Synchronized
     override fun getServerConnections(): List<IServerConnection> {
-        val enabledBindingIds = loadedState.bindings
+        return AppLevelModelSyncService.getInstance().getConnections().map { Connection(it) }
+    }
+
+    @Synchronized
+    override fun getUsedServerConnections(): List<IServerConnection> {
+        return loadedState.bindings
             .filterValues { it.enabled }
             .keys
             .map { it.connectionProperties }
-
-        return AppLevelModelSyncService.getInstance().getConnections()
-            .filter { con -> enabledBindingIds.contains(con.properties)}
-            .map { Connection(it) }
+            .distinct()
+            .map { Connection(AppLevelModelSyncService.getInstance().getOrCreateConnection(it)) }
     }
 
     @Synchronized
@@ -319,6 +322,10 @@ class ModelSyncService(val project: Project) :
 
         override fun getProject(): org.jetbrains.mps.openapi.project.Project {
             return ProjectHelper.fromIdeaProject(project)!!
+        }
+
+        override fun getConnection(): IServerConnection {
+            return Connection(AppLevelModelSyncService.getInstance().getOrCreateConnection(id.connectionProperties))
         }
 
         override fun getBranchRef(): BranchReference {

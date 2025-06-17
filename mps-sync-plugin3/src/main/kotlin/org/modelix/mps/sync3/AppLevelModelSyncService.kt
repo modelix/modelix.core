@@ -41,7 +41,7 @@ class AppLevelModelSyncService() : Disposable {
     fun getConnections() = synchronized(connections) { connections.values.toList() }
 
     @Synchronized
-    fun addConnection(properties: ModelServerConnectionProperties): ServerConnection {
+    fun getOrCreateConnection(properties: ModelServerConnectionProperties): ServerConnection {
         return synchronized(connections) { connections.getOrPut(properties) { ServerConnection(properties) } }
     }
 
@@ -50,7 +50,7 @@ class AppLevelModelSyncService() : Disposable {
     }
 
     class ServerConnection(val properties: ModelServerConnectionProperties) {
-        private var client: ValueWithMutex<IModelClientV2?> = ValueWithMutex(null)
+        private var client: ValueWithMutex<ModelClientV2?> = ValueWithMutex(null)
         private var connected: Boolean = false
         private val authRequestHandler = AsyncAuthRequestHandler()
         private var authConfig: IAuthConfig = IAuthConfig.oauth {
@@ -85,7 +85,12 @@ class AppLevelModelSyncService() : Disposable {
 
         fun disconnect() {
             authRequestHandler.clear()
-            runBlocking { client.updateValue { null } }
+            runBlocking {
+                client.updateValue {
+                    it?.close()
+                    null
+                }
+            }
             connected = false
         }
 

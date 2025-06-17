@@ -32,7 +32,7 @@
 
     <actions>
         <group id="org.modelix.mps.sync3.ui.StatusWidgetGroup">
-            <action id="org.modelix.mps.sync3.ui.ForceSyncToMPSAction" class="org.modelix.mps.sync3.ui.ForceSyncToMPSAction" icon="AllIcons.Vcs.Fetch"/>
+            <action id="org.modelix.mps.sync3.ui.ForceSyncToMPSAction" class="org.modelix.mps.sync3.ui.ForceSyncToMPSAction" icon="AllIcons.Vcs.Clone"/>
             <action id="org.modelix.mps.sync3.ui.ForceSyncToServerAction" class="org.modelix.mps.sync3.ui.ForceSyncToServerAction" icon="AllIcons.Vcs.Push"/>
         </group>
     </actions>

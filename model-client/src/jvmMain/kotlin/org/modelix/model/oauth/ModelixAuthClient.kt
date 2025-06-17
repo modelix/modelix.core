@@ -28,7 +28,11 @@ import io.ktor.http.auth.parseAuthorizationHeader
 import io.ktor.http.buildUrl
 import io.ktor.http.isSecure
 import io.ktor.http.takeFrom
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.modelix.kotlin.utils.urlEncode
 import java.net.SocketException
@@ -87,7 +91,9 @@ actual class ModelixAuthClient {
                             }
                         }
                     } ?: AuthorizationCodeInstalledApp.DefaultBrowser()
-                    val tokens = AuthorizationCodeInstalledApp(flow, receiver, browser).authorize(userId)
+                    val tokens = cancelable({ receiver.stop() }) {
+                        AuthorizationCodeInstalledApp(flow, receiver, browser).authorize(userId)
+                    }
                     if ((tokens.expiresInSeconds ?: 0) < 60) {
                         tokens.refreshToken()
                     }
@@ -182,5 +188,36 @@ actual class ModelixAuthClient {
                 else -> protocol
             }
         }.toString()
+    }
+
+    /**
+     * [blockingCall] is expected to be uninterruptible by typical platform mechanisms, but by some special call done
+     * by [onCancel].
+     */
+    private suspend fun <R> cancelable(onCancel: suspend () -> Unit, blockingCall: () -> R): R {
+        return coroutineScope {
+            var cancellationEx: CancellationException? = null
+            var blockingCallReturned = false
+            val cancellationHandlerJob = launch(Dispatchers.IO) {
+                try {
+                    awaitCancellation()
+                } catch (ex: CancellationException) {
+                    if (!blockingCallReturned) {
+                        cancellationEx = ex
+                        onCancel()
+                    }
+                }
+            }
+            withContext(Dispatchers.IO) {
+                try {
+                    return@withContext blockingCall()
+                } catch (ex: Throwable) {
+                    throw cancellationEx ?: ex
+                } finally {
+                    blockingCallReturned = true
+                    cancellationHandlerJob.cancel()
+                }
+            }
+        }
     }
 }

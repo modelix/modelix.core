@@ -61,7 +61,7 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
     init {
         object : ClickListener() {
             override fun onClick(e: MouseEvent, clickCount: Int): Boolean {
-                val urls = IModelSyncService.getInstance(project).getServerConnections()
+                val urls = IModelSyncService.getInstance(project).getUsedServerConnections()
                     .mapNotNull { it.getPendingAuthRequest() }.toSet()
                 if (urls.isNotEmpty()) {
                     val desktop = Desktop.getDesktop()
@@ -124,7 +124,7 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
     }
 
     private fun authorizationRequired(): Boolean {
-        return IModelSyncService.getInstance(project).getServerConnections().any { it.getPendingAuthRequest() != null }
+        return IModelSyncService.getInstance(project).getUsedServerConnections().any { it.getPendingAuthRequest() != null }
     }
 
     override fun getPresentation(): StatusBarWidget.WidgetPresentation? {

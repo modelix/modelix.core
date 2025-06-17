@@ -16,5 +16,4 @@ class LogoutAction() : AnAction() {
         IModelSyncService.getInstance(project).getServerConnections()
             .forEach { it.deactivate() }
     }
-
 }

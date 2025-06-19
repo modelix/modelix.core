@@ -6,7 +6,7 @@
     "prettier:fix": "npm run prettier -- --write"
   },
   "devDependencies": {
-    "@tsconfig/recommended": "^1.0.9",
+    "@tsconfig/recommended": "^1.0.10",
     "@types/jest": "^30.0.0",
     "jest": "^30.0.1",
     "prettier": "3.5.3",

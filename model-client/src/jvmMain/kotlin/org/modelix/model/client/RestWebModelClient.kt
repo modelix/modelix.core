@@ -79,6 +79,7 @@ typealias ConnectionStatusListener = (oldValue: RestWebModelClient.ConnectionSta
 /**
  * We need to specify the connection listeners right into the constructor because connection is started in the constructor.
  */
+@Deprecated("Use ModelClientV2 instead")
 class RestWebModelClient @JvmOverloads constructor(
     var baseUrl: String = defaultUrl,
     private val authTokenProvider: (() -> String?)? = null,

@@ -5,7 +5,6 @@ import kotlinx.coroutines.test.runTest
 import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeReference
-import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.runWrite
@@ -36,7 +35,6 @@ class RepositoryMigrationTest {
     val modelData = ModelData(
         root = NodeData(
             id = PNodeReference(config.modelId, ITree.ROOT_ID).serialize(),
-            concept = NullConcept.getReference().getUID(),
             children = listOf(
                 NodeData(
                     id = "id1",
@@ -61,7 +59,6 @@ class RepositoryMigrationTest {
         """
         {
             "id": "modelix:d9330ca8-2145-4d1f-9b50-8f5aed1804cf/1",
-            "concept": "null",
             "children": [
                 {
                     "id": "modelix:d9330ca8-2145-4d1f-9b50-8f5aed1804cf/1c800000001",

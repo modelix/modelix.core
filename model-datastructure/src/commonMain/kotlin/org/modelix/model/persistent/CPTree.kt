@@ -29,7 +29,7 @@ import org.modelix.streams.plus
 
 typealias ModelTreeRef = ObjectReference<CPTree>
 
-class CPTree(
+data class CPTree(
     val id: TreeId,
     val int64Hamt: ObjectReference<IPersistentMapRootData<Long, ObjectReference<NodeObjectData<Long>>>>?,
     val trieWithNodeRefIds: ObjectReference<IPersistentMapRootData<INodeReference, ObjectReference<NodeObjectData<INodeReference>>>>?,

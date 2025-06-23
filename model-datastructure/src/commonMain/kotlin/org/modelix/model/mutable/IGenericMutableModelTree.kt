@@ -53,6 +53,20 @@ fun <NodeId> IGenericMutableModelTree.WriteTransaction<NodeId>.addNewChild(
     ),
 )
 
+fun <NodeId> IGenericMutableModelTree.WriteTransaction<NodeId>.moveChildren(
+    parentId: NodeId,
+    role: IChildLinkReference,
+    index: Int,
+    childIds: List<NodeId>,
+) = mutate(
+    MutationParameters.Move(
+        nodeId = parentId,
+        role = role,
+        index = index,
+        existingChildIds = childIds,
+    ),
+)
+
 fun <NodeId> IGenericMutableModelTree.WriteTransaction<NodeId>.moveChild(
     parentId: NodeId,
     role: IChildLinkReference,
@@ -67,6 +81,12 @@ fun <NodeId> IGenericMutableModelTree.WriteTransaction<NodeId>.moveChild(
     ),
 )
 
+fun <NodeId> IGenericMutableModelTree<NodeId>.setProperty(
+    nodeId: NodeId,
+    role: IPropertyReference,
+    value: String?,
+) = getWriteTransaction().setProperty(nodeId, role, value)
+
 fun <NodeId> IGenericMutableModelTree.WriteTransaction<NodeId>.setProperty(
     nodeId: NodeId,
     role: IPropertyReference,
@@ -78,6 +98,12 @@ fun <NodeId> IGenericMutableModelTree.WriteTransaction<NodeId>.setProperty(
         value = value,
     ),
 )
+
+fun <NodeId> IGenericMutableModelTree<NodeId>.setReferenceTarget(
+    nodeId: NodeId,
+    role: IReferenceLinkReference,
+    target: INodeReference?,
+) = getWriteTransaction().setReferenceTarget(nodeId, role, target)
 
 fun <NodeId> IGenericMutableModelTree.WriteTransaction<NodeId>.setReferenceTarget(
     nodeId: NodeId,

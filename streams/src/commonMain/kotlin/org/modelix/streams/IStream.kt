@@ -135,3 +135,9 @@ fun <A, B, R> IStream.Many<Pair<A, B>>.mapSecond(mapper: (B) -> R) = map { it.fi
 
 fun IStream.Many<*>.isNotEmpty() = isEmpty().map { !it }
 fun <T> IStream.Many<T>.contains(element: T): IStream.One<Boolean> = this.filter { it == element }.isNotEmpty()
+
+fun <T> IStream.Many<T>.forEach(action: (T) -> Unit): IStream.Completable = map(action).drainAll()
+fun <T> IStream.Many<T>.onEach(action: (T) -> Unit): IStream.Many<T> = map {
+    action(it)
+    it
+}

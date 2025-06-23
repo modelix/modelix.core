@@ -106,5 +106,8 @@ suspend fun <T> IStream.ZeroOrOne<T>.getSuspending(executor: IStreamExecutor): T
 fun <T> IStream.Many<T>.iterateBlocking(executor: IStreamExecutorProvider, visitor: (T) -> Unit): Unit = iterateBlocking(executor.getStreamExecutor(), visitor)
 fun <T> IStream.Many<T>.iterateBlocking(executor: IStreamExecutor, visitor: (T) -> Unit): Unit = executor.iterate({ this }, visitor)
 
+fun IStream.Completable.executeBlocking(executor: IStreamExecutorProvider): Unit = executor.execute { this }
+suspend fun IStream.Completable.executeSuspending(executor: IStreamExecutorProvider): Unit = executor.executeSuspending { this }
+
 suspend fun <T> IStream.Many<T>.iterateSuspending(executor: IStreamExecutorProvider, visitor: suspend (T) -> Unit): Unit = iterateSuspending(executor.getStreamExecutor(), visitor)
 suspend fun <T> IStream.Many<T>.iterateSuspending(executor: IStreamExecutor, visitor: suspend (T) -> Unit): Unit = executor.iterateSuspending({ this }, visitor)

@@ -9,7 +9,9 @@ import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.ITree
 import org.modelix.model.api.IWriteTransaction
+import org.modelix.model.api.NullChildLinkReference
 import org.modelix.model.api.PNodeReference
+import org.modelix.model.api.meta.NullConcept
 
 @Serializable
 data class ModelData(
@@ -143,8 +145,8 @@ fun IReadableNode.asData(): NodeData = asLegacyNode().asData()
 
 fun INode.asData(): NodeData = NodeData(
     id = reference.serialize(),
-    concept = getConceptReference()?.getUID(),
-    role = getContainmentLink()?.toReference()?.getIdOrNameOrNull(),
+    concept = getConceptReference()?.takeIf { it != NullConcept.getReference() }?.getUID(),
+    role = getContainmentLink()?.toReference()?.takeIf { !it.matches(NullChildLinkReference) }?.getIdOrNameOrNull(),
     properties = getPropertyLinks().associateWithNotNull { getPropertyValue(it) }
         .mapKeys { it.key.toReference().getIdOrName() },
     references = getReferenceLinks().associateWithNotNull { getReferenceTargetRef(it)?.serialize() }

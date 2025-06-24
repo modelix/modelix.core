@@ -192,7 +192,12 @@ class ModelSyncService(val project: Project) :
                 bindings.map { bindingEntry ->
                     Element("binding").also {
                         it.children.add(Element("enabled").also { it.text = bindingEntry.value.enabled.toString() })
-                        it.children.add(Element("url").also { it.text = bindingEntry.key.connectionProperties.url })
+                        it.children.add(
+                            Element("url").also {
+                                it.text = bindingEntry.key.connectionProperties.url
+                                it.setAttribute("repositoryScoped", "${bindingEntry.key.connectionProperties.repositoryId != null}")
+                            },
+                        )
                         bindingEntry.key.connectionProperties.oauthClientId?.let { oauthClientId ->
                             it.children.add(Element("oauthClientId").also { it.text = oauthClientId })
                         }
@@ -214,7 +219,7 @@ class ModelSyncService(val project: Project) :
                         BindingId(
                             connectionProperties = ModelServerConnectionProperties(
                                 url = element.getChild("url")?.text ?: return@mapNotNull null,
-                                repositoryId = repositoryId,
+                                repositoryId = repositoryId.takeIf { element.getChild("url")?.getAttribute("repositoryScoped")?.value != "false" },
                                 oauthClientId = element.getChild("oauthClientId")?.text,
                                 oauthClientSecret = element.getChild("oauthClientSecret")?.text,
                             ),
@@ -288,7 +293,7 @@ class ModelSyncService(val project: Project) :
             val id = BindingId(connection.properties, branchRef)
             updateBindingState(id) { oldBinding ->
                 BindingState(
-                    versionHash = lastSyncedVersionHash ?: oldBinding?.versionHash,
+                    versionHash = lastSyncedVersionHash ?: oldBinding.versionHash,
                     enabled = true,
                 )
             }

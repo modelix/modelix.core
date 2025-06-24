@@ -549,7 +549,7 @@ class ProjectSyncTest : MPSTestBase() {
               <component name="modelix-sync">
                 <binding>
                   <enabled>true</enabled>
-                  <url>http://localhost:$port</url>
+                  <url repositoryScoped="false">http://localhost:$port</url>
                   <repository>${branchRef.repositoryId.id}</repository>
                   <branch>${branchRef.branchName}</branch>
                   <versionHash>${version1.getContentHash()}</versionHash>

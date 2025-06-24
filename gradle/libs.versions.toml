@@ -12,7 +12,6 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 gitVersion = { id = "com.palantir.git-version", version = "3.3.0" }
 modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version.ref = "modelixBuildtools" }
-dokka = {id = "org.jetbrains.dokka", version.ref = "dokka"}
 node = {id = "com.github.node-gradle.node", version = "7.1.0"}
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 npm-publish = { id = "dev.petuska.npm.publish", version = "3.5.3" }
@@ -36,7 +35,6 @@ node="22.16.0"
 modelixBuildtools="1.9.0"
 openapi = "7.13.0"
 micrometer = "1.15.1"
-dokka = "2.0.0"
 detekt = "1.23.8"
 xmlunit = "2.10.3"
 kotest = "5.9.1"
@@ -130,7 +128,6 @@ apache-cxf-sse = { group = "org.apache.cxf", name = "cxf-rt-rs-sse", version.ref
 apache-cxf-client = { group = "org.apache.cxf", name = "cxf-rt-rs-client", version.ref = "apacheCxf" }
 
 semver = { group = "org.semver", name = "api", version = "0.9.33"}
-dokka-base = { group = "org.jetbrains.dokka", name = "dokka-base", version.ref="dokka"}
 
 modelix-buildtools-gradle = { group = "org.modelix.mps", name = "build-tools-gradle", version.ref = "modelixBuildtools"}
 modelix-buildtools-lib = { group = "org.modelix.mps", name = "build-tools-lib", version.ref = "modelixBuildtools"}

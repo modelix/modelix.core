@@ -2,22 +2,12 @@ import com.github.gradle.node.NodeExtension
 import com.github.gradle.node.NodePlugin
 import io.gitlab.arturbosch.detekt.Detekt
 import org.gradle.kotlin.dsl.withType
-import org.jetbrains.dokka.base.DokkaBase
-import org.jetbrains.dokka.base.DokkaBaseConfiguration
-import org.jetbrains.dokka.gradle.DokkaTaskPartial
-
-buildscript {
-    dependencies {
-        classpath(libs.dokka.base)
-    }
-}
 
 plugins {
     `maven-publish`
     `version-catalog`
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.gitVersion)
-    alias(libs.plugins.dokka)
     alias(libs.plugins.node) apply false
     alias(libs.plugins.detekt)
     alias(libs.plugins.kotlinx.kover)
@@ -56,19 +46,12 @@ val parentProject = project
 subprojects {
     val subproject = this
     apply(plugin = "maven-publish")
-    apply(plugin = "org.jetbrains.dokka")
     if (subproject.name !in setOf("model-server-openapi")) {
         apply(plugin = "org.jetbrains.kotlinx.kover")
     }
 
     version = rootProject.version
     group = rootProject.group
-
-    tasks.withType<DokkaTaskPartial>().configureEach {
-        pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
-            footerMessage = dokkaFooterMessage
-        }
-    }
 
     subproject.plugins.withType<NodePlugin> {
         subproject.extensions.configure<NodeExtension> {
@@ -142,25 +125,6 @@ fun MavenPublication.setMetadata() {
 tasks.withType<org.jetbrains.kotlin.gradle.targets.js.npm.tasks.KotlinNpmInstallTask> {
     dependsOn(":ts-model-api:npm_run_build")
 }
-
-tasks.dokkaHtmlMultiModule {
-    val docsDir = project.layout.buildDirectory.dir("dokka").get().asFile
-    outputDirectory.set(docsDir)
-    pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
-        customAssets += file(projectDir.resolve("dokka/logo-dark.svg"))
-        customAssets += file(projectDir.resolve("dokka/logo-icon.svg"))
-        customStyleSheets += file(projectDir.resolve("dokka/logo-styles.css"))
-        footerMessage = dokkaFooterMessage
-    }
-}
-
-val dokkaFooterMessage = """
-    <span>
-      <p>For more information visit <a href="https://modelix.org">modelix.org</a>, for further documentation visit <a href="https://docs.modelix.org">docs.modelix.org</a>.</p>
-      <p>Copyright ${"\u00A9"} 2021-present by the <a href="https://modelix.org">modelix open source project</a> and the individual contributors. All Rights reserved.</p>
-      <p>Except where otherwise noted, <a href="https://api.modelix.org">api.modelix.org</a>, modelix, and the modelix framework, are licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0.html">Apache-2.0 license</a>.</p>
-    </span>
-""".trimIndent()
 
 catalog {
     versionCatalog {

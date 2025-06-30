@@ -39,7 +39,7 @@ detekt = "1.23.8"
 xmlunit = "2.10.3"
 kotest = "5.9.1"
 reaktive = "2.2.0"
-testcontainers = "1.21.2"
+testcontainers = "1.21.3"
 keycloak = "26.0.5"
 arrow = "2.1.2"
 

@@ -101,6 +101,7 @@ object ModelServerPermissionSchema {
                             }
                             permission(READ) {
                                 includes(LEGACY_USER_DEFINED_ENTRIES, READ)
+                                includedIn(REPOSITORY, READ)
                                 permission(LIST) {
                                     includes(REPOSITORY, LIST)
                                     description("Allows to know its existence and name, but not the content.")

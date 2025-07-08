@@ -54,20 +54,29 @@ actual class ModelixAuthClient {
     }
 
     private fun Credential.refreshIfExpired(): Credential? {
-        if (isExpired()) {
-            try {
-                val success = refreshToken()
-                if (success) return this
-            } catch (e: TokenResponseException) {
-                LOG.warn("Could not refresh the access token: ${e.details}")
-                return null // config?.let { authorize(it) }
-            }
+        return if (isExpired()) {
+            alwaysRefresh()
+        } else {
+            this.takeIf { it.accessToken != null }
         }
-        return this.takeIf { it.accessToken != null }
+    }
+
+    fun Credential.alwaysRefresh(): Credential? {
+        try {
+            val success = refreshToken()
+            if (success) return this
+        } catch (e: TokenResponseException) {
+            LOG.warn("Could not refresh the access token: ${e.details}")
+        }
+        return null
     }
 
     suspend fun getAndMaybeRefreshTokens(): Credential? {
         return getTokens()?.refreshIfExpired()
+    }
+
+    suspend fun refreshTokensOrReauthorize(config: OAuthConfig): Credential? {
+        return getTokens()?.alwaysRefresh() ?: authorize(config)
     }
 
     suspend fun authorize(config: OAuthConfig): Credential? {
@@ -153,7 +162,7 @@ actual class ModelixAuthClient {
                                 val realm = wwwAuthenticate.parameter("realm")
                                 val description = wwwAuthenticate.parameter("error_description")
                             }
-                            val tokens = authorize(currentAuthConfig)
+                            val tokens = refreshTokensOrReauthorize(currentAuthConfig)
                             checkNotNull(tokens) { "No tokens received" }
 
                             LOG.info("Access Token: " + tokens.accessToken)

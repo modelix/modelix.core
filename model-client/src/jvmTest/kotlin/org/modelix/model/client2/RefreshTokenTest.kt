@@ -159,4 +159,125 @@ class RefreshTokenTest {
             assertEquals(3, nextTokenSuffix)
         }
     }
+
+    @Test
+    fun `refresh token is used to fetch new tokens`() = runBlocking {
+        val expectedRepoId = "my-repo"
+        var nextTokenSuffix = 1
+        val validAccessTokens: MutableSet<String> = mutableSetOf()
+        val validRefreshTokens: MutableSet<String> = mutableSetOf()
+        val expectedBranches = listOf(
+            RepositoryId(expectedRepoId).getBranchReference("a"),
+            RepositoryId(expectedRepoId).getBranchReference("b"),
+        )
+
+        suspend fun ApplicationCall.respondNextToken() {
+            val suffix = nextTokenSuffix++
+            val accessToken = "my-access-token-$suffix"
+            val refreshToken = "my-refresh-token-$suffix"
+            validAccessTokens += accessToken
+            validRefreshTokens += refreshToken
+            val message = TokenResponse2(
+                accessToken = accessToken,
+                refreshToken = refreshToken,
+            )
+            respond(message)
+        }
+
+        fun invalidateAccessToken() {
+            validAccessTokens.clear()
+        }
+
+        suspend fun runWithServer(body: suspend (port: Int) -> Unit) {
+            // real server need instead of ktor.test because the PKCE flow is implemented by a non-ktor client
+            val server = embeddedServer(Netty, port = Random.nextInt(20000, 60000)) {
+                install(ContentNegotiation) {
+                    json()
+                }
+                install(CallLogging)
+                routing {
+                    post("/token") {
+                        val receivedParameters = call.receiveParameters()
+                        if (receivedParameters["grant_type"] == "authorization_code") {
+                            if (receivedParameters["code"] == "abc") {
+                                check(validRefreshTokens.isEmpty()) {
+                                    "Should use refresh token to fetch new tokens"
+                                }
+                                call.respondNextToken()
+                            } else {
+                                call.respond(HttpStatusCode.BadRequest)
+                            }
+                        } else if (receivedParameters["grant_type"] == "refresh_token") {
+                            if (validRefreshTokens.contains(receivedParameters["refresh_token"])) {
+                                call.respondNextToken()
+                            } else {
+                                call.respond(HttpStatusCode.BadRequest)
+                            }
+                        } else {
+                            call.respond(HttpStatusCode.BadRequest)
+                        }
+                    }
+
+                    get("/v2/repositories/{repository-id}/branches") {
+                        val authHeader = call.request.parseAuthorizationHeader()
+                        if (authHeader is HttpAuthHeader.Single && authHeader.authScheme == "Bearer" && validAccessTokens.contains(authHeader.blob)) {
+                            call.respondText(expectedBranches.joinToString("\n") { it.branchName })
+                        } else {
+                            val port = engine.resolvedConnectors().single().port
+                            call.respond(
+                                UnauthorizedResponse(
+                                    HttpAuthHeader.Parameterized(
+                                        "Bearer",
+                                        mapOf(
+                                            HttpAuthHeader.Parameters.Realm to "modelix",
+                                            "error" to "invalid_token",
+                                            "authorization_uri" to "http://localhost:$port/auth",
+                                            "token_uri" to "http://localhost:$port/token",
+                                        ).filterNotNullValues(),
+                                    ),
+                                ),
+                            )
+                        }
+                    }
+                }
+            }.startSuspend()
+            try {
+                body(server.engine.resolvedConnectors().single().port)
+            } finally {
+                server.stop()
+            }
+        }
+
+        runWithServer { port ->
+            val modelClient = ModelClientV2.builder().url("http://localhost:$port").authConfig(
+                IAuthConfig.oauth {
+                    authRequestHandler(object : IAuthRequestHandler {
+                        var loginAlreadyRequested = false
+                        override fun browse(url: String) {
+                            check(!loginAlreadyRequested) { "Should use refresh token to fetch new tokens" }
+                            loginAlreadyRequested = true
+                            // https://localhost/realms/modelix/protocol/openid-connect/auth?client_id=my-client-id&code_challenge=YzBhqU2-lRzCkoSLVc0BGN3_AlwU5YUpYS1_m_6FMbI&code_challenge_method=S256&redirect_uri=http://127.0.0.1:64186/Callback&response_type=code&scope=email
+                            val redirectUri = Url(url).parameters["redirect_uri"]!!
+                            val callbackWithCode = buildUrl {
+                                takeFrom(redirectUri)
+                                parameters.append("code", "abc")
+                            }
+                            runBlocking {
+                                HttpClient(CIO).get(callbackWithCode)
+                            }
+                        }
+                    })
+                    clientId("my-client-id")
+                    repositoryId(RepositoryId(expectedRepoId))
+                },
+            ).build()
+
+            val actualBranches = modelClient.listBranches(RepositoryId(expectedRepoId))
+            assertEquals(expectedBranches, actualBranches)
+            invalidateAccessToken()
+            val actualBranches2 = modelClient.listBranches(RepositoryId(expectedRepoId))
+            assertEquals(expectedBranches, actualBranches2)
+            assertEquals(3, nextTokenSuffix)
+        }
+    }
 }

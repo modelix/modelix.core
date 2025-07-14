@@ -328,6 +328,9 @@ class ModelixJWTUtil {
         fun claim(name: String, value: String) {
             builder.claim(name, value)
         }
+        fun claim(name: String, value: Long) {
+            builder.claim(name, value)
+        }
     }
 
     private inner class PemFileJWKSet<C : SecurityContext>(pemFile: File) : FileJWKSet<C>(pemFile) {

@@ -8,7 +8,7 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.ExperimentalTime
 import kotlin.time.toJavaDuration
 
-fun runWithModelServer(body: suspend (port: Int) -> Unit) = runBlocking {
+fun runWithModelServer(hmacKey: String? = null, body: suspend (port: Int) -> Unit) = runBlocking {
     @OptIn(ExperimentalTime::class)
     withTimeout(5.minutes) {
         val modelServer: GenericContainer<*> = GenericContainer(System.getProperty("modelix.model.server.image"))
@@ -16,6 +16,12 @@ fun runWithModelServer(body: suspend (port: Int) -> Unit) = runBlocking {
             .withCommand("-inmemory")
             .withEnv("MODELIX_VALIDATE_VERSIONS", "true")
 //            .withEnv("MODELIX_REJECT_EXISTING_OBJECT", "true")
+            .also {
+                if (hmacKey != null) {
+                    it.withEnv("MODELIX_PERMISSION_CHECKS_ENABLED", "true")
+                    it.withEnv("MODELIX_JWT_SIGNATURE_HMAC512_KEY", hmacKey)
+                }
+            }
             .waitingFor(Wait.forListeningPort().withStartupTimeout(3.minutes.toJavaDuration()))
             .withLogConsumer {
                 println(it.utf8StringWithoutLineEnding)

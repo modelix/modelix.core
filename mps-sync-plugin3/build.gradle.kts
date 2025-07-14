@@ -39,6 +39,7 @@ dependencies {
     implementation(libs.kotlin.logging, excludeMPSLibraries)
     implementation(libs.kotlin.html, excludeMPSLibraries)
     implementation(libs.kotlin.datetime, excludeMPSLibraries)
+    implementation(libs.ktor.client.core, excludeMPSLibraries)
 
     compileOnly(
         fileTree(mpsHomeDir).matching {
@@ -51,6 +52,8 @@ dependencies {
     testImplementation(libs.kotlin.coroutines.test)
     testImplementation(libs.logback.classic)
     testImplementation(kotlin("test"))
+    testImplementation(project(":authorization"), excludeMPSLibraries)
+    testImplementation(project(":model-server"), excludeMPSLibraries)
 }
 
 tasks {

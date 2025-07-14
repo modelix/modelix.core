@@ -260,6 +260,26 @@ paths:
           $ref: '#/components/responses/versionDelta'
         default:
           $ref: '#/components/responses/GeneralError'
+  /repositories/{repository}/branches/{branch}/frontend:
+    get:
+      tags: [v2]
+      operationId: redirectToFrontend
+      parameters:
+        - name: repository
+          in: "path"
+          required: true
+          schema:
+            type: string
+        - name: branch
+          in: "path"
+          required: true
+          schema:
+            type: string
+      responses:
+        "302":
+          description: "Redirect browser to actual frontend URL"
+        default:
+          $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/branches/{branch}/hash:
     get:
       tags:

@@ -11,6 +11,7 @@ import io.ktor.server.request.receive
 import io.ktor.server.request.receiveChannel
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytesWriter
+import io.ktor.server.response.respondRedirect
 import io.ktor.server.response.respondText
 import io.ktor.server.response.respondTextWriter
 import io.ktor.server.routing.RoutingContext
@@ -28,6 +29,7 @@ import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.hasPermission
 import org.modelix.authorization.requiresLogin
+import org.modelix.kotlin.utils.urlEncode
 import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.TreeId
 import org.modelix.model.api.IBranch
@@ -259,6 +261,15 @@ class ModelReplicationServer(
         } else {
             call.respond(HttpStatusCode.NotFound)
         }
+    }
+
+    override suspend fun RoutingContext.redirectToFrontend(
+        repository: String,
+        branch: String,
+    ) {
+        val urlTemplate = System.getenv("MODELIX_FRONTEND_URL") ?: "../../../../../history/{repository}/{branch}/"
+        val url = urlTemplate.replace("{repository}", repository.urlEncode()).replace("{branch}", branch.urlEncode())
+        call.respondRedirect(permanent = false, url = url)
     }
 
     override suspend fun RoutingContext.postRepositoryBranch(

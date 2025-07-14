@@ -24,6 +24,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLBuilder
+import io.ktor.http.Url
 import io.ktor.http.appendPathSegments
 import io.ktor.http.buildUrl
 import io.ktor.http.contentType
@@ -583,6 +584,13 @@ class ModelClientV2(
             appendPathSegmentsEncodingSlash("repositories", repositoryId.id, "versions", versionHash, "query")
         }
         return ModelQLClient.builder().httpClient(httpClient).url(url.buildString()).build().query(body)
+    }
+
+    override fun getFrontendUrl(branch: BranchReference): Url {
+        return buildUrl {
+            takeFrom(baseUrl)
+            appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName, "frontend")
+        }
     }
 
     override fun close() {

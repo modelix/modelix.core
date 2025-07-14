@@ -1,5 +1,6 @@
 package org.modelix.model.client2
 
+import io.ktor.http.Url
 import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.model.IVersion
 import org.modelix.model.ObjectDeltaFilter
@@ -102,4 +103,6 @@ interface IModelClientV2 {
     suspend fun <R> query(branch: BranchReference, body: (IMonoStep<INode>) -> IMonoStep<R>): R
 
     suspend fun <R> query(repositoryId: RepositoryId, versionHash: String, body: (IMonoStep<INode>) -> IMonoStep<R>): R
+
+    fun getFrontendUrl(branch: BranchReference): Url
 }

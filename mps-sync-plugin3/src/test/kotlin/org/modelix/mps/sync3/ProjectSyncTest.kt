@@ -1,7 +1,11 @@
 package org.modelix.mps.sync3
 
 import com.intellij.configurationStore.saveSettings
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.ResponseException
+import io.ktor.client.request.get
+import io.ktor.http.HttpStatusCode
 import jetbrains.mps.smodel.SNodeUtil
 import jetbrains.mps.smodel.adapter.ids.SConceptId
 import jetbrains.mps.smodel.adapter.ids.SContainmentLinkId
@@ -38,7 +42,9 @@ import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.operations.IOperation
 import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.mps.multiplatform.model.MPSIdGenerator
+import org.modelix.mps.sync3.ui.OpenFrontendAction
 import org.modelix.streams.getBlocking
+import java.net.URL
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.io.path.readText
@@ -577,6 +583,44 @@ class ProjectSyncTest : MPSTestBase() {
         }
 
         assertEquals(IBinding.Status.NoPermission(user = "sync-plugin-test@modelix.org"), binding.getStatus())
+    }
+
+    fun `test default frontend url`(): Unit = runWithModelServer { port ->
+        val branchRef = RepositoryId("sync-test").getBranchReference("branchA")
+
+        openTestProject("initial")
+        val binding = IModelSyncService.getInstance(mpsProject)
+            .addServer("http://localhost:$port")
+            .bind(branchRef, null)
+
+        val action = OpenFrontendAction()
+        val urls = action.getFrontendUrls(project)
+        assertEquals(listOf("http://localhost:$port/v2/repositories/sync-test/branches/branchA/frontend"), urls)
+
+        val response = HttpClient(CIO) {
+            followRedirects = false
+        }.get(urls.single())
+        assertEquals(HttpStatusCode.Found, response.status)
+        assertEquals("http://localhost:$port/history/sync-test/branchA/", URL(urls.single()).toURI().resolve(response.headers["Location"]).toString())
+    }
+
+    fun `test configured frontend url`(): Unit = runWithModelServer(additionalEnv = mapOf("MODELIX_FRONTEND_URL" to "http://my-frontend.example.com/{repository}/{branch}/overview")) { port ->
+        val branchRef = RepositoryId("sync-test").getBranchReference("branchA")
+
+        openTestProject("initial")
+        val binding = IModelSyncService.getInstance(mpsProject)
+            .addServer("http://localhost:$port")
+            .bind(branchRef, null)
+
+        val action = OpenFrontendAction()
+        val urls = action.getFrontendUrls(project)
+        assertEquals(listOf("http://localhost:$port/v2/repositories/sync-test/branches/branchA/frontend"), urls)
+
+        val response = HttpClient(CIO) {
+            followRedirects = false
+        }.get(urls.single())
+        assertEquals(HttpStatusCode.Found, response.status)
+        assertEquals("http://my-frontend.example.com/sync-test/branchA/overview", URL(urls.single()).toURI().resolve(response.headers["Location"]).toString())
     }
 
     fun `test loading enabled persisted binding`(): Unit = runPersistedBindingTest(true)

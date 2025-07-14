@@ -131,7 +131,7 @@ class RefreshTokenTest {
         }
 
         runWithServer { port ->
-            val modelClient = ModelClientV2.builder().url("http://localhost:$port").authConfig(
+            ModelClientV2.builder().url("http://localhost:$port").authConfig(
                 IAuthConfig.oauth {
                     authRequestHandler(object : IAuthRequestHandler {
                         override fun browse(url: String) {
@@ -149,14 +149,14 @@ class RefreshTokenTest {
                     clientId("my-client-id")
                     repositoryId(RepositoryId(expectedRepoId))
                 },
-            ).build()
-
-            val actualBranches = modelClient.listBranches(RepositoryId(expectedRepoId))
-            assertEquals(expectedBranches, actualBranches)
-            invalidateTokens()
-            val actualBranches2 = modelClient.listBranches(RepositoryId(expectedRepoId))
-            assertEquals(expectedBranches, actualBranches2)
-            assertEquals(3, nextTokenSuffix)
+            ).build().use { modelClient ->
+                val actualBranches = modelClient.listBranches(RepositoryId(expectedRepoId))
+                assertEquals(expectedBranches, actualBranches)
+                invalidateTokens()
+                val actualBranches2 = modelClient.listBranches(RepositoryId(expectedRepoId))
+                assertEquals(expectedBranches, actualBranches2)
+                assertEquals(3, nextTokenSuffix)
+            }
         }
     }
 
@@ -249,7 +249,7 @@ class RefreshTokenTest {
         }
 
         runWithServer { port ->
-            val modelClient = ModelClientV2.builder().url("http://localhost:$port").authConfig(
+            ModelClientV2.builder().url("http://localhost:$port").authConfig(
                 IAuthConfig.oauth {
                     authRequestHandler(object : IAuthRequestHandler {
                         var loginAlreadyRequested = false
@@ -270,14 +270,14 @@ class RefreshTokenTest {
                     clientId("my-client-id")
                     repositoryId(RepositoryId(expectedRepoId))
                 },
-            ).build()
-
-            val actualBranches = modelClient.listBranches(RepositoryId(expectedRepoId))
-            assertEquals(expectedBranches, actualBranches)
-            invalidateAccessToken()
-            val actualBranches2 = modelClient.listBranches(RepositoryId(expectedRepoId))
-            assertEquals(expectedBranches, actualBranches2)
-            assertEquals(3, nextTokenSuffix)
+            ).build().use { modelClient ->
+                val actualBranches = modelClient.listBranches(RepositoryId(expectedRepoId))
+                assertEquals(expectedBranches, actualBranches)
+                invalidateAccessToken()
+                val actualBranches2 = modelClient.listBranches(RepositoryId(expectedRepoId))
+                assertEquals(expectedBranches, actualBranches2)
+                assertEquals(3, nextTokenSuffix)
+            }
         }
     }
 }

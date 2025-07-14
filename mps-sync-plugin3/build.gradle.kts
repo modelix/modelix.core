@@ -54,6 +54,7 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation(project(":authorization"), excludeMPSLibraries)
     testImplementation(project(":model-server"), excludeMPSLibraries)
+    testImplementation(libs.ktor.client.cio, excludeMPSLibraries)
 }
 
 tasks {

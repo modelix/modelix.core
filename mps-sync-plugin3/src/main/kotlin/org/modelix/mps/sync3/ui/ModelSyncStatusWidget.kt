@@ -26,6 +26,7 @@ import kotlinx.html.td
 import kotlinx.html.tr
 import org.modelix.model.lazy.CLVersion
 import org.modelix.mps.api.ModelixMpsApi
+import org.modelix.mps.sync3.IBinding
 import org.modelix.mps.sync3.IModelSyncService
 import org.modelix.mps.sync3.IServerConnection
 import java.awt.Desktop
@@ -257,9 +258,14 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
                             return "Click to log in"
                         }
                     }
-                    result = binding.getSyncProgress()?.let { "Synchronizing: $it" }
-                        ?: binding.getCurrentVersion()?.getContentHash()?.let { "Synchronized: ${it.take(5)}" }
-                        ?: result
+                    result = when (val status = binding.getStatus()) {
+                        IBinding.Status.Disabled -> "Disabled"
+                        IBinding.Status.Initializing -> "Initializing"
+                        is IBinding.Status.Synced -> "Synchronized: ${status.versionHash.take(5)}"
+                        is IBinding.Status.Syncing -> "Synchronizing: ${status.progress()}"
+                        is IBinding.Status.Error -> "Synchronization failed: ${status.message}"
+                        is IBinding.Status.NoPermission -> "${status.user} has no permission on ${binding.getBranchRef().repositoryId}"
+                    }
                 }
             }
         }

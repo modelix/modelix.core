@@ -99,4 +99,34 @@ interface IBinding : Closeable {
     fun getCurrentVersion(): IVersion?
 
     fun getSyncProgress(): String?
+    fun getStatus(): Status
+
+    sealed class Status {
+        object Disabled : Status()
+
+        /**
+         * Binding is enabled, but the initial synchronization hasn't started yet.
+         */
+        object Initializing : Status()
+
+        /**
+         * The last synchronization was successful.
+         */
+        data class Synced(val versionHash: String) : Status()
+
+        /**
+         * Synchronization is running.
+         */
+        data class Syncing(val progress: () -> String?) : Status()
+
+        /**
+         * The last synchronization failed.
+         */
+        data class Error(val message: String?) : Status()
+
+        /**
+         * The last synchronization failed because of a mission permission.
+         */
+        data class NoPermission(val user: String?) : Status()
+    }
 }

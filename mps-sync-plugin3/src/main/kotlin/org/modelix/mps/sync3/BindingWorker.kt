@@ -2,6 +2,8 @@ package org.modelix.mps.sync3
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
+import io.ktor.client.plugins.ResponseException
+import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.CancellationException
 import jetbrains.mps.project.MPSProject
 import kotlinx.coroutines.CoroutineScope
@@ -62,6 +64,7 @@ class BindingWorker(
     private var invalidatingListener: MyInvalidatingListener? = null
     private var activeSynchronizer: ModelSynchronizer? = null
     private var previousSyncStack: List<IReadableNode> = emptyList()
+    private var status: IBinding.Status = IBinding.Status.Disabled
 
     private val repository: SRepository get() = mpsProject.repository
     private suspend fun client() = serverConnection.getClient()
@@ -72,6 +75,7 @@ class BindingWorker(
 
     fun activate() {
         if (activated.getAndSet(true)) return
+        status = IBinding.Status.Initializing
         syncJob = coroutinesScope.launch {
             try {
                 syncJob()
@@ -84,13 +88,15 @@ class BindingWorker(
 
     fun deactivate() {
         if (!activated.getAndSet(false)) return
-
+        status = IBinding.Status.Disabled
         syncJob?.cancel()
         syncJob = null
         syncToServerTask = null
         invalidatingListener?.stop()
         invalidatingListener = null
     }
+
+    fun getStatus(): IBinding.Status = status
 
     private fun ModelSynchronizer.synchronizeAndStoreInstance() {
         try {
@@ -153,6 +159,22 @@ class BindingWorker(
         }
     }
 
+    private suspend fun <R : IVersion?> runSync(body: suspend (IVersion?) -> R) = lastSyncedVersion.updateValue {
+        try {
+            status = IBinding.Status.Syncing(::getSyncProgress)
+            body(it).also {
+                status = IBinding.Status.Synced(it?.getContentHash() ?: "null")
+            }
+        } catch (ex: Throwable) {
+            status = if (ex is ResponseException && ex.response.status == HttpStatusCode.Forbidden) {
+                IBinding.Status.NoPermission(runCatching { client().getUserId() }.getOrNull())
+            } else {
+                IBinding.Status.Error(ex.message)
+            }
+            throw ex
+        }
+    }
+
     private suspend fun CoroutineScope.syncJob() {
         // initial sync
         while (isActive()) {
@@ -189,7 +211,7 @@ class BindingWorker(
     }
 
     private suspend fun initialSync() {
-        lastSyncedVersion.updateValue { oldVersion ->
+        runSync { oldVersion ->
             LOG.debug { "Running initial synchronization" }
 
             val baseVersion = oldVersion
@@ -230,7 +252,7 @@ class BindingWorker(
     }
 
     suspend fun syncToMPS(incremental: Boolean): IVersion {
-        return lastSyncedVersion.updateValue { oldVersion ->
+        return runSync { oldVersion ->
             client().pull(branchRef, oldVersion).also { newVersion ->
                 doSyncToMPS(oldVersion, newVersion, incremental)
             }
@@ -238,7 +260,7 @@ class BindingWorker(
     }
 
     suspend fun syncToServer(incremental: Boolean): IVersion? {
-        return lastSyncedVersion.updateValue { oldVersion ->
+        return runSync { oldVersion ->
             if (oldVersion == null) {
                 // have to wait for initial sync
                 oldVersion

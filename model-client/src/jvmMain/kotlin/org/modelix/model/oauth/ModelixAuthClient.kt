@@ -162,6 +162,18 @@ actual class ModelixAuthClient {
                                 val realm = wwwAuthenticate.parameter("realm")
                                 val description = wwwAuthenticate.parameter("error_description")
                             }
+                            if (currentAuthConfig.tokenUrl == null) {
+                                LOG.warn { "No token URL configured" }
+                                return@refreshTokens null
+                            }
+                            if (currentAuthConfig.authorizationUrl == null) {
+                                LOG.warn { "No authorization URL configured" }
+                                return@refreshTokens null
+                            }
+                            if (currentAuthConfig.clientId == null) {
+                                LOG.warn { "No client ID configured" }
+                                return@refreshTokens null
+                            }
                             val tokens = refreshTokensOrReauthorize(currentAuthConfig)
                             checkNotNull(tokens) { "No tokens received" }
 

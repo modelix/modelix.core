@@ -382,6 +382,10 @@ class ModelSyncService(val project: Project) :
             return workers[id]?.getSyncProgress()
         }
 
+        override fun getStatus(): IBinding.Status {
+            return workers[id]?.getStatus() ?: IBinding.Status.Disabled
+        }
+
         private fun getService(): ModelSyncService = this@ModelSyncService
 
         override fun equals(other: Any?): Boolean {

@@ -1,16 +1,20 @@
 package org.modelix.mps.sync3
 
 import com.intellij.configurationStore.saveSettings
+import io.ktor.client.plugins.ResponseException
 import jetbrains.mps.smodel.SNodeUtil
 import jetbrains.mps.smodel.adapter.ids.SConceptId
 import jetbrains.mps.smodel.adapter.ids.SContainmentLinkId
 import jetbrains.mps.smodel.adapter.structure.concept.SConceptAdapterById
 import jetbrains.mps.smodel.adapter.structure.link.SContainmentLinkAdapterById
+import kotlinx.coroutines.delay
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.junit.Assert
+import org.modelix.authorization.ModelixJWTUtil
 import org.modelix.datastructures.model.ModelChangeEvent
 import org.modelix.datastructures.model.MutationParameters
+import org.modelix.datastructures.model.PropertyChangedEvent
 import org.modelix.model.IVersion
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INodeReference
@@ -30,7 +34,9 @@ import org.modelix.model.mpsadapters.MPSProjectReference
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.toModelix
 import org.modelix.model.mutable.asModelSingleThreaded
+import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.operations.IOperation
+import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.mps.multiplatform.model.MPSIdGenerator
 import org.modelix.streams.getBlocking
 import java.nio.file.Path
@@ -39,6 +45,7 @@ import kotlin.io.path.readText
 import kotlin.io.path.writeText
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
+import kotlin.time.Duration.Companion.seconds
 
 class ProjectSyncTest : MPSTestBase() {
 
@@ -259,7 +266,7 @@ class ProjectSyncTest : MPSTestBase() {
             it.getStreamExecutor().query { it.getChanges(version1.getModelTree(), false).toList() }
         }
         assertEquals(1, changes.size)
-        val change = changes.single() as org.modelix.datastructures.model.PropertyChangedEvent<INodeReference>
+        val change = changes.single() as PropertyChangedEvent<INodeReference>
         assertEquals(MPSProperty(nameProperty).getUID(), change.role.getUID())
         assertEquals("MyClass", version1.getModelTree().getProperty(change.nodeId, change.role).getBlocking(version1.getModelTree()))
         assertEquals("Changed", version2.getModelTree().getProperty(change.nodeId, change.role).getBlocking(version1.getModelTree()))
@@ -484,6 +491,92 @@ class ProjectSyncTest : MPSTestBase() {
 
         // ... applies all the pending changes and is again in sync with the other client
         assertEquals(expectedSnapshot, project.captureSnapshot())
+    }
+
+    fun `test missing permission on initial sync is detected`(): Unit = runWithModelServer(hmacKey = "abc") { port ->
+        val branchRef = RepositoryId("sync-test").getBranchReference("branchA")
+        AppLevelModelSyncService.getInstance().getOrCreateConnection(
+            ModelServerConnectionProperties(
+                url = "http://localhost:$port",
+                repositoryId = branchRef.repositoryId,
+            ),
+        ).setAuthorizationConfig(
+            IAuthConfig.fromTokenProvider {
+                ModelixJWTUtil().also { it.setHmac512Key("abc") }
+                    .createAccessToken("sync-plugin-test@modelix.org", listOf())
+            },
+        )
+
+        openTestProject("initial")
+        val binding = IModelSyncService.getInstance(mpsProject)
+            .addServer("http://localhost:$port")
+            .bind(branchRef, null)
+        assertFailsWith<ResponseException> {
+            binding.flush()
+        }
+
+        assertEquals(IBinding.Status.NoPermission(user = "sync-plugin-test@modelix.org"), binding.getStatus())
+    }
+
+    fun `test missing permission after initial sync is detected`(): Unit = runWithModelServer(hmacKey = "abc") { port ->
+        fun now() = kotlinx.datetime.Instant.fromEpochMilliseconds(System.currentTimeMillis())
+        val leeway = 60.seconds
+        var grantPermission = true
+        var tokenExpiration = now()
+        val branchRef = RepositoryId("sync-test").getBranchReference("branchA")
+
+        fun initConnection(repositoryId: RepositoryId?) {
+            AppLevelModelSyncService.getInstance().getOrCreateConnection(
+                ModelServerConnectionProperties(
+                    url = "http://localhost:$port",
+                    repositoryId = repositoryId,
+                ),
+            ).setAuthorizationConfig(
+                IAuthConfig.fromTokenProvider {
+                    val permissions = listOfNotNull(
+                        ModelServerPermissionSchema.repository(branchRef.repositoryId).write.fullId.takeIf { grantPermission },
+                    )
+                    ModelixJWTUtil()
+                        .also { it.setHmac512Key("abc") }
+                        .createAccessToken("sync-plugin-test@modelix.org", permissions) {
+                            tokenExpiration = now() + 10.seconds
+                            it.claim("exp", (tokenExpiration - leeway).epochSeconds)
+                        }
+                        .also { println("Generated token: $it") }
+                },
+            )
+        }
+        initConnection(null)
+        initConnection(branchRef.repositoryId)
+
+        openTestProject("initial")
+        val binding = IModelSyncService.getInstance(mpsProject)
+            .addServer("http://localhost:$port")
+            .bind(branchRef, null)
+        binding.flush()
+        println("Initial sync done")
+        grantPermission = false
+
+        delay(tokenExpiration - now())
+
+        val nameProperty = SNodeUtil.property_INamedConcept_name
+        command {
+            val node = mpsProject.projectModules
+                .first { it.moduleName == "NewSolution" }
+                .models
+                .flatMap { it.rootNodes }
+                .first { it.getProperty(nameProperty) == "MyClass" }
+            println("will change property")
+            node.setProperty(nameProperty, "Changed")
+            println("property changed")
+        }
+
+        println(AppLevelModelSyncService.getInstance().getConnections().map { it.properties })
+        assertFailsWith<ResponseException> {
+            binding.flush()
+        }
+
+        assertEquals(IBinding.Status.NoPermission(user = "sync-plugin-test@modelix.org"), binding.getStatus())
     }
 
     fun `test loading enabled persisted binding`(): Unit = runPersistedBindingTest(true)

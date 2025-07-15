@@ -23,6 +23,9 @@ plugins {
 intellij {
     localPath = copyMps().absolutePath
     instrumentCode = false
+    plugins = listOf(
+        "jetbrains.mps.ide.java", // for loading stub models in tests
+    )
 }
 
 dependencies {

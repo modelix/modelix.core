@@ -1,11 +1,14 @@
 package org.modelix.mps.sync3
 
 import com.intellij.configurationStore.saveSettings
+import com.intellij.openapi.util.use
+import com.intellij.openapi.application.ApplicationInfo
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.get
 import io.ktor.http.HttpStatusCode
+import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.smodel.SNodeUtil
 import jetbrains.mps.smodel.adapter.ids.SConceptId
 import jetbrains.mps.smodel.adapter.ids.SContainmentLinkId
@@ -41,6 +44,7 @@ import org.modelix.model.mutable.asModelSingleThreaded
 import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.operations.IOperation
 import org.modelix.model.server.ModelServerPermissionSchema
+import org.modelix.mps.api.ModelixMpsApi
 import org.modelix.mps.multiplatform.model.MPSIdGenerator
 import org.modelix.mps.sync3.ui.OpenFrontendAction
 import org.modelix.streams.getBlocking
@@ -49,6 +53,7 @@ import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.io.path.readText
 import kotlin.io.path.writeText
+import kotlin.test.assertContains
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 import kotlin.time.Duration.Companion.seconds
@@ -497,6 +502,32 @@ class ProjectSyncTest : MPSTestBase() {
 
         // ... applies all the pending changes and is again in sync with the other client
         assertEquals(expectedSnapshot, project.captureSnapshot())
+    }
+
+    private fun getMPSPlatformVersion(): Int {
+        val info = ApplicationInfo.getInstance()
+        return (info.majorVersion.toInt() - 2000) * 10 + info.minorVersionMainPart.toInt()
+    }
+
+    fun `test change in stub model`(): Unit = runWithModelServer { port ->
+        if (getMPSPlatformVersion() <= 211) return@runWithModelServer // not worth maintaining these old versions
+
+        // ensure stub model loading works
+        openTestProject("with-stub-models").also { p ->
+            val mpsProject = ProjectHelper.fromIdeaProject(p)!!
+            mpsProject.modelAccess.runReadAction {
+                val module = mpsProject.projectModules.first { it.moduleName == "SolutionWithJavaSourceStubs" }
+                assertEquals(listOf("org.modelix.sync.sandbox@java_stub"), module.models.map { it.name.value })
+            }
+            p.close()
+        }
+
+        val branchRef = RepositoryId("sync-test").getBranchReference("branchA")
+        val version1 = syncProjectToServer("with-stub-models", port, branchRef)
+
+        val version2 = syncProjectToServer("with-stub-models-changed", port, branchRef, version1.getContentHash())
+        // stub models are ignored and changes in them have no effect
+        assertEquals(version1.getContentHash(), version2.getContentHash())
     }
 
     fun `test missing permission on initial sync is detected`(): Unit = runWithModelServer(hmacKey = "abc") { port ->

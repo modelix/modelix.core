@@ -48,6 +48,7 @@ fun INode.getOriginalOrCurrentReference(): String = getOriginalReference() ?: re
 
 interface IWritableNode : IReadableNode {
     override fun asLegacyNode(): INode = WritableNodeAsLegacyNode(this)
+    fun isReadOnly(): Boolean = false
 
     override fun getModel(): IMutableModel
     override fun getAllChildren(): List<IWritableNode>

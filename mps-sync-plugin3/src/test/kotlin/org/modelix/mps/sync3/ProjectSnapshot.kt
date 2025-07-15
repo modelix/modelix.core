@@ -48,6 +48,7 @@ private fun Project.captureFileContents(): Map<String, String> {
                 module as AbstractModule
                 module.save()
                 for (model in module.models.filterIsInstance<EditableSModel>()) {
+                    if (model.isReadOnly) continue
                     ModelixMpsApi.forceSave(model)
                 }
             }

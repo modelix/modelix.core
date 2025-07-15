@@ -190,6 +190,10 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
 
     override fun getChildAccessors() = childAccessors
 
+    override fun isReadOnly(): Boolean {
+        return model.isReadOnly
+    }
+
     override fun getParent(): IWritableNode? {
         return model.module?.let { MPSModuleAsNode(it) }
     }

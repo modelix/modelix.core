@@ -122,6 +122,10 @@ class ModelSynchronizer(
         targetNode: IWritableNode,
         forceSyncDescendants: Boolean,
     ) {
+        if (targetNode.isReadOnly()) {
+            LOG.trace { "Skipping read-only node. targetNode = $targetNode" }
+            return
+        }
         LOG.trace { "Synchronizing changed node. sourceNode = $sourceNode" }
         runSafe { synchronizeProperties(sourceNode, targetNode) }
         runSafe { synchronizeReferences(sourceNode, targetNode) }

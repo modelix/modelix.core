@@ -37,6 +37,11 @@ fun SNode.asReadableNode(): IReadableNode = MPSWritableNode(this)
 fun SNode.asWritableNode(): IWritableNode = MPSWritableNode(this)
 
 data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
+
+    override fun isReadOnly(): Boolean {
+        return node.model?.isReadOnly == true
+    }
+
     override fun getModel(): IMutableModel {
         return MPSArea(node.model?.repository ?: MPSModuleRepository.getInstance()).asModel()
     }

@@ -1,19 +1,24 @@
 package org.modelix.mps.sync3
 
 import com.intellij.configurationStore.saveSettings
-import com.intellij.openapi.util.use
 import com.intellij.openapi.application.ApplicationInfo
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.get
 import io.ktor.http.HttpStatusCode
+import jetbrains.mps.core.tool.environment.util.SetLibraryContributor
+import jetbrains.mps.ide.MPSCoreComponents
 import jetbrains.mps.ide.project.ProjectHelper
+import jetbrains.mps.library.contributor.LibDescriptor
+import jetbrains.mps.smodel.MPSModuleRepository
+import jetbrains.mps.smodel.SNodePointer
 import jetbrains.mps.smodel.SNodeUtil
 import jetbrains.mps.smodel.adapter.ids.SConceptId
 import jetbrains.mps.smodel.adapter.ids.SContainmentLinkId
 import jetbrains.mps.smodel.adapter.structure.concept.SConceptAdapterById
 import jetbrains.mps.smodel.adapter.structure.link.SContainmentLinkAdapterById
+import jetbrains.mps.vfs.VFSManager
 import kotlinx.coroutines.delay
 import org.jetbrains.mps.openapi.model.SNode
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
@@ -26,6 +31,7 @@ import org.modelix.model.IVersion
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.getDescendants
+import org.modelix.model.api.getName
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.computeWriteOnModel
 import org.modelix.model.client2.runWriteOnModel
@@ -39,15 +45,18 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSModuleAsNode
 import org.modelix.model.mpsadapters.MPSProjectReference
 import org.modelix.model.mpsadapters.MPSProperty
+import org.modelix.model.mpsadapters.computeRead
 import org.modelix.model.mpsadapters.toModelix
 import org.modelix.model.mutable.asModelSingleThreaded
 import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.operations.IOperation
+import org.modelix.model.operations.SetPropertyOp
 import org.modelix.model.server.ModelServerPermissionSchema
-import org.modelix.mps.api.ModelixMpsApi
 import org.modelix.mps.multiplatform.model.MPSIdGenerator
+import org.modelix.mps.multiplatform.model.MPSNodeReference
 import org.modelix.mps.sync3.ui.OpenFrontendAction
 import org.modelix.streams.getBlocking
+import java.io.File
 import java.net.URL
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicLong
@@ -528,6 +537,81 @@ class ProjectSyncTest : MPSTestBase() {
         val version2 = syncProjectToServer("with-stub-models-changed", port, branchRef, version1.getContentHash())
         // stub models are ignored and changes in them have no effect
         assertEquals(version1.getContentHash(), version2.getContentHash())
+    }
+
+    private suspend fun <R> withGlobalLibrary(folder: File, body: suspend () -> R): R {
+        val vfsManager = MPSCoreComponents.getInstance().platform.findComponent(VFSManager::class.java)!!
+        val packagedModulesFolder = vfsManager.getFileSystem(VFSManager.FILE_FS).getFile(folder)
+        val packagedModulesContributors = listOf(SetLibraryContributor.fromSet("packaged-modules", setOf(LibDescriptor(packagedModulesFolder))))
+        MPSCoreComponents.getInstance().libraryInitializer.load(packagedModulesContributors)
+        try {
+            return body()
+        } finally {
+            MPSCoreComponents.getInstance().libraryInitializer.unload(packagedModulesContributors)
+        }
+    }
+
+    fun `test change in packaged module`(): Unit = runWithModelServer { port ->
+        // Modules in packaged-modules/modules.jar are the same as in solutions/ but packaged into a jar file
+        // which makes them read-only.
+
+        val branchRef = RepositoryId("sync-test").getBranchReference("branchA")
+        val changedNodeRef = SNodePointer.deserialize("r:cd78e6ac-0e34-490a-9b49-e5643f948d6d(NewSolution.a_model)/8281020627045237343")
+        val version1 = withGlobalLibrary(File("testdata/with-packaged-module/packaged-modules")) {
+            val globalRepo = MPSModuleRepository.getInstance()
+            globalRepo.modelAccess.runReadAction {
+                assertContains(globalRepo.modules.map { it.moduleName.orEmpty() }.filterNot { it.startsWith("jetbrains.") }, "NewSolution")
+            }
+
+            openTestProject("with-packaged-module").also { p ->
+                val mpsProject = ProjectHelper.fromIdeaProject(p)!!
+                mpsProject.modelAccess.runReadAction {
+                    val changedNode = checkNotNull(changedNodeRef.resolve(mpsProject.repository)) {
+                        "Node not found: $changedNodeRef"
+                    }
+                    assertEquals("MyClass", changedNode.name)
+                    assertEquals("NewSolution.a_model", changedNode.model?.name?.value)
+                    assertTrue("Not read-only: ${changedNode.model?.name}", changedNode.model?.isReadOnly == true)
+                }
+                p.close()
+            }
+
+            syncProjectToServer("with-packaged-module", port, branchRef)
+        }
+
+        delay(1.seconds) // wait for the modules to be unregistered
+
+        val version2 = syncProjectToServer("with-packaged-module-changed", port, branchRef, version1.getContentHash())
+
+        // read-only modules should be skipped
+        assertNotEquals(version1.getContentHash(), version2.getContentHash())
+        version2 as CLVersion
+        val operation = version2.operations.single() as SetPropertyOp
+        assertEquals("MyClassRenamed", operation.value)
+
+        val branchRef2 = RepositoryId("sync-test").getBranchReference("branchB")
+        val client = ModelClientV2.builder().url("http://localhost:$port").lazyAndBlockingQueries().build()
+        client.push(branchRef2, version1, null)
+
+        withGlobalLibrary(File("testdata/with-packaged-module/packaged-modules")) {
+            openTestProject("with-packaged-module")
+            val binding = IModelSyncService.getInstance(mpsProject)
+                .addServer("http://localhost:$port")
+                .bind(branchRef, null)
+            binding.flush()
+
+            suspend fun nameOnServer() = client.pull(branchRef2, null).getModelTree().asModelSingleThreaded().resolveNode(MPSNodeReference.parseSNodeReference(changedNodeRef.toString())).getName()
+            fun nameInMPS() = mpsProject.repository.computeRead { changedNodeRef.resolve(mpsProject.repository)!!.name }
+
+            assertEquals("MyClass", nameInMPS())
+            MPSNodeReference.parseSNodeReference(changedNodeRef.toString())
+            assertEquals("MyClass", nameOnServer())
+            client.push(branchRef2, version2, null)
+            assertEquals("MyClassRenamed", nameOnServer())
+            binding.flush()
+            assertEquals("MyClass", nameInMPS()) // name remains unchanged, because the model is read-only
+            assertEquals("MyClassRenamed", nameOnServer())
+        }
     }
 
     fun `test missing permission on initial sync is detected`(): Unit = runWithModelServer(hmacKey = "abc") { port ->

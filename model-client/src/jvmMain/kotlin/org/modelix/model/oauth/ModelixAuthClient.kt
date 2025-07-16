@@ -35,6 +35,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.modelix.kotlin.utils.urlEncode
 import java.net.SocketException
+import java.net.SocketTimeoutException
 
 @Suppress("UndocumentedPublicClass") // already documented in the expected declaration
 actual class ModelixAuthClient {
@@ -62,11 +63,16 @@ actual class ModelixAuthClient {
     }
 
     fun Credential.alwaysRefresh(): Credential? {
-        try {
-            val success = refreshToken()
-            if (success) return this
-        } catch (e: TokenResponseException) {
-            LOG.warn("Could not refresh the access token: ${e.details}")
+        for (attempt in 1..3) {
+            try {
+                val success = refreshToken()
+                if (success) return this
+            } catch (e: SocketTimeoutException) {
+                LOG.warn(e) { "Token refresh timed out" }
+            } catch (e: TokenResponseException) {
+                LOG.warn("Could not refresh the access token: ${e.details}")
+                break
+            }
         }
         return null
     }

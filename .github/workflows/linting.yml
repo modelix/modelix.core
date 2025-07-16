@@ -25,7 +25,7 @@ jobs:
     steps:
       - name: Clone repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - uses: stoplightio/spectral-action@577bade2d6e0eeb50528c94182a5588bf961ae8f # v0.8.12
+      - uses: stoplightio/spectral-action@6416fd018ae38e60136775066eb3e98172143141 # v0.8.13
         with:
           file_glob: 'model-server-openapi/specifications/model-server-*.yaml'
           spectral_ruleset: .spectral.yaml

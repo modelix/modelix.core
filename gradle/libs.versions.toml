@@ -18,7 +18,7 @@ npm-publish = { id = "dev.petuska.npm.publish", version = "3.5.3" }
 test-logger = { id = "com.adarshr.test-logger", version = "4.0.0" }
 shadow = { id = "com.github.johnrengelman.shadow", version = "8.1.1" }
 intellij = { id = "org.jetbrains.intellij", version = "1.17.4" }
-intellij2 = { id = "org.jetbrains.intellij.platform", version = "2.7.0" }
+intellij2 = { id = "org.jetbrains.intellij.platform", version = "2.7.1" }
 openapi-generator = {id = "org.openapi.generator", version.ref = "openapi"}
 kotlinx-kover = { id = "org.jetbrains.kotlinx.kover", version = "0.9.1" }
 docker-compose = { id = "com.avast.gradle.docker-compose" , version = "0.17.12" }

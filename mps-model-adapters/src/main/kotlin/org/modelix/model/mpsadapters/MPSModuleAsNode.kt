@@ -522,7 +522,7 @@ data class MPSDevkitAsNode(override val module: DevKit) : MPSModuleAsNode<DevKit
     override fun getConcept(): IConcept = BuiltinLanguages.MPSRepositoryConcepts.DevKit
 }
 
-private fun <T : SModel> Iterable<T>.withoutDescriptorModel(): List<T> {
+fun <T : SModel> Iterable<T>.withoutDescriptorModel(): List<T> {
     return filter { it.name.stereotype != "descriptor" }
 }
 

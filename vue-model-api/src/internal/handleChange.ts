@@ -1,6 +1,7 @@
 import { org } from "@modelix/model-client";
 import type { ReactiveINodeJS } from "./ReactiveINodeJS";
 import type { Cache } from "./Cache";
+import { toRoleJS } from "@modelix/ts-model-api";
 
 const { PropertyChanged, ReferenceChanged, ChildrenChanged } =
   org.modelix.model.client2;
@@ -14,10 +15,10 @@ export function handleChange(change: ChangeJS, cache: Cache<ReactiveINodeJS>) {
     return;
   }
   if (change instanceof PropertyChanged) {
-    reactiveNode.triggerChangeInProperty(change.role);
+    reactiveNode.triggerChangeInProperty(toRoleJS(change.role));
   } else if (change instanceof ReferenceChanged) {
-    reactiveNode.triggerChangeInReference(change.role);
+    reactiveNode.triggerChangeInReference(toRoleJS(change.role));
   } else if (change instanceof ChildrenChanged) {
-    reactiveNode.triggerChangeInChild(change.role);
+    reactiveNode.triggerChangeInChild(toRoleJS(change.role));
   }
 }

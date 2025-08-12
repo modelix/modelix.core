@@ -1,5 +1,6 @@
 import { org } from "@modelix/model-client";
 import type { INodeJS } from "@modelix/ts-model-api";
+import { toRoleJS } from "@modelix/ts-model-api";
 import { watchEffect, type Ref, ref } from "vue";
 import { useModelClient } from "./useModelClient";
 import { useReplicatedModel } from "./useReplicatedModel";
@@ -20,7 +21,7 @@ class SuccessfulBranchJS {
     };
 
     this.rootNode = loadModelsFromJson([JSON.stringify(root)]);
-    this.rootNode.setPropertyValue("branchId", branchId);
+    this.rootNode.setPropertyValue(toRoleJS("branchId"), branchId);
   }
 
   addListener = jest.fn();
@@ -63,7 +64,9 @@ test("test branch connects", (done) => {
   );
   watchEffect(() => {
     if (rootNode.value !== null && replicatedModel.value !== null) {
-      expect(rootNode.value.getPropertyValue("branchId")).toBe("aBranch");
+      expect(rootNode.value.getPropertyValue(toRoleJS("branchId"))).toBe(
+        "aBranch",
+      );
       done();
     }
   });

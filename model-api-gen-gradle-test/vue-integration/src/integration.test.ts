@@ -1,4 +1,5 @@
 import { useModelsFromJson } from "@modelix/vue-model-api";
+import { toRoleJS } from "@modelix/ts-model-api";
 import { computed } from "vue";
 import { registerLanguages } from "typescript-generation";
 import type { BaseConcept } from "typescript-generation/dist/L_jetbrains_mps_lang_core";
@@ -36,7 +37,9 @@ test("change to property is reactivly updated", () => {
     },
   };
 
-  const untypedNode = useRootNode(nodeData).getChildren("children1")[0];
+  const untypedNode = useRootNode(nodeData).getChildren(
+    toRoleJS("children1"),
+  )[0];
   const typedNode = LanguageRegistry.INSTANCE.wrapNode(untypedNode);
   if (!isOfConcept_INamedConcept(typedNode)) {
     fail(`${typedNode} should be a ${C_INamedConcept}`);
@@ -78,7 +81,9 @@ test("change to children is reactivly updated", () => {
       ],
     },
   };
-  const untypedNode = useRootNode(nodeData).getChildren("children1")[0];
+  const untypedNode = useRootNode(nodeData).getChildren(
+    toRoleJS("children1"),
+  )[0];
   const baseConcept = LanguageRegistry.INSTANCE.wrapNode(
     untypedNode,
   ) as BaseConcept;
@@ -119,10 +124,10 @@ test("change to reference is reactivly updated", () => {
   };
   const rootNode = useRootNode(nodeData);
   const staticFieldReference = LanguageRegistry.INSTANCE.wrapNode(
-    rootNode.getChildren("staticFieldReferences")[0],
+    rootNode.getChildren(toRoleJS("staticFieldReferences"))[0],
   ) as StaticFieldReference;
   const classifier = LanguageRegistry.INSTANCE.wrapNode(
-    rootNode.getChildren("classifiers")[0],
+    rootNode.getChildren(toRoleJS("classifiers"))[0],
   ) as Classifier;
 
   const computedClassifierName = computed(

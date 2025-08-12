@@ -93,6 +93,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                 GeneratedLanguage,
                 IConceptJS,
                 INodeJS,
+                toRoleJS,
                 ITypedNode,
                 SingleChildAccessor,
                 TypedNode,
@@ -132,10 +133,10 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                         IPropertyReference.fromIdAndName(feature.uid, feature.originalName).stringForLegacyApi()
                     val rawPropertyText = """
                         public set $rawValueName(value: string | undefined) {
-                            this._node.setPropertyValue("$stringForLegacyApi", value)
+                            this._node.setPropertyValue(toRoleJS("$stringForLegacyApi"), value)
                         }
                         public get $rawValueName(): string | undefined {
-                            return this._node.getPropertyValue("$stringForLegacyApi")
+                            return this._node.getPropertyValue(toRoleJS("$stringForLegacyApi"))
                         }
                     """
                     val typedPropertyText = if (feature.type is PrimitivePropertyType) {
@@ -190,10 +191,10 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                         IReferenceLinkReference.fromIdAndName(feature.uid, feature.originalName).stringForLegacyApi()
                     """
                     public set ${feature.generatedName}(value: $entityType | undefined) {
-                        this._node.setReferenceTargetNode("$stringForLegacyApi", value?.unwrap());
+                        this._node.setReferenceTargetNode(toRoleJS("$stringForLegacyApi"), value?.unwrap());
                     }
                     public get ${feature.generatedName}(): $entityType | undefined {
-                        let target = this._node.getReferenceTargetNode("$stringForLegacyApi");
+                        let target = this._node.getReferenceTargetNode(toRoleJS("$stringForLegacyApi"));
                         return target ? LanguageRegistry.INSTANCE.wrapNode(target) as $entityType : undefined;
                     }
                     """
@@ -205,7 +206,7 @@ class TypescriptMMGenerator(val outputDir: Path, val nameConfig: NameConfig = Na
                     val stringForLegacyApi =
                         IChildLinkReference.fromIdAndName(feature.uid, feature.originalName).stringForLegacyApi()
                     """
-                        public ${feature.generatedName}: $accessorClassName<$languagePrefix${typeRef.nodeWrapperInterfaceName()}> = new $accessorClassName(this._node, "$stringForLegacyApi")
+                        public ${feature.generatedName}: $accessorClassName<$languagePrefix${typeRef.nodeWrapperInterfaceName()}> = new $accessorClassName(this._node, toRoleJS("$stringForLegacyApi"))
                     """
                 }
                 else -> ""

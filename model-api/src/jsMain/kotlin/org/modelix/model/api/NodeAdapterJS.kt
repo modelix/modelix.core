@@ -1,9 +1,12 @@
 package org.modelix.model.api
 
+import ChildRole
 import IConceptJS
 import INodeJS
 import INodeReferenceJS
 import LanguageRegistry
+import PropertyRole
+import ReferenceRole
 import TypedNode
 
 @ExperimentalJsExport
@@ -65,28 +68,29 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
         return node.reference.serialize()
     }
 
-    override fun getRoleInParent(): String? = node.roleInParent
+    override fun getRoleInParent(): ChildRole? = node.roleInParent
 
     override fun getParent(): INodeJS? = node.parent?.let { NodeAdapterJS(it) }
 
-    override fun getChildren(role: String?): Array<INodeJS> {
+    override fun getChildren(role: ChildRole?): Array<INodeJS> {
         // TODO use IChildLink instead of String
-        return node.getChildren(role).map { NodeAdapterJS(it) }.toTypedArray()
+        return node.getChildren(role as String?).map { NodeAdapterJS(it) }.toTypedArray()
     }
 
     override fun getAllChildren(): Array<INodeJS> {
+        // TODO use IChildLink instead of String
         return node.allChildren.map { NodeAdapterJS(it) }.toTypedArray()
     }
 
-    override fun moveChild(role: String?, index: Number, child: INodeJS) {
+    override fun moveChild(role: ChildRole?, index: Number, child: INodeJS) {
         // TODO use IChildLink instead of String
-        node.moveChild(role, index.toInt(), (child as NodeAdapterJS).node)
+        node.moveChild(role as String?, index.toInt(), (child as NodeAdapterJS).node)
     }
 
-    override fun addNewChild(role: String?, index: Number, concept: IConceptJS?): INodeJS {
+    override fun addNewChild(role: ChildRole?, index: Number, concept: IConceptJS?): INodeJS {
         val conceptRef = concept?.getUID()?.let { ConceptReference(it) }
         // TODO use IChildLink instead of String
-        return NodeAdapterJS(node.addNewChild(role, index.toInt(), conceptRef))
+        return NodeAdapterJS(node.addNewChild(role as String?, index.toInt(), conceptRef))
     }
 
     override fun removeChild(child: INodeJS) {
@@ -97,43 +101,43 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
         node.remove()
     }
 
-    override fun getReferenceRoles(): Array<String> {
+    override fun getReferenceRoles(): Array<ReferenceRole> {
         return node.getReferenceRoles().toTypedArray()
     }
 
-    override fun getReferenceTargetNode(role: String): INodeJS? {
+    override fun getReferenceTargetNode(role: ReferenceRole): INodeJS? {
         // TODO use IReferenceLink instead of String
-        return node.getReferenceTarget(role)?.let { NodeAdapterJS(it) }
+        return node.getReferenceTarget(role as String)?.let { NodeAdapterJS(it) }
     }
 
-    override fun getReferenceTargetRef(role: String): INodeReferenceJS? {
+    override fun getReferenceTargetRef(role: ReferenceRole): INodeReferenceJS? {
         // TODO use IReferenceLink instead of String
-        return node.getReferenceTargetRef(role)?.serialize()
+        return node.getReferenceTargetRef(role as String)?.serialize()
     }
 
-    override fun setReferenceTargetNode(role: String, target: INodeJS?) {
+    override fun setReferenceTargetNode(role: ReferenceRole, target: INodeJS?) {
         val unwrappedTarget = if (target == null) null else (target as NodeAdapterJS).node
         // TODO use IReferenceLink instead of String
-        node.setReferenceTarget(role, unwrappedTarget)
+        node.setReferenceTarget(role as String, unwrappedTarget)
     }
 
-    override fun setReferenceTargetRef(role: String, target: INodeReferenceJS?) {
+    override fun setReferenceTargetRef(role: ReferenceRole, target: INodeReferenceJS?) {
         // TODO use IReferenceLink instead of String
-        node.setReferenceTarget(role, target?.let { INodeReferenceSerializer.deserialize(it as String) })
+        node.setReferenceTarget(role as String, target?.let { INodeReferenceSerializer.deserialize(it as String) })
     }
 
-    override fun getPropertyRoles(): Array<String> {
+    override fun getPropertyRoles(): Array<PropertyRole> {
         return node.getPropertyRoles().toTypedArray()
     }
 
-    override fun getPropertyValue(role: String): String? {
+    override fun getPropertyValue(role: PropertyRole): String? {
         // TODO use IProperty instead of String
-        return node.getPropertyValue(role) ?: undefined
+        return node.getPropertyValue(role as String) ?: undefined
     }
 
-    override fun setPropertyValue(role: String, value: String?) {
+    override fun setPropertyValue(role: PropertyRole, value: String?) {
         // TODO use IProperty instead of String
-        node.setPropertyValue(role, value)
+        node.setPropertyValue(role as String, value)
     }
 
     override fun equals(other: Any?): Boolean {

@@ -3,6 +3,7 @@ package org.modelix.model.mutable
 import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.datastructures.model.MutationParameters
 import org.modelix.model.TreeId
+import org.modelix.model.api.IModel
 import org.modelix.model.api.IMutableModel
 import org.modelix.model.api.INodeReference
 import org.modelix.streams.getBlocking
@@ -58,3 +59,4 @@ class SingleThreadMutableModelTree<NodeId>(
 
 fun <T> IGenericModelTree<T>.asMutableSingleThreaded(): IGenericMutableModelTree<T> = SingleThreadMutableModelTree(this)
 fun IGenericModelTree<INodeReference>.asModelSingleThreaded(): IMutableModel = asMutableSingleThreaded().asModel()
+fun IGenericModelTree<INodeReference>.asReadOnlyModel(): IModel = asModelSingleThreaded()

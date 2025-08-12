@@ -11,7 +11,9 @@ import jetbrains.mps.core.tool.environment.util.SetLibraryContributor
 import jetbrains.mps.ide.MPSCoreComponents
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.library.contributor.LibDescriptor
+import jetbrains.mps.smodel.Language
 import jetbrains.mps.smodel.MPSModuleRepository
+import jetbrains.mps.smodel.ModelImports
 import jetbrains.mps.smodel.SNodePointer
 import jetbrains.mps.smodel.SNodeUtil
 import jetbrains.mps.smodel.adapter.ids.SConceptId
@@ -46,13 +48,17 @@ import org.modelix.model.mpsadapters.MPSModuleAsNode
 import org.modelix.model.mpsadapters.MPSProjectReference
 import org.modelix.model.mpsadapters.MPSProperty
 import org.modelix.model.mpsadapters.computeRead
+import org.modelix.model.mpsadapters.toMPS
 import org.modelix.model.mpsadapters.toModelix
+import org.modelix.model.mpsadapters.withoutDescriptorModel
 import org.modelix.model.mutable.asModelSingleThreaded
+import org.modelix.model.mutable.asReadOnlyModel
 import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.operations.IOperation
 import org.modelix.model.operations.SetPropertyOp
 import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.mps.multiplatform.model.MPSIdGenerator
+import org.modelix.mps.multiplatform.model.MPSModelReference
 import org.modelix.mps.multiplatform.model.MPSNodeReference
 import org.modelix.mps.sync3.ui.OpenFrontendAction
 import org.modelix.streams.getBlocking
@@ -511,6 +517,79 @@ class ProjectSyncTest : MPSTestBase() {
 
         // ... applies all the pending changes and is again in sync with the other client
         assertEquals(expectedSnapshot, project.captureSnapshot())
+    }
+
+    /**
+     * This reproduces a bug observed in the SECURE project.
+     */
+    fun `test sync of model dependencies`(): Unit = runWithModelServer { port ->
+        // An initialized repository exists on the server.
+        val branchRef = RepositoryId("sync-test").getBranchReference("branchA")
+        val version1 = syncProjectToServer("model-dependencies", port, branchRef)
+
+        // The repository is then checked out by an MPS client using a modelix.xml without a commit hash.
+        openTestProject(null) { projectDir ->
+            projectDir.resolve(".mps").resolve("modelix.xml").writeText(
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <project version="4">
+                  <component name="modelix-sync">
+                    <binding>
+                      <enabled>true</enabled>
+                      <url>http://localhost:$port</url>
+                      <repository>${branchRef.repositoryId.id}</repository>
+                      <branch>${branchRef.branchName}</branch>
+                    </binding>
+                  </component>
+                </project>
+                """.trimIndent(),
+            )
+        }
+        val connections = IModelSyncService.getInstance(mpsProject)
+            .getServerConnections()
+        assertEquals(1, connections.flatMap { it.getBindings() }.count { it.isEnabled() })
+        connections.flatMap { it.getBindings() }.forEach { it.flushIfEnabled() }
+
+        // The repository is expected to remain unchanged.
+        val client = ModelClientV2.builder().url("http://localhost:$port").lazyAndBlockingQueries().build()
+        assertEquals(version1.getContentHash(), client.pull(branchRef, null).getContentHash())
+
+        // The following bug was observed:
+        // Dependencies to local models that are not stored on the server are not properly created,
+        // even though the dependency itself exist on the server.
+        //
+        // It was also observed that this might be the case for dependencies that involve a devkit.
+
+        val mpsModels = readAction {
+            mpsProject
+                .projectModules
+                .flatMap {
+                    when (it) {
+                        is Language -> listOf(it) + it.generators
+                        else -> listOf(it)
+                    }
+                }
+                .flatMap { it.models }
+                .withoutDescriptorModel()
+                .associateBy { it.name.value }
+        }
+        val serverModels = version1.getModelTree().asReadOnlyModel().getRootNode().getDescendants(true)
+            .filter { it.getConceptReference() == BuiltinLanguages.MPSRepositoryConcepts.Model.getReference() }
+            .associateBy { it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference()).orEmpty() }
+
+        assertEquals(serverModels.keys, mpsModels.keys)
+
+        for (modelName in mpsModels.keys) {
+            val mpsModel = mpsModels.getValue(modelName)
+            val serverModel = serverModels.getValue(modelName)
+
+            val importsInMPS = readAction { ModelImports(mpsModel).importedModels.toSet() }
+            val importsOnServer = serverModel.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.modelImports.toReference())
+                .mapNotNull { it.getReferenceTargetRef(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model.toReference()) }
+                .mapNotNull { MPSModelReference.tryConvert(it)?.toMPS() }
+                .toSet()
+            assertEquals(importsOnServer, importsInMPS)
+        }
     }
 
     private fun getMPSPlatformVersion(): Int {

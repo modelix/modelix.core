@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { GenericContainer } from "testcontainers";
 import type { StartedTestContainer } from "testcontainers";
 import IdSchemeJS = org.modelix.model.client2.IdSchemeJS;
+import { toRoleJS } from "@modelix/ts-model-api";
 
 const connectClient = org.modelix.model.client2.connectClient;
 type ClientJS = org.modelix.model.client2.ClientJS;
@@ -50,7 +51,7 @@ describe("a new merged version", () => {
     client!.setClientProvidedUserId(userId);
     const rootNode = replicatedModel!.getBranch().rootNode;
 
-    rootNode.setPropertyValue("aProperty", "aValue");
+    rootNode.setPropertyValue(toRoleJS("aProperty"), "aValue");
 
     versionInformation = await replicatedModel!.getCurrentVersionInformation();
   });

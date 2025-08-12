@@ -1,6 +1,7 @@
 import { useModelsFromJson } from "../useModelsFromJson";
 import { computed, isReactive, reactive } from "vue";
 import { runGarbageCollection } from "./runGarbageCollection";
+import { toRoleJS } from "@modelix/ts-model-api";
 
 const root = {
   root: {
@@ -36,7 +37,7 @@ function useRootNode() {
 }
 
 test("nodes are not wrapped into a reactive object by Vue ", () => {
-  const node = useRootNode().getChildren("children1")[0];
+  const node = useRootNode().getChildren(toRoleJS("children1"))[0];
 
   const reactiveData = reactive({ node });
 
@@ -45,29 +46,33 @@ test("nodes are not wrapped into a reactive object by Vue ", () => {
 });
 
 test("change to property is reactivly updated", () => {
-  const node = useRootNode().getChildren("children1")[0];
+  const node = useRootNode().getChildren(toRoleJS("children1"))[0];
 
   // We use `computed` to test the reactivity with Vue.
   // Accessing the property directly would circumvent Vue
   // and make this test useless.
-  const computedProperty = computed(() => node.getPropertyValue("aProperty"));
+  const computedProperty = computed(() =>
+    node.getPropertyValue(toRoleJS("aProperty")),
+  );
   expect(computedProperty.value).toBe("aValue");
 
-  node.setPropertyValue("aProperty", "aValue2");
+  node.setPropertyValue(toRoleJS("aProperty"), "aValue2");
   expect(computedProperty.value).toBe("aValue2");
 });
 
 test("change to reference is reactivly updated", () => {
-  const [child0, child1, child2] = useRootNode().getChildren("children1");
+  const [child0, child1, child2] = useRootNode().getChildren(
+    toRoleJS("children1"),
+  );
 
   // We use `computed` to test the reactivity with Vue.
   // Accessing the property directly would circumvent Vue
   // and make this test useless.
   const computedReferenceTargetRef = computed(() =>
-    child0.getReferenceTargetRef("aReference"),
+    child0.getReferenceTargetRef(toRoleJS("aReference")),
   );
   const computedReferenceTargetNode = computed(() =>
-    child0.getReferenceTargetNode("aReference"),
+    child0.getReferenceTargetNode(toRoleJS("aReference")),
   );
 
   expect(computedReferenceTargetRef.value).toBe(null);
@@ -76,11 +81,11 @@ test("change to reference is reactivly updated", () => {
   // see. https://issues.modelix.org/issue/MODELIX-567/
   expect(computedReferenceTargetNode.value).toBe(null);
 
-  child0.setReferenceTargetRef("aReference", child1.getReference());
+  child0.setReferenceTargetRef(toRoleJS("aReference"), child1.getReference());
   expect(computedReferenceTargetRef.value).toBe(child1.getReference());
   expect(computedReferenceTargetNode.value).toBe(child1);
 
-  child0.setReferenceTargetNode("aReference", child2);
+  child0.setReferenceTargetNode(toRoleJS("aReference"), child2);
   expect(computedReferenceTargetRef.value).toBe(child2.getReference());
   expect(computedReferenceTargetNode.value).toBe(child2);
 });
@@ -90,13 +95,13 @@ test("change to children with role is reactive", () => {
 
   const computedChildNames = computed(() =>
     rootNode
-      .getChildren("children1")
-      .map((child) => child.getPropertyValue("name")),
+      .getChildren(toRoleJS("children1"))
+      .map((child) => child.getPropertyValue(toRoleJS("name"))),
   );
   expect(computedChildNames.value).toEqual(["child0", "child1", "child2"]);
 
-  const child3 = rootNode.addNewChild("children1", -1, undefined);
-  child3.setPropertyValue("name", "child3");
+  const child3 = rootNode.addNewChild(toRoleJS("children1"), -1, undefined);
+  child3.setPropertyValue(toRoleJS("name"), "child3");
   expect(computedChildNames.value).toEqual([
     "child0",
     "child1",
@@ -104,12 +109,12 @@ test("change to children with role is reactive", () => {
     "child3",
   ]);
 
-  const child2 = rootNode.getChildren("children1")[2];
+  const child2 = rootNode.getChildren(toRoleJS("children1"))[2];
   rootNode.removeChild(child2);
   expect(computedChildNames.value).toEqual(["child0", "child1", "child3"]);
 
-  const child1 = rootNode.getChildren("children1")[1];
-  rootNode.moveChild("children1", -1, child1);
+  const child1 = rootNode.getChildren(toRoleJS("children1"))[1];
+  rootNode.moveChild(toRoleJS("children1"), -1, child1);
   expect(computedChildNames.value).toEqual(["child0", "child3", "child1"]);
 });
 
@@ -119,12 +124,12 @@ test("change to children with no role is reactive", () => {
   const computedChildNames = computed(() =>
     rootNode
       .getChildren(undefined)
-      .map((child) => child.getPropertyValue("name")),
+      .map((child) => child.getPropertyValue(toRoleJS("name"))),
   );
   expect(computedChildNames.value).toEqual([]);
 
   const child1 = rootNode.addNewChild(undefined, -1, undefined);
-  child1.setPropertyValue("name", "child1");
+  child1.setPropertyValue(toRoleJS("name"), "child1");
   expect(computedChildNames.value).toEqual(["child1"]);
 });
 
@@ -132,12 +137,14 @@ test("change to all children is reactive", () => {
   const rootNode = useRootNode();
 
   const computedChildNames = computed(() =>
-    rootNode.getAllChildren().map((child) => child.getPropertyValue("name")),
+    rootNode
+      .getAllChildren()
+      .map((child) => child.getPropertyValue(toRoleJS("name"))),
   );
   expect(computedChildNames.value).toEqual(["child0", "child1", "child2"]);
 
   const child3 = rootNode.addNewChild(undefined, -1, undefined);
-  child3.setPropertyValue("name", "child3");
+  child3.setPropertyValue(toRoleJS("name"), "child3");
   expect(computedChildNames.value).toEqual([
     "child0",
     "child1",
@@ -148,13 +155,15 @@ test("change to all children is reactive", () => {
 
 test("removing a node is reactive", () => {
   const rootNode = useRootNode();
-  const childCount = rootNode.getChildren("children1").length;
-  const node = rootNode.getChildren("children1")[0];
+  const childCount = rootNode.getChildren(toRoleJS("children1")).length;
+  const node = rootNode.getChildren(toRoleJS("children1"))[0];
 
   // We use `computed` to test the reactivity with Vue.
   // Accessing the property directly would circumvent Vue
   // and make this test useless.
-  const computedProperty = computed(() => rootNode.getChildren("children1"));
+  const computedProperty = computed(() =>
+    rootNode.getChildren(toRoleJS("children1")),
+  );
   expect(computedProperty.value).toHaveLength(childCount);
 
   node.remove();
@@ -168,14 +177,14 @@ test("garbage collection does not break reactivity", async () => {
   function getChild() {
     return rootNode.getAllChildren()[0];
   }
-  getChild().setPropertyValue("name", "firstName");
+  getChild().setPropertyValue(toRoleJS("name"), "firstName");
   const computedChildNames = computed(() =>
-    getChild().getPropertyValue("name"),
+    getChild().getPropertyValue(toRoleJS("name")),
   );
   expect(computedChildNames.value).toEqual("firstName");
 
   await runGarbageCollection();
-  getChild().setPropertyValue("name", "secondName");
+  getChild().setPropertyValue(toRoleJS("name"), "secondName");
 
   expect(computedChildNames.value).toEqual("secondName");
 });

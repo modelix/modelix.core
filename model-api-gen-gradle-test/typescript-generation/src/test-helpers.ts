@@ -1,5 +1,5 @@
 import { org } from "@modelix/model-client";
-import type { ITypedNode} from "@modelix/ts-model-api";
+import { type ITypedNode, toRoleJS } from "@modelix/ts-model-api";
 import { LanguageRegistry } from "@modelix/ts-model-api";
 import { registerLanguages } from "../build/typescript_src";
 
@@ -27,7 +27,7 @@ export function useFakeRootNode(nodeData: object = DEFAULT_NODE_DATA) {
   );
 
   function getUntypedNode(role: string = "children1") {
-    return rootNode.getChildren(role)[0];
+    return rootNode.getChildren(toRoleJS(role))[0];
   }
 
   function getTypedNode<T extends ITypedNode>(role?: string) {

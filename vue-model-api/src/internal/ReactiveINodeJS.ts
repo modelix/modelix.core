@@ -1,4 +1,10 @@
-import type { IConceptJS, INodeJS } from "@modelix/ts-model-api";
+import type {
+  IConceptJS,
+  INodeJS,
+  ChildRole,
+  ReferenceRole,
+  PropertyRole,
+} from "@modelix/ts-model-api";
 import type { Ref } from "vue";
 import { markRaw, shallowRef } from "vue";
 import type { Cache } from "./Cache";
@@ -65,13 +71,13 @@ export class ReactiveINodeJS implements INodeJS {
     markRaw(this);
   }
 
-  private propertyGetter = (role: string) =>
+  private propertyGetter = (role: PropertyRole) =>
     this.unreactiveNode.getPropertyValue(role);
 
-  private referenceTargetRefGetter = (role: string) =>
+  private referenceTargetRefGetter = (role: ReferenceRole) =>
     this.unreactiveNode.getReferenceTargetRef(role);
 
-  private referenceTargetNodeGetter = (role: string) => {
+  private referenceTargetNodeGetter = (role: ReferenceRole) => {
     const unreactiveTargetNode =
       this.unreactiveNode.getReferenceTargetNode(role);
     return unreactiveTargetNode
@@ -79,7 +85,7 @@ export class ReactiveINodeJS implements INodeJS {
       : unreactiveTargetNode;
   };
 
-  private childrenGetter = (role: string | undefined) =>
+  private childrenGetter = (role: ChildRole | undefined) =>
     this.unreactiveNode
       .getChildren(role)
       .map((node) => toReactiveINodeJS(node, this.cache));
@@ -101,7 +107,7 @@ export class ReactiveINodeJS implements INodeJS {
     return this.unreactiveNode.getReference();
   }
 
-  getRoleInParent(): string | undefined {
+  getRoleInParent(): ChildRole | undefined {
     // The role of the own node does not need to be reactive,
     // because the node could have only been obtained by accessing it from its parent.
     // Whenever the role in the parent or the parent changes,
@@ -121,7 +127,7 @@ export class ReactiveINodeJS implements INodeJS {
     this.unreactiveNode.remove();
   }
 
-  getChildren(role: string | undefined): INodeJS[] {
+  getChildren(role: ChildRole | undefined): INodeJS[] {
     const ref = this.getOrCreateRefForRole(
       this.byRoleRefToChildren,
       role,
@@ -137,12 +143,12 @@ export class ReactiveINodeJS implements INodeJS {
     return this.refForAllChildren!.value;
   }
 
-  moveChild(role: string | undefined, index: number, child: INodeJS): void {
+  moveChild(role: ChildRole | undefined, index: number, child: INodeJS): void {
     this.unreactiveNode.moveChild(role, index, unwrapReactiveINodeJS(child));
   }
 
   addNewChild(
-    role: string | undefined,
+    role: ChildRole | undefined,
     index: number,
     concept: IConceptJS | undefined,
   ): INodeJS {
@@ -160,13 +166,13 @@ export class ReactiveINodeJS implements INodeJS {
     return this.unreactiveNode.removeChild(unwrapReactiveINodeJS(child));
   }
 
-  getReferenceRoles(): string[] {
+  getReferenceRoles(): ReferenceRole[] {
     // We do not make the getPropertyRoles reactive,
     // because for a typed reactive API they are not relevant.
     return this.unreactiveNode.getReferenceRoles();
   }
 
-  getReferenceTargetNode(role: string): INodeJS | undefined {
+  getReferenceTargetNode(role: ReferenceRole): INodeJS | undefined {
     const ref = this.getOrCreateRefForRole(
       this.byRoleRefToReferenceTargetNode,
       role,
@@ -175,7 +181,7 @@ export class ReactiveINodeJS implements INodeJS {
     return ref.value;
   }
 
-  getReferenceTargetRef(role: string): INodeReferenceJS | undefined {
+  getReferenceTargetRef(role: ReferenceRole): INodeReferenceJS | undefined {
     const ref = this.getOrCreateRefForRole(
       this.byRoleRefToReferenceTargetRef,
       role,
@@ -184,7 +190,10 @@ export class ReactiveINodeJS implements INodeJS {
     return ref.value;
   }
 
-  setReferenceTargetNode(role: string, target: INodeJS | undefined): void {
+  setReferenceTargetNode(
+    role: ReferenceRole,
+    target: INodeJS | undefined,
+  ): void {
     // The related Vue-`Ref` does not need to be triggered.
     // It will be updated through the changed listener of the branch.
     return this.unreactiveNode.setReferenceTargetNode(
@@ -194,7 +203,7 @@ export class ReactiveINodeJS implements INodeJS {
   }
 
   setReferenceTargetRef(
-    role: string,
+    role: ReferenceRole,
     target: INodeReferenceJS | undefined,
   ): void {
     // The related Vue-`Ref` does not need to be triggered.
@@ -202,13 +211,13 @@ export class ReactiveINodeJS implements INodeJS {
     this.unreactiveNode.setReferenceTargetRef(role, target);
   }
 
-  getPropertyRoles(): string[] {
+  getPropertyRoles(): PropertyRole[] {
     // We do not make the getPropertyRoles reactive,
     // because for a typed reactive API they are not relevant.
     return this.unreactiveNode.getPropertyRoles();
   }
 
-  getPropertyValue(role: string): string | undefined {
+  getPropertyValue(role: PropertyRole): string | undefined {
     const ref = this.getOrCreateRefForRole(
       this.byRoleRefToProperty,
       role,
@@ -217,47 +226,51 @@ export class ReactiveINodeJS implements INodeJS {
     return ref.value;
   }
 
-  setPropertyValue(role: string, value: string | undefined): void {
+  setPropertyValue(role: PropertyRole, value: string | undefined): void {
     // The related Vue-`Ref` does not need to be triggered.
     // It will be updated through the changed listener of the branch.
     this.unreactiveNode.setPropertyValue(role, value);
   }
 
-  getOrCreateRefForRole<ValueT>(
+  getOrCreateRefForRole<ValueT, RoleT>(
     byRoleRefs: org.modelix.model.api.MapWithRoleKey<Ref<ValueT>>,
-    role: string | undefined,
-    getValue: (role: string) => ValueT,
+    role: RoleT,
+    getValue: (role: RoleT) => ValueT,
   ): Ref<ValueT> {
-    return byRoleRefs.getOrPut(role ?? "null", () =>
-      shallowRef(getValue(role ?? "null")),
+    return byRoleRefs.getOrPut((role as unknown as string) ?? "null", () =>
+      shallowRef(getValue(role)),
     );
   }
 
-  triggerChangeInChild(role: Nullable<string>) {
+  triggerChangeInChild(role: Nullable<ChildRole>) {
     if (this.refForAllChildren) {
       this.refForAllChildren.value = this.allChildrenGetter();
     }
 
-    const normalizedRole = role ?? "null";
-    const maybeRef = this.byRoleRefToChildren.get(normalizedRole);
+    const normalizedRole = role ?? undefined;
+    const maybeRef = this.byRoleRefToChildren.get(role as unknown as string);
     if (maybeRef) {
       maybeRef.value = this.childrenGetter(normalizedRole);
     }
   }
 
-  triggerChangeInReference(role: string) {
-    const maybeTargetNodeRef = this.byRoleRefToReferenceTargetNode.get(role);
+  triggerChangeInReference(role: ReferenceRole) {
+    const maybeTargetNodeRef = this.byRoleRefToReferenceTargetNode.get(
+      role as unknown as string,
+    );
     if (maybeTargetNodeRef) {
       maybeTargetNodeRef.value = this.referenceTargetNodeGetter(role);
     }
-    const maybeTargetRefRef = this.byRoleRefToReferenceTargetRef.get(role);
+    const maybeTargetRefRef = this.byRoleRefToReferenceTargetRef.get(
+      role as unknown as string,
+    );
     if (maybeTargetRefRef) {
       maybeTargetRefRef.value = this.referenceTargetRefGetter(role);
     }
   }
 
-  triggerChangeInProperty(role: string) {
-    const maybeRef = this.byRoleRefToProperty.get(role);
+  triggerChangeInProperty(role: PropertyRole) {
+    const maybeRef = this.byRoleRefToProperty.get(role as unknown as string);
     if (maybeRef) {
       maybeRef.value = this.propertyGetter(role);
     }

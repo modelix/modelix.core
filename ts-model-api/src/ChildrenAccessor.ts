@@ -1,10 +1,10 @@
 import type {ITypedNode} from "./TypedNode.js";
-import type {INodeJS} from "./INodeJS.js";
+import type {INodeJS, ChildRole} from "./INodeJS.js";
 import {LanguageRegistry} from "./LanguageRegistry.js";
 import type {IConceptJS} from "./IConceptJS.js";
 
 export abstract class ChildrenAccessor<ChildT extends ITypedNode> implements Iterable<ChildT> {
-  constructor(public parentNode: INodeJS, public role: string | undefined) {
+  constructor(public parentNode: INodeJS, public role: ChildRole | undefined) {
   }
 
   [Symbol.iterator](): Iterator<ChildT> {
@@ -21,7 +21,7 @@ export abstract class ChildrenAccessor<ChildT extends ITypedNode> implements Ite
 }
 
 export class ChildListAccessor<ChildT extends ITypedNode> extends ChildrenAccessor<ChildT> {
-  constructor(parentNode: INodeJS, role: string | undefined) {
+  constructor(parentNode: INodeJS, role: ChildRole | undefined) {
     super(parentNode, role);
   }
 
@@ -35,7 +35,7 @@ export class ChildListAccessor<ChildT extends ITypedNode> extends ChildrenAccess
 }
 
 export class SingleChildAccessor<ChildT extends ITypedNode> extends ChildrenAccessor<ChildT> {
-  constructor(parentNode: INodeJS, role: string | undefined) {
+  constructor(parentNode: INodeJS, role: ChildRole | undefined) {
     super(parentNode, role);
   }
 

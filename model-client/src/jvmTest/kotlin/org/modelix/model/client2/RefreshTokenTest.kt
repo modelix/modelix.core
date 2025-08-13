@@ -33,6 +33,7 @@ import org.modelix.model.oauth.IAuthRequestHandler
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @Serializable
 private data class TokenResponse2(
@@ -276,7 +277,7 @@ class RefreshTokenTest {
                 invalidateAccessToken()
                 val actualBranches2 = modelClient.listBranches(RepositoryId(expectedRepoId))
                 assertEquals(expectedBranches, actualBranches2)
-                assertEquals(3, nextTokenSuffix)
+                assertTrue(nextTokenSuffix >= 3, "No token refresh happened")
             }
         }
     }

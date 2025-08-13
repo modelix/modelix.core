@@ -11,6 +11,7 @@ import org.jetbrains.mps.openapi.model.EditableSModel
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.model.SModelName
+import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
@@ -19,9 +20,11 @@ import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
+import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.data.asData
+import org.modelix.mps.multiplatform.model.MPSModelReference
 
 data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
 
@@ -82,10 +85,24 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
                     sourceNode: SpecWithResolvedConcept,
                 ): IWritableNode {
                     require(sourceNode.getConceptReference() == BuiltinLanguages.MPSRepositoryConcepts.ModelReference.getReference())
+                    val modelRef = getTargetModelRef(sourceNode.getNode())
+                    ModelImports(element).addModelImport(modelRef)
+                    return MPSModelImportAsNode(modelRef, element)
+                }
 
-                    val importedModel = checkNotNull(sourceNode.getNode().getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model.toReference())) {
-                        "Model reference not set: ${sourceNode.getNode().asLegacyNode().asData().toJson()}"
+                private fun getTargetModelRef(modelReferenceNode: IReadableNode): SModelReference {
+                    val importedModel = modelReferenceNode.getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model.toReference())
+
+                    if (importedModel == null) {
+                        val targetId = checkNotNull(modelReferenceNode.getReferenceTargetRef(BuiltinLanguages.MPSRepositoryConcepts.ModelReference.model.toReference())) {
+                            "Model reference not set: ${modelReferenceNode.asLegacyNode().asData().toJson()}"
+                        }
+                        val refFromId = checkNotNull(MPSModelReference.tryConvert(targetId)) {
+                            "Target model not resolvable and also has no MPS compatible ID: ${modelReferenceNode.asLegacyNode().asData().toJson()}"
+                        }
+                        return refFromId.toMPS()
                     }
+
                     val modelId = checkNotNull(importedModel.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id.toReference())) {
                         "Target model has no ID: $importedModel"
                     }
@@ -101,8 +118,7 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
                         smodelId,
                         modelName,
                     )
-                    ModelImports(element).addModelImport(modelRef)
-                    return MPSModelImportAsNode(modelRef, element)
+                    return modelRef
                 }
 
                 override fun remove(

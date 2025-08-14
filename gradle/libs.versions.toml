@@ -25,7 +25,7 @@ docker-compose = { id = "com.avast.gradle.docker-compose" , version = "0.17.12" 
 jib = { id = "com.google.cloud.tools.jib", version = "3.4.5" }
 
 [versions]
-kotlin = "2.2.0"
+kotlin = "2.2.10"
 kotlinCoroutines="1.10.2"
 ktor="3.2.3"
 kotlinSerialization="1.9.0"

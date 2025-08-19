@@ -78,11 +78,11 @@ actual class ModelixAuthClient {
     }
 
     suspend fun getAndMaybeRefreshTokens(): Credential? {
-        return getTokens()?.refreshIfExpired()
+        return lastCredentials?.refreshIfExpired()
     }
 
     suspend fun refreshTokensOrReauthorize(config: OAuthConfig): Credential? {
-        return getTokens()?.alwaysRefresh() ?: authorize(config)
+        return lastCredentials?.alwaysRefresh() ?: authorize(config)
     }
 
     suspend fun authorize(config: OAuthConfig): Credential? {
@@ -114,6 +114,7 @@ actual class ModelixAuthClient {
                     return@withContext tokens
                 } catch (ex: SocketException) {
                     LOG.info("Port $port already in use. Trying next one.")
+                    LOG.debug(ex)
                 }
             }
             throw IllegalStateException("Couldn't find an available port for the redirect URL")

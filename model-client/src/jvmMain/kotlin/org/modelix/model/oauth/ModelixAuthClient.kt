@@ -114,7 +114,7 @@ actual class ModelixAuthClient {
                     return@withContext tokens
                 } catch (ex: SocketException) {
                     LOG.info("Port $port already in use. Trying next one.")
-                    LOG.debug(ex)
+                    LOG.debug("Login failed with socket exception, which is expected, if we can not open the callback port.", ex)
                 }
             }
             throw IllegalStateException("Couldn't find an available port for the redirect URL")

@@ -25,33 +25,25 @@ class AppLevelModelSyncService() : Disposable {
 
     private val connections = LinkedHashMap<ModelServerConnectionProperties, ServerConnection>()
     private val coroutinesScope = CoroutineScope(Dispatchers.Default)
-    private val connectionCheckingJob = coroutinesScope.launchLoop(
-        BackoffStrategy(
-            initialDelay = 3_000,
-            maxDelay = 10_000,
-            factor = 1.2,
-        ),
-    ) {
-        for (connection in synchronized(connections) { connections.values.toList() }) {
-            connection.checkConnection()
-        }
-    }
 
     @Synchronized
     fun getConnections() = synchronized(connections) { connections.values.toList() }
 
     @Synchronized
     fun getOrCreateConnection(properties: ModelServerConnectionProperties): ServerConnection {
-        return synchronized(connections) { connections.getOrPut(properties) { ServerConnection(properties) } }
+        return synchronized(connections) { connections.getOrPut(properties) { ServerConnection(properties, coroutinesScope) } }
     }
 
     override fun dispose() {
         coroutinesScope.cancel("disposed")
+        connections.values.forEach { it.dispose() }
     }
 
-    class ServerConnection(val properties: ModelServerConnectionProperties) {
+    class ServerConnection(val properties: ModelServerConnectionProperties, val coroutinesScope: CoroutineScope) {
         private var client: ValueWithMutex<ModelClientV2?> = ValueWithMutex(null)
         private var connected: Boolean = false
+        private var enabled: Boolean = true
+        private var disposed: Boolean = false
         private val authRequestHandler = AsyncAuthRequestHandler()
         private var authConfig: IAuthConfig = IAuthConfig.oauth {
             clientId(properties.oauthClientId ?: "external-mps")
@@ -59,8 +51,16 @@ class AppLevelModelSyncService() : Disposable {
             authRequestHandler(authRequestHandler)
             properties.repositoryId?.let { repositoryId(it) }
         }
-
+        private val connectionCheckingJob = coroutinesScope.launchLoop(
+            BackoffStrategy(
+                initialDelay = 3_000,
+                maxDelay = 10_000,
+                factor = 1.2,
+            ),
+        ) { checkConnection() }
         suspend fun getClient(): IModelClientV2 {
+            checkDisposed()
+            check(enabled) { "disabled" }
             return client.getValue() ?: client.updateValue {
                 it ?: ModelClientV2.builder()
                     .url(properties.url)
@@ -72,6 +72,7 @@ class AppLevelModelSyncService() : Disposable {
         }
 
         suspend fun checkConnection() {
+            if (!enabled) return
             try {
                 getClient().getServerId()
                 connected = true
@@ -83,7 +84,24 @@ class AppLevelModelSyncService() : Disposable {
 
         fun isConnected(): Boolean = connected
 
+        fun isEnabled() = enabled
+
+        fun setEnabled(enabled: Boolean) = if (enabled) enable() else disable()
+
+        fun enable() {
+            checkDisposed()
+            if (enabled) return
+            enabled = true
+        }
+
+        fun disable() {
+            if (!enabled) return
+            enabled = false
+            disconnect()
+        }
+
         fun disconnect() {
+            checkDisposed()
             authRequestHandler.clear()
             runBlocking {
                 client.updateValue {
@@ -95,16 +113,28 @@ class AppLevelModelSyncService() : Disposable {
         }
 
         fun setAuthorizationConfig(config: IAuthConfig) {
+            checkDisposed()
             this.authConfig = config
             runBlocking { client.updateValue { null } }
         }
 
         fun configureOAuth(body: OAuthConfigBuilder.() -> Unit) {
+            checkDisposed()
             this.authConfig = OAuthConfigBuilder(this.authConfig as? OAuthConfig).apply(body).build()
             runBlocking { client.updateValue { null } }
         }
 
-        fun getPendingAuthRequest(): String? = authRequestHandler.getPendingRequest()
+        fun getPendingAuthRequest(): String? {
+            checkDisposed()
+            return authRequestHandler.getPendingRequest()
+        }
+
+        fun dispose() {
+            disable()
+            disposed = true
+        }
+
+        private fun checkDisposed() = check(!disposed) { "disposed" }
     }
 }
 

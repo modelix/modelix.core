@@ -24,10 +24,26 @@ class IdentityPreservingNodeAssociation(
         sourceNode: IReadableNode,
         targetNode: IWritableNode,
     ) {
+        tryAssociate(sourceNode, targetNode)?.let { throw IllegalArgumentException(it) }
+    }
+
+    override fun matches(
+        sourceNode: IReadableNode,
+        targetNode: IWritableNode,
+    ): Boolean {
+        return tryAssociate(sourceNode, targetNode) == null
+    }
+
+    private fun tryAssociate(
+        sourceNode: IReadableNode,
+        targetNode: IWritableNode,
+    ): String? {
         val sourceReference = sourceNode.getNodeReference()
         val expectedTargetReference = overrides[sourceReference] ?: sourceReference
         val actualTargetReference = targetNode.getNodeReference()
-        require(expectedTargetReference == actualTargetReference) {
+        return if (expectedTargetReference == actualTargetReference) {
+            null
+        } else {
             "Cannot associate $sourceReference with $actualTargetReference, expected: $expectedTargetReference"
         }
     }

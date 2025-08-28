@@ -8,6 +8,7 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.promise
+import kotlinx.datetime.toJSDate
 import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.model.TreeId
 import org.modelix.model.api.INode
@@ -15,11 +16,13 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.JSNodeConverter
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.data.ModelData
+import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.mutable.DummyIdGenerator
 import org.modelix.model.mutable.INodeIdGenerator
 import org.modelix.model.mutable.ModelixIdGenerator
+import org.modelix.model.mutable.VersionedModelTree
 import org.modelix.model.mutable.asMutableThreadSafe
 import org.modelix.model.mutable.load
 import org.modelix.model.mutable.withAutoTransactions
@@ -80,6 +83,9 @@ sealed class IdSchemeJS() {
     object READONLY : IdSchemeJS()
 }
 
+@JsExport
+data class VersionInformationWithModelTree(val version: VersionInformationJS, val tree: MutableModelTreeJs)
+
 /**
  * JS-API for [ModelClientV2].
  * Can be used to perform operations on the model server and to read and write model data.
@@ -110,6 +116,8 @@ interface ClientJS {
      *                   to access roles see [ITree.usesRoleIds]
      */
     fun initRepository(repositoryId: String, useRoleIds: Boolean = true): Promise<Unit>
+
+    fun loadReadonlyVersion(repositoryId: String, versionHash: String): Promise<VersionInformationWithModelTree>
 
     /**
      * Fetch existing branches for a given repository from the model server.
@@ -189,6 +197,20 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
         return GlobalScope.promise {
             model.start()
             return@promise ReplicatedModelJSImpl(model)
+        }
+    }
+
+    override fun loadReadonlyVersion(repositoryId: String, versionHash: String): Promise<VersionInformationWithModelTree> {
+        return GlobalScope.promise {
+            val version = modelClient.loadVersion(RepositoryId(repositoryId), versionHash, null)
+            VersionInformationWithModelTree(
+                VersionInformationJS(
+                    (version as CLVersion).author,
+                    version.getTimestamp()?.toJSDate(),
+                    version.getContentHash(),
+                ),
+                MutableModelTreeJsImpl(VersionedModelTree(version).withAutoTransactions()),
+            )
         }
     }
 

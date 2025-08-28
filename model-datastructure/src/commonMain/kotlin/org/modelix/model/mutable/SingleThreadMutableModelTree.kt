@@ -12,6 +12,9 @@ class SingleThreadMutableModelTree<NodeId>(
     override var tree: IGenericModelTree<NodeId>,
     private val idGenerator: INodeIdGenerator<NodeId> = DummyIdGenerator(),
 ) : IGenericMutableModelTree<NodeId>, IGenericMutableModelTree.WriteTransaction<NodeId> {
+
+    private var listeners: Set<IGenericMutableModelTree.Listener<NodeId>> = emptySet()
+
     override fun getId(): TreeId {
         return tree.getId()
     }
@@ -45,15 +48,20 @@ class SingleThreadMutableModelTree<NodeId>(
     }
 
     override fun addListener(listener: IGenericMutableModelTree.Listener<NodeId>) {
-        throw UnsupportedOperationException()
+        listeners += listener
     }
 
     override fun removeListener(listener: IGenericMutableModelTree.Listener<NodeId>) {
-        throw UnsupportedOperationException()
+        listeners -= listener
     }
 
     override fun mutate(parameters: MutationParameters<NodeId>) {
-        tree = tree.mutate(parameters).getBlocking(tree)
+        val oldTree = tree
+        val newTree = tree.mutate(parameters).getBlocking(tree)
+        tree = newTree
+        for (listener in listeners) {
+            listener.treeChanged(oldTree, newTree)
+        }
     }
 }
 

@@ -24,6 +24,7 @@ import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.mutable.DummyIdGenerator
 import org.modelix.model.mutable.INodeIdGenerator
 import org.modelix.model.mutable.ModelixIdGenerator
+import org.modelix.model.mutable.asMutableReadonly
 import org.modelix.model.mutable.asMutableThreadSafe
 import org.modelix.model.mutable.load
 import org.modelix.model.mutable.withAutoTransactions
@@ -86,6 +87,9 @@ sealed class IdSchemeJS() {
     object READONLY : IdSchemeJS()
 }
 
+@JsExport
+data class VersionInformationWithModelTree(val version: VersionInformationJS, val tree: MutableModelTreeJs)
+
 /**
  * JS-API for [ModelClientV2].
  * Can be used to perform operations on the model server and to read and write model data.
@@ -116,6 +120,8 @@ interface ClientJS {
      *                   to access roles see [ITree.usesRoleIds]
      */
     fun initRepository(repositoryId: String, useRoleIds: Boolean = true): Promise<Unit>
+
+    fun loadReadonlyVersion(repositoryId: String, versionHash: String): Promise<VersionInformationWithModelTree>
 
     fun getHistoryRange(repositoryId: String, headVersion: String, skip: Int, limit: Int): Promise<Array<VersionInformationJS>>
     fun getHistorySessions(repositoryId: String, headVersion: String, delaySeconds: Int, skip: Int, limit: Int): Promise<Array<HistoryIntervalJS>>
@@ -205,6 +211,20 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
         return GlobalScope.promise {
             model.start()
             return@promise ReplicatedModelJSImpl(model)
+        }
+    }
+
+    override fun loadReadonlyVersion(repositoryId: String, versionHash: String): Promise<VersionInformationWithModelTree> {
+        return GlobalScope.promise {
+            val version = modelClient.loadVersion(RepositoryId(repositoryId), versionHash, null)
+            VersionInformationWithModelTree(
+                VersionInformationJS(
+                    version.getAuthor(),
+                    version.getTimestamp()?.toJSDate(),
+                    version.getContentHash(),
+                ),
+                MutableModelTreeJsImpl(version.getModelTree().asMutableReadonly()),
+            )
         }
     }
 

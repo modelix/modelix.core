@@ -113,6 +113,9 @@ class MPSMetaModelExporter(private val outputFolder: File) {
                     }
                     fqName(it)
                 }
+            val smodelAttributes = SNodeOperations
+                .getChildren(concept, LINKS.smodelAttribute)
+                .map(MPSModelExporter::exportNode)
             val metaProperties: MutableMap<String, String> = HashMap()
             if (SPropertyOperations.getString(concept, PROPS.conceptAlias) != null) {
                 metaProperties[ConceptData.ALIAS_KEY] =
@@ -127,6 +130,7 @@ class MPSMetaModelExporter(private val outputFolder: File) {
                 referenceLinks,
                 superConcepts,
                 deprecationMsg(concept),
+                smodelAttributes,
                 metaProperties,
             )
         }
@@ -294,6 +298,13 @@ class MPSMetaModelExporter(private val outputFolder: File) {
             0x2e770ca32c607c5fL,
             0xeeb344f63fe016cL,
             "defaultMember",
+        )
+        val smodelAttribute: SContainmentLink = MetaAdapterFactory.getContainmentLink(
+            -0x3154ae6ada15b0deL,
+            -0x646defc46a3573f4L,
+            0x10802efe25aL,
+            0x47bf8397520e5942L,
+            "smodelAttribute",
         )
     }
 

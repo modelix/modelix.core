@@ -22,6 +22,7 @@ import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.mutable.DummyIdGenerator
 import org.modelix.model.mutable.INodeIdGenerator
 import org.modelix.model.mutable.ModelixIdGenerator
+import org.modelix.model.mutable.VersionedModelTree
 import org.modelix.model.mutable.asMutableSingleThreaded
 import org.modelix.model.mutable.asMutableThreadSafe
 import org.modelix.model.mutable.load
@@ -83,6 +84,9 @@ sealed class IdSchemeJS() {
     object READONLY : IdSchemeJS()
 }
 
+@JsExport
+data class VersionInformationWithModelTree(val version: VersionInformationJS, val tree: MutableModelTreeJs)
+
 /**
  * JS-API for [ModelClientV2].
  * Can be used to perform operations on the model server and to read and write model data.
@@ -114,7 +118,7 @@ interface ClientJS {
      */
     fun initRepository(repositoryId: String, useRoleIds: Boolean = true): Promise<Unit>
 
-    fun loadReadonlyVersion(repositoryId: String, versionHash: String): Promise<Pair<MutableModelTreeJs, VersionInformationJS>>
+    fun loadReadonlyVersion(repositoryId: String, versionHash: String): Promise<VersionInformationWithModelTree>
 
     /**
      * Fetch existing branches for a given repository from the model server.
@@ -197,13 +201,16 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
         }
     }
 
-    override fun loadReadonlyVersion(repositoryId: String, versionHash: String): Promise<Pair<MutableModelTreeJs, VersionInformationJS>> {
+    override fun loadReadonlyVersion(repositoryId: String, versionHash: String): Promise<VersionInformationWithModelTree> {
         return GlobalScope.promise {
             val version = modelClient.loadVersion(RepositoryId(repositoryId), versionHash, null)
-            MutableModelTreeJsImpl(version.getModelTree().asMutableSingleThreaded()) to VersionInformationJS(
-                (version as CLVersion).author,
-                version.getTimestamp()?.toJSDate(),
-                version.getContentHash())
+            VersionInformationWithModelTree(
+                VersionInformationJS(
+                    (version as CLVersion).author,
+                    version.getTimestamp()?.toJSDate(),
+                    version.getContentHash()),
+                MutableModelTreeJsImpl(VersionedModelTree(version).withAutoTransactions())
+            )
         }
     }
 

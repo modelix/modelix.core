@@ -1,3 +1,4 @@
+import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.model.IKeyValueStore
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IConcept
@@ -11,6 +12,7 @@ import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.operations.LegacyBranchAsMutableModelTree
 import org.modelix.model.operations.OTBranch
+import org.modelix.model.persistent.CPTree
 import org.modelix.model.persistent.MapBaseStore
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -312,6 +314,13 @@ class TreeSerializationTest {
         )
 
         assertStore(mapStore)
+    }
+
+    @Test
+    fun backwards_compatibility_of_persistence_version_2() {
+        val serialized = "4f7aa052-43e0-4f5e-b5c8-f197a80507a0/2/V_4I6*Hbk19Lb1sBNIU1k7aA9kGXTI3zBQqYZ9CZje74"
+        val deserialized = CPTree.deserialize(serialized, IObjectGraph.FREE_FLOATING)
+        assertEquals(serialized, deserialized.serialize())
     }
 
     fun assertStore(store: IKeyValueStore) {

@@ -68,7 +68,7 @@ data class CPTree(
             usesRoleIds -> INT64_WITH_ROLE_IDS
             else -> INT64_WITH_ROLE_NAMES
         }
-        return "$id/$pv/${getTreeReference().getHash()}/${if (usesRoleIds) "i" else "n"}"
+        return "$id/$pv/${getTreeReference().getHash()}${if (usesRoleIds) "/i" else ""}"
     }
 
     override fun getDeserializer(): IObjectDeserializer<CPTree> = DESERIALIZER
@@ -133,7 +133,12 @@ data class CPTree(
             val graph = referenceFactory as IObjectGraph
             return when (persistenceVersion) {
                 STRING_IDS -> {
-                    val usesRoleIds = parts.getOrNull(3) != "n"
+                    val usesRoleIds = when (val part = parts.getOrNull(3)) {
+                        null -> false
+                        "n" -> false
+                        "i" -> true
+                        else -> throw IllegalArgumentException("Unknown value `$part` in $input")
+                    }
                     CPTree(
                         id = treeId,
                         int64Hamt = null,

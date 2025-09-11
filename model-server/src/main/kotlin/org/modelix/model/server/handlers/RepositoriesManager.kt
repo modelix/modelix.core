@@ -3,9 +3,14 @@ package org.modelix.model.server.handlers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.datetime.Clock
+import org.modelix.datastructures.model.HistoryIndexNode
 import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.datastructures.model.getHash
+import org.modelix.datastructures.model.merge
 import org.modelix.datastructures.model.withIdTranslation
+import org.modelix.datastructures.objects.Object
+import org.modelix.datastructures.objects.ObjectHash
+import org.modelix.datastructures.objects.asObject
 import org.modelix.model.IVersion
 import org.modelix.model.ModelMigrations
 import org.modelix.model.ObjectDeltaFilter
@@ -393,6 +398,32 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         if (!isolated) {
             stores.genericStore.put(legacyBranchKey(branch), hash, false)
         }
+        if (hash != null) {
+            // eager update of the index
+            getVersion(branch.repositoryId, hash)?.let { getOrCreateHistoryIndex(branch.repositoryId, it) }
+        }
+    }
+
+    @RequiresTransaction
+    fun getOrCreateHistoryIndex(repositoryId: RepositoryId, version: CLVersion): Object<HistoryIndexNode> {
+        val key = versionHistoryKey(repositoryId, version.getObjectHash())
+        val indexHash = stores.genericStore.get(key)?.let { ObjectHash(it) }
+        val graph = stores.getAsyncStore(repositoryId.takeIf { isIsolated(it) ?: false }).asObjectGraph()
+        if (indexHash != null) {
+            return graph.fromHash(indexHash, HistoryIndexNode).resolveNow()
+        } else {
+            val parentIndices = version.getParentVersions().map { getOrCreateHistoryIndex(repositoryId, it as CLVersion) }
+            val newElement = HistoryIndexNode.of(version.obj).asObject(graph)
+            val newIndex = when (parentIndices.size) {
+                0 -> newElement
+                1 -> parentIndices.single().merge(newElement)
+                2 -> parentIndices[0].merge(parentIndices[1]).merge(newElement)
+                else -> error("impossible")
+            }
+            newIndex.write()
+            stores.genericStore.put(key, newIndex.getHashString())
+            return newIndex
+        }
     }
 
     override suspend fun pollVersionHash(branch: BranchReference, lastKnown: String?): String {
@@ -482,6 +513,14 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
             ObjectInRepository(branch.repositoryId.id, "$KEY_PREFIX:branches:${SerializationUtil.escape(branch.branchName)}")
         } else {
             ObjectInRepository.global("$KEY_PREFIX:repositories:${branch.repositoryId.id}:branches:${branch.branchName}")
+        }
+    }
+
+    private fun versionHistoryKey(repositoryId: RepositoryId, versionHash: ObjectHash, isolated: Boolean = isIsolated(repositoryId) ?: true): ObjectInRepository {
+        return if (isolated) {
+            ObjectInRepository(repositoryId.id, "$KEY_PREFIX:historyIndex:$versionHash")
+        } else {
+            ObjectInRepository.global("$KEY_PREFIX:repositories:${repositoryId.id}:historyIndex:$versionHash")
         }
     }
 

@@ -27,7 +27,22 @@ interface IStream<out E> {
         fun filter(predicate: (E) -> Boolean): Many<E>
         fun <R> map(mapper: (E) -> R): Many<R>
         fun <R : Any> mapNotNull(mapper: (E) -> R?): Many<R> = map(mapper).filterNotNull()
-        fun <R> flatMap(mapper: (E) -> Many<R>): Many<R>
+
+        @Deprecated("Use flatMapOrdered or flatMapUnordered")
+        fun <R> flatMap(mapper: (E) -> Many<R>): Many<R> = flatMapOrdered(mapper)
+
+        /**
+         * Output elements are only emitted after all output elements of the previous input are emitted.
+         * Can have a lower performance than [flatMapUnordered].
+         */
+        fun <R> flatMapOrdered(mapper: (E) -> Many<R>): Many<R>
+
+        /**
+         * Output elements are emitted as soon as possible.
+         * Can have a higher performance than [flatMapOrdered].
+         */
+        fun <R> flatMapUnordered(mapper: (E) -> Many<R>): Many<R> = flatMapOrdered(mapper)
+
         fun <R> flatMapIterable(mapper: (E) -> Iterable<R>): Many<R> = flatMap { IStream.many(mapper(it)) }
         fun concat(other: Many<@UnsafeVariance E>): Many<E>
         fun concat(other: OneOrMany<@UnsafeVariance E>): OneOrMany<E>

@@ -27,8 +27,12 @@ open class CollectionAsStream<E>(val collection: Collection<E>) : IStream.Many<E
         return SingleValueStream(collection.firstOrNull())
     }
 
-    override fun <R> flatMap(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
-        return convertLater().flatMap(mapper)
+    override fun <R> flatMapOrdered(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
+        return convertLater().flatMapOrdered(mapper)
+    }
+
+    override fun <R> flatMapUnordered(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
+        return convertLater().flatMapUnordered(mapper)
     }
 
     override fun <R> flatMapIterable(mapper: (E) -> Iterable<R>): IStream.Many<R> {

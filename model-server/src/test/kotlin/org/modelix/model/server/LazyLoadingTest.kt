@@ -148,7 +148,7 @@ private object DepthFirstSearchPattern : AccessPattern {
 private object StreamBasedApi : AccessPattern {
     override suspend fun runPattern(rootNode: INode) {
         val asyncNode = rootNode.asAsyncNode()
-        asyncNode.querySuspending { asyncNode.getDescendants(true).count() }
+        asyncNode.querySuspending { asyncNode.getDescendantsUnordered(true).count() }
     }
 }
 

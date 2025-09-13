@@ -162,9 +162,15 @@ class DeferredStreamBuilder : IStreamBuilder {
             return ConvertibleMany { convert(it).map(mapper) }
         }
 
-        override fun <R> flatMap(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
+        override fun <R> flatMapUnordered(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
             return ConvertibleMany { converter ->
-                convert(converter).flatMap { mapper(it).convert(converter) }
+                convert(converter).flatMapUnordered { mapper(it).convert(converter) }
+            }
+        }
+
+        override fun <R> flatMapOrdered(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
+            return ConvertibleMany { converter ->
+                convert(converter).flatMapOrdered { mapper(it).convert(converter) }
             }
         }
 

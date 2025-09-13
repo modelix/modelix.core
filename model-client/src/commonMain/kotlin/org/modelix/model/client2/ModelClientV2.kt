@@ -37,7 +37,9 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
+import org.modelix.datastructures.model.HistoryIndexNode
 import org.modelix.datastructures.objects.IObjectGraph
+import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.kotlin.utils.WeakValueMap
@@ -89,6 +91,8 @@ import org.modelix.model.server.api.v2.toMap
 import org.modelix.modelql.client.ModelQLClient
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.streams.IExecutableStream
+import org.modelix.streams.getSuspending
+import org.modelix.streams.iterateSuspending
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -325,6 +329,106 @@ class ModelClientV2(
                 }
             }
             throw VersionNotFoundException(versionHash)
+        }
+    }
+
+    override suspend fun getHistory(
+        repositoryId: RepositoryId,
+        headVersion: ObjectHash,
+        skip: Int,
+        limit: Int,
+        interval: Duration?,
+    ): HistoryResponse {
+        val index: Object<HistoryIndexNode> = getHistoryIndex(repositoryId, headVersion)
+        val entries = if (interval != null) {
+            val mergedEntries = ArrayList<HistoryEntry>()
+            var previousIntervalId: Long = Long.MAX_VALUE
+            try {
+                index.data.splitAtInterval(interval).iterateSuspending(index.graph) {
+                    val intervalId = it.maxTime.toEpochMilliseconds() / interval.inWholeMilliseconds
+                    require(intervalId <= previousIntervalId)
+                    if (intervalId == previousIntervalId) {
+                        val entry = mergedEntries[mergedEntries.lastIndex]
+                        mergedEntries[mergedEntries.lastIndex] = HistoryEntry(
+                            firstVersionHash = it.firstVersion.getHash(),
+                            lastVersionHash = entry.lastVersionHash,
+                            minTime = it.minTime.epochSeconds,
+                            maxTime = entry.maxTime,
+                            authors = entry.authors + it.authors,
+                        )
+                    } else {
+                        if (mergedEntries.size >= limit) throw LimitedReached()
+                        previousIntervalId = intervalId
+                        mergedEntries += HistoryEntry(
+                            firstVersionHash = it.firstVersion.getHash(),
+                            lastVersionHash = it.lastVersion.getHash(),
+                            minTime = it.minTime.epochSeconds,
+                            maxTime = it.maxTime.epochSeconds,
+                            authors = it.authors,
+                        )
+                    }
+                }
+            } catch (ex: LimitedReached) {
+                // Expected exception used for exiting the iterateSuspending call
+            }
+            mergedEntries
+        } else {
+            index.data.getAllVersionsReversed().flatMapOrdered { it.resolve() }.map { CLVersion(it) }
+                .map {
+                    val hash = it.getObjectHash()
+                    val time = it.getTimestamp()?.epochSeconds
+                    HistoryEntry(
+                        firstVersionHash = hash,
+                        lastVersionHash = hash,
+                        minTime = time,
+                        maxTime = time,
+                        authors = setOfNotNull(it.author),
+                    )
+                }
+                .take(limit)
+                .toList()
+                .getSuspending(index.graph)
+        }
+        return HistoryResponse(entries = entries, nextVersions = emptyList())
+    }
+
+    override suspend fun getHistoryRange(
+        repositoryId: RepositoryId,
+        headVersion: ObjectHash,
+        skip: Long,
+        limit: Long,
+    ): List<IVersion> {
+        val index: Object<HistoryIndexNode> = getHistoryIndex(repositoryId, headVersion)
+        return index.data.getRange(skip until (limit + skip))
+            .flatMapOrdered { it.getAllVersionsReversed() }
+            .flatMapOrdered { it.resolve() }
+            .map { CLVersion(it) }
+            .toList()
+            .getSuspending(index.graph)
+    }
+
+    suspend fun getHistoryIndex(
+        repositoryId: RepositoryId?,
+        versionHash: ObjectHash,
+    ): Object<HistoryIndexNode> {
+        return httpClient.prepareGet {
+            url {
+                takeFrom(baseUrl)
+                if (repositoryId == null) {
+                    appendPathSegments("versions", versionHash.toString())
+                } else {
+                    appendPathSegments("repositories", repositoryId.id, "versions", versionHash.toString())
+                }
+                appendPathSegments("history-index")
+            }
+        }.execute { response ->
+            val graph = getObjectGraph(repositoryId).also { it.config = it.config.copy(lazyLoadingEnabled = true) }
+            val text = response.bodyAsText()
+            val hashString = text.substringBefore('\n')
+            val serialized = text.substringAfter('\n')
+            val deserialized = HistoryIndexNode.deserialize(serialized, graph)
+            val ref = graph.fromDeserialized(ObjectHash(hashString), deserialized)
+            Object(deserialized, ref)
         }
     }
 
@@ -968,3 +1072,5 @@ fun IVersion.runWrite(idGenerator: IIdGenerator, author: String?, body: (IBranch
 }
 
 private fun String.ensureSuffix(suffix: String) = if (endsWith(suffix)) this else this + suffix
+
+private class LimitedReached : RuntimeException("limited reached")

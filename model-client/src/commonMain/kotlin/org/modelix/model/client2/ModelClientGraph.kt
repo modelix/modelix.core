@@ -128,8 +128,12 @@ class ModelClientGraph(
         hash: ObjectHash,
         data: T,
     ): ObjectReference<T> {
-        // Should never be called, because all deserialization happens internally.
-        throw UnsupportedOperationException()
+        if (config.lazyLoadingEnabled) {
+            return ObjectReferenceImpl(this, hash, data)
+        } else {
+            // Should never be called, because all deserialization happens internally.
+            throw UnsupportedOperationException()
+        }
     }
 
     @Synchronized

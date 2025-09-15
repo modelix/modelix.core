@@ -67,7 +67,7 @@ class HistoryIndexTest {
         val graph = version1.graph
         val history1 = HistoryIndexNode.of(version1.obj, version2.obj).asObject(graph)
         val history2 = HistoryIndexNode.of(version3.obj).asObject(graph)
-        val history = history1.merge(history2)
+        val history = history1.merge(history2).getBlocking(graph)
         assertEquals(3, history.size)
         assertEquals(3, history.height)
     }
@@ -82,6 +82,7 @@ class HistoryIndexTest {
         val history = HistoryIndexNode.of(version1.obj, version2.obj).asObject(graph)
             .merge(HistoryIndexNode.of(version3.obj).asObject(graph))
             .merge(HistoryIndexNode.of(version4.obj).asObject(graph))
+            .getBlocking(graph)
         assertEquals(4, history.size)
         assertEquals(4, history.height)
     }
@@ -98,6 +99,7 @@ class HistoryIndexTest {
             .merge(HistoryIndexNode.of(version3.obj).asObject(graph))
             .merge(HistoryIndexNode.of(version4.obj).asObject(graph))
             .merge(HistoryIndexNode.of(version5.obj).asObject(graph))
+            .getBlocking(graph)
         assertEquals(5, history.size)
         assertEquals(4, history.height)
     }
@@ -133,10 +135,12 @@ class HistoryIndexTest {
             .merge(HistoryIndexNode.of(version4b.obj).asObject(graph))
             .merge(HistoryIndexNode.of(version5b.obj).asObject(graph))
             .merge(HistoryIndexNode.of(version6b.obj).asObject(graph))
+            .getBlocking(graph)
         val history = historyA
             .merge(historyB)
             .merge(HistoryIndexNode.of(version7.obj).asObject(graph))
             .merge(HistoryIndexNode.of(version8.obj).asObject(graph))
+            .getBlocking(graph)
 
         assertEquals(
             listOf(version1, version2, version3a, version3b, version4a, version4b, version5a, version5b, version6b, version7, version8).map { it.getObjectHash() },
@@ -154,7 +158,7 @@ class HistoryIndexTest {
         }
         val graph = versions.first().graph
         val history = versions.drop(1).fold(HistoryIndexNode.of(versions.first().asObject()).asObject(graph)) { acc, it ->
-            acc.merge(HistoryIndexNode.of(it.asObject()).asObject(graph))
+            acc.merge(HistoryIndexNode.of(it.asObject()).asObject(graph)).getBlocking(graph)
         }
         assertEquals(versions.size.toLong(), history.size)
         assertEquals(
@@ -172,7 +176,7 @@ class HistoryIndexTest {
         }
         val graph = versions.first().graph
         val history = versions.drop(1).shuffled(Random(78234554)).fold(HistoryIndexNode.of(versions.first().asObject()).asObject(graph)) { acc, it ->
-            acc.merge(HistoryIndexNode.of(it.asObject()).asObject(graph))
+            acc.merge(HistoryIndexNode.of(it.asObject()).asObject(graph)).getBlocking(graph)
         }
         assertEquals(versions.size.toLong(), history.size)
         assertEquals(
@@ -217,8 +221,13 @@ class HistoryIndexTest {
     }
 
     private fun buildHistory(versions: List<CLVersion>): Object<HistoryIndexNode> {
-        if (versions.size == 1) return HistoryIndexNode.of(versions.single().obj).asObject(versions.single().graph)
+        val graph = versions.first().graph
+        if (versions.size == 1) {
+            return HistoryIndexNode.of(versions.single().obj).asObject(graph)
+        }
         val centerIndex = versions.size / 2
-        return buildHistory(versions.subList(0, centerIndex)).merge(buildHistory(versions.subList(centerIndex, versions.size)))
+        return buildHistory(versions.subList(0, centerIndex))
+            .merge(buildHistory(versions.subList(centerIndex, versions.size)))
+            .getBlocking(graph)
     }
 }

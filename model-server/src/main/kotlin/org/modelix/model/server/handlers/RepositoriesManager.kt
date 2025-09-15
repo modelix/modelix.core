@@ -416,8 +416,8 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
             val newElement = HistoryIndexNode.of(version.obj).asObject(graph)
             val newIndex = when (parentIndices.size) {
                 0 -> newElement
-                1 -> parentIndices.single().merge(newElement)
-                2 -> parentIndices[0].merge(parentIndices[1]).merge(newElement)
+                1 -> parentIndices.single().merge(newElement).getBlocking(graph)
+                2 -> parentIndices[0].merge(parentIndices[1]).merge(newElement).getBlocking(graph)
                 else -> error("impossible")
             }
             newIndex.write()

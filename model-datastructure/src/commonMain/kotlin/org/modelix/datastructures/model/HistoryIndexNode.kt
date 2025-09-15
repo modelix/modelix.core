@@ -18,6 +18,7 @@ import org.modelix.model.persistent.CPVersion
 import org.modelix.model.persistent.Separators
 import org.modelix.streams.IStream
 import org.modelix.streams.flatten
+import org.modelix.streams.getBlocking
 import org.modelix.streams.plus
 import kotlin.math.abs
 import kotlin.math.max
@@ -38,7 +39,7 @@ sealed class HistoryIndexNode : IObjectData {
     abstract fun getAllVersionsReversed(): IStream.Many<ObjectReference<CPVersion>>
     abstract fun getRange(indexRange: LongRange): IStream.Many<HistoryIndexNode>
     fun getRange(indexRange: IntRange) = getRange(indexRange.first.toLong()..indexRange.last.toLong())
-    abstract fun merge(self: Object<HistoryIndexNode>, otherObj: Object<HistoryIndexNode>): Object<HistoryIndexNode>
+    abstract fun merge(self: Object<HistoryIndexNode>, otherObj: Object<HistoryIndexNode>): IStream.One<Object<HistoryIndexNode>>
 
     /**
      * Each returned node spans at most the duration specified in [interval].
@@ -120,12 +121,13 @@ sealed class HistoryIndexNode : IObjectData {
         }
 
         fun of(version1: Object<CPVersion>, version2: Object<CPVersion>): HistoryIndexNode {
-            return of(version1).asObject(version1.graph).merge(of(version2).asObject(version2.graph)).data
+            return of(version1).asObject(version1.graph).merge(of(version2).asObject(version2.graph)).getBlocking(version1.graph).data
         }
     }
 }
 
-fun Object<HistoryIndexNode>.merge(otherObj: Object<HistoryIndexNode>): Object<HistoryIndexNode> = data.merge(this, otherObj)
+fun Object<HistoryIndexNode>.merge(otherObj: Object<HistoryIndexNode>) = data.merge(this, otherObj)
+fun IStream.One<Object<HistoryIndexNode>>.merge(otherObj: Object<HistoryIndexNode>) = flatMapOne { it.merge(otherObj) }
 fun Object<HistoryIndexNode>.concatUnbalanced(otherObj: Object<HistoryIndexNode>): Object<HistoryIndexNode> = data.concat(this, otherObj)
 val Object<HistoryIndexLeafNode>.time get() = data.time
 
@@ -191,7 +193,7 @@ data class HistoryIndexLeafNode(
     override fun merge(
         self: Object<HistoryIndexNode>,
         otherObj: Object<HistoryIndexNode>,
-    ): Object<HistoryIndexNode> {
+    ): IStream.One<Object<HistoryIndexNode>> {
         val other = otherObj.data
         return when (other) {
             is HistoryIndexLeafNode -> {
@@ -202,7 +204,7 @@ data class HistoryIndexLeafNode(
                         versions = (versions.associateBy { it.getHash() } + other.versions.associateBy { it.getHash() }).values.toList(),
                         authors = authors + other.authors,
                         time = time,
-                    ).asObject(self.graph)
+                    ).asObject(self.graph).let { IStream.of(it) }
                 }
             }
             is HistoryIndexRangeNode -> {
@@ -275,62 +277,62 @@ data class HistoryIndexRangeNode(
         TODO("Not yet implemented")
     }
 
-    override fun merge(self: Object<HistoryIndexNode>, otherObj: Object<HistoryIndexNode>): Object<HistoryIndexNode> {
+    override fun merge(self: Object<HistoryIndexNode>, otherObj: Object<HistoryIndexNode>): IStream.One<Object<HistoryIndexNode>> {
         val self = self as Object<HistoryIndexRangeNode>
         val other = otherObj.data
-        val resolvedChild1 = child1.resolveNow()
-        val resolvedChild2 = child2.resolveNow()
-        when (other) {
-            is HistoryIndexLeafNode -> {
-                val range1 = resolvedChild1.data.timeRange
-                val range2 = resolvedChild2.data.timeRange
-                return when {
-                    other.time < range1.start -> otherObj.concatBalanced(resolvedChild1).concatBalanced(resolvedChild2)
-                    other.time <= range1.endInclusive -> resolvedChild1.merge(otherObj).concatBalanced(resolvedChild2)
-                    other.time < range2.start -> if (resolvedChild1.size <= resolvedChild2.size) {
-                        resolvedChild1.concatBalanced(otherObj).concatBalanced(resolvedChild2)
-                    } else {
-                        resolvedChild1.concatBalanced(otherObj.concatBalanced(resolvedChild2))
-                    }
-                    other.time <= range2.endInclusive -> resolvedChild1.concatBalanced(resolvedChild2.merge(otherObj))
-                    else -> resolvedChild1.concatBalanced(resolvedChild2.concatBalanced(otherObj))
-                }
-            }
-            is HistoryIndexRangeNode -> {
-                val range1 = resolvedChild1.data.timeRange
-                val range2 = resolvedChild2.data.timeRange
-                val intersects1 = other.timeRange.intersects(range1)
-                val intersects2 = other.timeRange.intersects(range2)
-                return when {
-                    intersects1 && intersects2 -> {
-                        resolvedChild1.merge(otherObj).merge(resolvedChild2)
-                    }
-                    intersects1 -> resolvedChild1.merge(otherObj).concatBalanced(resolvedChild2)
-                    intersects2 -> resolvedChild1.concatBalanced(resolvedChild2.merge(otherObj))
-                    other.maxTime < range1.start -> {
-                        if (other.size < resolvedChild2.size) {
-                            otherObj.concatBalanced(resolvedChild1).concatBalanced(resolvedChild2)
-                        } else {
-                            otherObj.concatBalanced(self)
-                        }
-                    }
-                    other.maxTime < range2.start -> {
-                        if (resolvedChild2.size < resolvedChild1.size) {
-                            resolvedChild1.concatBalanced(otherObj.concatBalanced(resolvedChild2))
-                        } else {
+        return child1.requestBoth(child2) { resolvedChild1, resolvedChild2 ->
+            when (other) {
+                is HistoryIndexLeafNode -> {
+                    val range1 = resolvedChild1.data.timeRange
+                    val range2 = resolvedChild2.data.timeRange
+                    when {
+                        other.time < range1.start -> otherObj.concatBalanced(resolvedChild1).concatBalanced(resolvedChild2)
+                        other.time <= range1.endInclusive -> resolvedChild1.merge(otherObj).concatBalanced(resolvedChild2)
+                        other.time < range2.start -> if (resolvedChild1.size <= resolvedChild2.size) {
                             resolvedChild1.concatBalanced(otherObj).concatBalanced(resolvedChild2)
-                        }
-                    }
-                    else -> {
-                        if (other.size < resolvedChild1.size) {
-                            resolvedChild1.concatBalanced(resolvedChild2.concatBalanced(otherObj))
                         } else {
-                            self.concatBalanced(otherObj)
+                            resolvedChild1.concatBalanced(otherObj.concatBalanced(resolvedChild2))
+                        }
+                        other.time <= range2.endInclusive -> resolvedChild1.concatBalanced(resolvedChild2.merge(otherObj))
+                        else -> resolvedChild1.concatBalanced(resolvedChild2.concatBalanced(otherObj))
+                    }
+                }
+                is HistoryIndexRangeNode -> {
+                    val range1 = resolvedChild1.data.timeRange
+                    val range2 = resolvedChild2.data.timeRange
+                    val intersects1 = other.timeRange.intersects(range1)
+                    val intersects2 = other.timeRange.intersects(range2)
+                    when {
+                        intersects1 && intersects2 -> {
+                            resolvedChild1.merge(otherObj).merge(resolvedChild2)
+                        }
+                        intersects1 -> resolvedChild1.merge(otherObj).concatBalanced(resolvedChild2)
+                        intersects2 -> resolvedChild1.concatBalanced(resolvedChild2.merge(otherObj))
+                        other.maxTime < range1.start -> {
+                            if (other.size < resolvedChild2.size) {
+                                otherObj.concatBalanced(resolvedChild1).concatBalanced(resolvedChild2)
+                            } else {
+                                otherObj.concatBalanced(self)
+                            }
+                        }
+                        other.maxTime < range2.start -> {
+                            if (resolvedChild2.size < resolvedChild1.size) {
+                                resolvedChild1.concatBalanced(otherObj.concatBalanced(resolvedChild2))
+                            } else {
+                                resolvedChild1.concatBalanced(otherObj).concatBalanced(resolvedChild2)
+                            }
+                        }
+                        else -> {
+                            if (other.size < resolvedChild1.size) {
+                                resolvedChild1.concatBalanced(resolvedChild2.concatBalanced(otherObj))
+                            } else {
+                                self.concatBalanced(otherObj)
+                            }
                         }
                     }
                 }
             }
-        }
+        }.flatten()
     }
 
     override fun splitAtInterval(interval: Duration): IStream.Many<HistoryIndexNode> {
@@ -397,31 +399,42 @@ fun LongRange.intersect(other: LongRange): LongRange {
     return if (this.first > other.first) other.intersect(this) else other.first..min(this.last, other.last)
 }
 
-fun Object<HistoryIndexNode>.rebalance(otherObj: Object<HistoryIndexNode>): Pair<Object<HistoryIndexNode>, Object<HistoryIndexNode>> {
-    if (otherObj.height > height + 1) {
-        val split1 = (otherObj.data as HistoryIndexRangeNode).child1.resolveNow()
-        val split2 = (otherObj.data as HistoryIndexRangeNode).child2.resolveNow()
-        val rebalanced = this.rebalance(split1)
-        if (rebalanced.first.height <= split2.height) {
-            return rebalanced.first.concatUnbalanced(rebalanced.second) to split2
-        } else {
-            return rebalanced.first to rebalanced.second.concatUnbalanced(split2)
-        }
+private fun Object<HistoryIndexNode>.rebalance(otherObj: Object<HistoryIndexNode>): IStream.One<Pair<Object<HistoryIndexNode>, Object<HistoryIndexNode>>> {
+    return if (otherObj.height > height + 1) {
+        (otherObj.data as HistoryIndexRangeNode).child1.requestBoth((otherObj.data as HistoryIndexRangeNode).child2) { split1, split2 ->
+            this.rebalance(split1).map { rebalanced ->
+                if (rebalanced.first.height <= split2.height) {
+                    rebalanced.first.concatUnbalanced(rebalanced.second) to split2
+                } else {
+                    rebalanced.first to rebalanced.second.concatUnbalanced(split2)
+                }
+            }
+        }.flatten()
     } else if (height > otherObj.height + 1) {
-        val split1 = (this.data as HistoryIndexRangeNode).child1.resolveNow()
-        val split2 = (this.data as HistoryIndexRangeNode).child2.resolveNow()
-        val rebalanced = split2.rebalance(otherObj)
-        if (rebalanced.second.height > split1.height) {
-            return split1.concatUnbalanced(rebalanced.first) to rebalanced.second
-        } else {
-            return split1 to rebalanced.first.concatUnbalanced(rebalanced.second)
-        }
+        (this.data as HistoryIndexRangeNode).child1.requestBoth((this.data as HistoryIndexRangeNode).child2) { split1, split2 ->
+            split2.rebalance(otherObj).map { rebalanced ->
+                if (rebalanced.second.height > split1.height) {
+                    split1.concatUnbalanced(rebalanced.first) to rebalanced.second
+                } else {
+                    split1 to rebalanced.first.concatUnbalanced(rebalanced.second)
+                }
+            }
+        }.flatten()
     } else {
-        return this to otherObj
+        IStream.of(this to otherObj)
     }
 }
 
-fun Object<HistoryIndexNode>.concatBalanced(otherObj: Object<HistoryIndexNode>): Object<HistoryIndexNode> {
-    val rebalanced = this.rebalance(otherObj)
-    return rebalanced.first.concatUnbalanced(rebalanced.second)
+private fun Object<HistoryIndexNode>.concatBalanced(otherObj: Object<HistoryIndexNode>): IStream.One<Object<HistoryIndexNode>> {
+    return this.rebalance(otherObj).map { rebalanced ->
+        rebalanced.first.concatUnbalanced(rebalanced.second)
+    }
+}
+
+private fun IStream.One<Object<HistoryIndexNode>>.concatBalanced(otherObj: Object<HistoryIndexNode>): IStream.One<Object<HistoryIndexNode>> {
+    return flatMapOne { it.concatBalanced(otherObj) }
+}
+
+private fun Object<HistoryIndexNode>.concatBalanced(otherObj: IStream.One<Object<HistoryIndexNode>>): IStream.One<Object<HistoryIndexNode>> {
+    return otherObj.flatMapOne { this.concatBalanced(it) }
 }

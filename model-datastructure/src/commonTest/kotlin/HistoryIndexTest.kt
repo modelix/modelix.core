@@ -56,7 +56,7 @@ class HistoryIndexTest {
         val version2 = newVersion(version1)
         val history = HistoryIndexNode.of(version1.obj, version2.obj)
         assertEquals(2, history.size)
-        assertEquals(1, history.height)
+        assertEquals(2, history.height)
     }
 
     @Test
@@ -69,7 +69,7 @@ class HistoryIndexTest {
         val history2 = HistoryIndexNode.of(version3.obj).asObject(graph)
         val history = history1.merge(history2)
         assertEquals(3, history.size)
-        assertEquals(2, history.height)
+        assertEquals(3, history.height)
     }
 
     @Test
@@ -83,7 +83,7 @@ class HistoryIndexTest {
             .merge(HistoryIndexNode.of(version3.obj).asObject(graph))
             .merge(HistoryIndexNode.of(version4.obj).asObject(graph))
         assertEquals(4, history.size)
-        assertEquals(3, history.height)
+        assertEquals(4, history.height)
     }
 
     @Test
@@ -161,7 +161,7 @@ class HistoryIndexTest {
             versions.map { it.getObjectHash() },
             history.data.getAllVersions().map { it.getHash() }.toList().getBlocking(graph),
         )
-        assertEquals(12, history.height)
+        assertEquals(11, history.height)
     }
 
     @Test
@@ -196,7 +196,7 @@ class HistoryIndexTest {
             versions.map { it.getObjectHash() },
             history.data.getAllVersions().map { it.getHash() }.toList().getBlocking(graph),
         )
-        assertEquals(10, history.height)
+        assertEquals(11, history.height)
     }
 
     @Test

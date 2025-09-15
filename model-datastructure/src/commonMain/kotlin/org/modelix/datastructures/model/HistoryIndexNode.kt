@@ -19,6 +19,7 @@ import org.modelix.model.persistent.Separators
 import org.modelix.streams.IStream
 import org.modelix.streams.flatten
 import org.modelix.streams.plus
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.time.Duration
@@ -53,6 +54,7 @@ sealed class HistoryIndexNode : IObjectData {
         require(self.data === this)
         val other = otherObj.data
         require(maxTime < other.minTime)
+        require(abs(height - other.height) <= 2)
         return HistoryIndexRangeNode(
             firstVersion = firstVersion,
             lastVersion = other.lastVersion,
@@ -108,7 +110,7 @@ sealed class HistoryIndexNode : IObjectData {
             }
         }
 
-        fun of(version: Object<CPVersion>): HistoryIndexLeafNode {
+        fun of(version: Object<CPVersion>): HistoryIndexNode {
             val time = CLVersion(version).getTimestamp() ?: Instant.Companion.fromEpochMilliseconds(0L)
             return HistoryIndexLeafNode(
                 versions = listOf(version.ref),
@@ -124,7 +126,7 @@ sealed class HistoryIndexNode : IObjectData {
 }
 
 fun Object<HistoryIndexNode>.merge(otherObj: Object<HistoryIndexNode>): Object<HistoryIndexNode> = data.merge(this, otherObj)
-fun Object<HistoryIndexNode>.concat(otherObj: Object<HistoryIndexNode>): Object<HistoryIndexNode> = data.concat(this, otherObj)
+fun Object<HistoryIndexNode>.concatUnbalanced(otherObj: Object<HistoryIndexNode>): Object<HistoryIndexNode> = data.concat(this, otherObj)
 val Object<HistoryIndexLeafNode>.time get() = data.time
 
 data class HistoryIndexLeafNode(
@@ -194,8 +196,8 @@ data class HistoryIndexLeafNode(
         return when (other) {
             is HistoryIndexLeafNode -> {
                 when {
-                    other.time < time -> otherObj.concat(self)
-                    other.time > time -> self.concat(otherObj)
+                    other.time < time -> otherObj.concatBalanced(self)
+                    other.time > time -> self.concatBalanced(otherObj)
                     else -> HistoryIndexLeafNode(
                         versions = (versions.associateBy { it.getHash() } + other.versions.associateBy { it.getHash() }).values.toList(),
                         authors = authors + other.authors,
@@ -283,15 +285,15 @@ data class HistoryIndexRangeNode(
                 val range1 = resolvedChild1.data.timeRange
                 val range2 = resolvedChild2.data.timeRange
                 return when {
-                    other.time < range1.start -> otherObj.concat(resolvedChild1).concat(resolvedChild2)
-                    other.time <= range1.endInclusive -> resolvedChild1.merge(otherObj).concat(resolvedChild2)
+                    other.time < range1.start -> otherObj.concatBalanced(resolvedChild1).concatBalanced(resolvedChild2)
+                    other.time <= range1.endInclusive -> resolvedChild1.merge(otherObj).concatBalanced(resolvedChild2)
                     other.time < range2.start -> if (resolvedChild1.size <= resolvedChild2.size) {
-                        resolvedChild1.concat(otherObj).concat(resolvedChild2)
+                        resolvedChild1.concatBalanced(otherObj).concatBalanced(resolvedChild2)
                     } else {
-                        resolvedChild1.concat(otherObj.concat(resolvedChild2))
+                        resolvedChild1.concatBalanced(otherObj.concatBalanced(resolvedChild2))
                     }
-                    other.time <= range2.endInclusive -> resolvedChild1.concat(resolvedChild2.merge(otherObj))
-                    else -> resolvedChild1.concat(resolvedChild2.concat(otherObj))
+                    other.time <= range2.endInclusive -> resolvedChild1.concatBalanced(resolvedChild2.merge(otherObj))
+                    else -> resolvedChild1.concatBalanced(resolvedChild2.concatBalanced(otherObj))
                 }
             }
             is HistoryIndexRangeNode -> {
@@ -303,27 +305,27 @@ data class HistoryIndexRangeNode(
                     intersects1 && intersects2 -> {
                         resolvedChild1.merge(otherObj).merge(resolvedChild2)
                     }
-                    intersects1 -> resolvedChild1.merge(otherObj).concat(resolvedChild2)
-                    intersects2 -> resolvedChild1.concat(resolvedChild2.merge(otherObj))
+                    intersects1 -> resolvedChild1.merge(otherObj).concatBalanced(resolvedChild2)
+                    intersects2 -> resolvedChild1.concatBalanced(resolvedChild2.merge(otherObj))
                     other.maxTime < range1.start -> {
                         if (other.size < resolvedChild2.size) {
-                            otherObj.concat(resolvedChild1).concat(resolvedChild2)
+                            otherObj.concatBalanced(resolvedChild1).concatBalanced(resolvedChild2)
                         } else {
-                            otherObj.concat(self)
+                            otherObj.concatBalanced(self)
                         }
                     }
                     other.maxTime < range2.start -> {
                         if (resolvedChild2.size < resolvedChild1.size) {
-                            resolvedChild1.concat(otherObj.concat(resolvedChild2))
+                            resolvedChild1.concatBalanced(otherObj.concatBalanced(resolvedChild2))
                         } else {
-                            resolvedChild1.concat(otherObj).concat(resolvedChild2)
+                            resolvedChild1.concatBalanced(otherObj).concatBalanced(resolvedChild2)
                         }
                     }
                     else -> {
                         if (other.size < resolvedChild1.size) {
-                            resolvedChild1.concat(resolvedChild2.concat(otherObj))
+                            resolvedChild1.concatBalanced(resolvedChild2.concatBalanced(otherObj))
                         } else {
-                            self.concat(otherObj)
+                            self.concatBalanced(otherObj)
                         }
                     }
                 }
@@ -393,4 +395,33 @@ fun LongRange.size() = (last - first + 1).coerceAtLeast(0)
 fun Long.rangeOfSize(size: Long) = this until (this + size)
 fun LongRange.intersect(other: LongRange): LongRange {
     return if (this.first > other.first) other.intersect(this) else other.first..min(this.last, other.last)
+}
+
+fun Object<HistoryIndexNode>.rebalance(otherObj: Object<HistoryIndexNode>): Pair<Object<HistoryIndexNode>, Object<HistoryIndexNode>> {
+    if (otherObj.height > height + 1) {
+        val split1 = (otherObj.data as HistoryIndexRangeNode).child1.resolveNow()
+        val split2 = (otherObj.data as HistoryIndexRangeNode).child2.resolveNow()
+        val rebalanced = this.rebalance(split1)
+        if (rebalanced.first.height <= split2.height) {
+            return rebalanced.first.concatUnbalanced(rebalanced.second) to split2
+        } else {
+            return rebalanced.first to rebalanced.second.concatUnbalanced(split2)
+        }
+    } else if (height > otherObj.height + 1) {
+        val split1 = (this.data as HistoryIndexRangeNode).child1.resolveNow()
+        val split2 = (this.data as HistoryIndexRangeNode).child2.resolveNow()
+        val rebalanced = split2.rebalance(otherObj)
+        if (rebalanced.second.height > split1.height) {
+            return split1.concatUnbalanced(rebalanced.first) to rebalanced.second
+        } else {
+            return split1 to rebalanced.first.concatUnbalanced(rebalanced.second)
+        }
+    } else {
+        return this to otherObj
+    }
+}
+
+fun Object<HistoryIndexNode>.concatBalanced(otherObj: Object<HistoryIndexNode>): Object<HistoryIndexNode> {
+    val rebalanced = this.rebalance(otherObj)
+    return rebalanced.first.concatUnbalanced(rebalanced.second)
 }

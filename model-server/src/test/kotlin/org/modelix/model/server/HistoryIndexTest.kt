@@ -12,6 +12,7 @@ import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.store.InMemoryStoreClient
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.seconds
@@ -77,6 +78,7 @@ class HistoryIndexTest {
     @Test fun pagination_201_201() = runPaginationTest(201, 201)
 
     private fun runPaginationTest(skip: Int, limit: Int) = runTest {
+        val rand = Random(8923345)
         val modelClient: IModelClientV2 = createModelClient()
         val repositoryId = RepositoryId("repo1")
         val branchRef = repositoryId.getBranchReference()
@@ -89,7 +91,7 @@ class HistoryIndexTest {
                     .baseVersion(currentVersion)
                     .tree(currentVersion.getModelTree())
                     .author("user1")
-                    .time(currentVersion.getTimestamp()!! + 3.seconds)
+                    .time(currentVersion.getTimestamp()!! + rand.nextInt(0, 3).seconds)
                     .build()
                 currentVersion = modelClient.push(branchRef, newVersion, currentVersion)
             }
@@ -98,7 +100,7 @@ class HistoryIndexTest {
                     .baseVersion(currentVersion)
                     .tree(currentVersion.getModelTree())
                     .author("user2")
-                    .time(currentVersion.getTimestamp()!! + 2.seconds)
+                    .time(currentVersion.getTimestamp()!! + rand.nextInt(0, 3).seconds)
                     .build()
                 currentVersion = modelClient.push(branchRef, newVersion, currentVersion)
             }

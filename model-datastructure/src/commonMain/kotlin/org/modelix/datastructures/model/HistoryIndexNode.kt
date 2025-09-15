@@ -201,7 +201,7 @@ data class HistoryIndexLeafNode(
                     other.time < time -> otherObj.concatBalanced(self)
                     other.time > time -> self.concatBalanced(otherObj)
                     else -> HistoryIndexLeafNode(
-                        versions = (versions.associateBy { it.getHash() } + other.versions.associateBy { it.getHash() }).values.toList(),
+                        versions = (versions + other.versions).distinctBy { it.getHash() }.toList(),
                         authors = authors + other.authors,
                         time = time,
                     ).asObject(self.graph).let { IStream.of(it) }

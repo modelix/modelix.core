@@ -8,13 +8,16 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.promise
+import kotlinx.datetime.toJSDate
 import org.modelix.datastructures.model.IGenericModelTree
+import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.model.TreeId
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.JSNodeConverter
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.data.ModelData
+import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.mutable.DummyIdGenerator
@@ -111,6 +114,9 @@ interface ClientJS {
      */
     fun initRepository(repositoryId: String, useRoleIds: Boolean = true): Promise<Unit>
 
+    fun getHistoryRangeForBranch(repositoryId: String, branchId: String, skip: Int, limit: Int): Promise<Array<VersionInformationJS>>
+    fun getHistoryRange(repositoryId: String, headVersion: String, skip: Int, limit: Int): Promise<Array<VersionInformationJS>>
+
     /**
      * Fetch existing branches for a given repository from the model server.
      *
@@ -191,6 +197,30 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
             return@promise ReplicatedModelJSImpl(model)
         }
     }
+
+    override fun getHistoryRangeForBranch(repositoryId: String, branchId: String, skip: Int, limit: Int) =
+        GlobalScope.promise { modelClient.pullHash(RepositoryId(repositoryId).getBranchReference(branchId)) }
+            .then { getHistoryRange(repositoryId, it, skip, limit) }
+            .then { it }
+
+    override fun getHistoryRange(repositoryId: String, headVersion: String, skip: Int, limit: Int) =
+        GlobalScope.promise {
+            modelClient.getHistoryRange(
+                RepositoryId(repositoryId),
+                ObjectHash(headVersion),
+                skip.toLong(),
+                limit.toLong(),
+            )
+                .filterIsInstance<CLVersion>()
+                .map {
+                    VersionInformationJS(
+                        it.author,
+                        it.getTimestamp()?.toJSDate(),
+                        it.getObjectHash().toString(),
+                    )
+                }
+                .toTypedArray()
+        }
 
     override fun dispose() {
         modelClient.close()

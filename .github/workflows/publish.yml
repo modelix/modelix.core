@@ -105,7 +105,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
 
       - name: Install Skaffold
-        uses: yokawasa/action-setup-kube-tools@9e25a4277af127b60011c95b6ed2da7e3b3613b1 # v0.11.2
+        uses: yokawasa/action-setup-kube-tools@ebd6f098e4d66281876e21f576a024a3b97ed968 # v0.13.0
         with:
           setup-tools: |
             skaffold

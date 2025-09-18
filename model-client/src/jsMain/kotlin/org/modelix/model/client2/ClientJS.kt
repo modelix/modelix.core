@@ -10,6 +10,7 @@ import kotlinx.coroutines.await
 import kotlinx.coroutines.promise
 import kotlinx.datetime.toJSDate
 import org.modelix.datastructures.model.IGenericModelTree
+import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.model.TreeId
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
@@ -119,6 +120,9 @@ interface ClientJS {
 
     fun loadReadonlyVersion(repositoryId: String, versionHash: String): Promise<VersionInformationWithModelTree>
 
+    fun getHistoryRangeForBranch(repositoryId: String, branchId: String, skip: Int, limit: Int): Promise<Array<VersionInformationJS>>
+    fun getHistoryRange(repositoryId: String, headVersion: String, skip: Int, limit: Int): Promise<Array<VersionInformationJS>>
+
     /**
      * Fetch existing branches for a given repository from the model server.
      *
@@ -213,6 +217,30 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
             )
         }
     }
+
+    override fun getHistoryRangeForBranch(repositoryId: String, branchId: String, skip: Int, limit: Int) =
+        GlobalScope.promise { modelClient.pullHash(RepositoryId(repositoryId).getBranchReference(branchId)) }
+            .then { getHistoryRange(repositoryId, it, skip, limit) }
+            .then { it }
+
+    override fun getHistoryRange(repositoryId: String, headVersion: String, skip: Int, limit: Int) =
+        GlobalScope.promise {
+            modelClient.getHistoryRange(
+                RepositoryId(repositoryId),
+                ObjectHash(headVersion),
+                skip.toLong(),
+                limit.toLong(),
+            )
+                .filterIsInstance<CLVersion>()
+                .map {
+                    VersionInformationJS(
+                        it.author,
+                        it.getTimestamp()?.toJSDate(),
+                        it.getObjectHash().toString(),
+                    )
+                }
+                .toTypedArray()
+        }
 
     override fun dispose() {
         modelClient.close()

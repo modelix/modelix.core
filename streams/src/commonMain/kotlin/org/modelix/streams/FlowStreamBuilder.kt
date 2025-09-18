@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.fold
@@ -187,7 +188,11 @@ class FlowStreamBuilder() : IStreamBuilder {
             return Wrapper(wrapped.flatMapConcat { convert(mapper(it)) })
         }
 
-        override fun <R> flatMap(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
+        override fun <R> flatMapUnordered(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
+            return Wrapper(wrapped.flatMapMerge { convert(mapper(it)) })
+        }
+
+        override fun <R> flatMapOrdered(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
             return Wrapper(wrapped.flatMapConcat { convert(mapper(it)) })
         }
 

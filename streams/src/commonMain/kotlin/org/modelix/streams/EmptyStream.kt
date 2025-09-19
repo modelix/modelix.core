@@ -69,7 +69,7 @@ class EmptyStream<E> : IStreamInternal.ZeroOrOne<E> {
     @DelicateModelixApi
     override fun iterateBlocking(visitor: (E) -> Unit) {}
 
-    override fun <R> flatMap(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
+    override fun <R> flatMapOrdered(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
         return EmptyStream()
     }
 

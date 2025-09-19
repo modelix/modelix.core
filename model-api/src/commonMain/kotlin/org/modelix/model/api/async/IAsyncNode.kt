@@ -33,6 +33,7 @@ interface IAsyncNode : IStreamExecutorProvider {
     fun getAllReferenceTargets(): IStream.Many<Pair<IReferenceLinkReference, IAsyncNode>>
 
     fun getDescendants(includeSelf: Boolean): IStream.Many<IAsyncNode>
+    fun getDescendantsUnordered(includeSelf: Boolean): IStream.Many<IAsyncNode> = getDescendants(includeSelf)
 }
 
 interface INodeWithAsyncSupport : INode {

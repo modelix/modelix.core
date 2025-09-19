@@ -188,6 +188,23 @@ class ModelReplicationServer(
         call.respondText(versionHash)
     }
 
+    override suspend fun RoutingContext.getHistoryIndex(
+        repository: String,
+        versionHash: String,
+    ) {
+        checkPermission(ModelServerPermissionSchema.repository(repository).objects.read)
+        val version = repositoriesManager.getVersion(repositoryId(repository), versionHash)
+        if (version == null) {
+            throw VersionNotFoundException(versionHash)
+        }
+
+        @OptIn(RequiresTransaction::class)
+        val index = runWrite {
+            (repositoriesManager as RepositoriesManager).getOrCreateHistoryIndex(repositoryId(repository), version)
+        }
+        call.respondText(index.getHashString() + "\n" + index.data.serialize())
+    }
+
     override suspend fun RoutingContext.initializeRepository(
         repositoryName: String,
         useRoleIds: Boolean?,

@@ -261,8 +261,12 @@ class ReaktiveStreamBuilder() : IStreamBuilder {
             throw UnsupportedOperationException("Use IStreamExecutor.iterate")
         }
 
-        override fun <R> flatMap(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
-            return WrapperMany(wrapped.flatMap { mapper(it).toReaktive() })
+        override fun <R> flatMapUnordered(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
+            return WrapperMany(wrapped.flatMap(maxConcurrency = Int.MAX_VALUE) { mapper(it).toReaktive() })
+        }
+
+        override fun <R> flatMapOrdered(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
+            return WrapperMany(wrapped.flatMap(maxConcurrency = 1) { mapper(it).toReaktive() })
         }
 
         override fun concat(other: IStream.Many<E>): IStream.Many<E> {
@@ -356,7 +360,7 @@ class ReaktiveStreamBuilder() : IStreamBuilder {
         }
 
         override fun <R> flatMapOne(mapper: (E) -> IStream.One<R>): OneOrMany<R> {
-            return WrapperOneOrMany(wrapped.flatMapSingle { mapper(it).toReaktive() })
+            return WrapperOneOrMany(wrapped.flatMapSingle(maxConcurrency = 1) { mapper(it).toReaktive() })
         }
 
         override fun onErrorReturn(valueSupplier: (Throwable) -> E): OneOrMany<E> {
@@ -439,7 +443,7 @@ class ReaktiveStreamBuilder() : IStreamBuilder {
             return WrapperMaybe(wrapped.flatMapMaybe { mapper(it).toReaktive() })
         }
 
-        override fun <R> flatMap(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
+        override fun <R> flatMapOrdered(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
             return WrapperMany(wrapped.flatMapObservable { mapper(it).toReaktive() })
         }
 
@@ -565,7 +569,7 @@ class ReaktiveStreamBuilder() : IStreamBuilder {
             throw UnsupportedOperationException("Use IStreamExecutor.iterate")
         }
 
-        override fun <R> flatMap(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
+        override fun <R> flatMapOrdered(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
             return WrapperMany(wrapped.flatMapObservable { mapper(it).toReaktive() })
         }
 

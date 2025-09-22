@@ -1,6 +1,7 @@
 package org.modelix.model.client2
 
 import io.ktor.http.Url
+import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.model.IVersion
 import org.modelix.model.ObjectDeltaFilter
@@ -11,6 +12,7 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.api.RepositoryConfig
 import org.modelix.modelql.core.IMonoStep
+import kotlin.time.Duration
 
 /**
  * This interface is meant exclusively for model client usage.
@@ -105,4 +107,41 @@ interface IModelClientV2 {
     suspend fun <R> query(repositoryId: RepositoryId, versionHash: String, body: (IMonoStep<INode>) -> IMonoStep<R>): R
 
     fun getFrontendUrl(branch: BranchReference): Url
+
+    /**
+     * @param headVersion starting point for history computations. For a paginated view this value should be the same and
+     *        the value for [skip] should be incremented instead. Only then its guaranteed that the returned list is
+     *        complete.
+     * @param skip for a paginated view of the history
+     * @param limit maximum size of the returned list
+     * @param interval splits the timeline into equally sized intervals and returns only the last version of each interval
+     */
+    suspend fun getHistory(
+        repositoryId: RepositoryId,
+        headVersion: ObjectHash,
+        skip: Int = 0,
+        limit: Int = 1000,
+        interval: Duration?,
+    ): HistoryResponse
+
+    suspend fun getHistoryRange(
+        repositoryId: RepositoryId,
+        headVersion: ObjectHash,
+        skip: Long = 0L,
+        limit: Long = 1000L,
+    ): List<IVersion>
 }
+
+data class HistoryResponse(
+    val entries: List<HistoryEntry>,
+    val nextVersions: List<ObjectHash>,
+)
+
+data class HistoryEntry(
+    val firstVersionHash: ObjectHash,
+    val lastVersionHash: ObjectHash,
+    val minTime: Long?,
+    val maxTime: Long?,
+    val authors: Set<String>,
+    // val headOfBranch: Set<BranchReference>,
+)

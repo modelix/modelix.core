@@ -87,7 +87,7 @@ class SingleValueStream<E>(val value: E) : IStreamInternal.One<E> {
         return this
     }
 
-    override fun <R> flatMap(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
+    override fun <R> flatMapOrdered(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
         return mapper(value)
     }
 

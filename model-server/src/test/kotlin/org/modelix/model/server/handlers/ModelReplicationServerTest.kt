@@ -48,6 +48,7 @@ import org.modelix.model.client2.readVersionDelta
 import org.modelix.model.client2.runWrite
 import org.modelix.model.client2.useVersionStreamFormat
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.server.api.BranchInfo
 import org.modelix.model.server.api.v2.VersionDeltaStream
 import org.modelix.model.server.api.v2.VersionDeltaStreamV2
 import org.modelix.model.server.installDefaultServerPlugins
@@ -166,6 +167,71 @@ class ModelReplicationServerTest {
 
             assertEquals(HttpStatusCode.NotFound, response.status)
             assertContains(response.bodyAsText(), "does not exist in repository")
+        }
+    }
+
+    @Test
+    fun `fetch branches as plain`() {
+        val repositoryId = RepositoryId("repo1")
+
+        runWithTestModelServer { _, fixture ->
+            @OptIn(RequiresTransaction::class)
+            fixture.repositoriesManager.getTransactionManager().runWrite {
+                val version = fixture.repositoriesManager.createRepository(repositoryId, null)
+                fixture.repositoriesManager.forcePush(
+                    branch = repositoryId.getBranchReference("change-request/1"),
+                    newVersionHash = version.getContentHash(),
+                )
+            }
+
+            val response = client.get {
+                url {
+                    appendPathSegments("v2", "repositories", repositoryId.id, "branches")
+                }
+            }
+
+            assertEquals(HttpStatusCode.OK, response.status)
+            assertContains(response.bodyAsText(), "master")
+        }
+    }
+
+    @Test
+    fun `fetch branches as json`() {
+        val repositoryId = RepositoryId("repo1")
+
+        runWithTestModelServer { _, fixture ->
+
+            // Arrange
+            @OptIn(RequiresTransaction::class)
+            val initialVersion = fixture.repositoriesManager.getTransactionManager().runWrite {
+                fixture.repositoriesManager.createRepository(repositoryId, null)
+                    .also {
+                        fixture.repositoriesManager.forcePush(
+                            branch = repositoryId.getBranchReference("change-requests/1"),
+                            newVersionHash = it.getContentHash(),
+                        )
+                    }
+            }
+
+            // Act
+            val client = jsonClient()
+            val response = client.get {
+                accept(ContentType.Application.Json)
+                url {
+                    appendPathSegments("v2", "repositories", repositoryId.id, "branches")
+                }
+            }
+
+            // Assert
+            assertEquals(HttpStatusCode.OK, response.status)
+            response.shouldHaveContentType(ContentType.Application.Json.withCharset(Charsets.UTF_8))
+            assertEquals(
+                response.body<List<BranchInfo>>(),
+                listOf(
+                    BranchInfo("change-requests/1", initialVersion.getContentHash()),
+                    BranchInfo("master", initialVersion.getContentHash()),
+                ),
+            )
         }
     }
 
@@ -434,13 +500,7 @@ class ModelReplicationServerTest {
             fixture.repositoriesManager.getTransactionManager().runWrite {
                 fixture.repositoriesManager.createRepository(repositoryId, null)
             }
-            val client = createClient {
-                install(ContentNegotiation) {
-                    json()
-                    register(branchV1ContentType, KotlinxSerializationConverter(DefaultJson))
-                }
-            }
-
+            val client = jsonClient()
             val response = client.get {
                 url {
                     appendPathSegments("v2", "repositories", repositoryId.id, "branches", "master")
@@ -542,6 +602,13 @@ class ModelReplicationServerTest {
 
         response shouldHaveStatus HttpStatusCode.NotFound
         problem.type shouldBe "/problems/object-value-not-found"
+    }
+}
+
+private fun ApplicationTestBuilder.jsonClient(): HttpClient = createClient {
+    install(ContentNegotiation) {
+        json()
+        register(ContentType.Application.Json, KotlinxSerializationConverter(DefaultJson))
     }
 }
 

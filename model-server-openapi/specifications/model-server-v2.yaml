@@ -249,7 +249,14 @@ paths:
             type: string
       responses:
         "200":
-          $ref: '#/components/responses/200'
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BranchesWithHashes"
         default:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/branches/{branch}:
@@ -764,3 +771,15 @@ components:
           type: string
           description: Unix timestamp
         author: { type: string }
+    BranchesWithHashes:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          versionHash:
+            type: string
+        required:
+          - id
+          - versionHash

@@ -8,8 +8,10 @@ import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.contentnegotiation.exclude
 import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.accept
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
@@ -84,6 +86,7 @@ import org.modelix.model.oauth.TokenProviderAuthConfig
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.CPVersion
 import org.modelix.model.persistent.HashUtil
+import org.modelix.model.server.api.BranchInfo
 import org.modelix.model.server.api.RepositoryConfig
 import org.modelix.model.server.api.v2.ImmutableObjectsStream
 import org.modelix.model.server.api.v2.ObjectHashAndSerializedObject
@@ -284,11 +287,23 @@ class ModelClientV2(
 
     override suspend fun listBranches(repository: RepositoryId): List<BranchReference> {
         return httpClient.get {
+            // only accept text/plain, not application/json
+            accept(ContentType.Text.Plain)
+            exclude(ContentType.Application.Json)
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", repository.id, "branches")
             }
         }.bodyAsText().lines().filter { it.isNotEmpty() }.map { repository.getBranchReference(it) }
+    }
+
+    override suspend fun listBranchesWithHashes(repository: RepositoryId): List<BranchInfo> {
+        return httpClient.get {
+            url {
+                takeFrom(baseUrl)
+                appendPathSegmentsEncodingSlash("repositories", repository.id, "branches")
+            }
+        }.body()
     }
 
     override suspend fun deleteBranch(branch: BranchReference): Boolean {

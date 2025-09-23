@@ -46,6 +46,7 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.ModelServerPermissionSchema
+import org.modelix.model.server.api.BranchInfo
 import org.modelix.model.server.api.RepositoryConfig
 import org.modelix.model.server.api.v2.ImmutableObjectsStream
 import org.modelix.model.server.api.v2.VersionDelta
@@ -104,13 +105,29 @@ class ModelReplicationServer(
     }
 
     override suspend fun RoutingContext.getRepositoryBranches(repository: String) {
-        call.respondText(
-            @OptIn(RequiresTransaction::class)
-            runRead { repositoriesManager.getBranchNames(repositoryId(repository)) }
+        @OptIn(RequiresTransaction::class)
+        val branchNames = runRead {
+            repositoriesManager.getBranchNames(repositoryId(repository))
                 .filter { call.hasPermission(ModelServerPermissionSchema.repository(repository).branch(it).list) }
-                .joinToString("\n"),
-        )
+        }
+        if (acceptsJson()) {
+            call.respond<List<BranchInfo>>(
+                @OptIn(RequiresTransaction::class)
+                runRead {
+                    branchNames.mapNotNull { branchName ->
+                        val branchRef = repositoryId(repository).getBranchReference(branchName)
+                        val versionHash = repositoriesManager.getVersionHash(branchRef)
+                        versionHash?.let { BranchInfo(branchName, it) }
+                    }
+                },
+            )
+        } else {
+            call.respondText(branchNames.joinToString("\n"))
+        }
     }
+
+    private fun RoutingContext.acceptsJson(): Boolean =
+        call.request.acceptItems().any { ContentType.parse(it.value).match(ContentType.Application.Json) }
 
     override suspend fun RoutingContext.getRepositoryBranchDelta(
         repository: String,

@@ -140,6 +140,8 @@ interface ClientJS {
      */
     fun fetchBranches(repositoryId: String): Promise<Array<String>>
 
+    fun createBranch(repositoryId: String, branchId: String, versionHash: String, failIfExists: Boolean = false): Promise<Boolean>
+
     /**
      * Fetch existing repositories from the model server.
      */
@@ -187,6 +189,27 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
             val repositoryIdObject = RepositoryId(repositoryId)
             return@promise modelClient.listBranches(repositoryIdObject)
                 .map { it.branchName }.toTypedArray()
+        }
+    }
+
+    override fun createBranch(
+        repositoryId: String,
+        branchId: String,
+        versionHash: String,
+        failIfExists: Boolean,
+    ): Promise<Boolean> {
+        return GlobalScope.promise {
+            RepositoryId(repositoryId).let { repositoryId ->
+                val branchReference = repositoryId.getBranchReference(branchId)
+
+                if (failIfExists) {
+                    throw TODO("implement server endpoint for this")
+                } else {
+                    val version = modelClient.lazyLoadVersion(repositoryId, versionHash)
+                    modelClient.push(branchReference, version, version, true)
+                    return@promise true
+                }
+            }
         }
     }
 

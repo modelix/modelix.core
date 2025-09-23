@@ -29,6 +29,7 @@ import org.modelix.model.mutable.asMutableThreadSafe
 import org.modelix.model.mutable.load
 import org.modelix.model.mutable.withAutoTransactions
 import org.modelix.model.persistent.MapBasedStore
+import org.modelix.model.server.api.BranchInfo
 import org.modelix.mps.multiplatform.model.MPSIdGenerator
 import kotlin.js.Date
 import kotlin.js.Promise
@@ -140,6 +141,15 @@ interface ClientJS {
      */
     fun fetchBranches(repositoryId: String): Promise<Array<String>>
 
+    /**
+     * Fetch existing branches for a given repository from the model server.
+     *
+     * @param repositoryId Repository ID to fetch branches from.
+     */
+    fun fetchBranchesWithHashes(
+        repositoryId: String,
+    ): Promise<Array<BranchInfo>>
+
     fun createBranch(repositoryId: String, branchId: String, versionHash: String, failIfExists: Boolean = false): Promise<Boolean>
 
     /**
@@ -190,6 +200,12 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
             return@promise modelClient.listBranches(repositoryIdObject)
                 .map { it.branchName }.toTypedArray()
         }
+    }
+
+    override fun fetchBranchesWithHashes(
+        repositoryId: String,
+    ): Promise<Array<BranchInfo>> = GlobalScope.promise {
+        return@promise modelClient.listBranchesWithHashes(RepositoryId(repositoryId)).toTypedArray()
     }
 
     override fun createBranch(

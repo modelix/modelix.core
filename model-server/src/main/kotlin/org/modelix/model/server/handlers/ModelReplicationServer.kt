@@ -396,8 +396,10 @@ class ModelReplicationServer(
         repository: String,
         branch: String,
         force: Boolean?,
+        failIfExists: Boolean?,
     ) {
         val force = force == true
+        val failIfExists = failIfExists == true
         checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).run { if (force) forcePush else push })
 
         val branchRef = repositoryId(repository).getBranchReference(branch)
@@ -408,23 +410,44 @@ class ModelReplicationServer(
             @OptIn(RequiresTransaction::class) // no transactions required for immutable store
             repositoriesManager.getStoreClient(RepositoryId(repository), true).putAll(objectsFromClient)
         }
+        suspend fun <R : Any> writeToBranch(writeAction: () -> R, onSuccess: suspend (R) -> Unit) {
+            val result =
+                @OptIn(RequiresTransaction::class)
+                runWrite {
+                    if (failIfExists && repositoriesManager.getVersionHash(branchRef) != null) {
+                        null
+                    } else {
+                        writeAction()
+                    }
+                }
+            if (result == null) {
+                call.respond(
+                    HttpStatusCode.Conflict,
+                    "Branch $branch in repository $repository already exists",
+                )
+            } else {
+                onSuccess(result)
+            }
+        }
 
         if (force) {
             @OptIn(RequiresTransaction::class)
-            runWrite {
+            writeToBranch({
                 repositoriesManager.forcePush(branchRef, deltaFromClient.versionHash)
-            }
-            call.respondDelta(RepositoryId(repository), deltaFromClient.versionHash, ObjectDeltaFilter(deltaFromClient.versionHash))
+            }, {
+                call.respondDelta(RepositoryId(repository), deltaFromClient.versionHash, ObjectDeltaFilter(deltaFromClient.versionHash))
+            })
         } else {
             // Run a merge outside a transaction to keep the transaction for the actual merge smaller.
             // If there are no concurrent pushes on the same branch, then all the work is done here.
             val preMergedVersion = repositoriesManager.mergeChangesWithoutPush(branchRef, deltaFromClient.versionHash)
 
             @OptIn(RequiresTransaction::class)
-            val mergedHash = runWrite {
+            writeToBranch({
                 repositoriesManager.mergeChanges(branchRef, preMergedVersion)
-            }
-            call.respondDelta(RepositoryId(repository), mergedHash, ObjectDeltaFilter(deltaFromClient.versionHash))
+            }, { mergedHash ->
+                call.respondDelta(RepositoryId(repository), mergedHash, ObjectDeltaFilter(deltaFromClient.versionHash))
+            })
         }
     }
 

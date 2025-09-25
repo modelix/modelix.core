@@ -188,7 +188,7 @@ class SequenceStreamBuilder() : IStreamBuilder {
             return Wrapper(wrapped.flatMap { convert(mapper(it)) })
         }
 
-        override fun <R> flatMap(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
+        override fun <R> flatMapOrdered(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
             return Wrapper(wrapped.flatMap { convert(mapper(it)) })
         }
 

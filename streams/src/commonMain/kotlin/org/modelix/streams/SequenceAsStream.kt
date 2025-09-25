@@ -49,8 +49,8 @@ open class SequenceAsStream<E>(val wrapped: Sequence<E>) : IStream.Many<E>, IStr
         return SequenceAsStreamOneOrMany(wrapped.ifEmpty { sequenceOf(alternative()) })
     }
 
-    override fun <R> flatMap(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
-        return convertLater().flatMap(mapper)
+    override fun <R> flatMapOrdered(mapper: (E) -> IStream.Many<R>): IStream.Many<R> {
+        return convertLater().flatMapOrdered(mapper)
     }
 
     override fun concat(other: IStream.Many<E>): IStream.Many<E> {

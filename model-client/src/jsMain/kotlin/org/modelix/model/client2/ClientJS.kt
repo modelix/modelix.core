@@ -8,23 +8,29 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.promise
+import kotlinx.datetime.toJSDate
 import org.modelix.datastructures.model.IGenericModelTree
+import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.model.TreeId
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.JSNodeConverter
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.data.ModelData
+import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.mutable.DummyIdGenerator
 import org.modelix.model.mutable.INodeIdGenerator
 import org.modelix.model.mutable.ModelixIdGenerator
+import org.modelix.model.mutable.VersionedModelTree
 import org.modelix.model.mutable.asMutableThreadSafe
 import org.modelix.model.mutable.load
 import org.modelix.model.mutable.withAutoTransactions
 import org.modelix.model.persistent.MapBasedStore
+import org.modelix.model.server.api.BranchInfo
 import org.modelix.mps.multiplatform.model.MPSIdGenerator
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.js.Promise
 
 /**
@@ -80,6 +86,9 @@ sealed class IdSchemeJS() {
     object READONLY : IdSchemeJS()
 }
 
+@JsExport
+data class VersionInformationWithModelTree(val version: VersionInformationJS, val tree: MutableModelTreeJs)
+
 /**
  * JS-API for [ModelClientV2].
  * Can be used to perform operations on the model server and to read and write model data.
@@ -111,12 +120,51 @@ interface ClientJS {
      */
     fun initRepository(repositoryId: String, useRoleIds: Boolean = true): Promise<Unit>
 
+    fun loadReadonlyVersion(repositoryId: String, versionHash: String): Promise<VersionInformationWithModelTree>
+
+    fun getHistoryRangeForBranch(repositoryId: String, branchId: String, skip: Int, limit: Int): Promise<Array<VersionInformationJS>>
+    fun getHistoryRange(repositoryId: String, headVersion: String, skip: Int, limit: Int): Promise<Array<VersionInformationJS>>
+
     /**
      * Fetch existing branches for a given repository from the model server.
      *
      * @param repositoryId Repository ID to fetch branches from.
      */
     fun fetchBranches(repositoryId: String): Promise<Array<String>>
+
+    /**
+     * Fetch existing branches for a given repository from the model server.
+     *
+     * @param repositoryId Repository ID to fetch branches from.
+     */
+    fun fetchBranchesWithHashes(
+        repositoryId: String,
+    ): Promise<Array<BranchInfo>>
+
+    /**
+     * Create a new branch in the given repository on the model server.
+     * The new branch will point to the given version.
+     * If the branch already exists, the promise will be rejected.
+     * See also [deleteBranch] to delete an existing branch.
+     * @param repositoryId Repository ID to create the branch in.
+     * @param branchId ID of the new branch to create.
+     * @param versionHash Hash of the version the new branch should point to.
+     */
+    fun createBranch(repositoryId: String, branchId: String, versionHash: String): Promise<Unit>
+
+    /**
+     * Delete an existing branch from the given repository on the model server.
+     * If the branch does not exist, the promise will be resolved with `false`.
+     * See also [createBranch] to create a new branch.
+     *
+     * @param repositoryId Repository ID to delete the branch from.
+     * @param branchId ID of the branch to delete.
+     * @return Promise that resolves to `true` if the branch existed and was deleted, else `false`.
+     */
+    fun deleteBranch(
+        repositoryId: String,
+        branchId: String,
+    ): Promise<Boolean>
 
     /**
      * Fetch existing repositories from the model server.
@@ -168,6 +216,40 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
         }
     }
 
+    override fun fetchBranchesWithHashes(
+        repositoryId: String,
+    ): Promise<Array<BranchInfo>> = GlobalScope.promise {
+        return@promise modelClient.listBranchesWithHashes(RepositoryId(repositoryId)).toTypedArray()
+    }
+
+    override fun createBranch(
+        repositoryId: String,
+        branchId: String,
+        versionHash: String,
+    ): Promise<Unit> {
+        return GlobalScope.promise {
+            RepositoryId(repositoryId).let { repositoryId ->
+                val branchReference = repositoryId.getBranchReference(branchId)
+
+                val version = modelClient.lazyLoadVersion(repositoryId, versionHash)
+                modelClient.push(branchReference, version, version, force = false, failIfExists = true)
+                    ?: throw CancellationException("Branch $branchId already exists in repository $repositoryId")
+            }
+        }
+    }
+
+    override fun deleteBranch(
+        repositoryId: String,
+        branchId: String,
+    ): Promise<Boolean> {
+        return GlobalScope.promise {
+            RepositoryId(repositoryId).let { repositoryId ->
+                val branchReference = repositoryId.getBranchReference(branchId)
+                return@promise modelClient.deleteBranch(branchReference)
+            }
+        }
+    }
+
     override fun startReplicatedModel(
         repositoryId: String,
         branchId: String,
@@ -191,6 +273,44 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
             return@promise ReplicatedModelJSImpl(model)
         }
     }
+
+    override fun loadReadonlyVersion(repositoryId: String, versionHash: String): Promise<VersionInformationWithModelTree> {
+        return GlobalScope.promise {
+            val version = modelClient.loadVersion(RepositoryId(repositoryId), versionHash, null)
+            VersionInformationWithModelTree(
+                VersionInformationJS(
+                    (version as CLVersion).author,
+                    version.getTimestamp()?.toJSDate(),
+                    version.getContentHash(),
+                ),
+                MutableModelTreeJsImpl(VersionedModelTree(version).withAutoTransactions()),
+            )
+        }
+    }
+
+    override fun getHistoryRangeForBranch(repositoryId: String, branchId: String, skip: Int, limit: Int) =
+        GlobalScope.promise { modelClient.pullHash(RepositoryId(repositoryId).getBranchReference(branchId)) }
+            .then { getHistoryRange(repositoryId, it, skip, limit) }
+            .then { it }
+
+    override fun getHistoryRange(repositoryId: String, headVersion: String, skip: Int, limit: Int) =
+        GlobalScope.promise {
+            modelClient.getHistoryRange(
+                RepositoryId(repositoryId),
+                ObjectHash(headVersion),
+                skip.toLong(),
+                limit.toLong(),
+            )
+                .filterIsInstance<CLVersion>()
+                .map {
+                    VersionInformationJS(
+                        it.author,
+                        it.getTimestamp()?.toJSDate(),
+                        it.getObjectHash().toString(),
+                    )
+                }
+                .toTypedArray()
+        }
 
     override fun dispose() {
         modelClient.close()

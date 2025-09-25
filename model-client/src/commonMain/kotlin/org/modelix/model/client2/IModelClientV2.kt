@@ -84,6 +84,17 @@ interface IModelClientV2 {
     suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?, force: Boolean = false): IVersion
     suspend fun push(branch: BranchReference, version: IVersion, baseVersions: List<IVersion>, force: Boolean = false): IVersion
 
+    /**
+     * The pushed version is merged automatically by the server with the current head.
+     *
+     * If [failIfExists] is true, the push fails if the version already exists on the server.
+     * @return The resulting version on the server or null iff the version already exists and [failIfExists] is true.
+     * @param baseVersion Some version that is known to exist on the server.
+     *                    Is used for optimizing the amount of data sent to the server.
+     */
+    suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?, force: Boolean = false, failIfExists: Boolean): IVersion?
+    suspend fun push(branch: BranchReference, version: IVersion, baseVersions: List<IVersion>, force: Boolean = false, failIfExists: Boolean): IVersion?
+
     suspend fun pull(
         branch: BranchReference,
         lastKnownVersion: IVersion?,

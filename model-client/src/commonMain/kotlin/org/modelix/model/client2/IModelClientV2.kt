@@ -10,6 +10,7 @@ import org.modelix.model.api.INode
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.server.api.BranchInfo
 import org.modelix.model.server.api.RepositoryConfig
 import org.modelix.modelql.core.IMonoStep
 import kotlin.time.Duration
@@ -54,6 +55,7 @@ interface IModelClientV2 {
     suspend fun listRepositories(): List<RepositoryId>
     suspend fun deleteRepository(repository: RepositoryId): Boolean
     suspend fun listBranches(repository: RepositoryId): List<BranchReference>
+    suspend fun listBranchesWithHashes(repository: RepositoryId): List<BranchInfo>
 
     /**
      * Deletes a branch from a repository if it exists.
@@ -81,6 +83,17 @@ interface IModelClientV2 {
      */
     suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?, force: Boolean = false): IVersion
     suspend fun push(branch: BranchReference, version: IVersion, baseVersions: List<IVersion>, force: Boolean = false): IVersion
+
+    /**
+     * The pushed version is merged automatically by the server with the current head.
+     *
+     * If [failIfExists] is true, the push fails if the version already exists on the server.
+     * @return The resulting version on the server or null iff the version already exists and [failIfExists] is true.
+     * @param baseVersion Some version that is known to exist on the server.
+     *                    Is used for optimizing the amount of data sent to the server.
+     */
+    suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?, force: Boolean = false, failIfExists: Boolean): IVersion?
+    suspend fun push(branch: BranchReference, version: IVersion, baseVersions: List<IVersion>, force: Boolean = false, failIfExists: Boolean): IVersion?
 
     suspend fun pull(
         branch: BranchReference,

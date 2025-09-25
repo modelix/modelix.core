@@ -31,6 +31,7 @@ import org.modelix.model.mutable.withAutoTransactions
 import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.server.api.BranchInfo
 import org.modelix.mps.multiplatform.model.MPSIdGenerator
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.js.Date
 import kotlin.js.Promise
 import kotlin.time.Duration.Companion.seconds
@@ -150,8 +151,26 @@ interface ClientJS {
         repositoryId: String,
     ): Promise<Array<BranchInfo>>
 
-    fun createBranch(repositoryId: String, branchId: String, versionHash: String, failIfExists: Boolean = false): Promise<Boolean>
+    /**
+     * Create a new branch in the given repository on the model server.
+     * The new branch will point to the given version.
+     * If the branch already exists, the promise will be rejected.
+     * See also [deleteBranch] to delete an existing branch.
+     * @param repositoryId Repository ID to create the branch in.
+     * @param branchId ID of the new branch to create.
+     * @param versionHash Hash of the version the new branch should point to.
+     */
+    fun createBranch(repositoryId: String, branchId: String, versionHash: String): Promise<Unit>
 
+    /**
+     * Delete an existing branch from the given repository on the model server.
+     * If the branch does not exist, the promise will be resolved with `false`.
+     * See also [createBranch] to create a new branch.
+     *
+     * @param repositoryId Repository ID to delete the branch from.
+     * @param branchId ID of the branch to delete.
+     * @return Promise that resolves to `true` if the branch existed and was deleted, else `false`.
+     */
     fun deleteBranch(
         repositoryId: String,
         branchId: String,
@@ -217,19 +236,14 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
         repositoryId: String,
         branchId: String,
         versionHash: String,
-        failIfExists: Boolean,
-    ): Promise<Boolean> {
+    ): Promise<Unit> {
         return GlobalScope.promise {
             RepositoryId(repositoryId).let { repositoryId ->
                 val branchReference = repositoryId.getBranchReference(branchId)
 
-                if (failIfExists) {
-                    throw TODO("implement server endpoint for this")
-                } else {
-                    val version = modelClient.lazyLoadVersion(repositoryId, versionHash)
-                    modelClient.push(branchReference, version, version, true)
-                    return@promise true
-                }
+                val version = modelClient.lazyLoadVersion(repositoryId, versionHash)
+                modelClient.push(branchReference, version, version, force = false, failIfExists = true)
+                    ?: throw CancellationException("Branch $branchId already exists in repository $repositoryId")
             }
         }
     }

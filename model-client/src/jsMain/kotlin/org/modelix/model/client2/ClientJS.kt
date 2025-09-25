@@ -142,6 +142,11 @@ interface ClientJS {
 
     fun createBranch(repositoryId: String, branchId: String, versionHash: String, failIfExists: Boolean = false): Promise<Boolean>
 
+    fun deleteBranch(
+        repositoryId: String,
+        branchId: String,
+    ): Promise<Boolean>
+
     /**
      * Fetch existing repositories from the model server.
      */
@@ -215,6 +220,18 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
                     modelClient.push(branchReference, version, version, true)
                     return@promise true
                 }
+            }
+        }
+    }
+
+    override fun deleteBranch(
+        repositoryId: String,
+        branchId: String,
+    ): Promise<Boolean> {
+        return GlobalScope.promise {
+            RepositoryId(repositoryId).let { repositoryId ->
+                val branchReference = repositoryId.getBranchReference(branchId)
+                return@promise modelClient.deleteBranch(branchReference)
             }
         }
     }

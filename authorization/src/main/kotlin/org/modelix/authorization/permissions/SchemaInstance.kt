@@ -156,6 +156,31 @@ data class ResourceInstanceReference(
     fun toPermissionParts(): PermissionParts {
         return (parent?.toPermissionParts() ?: PermissionParts()) + name + parameterValues
     }
+
+    fun getWildcardMutations(): Sequence<ResourceInstanceReference> {
+        val mutateSelf = parameterValues.size == 1 && parameterValues.single() != WILDCARD
+        val parentMutations = parent?.getWildcardMutations() ?: emptySequence()
+        return if (mutateSelf) {
+            sequenceOf(parent).map {
+                ResourceInstanceReference(name, listOf(WILDCARD), it)
+            } + parentMutations.flatMap {
+                sequenceOf(
+                    ResourceInstanceReference(name, parameterValues, it),
+                    ResourceInstanceReference(name, listOf(WILDCARD), it),
+                )
+            }
+        } else {
+            parentMutations.map { ResourceInstanceReference(name, parameterValues, it) }
+        }
+    }
+
+    fun containsWildcards(): Boolean {
+        return parameterValues.contains(WILDCARD) || parent != null && parent.containsWildcards()
+    }
+
+    companion object {
+        const val WILDCARD = "*"
+    }
 }
 
 data class PermissionInstanceReference(val permissionName: String, val resource: ResourceInstanceReference) {
@@ -172,4 +197,9 @@ data class PermissionInstanceReference(val permissionName: String, val resource:
             false
         }
     }
+    fun getWildcardMutations(): Sequence<PermissionInstanceReference> {
+        return resource.getWildcardMutations().map { PermissionInstanceReference(permissionName, it) }
+    }
+
+    fun containsWildcards() = resource.containsWildcards()
 }

@@ -48,10 +48,21 @@ class PermissionEvaluator(val schemaInstance: SchemaInstance) {
     }
 
     fun hasPermission(permissionInstanceRef: PermissionInstanceReference): Boolean {
+        require(!permissionInstanceRef.containsWildcards()) {
+            // An attacker could try to create a resource with the name '*' to get an unintended wildcard grant.
+            "A permission containing wildcards is illegal: $permissionInstanceRef"
+        }
+        for (withWildcards in sequenceOf(permissionInstanceRef) + permissionInstanceRef.getWildcardMutations()) {
+            if (checkPermission(withWildcards)) return true
+        }
+        return false
+    }
+
+    private fun checkPermission(permissionInstanceRef: PermissionInstanceReference): Boolean {
         if (allGrantedPermissions.contains(permissionInstanceRef)) return true
 
         val permissionInstance = schemaInstance.instantiatePermission(permissionInstanceRef)
-        val indirectlyGranted = permissionInstance.includedIn.any { hasPermission(it.ref) }
+        val indirectlyGranted = permissionInstance.includedIn.any { checkPermission(it.ref) }
         if (indirectlyGranted) allGrantedPermissions.add(permissionInstanceRef)
         return indirectlyGranted
     }

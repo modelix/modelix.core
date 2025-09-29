@@ -220,6 +220,7 @@ object Main {
                     allowMethod(HttpMethod.Get)
                     allowMethod(HttpMethod.Put)
                     allowMethod(HttpMethod.Post)
+                    allowMethod(HttpMethod.Delete)
                 }
                 installStatusPages()
 

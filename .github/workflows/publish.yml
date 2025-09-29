@@ -93,7 +93,7 @@ jobs:
       - name: Log in to Docker Hub
         # Only attempt to log in if we later attempt to push.
         if: ${{ env.PUSH == 'true' }}
-        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3
         with:
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_KEY }}

@@ -58,6 +58,25 @@ class SchemaBuilder {
             }
         }
 
+        fun copyPermissionsFrom(vararg resourceNames: String) {
+            val resourceBuilder = resourceBuilders[resourceNames.first()]
+                ?: throw IllegalArgumentException("No resource named ${resourceNames.first()} in $this")
+
+            val targetResource = resourceNames.drop(1).fold(resourceBuilder) { acc, name ->
+                acc.innerResourceBuilders[name]
+                    ?: throw IllegalArgumentException("No inner resource named $name in $this")
+            }
+            copyPermissionsFrom(targetResource)
+        }
+
+        private fun copyPermissionsFrom(otherResourceBuilder: ResourceBuilder) {
+            otherResourceBuilder.permissionBuilders.forEach { name, permBuilder ->
+                permission(name) {
+                    copyFrom(permBuilder)
+                }
+            }
+        }
+
         fun resource(name: String, body: ResourceBuilder.() -> Unit = {}) {
             innerResourceBuilders[name] = ResourceBuilder(name).also(body)
         }
@@ -93,6 +112,22 @@ class SchemaBuilder {
                 permission.includes.forEach { target ->
                     includes(target.resourceName, target.permissionName)
                 }
+            }
+
+            fun copyFrom(other: PermissionBuilder) {
+                other.description?.let { description(it) }
+                other.includedIn
+                    // avoid recursive includes
+                    .filter { target -> target.resourceName != resourceName || target.permissionName != permissionName }
+                    .forEach { target ->
+                        includedIn(target.resourceName, target.permissionName)
+                    }
+                other.includes
+                    // avoid recursive includes
+                    .filter { target -> target.resourceName != resourceName || target.permissionName != permissionName }
+                    .forEach { target ->
+                        includes(target.resourceName, target.permissionName)
+                    }
             }
 
             fun permission(name: String, body: PermissionBuilder.() -> Unit = {}) {

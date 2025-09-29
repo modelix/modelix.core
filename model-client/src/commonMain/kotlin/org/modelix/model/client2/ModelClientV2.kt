@@ -8,8 +8,10 @@ import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.contentnegotiation.exclude
 import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.accept
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
@@ -79,6 +81,7 @@ import org.modelix.model.oauth.TokenProviderAuthConfig
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.CPVersion
 import org.modelix.model.persistent.HashUtil
+import org.modelix.model.server.api.BranchInfo
 import org.modelix.model.server.api.RepositoryConfig
 import org.modelix.model.server.api.v2.ImmutableObjectsStream
 import org.modelix.model.server.api.v2.ObjectHashAndSerializedObject
@@ -281,11 +284,23 @@ class ModelClientV2(
 
     override suspend fun listBranches(repository: RepositoryId): List<BranchReference> {
         return httpClient.get {
+            // only accept text/plain, not application/json
+            accept(ContentType.Text.Plain)
+            exclude(ContentType.Application.Json)
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", repository.id, "branches")
             }
         }.bodyAsText().lines().filter { it.isNotEmpty() }.map { repository.getBranchReference(it) }
+    }
+
+    override suspend fun listBranchesWithHashes(repository: RepositoryId): List<BranchInfo> {
+        return httpClient.get {
+            url {
+                takeFrom(baseUrl)
+                appendPathSegmentsEncodingSlash("repositories", repository.id, "branches")
+            }
+        }.body()
     }
 
     override suspend fun deleteBranch(branch: BranchReference): Boolean {
@@ -492,10 +507,20 @@ class ModelClientV2(
     }
 
     override suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?, force: Boolean): IVersion {
-        return push(branch, version, listOfNotNull(baseVersion), force)
+        // safe to ignore null, because push may only return null if failIfExists is true
+        return push(branch, version, baseVersion, force, failIfExists = false)!!
     }
 
     override suspend fun push(branch: BranchReference, version: IVersion, knownVersions: List<IVersion>, force: Boolean): IVersion {
+        // safe to ignore null, because push may only return null if failIfExists is true
+        return push(branch, version, knownVersions, force, failIfExists = false)!!
+    }
+
+    override suspend fun push(branch: BranchReference, version: IVersion, baseVersion: IVersion?, force: Boolean, failIfExists: Boolean): IVersion? {
+        return push(branch, version, listOfNotNull(baseVersion), force)
+    }
+
+    override suspend fun push(branch: BranchReference, version: IVersion, knownVersions: List<IVersion>, force: Boolean, failIfExists: Boolean): IVersion? {
         LOG.debug { "${clientId.toString(16)}.push($branch, $version, ${knownVersions.joinToString(", ").take(200)})" }
         require(version is CLVersion)
         val delta = if (knownVersions.map { it.getObjectHash() }.contains(version.getObjectHash())) {
@@ -520,12 +545,19 @@ class ModelClientV2(
                 if (force) {
                     parameters["force"] = force.toString()
                 }
+                if (failIfExists) {
+                    parameters["failIfExists"] = failIfExists.toString()
+                }
             }
             useVersionStreamFormat()
             contentType(ContentType.Application.Json)
             setBody(delta)
         }.execute { response ->
-            createVersion(branch.repositoryId, version, response.readVersionDelta())
+            if (response.status == HttpStatusCode.Conflict) {
+                null
+            } else {
+                createVersion(branch.repositoryId, version, response.readVersionDelta())
+            }
         }
     }
 

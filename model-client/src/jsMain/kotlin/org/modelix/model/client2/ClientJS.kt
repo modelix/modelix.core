@@ -28,7 +28,9 @@ import org.modelix.model.mutable.asMutableThreadSafe
 import org.modelix.model.mutable.load
 import org.modelix.model.mutable.withAutoTransactions
 import org.modelix.model.persistent.MapBasedStore
+import org.modelix.model.server.api.BranchInfo
 import org.modelix.mps.multiplatform.model.MPSIdGenerator
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.js.Promise
 
 /**
@@ -131,6 +133,40 @@ interface ClientJS {
     fun fetchBranches(repositoryId: String): Promise<Array<String>>
 
     /**
+     * Fetch existing branches for a given repository from the model server.
+     *
+     * @param repositoryId Repository ID to fetch branches from.
+     */
+    fun fetchBranchesWithHashes(
+        repositoryId: String,
+    ): Promise<Array<BranchInfo>>
+
+    /**
+     * Create a new branch in the given repository on the model server.
+     * The new branch will point to the given version.
+     * If the branch already exists, the promise will be rejected.
+     * See also [deleteBranch] to delete an existing branch.
+     * @param repositoryId Repository ID to create the branch in.
+     * @param branchId ID of the new branch to create.
+     * @param versionHash Hash of the version the new branch should point to.
+     */
+    fun createBranch(repositoryId: String, branchId: String, versionHash: String): Promise<Unit>
+
+    /**
+     * Delete an existing branch from the given repository on the model server.
+     * If the branch does not exist, the promise will be resolved with `false`.
+     * See also [createBranch] to create a new branch.
+     *
+     * @param repositoryId Repository ID to delete the branch from.
+     * @param branchId ID of the branch to delete.
+     * @return Promise that resolves to `true` if the branch existed and was deleted, else `false`.
+     */
+    fun deleteBranch(
+        repositoryId: String,
+        branchId: String,
+    ): Promise<Boolean>
+
+    /**
      * Fetch existing repositories from the model server.
      */
     fun fetchRepositories(): Promise<Array<String>>
@@ -177,6 +213,40 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
             val repositoryIdObject = RepositoryId(repositoryId)
             return@promise modelClient.listBranches(repositoryIdObject)
                 .map { it.branchName }.toTypedArray()
+        }
+    }
+
+    override fun fetchBranchesWithHashes(
+        repositoryId: String,
+    ): Promise<Array<BranchInfo>> = GlobalScope.promise {
+        return@promise modelClient.listBranchesWithHashes(RepositoryId(repositoryId)).toTypedArray()
+    }
+
+    override fun createBranch(
+        repositoryId: String,
+        branchId: String,
+        versionHash: String,
+    ): Promise<Unit> {
+        return GlobalScope.promise {
+            RepositoryId(repositoryId).let { repositoryId ->
+                val branchReference = repositoryId.getBranchReference(branchId)
+
+                val version = modelClient.lazyLoadVersion(repositoryId, versionHash)
+                modelClient.push(branchReference, version, version, force = false, failIfExists = true)
+                    ?: throw CancellationException("Branch $branchId already exists in repository $repositoryId")
+            }
+        }
+    }
+
+    override fun deleteBranch(
+        repositoryId: String,
+        branchId: String,
+    ): Promise<Boolean> {
+        return GlobalScope.promise {
+            RepositoryId(repositoryId).let { repositoryId ->
+                val branchReference = repositoryId.getBranchReference(branchId)
+                return@promise modelClient.deleteBranch(branchReference)
+            }
         }
     }
 

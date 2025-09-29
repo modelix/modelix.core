@@ -21,6 +21,7 @@ object ModelServerPermissionSchema {
     private const val CREATE = "create"
     private const val LIST = "list"
     private const val BRANCH = "branch"
+    private const val ANY_BRANCH = "any-branch"
     private const val OBJECTS = "objects"
     private const val FORCE_PUSH = "force-push"
     private const val PUSH = "push"
@@ -83,35 +84,46 @@ object ModelServerPermissionSchema {
 
                 permission(ADMIN) {
                     includedIn(REPOSITORY, ADMIN)
+                    includedIn(ANY_BRANCH, ADMIN)
                     permission(REWRITE) {
                         includedIn(REPOSITORY, REWRITE)
+                        includedIn(ANY_BRANCH, REWRITE)
                         description("Destructive write operations that change the history and loses previously pushed changes.")
 
-                        permission(DELETE)
+                        permission(DELETE) {
+                            includedIn(ANY_BRANCH, DELETE)
+                        }
                         permission(WRITE) {
                             description("Non-destructive write operations that preserve the history.")
                             includedIn(REPOSITORY, WRITE)
+                            includedIn(ANY_BRANCH, WRITE)
                             includes(LEGACY_USER_DEFINED_ENTRIES, WRITE)
                             permission(CREATE) {
                                 description("Can create a branch with this name, if it doesn't exist yet.")
+                                includedIn(ANY_BRANCH, CREATE)
                             }
                             permission(PUSH) {
                                 description("Add changes to a branch and merge it with the current version.")
                                 includes(OBJECTS, ADD)
+                                includedIn(ANY_BRANCH, PUSH)
                             }
                             permission(READ) {
                                 includes(LEGACY_USER_DEFINED_ENTRIES, READ)
                                 includedIn(REPOSITORY, READ)
+                                includedIn(ANY_BRANCH, READ)
                                 permission(LIST) {
                                     includes(REPOSITORY, LIST)
                                     description("Allows to know its existence and name, but not the content.")
+                                    includedIn(ANY_BRANCH, LIST)
                                 }
                                 permission(PULL) {
                                     description("Allows reading the version hash. Permissions on objects are checked on repository level, which mean if a client knows the hash it can still read the content.")
                                     includes(OBJECTS, READ)
+                                    includedIn(ANY_BRANCH, PULL)
                                 }
                                 permission(QUERY) {
                                     description("Allows the execution of ModelQL queries.")
+                                    includedIn(ANY_BRANCH, QUERY)
                                 }
                             }
                         }
@@ -119,9 +131,14 @@ object ModelServerPermissionSchema {
                         permission(FORCE_PUSH) {
                             description("Overwrite the current version. Don't do any merges and don't prevent losing history.")
                             includes(PUSH)
+                            includedIn(ANY_BRANCH, FORCE_PUSH)
                         }
                     }
                 }
+            }
+
+            resource(ANY_BRANCH) {
+                copyPermissionsFrom(REPOSITORY, BRANCH)
             }
         }
     }

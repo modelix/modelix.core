@@ -2,7 +2,6 @@ package org.modelix.model.mpsadapters
 
 import jetbrains.mps.smodel.SNodePointer
 import jetbrains.mps.util.StringUtil
-import org.jetbrains.mps.openapi.model.SModelName
 import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.model.SNodeReference
 import org.jetbrains.mps.openapi.module.SModuleId
@@ -20,11 +19,11 @@ fun MPSModuleReference.toMPS(): SModuleReference = PersistenceFacade.getInstance
     null,
 )
 
-fun SModelReference.toModelix() = MPSModelReference(moduleReference?.toModelix(), modelId.toString(), modelName.toString())
+fun SModelReference.toModelix() = MPSModelReference(moduleReference?.toModelix(), modelId.toString())
 fun MPSModelReference.toMPS(): SModelReference = PersistenceFacade.getInstance().createModelReference(
     moduleReference?.toMPS(),
     PersistenceFacade.getInstance().createModelId(modelId),
-    SModelName(modelName ?: "unknown"), // we need a non-empty model name here to avoid PersistenceFacade$IncorrectModelReferenceFormatException: Incomplete model reference, the presentation part is absent
+    "",
 )
 
 fun SNodeReference.toModelix() = MPSNodeReference(

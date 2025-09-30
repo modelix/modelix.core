@@ -2,7 +2,7 @@ package org.modelix.mps.multiplatform.model
 
 import org.modelix.model.api.INodeReference
 
-data class MPSModelReference(val moduleReference: MPSModuleReference?, val modelId: String, val modelName: String? = null) : INodeReference() {
+data class MPSModelReference(val moduleReference: MPSModuleReference?, val modelId: String) : INodeReference() {
 
     companion object {
         const val PREFIX = "mps-model"
@@ -24,7 +24,7 @@ data class MPSModelReference(val moduleReference: MPSModuleReference?, val model
             val moduleName = modelRefParts[2]?.takeIf { it.isNotBlank() }
             val modelName = modelRefParts[3]?.takeIf { it.isNotBlank() }
             val moduleReference = moduleId?.let { MPSModuleReference(it) }
-            val modelReference = modelId?.let { MPSModelReference(moduleReference, it, modelName) }
+            val modelReference = modelId?.let { MPSModelReference(moduleReference, it) }
             return requireNotNull(modelReference) { "Invalid MPS model reference: $serialized" }
         }
 
@@ -76,8 +76,5 @@ data class MPSModelReference(val moduleReference: MPSModuleReference?, val model
         return "$PREFIX:${toMPSString()}"
     }
 
-    fun toMPSString() =
-        (moduleReference?.let { escapeRefChars(it.moduleId) + "/" } ?: "") +
-            escapeRefChars(modelId) +
-            (modelName?.let { "(${escapeRefChars(modelName)})" } ?: "")
+    fun toMPSString() = (moduleReference?.let { escapeRefChars(it.moduleId) + "/" } ?: "") + escapeRefChars(modelId)
 }

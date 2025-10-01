@@ -333,6 +333,50 @@ class ModelClientV2(
         }
     }
 
+    /**
+     * Splits the history into intervals where the time difference between two versions is less or equal to [delay].
+     */
+    override suspend fun getHistorySessions(
+        repositoryId: RepositoryId,
+        headVersion: ObjectHash,
+        timeRange: ClosedRange<Instant>?,
+        delay: Duration,
+    ): List<HistoryInterval> {
+        val index: Object<HistoryIndexNode> = getHistoryIndex(repositoryId, headVersion)
+        val sessions = ArrayList<HistoryInterval>()
+        var previousMinTime = Instant.fromEpochSeconds(Long.MAX_VALUE)
+
+        // In the worst case two adjacent intervals contain a single entry directly at the border.
+        // The maximum difference between these two entries is less than two times the interval.
+        val interval = delay / 2
+
+        index.data.splitAtInterval(interval, timeRange).iterateSuspending(index.graph) {
+            if (previousMinTime - it.maxTime >= delay) {
+                sessions += HistoryInterval(
+                    firstVersionHash = it.firstVersion.getHash(),
+                    lastVersionHash = it.lastVersion.getHash(),
+                    size = it.size,
+                    minTime = it.minTime,
+                    maxTime = it.maxTime,
+                    authors = it.authors,
+                )
+            } else {
+                val entry = sessions[sessions.lastIndex]
+                sessions[sessions.lastIndex] = HistoryInterval(
+                    firstVersionHash = it.firstVersion.getHash(),
+                    lastVersionHash = entry.lastVersionHash,
+                    size = entry.size + it.size,
+                    minTime = minOf(entry.minTime, it.minTime),
+                    maxTime = maxOf(entry.maxTime, it.maxTime),
+                    authors = entry.authors + it.authors,
+                )
+            }
+            previousMinTime = it.minTime
+        }
+
+        return sessions
+    }
+
     override suspend fun getHistoryIntervals(
         repositoryId: RepositoryId,
         headVersion: ObjectHash,

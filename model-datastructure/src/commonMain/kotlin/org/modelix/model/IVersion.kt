@@ -31,6 +31,7 @@ interface IVersion {
     fun tryGetParentVersions(): List<VersionAndHash>
 
     fun getTimestamp(): Instant?
+    fun getAuthor(): String?
 
     companion object {
         fun builder(): VersionBuilder = VersionBuilder()

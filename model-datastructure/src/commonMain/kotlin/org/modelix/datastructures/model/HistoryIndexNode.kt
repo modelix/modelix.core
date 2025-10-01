@@ -46,7 +46,7 @@ sealed class HistoryIndexNode : IObjectData {
      * For the same interval multiple nodes may be returned.
      * Latest entry is returned first.
      */
-    abstract fun splitAtInterval(interval: Duration): IStream.Many<HistoryIndexNode>
+    abstract fun splitAtInterval(interval: Duration, timeRangeFilter: ClosedRange<Instant>?): IStream.Many<HistoryIndexNode>
 
     fun concat(
         self: Object<HistoryIndexNode>,
@@ -213,8 +213,8 @@ data class HistoryIndexLeafNode(
         }
     }
 
-    override fun splitAtInterval(interval: Duration): IStream.Many<HistoryIndexNode> {
-        TODO("Not yet implemented")
+    override fun splitAtInterval(interval: Duration, timeRangeFilter: ClosedRange<Instant>?): IStream.Many<HistoryIndexNode> {
+        return if (timeRangeFilter == null || timeRangeFilter.contains(time)) IStream.of(this) else IStream.empty()
     }
 }
 
@@ -335,8 +335,18 @@ data class HistoryIndexRangeNode(
         }.flatten()
     }
 
-    override fun splitAtInterval(interval: Duration): IStream.Many<HistoryIndexNode> {
-        TODO("Not yet implemented")
+    override fun splitAtInterval(interval: Duration, timeRangeFilter: ClosedRange<Instant>?): IStream.Many<HistoryIndexNode> {
+        if (timeRangeFilter != null && !timeRangeFilter.intersects(timeRange)) return IStream.empty()
+
+        val intervalIndex1 = timeRange.start.epochSeconds / interval.inWholeSeconds
+        val intervalIndex2 = timeRange.endInclusive.epochSeconds / interval.inWholeSeconds
+        if (intervalIndex1 == intervalIndex2) {
+            return IStream.of(this)
+        } else {
+            return IStream.of(child2, child1)
+                .flatMapOrdered { it.resolve() }
+                .flatMapOrdered { it.data.splitAtInterval(interval, timeRangeFilter) }
+        }
     }
 
     /**

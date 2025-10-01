@@ -1,6 +1,7 @@
 package org.modelix.model.client2
 
 import io.ktor.http.Url
+import kotlinx.datetime.Instant
 import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.model.IVersion
@@ -109,20 +110,18 @@ interface IModelClientV2 {
     fun getFrontendUrl(branch: BranchReference): Url
 
     /**
-     * @param headVersion starting point for history computations. For a paginated view this value should be the same and
-     *        the value for [skip] should be incremented instead. Only then its guaranteed that the returned list is
-     *        complete.
-     * @param skip for a paginated view of the history
-     * @param limit maximum size of the returned list
-     * @param interval splits the timeline into equally sized intervals and returns only the last version of each interval
+     * @param headVersion starting point for history computations. For a paginated view this value should be the same
+     *        and the value for [skip] should be incremented instead. Only then it's guaranteed that the returned list
+     *        is complete.
+     * @param timeRange return only intervals in this time range
+     * @param interval splits the timeline into equally sized intervals and returns a summary of the contained versions
      */
-    suspend fun getHistory(
+    suspend fun getHistoryIntervals(
         repositoryId: RepositoryId,
         headVersion: ObjectHash,
-        skip: Int = 0,
-        limit: Int = 1000,
-        interval: Duration?,
-    ): HistoryResponse
+        timeRange: ClosedRange<Instant>?,
+        interval: Duration,
+    ): List<HistoryInterval>
 
     suspend fun getHistoryRange(
         repositoryId: RepositoryId,
@@ -133,15 +132,16 @@ interface IModelClientV2 {
 }
 
 data class HistoryResponse(
-    val entries: List<HistoryEntry>,
+    val entries: List<HistoryInterval>,
     val nextVersions: List<ObjectHash>,
 )
 
-data class HistoryEntry(
+data class HistoryInterval(
     val firstVersionHash: ObjectHash,
     val lastVersionHash: ObjectHash,
-    val minTime: Long?,
-    val maxTime: Long?,
+    val size: Long,
+    val minTime: Instant,
+    val maxTime: Instant,
     val authors: Set<String>,
     // val headOfBranch: Set<BranchReference>,
 )

@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Instant
 import mu.KotlinLogging
 import org.modelix.datastructures.model.HistoryIndexNode
 import org.modelix.datastructures.objects.IObjectGraph
@@ -332,64 +333,43 @@ class ModelClientV2(
         }
     }
 
-    override suspend fun getHistory(
+    override suspend fun getHistoryIntervals(
         repositoryId: RepositoryId,
         headVersion: ObjectHash,
-        skip: Int,
-        limit: Int,
-        interval: Duration?,
-    ): HistoryResponse {
+        timeRange: ClosedRange<Instant>?,
+        interval: Duration,
+    ): List<HistoryInterval> {
         val index: Object<HistoryIndexNode> = getHistoryIndex(repositoryId, headVersion)
-        val entries = if (interval != null) {
-            val mergedEntries = ArrayList<HistoryEntry>()
-            var previousIntervalId: Long = Long.MAX_VALUE
-            try {
-                index.data.splitAtInterval(interval).iterateSuspending(index.graph) {
-                    val intervalId = it.maxTime.toEpochMilliseconds() / interval.inWholeMilliseconds
-                    require(intervalId <= previousIntervalId)
-                    if (intervalId == previousIntervalId) {
-                        val entry = mergedEntries[mergedEntries.lastIndex]
-                        mergedEntries[mergedEntries.lastIndex] = HistoryEntry(
-                            firstVersionHash = it.firstVersion.getHash(),
-                            lastVersionHash = entry.lastVersionHash,
-                            minTime = it.minTime.epochSeconds,
-                            maxTime = entry.maxTime,
-                            authors = entry.authors + it.authors,
-                        )
-                    } else {
-                        if (mergedEntries.size >= limit) throw LimitedReached()
-                        previousIntervalId = intervalId
-                        mergedEntries += HistoryEntry(
-                            firstVersionHash = it.firstVersion.getHash(),
-                            lastVersionHash = it.lastVersion.getHash(),
-                            minTime = it.minTime.epochSeconds,
-                            maxTime = it.maxTime.epochSeconds,
-                            authors = it.authors,
-                        )
-                    }
-                }
-            } catch (ex: LimitedReached) {
-                // Expected exception used for exiting the iterateSuspending call
+        val mergedEntries = ArrayList<HistoryInterval>()
+        var previousIntervalId: Long = Long.MAX_VALUE
+
+        index.data.splitAtInterval(interval, timeRange).iterateSuspending(index.graph) {
+            val intervalId = it.maxTime.epochSeconds / interval.inWholeSeconds
+            check(intervalId <= previousIntervalId)
+            if (intervalId == previousIntervalId) {
+                val entry = mergedEntries[mergedEntries.lastIndex]
+                mergedEntries[mergedEntries.lastIndex] = HistoryInterval(
+                    firstVersionHash = it.firstVersion.getHash(),
+                    lastVersionHash = entry.lastVersionHash,
+                    size = entry.size + it.size,
+                    minTime = minOf(entry.minTime, it.minTime),
+                    maxTime = maxOf(entry.maxTime, it.maxTime),
+                    authors = entry.authors + it.authors,
+                )
+            } else {
+                previousIntervalId = intervalId
+                mergedEntries += HistoryInterval(
+                    firstVersionHash = it.firstVersion.getHash(),
+                    lastVersionHash = it.lastVersion.getHash(),
+                    size = it.size,
+                    minTime = it.minTime,
+                    maxTime = it.maxTime,
+                    authors = it.authors,
+                )
             }
-            mergedEntries
-        } else {
-            index.data.getAllVersionsReversed().flatMapOrdered { it.resolve() }.map { CLVersion(it) }
-                .map {
-                    val hash = it.getObjectHash()
-                    val time = it.getTimestamp()?.epochSeconds
-                    HistoryEntry(
-                        firstVersionHash = hash,
-                        lastVersionHash = hash,
-                        minTime = time,
-                        maxTime = time,
-                        authors = setOfNotNull(it.author),
-                    )
-                }
-                .take(limit)
-                .toList()
-                .getSuspending(index.graph)
         }
-        return HistoryResponse(entries = entries, nextVersions = emptyList())
+
+        return mergedEntries
     }
 
     override suspend fun getHistoryRange(
@@ -1073,4 +1053,4 @@ fun IVersion.runWrite(idGenerator: IIdGenerator, author: String?, body: (IBranch
 
 private fun String.ensureSuffix(suffix: String) = if (endsWith(suffix)) this else this + suffix
 
-private class LimitedReached : RuntimeException("limited reached")
+private class LimitReached : RuntimeException("limit reached")

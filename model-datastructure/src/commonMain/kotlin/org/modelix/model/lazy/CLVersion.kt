@@ -61,6 +61,8 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
 
     val data: CPVersion get() = resolvedData.data
 
+    @get:JvmName("get_author")
+    @Deprecated("Use getAuthor()", ReplaceWith("getAuthor()"))
     val author: String?
         get() = data.author
 
@@ -82,6 +84,8 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
         } catch (ex: Exception) {}
         return null
     }
+
+    override fun getAuthor(): String? = data.author
 
     @Deprecated("Use getObjectHash()", ReplaceWith("getObjectHash()"))
     val hash: String

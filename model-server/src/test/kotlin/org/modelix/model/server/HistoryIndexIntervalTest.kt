@@ -3,8 +3,8 @@ package org.modelix.model.server
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import mu.KotlinLogging
+import org.modelix.datastructures.history.HistoryInterval
 import org.modelix.model.IVersion
-import org.modelix.model.client2.HistoryInterval
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.historyAsSequence
 import org.modelix.model.lazy.RepositoryId
@@ -121,9 +121,7 @@ class HistoryIndexIntervalTest {
             .take(limit)
 
         val timeRange = (expectedIntervals.minOf { it.minTime })..(expectedIntervals.maxOf { it.maxTime })
-        val history = modelClient.getHistoryIntervals(
-            repositoryId = repositoryId,
-            headVersion = currentVersion.getObjectHash(),
+        val history = modelClient.queryHistory(repositoryId, currentVersion.getObjectHash()).intervals(
             timeRange = timeRange,
             interval = intervalSeconds.seconds,
         )

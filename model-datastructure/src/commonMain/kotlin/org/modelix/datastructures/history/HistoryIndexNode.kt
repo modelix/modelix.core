@@ -1,4 +1,4 @@
-package org.modelix.datastructures.model
+package org.modelix.datastructures.history
 
 import kotlinx.datetime.Instant
 import org.modelix.datastructures.objects.IObjectData
@@ -23,7 +23,6 @@ import org.modelix.streams.plus
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.time.Duration
 
 sealed class HistoryIndexNode : IObjectData {
     abstract val firstVersion: ObjectReference<CPVersion>
@@ -46,7 +45,7 @@ sealed class HistoryIndexNode : IObjectData {
      * For the same interval multiple nodes may be returned.
      * Latest entry is returned first.
      */
-    abstract fun splitAtInterval(interval: Duration, timeRangeFilter: ClosedRange<Instant>?): IStream.Many<HistoryIndexNode>
+    abstract fun splitAtInterval(intervalSpec: IntervalsSpec): IStream.Many<HistoryIndexNode>
 
     fun concat(
         self: Object<HistoryIndexNode>,
@@ -213,8 +212,8 @@ data class HistoryIndexLeafNode(
         }
     }
 
-    override fun splitAtInterval(interval: Duration, timeRangeFilter: ClosedRange<Instant>?): IStream.Many<HistoryIndexNode> {
-        return if (timeRangeFilter == null || timeRangeFilter.contains(time)) IStream.of(this) else IStream.empty()
+    override fun splitAtInterval(intervalSpec: IntervalsSpec): IStream.Many<HistoryIndexNode> {
+        return if (intervalSpec.includes(time)) IStream.of(this) else IStream.empty()
     }
 }
 
@@ -335,17 +334,17 @@ data class HistoryIndexRangeNode(
         }.flatten()
     }
 
-    override fun splitAtInterval(interval: Duration, timeRangeFilter: ClosedRange<Instant>?): IStream.Many<HistoryIndexNode> {
-        if (timeRangeFilter != null && !timeRangeFilter.intersects(timeRange)) return IStream.empty()
+    override fun splitAtInterval(intervalSpec: IntervalsSpec): IStream.Many<HistoryIndexNode> {
+        if (!intervalSpec.intersects(timeRange)) return IStream.empty()
 
-        val intervalIndex1 = timeRange.start.epochSeconds / interval.inWholeSeconds
-        val intervalIndex2 = timeRange.endInclusive.epochSeconds / interval.inWholeSeconds
-        if (intervalIndex1 == intervalIndex2) {
+        val intervalIndex1 = intervalSpec.getIntervalIndex(timeRange.start)
+        val intervalIndex2 = intervalSpec.getIntervalIndex(timeRange.endInclusive)
+        if (intervalIndex1 == intervalIndex2 && intervalIndex1 >= 0) {
             return IStream.of(this)
         } else {
             return IStream.of(child2, child1)
                 .flatMapOrdered { it.resolve() }
-                .flatMapOrdered { it.data.splitAtInterval(interval, timeRangeFilter) }
+                .flatMapOrdered { it.data.splitAtInterval(intervalSpec) }
         }
     }
 
@@ -396,7 +395,7 @@ data class HistoryIndexRangeNode(
 }
 
 private fun LongRange.shift(amount: Long) = first.plus(amount)..last.plus(amount)
-private fun <T : Comparable<T>> ClosedRange<T>.intersects(other: ClosedRange<T>): Boolean {
+fun <T : Comparable<T>> ClosedRange<T>.intersects(other: ClosedRange<T>): Boolean {
     return this.contains(other.start) || this.contains(other.endInclusive) ||
         other.contains(this.start) || other.contains(this.endInclusive)
 }

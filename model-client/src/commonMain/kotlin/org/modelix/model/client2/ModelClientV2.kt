@@ -36,9 +36,10 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Instant
 import mu.KotlinLogging
-import org.modelix.datastructures.model.HistoryIndexNode
+import org.modelix.datastructures.history.HistoryIndexNode
+import org.modelix.datastructures.history.HistoryQueries
+import org.modelix.datastructures.history.IHistoryQueries
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectHash
@@ -92,8 +93,6 @@ import org.modelix.model.server.api.v2.toMap
 import org.modelix.modelql.client.ModelQLClient
 import org.modelix.modelql.core.IMonoStep
 import org.modelix.streams.IExecutableStream
-import org.modelix.streams.getSuspending
-import org.modelix.streams.iterateSuspending
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -333,102 +332,11 @@ class ModelClientV2(
         }
     }
 
-    /**
-     * Splits the history into intervals where the time difference between two versions is less or equal to [delay].
-     */
-    override suspend fun getHistorySessions(
+    override fun queryHistory(
         repositoryId: RepositoryId,
         headVersion: ObjectHash,
-        timeRange: ClosedRange<Instant>?,
-        delay: Duration,
-    ): List<HistoryInterval> {
-        val index: Object<HistoryIndexNode> = getHistoryIndex(repositoryId, headVersion)
-        val sessions = ArrayList<HistoryInterval>()
-        var previousMinTime = Instant.fromEpochSeconds(Long.MAX_VALUE)
-
-        // In the worst case two adjacent intervals contain a single entry directly at the border.
-        // The maximum difference between these two entries is less than two times the interval.
-        val interval = delay / 2
-
-        index.data.splitAtInterval(interval, timeRange).iterateSuspending(index.graph) {
-            if (previousMinTime - it.maxTime >= delay) {
-                sessions += HistoryInterval(
-                    firstVersionHash = it.firstVersion.getHash(),
-                    lastVersionHash = it.lastVersion.getHash(),
-                    size = it.size,
-                    minTime = it.minTime,
-                    maxTime = it.maxTime,
-                    authors = it.authors,
-                )
-            } else {
-                val entry = sessions[sessions.lastIndex]
-                sessions[sessions.lastIndex] = HistoryInterval(
-                    firstVersionHash = it.firstVersion.getHash(),
-                    lastVersionHash = entry.lastVersionHash,
-                    size = entry.size + it.size,
-                    minTime = minOf(entry.minTime, it.minTime),
-                    maxTime = maxOf(entry.maxTime, it.maxTime),
-                    authors = entry.authors + it.authors,
-                )
-            }
-            previousMinTime = it.minTime
-        }
-
-        return sessions
-    }
-
-    override suspend fun getHistoryIntervals(
-        repositoryId: RepositoryId,
-        headVersion: ObjectHash,
-        timeRange: ClosedRange<Instant>?,
-        interval: Duration,
-    ): List<HistoryInterval> {
-        val index: Object<HistoryIndexNode> = getHistoryIndex(repositoryId, headVersion)
-        val mergedEntries = ArrayList<HistoryInterval>()
-        var previousIntervalId: Long = Long.MAX_VALUE
-
-        index.data.splitAtInterval(interval, timeRange).iterateSuspending(index.graph) {
-            val intervalId = it.maxTime.epochSeconds / interval.inWholeSeconds
-            check(intervalId <= previousIntervalId)
-            if (intervalId == previousIntervalId) {
-                val entry = mergedEntries[mergedEntries.lastIndex]
-                mergedEntries[mergedEntries.lastIndex] = HistoryInterval(
-                    firstVersionHash = it.firstVersion.getHash(),
-                    lastVersionHash = entry.lastVersionHash,
-                    size = entry.size + it.size,
-                    minTime = minOf(entry.minTime, it.minTime),
-                    maxTime = maxOf(entry.maxTime, it.maxTime),
-                    authors = entry.authors + it.authors,
-                )
-            } else {
-                previousIntervalId = intervalId
-                mergedEntries += HistoryInterval(
-                    firstVersionHash = it.firstVersion.getHash(),
-                    lastVersionHash = it.lastVersion.getHash(),
-                    size = it.size,
-                    minTime = it.minTime,
-                    maxTime = it.maxTime,
-                    authors = it.authors,
-                )
-            }
-        }
-
-        return mergedEntries
-    }
-
-    override suspend fun getHistoryRange(
-        repositoryId: RepositoryId,
-        headVersion: ObjectHash,
-        skip: Long,
-        limit: Long,
-    ): List<IVersion> {
-        val index: Object<HistoryIndexNode> = getHistoryIndex(repositoryId, headVersion)
-        return index.data.getRange(skip until (limit + skip))
-            .flatMapOrdered { it.getAllVersionsReversed() }
-            .flatMapOrdered { it.resolve() }
-            .map { CLVersion(it) }
-            .toList()
-            .getSuspending(index.graph)
+    ): IHistoryQueries {
+        return HistoryQueries { getHistoryIndex(repositoryId, headVersion) }
     }
 
     suspend fun getHistoryIndex(

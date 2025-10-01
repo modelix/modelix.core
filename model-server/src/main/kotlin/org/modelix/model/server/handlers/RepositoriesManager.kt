@@ -3,10 +3,10 @@ package org.modelix.model.server.handlers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.datetime.Clock
-import org.modelix.datastructures.model.HistoryIndexNode
+import org.modelix.datastructures.history.HistoryIndexNode
+import org.modelix.datastructures.history.merge
 import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.datastructures.model.getHash
-import org.modelix.datastructures.model.merge
 import org.modelix.datastructures.model.withIdTranslation
 import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectHash

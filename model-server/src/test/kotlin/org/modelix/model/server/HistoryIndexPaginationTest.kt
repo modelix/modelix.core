@@ -108,9 +108,10 @@ class HistoryIndexPaginationTest {
 
         val expectedOrder = currentVersion.historyAsSequence().map { it.getContentHash() }.toList()
 
-        val history = modelClient.getHistoryRange(
+        val history = modelClient.queryHistory(
             repositoryId = repositoryId,
             headVersion = currentVersion.getObjectHash(),
+        ).range(
             skip = skip.toLong(),
             limit = limit.toLong(),
         )

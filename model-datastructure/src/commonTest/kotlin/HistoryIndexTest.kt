@@ -1,9 +1,9 @@
 import kotlinx.datetime.Instant
-import org.modelix.datastructures.model.HistoryIndexNode
+import org.modelix.datastructures.history.HistoryIndexNode
+import org.modelix.datastructures.history.height
+import org.modelix.datastructures.history.merge
+import org.modelix.datastructures.history.size
 import org.modelix.datastructures.model.IGenericModelTree
-import org.modelix.datastructures.model.height
-import org.modelix.datastructures.model.merge
-import org.modelix.datastructures.model.size
 import org.modelix.datastructures.objects.FullyLoadedObjectGraph
 import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.asObject

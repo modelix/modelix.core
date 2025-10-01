@@ -1,7 +1,7 @@
 package org.modelix.model.client2
 
 import io.ktor.http.Url
-import kotlinx.datetime.Instant
+import org.modelix.datastructures.history.IHistoryQueries
 import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.model.IVersion
@@ -13,8 +13,6 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.api.RepositoryConfig
 import org.modelix.modelql.core.IMonoStep
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.minutes
 
 /**
  * This interface is meant exclusively for model client usage.
@@ -110,58 +108,5 @@ interface IModelClientV2 {
 
     fun getFrontendUrl(branch: BranchReference): Url
 
-    /**
-     * Splits the history between versions where the time difference is greater or equal to [delay].
-     *
-     * @param headVersion starting point for history computations.
-     * @param timeRange return versions in this time range only
-     * @param delay time between two changes after which it is considered to be a new session
-     */
-    suspend fun getHistorySessions(
-        repositoryId: RepositoryId,
-        headVersion: ObjectHash,
-        timeRange: ClosedRange<Instant>? = null,
-        delay: Duration = 5.minutes,
-    ): List<HistoryInterval>
-
-    /**
-     *
-     * @param headVersion starting point for history computations.
-     * @param timeRange return versions in this time range only
-     * @param interval splits the timeline into equally sized intervals and returns a summary of the contained versions
-     */
-    suspend fun getHistoryIntervals(
-        repositoryId: RepositoryId,
-        headVersion: ObjectHash,
-        timeRange: ClosedRange<Instant>?,
-        interval: Duration,
-    ): List<HistoryInterval>
-
-    /**
-     * A paginated view on the list of all versions in the history sorted by their timestamp. Latest version first.
-     * @param headVersion starting point for history computations. For a paginated view this value should be the same
-     *        and the value for [skip] should be incremented instead. Only then it's guaranteed that the returned list
-     *        is complete.
-     */
-    suspend fun getHistoryRange(
-        repositoryId: RepositoryId,
-        headVersion: ObjectHash,
-        skip: Long = 0L,
-        limit: Long = 1000L,
-    ): List<IVersion>
+    fun queryHistory(repositoryId: RepositoryId, headVersion: ObjectHash): IHistoryQueries
 }
-
-/**
- * A summary of a range of versions.
- */
-data class HistoryInterval(
-    val firstVersionHash: ObjectHash,
-    val lastVersionHash: ObjectHash,
-    /**
-     * Number of versions contained in this interval.
-     */
-    val size: Long,
-    val minTime: Instant,
-    val maxTime: Instant,
-    val authors: Set<String>,
-)

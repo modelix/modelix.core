@@ -205,9 +205,10 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
 
     override fun getHistoryRange(repositoryId: String, headVersion: String, skip: Int, limit: Int) =
         GlobalScope.promise {
-            modelClient.getHistoryRange(
+            modelClient.queryHistory(
                 RepositoryId(repositoryId),
                 ObjectHash(headVersion),
+            ).range(
                 skip.toLong(),
                 limit.toLong(),
             )

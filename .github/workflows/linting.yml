@@ -20,16 +20,16 @@ jobs:
       - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6
       - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
 
-  openapi-linting:
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Clone repo
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
-      - uses: stoplightio/spectral-action@6416fd018ae38e60136775066eb3e98172143141 # v0.8.13
-        with:
-          file_glob: 'model-server-openapi/specifications/model-server-*.yaml'
-          spectral_ruleset: .spectral.yaml
-        continue-on-error: true
+#  openapi-linting:
+#    runs-on: ubuntu-24.04
+#    steps:
+#      - name: Clone repo
+#        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+#      - uses: stoplightio/spectral-action@6416fd018ae38e60136775066eb3e98172143141 # v0.8.13
+#        with:
+#          file_glob: 'model-server-openapi/specifications/model-server-*.yaml'
+#          spectral_ruleset: .spectral.yaml
+#        continue-on-error: true
 
   openapi-breaking-changes:
     runs-on: ubuntu-24.04

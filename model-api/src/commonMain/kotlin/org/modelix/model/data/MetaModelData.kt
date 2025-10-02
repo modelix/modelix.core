@@ -43,6 +43,7 @@ data class ConceptData(
     val references: List<ReferenceLinkData> = emptyList(),
     val extends: List<String> = emptyList(),
     override val deprecationMessage: String? = null,
+    val smodelAttributes: List<NodeData> = emptyList(),
     val metaProperties: MutableMap<String, String> = mutableMapOf(),
 ) : IDeprecatable {
     companion object {

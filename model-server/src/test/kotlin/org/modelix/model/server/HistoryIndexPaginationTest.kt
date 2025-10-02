@@ -79,7 +79,7 @@ class HistoryIndexPaginationTest {
 
     private fun runPaginationTest(skip: Int, limit: Int) = runTest {
         val rand = Random(8923345)
-        val modelClient: IModelClientV2 = createModelClient()
+        val modelClient: IModelClientV2 = createModelClient(lazyAndBlocking = true)
         val repositoryId = RepositoryId("repo1")
         val branchRef = repositoryId.getBranchReference()
         val initialVersion = modelClient.initRepository(RepositoryConfig(repositoryId = repositoryId.id, repositoryName = repositoryId.id, modelId = "61bd6cb0-33ff-45d8-9d1b-2149fdb01d16"))
@@ -106,7 +106,7 @@ class HistoryIndexPaginationTest {
             }
         }
 
-        val expectedOrder = currentVersion.historyAsSequence().map { it.getContentHash() }.toList()
+        val expectedOrder = currentVersion.historyAsSequence().map { it.getObjectHash() }.toList()
 
         val history = modelClient.queryHistory(
             repositoryId = repositoryId,
@@ -115,7 +115,7 @@ class HistoryIndexPaginationTest {
             skip = skip.toLong(),
             limit = limit.toLong(),
         )
-        assertEquals(expectedOrder.drop(skip).take(limit).toSet(), history.map { it.getContentHash() }.toSet())
-        assertEquals(expectedOrder.drop(skip).take(limit), history.map { it.getContentHash() })
+        assertEquals(expectedOrder.drop(skip).take(limit).toSet(), history.map { it.versionHash }.toSet())
+        assertEquals(expectedOrder.drop(skip).take(limit), history.map { it.versionHash })
     }
 }

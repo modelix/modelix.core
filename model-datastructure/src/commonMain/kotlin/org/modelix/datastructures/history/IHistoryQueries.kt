@@ -1,7 +1,6 @@
 package org.modelix.datastructures.history
 
 import kotlinx.datetime.Instant
-import org.modelix.model.IVersion
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
@@ -37,9 +36,10 @@ interface IHistoryQueries {
      *        is complete.
      */
     suspend fun range(
+        timeRange: ClosedRange<Instant>? = null,
         skip: Long = 0L,
         limit: Long = 1000L,
-    ): List<IVersion>
+    ): List<HistoryEntry>
 
     /**
      * Split the history at the specified [splitPoints]. The split point itself is part of the interval that ends at

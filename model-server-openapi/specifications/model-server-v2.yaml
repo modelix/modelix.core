@@ -113,31 +113,113 @@ paths:
           $ref: '#/components/responses/200json'
         default:
           $ref: '#/components/responses/GeneralError'
-  /repositories/{repository}/versions/{versionHash}/history-index:
+  /repositories/{repository}/versions/{versionHash}/history/index:
     get:
-      tags:
-        - v2
+      tags: [ v2 ]
       operationId: getHistoryIndex
       parameters:
-        - name: repository
-          in: "path"
-          required: true
-          schema:
-            type: string
-        - name: versionHash
-          in: "path"
-          required: true
-          schema:
-            type: string
+        - { name: repository, in: "path", required: true, schema: { type: string } }
+        - { name: versionHash, in: "path", required: true, schema: { type: string } }
       responses:
-        "403":
-          $ref: '#/components/responses/403'
-        "401":
-          $ref: '#/components/responses/401'
+        "403": { $ref: '#/components/responses/403' }
+        "401": { $ref: '#/components/responses/401' }
+        "200": { $ref: '#/components/responses/200' }
+        default: { $ref: '#/components/responses/GeneralError' }
+
+  /repositories/{repository}/versions/{versionHash}/history/entries:
+    get:
+      tags: [ v2 ]
+      operationId: getHistoryEntries
+      parameters:
+        - { name: repository, in: "path", required: true, schema: { type: string } }
+        - { name: versionHash, in: "path", required: true, schema: { type: string } }
+        - { name: minTime, in: "query", required: false, schema: { type: string } }
+        - { name: maxTime, in: "query", required: false, schema: { type: string } }
+        - { name: skip, in: "query", required: false, schema: { type: integer } }
+        - { name: limit, in: "query", required: false, schema: { type: integer } }
+      responses:
+        "403": { $ref: '#/components/responses/403' }
+        "401": { $ref: '#/components/responses/401' }
+        "200": { description: OK, content: { text/json: { schema: { type: array, items: { $ref: '#/components/schemas/HistoryEntry' } } } } }
+        default: { $ref: '#/components/responses/GeneralError' }
+
+  /repositories/{repository}/versions/{versionHash}/history/sessions:
+    get:
+      tags: [ v2 ]
+      operationId: getHistoryAsSessions
+      parameters:
+        - { name: repository, in: "path", required: true, schema: { type: string } }
+        - { name: versionHash, in: "path", required: true, schema: { type: string } }
+        - { name: minTime, in: "query", required: false, schema: { type: string } }
+        - { name: maxTime, in: "query", required: false, schema: { type: string } }
+        - { name: delay, in: "query", required: false, description: "In seconds. Default value is 5 minutes.", schema: { type: integer } }
+        - { name: skip, in: "query", required: false, schema: { type: integer } }
+        - { name: limit, in: "query", required: false, schema: { type: integer } }
+      responses:
+        "403": { $ref: '#/components/responses/403' }
+        "401": { $ref: '#/components/responses/401' }
         "200":
-          $ref: '#/components/responses/200'
-        default:
-          $ref: '#/components/responses/GeneralError'
+          description: OK
+          content:
+            text/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HistoryInterval'
+        default: { $ref: '#/components/responses/GeneralError' }
+
+  /repositories/{repository}/versions/{versionHash}/history/intervals:
+    get:
+      tags: [ v2 ]
+      operationId: getHistoryAsFixedIntervals
+      parameters:
+        - { name: repository, in: "path", required: true, schema: { type: string } }
+        - { name: versionHash, in: "path", required: true, schema: { type: string } }
+        - { name: minTime, in: "query", required: false, schema: { type: string } }
+        - { name: maxTime, in: "query", required: false, schema: { type: string } }
+        - { name: duration, in: "query", required: true, description: "Duration of one interval in seconds.", schema: { type: integer } }
+        - { name: skip, in: "query", required: false, schema: { type: integer } }
+        - { name: limit, in: "query", required: false, schema: { type: integer } }
+      responses:
+        "403": { $ref: '#/components/responses/403' }
+        "401": { $ref: '#/components/responses/401' }
+        "200":
+          description: OK
+          content:
+            text/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HistoryInterval'
+        default: { $ref: '#/components/responses/GeneralError' }
+    post:
+      tags: [ v2 ]
+      operationId: getHistoryAsProvidedIntervals
+      parameters:
+        - { name: repository, in: "path", required: true, schema: { type: string } }
+        - { name: versionHash, in: "path", required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+                description: Unix timestamp
+      responses:
+        "403": { $ref: '#/components/responses/403' }
+        "401": { $ref: '#/components/responses/401' }
+        "200":
+          description: OK
+          content:
+            text/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HistoryInterval'
+        default: { $ref: '#/components/responses/GeneralError' }
+
   /repositories/{repository}/objects/getAll:
     post:
       tags:
@@ -663,3 +745,22 @@ components:
       required:
         - name
         - current_hash
+    HistoryInterval:
+      type: object
+      required: [firstVersionHash, lastVersionHash, size, minTime, maxTime, authors]
+      properties:
+        firstVersionHash: { type: string }
+        lastVersionHash: { type: string, description: "Omitted if the size is 1" }
+        size: { type: integer }
+        minTime: { type: string, description: "Unix timestamp" }
+        maxTime: { type: string, description: "Unix timestamp. Omitted if the size is 1" }
+        authors: { type: array, items: { type: string } }
+    HistoryEntry:
+      type: object
+      required: [versionHash, time]
+      properties:
+        versionHash: { type: string }
+        time:
+          type: string
+          description: Unix timestamp
+        author: { type: string }

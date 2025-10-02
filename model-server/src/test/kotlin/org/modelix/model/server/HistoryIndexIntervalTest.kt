@@ -74,7 +74,7 @@ class HistoryIndexIntervalTest {
 
     private fun runIntervalTest(skip: Int, limit: Int, intervalSeconds: Int) = runTest {
         val rand = Random(8923345)
-        val modelClient: IModelClientV2 = createModelClient()
+        val modelClient: IModelClientV2 = createModelClient(lazyAndBlocking = true)
         val repositoryId = RepositoryId("repo1")
         val branchRef = repositoryId.getBranchReference()
         val initialVersion = modelClient.initRepository(RepositoryConfig(repositoryId = repositoryId.id, repositoryName = repositoryId.id, modelId = "61bd6cb0-33ff-45d8-9d1b-2149fdb01d16"))

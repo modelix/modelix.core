@@ -1,10 +1,12 @@
 package org.modelix.datastructures.objects
 
+import kotlinx.serialization.Serializable
 import org.kotlincrypto.hash.sha2.SHA256
 import org.modelix.kotlin.utils.base64UrlEncoded
 import kotlin.jvm.JvmInline
 
 @JvmInline
+@Serializable
 value class ObjectHash(private val hash: String) : Comparable<ObjectHash> {
     init {
         require(isValidHashString(hash)) { "Not an object hash: $hash" }

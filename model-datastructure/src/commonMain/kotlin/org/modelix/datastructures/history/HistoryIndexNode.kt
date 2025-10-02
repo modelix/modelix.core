@@ -37,6 +37,7 @@ sealed class HistoryIndexNode : IObjectData {
     abstract fun getAllVersions(): IStream.Many<ObjectReference<CPVersion>>
     abstract fun getAllVersionsReversed(): IStream.Many<ObjectReference<CPVersion>>
     abstract fun getRange(indexRange: LongRange): IStream.Many<HistoryIndexNode>
+    abstract fun getRange(self: Object<HistoryIndexNode>, selectedTimeRange: ClosedRange<Instant>): IStream.ZeroOrOne<Object<HistoryIndexNode>>
     fun getRange(indexRange: IntRange) = getRange(indexRange.first.toLong()..indexRange.last.toLong())
     abstract fun merge(self: Object<HistoryIndexNode>, otherObj: Object<HistoryIndexNode>): IStream.One<Object<HistoryIndexNode>>
 
@@ -111,7 +112,7 @@ sealed class HistoryIndexNode : IObjectData {
         }
 
         fun of(version: Object<CPVersion>): HistoryIndexNode {
-            val time = CLVersion(version).getTimestamp() ?: Instant.Companion.fromEpochMilliseconds(0L)
+            val time = CLVersion(version).getTimestamp() ?: Instant.fromEpochMilliseconds(0L)
             return HistoryIndexLeafNode(
                 versions = listOf(version.ref),
                 authors = setOfNotNull(version.data.author),
@@ -169,6 +170,10 @@ data class HistoryIndexLeafNode(
                     )
                 }
         }
+    }
+
+    override fun getRange(self: Object<HistoryIndexNode>, selectedTimeRange: ClosedRange<Instant>): IStream.ZeroOrOne<Object<HistoryIndexNode>> {
+        return if (selectedTimeRange.contains(time)) IStream.of(self) else IStream.empty()
     }
 
     override fun getContainmentReferences(): List<ObjectReference<IObjectData>> {
@@ -382,6 +387,30 @@ data class HistoryIndexRangeNode(
         }.flatten()
     }
 
+    override fun getRange(self: Object<HistoryIndexNode>, selectedTimeRange: ClosedRange<Instant>): IStream.ZeroOrOne<Object<HistoryIndexNode>> {
+        if (selectedTimeRange.contains(this.timeRange.start) && selectedTimeRange.contains(this.timeRange.endInclusive)) return IStream.of(self)
+        if (!selectedTimeRange.intersects(this.timeRange)) return IStream.empty()
+        return child1.requestBoth(child2) { child1Obj, child2Obj ->
+            val range1 = child1Obj.getRange(selectedTimeRange)
+            val range2 = child2Obj.getRange(selectedTimeRange)
+            range1.orNull().zipWith(range2.orNull()) { range1, range2 ->
+                if (range1 == null) {
+                    if (range2 == null) {
+                        IStream.empty()
+                    } else {
+                        IStream.of(range2)
+                    }
+                } else {
+                    if (range2 == null) {
+                        IStream.of(range1)
+                    } else {
+                        range1.merge(range2)
+                    }
+                }
+            }.flatten()
+        }.flatten()
+    }
+
     override fun serialize(): String {
         return "R" +
             Separators.LEVEL1 + firstVersion.getHashString() + Separators.LEVEL2 + lastVersion.getHashString() +
@@ -446,4 +475,8 @@ private fun IStream.One<Object<HistoryIndexNode>>.concatBalanced(otherObj: Objec
 
 private fun Object<HistoryIndexNode>.concatBalanced(otherObj: IStream.One<Object<HistoryIndexNode>>): IStream.One<Object<HistoryIndexNode>> {
     return otherObj.flatMapOne { this.concatBalanced(it) }
+}
+
+fun Object<HistoryIndexNode>.getRange(selectedTimeRange: ClosedRange<Instant>): IStream.ZeroOrOne<Object<HistoryIndexNode>> {
+    return data.getRange(this, selectedTimeRange)
 }

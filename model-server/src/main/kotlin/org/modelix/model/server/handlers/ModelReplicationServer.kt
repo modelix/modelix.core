@@ -25,10 +25,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Instant
 import org.modelix.authorization.checkPermission
 import org.modelix.authorization.getUserName
 import org.modelix.authorization.hasPermission
 import org.modelix.authorization.requiresLogin
+import org.modelix.datastructures.history.EquidistantIntervalsSpec
+import org.modelix.datastructures.history.HistoryIndexNode
+import org.modelix.datastructures.history.HistoryQueries
+import org.modelix.datastructures.history.SplitPointsIntervalSpec
+import org.modelix.datastructures.history.withTimeRangeFilter
+import org.modelix.datastructures.objects.Object
 import org.modelix.kotlin.utils.urlEncode
 import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.TreeId
@@ -66,6 +73,8 @@ import org.modelix.streams.IStream
 import org.modelix.streams.IStreamExecutor
 import org.modelix.streams.ifEmpty
 import org.slf4j.LoggerFactory
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Implements the endpoints used by the 'model-client', but compared to KeyValueLikeModelServer also understands what
@@ -188,10 +197,7 @@ class ModelReplicationServer(
         call.respondText(versionHash)
     }
 
-    override suspend fun RoutingContext.getHistoryIndex(
-        repository: String,
-        versionHash: String,
-    ) {
+    private suspend fun RoutingContext.getHistoryIndexInternal(repository: String, versionHash: String): Object<HistoryIndexNode> {
         checkPermission(ModelServerPermissionSchema.repository(repository).objects.read)
         val version = repositoriesManager.getVersion(repositoryId(repository), versionHash)
         if (version == null) {
@@ -202,7 +208,73 @@ class ModelReplicationServer(
         val index = runWrite {
             (repositoriesManager as RepositoriesManager).getOrCreateHistoryIndex(repositoryId(repository), version)
         }
+        return index
+    }
+
+    private fun parseTimeRange(minTime: String?, maxTime: String?): ClosedRange<Instant>? {
+        if (minTime == null && maxTime == null) return null
+        return Instant.fromEpochSeconds(minTime?.toLong() ?: 0L)..Instant.fromEpochSeconds(maxTime?.toLong() ?: Long.MAX_VALUE)
+    }
+
+    override suspend fun RoutingContext.getHistoryIndex(
+        repository: String,
+        versionHash: String,
+    ) {
+        val index = getHistoryIndexInternal(repository, versionHash)
         call.respondText(index.getHashString() + "\n" + index.data.serialize())
+    }
+
+    override suspend fun RoutingContext.getHistoryAsFixedIntervals(
+        repository: String,
+        versionHash: String,
+        duration: Int,
+        minTime: String?,
+        maxTime: String?,
+        skip: Int?,
+        limit: Int?,
+    ) {
+        val index = getHistoryIndexInternal(repository, versionHash)
+        val intervalsSpec =
+            EquidistantIntervalsSpec(duration.seconds).withTimeRangeFilter(parseTimeRange(minTime, maxTime))
+        val intervals = HistoryQueries { index }.intervals(intervalsSpec)
+        call.respond(intervals)
+    }
+
+    override suspend fun RoutingContext.getHistoryAsProvidedIntervals(
+        repository: String,
+        versionHash: String,
+        requestBody: List<String>,
+    ) {
+        val index = getHistoryIndexInternal(repository, versionHash)
+        val intervals = HistoryQueries { index }.intervals(SplitPointsIntervalSpec(requestBody.map { Instant.fromEpochSeconds(it.toLong()) }))
+        call.respond(intervals)
+    }
+
+    override suspend fun RoutingContext.getHistoryAsSessions(
+        repository: String,
+        versionHash: String,
+        minTime: String?,
+        maxTime: String?,
+        delay: Int?,
+        skip: Int?,
+        limit: Int?,
+    ) {
+        val index = getHistoryIndexInternal(repository, versionHash)
+        val intervals = HistoryQueries { index }.sessions(parseTimeRange(minTime, maxTime), delay?.seconds ?: 5.minutes)
+        call.respond(intervals)
+    }
+
+    override suspend fun RoutingContext.getHistoryEntries(
+        repository: String,
+        versionHash: String,
+        minTime: String?,
+        maxTime: String?,
+        skip: Int?,
+        limit: Int?,
+    ) {
+        val index = getHistoryIndexInternal(repository, versionHash)
+        val entries = HistoryQueries { index }.range(parseTimeRange(minTime, maxTime), skip?.toLong() ?: 0L, limit?.toLong() ?: 200L)
+        call.respond(entries)
     }
 
     override suspend fun RoutingContext.initializeRepository(

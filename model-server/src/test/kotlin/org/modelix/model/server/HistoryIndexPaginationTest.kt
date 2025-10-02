@@ -3,6 +3,7 @@ package org.modelix.model.server
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import mu.KotlinLogging
+import org.modelix.datastructures.history.PaginationParameters
 import org.modelix.model.IVersion
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.historyAsSequence
@@ -112,8 +113,7 @@ class HistoryIndexPaginationTest {
             repositoryId = repositoryId,
             headVersion = currentVersion.getObjectHash(),
         ).range(
-            skip = skip.toLong(),
-            limit = limit.toLong(),
+            pagination = PaginationParameters(skip, limit),
         )
         assertEquals(expectedOrder.drop(skip).take(limit).toSet(), history.map { it.versionHash }.toSet())
         assertEquals(expectedOrder.drop(skip).take(limit), history.map { it.versionHash })

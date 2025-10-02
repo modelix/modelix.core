@@ -1,5 +1,7 @@
 package org.modelix.model.client2
 
+import kotlinx.datetime.toJSDate
+import org.modelix.datastructures.history.HistoryInterval
 import kotlin.js.Date
 
 /**
@@ -23,4 +25,26 @@ data class VersionInformationJS(
      * hash string of the version
      */
     val versionHash: String?,
+)
+
+@JsExport
+class HistoryIntervalJS(
+    val firstVersionHash: String,
+    val lastVersionHash: String,
+    /**
+     * Number of versions contained in this interval.
+     */
+    val size: Int,
+    val minTime: Date,
+    val maxTime: Date,
+    val authors: Array<String>,
+)
+
+fun HistoryInterval.toJS() = HistoryIntervalJS(
+    firstVersionHash = firstVersionHash.toString(),
+    lastVersionHash = lastVersionHash.toString(),
+    size = size.toInt(),
+    minTime = minTime.toJSDate(),
+    maxTime = maxTime.toJSDate(),
+    authors = authors.toTypedArray(),
 )

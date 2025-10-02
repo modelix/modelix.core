@@ -42,6 +42,7 @@ import org.modelix.datastructures.history.HistoryEntry
 import org.modelix.datastructures.history.HistoryIndexNode
 import org.modelix.datastructures.history.HistoryInterval
 import org.modelix.datastructures.history.IHistoryQueries
+import org.modelix.datastructures.history.PaginationParameters
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectHash
@@ -342,6 +343,7 @@ class ModelClientV2(
             override suspend fun sessions(
                 timeRange: ClosedRange<Instant>?,
                 delay: Duration,
+                pagination: PaginationParameters,
             ): List<HistoryInterval> {
                 return httpClient.prepareGet {
                     url {
@@ -352,6 +354,8 @@ class ModelClientV2(
                             parameters["maxTime"] = timeRange.endInclusive.epochSeconds.toString()
                         }
                         parameters["delay"] = delay.inWholeSeconds.toString()
+                        parameters["skip"] = pagination.skip.toString()
+                        parameters["limit"] = pagination.limit.toString()
                     }
                 }.execute { response ->
                     response.body<List<HistoryInterval>>()
@@ -361,6 +365,7 @@ class ModelClientV2(
             override suspend fun intervals(
                 timeRange: ClosedRange<Instant>?,
                 interval: Duration,
+                pagination: PaginationParameters,
             ): List<HistoryInterval> {
                 return httpClient.prepareGet {
                     url {
@@ -371,6 +376,8 @@ class ModelClientV2(
                             parameters["maxTime"] = timeRange.endInclusive.epochSeconds.toString()
                         }
                         parameters["duration"] = interval.inWholeSeconds.toString()
+                        parameters["skip"] = pagination.skip.toString()
+                        parameters["limit"] = pagination.limit.toString()
                     }
                 }.execute { response ->
                     response.body<List<HistoryInterval>>()
@@ -379,8 +386,7 @@ class ModelClientV2(
 
             override suspend fun range(
                 timeRange: ClosedRange<Instant>?,
-                skip: Long,
-                limit: Long,
+                pagination: PaginationParameters,
             ): List<HistoryEntry> {
                 return httpClient.prepareGet {
                     url {
@@ -390,8 +396,8 @@ class ModelClientV2(
                             parameters["minTime"] = timeRange.start.epochSeconds.toString()
                             parameters["maxTime"] = timeRange.endInclusive.epochSeconds.toString()
                         }
-                        parameters["skip"] = skip.toString()
-                        parameters["limit"] = limit.toString()
+                        parameters["skip"] = pagination.skip.toString()
+                        parameters["limit"] = pagination.limit.toString()
                     }
                 }.execute { response ->
                     response.body<List<HistoryEntry>>()
@@ -1077,5 +1083,3 @@ fun IVersion.runWrite(idGenerator: IIdGenerator, author: String?, body: (IBranch
 }
 
 private fun String.ensureSuffix(suffix: String) = if (endsWith(suffix)) this else this + suffix
-
-private class LimitReached : RuntimeException("limit reached")

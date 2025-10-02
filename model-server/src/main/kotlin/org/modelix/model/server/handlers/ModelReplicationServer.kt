@@ -33,6 +33,7 @@ import org.modelix.authorization.requiresLogin
 import org.modelix.datastructures.history.EquidistantIntervalsSpec
 import org.modelix.datastructures.history.HistoryIndexNode
 import org.modelix.datastructures.history.HistoryQueries
+import org.modelix.datastructures.history.PaginationParameters
 import org.modelix.datastructures.history.SplitPointsIntervalSpec
 import org.modelix.datastructures.history.withTimeRangeFilter
 import org.modelix.datastructures.objects.Object
@@ -236,7 +237,10 @@ class ModelReplicationServer(
         val index = getHistoryIndexInternal(repository, versionHash)
         val intervalsSpec =
             EquidistantIntervalsSpec(duration.seconds).withTimeRangeFilter(parseTimeRange(minTime, maxTime))
-        val intervals = HistoryQueries { index }.intervals(intervalsSpec)
+        val intervals = HistoryQueries { index }.intervals(
+            intervalsSpec,
+            PaginationParameters(skip ?: 0, limit ?: 200),
+        )
         call.respond(intervals)
     }
 
@@ -246,7 +250,10 @@ class ModelReplicationServer(
         requestBody: List<String>,
     ) {
         val index = getHistoryIndexInternal(repository, versionHash)
-        val intervals = HistoryQueries { index }.intervals(SplitPointsIntervalSpec(requestBody.map { Instant.fromEpochSeconds(it.toLong()) }))
+        val intervals = HistoryQueries { index }.intervals(
+            SplitPointsIntervalSpec(requestBody.map { Instant.fromEpochSeconds(it.toLong()) }),
+            PaginationParameters.ALL,
+        )
         call.respond(intervals)
     }
 
@@ -260,7 +267,11 @@ class ModelReplicationServer(
         limit: Int?,
     ) {
         val index = getHistoryIndexInternal(repository, versionHash)
-        val intervals = HistoryQueries { index }.sessions(parseTimeRange(minTime, maxTime), delay?.seconds ?: 5.minutes)
+        val intervals = HistoryQueries { index }.sessions(
+            parseTimeRange(minTime, maxTime),
+            delay?.seconds ?: 5.minutes,
+            PaginationParameters(skip ?: 0, limit ?: 200),
+        )
         call.respond(intervals)
     }
 
@@ -273,7 +284,10 @@ class ModelReplicationServer(
         limit: Int?,
     ) {
         val index = getHistoryIndexInternal(repository, versionHash)
-        val entries = HistoryQueries { index }.range(parseTimeRange(minTime, maxTime), skip?.toLong() ?: 0L, limit?.toLong() ?: 200L)
+        val entries = HistoryQueries { index }.range(
+            parseTimeRange(minTime, maxTime),
+            PaginationParameters(skip ?: 0, limit ?: 200),
+        )
         call.respond(entries)
     }
 

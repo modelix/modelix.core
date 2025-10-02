@@ -16,6 +16,7 @@ interface IHistoryQueries {
     suspend fun sessions(
         timeRange: ClosedRange<Instant>? = null,
         delay: Duration = 5.minutes,
+        pagination: PaginationParameters = PaginationParameters.DEFAULT,
     ): List<HistoryInterval>
 
     /**
@@ -25,8 +26,9 @@ interface IHistoryQueries {
      * @param interval splits the timeline into equally sized intervals and returns a summary of the contained versions
      */
     suspend fun intervals(
-        timeRange: ClosedRange<Instant>?,
+        timeRange: ClosedRange<Instant>? = null,
         interval: Duration,
+        pagination: PaginationParameters = PaginationParameters.DEFAULT,
     ): List<HistoryInterval>
 
     /**
@@ -37,8 +39,7 @@ interface IHistoryQueries {
      */
     suspend fun range(
         timeRange: ClosedRange<Instant>? = null,
-        skip: Long = 0L,
-        limit: Long = 1000L,
+        pagination: PaginationParameters = PaginationParameters.DEFAULT,
     ): List<HistoryEntry>
 
     /**

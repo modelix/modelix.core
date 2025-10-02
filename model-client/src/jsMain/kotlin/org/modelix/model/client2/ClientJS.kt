@@ -9,6 +9,8 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.promise
 import kotlinx.datetime.toJSDate
+import kotlinx.datetime.toKotlinInstant
+import org.modelix.datastructures.history.PaginationParameters
 import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.model.TreeId
@@ -27,7 +29,9 @@ import org.modelix.model.mutable.load
 import org.modelix.model.mutable.withAutoTransactions
 import org.modelix.model.persistent.MapBasedStore
 import org.modelix.mps.multiplatform.model.MPSIdGenerator
+import kotlin.js.Date
 import kotlin.js.Promise
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Same as [loadModelsFromJsonAsBranch] but directly returns the [MutableModelTreeJs.rootNode] of the created branch.
@@ -113,8 +117,15 @@ interface ClientJS {
      */
     fun initRepository(repositoryId: String, useRoleIds: Boolean = true): Promise<Unit>
 
-    fun getHistoryRangeForBranch(repositoryId: String, branchId: String, skip: Int, limit: Int): Promise<Array<VersionInformationJS>>
     fun getHistoryRange(repositoryId: String, headVersion: String, skip: Int, limit: Int): Promise<Array<VersionInformationJS>>
+    fun getHistorySessions(repositoryId: String, headVersion: String, delaySeconds: Int, skip: Int, limit: Int): Promise<Array<HistoryIntervalJS>>
+    fun getHistoryForFixedIntervals(repositoryId: String, headVersion: String, intervalDurationSeconds: Int, skip: Int, limit: Int): Promise<Array<HistoryIntervalJS>>
+    fun getHistoryForProvidedIntervals(repositoryId: String, headVersion: String, splitAt: Array<Date>): Promise<Array<HistoryIntervalJS>>
+
+    fun getHistoryRangeForBranch(repositoryId: String, branchId: String, skip: Int, limit: Int): Promise<Array<VersionInformationJS>>
+    fun getHistorySessionsForBranch(repositoryId: String, branchId: String, delaySeconds: Int, skip: Int, limit: Int): Promise<Array<HistoryIntervalJS>>
+    fun getHistoryForFixedIntervalsForBranch(repositoryId: String, branchId: String, intervalDurationSeconds: Int, skip: Int, limit: Int): Promise<Array<HistoryIntervalJS>>
+    fun getHistoryForProvidedIntervalsForBranch(repositoryId: String, branchId: String, splitAt: Array<Date>): Promise<Array<HistoryIntervalJS>>
 
     /**
      * Fetch existing branches for a given repository from the model server.
@@ -208,8 +219,7 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
                 RepositoryId(repositoryId),
                 ObjectHash(headVersion),
             ).range(
-                skip = skip.toLong(),
-                limit = limit.toLong(),
+                pagination = PaginationParameters(skip, limit),
             )
                 .map {
                     VersionInformationJS(
@@ -220,6 +230,82 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
                 }
                 .toTypedArray()
         }
+
+    override fun getHistorySessions(
+        repositoryId: String,
+        headVersion: String,
+        delaySeconds: Int,
+        skip: Int,
+        limit: Int,
+    ): Promise<Array<HistoryIntervalJS>> = GlobalScope.promise {
+        modelClient.queryHistory(
+            RepositoryId(repositoryId),
+            ObjectHash(headVersion),
+        ).sessions(
+            delay = delaySeconds.seconds,
+            pagination = PaginationParameters(skip, limit),
+        ).map { it.toJS() }.toTypedArray()
+    }
+
+    override fun getHistoryForFixedIntervals(
+        repositoryId: String,
+        headVersion: String,
+        intervalDurationSeconds: Int,
+        skip: Int,
+        limit: Int,
+    ): Promise<Array<HistoryIntervalJS>> = GlobalScope.promise {
+        modelClient.queryHistory(
+            RepositoryId(repositoryId),
+            ObjectHash(headVersion),
+        ).intervals(
+            interval = intervalDurationSeconds.seconds,
+            pagination = PaginationParameters(skip, limit),
+        ).map { it.toJS() }.toTypedArray()
+    }
+
+    override fun getHistoryForProvidedIntervals(
+        repositoryId: String,
+        headVersion: String,
+        splitAt: Array<Date>,
+    ): Promise<Array<HistoryIntervalJS>> = GlobalScope.promise {
+        modelClient.queryHistory(
+            RepositoryId(repositoryId),
+            ObjectHash(headVersion),
+        ).splitAt(
+            splitPoints = splitAt.map { it.toKotlinInstant() },
+        ).map { it.toJS() }.toTypedArray()
+    }
+
+    override fun getHistorySessionsForBranch(
+        repositoryId: String,
+        branchId: String,
+        delaySeconds: Int,
+        skip: Int,
+        limit: Int,
+    ): Promise<Array<HistoryIntervalJS>> =
+        GlobalScope.promise { modelClient.pullHash(RepositoryId(repositoryId).getBranchReference(branchId)) }
+            .then { getHistorySessions(repositoryId, it, delaySeconds, skip, limit) }
+            .then { it }
+
+    override fun getHistoryForFixedIntervalsForBranch(
+        repositoryId: String,
+        branchId: String,
+        intervalDurationSeconds: Int,
+        skip: Int,
+        limit: Int,
+    ): Promise<Array<HistoryIntervalJS>> =
+        GlobalScope.promise { modelClient.pullHash(RepositoryId(repositoryId).getBranchReference(branchId)) }
+            .then { getHistoryForFixedIntervals(repositoryId, it, intervalDurationSeconds, skip, limit) }
+            .then { it }
+
+    override fun getHistoryForProvidedIntervalsForBranch(
+        repositoryId: String,
+        branchId: String,
+        splitAt: Array<Date>,
+    ): Promise<Array<HistoryIntervalJS>> =
+        GlobalScope.promise { modelClient.pullHash(RepositoryId(repositoryId).getBranchReference(branchId)) }
+            .then { getHistoryForProvidedIntervals(repositoryId, it, splitAt) }
+            .then { it }
 
     override fun dispose() {
         modelClient.close()

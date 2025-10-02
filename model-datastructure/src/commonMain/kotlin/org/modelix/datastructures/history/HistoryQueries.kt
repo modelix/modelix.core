@@ -2,7 +2,6 @@ package org.modelix.datastructures.history
 
 import kotlinx.datetime.Instant
 import org.modelix.datastructures.objects.Object
-import org.modelix.model.IVersion
 import org.modelix.model.lazy.CLVersion
 import org.modelix.streams.getSuspending
 import org.modelix.streams.iterateSuspending
@@ -98,14 +97,24 @@ class HistoryQueries(val historyIndex: suspend () -> Object<HistoryIndexNode>) :
     }
 
     override suspend fun range(
+        timeRange: ClosedRange<Instant>?,
         skip: Long,
         limit: Long,
-    ): List<IVersion> {
+    ): List<HistoryEntry> {
         val index: Object<HistoryIndexNode> = historyIndex()
-        return index.data.getRange(skip until (limit + skip))
+        val inTimeRange = if (timeRange == null) index else index.getRange(timeRange).orNull().getSuspending(index.graph)
+        if (inTimeRange == null) return emptyList()
+        return inTimeRange.data.getRange(skip until (limit + skip))
             .flatMapOrdered { it.getAllVersionsReversed() }
             .flatMapOrdered { it.resolve() }
-            .map { CLVersion(it) }
+            .map {
+                val version = CLVersion(it)
+                HistoryEntry(
+                    versionHash = it.getHash(),
+                    time = version.getTimestamp() ?: Instant.fromEpochSeconds(0L),
+                    author = version.getAuthor(),
+                )
+            }
             .toList()
             .getSuspending(index.graph)
     }

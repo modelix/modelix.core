@@ -17,7 +17,6 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.JSNodeConverter
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.data.ModelData
-import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.mutable.DummyIdGenerator
@@ -209,15 +208,14 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
                 RepositoryId(repositoryId),
                 ObjectHash(headVersion),
             ).range(
-                skip.toLong(),
-                limit.toLong(),
+                skip = skip.toLong(),
+                limit = limit.toLong(),
             )
-                .filterIsInstance<CLVersion>()
                 .map {
                     VersionInformationJS(
                         it.author,
-                        it.getTimestamp()?.toJSDate(),
-                        it.getObjectHash().toString(),
+                        it.time.toJSDate(),
+                        it.versionHash.toString(),
                     )
                 }
                 .toTypedArray()

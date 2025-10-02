@@ -36,9 +36,11 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Instant
 import mu.KotlinLogging
+import org.modelix.datastructures.history.HistoryEntry
 import org.modelix.datastructures.history.HistoryIndexNode
-import org.modelix.datastructures.history.HistoryQueries
+import org.modelix.datastructures.history.HistoryInterval
 import org.modelix.datastructures.history.IHistoryQueries
 import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.Object
@@ -336,7 +338,78 @@ class ModelClientV2(
         repositoryId: RepositoryId,
         headVersion: ObjectHash,
     ): IHistoryQueries {
-        return HistoryQueries { getHistoryIndex(repositoryId, headVersion) }
+        return object : IHistoryQueries {
+            override suspend fun sessions(
+                timeRange: ClosedRange<Instant>?,
+                delay: Duration,
+            ): List<HistoryInterval> {
+                return httpClient.prepareGet {
+                    url {
+                        takeFrom(baseUrl)
+                        appendPathSegments("repositories", repositoryId.id, "versions", headVersion.toString(), "history", "sessions")
+                        if (timeRange != null) {
+                            parameters["minTime"] = timeRange.start.epochSeconds.toString()
+                            parameters["maxTime"] = timeRange.endInclusive.epochSeconds.toString()
+                        }
+                        parameters["delay"] = delay.inWholeSeconds.toString()
+                    }
+                }.execute { response ->
+                    response.body<List<HistoryInterval>>()
+                }
+            }
+
+            override suspend fun intervals(
+                timeRange: ClosedRange<Instant>?,
+                interval: Duration,
+            ): List<HistoryInterval> {
+                return httpClient.prepareGet {
+                    url {
+                        takeFrom(baseUrl)
+                        appendPathSegments("repositories", repositoryId.id, "versions", headVersion.toString(), "history", "intervals")
+                        if (timeRange != null) {
+                            parameters["minTime"] = timeRange.start.epochSeconds.toString()
+                            parameters["maxTime"] = timeRange.endInclusive.epochSeconds.toString()
+                        }
+                        parameters["duration"] = interval.inWholeSeconds.toString()
+                    }
+                }.execute { response ->
+                    response.body<List<HistoryInterval>>()
+                }
+            }
+
+            override suspend fun range(
+                timeRange: ClosedRange<Instant>?,
+                skip: Long,
+                limit: Long,
+            ): List<HistoryEntry> {
+                return httpClient.prepareGet {
+                    url {
+                        takeFrom(baseUrl)
+                        appendPathSegments("repositories", repositoryId.id, "versions", headVersion.toString(), "history", "entries")
+                        if (timeRange != null) {
+                            parameters["minTime"] = timeRange.start.epochSeconds.toString()
+                            parameters["maxTime"] = timeRange.endInclusive.epochSeconds.toString()
+                        }
+                        parameters["skip"] = skip.toString()
+                        parameters["limit"] = limit.toString()
+                    }
+                }.execute { response ->
+                    response.body<List<HistoryEntry>>()
+                }
+            }
+
+            override suspend fun splitAt(splitPoints: List<Instant>): List<HistoryInterval> {
+                return httpClient.preparePost {
+                    url {
+                        takeFrom(baseUrl)
+                        appendPathSegments("repositories", repositoryId.id, "versions", headVersion.toString(), "history", "intervals")
+                    }
+                    setBody(splitPoints.map { it.epochSeconds.toString() })
+                }.execute { response ->
+                    response.body<List<HistoryInterval>>()
+                }
+            }
+        }
     }
 
     suspend fun getHistoryIndex(
@@ -351,7 +424,7 @@ class ModelClientV2(
                 } else {
                     appendPathSegments("repositories", repositoryId.id, "versions", versionHash.toString())
                 }
-                appendPathSegments("history-index")
+                appendPathSegments("history", "index")
             }
         }.execute { response ->
             val graph = getObjectGraph(repositoryId).also { it.config = it.config.copy(lazyLoadingEnabled = true) }

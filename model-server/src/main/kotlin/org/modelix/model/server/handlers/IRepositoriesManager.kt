@@ -79,6 +79,9 @@ interface IRepositoriesManager {
 
     @RequiresTransaction
     fun getConfig(repositoryId: RepositoryId): RepositoryConfig
+
+    @RequiresTransaction
+    fun forkRepository(source: RepositoryId, target: RepositoryId)
 }
 
 @Deprecated("Provide a RepositoryConfig")

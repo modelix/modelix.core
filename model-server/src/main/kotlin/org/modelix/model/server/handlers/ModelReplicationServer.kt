@@ -349,6 +349,24 @@ class ModelReplicationServer(
         call.respondDelta(repositoryId, initialVersion.getContentHash(), ObjectDeltaFilter())
     }
 
+    override suspend fun RoutingContext.forkRepository(repository: String, target: String?) {
+        val source = RepositoryId(repository)
+        val target = target?.let { RepositoryId(it) } ?: RepositoryId.random()
+        checkPermission(ModelServerPermissionSchema.repository(source).read)
+        checkPermission(ModelServerPermissionSchema.repository(target).create)
+
+        @OptIn(RequiresTransaction::class)
+        runWrite {
+            repositoriesManager.forkRepository(source, target)
+        }
+
+        call.respond(
+            ForkRepository200Response(
+                repository = target.id,
+            ),
+        )
+    }
+
     override suspend fun RoutingContext.changeRepositoryConfig(repository: String) {
         checkPermission(ModelServerPermissionSchema.repository(repository).write)
         val newConfig: RepositoryConfig = call.receive()

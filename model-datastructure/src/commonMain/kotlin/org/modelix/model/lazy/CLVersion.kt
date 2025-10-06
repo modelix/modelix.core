@@ -131,6 +131,11 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
             return CLVersion(previousVersion)
         }
 
+    fun getBaseVersionLater(): IStream.ZeroOrOne<CLVersion> {
+        val previousVersionHash = data.baseVersion ?: data.previousVersion ?: return IStream.empty()
+        return previousVersionHash.resolve().map { CLVersion(it) }
+    }
+
     val operations: Iterable<IOperation>
         get() {
             val operationsHash = data.operationsHash

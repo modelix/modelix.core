@@ -12,13 +12,16 @@ import kotlinx.datetime.toJSDate
 import kotlinx.datetime.toKotlinInstant
 import org.modelix.datastructures.history.PaginationParameters
 import org.modelix.datastructures.model.IGenericModelTree
+import org.modelix.datastructures.model.historyAsMutationParameters
 import org.modelix.datastructures.objects.ObjectHash
+import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.model.TreeId
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.JSNodeConverter
 import org.modelix.model.client.IdGenerator
 import org.modelix.model.data.ModelData
+import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.lazy.createObjectStoreCache
 import org.modelix.model.mutable.DummyIdGenerator
@@ -31,6 +34,7 @@ import org.modelix.model.mutable.withAutoTransactions
 import org.modelix.model.persistent.MapBasedStore
 import org.modelix.model.server.api.BranchInfo
 import org.modelix.mps.multiplatform.model.MPSIdGenerator
+import org.modelix.streams.getSuspending
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.js.Date
 import kotlin.js.Promise
@@ -136,6 +140,8 @@ interface ClientJS {
     fun getHistoryForProvidedIntervalsForBranch(repositoryId: String, branchId: String, splitAt: Array<Date>): Promise<Array<HistoryIntervalJS>>
 
     fun revertTo(repositoryId: String, branchId: String, targetVersionHash: String): Promise<String>
+
+    fun diffAsMutationParameters(repositoryId: String, newVersion: String, oldVersion: String): Promise<Array<MutationParametersJS>>
 
     /**
      * Fetch existing branches for a given repository from the model server.
@@ -412,6 +418,20 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
 
     override fun dispose() {
         modelClient.close()
+    }
+
+    override fun diffAsMutationParameters(
+        repositoryId: String,
+        newVersion: String,
+        oldVersion: String,
+    ): Promise<Array<MutationParametersJS>> = GlobalScope.promise {
+        val version = modelClient.lazyLoadVersion(RepositoryId(repositoryId), newVersion) as CLVersion
+        @OptIn(DelicateModelixApi::class)
+        version.historyAsMutationParameters(ObjectHash(oldVersion))
+            .map { it.toJS() }
+            .toList()
+            .getSuspending(version.graph)
+            .toTypedArray()
     }
 }
 

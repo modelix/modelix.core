@@ -2,18 +2,24 @@ package org.modelix.model.client2
 
 import io.ktor.http.Url
 import org.modelix.datastructures.history.IHistoryQueries
+import org.modelix.datastructures.model.MutationParameters
+import org.modelix.datastructures.model.historyAsMutationParameters
 import org.modelix.datastructures.objects.ObjectHash
+import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.kotlin.utils.DeprecationInfo
 import org.modelix.model.IVersion
 import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.api.INode
+import org.modelix.model.api.INodeReference
 import org.modelix.model.async.IAsyncObjectStore
 import org.modelix.model.lazy.BranchReference
+import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.api.BranchInfo
 import org.modelix.model.server.api.RepositoryConfig
 import org.modelix.modelql.core.IMonoStep
+import org.modelix.streams.getSuspending
 
 /**
  * This interface is meant exclusively for model client usage.
@@ -141,4 +147,10 @@ interface IModelClientV2 {
      * The new version will just reference the old model hash, meaning this is a very lightweight operations.
      */
     suspend fun revertTo(branch: BranchReference, versionHash: ObjectHash): ObjectHash
+}
+
+@DelicateModelixApi
+suspend fun IModelClientV2.diffAsMutationParameters(repositoryId: RepositoryId, newVersion: ObjectHash, oldVersion: ObjectHash): List<MutationParameters<INodeReference>> {
+    val version = lazyLoadVersion(repositoryId, newVersion.toString()) as CLVersion
+    return version.historyAsMutationParameters(oldVersion).toList().getSuspending(version.graph)
 }

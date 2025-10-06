@@ -72,50 +72,6 @@ interface IGenericModelTree<NodeId> : IStreamExecutorProvider {
 
 fun IGenericModelTree<*>.getHash() = asObject().getHash()
 
-sealed class MutationParameters<NodeId> {
-    sealed class Node<NodeId> : MutationParameters<NodeId>() {
-        abstract val nodeId: NodeId
-    }
-
-    data class Property<NodeId>(
-        override val nodeId: NodeId,
-        val role: IPropertyReference,
-        val value: String?,
-    ) : Node<NodeId>()
-
-    data class Concept<NodeId>(
-        override val nodeId: NodeId,
-        val concept: ConceptReference,
-    ) : Node<NodeId>()
-
-    data class Reference<NodeId>(
-        override val nodeId: NodeId,
-        val role: IReferenceLinkReference,
-        val target: INodeReference?,
-    ) : Node<NodeId>()
-
-    sealed class Child<NodeId> : Node<NodeId>() {
-        abstract val role: IChildLinkReference
-        abstract val index: Int
-    }
-
-    data class Move<NodeId>(
-        override val nodeId: NodeId,
-        override val role: IChildLinkReference,
-        override val index: Int,
-        val existingChildIds: Iterable<NodeId>,
-    ) : Child<NodeId>()
-
-    data class AddNew<NodeId>(
-        override val nodeId: NodeId,
-        override val role: IChildLinkReference,
-        override val index: Int,
-        val newIdAndConcept: Iterable<Pair<NodeId, ConceptReference>>,
-    ) : Child<NodeId>()
-
-    data class Remove<NodeId>(override val nodeId: NodeId) : Node<NodeId>()
-}
-
 fun <NodeId> IGenericModelTree<NodeId>.getDescendants(nodeId: NodeId, includeSelf: Boolean): IStream.Many<NodeId> {
     return if (includeSelf) {
         IStream.of(nodeId).plus(getDescendants(nodeId, false))

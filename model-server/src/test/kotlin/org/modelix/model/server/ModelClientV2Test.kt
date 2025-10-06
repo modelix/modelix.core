@@ -3,9 +3,11 @@ package org.modelix.model.server
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import mu.KotlinLogging
+import org.modelix.datastructures.model.MutationParameters
 import org.modelix.datastructures.model.getHash
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.model.ObjectDeltaFilter
+import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.IPropertyReference
@@ -13,15 +15,19 @@ import org.modelix.model.api.ITree
 import org.modelix.model.api.NullChildLink
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.addNewChild
+import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.VersionNotFoundException
+import org.modelix.model.client2.diffAsMutationParameters
 import org.modelix.model.client2.runWrite
 import org.modelix.model.client2.runWriteOnBranch
 import org.modelix.model.client2.runWriteOnModel
+import org.modelix.model.client2.runWriteOnTree
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.MissingEntryException
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.mutable.ModelixIdGenerator
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.operations.RevertToOp
 import org.modelix.model.persistent.HashUtil
@@ -405,5 +411,33 @@ class ModelClientV2Test {
         assertEquals(versionB.getObjectHash(), op.latestKnownVersionRef.getHash())
         assertEquals(versionA.getObjectHash(), op.versionToRevertToRef.getHash())
         assertEquals(versionA.getModelTree().getHash(), revertedVersion.getModelTree().getHash())
+    }
+
+    @Test
+    fun `history diff as MutationParameters`() = runTest {
+        val modelClient = createModelClient()
+        val repositoryId = RepositoryId("my-repo")
+        val branch = repositoryId.getBranchReference()
+        val initialVersion = modelClient.initRepository(repositoryId)
+
+        val rootId = initialVersion.getModelTree().getRootNodeId()
+        val idGenerator = ModelixIdGenerator(modelClient.getIdGenerator(), initialVersion.getModelTree().getId())
+        val child1Id = idGenerator.generate(rootId)
+        val child2Id = idGenerator.generate(rootId)
+        val expected = listOf(
+            MutationParameters.Property(rootId, IPropertyReference.fromName("name"), "my root node"),
+            MutationParameters.AddNew(rootId, IChildLinkReference.fromName("roleA"), -1, listOf(child1Id to NullConcept.getReference())),
+            MutationParameters.AddNew(rootId, IChildLinkReference.fromName("roleA"), -1, listOf(child2Id to NullConcept.getReference())),
+        )
+
+        var lastVersion = initialVersion
+        for (mutationParameters in expected) {
+            lastVersion = modelClient.runWriteOnTree(branch) { tree ->
+                tree.getWriteTransaction().mutate(mutationParameters)
+            }
+        }
+
+        val actual = modelClient.diffAsMutationParameters(repositoryId, lastVersion.getObjectHash(), initialVersion.getObjectHash())
+        assertEquals(expected, actual)
     }
 }

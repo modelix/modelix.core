@@ -380,16 +380,16 @@ paths:
         "200":
           $ref: '#/components/responses/versionDelta'
         "409":
-            description: "Branch already exists and `failIfExists` was set to true."
-            content:
-                application/problem+json:
-                  schema:
-                      $ref: 'problem.yaml#/Problem'
+          description: "Branch already exists and `failIfExists` was set to true."
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem.yaml#/Problem'
         default:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/branches/{branch}/frontend:
     get:
-      tags: [v2]
+      tags: [ v2 ]
       operationId: redirectToFrontend
       parameters:
         - name: repository
@@ -516,6 +516,33 @@ paths:
           $ref: '#/components/responses/200json'
         "422":
           $ref: '#/components/responses/ModelQlQueryExecutionFailed'
+        default:
+          $ref: '#/components/responses/GeneralError'
+  /repositories/{repository}/branches/{branch}/revert:
+    post:
+      tags: [ v2 ]
+      operationId: revertTo
+      parameters:
+        - { name: repository, in: "path", required: true, schema: { type: string } }
+        - { name: branch, in: "path", required: true, schema: { type: string } }
+        - name: target
+          in: "query"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Branch was reverted to the content of the provided version.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [newHash]
+                properties:
+                  newHash:
+                    type: string
+        "404":
+          description: Branch or target version not found
         default:
           $ref: '#/components/responses/GeneralError'
   /repositories/{repository}/init:

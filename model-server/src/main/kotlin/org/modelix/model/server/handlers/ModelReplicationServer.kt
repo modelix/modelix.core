@@ -38,6 +38,7 @@ import org.modelix.datastructures.history.SplitPointsIntervalSpec
 import org.modelix.datastructures.history.withTimeRangeFilter
 import org.modelix.datastructures.objects.Object
 import org.modelix.kotlin.utils.urlEncode
+import org.modelix.model.IVersion
 import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.TreeId
 import org.modelix.model.api.IBranch
@@ -52,6 +53,7 @@ import org.modelix.model.client2.getAllObjects
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
+import org.modelix.model.operations.RevertToOp
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.ModelServerPermissionSchema
 import org.modelix.model.server.api.BranchInfo
@@ -617,6 +619,50 @@ class ModelReplicationServer(
             throw VersionNotFoundException(versionHash)
         }
         call.respondDelta(null, versionHash, ObjectDeltaFilter(lastKnown))
+    }
+
+    override suspend fun RoutingContext.revertTo(
+        repository: String,
+        branch: String,
+        target: String,
+    ) {
+        val branchRef = repositoryId(repository).getBranchReference(branch)
+        checkPermission(ModelServerPermissionSchema.branch(branchRef).write)
+
+        @OptIn(RequiresTransaction::class)
+        val response: suspend () -> Unit = runWrite {
+            val currentVersion = repositoriesManager.getVersion(branchRef)
+            if (currentVersion == null) {
+                return@runWrite {
+                    call.respondText(text = "Branch not found: $branchRef", status = HttpStatusCode.NotFound)
+                }
+            }
+            val targetVersion = repositoriesManager.getVersion(branchRef.repositoryId, target)
+            if (targetVersion == null) {
+                return@runWrite {
+                    call.respondText(text = "Target version not found: $target", status = HttpStatusCode.NotFound)
+                }
+            }
+            val newVersion = IVersion.builder()
+                .tree(targetVersion.getModelTree())
+                .author(getUserName())
+                .currentTime()
+                .regularUpdate(currentVersion)
+                .operations(
+                    listOf(
+                        RevertToOp(
+                            latestKnownVersionRef = currentVersion.obj.ref,
+                            versionToRevertToRef = targetVersion.obj.ref,
+                        ),
+                    ),
+                )
+                .build()
+            repositoriesManager.mergeChanges(branchRef, newVersion.getContentHash())
+            return@runWrite {
+                call.respond(message = RevertTo200Response(newHash = newVersion.getContentHash()))
+            }
+        }
+        response()
     }
 
     private suspend fun ApplicationCall.respondDelta(repositoryId: RepositoryId?, versionHash: String, filter: ObjectDeltaFilter) {

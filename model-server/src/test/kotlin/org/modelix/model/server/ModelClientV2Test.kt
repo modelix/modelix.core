@@ -3,10 +3,12 @@ package org.modelix.model.server
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import mu.KotlinLogging
+import org.modelix.datastructures.model.getHash
 import org.modelix.datastructures.objects.IObjectData
 import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
+import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.NullChildLink
 import org.modelix.model.api.PBranch
@@ -15,11 +17,13 @@ import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.VersionNotFoundException
 import org.modelix.model.client2.runWrite
 import org.modelix.model.client2.runWriteOnBranch
+import org.modelix.model.client2.runWriteOnModel
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.MissingEntryException
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.operations.OTBranch
+import org.modelix.model.operations.RevertToOp
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.ModelReplicationServer
@@ -377,5 +381,29 @@ class ModelClientV2Test {
         assertFailsWith<VersionNotFoundException> {
             modelClient.loadVersion(HashUtil.sha256("xyz"), null)
         }
+    }
+
+    @Test
+    fun `revert to old version`() = runTest {
+        val modelClient = createModelClient()
+        val repositoryId = RepositoryId("my-repo")
+        val branch = repositoryId.getBranchReference()
+        val initialVersion = modelClient.initRepository(repositoryId)
+
+        val versionA = modelClient.runWriteOnModel(branch) { rootNode ->
+            rootNode.setPropertyValue(IPropertyReference.fromName("name"), "a")
+        }
+        val versionB = modelClient.runWriteOnModel(branch) { rootNode ->
+            rootNode.setPropertyValue(IPropertyReference.fromName("name"), "b")
+        }
+        val revertedVersionHash = modelClient.revertTo(branch, versionA.getObjectHash())
+
+        val revertedVersion = modelClient.pull(branch, null) as CLVersion
+        assertEquals(revertedVersionHash, revertedVersion.getObjectHash())
+        assertEquals(versionB.getObjectHash(), revertedVersion.baseVersion?.getObjectHash())
+        val op = revertedVersion.operations.single() as RevertToOp
+        assertEquals(versionB.getObjectHash(), op.latestKnownVersionRef.getHash())
+        assertEquals(versionA.getObjectHash(), op.versionToRevertToRef.getHash())
+        assertEquals(versionA.getModelTree().getHash(), revertedVersion.getModelTree().getHash())
     }
 }

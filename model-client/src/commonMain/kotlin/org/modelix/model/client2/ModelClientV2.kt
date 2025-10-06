@@ -39,6 +39,8 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import mu.KotlinLogging
 import org.modelix.datastructures.history.HistoryEntry
 import org.modelix.datastructures.history.HistoryIndexNode
@@ -455,6 +457,21 @@ class ModelClientV2(
             val deserialized = HistoryIndexNode.deserialize(serialized, graph)
             val ref = graph.fromDeserialized(ObjectHash(hashString), deserialized)
             Object(deserialized, ref)
+        }
+    }
+
+    override suspend fun revertTo(
+        branch: BranchReference,
+        versionHash: ObjectHash,
+    ): ObjectHash {
+        return httpClient.preparePost {
+            url {
+                takeFrom(baseUrl)
+                appendPathSegments("repositories", branch.repositoryId.id, "branches", branch.branchName, "revert")
+                parameters["target"] = versionHash.toString()
+            }
+        }.execute { response ->
+            response.body<JsonObject>().getValue("newHash").jsonPrimitive.content.let { ObjectHash(it) }
         }
     }
 

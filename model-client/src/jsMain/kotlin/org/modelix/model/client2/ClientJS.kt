@@ -135,6 +135,8 @@ interface ClientJS {
     fun getHistoryForFixedIntervalsForBranch(repositoryId: String, branchId: String, intervalDurationSeconds: Int, skip: Int, limit: Int): Promise<Array<HistoryIntervalJS>>
     fun getHistoryForProvidedIntervalsForBranch(repositoryId: String, branchId: String, splitAt: Array<Date>): Promise<Array<HistoryIntervalJS>>
 
+    fun revertTo(repositoryId: String, branchId: String, targetVersionHash: String): Promise<String>
+
     /**
      * Fetch existing branches for a given repository from the model server.
      *
@@ -396,6 +398,17 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
         GlobalScope.promise { modelClient.pullHash(RepositoryId(repositoryId).getBranchReference(branchId)) }
             .then { getHistoryForProvidedIntervals(repositoryId, it, splitAt) }
             .then { it }
+
+    override fun revertTo(
+        repositoryId: String,
+        branchId: String,
+        targetVersionHash: String,
+    ): Promise<String> = GlobalScope.promise {
+        modelClient.revertTo(
+            branch = RepositoryId(repositoryId).getBranchReference(branchId),
+            versionHash = ObjectHash(targetVersionHash),
+        ).toString()
+    }
 
     override fun dispose() {
         modelClient.close()

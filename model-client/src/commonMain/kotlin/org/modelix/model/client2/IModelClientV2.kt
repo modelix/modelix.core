@@ -122,4 +122,11 @@ interface IModelClientV2 {
     fun getFrontendUrl(branch: BranchReference): Url
 
     fun queryHistory(repositoryId: RepositoryId, headVersion: ObjectHash): IHistoryQueries
+
+    /**
+     * Reset the model content to a previous version.
+     * A single entry is added to the history containing a single operation.
+     * The new version will just reference the old model hash, meaning this is a very lightweight operations.
+     */
+    suspend fun revertTo(branch: BranchReference, versionHash: ObjectHash): ObjectHash
 }

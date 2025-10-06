@@ -204,6 +204,28 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
     }
 
     @RequiresTransaction
+    override fun forkRepository(
+        source: RepositoryId,
+        target: RepositoryId,
+    ) {
+        getTransactionManager().assertWrite()
+        require(isIsolated(source) == true) {
+            "Repository '$source' uses the legacy global storage"
+        }
+        if (repositoryExists(target)) throw RepositoryAlreadyExistsException(target.id)
+
+        stores.genericStore.copyRepositoryObjects(source, target)
+
+        val existingRepositories = getRepositories(true)
+        val globalStore = stores.getGlobalStoreClient()
+        globalStore.put(
+            repositoriesListKey(true),
+            (existingRepositories + target).joinToString("\n") { it.id },
+            false,
+        )
+    }
+
+    @RequiresTransaction
     fun getBranchNames(repositoryId: RepositoryId): Set<String> {
         return stores.genericStore[branchListKey(repositoryId)]?.ifEmpty { null }?.lines()?.toSet().orEmpty()
     }

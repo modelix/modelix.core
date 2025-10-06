@@ -577,6 +577,26 @@ paths:
           $ref: '#/components/responses/versionDelta'
         default:
           $ref: '#/components/responses/GeneralError'
+  /repositories/{repository}/fork:
+    post:
+      tags: [ v2 ]
+      operationId: forkRepository
+      parameters:
+        - { name: repository, in: "path", required: true, schema: { type: string } }
+        - { name: target, in: "query", required: false, schema: { type: string } }
+      responses:
+        "403": { $ref: '#/components/responses/403' }
+        "401": { $ref: '#/components/responses/401' }
+        "200":
+          description: New repository created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [repository]
+                properties:
+                  repository: { type: string }
+        default: { $ref: '#/components/responses/GeneralError' }
   /repositories/{repository}/delete:
     post:
       tags:

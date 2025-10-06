@@ -241,6 +241,23 @@ class ModelClientV2(
         }
     }
 
+    override suspend fun forkRepository(
+        source: RepositoryId,
+        target: RepositoryId?,
+    ): RepositoryId {
+        return httpClient.preparePost {
+            url {
+                takeFrom(baseUrl)
+                appendPathSegmentsEncodingSlash("repositories", source.id, "fork")
+                if (target != null) {
+                    parameters["target"] = target.id
+                }
+            }
+        }.execute { response ->
+            response.body<JsonObject>().getValue("repository").jsonPrimitive.content.let { RepositoryId(it) }
+        }
+    }
+
     override suspend fun changeRepositoryConfig(config: RepositoryConfig): RepositoryConfig {
         val repositoryId = RepositoryId(config.repositoryId)
         return httpClient.preparePost {

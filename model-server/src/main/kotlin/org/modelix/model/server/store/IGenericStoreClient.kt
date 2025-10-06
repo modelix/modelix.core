@@ -24,6 +24,16 @@ interface IRepositoryAwareStore : IsolatingStore {
             .toSet()
         putAll(keysToDelete.associateWith { null })
     }
+
+    @RequiresTransaction
+    fun copyRepositoryObjects(source: RepositoryId, target: RepositoryId) {
+        val entries = getAll().asSequence()
+            .filter { it.key.getRepositoryId() == source.id }
+            .associate { entry ->
+                entry.key.copy(repositoryId = target.id) to entry.value
+            }
+        putAll(entries, silent = true)
+    }
 }
 
 interface IGenericStoreClient<KeyT> : AutoCloseable {

@@ -147,6 +147,34 @@ class IgniteStoreClient(jdbcProperties: Properties? = null, private val inmemory
         cache.removeAllAsync(toDelete).listen { LOG.info { "Cache entries deleted." } }
     }
 
+    @RequiresTransaction
+    override fun copyRepositoryObjects(
+        source: RepositoryId,
+        target: RepositoryId,
+    ) {
+        localLocks.assertWrite()
+        require(!inmemory) { "Cannot copy in in-memory mode." }
+        LOG.info { "Copying repository objects in database. [source=$source, target=$target]" }
+
+        dataSource.connection.use { connection ->
+            connection.prepareStatement(
+                "INSERT INTO model (repository, key, value)" +
+                    " SELECT ? AS repository, key, value" +
+                    " FROM model" +
+                    " WHERE repository = ?",
+            ).use { stmt ->
+                stmt.setString(1, target.id)
+                stmt.setString(2, source.id)
+                try {
+                    val copiedRows = stmt.executeUpdate()
+                    LOG.info { "Copied rows inside database. [copiedRows=$copiedRows]" }
+                } catch (e: SQLException) {
+                    LOG.error { e }
+                }
+            }
+        }
+    }
+
     private fun removeRepositoryObjectsFromDatabase(repositoryId: RepositoryId) {
         require(!inmemory) { "Cannot remove from database in in-memory mode." }
         LOG.info { "Removing repository objects from database." }

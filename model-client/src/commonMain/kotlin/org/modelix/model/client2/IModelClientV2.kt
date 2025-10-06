@@ -39,6 +39,18 @@ interface IModelClientV2 {
     @Deprecated("Provide a RepositoryConfig")
     suspend fun initRepository(repository: RepositoryId, useRoleIds: Boolean = true): IVersion
 
+    /**
+     * Copy the entire content of the [source] repository to a new [target] repository.
+     * All branches and all objects, including indices and even unreachable garbage is copied.
+     *
+     * Not supported on repositories that use [RepositoryConfig.legacyGlobalStorage].
+     * `READ` permission on [source] and `CREATE` permission on target is required.
+     *
+     * @param target a random ID will be generated if no ID is provided.
+     * @return the ID of the created repository
+     */
+    suspend fun forkRepository(source: RepositoryId, target: RepositoryId? = null): RepositoryId
+
     @Deprecated("Provide a RepositoryConfig")
     suspend fun initRepositoryWithLegacyStorage(repository: RepositoryId): IVersion
 

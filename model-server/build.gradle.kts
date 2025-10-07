@@ -94,7 +94,7 @@ tasks.named<ShadowJar>("shadowJar") {
 
     transform(PropertiesFileTransformer::class.java) {
         paths = listOf("META-INF/spring.factories")
-        mergeStrategy = "append"
+        mergeStrategy = PropertiesFileTransformer.MergeStrategy.Append
     }
 }
 

@@ -80,6 +80,13 @@ class HistoryIndexSessionsTest {
 
     @Test fun interval_5_4_5() = runIntervalTest(5, 4, 5.minutes)
 
+    // Test cases for division by zero fix
+    @Test fun interval_0_10_delay_zero() = runIntervalTest(0, 10, Duration.ZERO)
+
+    @Test fun interval_0_10_delay_one_second() = runIntervalTest(0, 10, 1.seconds)
+
+    @Test fun interval_0_10_delay_half_second() = runIntervalTest(0, 10, Duration.parse("PT0.5S"))
+
     private fun runIntervalTest(skip: Int, limit: Int, delay: Duration) = runTest {
         val rand = Random(8923345)
         val modelClient: IModelClientV2 = createModelClient(lazyAndBlocking = true)
@@ -118,7 +125,15 @@ class HistoryIndexSessionsTest {
         val expectedHistory = currentVersion.historyAsSequence().toList().reversed()
 
         val expectedIntervals = expectedHistory.fold(listOf<HistoryInterval>()) { acc, version ->
-            if (acc.isEmpty() || version.getTimestamp()!! - acc.last().maxTime >= delay) {
+            val shouldGroup = if (delay == Duration.ZERO) {
+                // For zero delay, group versions with exactly the same timestamp
+                acc.isNotEmpty() && version.getTimestamp()!! == acc.last().maxTime
+            } else {
+                // For non-zero delay, use the normal logic
+                acc.isNotEmpty() && version.getTimestamp()!! - acc.last().maxTime < delay
+            }
+
+            if (acc.isEmpty() || !shouldGroup) {
                 acc + HistoryInterval(
                     firstVersionHash = version.getObjectHash(),
                     lastVersionHash = version.getObjectHash(),

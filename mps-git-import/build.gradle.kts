@@ -14,7 +14,7 @@ dependencies {
     implementation(libs.modelix.mpsApi)
     implementation(libs.kotlin.logging)
     implementation(libs.kotlin.datetime)
-    implementation("org.eclipse.jgit:org.eclipse.jgit:7.3.0.202506031305-r")
+    implementation("org.eclipse.jgit:org.eclipse.jgit:7.4.0.202509020913-r")
     api("com.github.ajalt.clikt:clikt:5.0.3")
 
     compileOnly(

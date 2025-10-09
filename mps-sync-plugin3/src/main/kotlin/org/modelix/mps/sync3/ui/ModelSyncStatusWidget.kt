@@ -1,9 +1,8 @@
 package org.modelix.mps.sync3.ui
 
+import com.intellij.ide.DataManager
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.openapi.util.NlsContexts
@@ -73,8 +72,7 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
                     }
                     return true
                 } else {
-                    @Suppress("removal") // alternative methods don't exist in older MPS versions
-                    val dataContext = SimpleDataContext.getSimpleContext(CommonDataKeys.PROJECT.name, project, null)
+                    val dataContext = DataManager.getInstance().getDataContext(component)
                     val group = ActionManager.getInstance().getAction("org.modelix.mps.sync3.ui.StatusWidgetGroup") as ActionGroup
                     val popup: PopupFactoryImpl.ActionGroupPopup = JBPopupFactory.getInstance().createActionGroupPopup(
                         "Model Synchronization",

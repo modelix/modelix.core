@@ -7,7 +7,7 @@ import com.intellij.openapi.project.Project
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.mps.sync3.IModelSyncService
 
-class OpenFrontendAction() : AnAction("Open Frontend in Browser") {
+class OpenFrontendAction() : AnAction("Open in Browser") {
 
     fun getFrontendUrls(project: Project): List<String> {
         val service = IModelSyncService.getInstance(project)

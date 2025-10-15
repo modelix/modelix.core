@@ -13,8 +13,7 @@ class OpenFrontendAction() : AnAction("Open in Browser") {
         val service = IModelSyncService.getInstance(project)
 
         return service.getBindings().filter { it.isEnabled() }.map {
-            ModelClientV2.builder().url(it.getConnection().getUrl()).build()
-                .getFrontendUrl(it.getBranchRef()).toString()
+            ModelClientV2.getFrontendUrl(it.getConnection().getUrl(), it.getBranchRef())
         }
     }
 

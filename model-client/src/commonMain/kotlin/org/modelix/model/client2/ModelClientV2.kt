@@ -806,6 +806,14 @@ class ModelClientV2(
     companion object {
         private val LOG = KotlinLogging.logger {}
         fun builder(): ModelClientV2Builder = ModelClientV2PlatformSpecificBuilder()
+
+        /**
+         * Requesting the frontend URL doesn't need authentication.
+         * This method sends the request without having to initialize a client instance first.
+         */
+        fun getFrontendUrl(serverUrl: String, branchRef: BranchReference): String {
+            return builder().url(serverUrl).build().getFrontendUrl(branchRef).toString()
+        }
     }
 }
 

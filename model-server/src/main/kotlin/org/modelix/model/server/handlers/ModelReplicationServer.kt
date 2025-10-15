@@ -9,11 +9,13 @@ import io.ktor.server.request.acceptItems
 import io.ktor.server.request.contentType
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveChannel
+import io.ktor.server.resources.get
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytesWriter
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.response.respondText
 import io.ktor.server.response.respondTextWriter
+import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.routing
 import io.ktor.util.cio.use
@@ -101,7 +103,15 @@ class ModelReplicationServer(
             requiresLogin {
                 installRoutes(this)
             }
+
+            get<Paths.redirectToFrontend> { parameters ->
+                redirectToFrontend(parameters.repository, parameters.branch)
+            }
         }
+    }
+
+    override fun Route.install_redirectToFrontend() {
+        // This endpoint shouldn't require a login. It's initialized above outside the `requiresLogin` block.
     }
 
     private fun repositoryId(paramValue: String?) =

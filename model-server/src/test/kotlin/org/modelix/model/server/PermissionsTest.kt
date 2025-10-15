@@ -352,4 +352,14 @@ class PermissionsTest {
         client.initRepository(repoId)
         assertEquals(listOf(repoId), client.listRepositories())
     }
+
+    @Test
+    fun `frontend URL doesn't need authorization`() = runTest {
+        val repoId = RepositoryId("repo1")
+        val client1 = createModelClient(grantedPermissions = listOf(ModelServerPermissionSchema.repository(repoId).write))
+        client1.initRepository(repoId)
+
+        val frontendUrl = ModelClientV2.getFrontendUrl("http://localhost/v2", repoId.getBranchReference())
+        assertEquals("http://localhost/v2/repositories/repo1/branches/master/frontend", frontendUrl)
+    }
 }

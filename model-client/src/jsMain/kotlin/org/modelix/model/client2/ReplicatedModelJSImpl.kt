@@ -10,12 +10,15 @@ import org.modelix.model.mutable.withAutoTransactions
 import kotlin.js.Promise
 
 internal class ReplicatedModelJSImpl(private val model: ReplicatedModel) : ReplicatedModelJS {
+
+    private val mutableModelTree = MutableModelTreeJsImpl(model.getVersionedModelTree().withAutoTransactions())
+
     override fun dispose() {
         model.dispose()
     }
 
     override fun getBranch(): MutableModelTreeJs {
-        return MutableModelTreeJsImpl(model.getVersionedModelTree().withAutoTransactions())
+        return mutableModelTree
     }
 
     override fun getCurrentVersionInformation(): Promise<VersionInformationJS> {

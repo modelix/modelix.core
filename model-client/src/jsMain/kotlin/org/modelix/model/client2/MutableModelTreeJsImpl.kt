@@ -35,6 +35,7 @@ internal class MutableModelTreeJsImpl(
 
     init {
         tree.addListener(changeListener)
+        // TODO missing removeListener call
     }
 
     override val rootNode: INodeJS

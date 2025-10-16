@@ -786,6 +786,9 @@ class ModelClientV2(
             val receivedObjects = delta.getObjectsAsFlow()
                 .map { ObjectHash(it.first) to it.second }.toMap()
             val graph = getObjectGraph(repository)
+            if (baseVersion != null && baseVersion.graph !== graph) {
+                throw IllegalArgumentException("baseVersion.graph is ${baseVersion.graph} but expected $graph")
+            }
             CLVersion(graph.loadVersion(ObjectHash(delta.versionHash), receivedObjects))
         }
     }

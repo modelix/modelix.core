@@ -10,6 +10,7 @@ import org.modelix.datastructures.objects.ObjectReferenceImpl
 import org.modelix.datastructures.objects.getHashString
 import org.modelix.datastructures.objects.upcast
 import org.modelix.incremental.SLRUMap
+import org.modelix.kotlin.utils.AtomicLong
 import org.modelix.kotlin.utils.WeakValueMap
 import org.modelix.kotlin.utils.getOrPut
 import org.modelix.kotlin.utils.runBlockingIfJvm
@@ -36,6 +37,11 @@ class ModelClientGraph(
     val repositoryId: RepositoryId,
     var config: ModelClientGraphConfig = ModelClientGraphConfig(),
 ) : IObjectGraph {
+    companion object {
+        val instanceIdSequence = AtomicLong(0L)
+    }
+
+    private val instanceId = instanceIdSequence.incrementAndGet()
     private val dataDedupeCache = WeakValueMap<ObjectHash, IObjectData>()
 
     private var eagerLoadingObjects: Map<ObjectHash, String>? = null
@@ -60,6 +66,10 @@ class ModelClientGraph(
      */
     private var lazyLoadingCache = object : SLRUMap<ObjectHash, String>(1000, 1000) {
         override fun evicted(key: ObjectHash, value: String) {}
+    }
+
+    override fun toString(): String {
+        return "ModelClientGraph[clientId=${client.getClientId()}, repositoryId=$repositoryId, instanceId=$instanceId]"
     }
 
     @Synchronized

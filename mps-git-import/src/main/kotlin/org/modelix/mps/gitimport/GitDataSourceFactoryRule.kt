@@ -13,6 +13,8 @@ import org.jetbrains.mps.openapi.persistence.NullDataSource
 import org.jetbrains.mps.openapi.persistence.StreamDataSource
 import org.jetbrains.mps.openapi.persistence.datasource.DataSourceType
 import org.jetbrains.mps.openapi.persistence.datasource.FileExtensionDataSourceType
+import org.modelix.mps.gitimport.fs.GitFS
+import org.modelix.mps.gitimport.fs.GitObjectAsVirtualFile
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.stream.Stream

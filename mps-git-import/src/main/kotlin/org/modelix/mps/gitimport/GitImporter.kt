@@ -36,6 +36,8 @@ import org.modelix.model.sync.bulk.IdentityPreservingNodeAssociation
 import org.modelix.model.sync.bulk.ModelSynchronizer
 import org.modelix.model.sync.bulk.UnfilteredModelMask
 import org.modelix.mps.api.ModelixMpsApi
+import org.modelix.mps.gitimport.fs.GitFS
+import org.modelix.mps.gitimport.fs.GitObjectAsVirtualFile
 import org.modelix.mps.multiplatform.model.MPSModelReference
 import java.io.File
 import kotlin.system.exitProcess

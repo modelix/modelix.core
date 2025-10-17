@@ -4,6 +4,6 @@
   "description": "",
   "author": "",
   "dependencies": {
-    "@redocly/cli": "^2.5.1"
+    "@redocly/cli": "^2.7.0"
   }
 }

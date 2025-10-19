@@ -1,6 +1,8 @@
 package org.modelix.mps.gitimport
 
+import jetbrains.mps.extapi.module.SRepositoryExt
 import jetbrains.mps.project.AbstractModule
+import jetbrains.mps.smodel.MPSModuleOwner
 import org.jetbrains.mps.openapi.module.ModelAccess
 import org.jetbrains.mps.openapi.module.RepositoryAccess
 import org.jetbrains.mps.openapi.module.SModule
@@ -12,7 +14,7 @@ import org.jetbrains.mps.openapi.repository.ReadActionListener
 import org.jetbrains.mps.openapi.repository.WriteActionListener
 import java.lang.AutoCloseable
 
-class DummyRepo : SRepository, AutoCloseable {
+class DummyRepo : SRepositoryExt, AutoCloseable {
     private val modelAccess = DummyModelAccess()
     private val registeredModules: MutableMap<SModuleId, SModule> = LinkedHashMap()
 
@@ -67,6 +69,28 @@ class DummyRepo : SRepository, AutoCloseable {
     }
 
     override fun removeRepositoryListener(p0: SRepositoryListener) {
+        TODO("Not yet implemented")
+    }
+
+    override fun getModules(p0: MPSModuleOwner?): Set<SModule?>? {
+        TODO("Not yet implemented")
+    }
+
+    override fun <T : SModule?> registerModule(
+        p0: T & Any,
+        p1: MPSModuleOwner,
+    ): T? {
+        TODO("Not yet implemented")
+    }
+
+    override fun unregisterModule(
+        p0: SModule,
+        p1: MPSModuleOwner,
+    ) {
+        TODO("Not yet implemented")
+    }
+
+    override fun getOwners(p0: SModule): Set<MPSModuleOwner?>? {
         TODO("Not yet implemented")
     }
 }

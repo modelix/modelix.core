@@ -199,21 +199,23 @@ class GitImporter(
         val mutableTree = VersionedModelTree(baseModelixVersion, DummyIdGenerator<INodeReference>())
         mutableTree.runWrite {
             val targetRoot = mutableTree.getRootNode()
-            ModelSynchronizer(
-                filter = syncFilter,
-                sourceRoot = sourceRoot,
-                targetRoot = targetRoot,
-                nodeAssociation = IdentityPreservingNodeAssociation(
-                    targetRoot.getModel(),
-                    mapOf(sourceRoot.getNodeReference() to targetRoot.getNodeReference()),
-                ),
-                sourceMask = UnfilteredModelMask(),
-                targetMask = UnfilteredModelMask(),
-                onException = {
-                    it.printStackTrace()
-                    exitProcess(1)
-                },
-            ).synchronize()
+            GitSyncUtils.runWithProjects(rootDir, mpsRepo) {
+                ModelSynchronizer(
+                    filter = syncFilter,
+                    sourceRoot = sourceRoot,
+                    targetRoot = targetRoot,
+                    nodeAssociation = IdentityPreservingNodeAssociation(
+                        targetRoot.getModel(),
+                        mapOf(sourceRoot.getNodeReference() to targetRoot.getNodeReference()),
+                    ),
+                    sourceMask = UnfilteredModelMask(),
+                    targetMask = UnfilteredModelMask(),
+                    onException = {
+                        it.printStackTrace()
+                        exitProcess(1)
+                    },
+                ).synchronize()
+            }
         }
 
         val (ops, newTree) = mutableTree.getPendingChanges()
@@ -347,7 +349,7 @@ private val moduleDescriptorExtensions = setOf(
 val IVersion.gitCommit: String? get() = getAttributes()["git-commit"]
 fun VersionBuilder.gitCommit(id: String) = attribute("git-commit", id)
 
-private class VersionIndex(rootVersion: IVersion) {
+class VersionIndex(rootVersion: IVersion) {
     private val historyIterator = rootVersion.historyAsSequence().iterator()
     private val indexedVersions = HashMap<String, ObjectHash>()
     private var initialVersion: IVersion? = null

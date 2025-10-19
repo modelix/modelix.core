@@ -32,7 +32,6 @@ class GitObjectAsVirtualFile(
             walk.isRecursive = false
             walk.filter = TreeFilter.ALL
             while (walk.next()) {
-                walk.isSubtree
                 yield(
                     GitObjectAsVirtualFile(
                         parent = this@GitObjectAsVirtualFile,
@@ -127,6 +126,7 @@ class GitObjectAsVirtualFile(
         return 0
     }
 
+    @Suppress("removal")
     override fun length(): Long {
         TODO("Not yet implemented")
     }
@@ -151,10 +151,12 @@ class GitObjectAsVirtualFile(
         TODO("Not yet implemented")
     }
 
+    @Suppress("removal")
     override fun rename(p0: String): Boolean {
         TODO("Not yet implemented")
     }
 
+    @Suppress("removal")
     override fun move(p0: IFile): Boolean {
         TODO("Not yet implemented")
     }

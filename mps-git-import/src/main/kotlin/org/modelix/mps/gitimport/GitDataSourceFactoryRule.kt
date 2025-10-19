@@ -6,6 +6,7 @@ import jetbrains.mps.extapi.persistence.datasource.DataSourceFactoryRule
 import jetbrains.mps.extapi.persistence.datasource.PreinstalledDataSourceTypes
 import jetbrains.mps.project.MPSExtentions
 import jetbrains.mps.vfs.IFile
+import jetbrains.mps.vfs.IFileSystem
 import jetbrains.mps.vfs.path.Path
 import org.jetbrains.mps.openapi.persistence.DataSource
 import org.jetbrains.mps.openapi.persistence.MultiStreamDataSource
@@ -13,13 +14,11 @@ import org.jetbrains.mps.openapi.persistence.NullDataSource
 import org.jetbrains.mps.openapi.persistence.StreamDataSource
 import org.jetbrains.mps.openapi.persistence.datasource.DataSourceType
 import org.jetbrains.mps.openapi.persistence.datasource.FileExtensionDataSourceType
-import org.modelix.mps.gitimport.fs.GitFS
-import org.modelix.mps.gitimport.fs.GitObjectAsVirtualFile
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.stream.Stream
 
-class GitDataSourceFactoryRule(private val gitFS: GitFS) : DataSourceFactoryRule {
+class GitDataSourceFactoryRule(private val gitFS: IFileSystem) : DataSourceFactoryRule {
     override fun spawn(type: DataSourceType): DataSourceFactoryFromName? {
         return null
     }
@@ -33,12 +32,12 @@ class GitDataSourceFactoryRule(private val gitFS: GitFS) : DataSourceFactoryRule
     }
 }
 
-class GitDataSourceFactoryFromPath(private val gitFS: GitFS) : DataSourceFactoryFromPath {
+class GitDataSourceFactoryFromPath(private val gitFS: IFileSystem) : DataSourceFactoryFromPath {
     override fun create(path: Path): DataSource {
-        return createFromFile(gitFS.getFile(path.toText()) as GitObjectAsVirtualFile)
+        return createFromFile(gitFS.getFile(path.toText()))
     }
 
-    fun createFromFile(file: GitObjectAsVirtualFile): DataSource {
+    fun createFromFile(file: IFile): DataSource {
         if (file.exists() && file.isDirectory()) {
             return GitObjectDataSource(file)
         } else if (file.getPath().endsWith(MPSExtentions.DOT_MODEL_ROOT)) {
@@ -50,13 +49,13 @@ class GitDataSourceFactoryFromPath(private val gitFS: GitFS) : DataSourceFactory
     }
 }
 
-class GitObjectDataSource(private val file: GitObjectAsVirtualFile) : StreamDataSource, MultiStreamDataSource {
+class GitObjectDataSource(private val file: IFile) : StreamDataSource, MultiStreamDataSource {
     override fun openInputStream(): InputStream {
         return file.openInputStream()
     }
 
     override fun openOutputStream(): OutputStream {
-        throw UnsupportedOperationException()
+        return file.openOutputStream()
     }
 
     override fun exists(): Boolean {
@@ -64,7 +63,7 @@ class GitObjectDataSource(private val file: GitObjectAsVirtualFile) : StreamData
     }
 
     override fun isReadOnly(): Boolean {
-        return true
+        return file.isReadOnly
     }
 
     override fun getType(): DataSourceType? {
@@ -85,7 +84,7 @@ class GitObjectDataSource(private val file: GitObjectAsVirtualFile) : StreamData
     }
 
     override fun delete(): Boolean {
-        TODO("Not yet implemented")
+        return file.delete()
     }
 
     override fun getStreamName(): String {
@@ -101,18 +100,18 @@ class GitObjectDataSource(private val file: GitObjectAsVirtualFile) : StreamData
     }
 
     override fun getSubStreams(): Stream<StreamDataSource> {
-        return file.children.map {
+        return file.children.orEmpty().map {
             val substream: StreamDataSource = GitObjectDataSource(it)
             substream
         }.stream()
     }
 
     override fun getStreamByNameOrCreate(name: String): StreamDataSource {
-        TODO("Not yet implemented")
+        return GitObjectDataSource(file.findChild(name))
     }
 
     override fun getStreamByName(name: String): StreamDataSource? {
-        return file.children.find { it.name == name }?.let { GitObjectDataSource(it) }
+        return file.children?.find { it.name == name }?.let { GitObjectDataSource(it) }
     }
 
     override fun getStreamByNameOrFail(name: String): StreamDataSource {

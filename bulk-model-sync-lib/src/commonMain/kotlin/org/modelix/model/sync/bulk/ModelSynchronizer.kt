@@ -406,9 +406,7 @@ class ModelSynchronizer(
                 }
                 val actualRef = targetNode.getReferenceTargetRef(role)
 
-                val referenceTargetInSource = sourceNode.getReferenceTarget(role) ?: return@runSafe false
-
-                val referenceTargetInTarget = nodeAssociation.resolveTarget(referenceTargetInSource)
+                val referenceTargetInTarget = nodeAssociation.resolveTarget({ sourceNode.getReferenceTarget(role) }, { expectedRef })
                     ?: return@runSafe false // Target cannot be resolved right now but might become resolvable later.
 
                 if (referenceTargetInTarget.getNodeReference().serialize() != actualRef?.serialize()) {

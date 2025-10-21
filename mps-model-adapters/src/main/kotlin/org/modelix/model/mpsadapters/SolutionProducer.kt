@@ -3,12 +3,10 @@
 package org.modelix.model.mpsadapters
 
 import jetbrains.mps.extapi.persistence.FileBasedModelRoot
-import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.persistence.DefaultModelRoot
 import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.MPSExtentions
-import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.project.Solution
 import jetbrains.mps.project.structure.modules.DevkitDescriptor
@@ -20,10 +18,10 @@ import jetbrains.mps.smodel.Generator
 import jetbrains.mps.smodel.Language
 import jetbrains.mps.vfs.IFile
 
-class SolutionProducer(private val myProject: MPSProject) {
+class SolutionProducer(private val myProject: IMPSProject) {
 
     fun create(name: String, id: ModuleId): Solution {
-        val basePath = checkNotNull(ProjectHelper.toIdeaProject(myProject).getBasePath()) { "Project has no base path: $myProject" }
+        val basePath = checkNotNull(myProject.getBasePath()) { "Project has no base path: $myProject" }
         val projectBaseDir = myProject.getFileSystem().getFile(basePath)
         val solutionBaseDir = projectBaseDir.findChild("solutions").findChild(name)
         return create(name, id, solutionBaseDir)
@@ -59,10 +57,10 @@ class SolutionProducer(private val myProject: MPSProject) {
     }
 }
 
-class LanguageProducer(private val myProject: MPSProject) {
+class LanguageProducer(private val myProject: IMPSProject) {
 
     fun create(name: String, id: ModuleId): Language {
-        val basePath = checkNotNull(ProjectHelper.toIdeaProject(myProject).getBasePath()) { "Project has no base path: $myProject" }
+        val basePath = checkNotNull(myProject.getBasePath()) { "Project has no base path: $myProject" }
         val projectBaseDir = myProject.getFileSystem().getFile(basePath)
         val solutionBaseDir = projectBaseDir.findChild("languages").findChild(name)
         return create(name, id, solutionBaseDir)
@@ -97,11 +95,11 @@ class LanguageProducer(private val myProject: MPSProject) {
     }
 }
 
-class GeneratorProducer(private val myProject: MPSProject) {
+class GeneratorProducer(private val myProject: IMPSProject) {
 
     fun create(language: Language, name: String, id: ModuleId, alias: String?): Generator {
-        val basePath = checkNotNull(ProjectHelper.toIdeaProject(myProject).getBasePath()) { "Project has no base path: $myProject" }
-        val projectBaseDir = myProject.fileSystem.getFile(basePath)
+        val basePath = checkNotNull(myProject.getBasePath()) { "Project has no base path: $myProject" }
+        val projectBaseDir = myProject.getFileSystem().getFile(basePath)
         val solutionBaseDir = projectBaseDir.findChild("languages").findChild(language.moduleName!!)
         return create(language, name, id, alias, solutionBaseDir)
     }
@@ -154,10 +152,10 @@ fun Generator.getGeneratorLocation(): IFile? {
     return modelRoots.filterIsInstance<FileBasedModelRoot>().mapNotNull { it.contentDirectory }.firstOrNull()
 }
 
-class DevkitProducer(private val myProject: MPSProject) {
+class DevkitProducer(private val myProject: IMPSProject) {
 
     fun create(name: String, id: ModuleId): DevKit {
-        val basePath = checkNotNull(ProjectHelper.toIdeaProject(myProject).getBasePath()) { "Project has no base path: $myProject" }
+        val basePath = checkNotNull(myProject.getBasePath()) { "Project has no base path: $myProject" }
         val projectBaseDir = myProject.getFileSystem().getFile(basePath)
         val solutionBaseDir = projectBaseDir.findChild("devkits").findChild(name)
         return create(name, id, solutionBaseDir)

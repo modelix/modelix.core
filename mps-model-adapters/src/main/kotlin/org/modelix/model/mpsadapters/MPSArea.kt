@@ -1,7 +1,6 @@
 package org.modelix.model.mpsadapters
 
 import jetbrains.mps.ide.ThreadUtils
-import jetbrains.mps.project.ProjectBase
 import jetbrains.mps.project.facets.JavaModuleFacet
 import jetbrains.mps.smodel.GlobalModelAccess
 import jetbrains.mps.smodel.ModelImports
@@ -18,7 +17,6 @@ import org.modelix.model.api.NodeReference
 import org.modelix.model.area.IArea
 import org.modelix.model.area.IAreaListener
 import org.modelix.model.area.IAreaReference
-import org.modelix.mps.api.ModelixMpsApi
 import org.modelix.mps.multiplatform.model.MPSModelReference
 import org.modelix.mps.multiplatform.model.MPSModuleReference
 import org.modelix.mps.multiplatform.model.MPSNodeReference
@@ -110,11 +108,11 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
         val inEDT = ThreadUtils.isInEDT()
 
         if (inEDT || enforceCommand) {
-            val projects = ModelixMpsApi.getMPSProjects()
-            val modelAccessCandidates = sequenceOf(repository.modelAccess) + projects.map { it.modelAccess }
+            val projects = MPSProjectAsNode.getContextProjects().filterIsInstance<MPSProjectAdapter>().map { it.mpsProject }
+            val modelAccessCandidates = (listOf(repository.modelAccess) + projects.map { it.modelAccess }).asReversed()
             // GlobalModelAccess throws an Exception when trying to execute a command.
             // Only a ProjectModelAccess can execute a command.
-            val modelAccess = modelAccessCandidates.filter { it !is GlobalModelAccess }.firstOrNull()
+            val modelAccess = modelAccessCandidates.firstOrNull { it !is GlobalModelAccess }
 
             if (modelAccess != null) {
                 if (inEDT) {
@@ -268,9 +266,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
     private fun resolveMPSProjectReference(ref: INodeReference): MPSProjectAsNode? {
         val projectName = (MPSProjectReference.tryConvert(ref) ?: return null).projectName
 
-        val project = ModelixMpsApi.getMPSProjects()
-            .filterIsInstance<ProjectBase>()
-            .find { it.readName() == projectName }
+        val project = MPSProjectAsNode.getContextProjects().find { it.getName() == projectName }
 
         return project?.let { MPSProjectAsNode(it) }
     }

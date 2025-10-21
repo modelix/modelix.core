@@ -1,11 +1,7 @@
 package org.modelix.model.mpsadapters
 
-import jetbrains.mps.module.ModuleDeleteHelper
 import jetbrains.mps.project.AbstractModule
-import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
-import jetbrains.mps.project.Project
-import jetbrains.mps.project.ProjectBase
 import jetbrains.mps.smodel.Generator
 import jetbrains.mps.smodel.Language
 import jetbrains.mps.smodel.tempmodel.TempModule
@@ -23,7 +19,6 @@ import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.NullChildLinkReference
-import org.modelix.mps.api.ModelixMpsApi
 
 fun SRepository.asLegacyNode(): INode = MPSRepositoryAsNode(this).asLegacyNode()
 fun SRepository.asWritableNode(): IWritableNode = MPSRepositoryAsNode(this)
@@ -47,19 +42,19 @@ data class MPSRepositoryAsNode(@get:JvmName("getRepository_") val repository: SR
                 ): IWritableNode {
                     return when (sourceNode.getConceptReference()) {
                         BuiltinLanguages.MPSRepositoryConcepts.Solution.getReference() -> {
-                            SolutionProducer(ModelixMpsApi.getMPSProject() as MPSProject).create(
+                            SolutionProducer(MPSProjectAsNode.getContextProject()).create(
                                 sourceNode.getNode().getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())!!,
                                 sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())!!.let { ModuleId.fromString(it) },
                             ).let { MPSModuleAsNode(it) }
                         }
                         BuiltinLanguages.MPSRepositoryConcepts.Language.getReference() -> {
-                            LanguageProducer(ModelixMpsApi.getMPSProject() as MPSProject).create(
+                            LanguageProducer(MPSProjectAsNode.getContextProject()).create(
                                 sourceNode.getNode().getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())!!,
                                 sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())!!.let { ModuleId.fromString(it) },
                             ).let { MPSModuleAsNode(it) }
                         }
                         BuiltinLanguages.MPSRepositoryConcepts.DevKit.getReference() -> {
-                            DevkitProducer(ModelixMpsApi.getMPSProject() as MPSProject).create(
+                            DevkitProducer(MPSProjectAsNode.getContextProject()).create(
                                 sourceNode.getNode().getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())!!,
                                 sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())!!.let { ModuleId.fromString(it) },
                             ).let { MPSModuleAsNode(it) }
@@ -87,8 +82,7 @@ data class MPSRepositoryAsNode(@get:JvmName("getRepository_") val repository: SR
             },
             BuiltinLanguages.MPSRepositoryConcepts.Repository.projects.toReference() to object : IChildAccessor<SRepository> {
                 override fun read(element: SRepository): List<IWritableNode> {
-                    return ModelixMpsApi.getMPSProjects()
-                        .map { MPSProjectAsNode(it as ProjectBase) }
+                    return MPSProjectAsNode.getContextProjects().map { MPSProjectAsNode(it) }
                 }
 
                 override fun addNew(element: SRepository, index: Int, sourceNode: SpecWithResolvedConcept): IWritableNode {
@@ -134,14 +128,19 @@ internal fun SModule.delete() {
         }
     }
 
-    ModuleDeleteHelper(ModelixMpsApi.getMPSProject() as Project).deleteModules(
-        listOf(this),
-        false,
-        true,
-    )
+    MPSProjectAsNode.getContextProjects().first { it.getModules().andGenerators().contains(this) }.deleteModule(this)
 }
 
 private fun SModule.saveModuleAndModels() {
     (this as? AbstractModule)?.save()
     models.filterIsInstance<EditableSModel>().forEach { it.save() }
+}
+
+fun List<SModule>.andGenerators(): List<SModule> {
+    return flatMap {
+        when (it) {
+            is Language -> listOf(it) + it.generators
+            else -> listOf(it)
+        }
+    }
 }

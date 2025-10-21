@@ -1,6 +1,5 @@
 package org.modelix.model.mpsadapters
 
-import jetbrains.mps.project.ProjectBase
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.BuiltinLanguages
@@ -10,15 +9,14 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IWritableNode
-import org.modelix.mps.api.ModelixMpsApi
 
-data class MPSProjectModuleAsNode(val project: ProjectBase, val module: SModule) : MPSGenericNodeAdapter<MPSProjectModuleAsNode>() {
+data class MPSProjectModuleAsNode(val project: IMPSProject, val module: SModule) : MPSGenericNodeAdapter<MPSProjectModuleAsNode>() {
 
     companion object {
         private val propertyAccessors: List<Pair<IPropertyReference, IPropertyAccessor<MPSProjectModuleAsNode>>> = listOf(
             BuiltinLanguages.MPSRepositoryConcepts.ProjectModule.virtualFolder.toReference() to object : IPropertyAccessor<MPSProjectModuleAsNode> {
                 override fun read(element: MPSProjectModuleAsNode): String? {
-                    return ModelixMpsApi.getVirtualFolder(element.project, element.module)
+                    return element.project.getVirtualFolder(element.module)
                 }
                 override fun write(element: MPSProjectModuleAsNode, value: String?) {
                     element.project.setVirtualFolder(element.module, value)
@@ -51,7 +49,7 @@ data class MPSProjectModuleAsNode(val project: ProjectBase, val module: SModule)
     }
 
     override fun getRepository(): SRepository? {
-        return project.repository
+        return project.getRepository()
     }
 
     override fun getPropertyAccessors(): List<Pair<IPropertyReference, IPropertyAccessor<MPSProjectModuleAsNode>>> {

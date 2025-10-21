@@ -3,7 +3,6 @@ package org.modelix.model.mpsadapters
 import jetbrains.mps.persistence.MementoImpl
 import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.DevKit
-import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.project.Solution
 import jetbrains.mps.project.facets.JavaModuleFacet
@@ -396,7 +395,7 @@ data class MPSLanguageAsNode(override val module: Language) : MPSModuleAsNode<La
                     index: Int,
                     sourceNode: SpecWithResolvedConcept,
                 ): IWritableNode {
-                    return GeneratorProducer(ModelixMpsApi.getMPSProjects().first() as MPSProject).create(
+                    return GeneratorProducer(MPSProjectAsNode.getContextProject()).create(
                         element,
                         sourceNode.getNode().getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())!!,
                         sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())!!.let { ModuleId.fromString(it) },

@@ -28,11 +28,11 @@ import org.modelix.model.area.PArea
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.runWriteOnModel
+import org.modelix.model.mpsadapters.MPSProjectAdapter
 import org.modelix.model.mpsadapters.MPSProjectAsNode
 import org.modelix.model.mpsadapters.MPSProjectReference
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import org.modelix.model.mpsadapters.computeRead
-import org.modelix.model.mpsadapters.writeName
 import org.modelix.model.mutable.DummyIdGenerator
 import org.modelix.model.mutable.asModelSingleThreaded
 import org.modelix.model.sync.bulk.DefaultInvalidationTree
@@ -40,7 +40,6 @@ import org.modelix.model.sync.bulk.FullSyncFilter
 import org.modelix.model.sync.bulk.IdentityPreservingNodeAssociation
 import org.modelix.model.sync.bulk.ModelSynchronizer
 import org.modelix.model.sync.bulk.NodeAssociationToModelServer
-import org.modelix.mps.api.ModelixMpsApi
 import org.modelix.mps.model.sync.bulk.MPSProjectSyncMask
 import org.modelix.streams.iterateSuspending
 import java.util.concurrent.atomic.AtomicBoolean
@@ -182,7 +181,7 @@ class BindingWorker(
                 initialSync()
                 break
             } catch (ex: CancellationException) {
-                break
+                throw ex
             } catch (ex: Throwable) {
                 LOG.error(ex) { "Initial synchronization failed" }
                 delay(5_000)
@@ -316,7 +315,7 @@ class BindingWorker(
                 if (projectNode != null) {
                     val projectId = getProjectId(projectNode)
                     if (projectId != getProjectId(MPSProjectAsNode(mpsProject))) {
-                        mpsProject.writeName(projectId)
+                        MPSProjectAdapter(mpsProject).setName(projectId)
                     }
                 }
 
@@ -347,7 +346,7 @@ class BindingWorker(
         ApplicationManager.getApplication().invokeAndWait({
             ApplicationManager.getApplication().runWriteAction {
                 repository.modelAccess.executeUndoTransparentCommand {
-                    ModelixMpsApi.runWithProject(mpsProject) {
+                    MPSProjectAsNode.runWithProject(mpsProject) {
                         result += body()
                     }
                 }
@@ -383,7 +382,7 @@ class BindingWorker(
                     nodeIdGenerator = DummyIdGenerator<INodeReference>(),
                     author = client.getUserId(),
                 ) { targetRoot ->
-                    ModelixMpsApi.runWithProject(mpsProject) {
+                    MPSProjectAsNode.runWithProject(mpsProject) {
                         val sourceRoot = MPSRepositoryAsNode(mpsProject.repository)
 
                         val legacyMutableTree = (targetRoot.getModel().asArea() as? PArea)?.branch

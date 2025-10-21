@@ -6,9 +6,9 @@ import jetbrains.mps.library.ModulesMiner
 import jetbrains.mps.project.MPSExtentions
 import jetbrains.mps.project.io.DescriptorIO
 import jetbrains.mps.project.io.DescriptorIOFacade
+import jetbrains.mps.project.structure.modules.LanguageDescriptor
 import jetbrains.mps.project.structure.modules.ModuleDescriptor
 import jetbrains.mps.smodel.GeneralModuleFactory
-import jetbrains.mps.util.JDOMUtil
 import jetbrains.mps.vfs.IFile
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.toKotlinInstant
@@ -38,7 +38,6 @@ import org.modelix.model.sync.bulk.UnfilteredModelMask
 import org.modelix.mps.api.ModelixMpsApi
 import org.modelix.mps.gitimport.fs.GitFS
 import org.modelix.mps.gitimport.fs.GitObjectAsVirtualFile
-import org.modelix.mps.multiplatform.model.MPSModelReference
 import java.io.File
 import kotlin.system.exitProcess
 
@@ -261,39 +260,35 @@ class GitImporter(
             for (file in changedFiles) {
                 when (file.extension) {
                     MPSExtentions.SOLUTION, MPSExtentions.LANGUAGE, MPSExtentions.GENERATOR, MPSExtentions.DEVKIT -> {
-                        file.readModuleDescriptor()?.let { descriptor ->
+                        file.readModuleDescriptor().let { descriptor ->
                             invalidations.invalidate(listOf(invalidations.root))
-                            invalidations.invalidate(listOf(invalidations.root, descriptor.moduleReference.toModelix()))
+                            for (moduleRef in descriptor.getAllModuleReferences()) {
+                                invalidations.invalidate(listOf(invalidations.root, moduleRef), includingDescendants = true)
+                            }
                         }
                     }
-                    MPSExtentions.MODEL, MPSExtentions.MODEL_ROOT -> {
-                        val moduleRef = file.findModuleFile()?.readModuleDescriptor()?.moduleReference?.toModelix()
-                        val modelRef = file.openInputStream().bufferedReader().lineSequence().mapNotNull {
-                            JDOMUtil.loadDocument(file.openInputStream())
-                                .rootElement
-                                .getAttribute("ref")?.value
-                                ?.let { MPSModelReference.parseSModelReference(it) }
-                        }.firstOrNull()
-                        if (modelRef != null) {
-                            invalidations.invalidate(
-                                listOfNotNull(
-                                    invalidations.root,
-                                    moduleRef,
-                                    modelRef,
-                                ),
-                                includingDescendants = true,
-                            )
+                    MPSExtentions.MODEL, MPSExtentions.MODEL_BINARY, MPSExtentions.MODEL_ROOT -> {
+                        val moduleDescriptor = file.findModuleFile()?.readModuleDescriptor()
+                        for (moduleRef in moduleDescriptor.getAllModuleReferences()) {
+                            invalidations.invalidate(listOfNotNull(invalidations.root, moduleRef), includingDescendants = true)
                         }
-                    }
-                    MPSExtentions.MODEL_BINARY -> {
-                        val moduleRef = file.findModuleFile()?.readModuleDescriptor()?.moduleReference?.toModelix()
-                        invalidations.invalidate(
-                            listOfNotNull(
-                                invalidations.root,
-                                moduleRef,
-                            ),
-                            includingDescendants = true,
-                        )
+
+//                        val modelRef = file.openInputStream().bufferedReader().lineSequence().mapNotNull {
+//                            JDOMUtil.loadDocument(file.openInputStream())
+//                                .rootElement
+//                                .getAttribute("ref")?.value
+//                                ?.let { MPSModelReference.parseSModelReference(it) }
+//                        }.firstOrNull()
+//                        if (modelRef != null) {
+//                            invalidations.invalidate(
+//                                listOfNotNull(
+//                                    invalidations.root,
+//                                    moduleRef,
+//                                    modelRef,
+//                                ),
+//                                includingDescendants = true,
+//                            )
+//                        }
                     }
                 }
             }
@@ -335,6 +330,11 @@ private fun IFile.readModuleDescriptor(): ModuleDescriptor? {
         ex.printStackTrace()
         return null
     }
+}
+
+private fun ModuleDescriptor?.getAllModuleReferences(): List<INodeReference> {
+    return listOfNotNull(this?.moduleReference?.toModelix()) +
+        (this as? LanguageDescriptor)?.generators.orEmpty().mapNotNull { it.moduleReference?.toModelix() }
 }
 
 private val moduleDescriptorExtensions = setOf(

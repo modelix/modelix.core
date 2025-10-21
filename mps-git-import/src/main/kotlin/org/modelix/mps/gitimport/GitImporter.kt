@@ -285,6 +285,16 @@ class GitImporter(
                             )
                         }
                     }
+                    MPSExtentions.MODEL_BINARY -> {
+                        val moduleRef = file.findModuleFile()?.readModuleDescriptor()?.moduleReference?.toModelix()
+                        invalidations.invalidate(
+                            listOfNotNull(
+                                invalidations.root,
+                                moduleRef,
+                            ),
+                            includingDescendants = true,
+                        )
+                    }
                 }
             }
         }

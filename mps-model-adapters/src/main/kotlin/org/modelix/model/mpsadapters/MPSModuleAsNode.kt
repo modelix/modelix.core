@@ -67,7 +67,12 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
         private val propertyAccessors = listOf<Pair<IPropertyReference, IPropertyAccessor<SModule>>>(
             BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference() to object : IPropertyAccessor<SModule> {
                 override fun read(element: SModule): String? = element.moduleName
-                override fun write(element: SModule, value: String?) = TODO()
+                override fun write(element: SModule, value: String?) {
+                    element as AbstractModule
+                    val descriptor = element.moduleDescriptor!!
+                    descriptor.namespace = value
+                    element.setModuleDescriptor(descriptor)
+                }
             },
             BuiltinLanguages.jetbrains_mps_lang_core.BaseConcept.virtualPackage.toReference() to object : IPropertyAccessor<SModule> {
                 override fun read(element: SModule): String? {

@@ -4,7 +4,7 @@ import jetbrains.mps.project.MPSProject
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IReadableNode
-import org.modelix.model.api.getName
+import org.modelix.model.api.getStereotype
 import org.modelix.model.mpsadapters.MPSModuleAsNode
 import org.modelix.model.mpsadapters.MPSProjectAsNode
 import org.modelix.model.sync.bulk.IModelMask
@@ -42,16 +42,15 @@ class MPSProjectSyncMask(val projects: List<MPSProject>, val isMPSSide: Boolean)
             }
             else -> when {
                 role.matches(BuiltinLanguages.MPSRepositoryConcepts.Module.models.toReference()) -> {
-                    children.filterNot { isStubModel(it.getName()) }
+                    children.filterNot { isStubModel(it.getStereotype()) }
                 }
                 else -> children
             }
         }
     }
 
-    private fun isStubModel(name: String?): Boolean {
-        if (name == null) return false
-        val stereotype = name.substringAfter('@')
+    private fun isStubModel(stereotype: String?): Boolean {
+        if (stereotype == null) return false
         return stereotype.contains("stub")
     }
 }

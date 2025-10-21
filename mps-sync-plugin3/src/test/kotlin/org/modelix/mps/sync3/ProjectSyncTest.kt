@@ -185,17 +185,17 @@ class ProjectSyncTest : MPSTestBase() {
         assertEquals(null, initialVersion.baseVersion)
         assertEquals(emptyList<IOperation>(), initialVersion.operations.toList())
         assertFalse(version1.isMerge())
-        assertEquals(680, version1.numberOfOperations)
+        assertEquals(671, version1.numberOfOperations)
 
         // version2 applies some changes on top of version1
         assertEquals(version1, version2.baseVersion)
         assertFalse(version2.isMerge())
-        assertEquals(455, version2.numberOfOperations)
+        assertEquals(449, version2.numberOfOperations)
 
         // version3 does the same as version2
         assertEquals(version1, version3.baseVersion)
         assertFalse(version3.isMerge())
-        assertEquals(455, version3.numberOfOperations)
+        assertEquals(449, version3.numberOfOperations)
         assertEquals(version2.getTreeReference().getHash(), version3.getTreeReference().getHash())
 
         assertNotEquals(version2.getObjectHash(), version3.getObjectHash())
@@ -571,7 +571,7 @@ class ProjectSyncTest : MPSTestBase() {
                 }
                 .flatMap { it.models }
                 .withoutDescriptorModel()
-                .associateBy { it.name.value }
+                .associateBy { it.name.longName }
         }
         val serverModels = version1.getModelTree().asReadOnlyModel().getRootNode().getDescendants(true)
             .filter { it.getConceptReference() == BuiltinLanguages.MPSRepositoryConcepts.Model.getReference() }

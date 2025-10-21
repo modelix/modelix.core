@@ -15,7 +15,14 @@ class IdentityPreservingNodeAssociation(
 ) : INodeAssociation {
 
     override fun resolveTarget(sourceNode: IReadableNode): IWritableNode? {
-        val sourceReference = sourceNode.getNodeReference()
+        return resolveTarget({ sourceNode }, { sourceNode.getNodeReference() })
+    }
+
+    override fun resolveTarget(
+        sourceNode: () -> IReadableNode?,
+        sourceNodeRef: () -> INodeReference,
+    ): IWritableNode? {
+        val sourceReference = sourceNodeRef()
         val targetReference = overrides[sourceReference] ?: sourceReference
         return targetModel.tryResolveNode(targetReference)
     }

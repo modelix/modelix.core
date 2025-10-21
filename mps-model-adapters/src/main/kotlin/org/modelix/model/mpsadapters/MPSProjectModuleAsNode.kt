@@ -27,8 +27,12 @@ data class MPSProjectModuleAsNode(val project: ProjectBase, val module: SModule)
         )
         private val referenceAccessors: List<Pair<IReferenceLinkReference, IReferenceAccessor<MPSProjectModuleAsNode>>> = listOf(
             BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference() to object : IReferenceAccessor<MPSProjectModuleAsNode> {
-                override fun read(element: MPSProjectModuleAsNode): IWritableNode? {
+                override fun read(element: MPSProjectModuleAsNode): IWritableNode {
                     return MPSModuleAsNode(element.module)
+                }
+
+                override fun readRef(element: MPSProjectModuleAsNode): INodeReference {
+                    return read(element).getNodeReference()
                 }
 
                 override fun write(element: MPSProjectModuleAsNode, value: INodeReference?) {

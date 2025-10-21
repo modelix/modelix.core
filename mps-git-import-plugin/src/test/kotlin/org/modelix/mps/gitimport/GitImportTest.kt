@@ -203,6 +203,8 @@ class GitImportTest : MPSTestBase() {
                   my.language.sandbox
                 my.solution
                   my.solution.model_with_binary_persistence
+                    AnnotherBinaryRoot
+                      m
                     MyBinaryClass
                       plus
                         a
@@ -238,6 +240,8 @@ class GitImportTest : MPSTestBase() {
                   my.language.sandbox
                 my.solution
                   my.solution.model_with_binary_persistence
+                    AnnotherBinaryRoot
+                      m
                     MyBinaryClass
                       plus
                         a
@@ -273,9 +277,12 @@ class GitImportTest : MPSTestBase() {
                   my.language.sandbox
                 my.solution
                   my.solution.model_with_binary_persistence
-                    MyBinaryClass
+                    AnnotherBinaryRoot
+                      m
+                    ModifiedRootInBinaryPersistence
                       plus
                         a
+                      changeBinaryPersistence
                   my.solution.model_with_file_per_root_persistence
                     MyRenamedClassInFilePerRootPersistence
                       f
@@ -350,6 +357,8 @@ class GitImportTest : MPSTestBase() {
                   my.language.sandbox
                 my.solution
                   my.solution.model_with_binary_persistence
+                    AnnotherBinaryRoot
+                      m
                     MyBinaryClass
                       plus
                         a
@@ -385,9 +394,12 @@ class GitImportTest : MPSTestBase() {
                   my.language.sandbox
                 my.solution
                   my.solution.model_with_binary_persistence
-                    MyBinaryClass
+                    AnnotherBinaryRoot
+                      m
+                    ModifiedRootInBinaryPersistence
                       plus
                         a
+                      changeBinaryPersistence
                   my.solution.model_with_file_per_root_persistence
                     MyRenamedClassInFilePerRootPersistence
                       f
@@ -426,9 +438,12 @@ class GitImportTest : MPSTestBase() {
                   my.language.sandbox
                 my.solution
                   my.solution.model_with_binary_persistence
+                    AnnotherBinaryRoot
+                      m
                     MyBinaryClass
                       plus
                         a
+                      changeBinaryPersistence
                   my.solution.model_with_file_per_root_persistence
                     AnotherRootNode
                       m1
@@ -464,6 +479,8 @@ class GitImportTest : MPSTestBase() {
                   my.language.sandbox
                 my.solution
                   my.solution.model_with_binary_persistence
+                    AnnotherBinaryRoot
+                      m
                     MyBinaryClass
                       plus
                         a
@@ -501,9 +518,12 @@ class GitImportTest : MPSTestBase() {
                   my.language.sandbox
                 my.solution
                   my.solution.model_with_binary_persistence
+                    AnnotherBinaryRoot
+                      m
                     MyBinaryClass
                       plus
                         a
+                      changeBinaryPersistence
                   my.solution.model_with_file_per_root_persistence
                     AnotherRootNode
                       m1
@@ -538,9 +558,12 @@ class GitImportTest : MPSTestBase() {
                   my.language.sandbox
                 my.solution
                   my.solution.model_with_binary_persistence
-                    MyBinaryClass
+                    AnnotherBinaryRoot
+                      m
+                    ModifiedRootInBinaryPersistence
                       plus
                         a
+                      changeBinaryPersistence
                   my.solution.model_with_file_per_root_persistence
                     MyRenamedClassInFilePerRootPersistence
                       f

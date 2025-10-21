@@ -95,7 +95,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -127,7 +127,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -158,7 +158,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -193,7 +193,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -230,7 +230,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -267,7 +267,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -311,7 +311,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -347,7 +347,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -384,7 +384,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -428,7 +428,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -469,7 +469,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -508,7 +508,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -548,7 +548,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem

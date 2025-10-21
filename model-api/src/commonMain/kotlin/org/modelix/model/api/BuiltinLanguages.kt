@@ -534,3 +534,4 @@ object BuiltinLanguages {
 }
 
 fun IReadableNode.getName() = getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())
+fun IReadableNode.getStereotype() = getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.stereotype.toReference())

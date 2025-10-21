@@ -31,6 +31,10 @@ data class MPSProjectModuleAsNode(val project: ProjectBase, val module: SModule)
                     return MPSModuleAsNode(element.module)
                 }
 
+                override fun readRef(element: MPSProjectModuleAsNode): INodeReference? {
+                    return read(element)?.getNodeReference()
+                }
+
                 override fun write(element: MPSProjectModuleAsNode, value: INodeReference?) {
                     throw UnsupportedOperationException("read only")
                 }

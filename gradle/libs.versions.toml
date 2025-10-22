@@ -10,7 +10,7 @@ apache-cxf = ["apache-cxf-client", "apache-cxf-sse"]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-gitVersion = { id = "com.palantir.git-version", version = "4.0.0" }
+gitVersion = { id = "com.palantir.git-version", version = "4.1.0" }
 modelix-mps-buildtools = { id = "org.modelix.mps.build-tools", version.ref = "modelixBuildtools" }
 node = {id = "com.github.node-gradle.node", version = "7.1.0"}
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }

@@ -7,6 +7,7 @@ import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.ResponseException
+import io.ktor.client.plugins.compression.ContentEncoding
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.contentnegotiation.exclude
 import io.ktor.client.plugins.expectSuccess
@@ -107,7 +108,7 @@ import kotlin.time.Duration.Companion.seconds
 class VersionNotFoundException(val versionHash: String) : Exception("Version $versionHash not found")
 
 class ModelClientV2(
-    private val httpClient: HttpClient,
+    val httpClient: HttpClient,
     val baseUrl: String,
     private var clientProvidedUserId: String?,
     var defaultGraphConfig: ModelClientGraphConfig,
@@ -958,6 +959,10 @@ abstract class ModelClientV2Builder {
             followRedirects = false
             install(ContentNegotiation) {
                 json()
+            }
+            install(ContentEncoding) {
+                deflate(0.8F)
+                gzip(0.9F)
             }
             install(HttpTimeout) {
                 connectTimeoutMillis = connectTimeout.inWholeMilliseconds

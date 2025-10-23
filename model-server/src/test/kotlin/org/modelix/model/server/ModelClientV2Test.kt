@@ -1,5 +1,11 @@
 package org.modelix.model.server
 
+import io.ktor.client.request.prepareGet
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsBytes
+import io.ktor.client.statement.readRawBytes
+import io.ktor.http.appendPathSegments
+import io.ktor.http.takeFrom
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import mu.KotlinLogging
@@ -23,6 +29,7 @@ import org.modelix.model.client2.runWrite
 import org.modelix.model.client2.runWriteOnBranch
 import org.modelix.model.client2.runWriteOnModel
 import org.modelix.model.client2.runWriteOnTree
+import org.modelix.model.client2.useVersionStreamFormat
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.MissingEntryException
@@ -47,6 +54,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 private val LOG = KotlinLogging.logger { }
@@ -439,5 +447,44 @@ class ModelClientV2Test {
 
         val actual = modelClient.diffAsMutationParameters(repositoryId, lastVersion.getObjectHash(), initialVersion.getObjectHash())
         assertEquals(expected, actual)
+    }
+
+    @Test
+    fun `version delta stream uses compression`() = runTest {
+        val modelClient = createModelClient()
+        val repositoryId = RepositoryId("my-repo")
+        val branch = repositoryId.getBranchReference()
+        modelClient.initRepository(repositoryId)
+
+        modelClient.runWriteOnModel(branch) { root ->
+            repeat(1000) {
+                root.addNewChild(IChildLinkReference.fromName("roleA"), -1, NullConcept.getReference())
+            }
+        }
+
+        suspend fun <R> sendRequest(mapper: suspend (HttpResponse) -> R): R {
+            return modelClient.httpClient.prepareGet {
+                url {
+                    takeFrom(modelClient.baseUrl)
+                    appendPathSegments("repositories", branch.repositoryId.id, "branches", branch.branchName)
+                }
+                useVersionStreamFormat()
+            }.execute(mapper)
+        }
+
+        val compressedBytes = sendRequest { it.unwrap().readRawBytes() }
+        val uncompressedBytes = sendRequest { it.bodyAsBytes() }
+
+        assertNotEquals(uncompressedBytes.toList(), compressedBytes.toList())
+
+        val ratio = compressedBytes.size.toDouble() / uncompressedBytes.size.toDouble()
+
+        println("compression ratio: $ratio")
+        assertTrue(ratio < 0.5, "compression ratio: $ratio")
+    }
+
+    private fun HttpResponse.unwrap(): HttpResponse {
+        // extract unprocessed response from DelegatedResponse.origin
+        return this.javaClass.getDeclaredField("origin").also { it.isAccessible = true }.get(this) as HttpResponse
     }
 }

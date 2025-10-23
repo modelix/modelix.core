@@ -16,6 +16,7 @@ import io.ktor.server.http.content.staticResources
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.calllogging.processingTimeMillis
+import io.ktor.server.plugins.compression.Compression
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.plugins.forwardedheaders.ForwardedHeaders
@@ -212,6 +213,7 @@ object Main {
                     json()
                     registerJsonTypes()
                 }
+                install(Compression)
                 install(CORS) {
                     anyHost()
                     allowHeader(HttpHeaders.ContentType)
@@ -359,6 +361,7 @@ fun Application.installDefaultServerPlugins(unitTestMode: Boolean = true) {
         json()
         registerJsonTypes()
     }
+    install(Compression)
     install(Resources)
     install(IgnoreTrailingSlash)
     installStatusPages()

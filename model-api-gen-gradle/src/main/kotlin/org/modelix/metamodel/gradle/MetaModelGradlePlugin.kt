@@ -35,7 +35,7 @@ class MetaModelGradlePlugin @Inject constructor(val project: Project) : Plugin<P
             MPSRunnerConfig(
                 mainClassName = "org.modelix.metamodel.export.CommandlineExporter",
                 mainMethodName = if (settings.includedModules.isNotEmpty()) "exportBoth" else "exportLanguages",
-                classPathElements = exporterDependencies.resolvedConfiguration.files.toList(),
+                classPathElements = exporterDependencies.incoming.files.toList(),
                 mpsHome = getMpsHome(),
                 additionalModuleDependencies = listOf(
                     "c72da2b9-7cce-4447-8389-f407dc1158b7(jetbrains.mps.lang.structure)",

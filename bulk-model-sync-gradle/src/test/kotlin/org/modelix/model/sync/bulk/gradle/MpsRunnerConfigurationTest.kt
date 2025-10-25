@@ -138,7 +138,7 @@ class MpsRunnerConfigurationTest {
             "-Dmodelix.mps.model.sync.bulk.output.modules.prefixes.excluded=${excludedModulePrefixes.joinToString(",")}",
         )
 
-        val config = buildMpsRunConfigurationForLocalSources(syncDirection, classPathElements, jsonDir)
+        val config = buildMpsRunConfigurationForLocalSources(syncDirection, classPathElements.toSet(), jsonDir)
 
         config.jvmArgs shouldContainAll expectedJvmArgs
     }

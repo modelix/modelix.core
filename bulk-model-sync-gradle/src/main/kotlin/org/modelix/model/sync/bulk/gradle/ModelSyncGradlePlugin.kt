@@ -127,8 +127,8 @@ class ModelSyncGradlePlugin : Plugin<Project> {
         previousTask: TaskProvider<*>,
         jsonDir: File,
     ): TaskProvider<*> {
-        val resolvedDependencies = mpsDependencies.resolvedConfiguration.files
-        val config = buildMpsRunConfigurationForLocalSources(syncDirection, resolvedDependencies, jsonDir)
+        val resolvedDependencies = mpsDependencies.incoming.files
+        val config = buildMpsRunConfigurationForLocalSources(syncDirection, resolvedDependencies.toSet(), jsonDir)
         return mpsBuildPlugin.createRunMPSTask("${syncDirection.name}ExportFromMps", config, arrayOf(previousTask)).also {
             it.configure { task ->
                 task.outputs.dir(jsonDir)
@@ -172,8 +172,8 @@ class ModelSyncGradlePlugin : Plugin<Project> {
         previousTask: TaskProvider<*>,
         jsonDir: File,
     ) {
-        val resolvedDependencies = mpsDependencies.resolvedConfiguration.files
-        val config = buildMpsRunConfigurationForLocalTarget(syncDirection, resolvedDependencies, jsonDir)
+        val resolvedDependencies = mpsDependencies.incoming.files
+        val config = buildMpsRunConfigurationForLocalTarget(syncDirection, resolvedDependencies.toSet(), jsonDir)
         val importName = "${syncDirection.name}ImportIntoMps"
         val importIntoMps = mpsBuildPlugin.createRunMPSTask(importName, config, arrayOf(previousTask)).also {
             it.configure { task ->

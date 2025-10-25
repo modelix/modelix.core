@@ -8,7 +8,6 @@ import org.jetbrains.mps.openapi.model.SNodeReference
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
-import org.jetbrains.mps.openapi.project.Project
 import org.modelix.model.api.INodeReference
 import org.modelix.mps.multiplatform.model.MPSModelReference
 import org.modelix.mps.multiplatform.model.MPSModuleReference
@@ -132,7 +131,7 @@ data class MPSProjectReference(val projectName: String) : INodeReference() {
         }
     }
 
-    constructor(project: Project) : this(project.readName())
+    constructor(project: IMPSProject) : this(project.getName())
 
     override fun serialize(): String {
         return "$PREFIX:$projectName"

@@ -145,7 +145,7 @@ abstract class MPSGenericNodeAdapter<E> : IWritableNode, ISyncTargetNode {
 
     interface IReferenceAccessor<in E> {
         fun read(element: E): IWritableNode?
-        fun readRef(element: E): INodeReference? = read(element)?.getNodeReference()
+        fun readRef(element: E): INodeReference?
         fun write(element: E, value: IWritableNode?)
         fun write(element: E, value: INodeReference?)
     }

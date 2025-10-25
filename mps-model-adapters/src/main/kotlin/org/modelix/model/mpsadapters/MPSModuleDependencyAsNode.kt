@@ -2,6 +2,7 @@ package org.modelix.model.mpsadapters
 
 import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.structure.modules.Dependency
+import jetbrains.mps.project.structure.modules.ModuleReference
 import org.jetbrains.mps.openapi.module.SDependencyScope
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleReference
@@ -50,7 +51,11 @@ data class MPSModuleDependencyAsNode(
                 }
 
                 override fun write(element: MPSModuleDependencyAsNode, value: String?) {
-                    throw UnsupportedOperationException("read only")
+                    val module = element.owner as AbstractModule
+                    val descriptor = module.moduleDescriptor!!
+                    descriptor.dependencies
+                        .filter { it.moduleRef.moduleId == element.moduleReference.moduleId }
+                        .forEach { it.moduleRef = ModuleReference(value, it.moduleRef.moduleId) }
                 }
             },
             BuiltinLanguages.MPSRepositoryConcepts.ModuleDependency.reexport.toReference() to object : IPropertyAccessor<MPSModuleDependencyAsNode> {

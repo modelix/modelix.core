@@ -31,10 +31,16 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
     companion object {
         private val propertyAccessors = listOf<Pair<IPropertyReference, IPropertyAccessor<SModel>>>(
             BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference() to object : IPropertyAccessor<SModel> {
-                override fun read(element: SModel): String? = element.name.value
+                override fun read(element: SModel): String? {
+                    return element.name.longName
+                }
                 override fun write(element: SModel, value: String?) {
                     require(value != null) { "Model name cannot be null" }
-                    element.rename(value)
+                    if (value.contains('@')) {
+                        element.rename(value)
+                    } else {
+                        element.rename(SModelName(value, element.name.stereotype).value)
+                    }
                 }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Model.id.toReference() to object : IPropertyAccessor<SModel> {
@@ -44,7 +50,7 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
                 }
             },
             BuiltinLanguages.MPSRepositoryConcepts.Model.stereotype.toReference() to object : IPropertyAccessor<SModel> {
-                override fun read(element: SModel): String? = element.name.stereotype
+                override fun read(element: SModel): String? = element.name.stereotype.takeIf { it.isNotEmpty() }
                 override fun write(element: SModel, value: String?) {
                     val oldName = element.name
                     element.rename(SModelName(oldName.longName, value).value)

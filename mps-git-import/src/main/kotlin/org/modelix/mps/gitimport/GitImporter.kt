@@ -6,9 +6,9 @@ import jetbrains.mps.library.ModulesMiner
 import jetbrains.mps.project.MPSExtentions
 import jetbrains.mps.project.io.DescriptorIO
 import jetbrains.mps.project.io.DescriptorIOFacade
+import jetbrains.mps.project.structure.modules.LanguageDescriptor
 import jetbrains.mps.project.structure.modules.ModuleDescriptor
 import jetbrains.mps.smodel.GeneralModuleFactory
-import jetbrains.mps.util.JDOMUtil
 import jetbrains.mps.vfs.IFile
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.toKotlinInstant
@@ -36,7 +36,8 @@ import org.modelix.model.sync.bulk.IdentityPreservingNodeAssociation
 import org.modelix.model.sync.bulk.ModelSynchronizer
 import org.modelix.model.sync.bulk.UnfilteredModelMask
 import org.modelix.mps.api.ModelixMpsApi
-import org.modelix.mps.multiplatform.model.MPSModelReference
+import org.modelix.mps.gitimport.fs.GitFS
+import org.modelix.mps.gitimport.fs.GitObjectAsVirtualFile
 import java.io.File
 import kotlin.system.exitProcess
 
@@ -198,21 +199,23 @@ class GitImporter(
         val mutableTree = VersionedModelTree(baseModelixVersion, DummyIdGenerator<INodeReference>())
         mutableTree.runWrite {
             val targetRoot = mutableTree.getRootNode()
-            ModelSynchronizer(
-                filter = syncFilter,
-                sourceRoot = sourceRoot,
-                targetRoot = targetRoot,
-                nodeAssociation = IdentityPreservingNodeAssociation(
-                    targetRoot.getModel(),
-                    mapOf(sourceRoot.getNodeReference() to targetRoot.getNodeReference()),
-                ),
-                sourceMask = UnfilteredModelMask(),
-                targetMask = UnfilteredModelMask(),
-                onException = {
-                    it.printStackTrace()
-                    exitProcess(1)
-                },
-            ).synchronize()
+            GitSyncUtils.runWithProjects(rootDir, mpsRepo) {
+                ModelSynchronizer(
+                    filter = syncFilter,
+                    sourceRoot = sourceRoot,
+                    targetRoot = targetRoot,
+                    nodeAssociation = IdentityPreservingNodeAssociation(
+                        targetRoot.getModel(),
+                        mapOf(sourceRoot.getNodeReference() to targetRoot.getNodeReference()),
+                    ),
+                    sourceMask = UnfilteredModelMask(),
+                    targetMask = UnfilteredModelMask(),
+                    onException = {
+                        it.printStackTrace()
+                        exitProcess(1)
+                    },
+                ).synchronize()
+            }
         }
 
         val (ops, newTree) = mutableTree.getPendingChanges()
@@ -259,29 +262,35 @@ class GitImporter(
             for (file in changedFiles) {
                 when (file.extension) {
                     MPSExtentions.SOLUTION, MPSExtentions.LANGUAGE, MPSExtentions.GENERATOR, MPSExtentions.DEVKIT -> {
-                        file.readModuleDescriptor()?.let { descriptor ->
+                        file.readModuleDescriptor().let { descriptor ->
                             invalidations.invalidate(listOf(invalidations.root))
-                            invalidations.invalidate(listOf(invalidations.root, descriptor.moduleReference.toModelix()))
+                            for (moduleRef in descriptor.getAllModuleReferences()) {
+                                invalidations.invalidate(listOf(invalidations.root, moduleRef), includingDescendants = true)
+                            }
                         }
                     }
-                    MPSExtentions.MODEL, MPSExtentions.MODEL_ROOT -> {
-                        val moduleRef = file.findModuleFile()?.readModuleDescriptor()?.moduleReference?.toModelix()
-                        val modelRef = file.openInputStream().bufferedReader().lineSequence().mapNotNull {
-                            JDOMUtil.loadDocument(file.openInputStream())
-                                .rootElement
-                                .getAttribute("ref")?.value
-                                ?.let { MPSModelReference.parseSModelReference(it) }
-                        }.firstOrNull()
-                        if (modelRef != null) {
-                            invalidations.invalidate(
-                                listOfNotNull(
-                                    invalidations.root,
-                                    moduleRef,
-                                    modelRef,
-                                ),
-                                includingDescendants = true,
-                            )
+                    MPSExtentions.MODEL, MPSExtentions.MODEL_BINARY, MPSExtentions.MODEL_ROOT -> {
+                        val moduleDescriptor = file.findModuleFile()?.readModuleDescriptor()
+                        for (moduleRef in moduleDescriptor.getAllModuleReferences()) {
+                            invalidations.invalidate(listOfNotNull(invalidations.root, moduleRef), includingDescendants = true)
                         }
+
+//                        val modelRef = file.openInputStream().bufferedReader().lineSequence().mapNotNull {
+//                            JDOMUtil.loadDocument(file.openInputStream())
+//                                .rootElement
+//                                .getAttribute("ref")?.value
+//                                ?.let { MPSModelReference.parseSModelReference(it) }
+//                        }.firstOrNull()
+//                        if (modelRef != null) {
+//                            invalidations.invalidate(
+//                                listOfNotNull(
+//                                    invalidations.root,
+//                                    moduleRef,
+//                                    modelRef,
+//                                ),
+//                                includingDescendants = true,
+//                            )
+//                        }
                     }
                 }
             }
@@ -325,6 +334,11 @@ private fun IFile.readModuleDescriptor(): ModuleDescriptor? {
     }
 }
 
+private fun ModuleDescriptor?.getAllModuleReferences(): List<INodeReference> {
+    return listOfNotNull(this?.moduleReference?.toModelix()) +
+        (this as? LanguageDescriptor)?.generators.orEmpty().mapNotNull { it.moduleReference?.toModelix() }
+}
+
 private val moduleDescriptorExtensions = setOf(
     MPSExtentions.SOLUTION,
     MPSExtentions.LANGUAGE,
@@ -335,7 +349,7 @@ private val moduleDescriptorExtensions = setOf(
 val IVersion.gitCommit: String? get() = getAttributes()["git-commit"]
 fun VersionBuilder.gitCommit(id: String) = attribute("git-commit", id)
 
-private class VersionIndex(rootVersion: IVersion) {
+class VersionIndex(rootVersion: IVersion) {
     private val historyIterator = rootVersion.historyAsSequence().iterator()
     private val indexedVersions = HashMap<String, ObjectHash>()
     private var initialVersion: IVersion? = null

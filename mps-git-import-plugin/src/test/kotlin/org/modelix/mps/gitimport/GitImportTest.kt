@@ -95,7 +95,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -111,6 +111,7 @@ class GitImportTest : MPSTestBase() {
                   my.solution.model_with_file_per_root_persistence
                     MyClass
                       f
+                test.org.modelix.git.import
             """.trimIndent(),
         )
     }
@@ -126,7 +127,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -142,6 +143,7 @@ class GitImportTest : MPSTestBase() {
                   my.solution.model_with_file_per_root_persistence
                     MyClass
                       f
+                test.org.modelix.git.import
             """.trimIndent(),
         )
 
@@ -156,7 +158,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -176,6 +178,7 @@ class GitImportTest : MPSTestBase() {
                       m3
                     MyClass
                       f
+                test.org.modelix.git.import
             """.trimIndent(),
         )
 
@@ -190,7 +193,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -200,6 +203,8 @@ class GitImportTest : MPSTestBase() {
                   my.language.sandbox
                 my.solution
                   my.solution.model_with_binary_persistence
+                    AnnotherBinaryRoot
+                      m
                     MyBinaryClass
                       plus
                         a
@@ -210,6 +215,7 @@ class GitImportTest : MPSTestBase() {
                       m3
                     MyClass
                       f
+                test.org.modelix.git.import
             """.trimIndent(),
         )
 
@@ -224,7 +230,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -234,6 +240,8 @@ class GitImportTest : MPSTestBase() {
                   my.language.sandbox
                 my.solution
                   my.solution.model_with_binary_persistence
+                    AnnotherBinaryRoot
+                      m
                     MyBinaryClass
                       plus
                         a
@@ -245,6 +253,7 @@ class GitImportTest : MPSTestBase() {
                     MyClass
                       f
                   my.solution.model_with_regular_xml_persistence
+                test.org.modelix.git.import
             """.trimIndent(),
         )
 
@@ -258,7 +267,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -268,9 +277,12 @@ class GitImportTest : MPSTestBase() {
                   my.language.sandbox
                 my.solution
                   my.solution.model_with_binary_persistence
-                    MyBinaryClass
+                    AnnotherBinaryRoot
+                      m
+                    ModifiedRootInBinaryPersistence
                       plus
                         a
+                      changeBinaryPersistence
                   my.solution.model_with_file_per_root_persistence
                     MyRenamedClassInFilePerRootPersistence
                       f
@@ -283,6 +295,7 @@ class GitImportTest : MPSTestBase() {
                     NewRootNodeOnFeatureBranchB
                       abc
                       def
+                test.org.modelix.git.import
             """.trimIndent(),
         )
     }
@@ -298,7 +311,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -318,6 +331,7 @@ class GitImportTest : MPSTestBase() {
                       m3
                     MyClass
                       f
+                test.org.modelix.git.import
             """.trimIndent(),
         )
     }
@@ -333,7 +347,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -343,6 +357,8 @@ class GitImportTest : MPSTestBase() {
                   my.language.sandbox
                 my.solution
                   my.solution.model_with_binary_persistence
+                    AnnotherBinaryRoot
+                      m
                     MyBinaryClass
                       plus
                         a
@@ -353,6 +369,7 @@ class GitImportTest : MPSTestBase() {
                       m3
                     MyClass
                       f
+                test.org.modelix.git.import
             """.trimIndent(),
         )
     }
@@ -367,7 +384,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -377,9 +394,12 @@ class GitImportTest : MPSTestBase() {
                   my.language.sandbox
                 my.solution
                   my.solution.model_with_binary_persistence
-                    MyBinaryClass
+                    AnnotherBinaryRoot
+                      m
+                    ModifiedRootInBinaryPersistence
                       plus
                         a
+                      changeBinaryPersistence
                   my.solution.model_with_file_per_root_persistence
                     MyRenamedClassInFilePerRootPersistence
                       f
@@ -392,6 +412,7 @@ class GitImportTest : MPSTestBase() {
                     NewRootNodeOnFeatureBranchB
                       abc
                       def
+                test.org.modelix.git.import
             """.trimIndent(),
         )
     }
@@ -407,7 +428,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -417,9 +438,12 @@ class GitImportTest : MPSTestBase() {
                   my.language.sandbox
                 my.solution
                   my.solution.model_with_binary_persistence
+                    AnnotherBinaryRoot
+                      m
                     MyBinaryClass
                       plus
                         a
+                      changeBinaryPersistence
                   my.solution.model_with_file_per_root_persistence
                     AnotherRootNode
                       m1
@@ -429,6 +453,7 @@ class GitImportTest : MPSTestBase() {
                       f
                       modifiedRootNodeOnMainBranch
                   my.solution.model_with_regular_xml_persistence
+                test.org.modelix.git.import
             """.trimIndent(),
         )
     }
@@ -444,7 +469,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -454,6 +479,8 @@ class GitImportTest : MPSTestBase() {
                   my.language.sandbox
                 my.solution
                   my.solution.model_with_binary_persistence
+                    AnnotherBinaryRoot
+                      m
                     MyBinaryClass
                       plus
                         a
@@ -465,6 +492,7 @@ class GitImportTest : MPSTestBase() {
                     MyClass
                       f
                   my.solution.model_with_regular_xml_persistence
+                test.org.modelix.git.import
             """.trimIndent(),
         )
     }
@@ -480,7 +508,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -490,9 +518,12 @@ class GitImportTest : MPSTestBase() {
                   my.language.sandbox
                 my.solution
                   my.solution.model_with_binary_persistence
+                    AnnotherBinaryRoot
+                      m
                     MyBinaryClass
                       plus
                         a
+                      changeBinaryPersistence
                   my.solution.model_with_file_per_root_persistence
                     AnotherRootNode
                       m1
@@ -501,6 +532,7 @@ class GitImportTest : MPSTestBase() {
                     MyClass
                       f
                       modifiedRootNodeOnMainBranch
+                test.org.modelix.git.import
             """.trimIndent(),
         )
     }
@@ -516,7 +548,7 @@ class GitImportTest : MPSTestBase() {
                   my.language.constraints
                   my.language.editor
                   my.language.generator
-                    my.language.generator.templates@generator
+                    my.language.generator.templates
                       main
                   my.language.structure
                   my.language.typesystem
@@ -526,9 +558,12 @@ class GitImportTest : MPSTestBase() {
                   my.language.sandbox
                 my.solution
                   my.solution.model_with_binary_persistence
-                    MyBinaryClass
+                    AnnotherBinaryRoot
+                      m
+                    ModifiedRootInBinaryPersistence
                       plus
                         a
+                      changeBinaryPersistence
                   my.solution.model_with_file_per_root_persistence
                     MyRenamedClassInFilePerRootPersistence
                       f
@@ -536,6 +571,7 @@ class GitImportTest : MPSTestBase() {
                     NewRootNodeInFilePerRootPersistence
                   my.solution.model_with_regular_xml_persistence
                     AddedRootToRegularPersistence
+                test.org.modelix.git.import
             """.trimIndent(),
         )
     }

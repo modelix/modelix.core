@@ -3,7 +3,6 @@ package org.modelix.model.mpsadapters
 import jetbrains.mps.persistence.MementoImpl
 import jetbrains.mps.project.AbstractModule
 import jetbrains.mps.project.DevKit
-import jetbrains.mps.project.MPSProject
 import jetbrains.mps.project.ModuleId
 import jetbrains.mps.project.Solution
 import jetbrains.mps.project.facets.JavaModuleFacet
@@ -68,7 +67,12 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
         private val propertyAccessors = listOf<Pair<IPropertyReference, IPropertyAccessor<SModule>>>(
             BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference() to object : IPropertyAccessor<SModule> {
                 override fun read(element: SModule): String? = element.moduleName
-                override fun write(element: SModule, value: String?) = TODO()
+                override fun write(element: SModule, value: String?) {
+                    element as AbstractModule
+                    val descriptor = element.moduleDescriptor!!
+                    descriptor.namespace = value
+                    element.setModuleDescriptor(descriptor)
+                }
             },
             BuiltinLanguages.jetbrains_mps_lang_core.BaseConcept.virtualPackage.toReference() to object : IPropertyAccessor<SModule> {
                 override fun read(element: SModule): String? {
@@ -396,7 +400,7 @@ data class MPSLanguageAsNode(override val module: Language) : MPSModuleAsNode<La
                     index: Int,
                     sourceNode: SpecWithResolvedConcept,
                 ): IWritableNode {
-                    return GeneratorProducer(ModelixMpsApi.getMPSProjects().first() as MPSProject).create(
+                    return GeneratorProducer(MPSProjectAsNode.getContextProject()).create(
                         element,
                         sourceNode.getNode().getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())!!,
                         sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())!!.let { ModuleId.fromString(it) },

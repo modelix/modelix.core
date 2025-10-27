@@ -18,7 +18,6 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - "2020.3"
           - "2021.1"
           - "2021.2"
           - "2021.3"

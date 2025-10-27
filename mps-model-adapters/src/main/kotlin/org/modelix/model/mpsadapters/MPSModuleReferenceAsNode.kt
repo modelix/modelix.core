@@ -2,7 +2,6 @@ package org.modelix.model.mpsadapters
 
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleReference
-import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ChildLinkReferenceByUID
 import org.modelix.model.api.IChildLinkReference
@@ -23,10 +22,6 @@ data class MPSModuleReferenceAsNode(
 ) : MPSGenericNodeAdapter<MPSModuleReferenceAsNode>() {
     override fun getElement(): MPSModuleReferenceAsNode {
         return this
-    }
-
-    override fun getRepository(): SRepository? {
-        return parent.getRepository()
     }
 
     override fun getPropertyAccessors(): List<Pair<IPropertyReference, IPropertyAccessor<MPSModuleReferenceAsNode>>> {

@@ -20,7 +20,6 @@ import org.jetbrains.mps.openapi.module.FacetsFacade
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleReference
-import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLinkReference
@@ -295,10 +294,6 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
         return module
     }
 
-    override fun getRepository(): SRepository? {
-        return module.repository
-    }
-
     override fun getPropertyAccessors(): List<Pair<IPropertyReference, IPropertyAccessor<E>>> = propertyAccessors
 
     override fun getReferenceAccessors(): List<Pair<IReferenceLinkReference, IReferenceAccessor<E>>> = referenceAccessors
@@ -306,7 +301,7 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
     override fun getChildAccessors(): List<Pair<IChildLinkReference, IChildAccessor<E>>> = childAccessors
 
     override fun getParent(): IWritableNode? {
-        return module.repository?.asWritableNode()
+        return ModelixMpsApi.getRepository().asWritableNode()
     }
 
     override fun getNodeReference(): INodeReference {

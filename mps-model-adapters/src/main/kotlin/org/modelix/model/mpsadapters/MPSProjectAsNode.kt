@@ -1,7 +1,6 @@
 package org.modelix.model.mpsadapters
 
 import jetbrains.mps.project.ModuleId
-import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.ContextValue
 import org.modelix.model.api.BuiltinLanguages
@@ -117,10 +116,6 @@ data class MPSProjectAsNode(val project: IMPSProject) : MPSGenericNodeAdapter<IM
 
     override fun getElement(): IMPSProject {
         return project
-    }
-
-    override fun getRepository(): SRepository? {
-        return project.getRepository()
     }
 
     override fun getPropertyAccessors(): List<Pair<IPropertyReference, IPropertyAccessor<IMPSProject>>> {

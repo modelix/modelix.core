@@ -5,7 +5,6 @@ import jetbrains.mps.project.AbstractModule
 import org.jetbrains.mps.openapi.language.SLanguage
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.SModule
-import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -86,8 +85,6 @@ data class MPSSingleLanguageDependencyAsNode(
     }
 
     override fun getElement(): MPSSingleLanguageDependencyAsNode = this
-
-    override fun getRepository(): SRepository? = null
 
     override fun getPropertyAccessors() = propertyAccessors
 

@@ -3,7 +3,6 @@ package org.modelix.model.mpsadapters
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleReference
-import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -46,8 +45,6 @@ data class MPSDevKitDependencyAsNode(
     }
 
     override fun getElement(): MPSDevKitDependencyAsNode = this
-
-    override fun getRepository(): SRepository? = moduleImporter?.repository ?: modelImporter?.repository
 
     override fun getPropertyAccessors(): List<Pair<IPropertyReference, IPropertyAccessor<MPSDevKitDependencyAsNode>>> {
         return propertyAccessors

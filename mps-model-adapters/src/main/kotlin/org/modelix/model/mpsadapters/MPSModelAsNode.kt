@@ -13,7 +13,6 @@ import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.model.SModelName
 import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.module.SModuleId
-import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLinkReference
@@ -196,10 +195,6 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
                 }
             },
         )
-    }
-
-    override fun getRepository(): SRepository? {
-        return model.module?.repository
     }
 
     override fun getElement(): SModel {

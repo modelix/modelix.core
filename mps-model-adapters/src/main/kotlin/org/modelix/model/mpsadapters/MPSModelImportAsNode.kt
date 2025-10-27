@@ -2,7 +2,6 @@ package org.modelix.model.mpsadapters
 
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
-import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -41,10 +40,6 @@ data class MPSModelImportAsNode(val importedModel: SModelReference, val importin
 
     override fun getElement(): MPSModelImportAsNode {
         return this
-    }
-
-    override fun getRepository(): SRepository? {
-        return importingModel.repository
     }
 
     override fun getPropertyAccessors(): List<Pair<IPropertyReference, IPropertyAccessor<MPSModelImportAsNode>>> {

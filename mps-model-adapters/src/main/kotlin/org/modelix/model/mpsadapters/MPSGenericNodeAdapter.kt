@@ -1,10 +1,8 @@
 package org.modelix.model.mpsadapters
 
-import jetbrains.mps.smodel.MPSModuleRepository
 import org.jetbrains.mps.openapi.language.SConcept
 import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.model.SNodeId
-import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IMutableModel
@@ -16,12 +14,12 @@ import org.modelix.model.api.ISyncTargetNode
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.NewNodeSpec
 import org.modelix.model.api.upcast
+import org.modelix.mps.api.ModelixMpsApi
 import org.modelix.mps.multiplatform.model.MPSNodeReference
 
 abstract class MPSGenericNodeAdapter<E> : IWritableNode, ISyncTargetNode {
 
     protected abstract fun getElement(): E
-    abstract fun getRepository(): SRepository?
     protected abstract fun getPropertyAccessors(): List<Pair<IPropertyReference, IPropertyAccessor<E>>>
     protected abstract fun getReferenceAccessors(): List<Pair<IReferenceLinkReference, IReferenceAccessor<E>>>
     protected abstract fun getChildAccessors(): List<Pair<IChildLinkReference, IChildAccessor<E>>>
@@ -35,7 +33,7 @@ abstract class MPSGenericNodeAdapter<E> : IWritableNode, ISyncTargetNode {
     protected fun getChildAccessor(role: IChildLinkReference) = requireNotNull(tryGetChildAccessor(role)) { "Unknown child link [role = $role, node = $this]" }
 
     override fun getModel(): IMutableModel {
-        return MPSArea(getRepository() ?: MPSModuleRepository.getInstance()).asModel()
+        return MPSArea(ModelixMpsApi.getRepository()).asModel()
     }
 
     override fun getAllChildren(): List<IWritableNode> {
@@ -92,7 +90,7 @@ abstract class MPSGenericNodeAdapter<E> : IWritableNode, ISyncTargetNode {
 
     private fun doSyncNewChildren(role: IChildLinkReference, index: Int, sourceNodes: List<Pair<ConceptReference, NewNodeSpec?>>): List<IWritableNode> {
         val accessor = getChildAccessor(role)
-        val repo = getRepository() ?: MPSModuleRepository.getInstance()
+        val repo = ModelixMpsApi.getRepository()
         val resolvedConcepts = sourceNodes.map { it.first }.distinct().associateWith { concept ->
             repo.resolveConcept(concept)
         }

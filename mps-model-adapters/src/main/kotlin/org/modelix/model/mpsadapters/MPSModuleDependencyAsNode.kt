@@ -6,7 +6,6 @@ import jetbrains.mps.project.structure.modules.ModuleReference
 import org.jetbrains.mps.openapi.module.SDependencyScope
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleReference
-import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -148,10 +147,6 @@ data class MPSModuleDependencyAsNode(
 
     override fun getElement(): MPSModuleDependencyAsNode {
         return this
-    }
-
-    override fun getRepository(): SRepository? {
-        return null
     }
 
     override fun getPropertyAccessors(): List<Pair<IPropertyReference, IPropertyAccessor<MPSModuleDependencyAsNode>>> {

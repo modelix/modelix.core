@@ -1,7 +1,6 @@
 package org.modelix.model.mpsadapters
 
 import jetbrains.mps.smodel.DynamicReference
-import jetbrains.mps.smodel.MPSModuleRepository
 import jetbrains.mps.smodel.SNodeId
 import jetbrains.mps.smodel.SNodeUtil
 import jetbrains.mps.smodel.adapter.MetaAdapterByDeclaration
@@ -43,7 +42,7 @@ data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
     }
 
     override fun getModel(): IMutableModel {
-        return MPSArea(node.model?.repository ?: MPSModuleRepository.getInstance()).asModel()
+        return MPSArea(node.model?.repository ?: ModelixMpsApi.getRepository()).asModel()
     }
 
     override fun getAllChildren(): List<IWritableNode> {

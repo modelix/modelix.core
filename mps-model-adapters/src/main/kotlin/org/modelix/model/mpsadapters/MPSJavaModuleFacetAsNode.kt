@@ -4,7 +4,6 @@ import jetbrains.mps.project.facets.JavaModuleFacet
 import jetbrains.mps.smodel.Generator
 import jetbrains.mps.util.MacroHelper
 import jetbrains.mps.util.MacrosFactory
-import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.Memento
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLinkReference
@@ -57,8 +56,6 @@ data class MPSJavaModuleFacetAsNode(val facet: JavaModuleFacet) : MPSGenericNode
     }
 
     override fun getElement(): JavaModuleFacet = facet
-
-    override fun getRepository(): SRepository? = null
 
     override fun getPropertyAccessors() = propertyAccessors
 

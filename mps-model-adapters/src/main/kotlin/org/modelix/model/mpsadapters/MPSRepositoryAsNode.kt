@@ -98,8 +98,6 @@ data class MPSRepositoryAsNode(@get:JvmName("getRepository_") val repository: SR
 
     override fun getElement(): SRepository = repository
 
-    override fun getRepository(): SRepository = repository
-
     override fun getPropertyAccessors() = propertyAccessors
 
     override fun getReferenceAccessors() = referenceAccessors

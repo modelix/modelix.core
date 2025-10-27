@@ -1,7 +1,6 @@
 package org.modelix.model.mpsadapters
 
 import org.jetbrains.mps.openapi.module.SModule
-import org.jetbrains.mps.openapi.module.SRepository
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -46,10 +45,6 @@ data class MPSProjectModuleAsNode(val project: IMPSProject, val module: SModule)
 
     override fun getElement(): MPSProjectModuleAsNode {
         return this
-    }
-
-    override fun getRepository(): SRepository? {
-        return project.getRepository()
     }
 
     override fun getPropertyAccessors(): List<Pair<IPropertyReference, IPropertyAccessor<MPSProjectModuleAsNode>>> {

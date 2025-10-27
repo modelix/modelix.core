@@ -126,7 +126,9 @@ internal fun SModule.delete() {
         }
     }
 
-    MPSProjectAsNode.getContextProjects().first { it.getModules().andGenerators().contains(this) }.deleteModule(this)
+    val projects = MPSProjectAsNode.getContextProjects()
+    val project = projects.lastOrNull() { it.getModules().andGenerators().contains(this) } ?: projects.last()
+    project.deleteModule(this)
 }
 
 private fun SModule.saveModuleAndModels() {

@@ -9,6 +9,7 @@ import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.model.api.INodeReference
+import org.modelix.model.api.NodeReference
 import org.modelix.mps.multiplatform.model.MPSModelReference
 import org.modelix.mps.multiplatform.model.MPSModuleReference
 import org.modelix.mps.multiplatform.model.MPSNodeReference
@@ -142,7 +143,22 @@ data class MPSProjectModuleReference(val moduleRef: SModuleReference, val projec
 
     companion object {
         internal const val PREFIX = "mps-project-module"
+        internal const val PREFIX_COLON = "$PREFIX:"
         internal const val SEPARATOR = "#IN#"
+
+        fun tryConvert(ref: INodeReference): MPSProjectModuleReference? {
+            if (ref is MPSProjectModuleReference) return ref
+            val serialized = ref.serialize()
+            if (!serialized.startsWith(PREFIX_COLON)) return null
+            val moduleRef = serialized
+                .substringAfter(PREFIX_COLON)
+                .substringBefore(SEPARATOR)
+                .let { MPSReferenceParser.parseSModuleReference(it) }
+            val projectRef = NodeReference(serialized.substringAfter(SEPARATOR))
+                .let { MPSProjectReference.tryConvert(it) }
+                .let { requireNotNull(it) { "Invalid project reference: $it" } }
+            return MPSProjectModuleReference(moduleRef, projectRef)
+        }
     }
 
     override fun serialize(): String {

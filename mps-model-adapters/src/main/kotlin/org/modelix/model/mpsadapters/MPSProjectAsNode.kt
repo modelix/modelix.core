@@ -11,6 +11,7 @@ import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IWritableNode
 import org.modelix.mps.api.ModelixMpsApi
+import org.modelix.mps.multiplatform.model.MPSModuleReference
 
 data class MPSProjectAsNode(val project: IMPSProject) : MPSGenericNodeAdapter<IMPSProject>() {
 
@@ -74,13 +75,18 @@ data class MPSProjectAsNode(val project: IMPSProject) : MPSGenericNodeAdapter<IM
                 }
 
                 override fun addNew(element: IMPSProject, index: Int, sourceNode: SpecWithResolvedConcept): IWritableNode {
-                    val targetModule = requireNotNull(sourceNode.getNode().getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference())) {
+                    val targetModuleRef = requireNotNull(sourceNode.getNode().getReferenceTargetRef(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference())) {
                         "Reference to module isn't set"
                     }
-                    val targetName = targetModule.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())
-                    val targetId = requireNotNull(targetModule.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())) {
-                        "Module ID isn't set: $targetModule"
-                    }.let { ModuleId.fromString(it) }
+                    val mpsTargetModuleRef = requireNotNull(MPSModuleReference.tryConvert(targetModuleRef)) {
+                        "Not an MPS module reference: $targetModuleRef"
+                    }
+                    val targetModule = sourceNode.getNode().getReferenceTarget(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference())
+                    val targetName = targetModule?.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())
+                    val targetId = (
+                        targetModule?.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())
+                            ?: mpsTargetModuleRef.moduleId
+                        ).let { ModuleId.fromString(it) }
                     val ref = PersistenceFacade.getInstance().createModuleReference(targetId, targetName)
                     val resolvedModule = checkNotNull(ref.resolve(element.getRepository())) { "Module not found: $ref" }
                     element.addModule(resolvedModule)

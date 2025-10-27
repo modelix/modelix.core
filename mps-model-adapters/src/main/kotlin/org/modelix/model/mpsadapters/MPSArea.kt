@@ -7,6 +7,7 @@ import jetbrains.mps.smodel.ModelImports
 import org.jetbrains.mps.openapi.model.SNodeReference
 import org.jetbrains.mps.openapi.module.SRepository
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
+import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.ChildLinkReferenceByUID
 import org.modelix.model.api.IBranch
 import org.modelix.model.api.IConcept
@@ -264,48 +265,19 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
     }
 
     private fun resolveMPSProjectReference(ref: INodeReference): MPSProjectAsNode? {
-        val projectName = (MPSProjectReference.tryConvert(ref) ?: return null).projectName
-
-        val project = MPSProjectAsNode.getContextProjects().find { it.getName() == projectName }
-
-        return project?.let { MPSProjectAsNode(it) }
+        return MPSRepositoryAsNode(repository)
+            .getChildren(BuiltinLanguages.MPSRepositoryConcepts.Repository.projects.toReference())
+            .find { it.getNodeReference() == ref }
+            ?.let { it as MPSProjectAsNode }
     }
 
     private fun resolveMPSProjectModuleReference(ref: INodeReference): MPSProjectModuleAsNode? {
-        val serialized = ref.serialize()
-        val moduleRef = if (ref is MPSProjectModuleReference) {
-            ref.moduleRef
-        } else {
-            val serializedModuleRef = serialized
-                .substringAfter("${MPSProjectModuleReference.PREFIX}:")
-                .substringBefore(MPSProjectModuleReference.SEPARATOR)
-            MPSReferenceParser.parseSModuleReference(serializedModuleRef)
-        }
-
-        val projectRef = if (ref is MPSProjectModuleReference) {
-            ref.projectRef
-        } else {
-            // XXX Prefix of `projectRef` is not checked.
-            // `projectRef` might actually be a ref to anything.
-            // This might trigger unexpected resolution results and undefined behavior.
-            // Similar missing checks exist for other references in `MPSArea`.
-            // See https://issues.modelix.org/issue/MODELIX-923
-            val projectRef = serialized.substringAfter(MPSProjectModuleReference.SEPARATOR)
-            NodeReference(projectRef)
-        }
-
-        val resolvedNodeForProject = resolveNode(projectRef)?.asWritableNode() ?: return null
-        check(resolvedNodeForProject is MPSProjectAsNode) {
-            "Resolved node `$resolvedNodeForProject` does not represent a project."
-        }
-        val resolvedProject = resolvedNodeForProject.project
-
-        return moduleRef.resolve(repository)?.let {
-            MPSProjectModuleAsNode(
-                project = resolvedProject,
-                module = it,
-            )
-        }
+        val ref = MPSProjectModuleReference.tryConvert(ref) ?: return null
+        val project = resolveNode(ref.projectRef)?.asWritableNode() ?: return null
+        return project
+            .getChildren(BuiltinLanguages.MPSRepositoryConcepts.Project.projectModules.toReference())
+            .find { it.getNodeReference() == ref }
+            ?.let { it as MPSProjectModuleAsNode }
     }
 
     private fun resolveMPSSingleLanguageDependencyReference(ref: INodeReference): MPSSingleLanguageDependencyAsNode? {

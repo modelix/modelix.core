@@ -31,6 +31,7 @@ import org.modelix.model.api.NewNodeSpec
 import org.modelix.model.api.NodeReference
 import org.modelix.model.api.meta.NullConcept
 import org.modelix.mps.api.ModelixMpsApi
+import org.modelix.mps.multiplatform.model.MPSNodeReference
 
 fun SNode.asReadableNode(): IReadableNode = MPSWritableNode(this)
 fun SNode.asWritableNode(): IWritableNode = MPSWritableNode(this)
@@ -212,7 +213,17 @@ data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
         role: IReferenceLinkReference,
         target: INodeReference?,
     ) {
-        setReferenceTarget(role, target?.let { checkNotNull(getModel().tryResolveNode(it)) { "Target not found: $target" } })
+        if (target == null) {
+            node.setReferenceTarget(resolve(role), null)
+        } else {
+            val resolvedTarget = getModel().tryResolveNode(target)
+            if (resolvedTarget != null) {
+                setReferenceTarget(role, resolvedTarget)
+            } else {
+                val targetRef = requireNotNull(MPSNodeReference.tryConvert(target)) { "Not an MPS node: $target" }
+                node.setReference(resolve(role), targetRef.toMPS())
+            }
+        }
     }
 
     override fun isValid(): Boolean {

@@ -16,12 +16,4 @@ class ConceptResolutionTest : MpsAdaptersTestBase("SimpleProject") {
         assertEquals("Module", moduleConcept.getShortName())
         assertContainsElements(moduleConcept.getOwnChildLinks().map { it.getSimpleName() }, "models")
     }
-
-    fun `test MPSLanguageRepository cannot resolve the Module concept`() {
-        val conceptUID = BuiltinLanguages.MPSRepositoryConcepts.Module.getReference().getUID()
-        val moduleConcept = MPSLanguageRepository(mpsProject.repository).resolveConcept(conceptUID)
-
-        // After making the repository language part of this plugin, this assertion will fail and this test can just be removed.
-        assertNull(moduleConcept)
-    }
 }

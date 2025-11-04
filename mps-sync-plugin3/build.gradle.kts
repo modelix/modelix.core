@@ -124,6 +124,8 @@ tasks {
                 moduleDependency(KnownModuleIds.JDK)
                 moduleDependency(KnownModuleIds.MPS_OpenAPI)
                 moduleDependency(KnownModuleIds.MPS_IDEA)
+                moduleDependency(KnownModuleIds.MPS_Core)
+                moduleDependency(KnownModuleIds.MPS_Platform)
             }
         }
     }

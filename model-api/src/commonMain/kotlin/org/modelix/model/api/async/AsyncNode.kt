@@ -83,6 +83,10 @@ class AsyncNode(
         }
     }
 
+    override fun getAncestors(includeSelf: Boolean): IStream.Many<IAsyncNode> {
+        return tree().getAncestors(nodeId, includeSelf).map { it.asNode() }
+    }
+
     override fun getDescendants(includeSelf: Boolean): IStream.Many<IAsyncNode> {
         return if (includeSelf) {
             IStream.of(IStream.of(this), getDescendants(false)).flatten()

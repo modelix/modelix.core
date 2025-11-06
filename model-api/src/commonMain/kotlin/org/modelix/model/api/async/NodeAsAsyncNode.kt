@@ -13,6 +13,7 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.asProperty
+import org.modelix.model.api.getAncestors
 import org.modelix.model.api.getDescendants
 import org.modelix.model.api.meta.NullConcept
 import org.modelix.model.api.toReference
@@ -76,6 +77,10 @@ open class NodeAsAsyncNode(val node: INode) : IAsyncNode {
 
     override fun getAllReferenceTargets(): IStream.Many<Pair<IReferenceLinkReference, IAsyncNode>> {
         return IStream.many(node.getAllReferenceTargets().map { it.first.toReference() to it.second.asAsyncNode() })
+    }
+
+    override fun getAncestors(includeSelf: Boolean): IStream.Many<IAsyncNode> {
+        return IStream.many(node.getAncestors(includeSelf).map { it.asAsyncNode() })
     }
 
     override fun getDescendants(includeSelf: Boolean): IStream.Many<IAsyncNode> {

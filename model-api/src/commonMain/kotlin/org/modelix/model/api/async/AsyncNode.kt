@@ -41,7 +41,7 @@ class AsyncNode(
         return tree().getConceptReference(nodeId)
     }
 
-    override fun getRoleInParent(): IStream.One<IChildLinkReference> {
+    override fun getRoleInParent(): IStream.ZeroOrOne<IChildLinkReference> {
         return tree().getRole(nodeId)
     }
 

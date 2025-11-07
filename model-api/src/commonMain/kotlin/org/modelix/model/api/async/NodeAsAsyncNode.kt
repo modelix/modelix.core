@@ -43,7 +43,7 @@ open class NodeAsAsyncNode(val node: INode) : IAsyncNode {
         return IStream.ofNotNull(node.parent?.asAsyncNode())
     }
 
-    override fun getRoleInParent(): IStream.One<IChildLinkReference> {
+    override fun getRoleInParent(): IStream.ZeroOrOne<IChildLinkReference> {
         return IStream.of(node.getContainmentLink().toReference())
     }
 

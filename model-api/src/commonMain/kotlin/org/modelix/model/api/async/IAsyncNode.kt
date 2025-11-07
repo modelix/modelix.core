@@ -18,7 +18,7 @@ interface IAsyncNode : IStreamExecutorProvider {
     fun getConcept(): IStream.One<IConcept>
     fun getConceptRef(): IStream.One<ConceptReference>
 
-    fun getRoleInParent(): IStream.One<IChildLinkReference>
+    fun getRoleInParent(): IStream.ZeroOrOne<IChildLinkReference>
     fun getParent(): IStream.ZeroOrOne<IAsyncNode>
 
     fun getPropertyValue(role: IPropertyReference): IStream.ZeroOrOne<String>

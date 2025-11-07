@@ -89,10 +89,10 @@ class AsyncNodeInMutableModel(
     private fun IStream.ZeroOrOne<INodeReference>.wrap(): IStream.ZeroOrOne<IAsyncNode> = map { it.wrap() }
 }
 
-fun IModelTree.tryResolveNode(ref: INodeReference): IAsyncNode? {
-    return AsyncNodeInMutableModel(this, ref)
+fun IModelTree.tryResolveNode(ref: INodeReference): IStream.One<IAsyncNode?> {
+    return containsNode(ref).map { if (it) AsyncNodeInMutableModel(this, ref) else null }
 }
 
-fun IModelTree.resolveNode(ref: INodeReference): IAsyncNode {
-    return tryResolveNode(ref) ?: throw NodeNotFoundException(ref, this.asReadOnlyModel())
+fun IModelTree.resolveNode(ref: INodeReference): IStream.One<IAsyncNode> {
+    return tryResolveNode(ref).map { it ?: throw NodeNotFoundException(ref, this.asReadOnlyModel()) }
 }

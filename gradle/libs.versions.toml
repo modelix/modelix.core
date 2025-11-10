@@ -109,7 +109,7 @@ modelix-build-tools-lib = { group = "org.modelix.mps", name = "build-tools-lib",
 kotlinpoet = { group = "com.squareup", name = "kotlinpoet", version = "2.2.0" }
 vavr = { group = "io.vavr", name = "vavr", version = "0.10.7" }
 apache-commons-lang = { group = "org.apache.commons", name = "commons-lang3", version = "3.19.0" }
-apache-commons-io = { group = "commons-io", name = "commons-io", version = "2.20.0" }
+apache-commons-io = { group = "commons-io", name = "commons-io", version = "2.21.0" }
 apache-commons-collections = { group = "org.apache.commons", name = "commons-collections4", version = "4.5.0" }
 trove4j = { group = "net.sf.trove4j", name = "core", version = "3.1.0" }
 

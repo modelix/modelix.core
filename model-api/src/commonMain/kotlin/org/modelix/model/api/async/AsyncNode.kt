@@ -41,7 +41,7 @@ class AsyncNode(
         return tree().getConceptReference(nodeId)
     }
 
-    override fun getRoleInParent(): IStream.One<IChildLinkReference> {
+    override fun getRoleInParent(): IStream.ZeroOrOne<IChildLinkReference> {
         return tree().getRole(nodeId)
     }
 
@@ -81,6 +81,10 @@ class AsyncNode(
         return tree().getAllReferenceTargetRefs(nodeId).mapNotNull {
             it.first to (it.second.resolveInCurrentContext() ?: return@mapNotNull null).asAsyncNode()
         }
+    }
+
+    override fun getAncestors(includeSelf: Boolean): IStream.Many<IAsyncNode> {
+        return tree().getAncestors(nodeId, includeSelf).map { it.asNode() }
     }
 
     override fun getDescendants(includeSelf: Boolean): IStream.Many<IAsyncNode> {

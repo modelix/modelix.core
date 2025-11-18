@@ -20,7 +20,7 @@ data class LegacyNodeAsWritableNode(val node: INode) : IWritableNode {
         return node.getChildren(role.toLegacy()).map { it.asWritableNode() }
     }
 
-    override fun getReferenceTarget(role: IReferenceLinkReference): IWritableNode? {
+    override fun getLocalReferenceTarget(role: IReferenceLinkReference): IWritableNode? {
         return node.getReferenceTarget(role.toLegacy())?.asWritableNode()
     }
 

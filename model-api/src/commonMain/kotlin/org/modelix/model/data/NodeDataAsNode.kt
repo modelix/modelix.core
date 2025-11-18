@@ -98,7 +98,7 @@ class NodeDataAsNode(val data: NodeData, val parent: NodeDataAsNode?) : IWritabl
         return data.properties.map { IPropertyReference.fromString(it.key) to it.value }
     }
 
-    override fun getReferenceTarget(role: IReferenceLinkReference): IWritableNode? {
+    override fun getLocalReferenceTarget(role: IReferenceLinkReference): IWritableNode? {
         return getReferenceTargetRef(role)?.let { tryResolveNode(it) }
     }
 

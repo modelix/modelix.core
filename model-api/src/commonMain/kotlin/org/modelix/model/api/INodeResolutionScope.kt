@@ -1,7 +1,6 @@
 package org.modelix.model.api
 
-import org.modelix.kotlin.utils.ContextValue
-
+@Deprecated("Use IModel.Companion")
 interface INodeResolutionScope {
 
     /**
@@ -20,12 +19,12 @@ interface INodeResolutionScope {
      * All node references inside the body are resolved against this scope. Compared to runWithAlso, the existing scopes
      * in the current context are not used, meaning they are replaced.
      */
-    fun <T> runWith(body: () -> T): T = contextScope.computeWith(this, body)
+    fun <T> runWith(body: () -> T): T = IModel.runWith(this.asModel(), body)
 
     /**
      * Does the same as runWithOnly, but with support for suspendable functions.
      */
-    suspend fun <T> runWithInCoroutine(body: suspend () -> T): T = contextScope.runInCoroutine(this, body)
+    suspend fun <T> runWithInCoroutine(body: suspend () -> T): T = IModel.runWithSuspended(this.asModel(), body)
 
     /**
      * All node references inside the body are resolved against this scope and if that fails against any other scope in
@@ -38,60 +37,41 @@ interface INodeResolutionScope {
      */
     suspend fun <T> runWithAdditionalScopeInCoroutine(body: suspend () -> T): T = runWithAdditionalScopeInCoroutine(this, body)
 
+    fun asModel(): IModel
+
     companion object {
-        internal val contextScope = ContextValue<INodeResolutionScope>()
-
-        private fun combineScopes(scopeToAdd: INodeResolutionScope): List<INodeResolutionScope> {
-            return listOf(scopeToAdd) + (getCurrentScopes() - scopeToAdd)
-        }
-
+        @Deprecated("Use IMode.runWith")
         fun <T> runWithAdditionalScope(scope: INodeResolutionScope, body: () -> T): T {
-            val newScopes = combineScopes(scope)
-            return when (newScopes.size) {
-                0 -> throw RuntimeException("Impossible case")
-                1 -> contextScope.computeWith(newScopes.single(), body)
-                else -> contextScope.computeWith(CompositeNodeResolutionScope(newScopes), body)
-            }
+            return IModel.runWith(scope.asModel(), body)
         }
 
+        @Deprecated("Use IMode.runWithSuspended")
         suspend fun <T> runWithAdditionalScopeInCoroutine(scope: INodeResolutionScope, body: suspend () -> T): T {
-            val newScopes = combineScopes(scope)
-            return when (newScopes.size) {
-                0 -> throw RuntimeException("Impossible case")
-                1 -> contextScope.runInCoroutine(newScopes.single(), body)
-                else -> contextScope.runInCoroutine(CompositeNodeResolutionScope(newScopes), body)
-            }
+            return IModel.runWithSuspended(scope.asModel(), body)
         }
 
         /**
          * Returns the current scope that INodeReferences should be resolved in.
          */
+        @Deprecated("Use IModel.CONTEXT_MODEL")
         fun getCurrentScope(): INodeResolutionScope {
-            return contextScope.getValueOrNull() ?: NullNodeResolutionScope
+            return IModel.CONTEXT_MODEL.getValueOrNull() as INodeResolutionScope? ?: NullNodeResolutionScope
         }
 
         /**
          * All the scopes that should be used for node reference resolution. The first element of the list should be
          * tried first.
          */
+        @Deprecated("Use IModel.CONTEXT_MODEL")
         fun getCurrentScopes(): List<INodeResolutionScope> {
-            return when (val current = contextScope.getValueOrNull()) {
-                null -> emptyList()
-                is CompositeNodeResolutionScope -> current.scopes
-                else -> listOf(current)
-            }
+            return IModel.getContextModels().map { it as INodeResolutionScope }
         }
 
         /**
          * Like runWithAlso, but doesn't change the resolution order if it already exists in the context.
          */
         fun <T> ensureInContext(scope: INodeResolutionScope, body: () -> T): T {
-            val current = getCurrentScopes()
-            return if (current.contains(scope)) {
-                body()
-            } else {
-                scope.runWithAdditionalScope(body)
-            }
+            return IModel.runWith(scope.asModel(), body)
         }
     }
 }
@@ -100,15 +80,8 @@ object NullNodeResolutionScope : INodeResolutionScope {
     override fun resolveNode(ref: INodeReference): INode? {
         throw IllegalStateException("INodeResolutionScope not set")
     }
-}
 
-class CompositeNodeResolutionScope(val scopes: List<INodeResolutionScope>) : INodeResolutionScope {
-    init {
-        require(scopes.all { it !is CompositeNodeResolutionScope }) {
-            "Nesting of CompositeNodeResolutionScope not allowed"
-        }
-    }
-    override fun resolveNode(ref: INodeReference): INode? {
-        return scopes.asSequence().mapNotNull { it.resolveNode(ref) }.firstOrNull()
+    override fun asModel(): IModel {
+        throw UnsupportedOperationException("Not a model")
     }
 }

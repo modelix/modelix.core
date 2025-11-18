@@ -55,5 +55,5 @@ interface IArea : INodeResolutionScope, ITransactionManager {
     fun addListener(l: IAreaListener)
     fun removeListener(l: IAreaListener)
 
-    fun asModel(): IMutableModel = AreaAsModel(this)
+    override fun asModel(): IMutableModel = AreaAsModel(this)
 }

@@ -492,7 +492,7 @@ class LionwebDataAsNode(
         return data.properties?.map { it.property.toPropertyReference() to it.value } ?: emptyList()
     }
 
-    override fun getReferenceTarget(role: IReferenceLinkReference): IWritableNode? {
+    override fun getLocalReferenceTarget(role: IReferenceLinkReference): IWritableNode? {
         return getReferenceTargetRef(role)?.let { tryResolveNode(it) }
     }
 

@@ -28,9 +28,12 @@ interface IReadableNode {
 
     /**
      * Is allowed to be null, even if getReferenceTargetRef is not null. Target nodes are only resolved if they are part
-     * of the same model. For cross model references use `getReferenceTargetRef(role).resolve()`.
+     * of the same model. For cross model references use [getReferenceTarget].
      */
-    fun getReferenceTarget(role: IReferenceLinkReference): IReadableNode?
+    fun getLocalReferenceTarget(role: IReferenceLinkReference): IReadableNode?
+    fun getReferenceTarget(role: IReferenceLinkReference): IReadableNode? {
+        return getLocalReferenceTarget(role) ?: getReferenceTargetRef(role)?.let { IModel.tryResolveNode(it) }
+    }
     fun getReferenceTargetRef(role: IReferenceLinkReference): INodeReference?
     fun getReferenceLinks(): List<IReferenceLinkReference>
     fun getAllReferenceTargets(): List<Pair<IReferenceLinkReference, IReadableNode>>
@@ -53,7 +56,11 @@ interface IWritableNode : IReadableNode {
     override fun getModel(): IMutableModel
     override fun getAllChildren(): List<IWritableNode>
     override fun getChildren(role: IChildLinkReference): List<IWritableNode>
-    override fun getReferenceTarget(role: IReferenceLinkReference): IWritableNode?
+
+    override fun getLocalReferenceTarget(role: IReferenceLinkReference): IWritableNode?
+    override fun getReferenceTarget(role: IReferenceLinkReference): IWritableNode? {
+        return getLocalReferenceTarget(role) ?: getReferenceTargetRef(role)?.let { IMutableModel.tryResolveNode(it) }
+    }
     override fun getAllReferenceTargets(): List<Pair<IReferenceLinkReference, IWritableNode>>
     override fun getParent(): IWritableNode?
 

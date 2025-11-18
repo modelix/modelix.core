@@ -50,7 +50,7 @@ class NodeInMutableModel(
         return query { it.getChildren(nodeId, role).wrap().toList() }
     }
 
-    override fun getReferenceTarget(role: IReferenceLinkReference): IWritableNode? {
+    override fun getLocalReferenceTarget(role: IReferenceLinkReference): IWritableNode? {
         return query { it.getReferenceTarget(nodeId, role).wrap().filter { it.isValid() }.orNull() }
     }
 

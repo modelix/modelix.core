@@ -63,7 +63,7 @@ data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
         }
     }
 
-    override fun getReferenceTarget(role: IReferenceLinkReference): IWritableNode? {
+    override fun getLocalReferenceTarget(role: IReferenceLinkReference): IWritableNode? {
         val mpsRole = MPSReferenceLink.tryFromReference(role)
         if (mpsRole != null) {
             DependencyTracking.accessed(MPSReferenceDependency(node, mpsRole.link))

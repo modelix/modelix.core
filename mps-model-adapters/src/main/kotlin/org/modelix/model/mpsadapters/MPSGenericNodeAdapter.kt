@@ -44,7 +44,7 @@ abstract class MPSGenericNodeAdapter<E> : IWritableNode, ISyncTargetNode {
         return tryGetChildAccessor(role)?.read(getElement()) ?: emptyList()
     }
 
-    override fun getReferenceTarget(role: IReferenceLinkReference): IWritableNode? {
+    override fun getLocalReferenceTarget(role: IReferenceLinkReference): IWritableNode? {
         return tryGetReferenceAccessor(role)?.read(getElement())
     }
 

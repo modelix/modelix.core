@@ -1,6 +1,7 @@
 package org.modelix.mps.multiplatform.model
 
 import org.modelix.model.api.INodeReference
+import org.modelix.model.randomUUID
 
 data class MPSModuleReference(val moduleId: String) : INodeReference() {
 
@@ -16,6 +17,10 @@ data class MPSModuleReference(val moduleId: String) : INodeReference() {
             return parseSModuleReference(withoutPrefix)
         }
 
+        fun convert(ref: INodeReference) = requireNotNull(tryConvert(ref)) {
+            "Not a module reference: $ref"
+        }
+
         fun parseSModuleReference(serialized: String): MPSModuleReference {
             val moduleId = if (serialized.contains('(') && serialized.contains(')')) {
                 serialized.substringBefore('(')
@@ -24,6 +29,8 @@ data class MPSModuleReference(val moduleId: String) : INodeReference() {
             }
             return MPSModuleReference(moduleId.trim())
         }
+
+        fun random() = MPSModuleReference(randomUUID())
     }
 
     override fun serialize(): String {

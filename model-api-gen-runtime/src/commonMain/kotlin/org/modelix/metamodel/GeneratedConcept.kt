@@ -4,7 +4,6 @@ import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
-import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.IProperty
 import org.modelix.model.api.IPropertyReference
@@ -125,7 +124,7 @@ abstract class GeneratedConcept<NodeT : ITypedNode, ConceptT : ITypedConcept>(
             ?: throw IllegalArgumentException("Concept ${getLongName()} doesn't contain reference link $roleKey")
     }
 
-    override fun getReference(): IConceptReference {
+    override fun getReference(): ConceptReference {
         return ConceptReference(getUID())
     }
 

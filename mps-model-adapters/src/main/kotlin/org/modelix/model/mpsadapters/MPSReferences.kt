@@ -130,9 +130,14 @@ data class MPSProjectReference(val projectName: String) : INodeReference() {
                 null
             }
         }
+
+        fun convert(ref: INodeReference): MPSProjectReference = requireNotNull(tryConvert(ref)) {
+            "Not a project reference: $ref"
+        }
     }
 
     constructor(project: IMPSProject) : this(project.getName())
+    constructor(project: org.jetbrains.mps.openapi.project.Project) : this(MPSProjectAdapter(project))
 
     override fun serialize(): String {
         return "$PREFIX:$projectName"
@@ -140,6 +145,8 @@ data class MPSProjectReference(val projectName: String) : INodeReference() {
 }
 
 data class MPSProjectModuleReference(val moduleRef: SModuleReference, val projectRef: MPSProjectReference) : INodeReference() {
+
+    constructor(moduleRef: MPSModuleReference, projectRef: MPSProjectReference) : this(moduleRef.toMPS(), projectRef)
 
     companion object {
         internal const val PREFIX = "mps-project-module"
@@ -158,6 +165,10 @@ data class MPSProjectModuleReference(val moduleRef: SModuleReference, val projec
                 .let { MPSProjectReference.tryConvert(it) }
                 .let { requireNotNull(it) { "Invalid project reference: $it" } }
             return MPSProjectModuleReference(moduleRef, projectRef)
+        }
+
+        fun convert(ref: INodeReference) = requireNotNull(tryConvert(ref)) {
+            "Not a project module: $ref"
         }
     }
 

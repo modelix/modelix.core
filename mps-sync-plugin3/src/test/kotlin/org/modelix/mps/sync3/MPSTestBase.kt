@@ -60,6 +60,7 @@ abstract class MPSTestBase : UsefulTestCase() {
                 </project>
                 """.trimIndent(),
             )
+            projectDir.resolve(".mps/.name").writeText(projectName)
             beforeOpen(projectDir)
             ProjectManagerEx.getInstanceEx().openProject(projectDir, options)!!
         }

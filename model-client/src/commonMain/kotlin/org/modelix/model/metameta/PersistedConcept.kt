@@ -1,5 +1,6 @@
 package org.modelix.model.metameta
 
+import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
@@ -28,7 +29,7 @@ data class PersistedConcept(val id: Long, val uid: String?) : IConcept, IConcept
         throw UnsupportedOperationException()
     }
 
-    override fun getReference(): IConceptReference {
+    override fun getReference(): ConceptReference {
         throw UnsupportedOperationException()
     }
 

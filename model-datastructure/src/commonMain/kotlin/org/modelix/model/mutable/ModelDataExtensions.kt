@@ -27,11 +27,13 @@ private fun ModelData.loadNode(
 ) {
     val conceptRef = nodeData.concept?.let { ConceptReference(it) } ?: NullConcept.getReference()
 
-    val nodeId = nodeData.id?.let { NodeReference(it) } ?: mutableTree.getIdGenerator().generate(parentId)
+    val role = IChildLinkReference.fromString(nodeData.role)
+    val nodeId = nodeData.id?.let { NodeReference(it) }
+        ?: mutableTree.getIdGenerator().generate(parentId, role, conceptRef)
     t.mutate(
         MutationParameters.AddNew(
             parentId,
-            IChildLinkReference.fromString(nodeData.role),
+            role,
             -1,
             listOf(nodeId to conceptRef),
         ),

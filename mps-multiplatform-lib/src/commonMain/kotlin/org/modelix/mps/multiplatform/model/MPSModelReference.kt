@@ -1,6 +1,7 @@
 package org.modelix.mps.multiplatform.model
 
 import org.modelix.model.api.INodeReference
+import org.modelix.model.randomUUID
 
 data class MPSModelReference(val moduleReference: MPSModuleReference?, val modelId: String) : INodeReference() {
 
@@ -70,6 +71,8 @@ data class MPSModelReference(val moduleReference: MPSModuleReference?, val model
             }
             return arrayOf<String?>(moduleId, modelID, moduleName, modelName)
         }
+
+        fun random() = MPSModelReference(null, randomUUID())
     }
 
     override fun serialize(): String {

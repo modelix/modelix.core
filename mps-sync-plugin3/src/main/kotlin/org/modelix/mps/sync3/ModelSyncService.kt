@@ -24,6 +24,7 @@ import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.oauth.OAuthConfigBuilder
 import org.modelix.model.oauth.TokenProvider
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.ExperimentalTime
 
 private val LOG = KotlinLogging.logger { }
@@ -37,7 +38,7 @@ class ModelSyncService(val project: Project) :
     private val mpsProject: MPSProject get() = ProjectHelper.fromIdeaProject(project)!!
 
     private var loadedState: SyncServiceState = SyncServiceState()
-    private val workers = LinkedHashMap<BindingId, BindingWorker>()
+    private val worker: AtomicReference<BindingWorker?> = AtomicReference(null)
     private val coroutinesScope = CoroutineScope(Dispatchers.IO)
 
     @Synchronized
@@ -62,7 +63,7 @@ class ModelSyncService(val project: Project) :
 
     @Synchronized
     override fun dispose() {
-        workers.values.forEach { it.deactivate() }
+        worker.get()?.deactivate()
         coroutinesScope.cancel("disposed")
     }
 
@@ -87,35 +88,34 @@ class ModelSyncService(val project: Project) :
     @Synchronized
     fun loadState(newState: SyncServiceState) {
         val oldState: SyncServiceState = this.loadedState
-        val allBindingIds = newState.bindings.keys + oldState.bindings.keys + workers.keys
+        val enabledBindings = newState.bindings.filter { it.value.enabled }
 
-        for (id in allBindingIds) {
-            val newBindingState: BindingState? = newState.bindings[id]
-            val oldBindingState: BindingState? = oldState.bindings[id]
-            val worker: BindingWorker? = workers[id]
-            if (newBindingState == null) {
-                if (worker == null) {
-                    // nothing to do
-                } else {
-                    worker.deactivate()
-                    workers.remove(id)
-                }
+        val worker: BindingWorker? = worker.get()
+        if (enabledBindings.isEmpty()) {
+            if (worker == null) {
+                // nothing to do
             } else {
-                if (worker != null) {
-                    if (newBindingState.versionHash != oldBindingState?.versionHash &&
-                        newBindingState.versionHash != worker.initialVersionHash &&
-                        newBindingState.versionHash != worker.getCurrentVersionHash()
-                    ) {
-                        worker.deactivate()
-                        workers.remove(id)
+                worker.deactivate()
+                this.worker.set(null)
+            }
+        } else {
+            if (worker != null) {
+                if (worker.syncTargets.map { it.bindingId } != enabledBindings.keys.toList() ||
+                    enabledBindings.any { (bindingId, newBindingState) ->
+                        newBindingState.versionHash != oldState.bindings[bindingId]?.versionHash &&
+                            newBindingState.versionHash != worker.initialVersionHash(bindingId) &&
+                            newBindingState.versionHash != worker.getCurrentVersionHash(bindingId)
                     }
+                ) {
+                    worker.deactivate()
+                    this.worker.set(null)
                 }
-                val newWorker = getOrCreateWorker(id, newBindingState)
-                if (newBindingState.enabled) {
-                    newWorker.activate()
-                } else {
-                    newWorker.deactivate()
-                }
+            }
+            if (enabledBindings.isNotEmpty()) {
+                getOrCreateWorker(enabledBindings)?.activate()
+            } else {
+                this.worker.get()?.deactivate()
+                this.worker.set(null)
             }
         }
 
@@ -151,34 +151,39 @@ class ModelSyncService(val project: Project) :
     private fun updateCurrentVersions(): SyncServiceState {
         return writeState { oldState ->
             oldState.copy(
-                oldState.bindings.mapValues {
-                    it.value.copy(
-                        versionHash = workers[it.key]?.getCurrentVersionHash() ?: it.value.versionHash,
-                    )
+                bindings = oldState.bindings.mapValues { (bindingId, state) ->
+                    val newHash = worker.get()?.getCurrentVersionHash(bindingId)
+                    state.copy(versionHash = newHash ?: state.versionHash)
                 },
             )
         }
     }
 
     @Synchronized
-    private fun updateWorker(id: BindingId, state: BindingState) {
-        val binding = getOrCreateWorker(id, state)
-        if (state.enabled) {
-            binding.activate()
-        } else {
-            binding.deactivate()
-        }
+    private fun getOrCreateWorker(): BindingWorker? {
+        val bindings = loadedState.bindings.map { it.key to it.value }.filter { it.second.enabled }
+        return if (bindings.isNotEmpty()) getOrCreateWorker(bindings) else null
     }
 
     @Synchronized
-    private fun getOrCreateWorker(id: BindingId, state: BindingState?): BindingWorker {
-        return workers.getOrPut(id) {
-            BindingWorker(
+    private fun getOrCreateWorker(bindings: Map<BindingId, BindingState>): BindingWorker? {
+        val enabledBindings = bindings.map { it.key to it.value }.filter { it.second.enabled }
+        return if (enabledBindings.isEmpty()) null else getOrCreateWorker(enabledBindings)
+    }
+
+    @Synchronized
+    private fun getOrCreateWorker(bindings: List<Pair<BindingId, BindingState?>>): BindingWorker {
+        return worker.getOrPut {
+            it ?: BindingWorker(
                 coroutinesScope,
                 mpsProject,
-                serverConnection = addServer(id.connectionProperties.copy(repositoryId = id.branchRef.repositoryId)),
-                branchRef = id.branchRef,
-                initialVersionHash = state?.versionHash,
+                syncTargets = bindings.map { (id, state) ->
+                    SyncTarget(
+                        serverConnection = addServer(id.connectionProperties.copy(repositoryId = id.branchRef.repositoryId)),
+                        bindingId = id,
+                        initialVersionHash = state?.versionHash,
+                    )
+                },
                 continueOnError = { IModelSyncService.continueOnError ?: true },
             )
         }
@@ -354,36 +359,43 @@ class ModelSyncService(val project: Project) :
         }
 
         override suspend fun flush(): IVersion {
-            val worker = synchronized(this@ModelSyncService) {
-                getOrCreateWorker(id, loadedState.bindings[id])
-            }
-            return worker.flush()
+            check(isEnabled()) { "Binding is disabled" }
+            return checkNotNull(flush(false)) { "Flush failed. No version was returned." }
         }
 
         override suspend fun flushIfEnabled(): IVersion? {
+            return flush(true)
+        }
+
+        private suspend fun flush(ifEnabled: Boolean): IVersion? {
             val worker = synchronized(this@ModelSyncService) {
-                if (!isEnabled()) return null
-                getOrCreateWorker(id, loadedState.bindings[id])
-            }
-            return worker.flush()
+                if (ifEnabled && !isEnabled()) return null
+                getOrCreateWorker()
+            } ?: return null
+            val index = worker.syncTargets.indexOfFirst { it.bindingId == id }
+            return worker.flush()[index]
+        }
+
+        private fun indexInWorker(): Int {
+            return (worker.get() ?: return -1).syncTargets.indexOfFirst { it.bindingId == id }
         }
 
         override fun forceSync(push: Boolean) {
             coroutinesScope.launch {
-                workers[id]?.forceSync(push)
+                worker.get()?.forceSync(push)
             }
         }
 
         override fun getCurrentVersion(): IVersion? {
-            return workers[id]?.getCurrentVersion()
+            return worker.get()?.getCurrentVersion(id)
         }
 
         override fun getSyncProgress(): String? {
-            return workers[id]?.getSyncProgress()
+            return worker.get()?.getSyncProgress()
         }
 
         override fun getStatus(): IBinding.Status {
-            return workers[id]?.getStatus() ?: IBinding.Status.Disabled
+            return worker.get()?.getStatus()[indexInWorker()] ?: IBinding.Status.Disabled
         }
 
         private fun getService(): ModelSyncService = this@ModelSyncService
@@ -418,7 +430,7 @@ suspend fun jobLoop(
             body()
             backoffStrategy.success()
         } catch (ex: CancellationException) {
-            break
+            throw ex
         } catch (ex: Throwable) {
             LOG.warn("Exception during synchronization", ex)
             backoffStrategy.failed()
@@ -431,3 +443,5 @@ data class BindingId(val connectionProperties: ModelServerConnectionProperties, 
         return "BindingId($connectionProperties, ${branchRef.repositoryId}, ${branchRef.branchName})"
     }
 }
+
+private fun <T : Any> AtomicReference<T?>.getOrPut(initializer: (T?) -> T) = updateAndGet { initializer(it) } as T

@@ -8,7 +8,16 @@ import io.ktor.utils.io.CancellationException
 import jetbrains.mps.project.MPSProject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.jetbrains.mps.openapi.module.SRepository
@@ -27,13 +36,14 @@ import org.modelix.model.api.getOriginalReference
 import org.modelix.model.area.PArea
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
-import org.modelix.model.lazy.runWriteOnModel
 import org.modelix.model.mpsadapters.MPSProjectAdapter
 import org.modelix.model.mpsadapters.MPSProjectAsNode
 import org.modelix.model.mpsadapters.MPSProjectReference
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import org.modelix.model.mpsadapters.computeRead
 import org.modelix.model.mutable.DummyIdGenerator
+import org.modelix.model.mutable.VersionedModelTree
+import org.modelix.model.mutable.asModel
 import org.modelix.model.mutable.asModelSingleThreaded
 import org.modelix.model.sync.bulk.DefaultInvalidationTree
 import org.modelix.model.sync.bulk.FullSyncFilter
@@ -44,12 +54,19 @@ import org.modelix.mps.model.sync.bulk.MPSProjectSyncMask
 import org.modelix.streams.iterateSuspending
 import java.util.concurrent.atomic.AtomicBoolean
 
+class SyncTarget(
+    val serverConnection: ModelSyncService.Connection,
+    val bindingId: BindingId,
+    val initialVersionHash: String?,
+) {
+    suspend fun client() = serverConnection.getClient()
+    val branchRef: BranchReference get() = bindingId.branchRef
+}
+
 class BindingWorker(
     val coroutinesScope: CoroutineScope,
     val mpsProject: MPSProject,
-    val serverConnection: ModelSyncService.Connection,
-    val branchRef: BranchReference,
-    val initialVersionHash: String?,
+    val syncTargets: List<SyncTarget>,
     val continueOnError: () -> Boolean,
 ) {
     companion object {
@@ -57,24 +74,33 @@ class BindingWorker(
     }
 
     private val activated = AtomicBoolean(false)
-    private val lastSyncedVersion = ValueWithMutex<IVersion?>(null)
+    private val lastSyncedVersion = ValueWithMutex<List<IVersion>?>(null)
     private var syncJob: Job? = null
     private var syncToServerTask: ValidatingJob? = null
     private var invalidatingListener: MyInvalidatingListener? = null
     private var activeSynchronizer: ModelSynchronizer? = null
     private var previousSyncStack: List<IReadableNode> = emptyList()
-    private var status: IBinding.Status = IBinding.Status.Disabled
+    private var status: List<IBinding.Status> = syncTargets.map { IBinding.Status.Disabled }
 
     private val repository: SRepository get() = mpsProject.repository
-    private suspend fun client() = serverConnection.getClient()
 
-    fun getCurrentVersionHash(): String? = lastSyncedVersion.getValue()?.getContentHash()
-    fun getCurrentVersion(): IVersion? = lastSyncedVersion.getValue()
+    init {
+        require(syncTargets.isNotEmpty())
+    }
+
+    fun getCurrentVersionHash(): List<String>? = getCurrentVersion()?.map { it.getContentHash() }
+    fun getCurrentVersionHash(bindingId: BindingId): String? = getCurrentVersion(bindingId)?.let { it.getContentHash() }
+    fun getCurrentVersion(): List<IVersion>? = lastSyncedVersion.getValue()
+    fun getCurrentVersion(bindingId: BindingId): IVersion? = lastSyncedVersion.getValue()?.let { versions ->
+        val index = syncTargets.indexOfFirst { it.bindingId == bindingId }
+        versions[index]
+    }
+    fun initialVersionHash(bindingId: BindingId) = syncTargets.find { it.bindingId == bindingId }?.initialVersionHash
     fun isActive(): Boolean = activated.get()
 
     fun activate() {
         if (activated.getAndSet(true)) return
-        status = IBinding.Status.Initializing
+        status = syncTargets.map { IBinding.Status.Initializing }
         syncJob = coroutinesScope.launch {
             try {
                 syncJob()
@@ -87,7 +113,7 @@ class BindingWorker(
 
     fun deactivate() {
         if (!activated.getAndSet(false)) return
-        status = IBinding.Status.Disabled
+        status = syncTargets.map { IBinding.Status.Disabled }
         syncJob?.cancel()
         syncJob = null
         syncToServerTask = null
@@ -95,7 +121,7 @@ class BindingWorker(
         invalidatingListener = null
     }
 
-    fun getStatus(): IBinding.Status = status
+    fun getStatus(): List<IBinding.Status> = status
 
     private fun ModelSynchronizer.synchronizeAndStoreInstance() {
         try {
@@ -126,18 +152,24 @@ class BindingWorker(
         }
     }
 
+    private inline fun <R> forEachTarget(body: SyncTarget.() -> R): List<R> = syncTargets.map { body(it) }
+    private inline fun <R> forEachTargetIndexed(body: SyncTarget.(index: Int) -> R): List<R> = syncTargets.withIndex().map { body(it.value, it.index) }
+
     private suspend fun checkInSync(): String? {
         check(activated.get()) { "Binding is deactivated" }
-        val version = lastSyncedVersion.flush()?.getOrThrow()
-        if (version == null) return "Initial sync isn't done yet"
+        val versions = lastSyncedVersion.flush()?.getOrThrow()
+        if (versions == null) return "Initial sync isn't done yet"
         if (invalidatingListener == null) return "No change listener registered in MPS"
         if (invalidatingListener?.hasAnyInvalidations() != false) return "There are pending changes in MPS"
-        val remoteVersion = client().pullHash(branchRef)
-        if (remoteVersion != version.getContentHash()) return "Local version (${version.getContentHash()} differs from remote version ($remoteVersion)"
+        forEachTargetIndexed { index ->
+            val version = versions[index]
+            val remoteVersion = client().pullHash(branchRef)
+            if (remoteVersion != version.getContentHash()) return "Local version (${version.getContentHash()} differs from remote version ($remoteVersion)"
+        }
         return null
     }
 
-    suspend fun flush(): IVersion {
+    suspend fun flush(): List<IVersion> {
         check(syncJob?.isActive == true) { "Synchronization is not active" }
         var reason = checkInSync()
         var i = 0
@@ -158,17 +190,19 @@ class BindingWorker(
         }
     }
 
-    private suspend fun <R : IVersion?> runSync(body: suspend (IVersion?) -> R) = lastSyncedVersion.updateValue {
+    private suspend fun <R : List<IVersion>?> runSync(body: suspend (List<IVersion>?) -> R): R = lastSyncedVersion.updateValue { oldVersions ->
         try {
-            status = IBinding.Status.Syncing(::getSyncProgress)
-            body(it).also {
-                status = IBinding.Status.Synced(it?.getContentHash() ?: "null")
+            status = IBinding.Status.Syncing(::getSyncProgress).let { s -> syncTargets.map { s } }
+            body(oldVersions).also { newVersions ->
+                status = (newVersions ?: syncTargets.map { null }).map { IBinding.Status.Synced(it?.getContentHash() ?: "null") }
             }
         } catch (ex: Throwable) {
-            status = if (ex is ResponseException && ex.response.status == HttpStatusCode.Forbidden) {
-                IBinding.Status.NoPermission(runCatching { client().getUserId() }.getOrNull())
-            } else {
-                IBinding.Status.Error(ex.message)
+            status = forEachTarget {
+                if (ex is ResponseException && ex.response.status == HttpStatusCode.Forbidden) {
+                    IBinding.Status.NoPermission(runCatching { client().getUserId() }.getOrNull())
+                } else {
+                    IBinding.Status.Error(ex.message)
+                }
             }
             throw ex
         }
@@ -189,11 +223,19 @@ class BindingWorker(
         }
 
         // continuous sync to MPS
-        launchLoop {
-            val newHash = client().pollHash(branchRef, lastSyncedVersion.getValue())
-            if (newHash != lastSyncedVersion.getValue()?.getContentHash()) {
-                LOG.debug { "New remote version detected: $newHash" }
-                syncToMPS(incremental = true)
+        val latestHashes: List<Flow<String>> = forEachTargetIndexed<Flow<String>> { index ->
+            channelFlow {
+                launchLoop {
+                    channel.send(client().pollHash(branchRef, lastSyncedVersion.getValue()?.get(index)))
+                }
+            }
+        }
+        launch {
+            latestHashes.combine().collect { newHashes ->
+                if (newHashes != lastSyncedVersion.getValue()?.map { it.getContentHash() }) {
+                    LOG.debug { "New remote version detected: $newHashes" }
+                    syncToMPS(incremental = true)
+                }
             }
         }
 
@@ -210,86 +252,111 @@ class BindingWorker(
     }
 
     private suspend fun initialSync() {
-        runSync { oldVersion ->
+        runSync<List<IVersion>?> { oldVersions ->
             LOG.debug { "Running initial synchronization" }
 
-            val baseVersion = oldVersion
-                ?: initialVersionHash?.let { client().loadVersion(branchRef.repositoryId, it, null) }
-            if (baseVersion == null) {
+            val baseVersions = forEachTargetIndexed { index ->
+                oldVersions?.get(index)
+                    ?: initialVersionHash?.let { client().loadVersion(branchRef.repositoryId, it, null) }
+            }
+
+            // The first binding is the primary binding where new modules are created.
+            // All other bindings are considered libraries where only existing modules are synchronized. They are not
+            // relevant for the decision in which direction we have to synchronize initially.
+            val primaryBaseVersion = baseVersions.first()
+            if (primaryBaseVersion == null) {
                 // Binding was never activated before. Overwrite local changes or do initial upload.
 
-                val remoteVersion = client().pullIfExists(branchRef)
-                if (remoteVersion == null || remoteVersion.isInitialVersion()) {
+                val existingRemoteVersions = forEachTargetIndexed { client().pullIfExists(branchRef) }
+                val createdRemoteVersions = forEachTargetIndexed { index ->
+                    existingRemoteVersions[index] ?: client().initRepository(branchRef.repositoryId)
+                }
+
+                if (existingRemoteVersions.first().let { it == null || it.isInitialVersion() }) {
                     LOG.debug { "Repository doesn't exist. Will copy the local project to the server." }
                     // repository doesn't exist -> copy the local project to the server
-                    val emptyVersion = remoteVersion ?: client().initRepository(branchRef.repositoryId)
-                    doSyncToServer(emptyVersion, incremental = false) ?: emptyVersion
+                    doSyncToServer(createdRemoteVersions, incremental = false) ?: createdRemoteVersions
                 } else {
-                    LOG.debug { "Repository exists. Will checkout version $remoteVersion" }
-                    doSyncToMPS(null, remoteVersion, incremental = false)
-                    remoteVersion
+                    LOG.debug { "Repository exists. Will checkout version $createdRemoteVersions" }
+                    doSyncToMPS(baseVersions, createdRemoteVersions, incremental = false)
+                    createdRemoteVersions
                 }
             } else {
                 // Binding was activated before. Preserve local changes.
 
+                val createdBaseVersions = forEachTargetIndexed { index ->
+                    baseVersions[index] ?: client().initRepository(branchRef.repositoryId)
+                }
+
                 // push local changes that happened while the binding was deactivated
-                val localChanges = doSyncFromMPS(baseVersion, incremental = false)
-                val remoteVersion = if (localChanges != null) {
-                    val mergedVersion = client().push(branchRef, localChanges, baseVersion)
-                    doSyncToMPS(baseVersion, mergedVersion, incremental = false)
-                    mergedVersion
-                } else {
-                    client().pull(branchRef, baseVersion)
+                val localChanges = doSyncFromMPS(createdBaseVersions, incremental = false)
+
+                val mergedVersions = forEachTargetIndexed { index ->
+                    val baseVersion = createdBaseVersions[index]
+                    val localChange = localChanges?.get(index)?.takeIf { it != baseVersion }
+                    if (localChange != null) {
+                        client().push(branchRef, localChange, baseVersion)
+                    } else {
+                        client().pull(branchRef, baseVersion)
+                    }
                 }
 
                 // load remote changes into MPS
-                doSyncToMPS(baseVersion, remoteVersion, incremental = false)
+                doSyncToMPS(createdBaseVersions, mergedVersions, incremental = false)
 
-                remoteVersion
+                mergedVersions
             }
         }
     }
 
-    suspend fun syncToMPS(incremental: Boolean): IVersion {
-        return runSync { oldVersion ->
-            client().pull(branchRef, oldVersion).also { newVersion ->
-                doSyncToMPS(oldVersion, newVersion, incremental)
+    suspend fun syncToMPS(incremental: Boolean): List<IVersion> {
+        return runSync { oldVersions ->
+            val newVersions = forEachTargetIndexed { index ->
+                val oldVersion = oldVersions?.get(index)
+                client().pull(branchRef, oldVersion)
             }
+            doSyncToMPS(oldVersions ?: syncTargets.map { null }, newVersions, incremental)
+            newVersions
         }
     }
 
-    suspend fun syncToServer(incremental: Boolean): IVersion? {
-        return runSync { oldVersion ->
-            if (oldVersion == null) {
+    suspend fun syncToServer(incremental: Boolean): List<IVersion>? {
+        return runSync { oldVersions ->
+            if (oldVersions == null) {
                 // have to wait for initial sync
-                oldVersion
+                oldVersions
             } else {
-                val newVersion = doSyncToServer(oldVersion, incremental)
-                newVersion ?: oldVersion
+                val newVersions = doSyncToServer(oldVersions, incremental)
+                newVersions ?: oldVersions
             }
         }
     }
 
-    private suspend fun doSyncToMPS(oldVersion: IVersion?, newVersion: IVersion, incremental: Boolean) {
-        if (oldVersion?.getContentHash() == newVersion.getContentHash()) return
+    private suspend fun doSyncToMPS(oldVersions: List<IVersion?>, newVersions: List<IVersion>, incremental: Boolean) {
+        if (oldVersions.zip(newVersions).all { it.first?.getContentHash() == it.second.getContentHash() }) return
 
-        LOG.debug { "Updating MPS project from $oldVersion to $newVersion" }
+        LOG.debug { "Updating MPS project from $oldVersions to $newVersions" }
 
-        val baseVersion = oldVersion
-        val filter = if (baseVersion != null && incremental) {
-            val newTree = newVersion.getModelTree()
-            val model = newTree.asModelSingleThreaded()
-            val invalidationTree = DefaultInvalidationTree(newTree.getRootNodeId(), 100_000)
-            fun invalidateNode(nodeId: INodeReference) {
-                val node = model.tryResolveNode(nodeId) ?: return
-                invalidationTree.invalidate(node, false)
-            }
-            newTree.getChanges(baseVersion.getModelTree(), changesOnly = true).iterateSuspending(newTree.asObject().graph) { event ->
-                when (event) {
-                    is ContainmentChangedEvent<INodeReference>, is NodeRemovedEvent<INodeReference>, is NodeAddedEvent<INodeReference> -> {
-                        // There will be a ChildrenChangedEvent that indirectly handles these cases.
+        val newTrees = newVersions.map { it.getModelTree() }
+        val sourceModel = SyncTargetModel(newTrees.map { it.asModelSingleThreaded() })
+        val baseVersions = oldVersions
+        val filter = if (baseVersions.all { it != null } && incremental) {
+            val invalidationTree = DefaultInvalidationTree(sourceModel.getRootNode().getNodeReference(), 100_000)
+
+            forEachTargetIndexed { index ->
+                val baseVersion = baseVersions[index] ?: return@forEachTargetIndexed
+                val newTree = newTrees[index]
+                fun invalidateNode(nodeId: INodeReference) {
+                    val node = sourceModel.tryResolveNode(nodeId) ?: return
+                    invalidationTree.invalidate(node, false)
+                }
+                newTree.getChanges(baseVersion.getModelTree(), changesOnly = true).iterateSuspending(newTree.asObject().graph) { event ->
+                    when (event) {
+                        is ContainmentChangedEvent<INodeReference>, is NodeRemovedEvent<INodeReference>, is NodeAddedEvent<INodeReference> -> {
+                            // There will be a ChildrenChangedEvent that indirectly handles these cases.
+                        }
+                        is NodeChangeEvent<INodeReference> -> invalidateNode(event.nodeId)
                     }
-                    is NodeChangeEvent<INodeReference> -> invalidateNode(event.nodeId)
                 }
             }
             invalidationTree
@@ -307,7 +374,6 @@ class BindingWorker(
             }
 
             getMPSListener().runSync {
-                val sourceModel = newVersion.getModelTree().asModelSingleThreaded()
                 val sourceRoot = sourceModel.getRootNode()
 
                 // handle renamed projects
@@ -370,36 +436,38 @@ class BindingWorker(
     /**
      * @return null if nothing changed
      */
-    private suspend fun doSyncFromMPS(oldVersion: IVersion, incremental: Boolean): IVersion? {
+    private suspend fun doSyncFromMPS(oldVersions: List<IVersion>, incremental: Boolean): List<IVersion>? {
         check(lastSyncedVersion.isLocked())
 
         LOG.debug { "Commiting MPS changes" }
 
-        val client = client()
-        val newVersion = repository.computeRead {
-            fun sync(invalidationTree: ModelSynchronizer.IIncrementalUpdateInformation): IVersion? {
-                return oldVersion.runWriteOnModel(
-                    nodeIdGenerator = DummyIdGenerator<INodeReference>(),
-                    author = client.getUserId(),
-                ) { targetRoot ->
+        val clients = forEachTarget { client() }
+        val newVersions = repository.computeRead {
+            fun sync(invalidationTree: ModelSynchronizer.IIncrementalUpdateInformation): List<IVersion>? {
+                val idGenerator = DummyIdGenerator<INodeReference>()
+                val versionedTrees = oldVersions.map { VersionedModelTree(it, idGenerator) }
+                val model = SyncTargetModel(versionedTrees.map { it.asModel() })
+                model.executeWrite {
+                    val targetRoot = model.getRootNode()
                     MPSProjectAsNode.runWithProject(mpsProject) {
                         val sourceRoot = MPSRepositoryAsNode(mpsProject.repository)
 
                         val legacyMutableTree = (targetRoot.getModel().asArea() as? PArea)?.branch
 
-                        val nodeAssociation = if (legacyMutableTree != null) {
-                            NodeAssociationToModelServer(legacyMutableTree)
-                        } else {
-                            IdentityPreservingNodeAssociation(
-                                targetRoot.getModel(),
-                                mapOf(sourceRoot.getNodeReference() to targetRoot.getNodeReference()),
-                            )
-                        }
-
-                        // handled renamed projects
                         val projectNode: IWritableNode? = findMatchingProjectNode(targetRoot) as IWritableNode?
-                        if (projectNode != null && !nodeAssociation.matches(MPSProjectAsNode(mpsProject), projectNode)) {
-                            nodeAssociation.associate(MPSProjectAsNode(mpsProject), projectNode)
+                        val nodeAssociation = if (legacyMutableTree != null) {
+                            NodeAssociationToModelServer(legacyMutableTree).also { nodeAssociation ->
+                                // handled renamed projects
+                                if (projectNode != null && !nodeAssociation.matches(MPSProjectAsNode(mpsProject), projectNode)) {
+                                    nodeAssociation.associate(MPSProjectAsNode(mpsProject), projectNode)
+                                }
+                            }
+                        } else {
+                            var overrides = mapOf(sourceRoot.getNodeReference() to targetRoot.getNodeReference())
+                            if (projectNode != null) {
+                                overrides += MPSProjectAsNode(mpsProject).getNodeReference() to projectNode.getNodeReference()
+                            }
+                            IdentityPreservingNodeAssociation(targetRoot.getModel(), overrides)
                         }
 
                         ModelSynchronizer(
@@ -413,6 +481,10 @@ class BindingWorker(
                         ).synchronizeAndStoreInstance()
                     }
                 }
+
+                return oldVersions.zip(versionedTrees, clients).map { (oldVersion, mutableTree, client) ->
+                    mutableTree.createVersion(client.getUserId()) ?: oldVersion
+                }.takeIf { it != oldVersions }
             }
 
             if (invalidatingListener == null) {
@@ -426,17 +498,23 @@ class BindingWorker(
             }
         }
 
-        LOG.debug { if (newVersion == null) "Nothing changed" else "New version created: $newVersion" }
+        LOG.debug { if (newVersions == null) "Nothing changed" else "New versions created: $newVersions" }
 
-        return newVersion
+        return newVersions
     }
 
     /**
      * @return null if nothing changed
      */
-    private suspend fun doSyncToServer(oldVersion: IVersion, incremental: Boolean): IVersion? {
-        return doSyncFromMPS(oldVersion, incremental)?.let {
-            client().push(branchRef, it, oldVersion)
+    private suspend fun doSyncToServer(oldVersions: List<IVersion>, incremental: Boolean): List<IVersion>? {
+        return doSyncFromMPS(oldVersions, incremental)?.let { newVersions ->
+            coroutineScope {
+                forEachTargetIndexed { index ->
+                    async {
+                        client().push(branchRef, newVersions[index], oldVersions[index])
+                    }
+                }.awaitAll()
+            }
         }
     }
 
@@ -472,3 +550,16 @@ class BindingWorker(
 }
 
 private fun IVersion.isInitialVersion() = (this as CLVersion).baseVersion == null
+
+private fun <T1, T2, T3> Iterable<T1>.zip(other1: Iterable<T2>, other2: Iterable<T3>): List<Triple<T1, T2, T3>> {
+    return (this zip other1 zip other2).map { Triple(it.first.first, it.first.second, it.second) }
+}
+
+private fun <T> List<Flow<T>>.combine(): Flow<List<T>> {
+    return when (size) {
+        0 -> emptyFlow()
+        1 -> this[0].map { listOf(it) }
+        2 -> this[0].combine(this[1]) { a, b -> listOf(a, b) }
+        else -> subList(0, size - 1).combine().combine(last()) { a, b -> a + b }
+    }
+}

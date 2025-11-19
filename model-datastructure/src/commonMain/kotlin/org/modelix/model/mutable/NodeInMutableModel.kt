@@ -80,7 +80,7 @@ class NodeInMutableModel(
     }
 
     override fun addNewChild(role: IChildLinkReference, index: Int, concept: ConceptReference): IWritableNode {
-        val newId = getIdGenerator().generate(nodeId)
+        val newId = getIdGenerator().generate(nodeId, role, concept)
         mutate(
             MutationParameters.AddNew<INodeReference>(
                 nodeId,
@@ -93,7 +93,7 @@ class NodeInMutableModel(
     }
 
     override fun addNewChildren(role: IChildLinkReference, index: Int, concepts: List<ConceptReference>): List<IWritableNode> {
-        val newIdAndConcept = concepts.map { getIdGenerator().generate(nodeId) to it }
+        val newIdAndConcept = concepts.map { getIdGenerator().generate(nodeId, role, it) to it }
         mutate(
             MutationParameters.AddNew<INodeReference>(
                 nodeId,
@@ -188,6 +188,10 @@ class NodeInMutableModel(
         var result = tree.hashCode()
         result = 31 * result + nodeId.hashCode()
         return result
+    }
+
+    override fun toString(): String {
+        return "NodeInMutableModel[$nodeId]"
     }
 }
 

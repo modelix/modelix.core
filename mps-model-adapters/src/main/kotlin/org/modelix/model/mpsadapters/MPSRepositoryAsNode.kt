@@ -1,7 +1,11 @@
 package org.modelix.model.mpsadapters
 
+import jetbrains.mps.extapi.module.TransientSModule
+import jetbrains.mps.generator.TransientModelsModule
 import jetbrains.mps.project.AbstractModule
+import jetbrains.mps.project.DevKit
 import jetbrains.mps.project.ModuleId
+import jetbrains.mps.project.Solution
 import jetbrains.mps.smodel.Generator
 import jetbrains.mps.smodel.Language
 import jetbrains.mps.smodel.tempmodel.TempModule
@@ -32,7 +36,19 @@ data class MPSRepositoryAsNode(@get:JvmName("getRepository_") val repository: SR
         private val childAccessors = listOf<Pair<IChildLinkReference, IChildAccessor<SRepository>>>(
             BuiltinLanguages.MPSRepositoryConcepts.Repository.modules.toReference() to object : IChildAccessor<SRepository> {
                 override fun read(element: SRepository): List<IWritableNode> {
-                    return element.modules.filter { !it.isTempModule() && it !is Generator }.map { MPSModuleAsNode(it) }
+                    return element.modules.filter {
+                        when (it) {
+                            is Language -> true
+                            is Solution -> true
+                            is DevKit -> true
+                            is Generator -> false
+                            is TransientModelsModule -> false
+                            is TransientSModule -> false
+                            is TempModule -> false
+                            is TempModule2 -> false
+                            else -> false
+                        }
+                    }.map { MPSModuleAsNode(it) }
                 }
 
                 override fun addNew(
@@ -43,20 +59,32 @@ data class MPSRepositoryAsNode(@get:JvmName("getRepository_") val repository: SR
                     return when (sourceNode.getConceptReference()) {
                         BuiltinLanguages.MPSRepositoryConcepts.Solution.getReference() -> {
                             SolutionProducer(MPSProjectAsNode.getContextProject()).create(
-                                sourceNode.getNode().getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())!!,
-                                sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())!!.let { ModuleId.fromString(it) },
+                                requireNotNull(sourceNode.getNode().getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())) {
+                                    "Solution has no name: ${sourceNode.getNode()}"
+                                },
+                                requireNotNull(sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())) {
+                                    "Solution has no ID: ${sourceNode.getNode()}"
+                                }.let { ModuleId.fromString(it) },
                             ).let { MPSModuleAsNode(it) }
                         }
                         BuiltinLanguages.MPSRepositoryConcepts.Language.getReference() -> {
                             LanguageProducer(MPSProjectAsNode.getContextProject()).create(
-                                sourceNode.getNode().getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())!!,
-                                sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())!!.let { ModuleId.fromString(it) },
+                                requireNotNull(sourceNode.getNode().getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())) {
+                                    "Language has no name: ${sourceNode.getNode()}"
+                                },
+                                requireNotNull(sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())) {
+                                    "Language has no ID: ${sourceNode.getNode()}"
+                                }.let { ModuleId.fromString(it) },
                             ).let { MPSModuleAsNode(it) }
                         }
                         BuiltinLanguages.MPSRepositoryConcepts.DevKit.getReference() -> {
                             DevkitProducer(MPSProjectAsNode.getContextProject()).create(
-                                sourceNode.getNode().getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())!!,
-                                sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())!!.let { ModuleId.fromString(it) },
+                                requireNotNull(sourceNode.getNode().getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())) {
+                                    "DevKit has no name: ${sourceNode.getNode()}"
+                                },
+                                requireNotNull(sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())) {
+                                    "DevKit has no ID: ${sourceNode.getNode()}"
+                                }.let { ModuleId.fromString(it) },
                             ).let { MPSModuleAsNode(it) }
                         }
                         else -> throw UnsupportedOperationException("Module type not supported yet: ${sourceNode.getConceptReference()}")

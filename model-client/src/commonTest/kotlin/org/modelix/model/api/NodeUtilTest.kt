@@ -13,7 +13,7 @@ class SimpleTestConcept : IConcept {
         TODO("Not yet implemented")
     }
 
-    override fun getReference(): IConceptReference {
+    override fun getReference(): ConceptReference {
         TODO("Not yet implemented")
     }
 

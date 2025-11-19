@@ -116,3 +116,7 @@ data class NewNodeSpec(
 fun <T : IReadableNode> T.ancestors(includeSelf: Boolean = false): Sequence<T> {
     return generateSequence(if (includeSelf) this else getParent() as T?) { it.getParent() as T? }
 }
+
+fun IWritableNode.addNewChild(role: IChildLinkDefinition, index: Int = -1): IWritableNode {
+    return addNewChild(role.toReference(), index, role.targetConcept.getReference().upcast())
+}

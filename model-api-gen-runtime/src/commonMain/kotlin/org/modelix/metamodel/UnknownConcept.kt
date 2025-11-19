@@ -1,5 +1,6 @@
 package org.modelix.metamodel
 
+import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
@@ -8,11 +9,12 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.IReferenceLink
 import org.modelix.model.api.meta.EmptyConcept
 import org.modelix.model.api.meta.NullConcept
+import org.modelix.model.api.upcast
 import kotlin.reflect.KClass
 
 data class UnknownConcept(private val ref: IConceptReference) : EmptyConcept() {
-    override fun getReference(): IConceptReference {
-        return ref
+    override fun getReference(): ConceptReference {
+        return ref.upcast()
     }
 
     override val language: ILanguage?

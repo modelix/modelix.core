@@ -19,6 +19,7 @@ import org.modelix.model.api.INode
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.NullChildLink
+import org.modelix.model.api.NullChildLinkReference
 import org.modelix.model.api.PBranch
 import org.modelix.model.api.addNewChild
 import org.modelix.model.api.meta.NullConcept
@@ -430,8 +431,8 @@ class ModelClientV2Test {
 
         val rootId = initialVersion.getModelTree().getRootNodeId()
         val idGenerator = ModelixIdGenerator(modelClient.getIdGenerator(), initialVersion.getModelTree().getId())
-        val child1Id = idGenerator.generate(rootId)
-        val child2Id = idGenerator.generate(rootId)
+        val child1Id = idGenerator.generate(rootId, NullChildLinkReference, NullConcept.getReference())
+        val child2Id = idGenerator.generate(rootId, NullChildLinkReference, NullConcept.getReference())
         val expected = listOf(
             MutationParameters.Property(rootId, IPropertyReference.fromName("name"), "my root node"),
             MutationParameters.AddNew(rootId, IChildLinkReference.fromName("roleA"), -1, listOf(child1Id to NullConcept.getReference())),

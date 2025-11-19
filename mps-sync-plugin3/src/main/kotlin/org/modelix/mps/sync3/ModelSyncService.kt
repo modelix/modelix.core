@@ -21,6 +21,7 @@ import org.modelix.model.IVersion
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.mpsadapters.MPSProjectReference
 import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.oauth.OAuthConfigBuilder
 import org.modelix.model.oauth.TokenProvider
@@ -39,6 +40,7 @@ class ModelSyncService(val project: Project) :
     private var loadedState: SyncServiceState = SyncServiceState()
     private val workers = LinkedHashMap<BindingId, BindingWorker>()
     private val coroutinesScope = CoroutineScope(Dispatchers.IO)
+    private val syncMaskManager = SyncMaskManager()
 
     @Synchronized
     override fun addServer(properties: ModelServerConnectionProperties): Connection {
@@ -151,7 +153,7 @@ class ModelSyncService(val project: Project) :
     private fun updateCurrentVersions(): SyncServiceState {
         return writeState { oldState ->
             oldState.copy(
-                oldState.bindings.mapValues {
+                bindings = oldState.bindings.mapValues {
                     it.value.copy(
                         versionHash = workers[it.key]?.getCurrentVersionHash() ?: it.value.versionHash,
                     )
@@ -161,18 +163,13 @@ class ModelSyncService(val project: Project) :
     }
 
     @Synchronized
-    private fun updateWorker(id: BindingId, state: BindingState) {
-        val binding = getOrCreateWorker(id, state)
-        if (state.enabled) {
-            binding.activate()
-        } else {
-            binding.deactivate()
-        }
-    }
-
-    @Synchronized
     private fun getOrCreateWorker(id: BindingId, state: BindingState?): BindingWorker {
         return workers.getOrPut(id) {
+            val isPrimary = loadedState.bindings.keys.firstOrNull() == id
+            if (isPrimary) {
+                syncMaskManager.setAsPrimary(id)
+                syncMaskManager.assign(id, MPSProjectReference(mpsProject))
+            }
             BindingWorker(
                 coroutinesScope,
                 mpsProject,
@@ -180,6 +177,8 @@ class ModelSyncService(val project: Project) :
                 branchRef = id.branchRef,
                 initialVersionHash = state?.versionHash,
                 continueOnError = { IModelSyncService.continueOnError ?: true },
+                bindingId = id,
+                syncMaskManager = syncMaskManager,
             )
         }
     }
@@ -418,7 +417,7 @@ suspend fun jobLoop(
             body()
             backoffStrategy.success()
         } catch (ex: CancellationException) {
-            break
+            throw ex
         } catch (ex: Throwable) {
             LOG.warn("Exception during synchronization", ex)
             backoffStrategy.failed()

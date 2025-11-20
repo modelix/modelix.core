@@ -1,5 +1,6 @@
 import com.github.gradle.node.NodeExtension
 import com.github.gradle.node.NodePlugin
+import dev.petuska.npm.publish.task.NpmPublishTask
 import io.gitlab.arturbosch.detekt.Detekt
 import org.gradle.kotlin.dsl.withType
 
@@ -18,6 +19,7 @@ group = "org.modelix"
 description = "Projectional Editor"
 version = computeVersion()
 println("Version: $version")
+val isPrerelease = !version.toString().matches(Regex("""\d+\.\d+.\d+"""))
 
 fun computeVersion(): Any {
     val versionFile = file("version.txt")
@@ -160,4 +162,12 @@ tasks.register("setupNodeEverywhere") {
     dependsOn(":modelql-untyped:kotlinNodeJsSetup")
     dependsOn(":streams:kotlinNodeJsSetup")
     dependsOn(":model-client:integration-tests:kotlinNodeJsSetup")
+}
+
+if (isPrerelease) {
+    allprojects {
+        tasks.withType<NpmPublishTask> {
+            tag = "snapshots"
+        }
+    }
 }

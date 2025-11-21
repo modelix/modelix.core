@@ -47,7 +47,6 @@ import org.modelix.model.sync.bulk.ModelSynchronizer
 import org.modelix.model.sync.bulk.NodeAssociationToModelServer
 import org.modelix.streams.IStream
 import org.modelix.streams.ifEmpty
-import org.modelix.streams.zip
 
 class LionwebApiImpl(val repoManager: IRepositoriesManager) : LionwebApi() {
 
@@ -228,7 +227,7 @@ class LionwebApiImpl(val repoManager: IRepositoriesManager) : LionwebApi() {
         val concept = node.getConceptRef()
         val allProperties = node.getAllPropertyValues().toList()
         val childIdsWithRoles = node.getAllChildren().flatMap { child ->
-            child.getRoleInParent().zipWith(child.lionwebId()) { role, id ->
+            child.getRoleInParent().exceptionIfEmpty().zipWith(child.lionwebId()) { role, id ->
                 role to id
             }
         }.toList().map { it.groupBy { it.first } }

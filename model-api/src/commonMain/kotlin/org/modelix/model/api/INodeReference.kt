@@ -43,20 +43,11 @@ abstract class INodeReference {
 }
 
 fun INodeReference.resolveInCurrentContext(): INode? {
-    return resolveIn(INodeResolutionScope.getCurrentScope())
+    return IModel.tryResolveNode(this)?.asLegacyNode()
 }
 
 fun INodeReference.resolveIn(scope: INodeResolutionScope): INode? {
-    try {
-        if (this is NodeReference) {
-            val deserialized = INodeReferenceSerializer.tryDeserialize(serialized)
-            if (deserialized != null) return deserialized.resolveIn(scope)
-        }
-        @Suppress("DEPRECATION")
-        return scope.resolveNode(this)
-    } catch (ex: Exception) {
-        throw RuntimeException("Failed to resolve $this", ex)
-    }
+    return scope.asModel().tryResolveNode(this)?.asLegacyNode()
 }
 
 fun INodeReference.toSerialized(): NodeReference = if (this is NodeReference) this else NodeReference(this.serialize())

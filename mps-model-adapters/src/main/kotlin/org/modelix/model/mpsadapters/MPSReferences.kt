@@ -133,6 +133,7 @@ data class MPSProjectReference(val projectName: String) : INodeReference() {
     }
 
     constructor(project: IMPSProject) : this(project.getName())
+    constructor(project: org.jetbrains.mps.openapi.project.Project) : this(MPSProjectAdapter(project))
 
     override fun serialize(): String {
         return "$PREFIX:$projectName"

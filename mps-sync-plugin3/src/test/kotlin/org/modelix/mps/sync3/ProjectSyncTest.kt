@@ -73,10 +73,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 import kotlin.time.Duration.Companion.seconds
 
-class ProjectSyncTest : MPSTestBase() {
-
-    private var lastSnapshotBeforeSync: String? = null
-    private var lastSnapshotAfterSync: String? = null
+class ProjectSyncTest : ProjectSyncTestBase() {
 
     override fun setUp() {
         super.setUp()

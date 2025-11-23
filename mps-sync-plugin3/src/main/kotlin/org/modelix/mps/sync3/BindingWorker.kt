@@ -40,7 +40,7 @@ import org.modelix.model.sync.bulk.FullSyncFilter
 import org.modelix.model.sync.bulk.IdentityPreservingNodeAssociation
 import org.modelix.model.sync.bulk.ModelSynchronizer
 import org.modelix.model.sync.bulk.NodeAssociationToModelServer
-import org.modelix.mps.model.sync.bulk.MPSProjectSyncMask
+import org.modelix.mps.multiplatform.model.MPSModuleReference
 import org.modelix.streams.iterateSuspending
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -51,6 +51,8 @@ class BindingWorker(
     val branchRef: BranchReference,
     val initialVersionHash: String?,
     val continueOnError: () -> Boolean,
+    val bindingId: BindingId,
+    val syncMaskManager: SyncMaskManager,
 ) {
     companion object {
         val LOG = KotlinLogging.logger { }
@@ -270,6 +272,21 @@ class BindingWorker(
         }
     }
 
+    private fun updateMask(repositoryNode: IReadableNode) {
+        for (moduleNode in repositoryNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Repository.modules.toReference())) {
+            val moduleRef = checkNotNull(MPSModuleReference.tryConvert(moduleNode.getNodeReference())) {
+                "Not a module: ${moduleNode.getNodeReference()}"
+            }
+            syncMaskManager.assign(bindingId, moduleRef)
+        }
+        for (projectNode in repositoryNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Repository.projects.toReference())) {
+            val moduleRef = checkNotNull(MPSProjectReference.tryConvert(projectNode.getNodeReference())) {
+                "Not a project: ${projectNode.getNodeReference()}"
+            }
+            syncMaskManager.assign(bindingId, moduleRef)
+        }
+    }
+
     private suspend fun doSyncToMPS(oldVersion: IVersion?, newVersion: IVersion, incremental: Boolean) {
         if (oldVersion?.getContentHash() == newVersion.getContentHash()) return
 
@@ -325,13 +342,14 @@ class BindingWorker(
                     mapOf(sourceRoot.getNodeReference() to targetRoot.getNodeReference()),
                 )
 
+                updateMask(sourceRoot)
                 ModelSynchronizer(
                     filter = filter,
                     sourceRoot = sourceRoot,
                     targetRoot = targetRoot,
                     nodeAssociation = nodeAssociation,
-                    sourceMask = MPSProjectSyncMask(listOf(mpsProject), false),
-                    targetMask = MPSProjectSyncMask(listOf(mpsProject), true),
+                    sourceMask = syncMaskManager.getMask(bindingId, false),
+                    targetMask = syncMaskManager.getMask(bindingId, true),
                     onException = {
                         if (!continueOnError()) throw it
                         getMPSListener().synchronizationErrorHappened()
@@ -387,19 +405,20 @@ class BindingWorker(
 
                         val legacyMutableTree = (targetRoot.getModel().asArea() as? PArea)?.branch
 
-                        val nodeAssociation = if (legacyMutableTree != null) {
-                            NodeAssociationToModelServer(legacyMutableTree)
-                        } else {
-                            IdentityPreservingNodeAssociation(
-                                targetRoot.getModel(),
-                                mapOf(sourceRoot.getNodeReference() to targetRoot.getNodeReference()),
-                            )
-                        }
-
-                        // handled renamed projects
                         val projectNode: IWritableNode? = findMatchingProjectNode(targetRoot) as IWritableNode?
-                        if (projectNode != null && !nodeAssociation.matches(MPSProjectAsNode(mpsProject), projectNode)) {
-                            nodeAssociation.associate(MPSProjectAsNode(mpsProject), projectNode)
+                        val nodeAssociation = if (legacyMutableTree != null) {
+                            NodeAssociationToModelServer(legacyMutableTree).also { nodeAssociation ->
+                                // handled renamed projects
+                                if (projectNode != null && !nodeAssociation.matches(MPSProjectAsNode(mpsProject), projectNode)) {
+                                    nodeAssociation.associate(MPSProjectAsNode(mpsProject), projectNode)
+                                }
+                            }
+                        } else {
+                            var overrides = mapOf(sourceRoot.getNodeReference() to targetRoot.getNodeReference())
+                            if (projectNode != null) {
+                                overrides += MPSProjectAsNode(mpsProject).getNodeReference() to projectNode.getNodeReference()
+                            }
+                            IdentityPreservingNodeAssociation(targetRoot.getModel(), overrides)
                         }
 
                         ModelSynchronizer(
@@ -407,8 +426,8 @@ class BindingWorker(
                             sourceRoot = sourceRoot,
                             targetRoot = targetRoot,
                             nodeAssociation = nodeAssociation,
-                            sourceMask = MPSProjectSyncMask(listOf(mpsProject), true),
-                            targetMask = MPSProjectSyncMask(listOf(mpsProject), false),
+                            sourceMask = syncMaskManager.getMask(bindingId, true),
+                            targetMask = syncMaskManager.getMask(bindingId, false),
                             onException = { if (!continueOnError()) throw it },
                         ).synchronizeAndStoreInstance()
                     }

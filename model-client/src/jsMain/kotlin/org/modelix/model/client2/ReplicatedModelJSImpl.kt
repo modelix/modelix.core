@@ -6,15 +6,15 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.promise
 import kotlinx.datetime.toJSDate
-import org.modelix.model.mutable.withAutoTransactions
 import kotlin.js.Promise
 
-internal class ReplicatedModelJSImpl(private val model: ReplicatedModel) : ReplicatedModelJS {
+internal class ReplicatedModelJSImpl(private val models: List<ReplicatedModel>) : ReplicatedModelJS {
 
-    private val mutableModelTree = MutableModelTreeJsImpl(model.getVersionedModelTree().withAutoTransactions())
+    private val mutableModelTree = MutableModelTreeJsImpl(models.map { it.getVersionedModelTree() })
 
     override fun dispose() {
-        model.dispose()
+        // TODO The models are passed to the constructor, so this class shouldn't be responsible for their lifecycle.
+        models.forEach { it.dispose() }
     }
 
     override fun getBranch(): MutableModelTreeJs {
@@ -23,10 +23,20 @@ internal class ReplicatedModelJSImpl(private val model: ReplicatedModel) : Repli
 
     override fun getCurrentVersionInformation(): Promise<VersionInformationJS> {
         return GlobalScope.promise {
-            val currentVersion = model.getCurrentVersion()
-            val currentVersionAuthor = currentVersion.author
-            val currentVersionTime = currentVersion.getTimestamp()?.toJSDate()
-            return@promise VersionInformationJS(currentVersionAuthor, currentVersionTime, currentVersion.getContentHash())
+            models.first().getCurrentVersionInformation()
         }
+    }
+
+    override fun getCurrentVersionInformations(): Promise<Array<VersionInformationJS>> {
+        return GlobalScope.promise {
+            models.map { it.getCurrentVersionInformation() }.toTypedArray()
+        }
+    }
+
+    private fun ReplicatedModel.getCurrentVersionInformation(): VersionInformationJS {
+        val currentVersion = getCurrentVersion()
+        val currentVersionAuthor = currentVersion.author
+        val currentVersionTime = currentVersion.getTimestamp()?.toJSDate()
+        return VersionInformationJS(currentVersionAuthor, currentVersionTime, currentVersion.getContentHash())
     }
 }

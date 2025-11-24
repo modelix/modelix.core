@@ -10,42 +10,41 @@ import org.modelix.datastructures.model.NodeAddedEvent
 import org.modelix.datastructures.model.NodeRemovedEvent
 import org.modelix.datastructures.model.PropertyChangedEvent
 import org.modelix.datastructures.model.ReferenceChangedEvent
+import org.modelix.model.api.AutoTransactionsNode
+import org.modelix.model.api.CompositeModel
 import org.modelix.model.api.INodeReference
-import org.modelix.model.api.INodeReferenceSerializer
+import org.modelix.model.api.IWritableNode
+import org.modelix.model.api.NodeReference
 import org.modelix.model.mutable.IGenericMutableModelTree
 import org.modelix.model.mutable.IMutableModelTree
 import org.modelix.model.mutable.NodeInMutableModel
 import org.modelix.model.mutable.asModel
-import org.modelix.model.mutable.getRootNode
 import org.modelix.streams.iterateBlocking
 
 internal class MutableModelTreeJsImpl(
-    private val tree: IMutableModelTree,
+    private val trees: List<IMutableModelTree>,
 ) : MutableModelTreeJs {
+    constructor(tree: IMutableModelTree) : this(listOf(tree))
 
     private val changeHandlers = mutableSetOf<ChangeHandler>()
 
-    private val jsRootNode = toNodeJs(tree.getRootNode().asLegacyNode())
-    private val changeListener = ChangeListener(tree) { change ->
-        changeHandlers.forEach {
-                changeHandler ->
-            changeHandler(change)
-        }
-    }
-
-    init {
-        tree.addListener(changeListener)
+    private val model = CompositeModel(trees.map { it.asModel() })
+    private val changeListeners = trees.map { tree ->
+        ChangeListener(tree) { change ->
+            changeHandlers.forEach { it(change) }
+        }.also { tree.addListener(it) }
         // TODO missing removeListener call
     }
 
-    override val rootNode: INodeJS
-        get() {
-            return jsRootNode
-        }
+    override val rootNode: INodeJS get() = getRootNodes().single()
+
+    override fun getRootNodes(): Array<INodeJS> {
+        return model.getRootNodes().map { it.toJS() }.toTypedArray()
+    }
 
     override fun resolveNode(reference: INodeReferenceJS): INodeJS? {
-        val referenceObject = INodeReferenceSerializer.deserialize(reference as String)
-        return tree.asModel().tryResolveNode(referenceObject)?.asLegacyNode()?.let(::toNodeJs)
+        val referenceObject = NodeReference(reference as String)
+        return model.tryResolveNode(referenceObject)?.toJS()
     }
 
     override fun addListener(handler: ChangeHandler) {
@@ -54,6 +53,8 @@ internal class MutableModelTreeJsImpl(
     override fun removeListener(handler: ChangeHandler) {
         changeHandlers.remove(handler)
     }
+
+    private fun IWritableNode.toJS() = toNodeJs(AutoTransactionsNode(this, model).asLegacyNode())
 }
 
 internal class ChangeListener(private val tree: IMutableModelTree, private val changeCallback: (ChangeJS) -> Unit) :
@@ -64,9 +65,6 @@ internal class ChangeListener(private val tree: IMutableModelTree, private val c
     }
 
     override fun treeChanged(oldTree: IGenericModelTree<INodeReference>, newTree: IGenericModelTree<INodeReference>) {
-        if (oldTree == null) {
-            return
-        }
         newTree.getChanges(oldTree, false).iterateBlocking(newTree) {
             when (it) {
                 is ConceptChangedEvent<INodeReference> -> changeCallback(ConceptChanged(nodeIdToInode(it.nodeId)))

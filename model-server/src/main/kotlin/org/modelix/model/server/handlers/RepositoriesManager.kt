@@ -487,7 +487,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         author: String?,
     ) {
         val repositoryId = RepositoryId(newConfig.repositoryId)
-        val oldConfig = getConfig(repositoryId)
+        val oldConfig = getConfig(repositoryId, repositoryId.getBranchReference(getBranchNames(repositoryId).first()))
 
         if (oldConfig.nodeIdType == RepositoryConfig.NodeIdType.INT64 && newConfig.nodeIdType == RepositoryConfig.NodeIdType.STRING) {
             val branches = getBranches(repositoryId)
@@ -513,8 +513,8 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
     }
 
     @RequiresTransaction
-    override fun getConfig(repositoryId: RepositoryId): RepositoryConfig {
-        val version = requireNotNull(getVersion(repositoryId.getBranchReference())) {
+    override fun getConfig(repositoryId: RepositoryId, branchReference: BranchReference): RepositoryConfig {
+        val version = requireNotNull(getVersion(branchReference)) {
             "No version found in repository $repositoryId"
         }
         val treeData = version.obj.data.getTree(TreeType.MAIN).resolveNow().data

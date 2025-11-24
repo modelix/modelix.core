@@ -18,6 +18,8 @@ interface ReplicatedModelJS {
      */
     fun getCurrentVersionInformation(): Promise<VersionInformationJS>
 
+    fun getCurrentVersionInformations(): Promise<Array<VersionInformationJS>>
+
     /**
      * Closes the replicated model and stops replicating data.
      */

@@ -1,7 +1,8 @@
 package org.modelix.model.api
 
-class CompositeModel(models: List<IModel>) : IModel {
-    val models: List<IModel> = models.flatMap {
+class CompositeModel(models: List<IModel>) : IMutableModel {
+    val models: List<IMutableModel> = models.flatMap {
+        it as IMutableModel
         when (it) {
             is CompositeModel -> it.models
             else -> listOf(it)
@@ -12,11 +13,11 @@ class CompositeModel(models: List<IModel>) : IModel {
         throw UnsupportedOperationException("Use getRootNodes for CompositeModels")
     }
 
-    override fun getRootNodes(): List<IReadableNode> {
+    override fun getRootNodes(): List<IWritableNode> {
         return models.flatMap { it.getRootNodes() }
     }
 
-    override fun tryResolveNode(ref: INodeReference): IReadableNode? {
+    override fun tryResolveNode(ref: INodeReference): IWritableNode? {
         return models.asSequence().mapNotNull { it.tryResolveNode(ref) }.firstOrNull()
     }
 

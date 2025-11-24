@@ -198,11 +198,20 @@ interface ClientJS {
      */
     fun startReplicatedModel(repositoryId: String, branchId: String, idScheme: IdSchemeJS): Promise<ReplicatedModelJS>
 
+    fun startReplicatedModels(parameters: Array<ReplicatedModelParameters>): Promise<ReplicatedModelJS>
+
     /**
      * Dispose the client by closing the underlying connection to the model server.
      */
     fun dispose()
 }
+
+@JsExport
+data class ReplicatedModelParameters(
+    val repositoryId: String,
+    val branchId: String,
+    val idScheme: IdSchemeJS,
+)
 
 internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
 
@@ -272,23 +281,23 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
         repositoryId: String,
         branchId: String,
         idScheme: IdSchemeJS,
-    ): Promise<ReplicatedModelJS> = startReplicatedModelWithIdGenerator(
-        repositoryId,
-        branchId,
-        when (idScheme) {
-            IdSchemeJS.READONLY -> { treeId -> DummyIdGenerator() }
-            IdSchemeJS.MODELIX -> { treeId -> ModelixIdGenerator(modelClient.getIdGenerator(), treeId) }
-            IdSchemeJS.MPS -> { treeId -> MPSIdGenerator(modelClient.getIdGenerator(), treeId) }
-        },
-    )
+    ): Promise<ReplicatedModelJS> {
+        return startReplicatedModels(arrayOf(ReplicatedModelParameters(repositoryId, branchId, idScheme)))
+    }
 
-    private fun startReplicatedModelWithIdGenerator(repositoryId: String, branchId: String, idGenerator: (TreeId) -> INodeIdGenerator<INodeReference>): Promise<ReplicatedModelJS> {
-        val modelClient = modelClient
-        val branchReference = RepositoryId(repositoryId).getBranchReference(branchId)
-        val model: ReplicatedModel = modelClient.getReplicatedModel(branchReference, idGenerator)
+    override fun startReplicatedModels(parameters: Array<ReplicatedModelParameters>): Promise<ReplicatedModelJS> {
         return GlobalScope.promise {
-            model.start()
-            return@promise ReplicatedModelJSImpl(model)
+            val models = parameters.map { parameters ->
+                val modelClient = modelClient
+                val branchReference = RepositoryId(parameters.repositoryId).getBranchReference(parameters.branchId)
+                val idGenerator: (TreeId) -> INodeIdGenerator<INodeReference> = when (parameters.idScheme) {
+                    IdSchemeJS.READONLY -> { treeId -> DummyIdGenerator() }
+                    IdSchemeJS.MODELIX -> { treeId -> ModelixIdGenerator(modelClient.getIdGenerator(), treeId) }
+                    IdSchemeJS.MPS -> { treeId -> MPSIdGenerator(modelClient.getIdGenerator(), treeId) }
+                }
+                modelClient.getReplicatedModel(branchReference, idGenerator).also { it.start() }
+            }
+            ReplicatedModelJSImpl(models)
         }
     }
 
@@ -451,6 +460,8 @@ interface MutableModelTreeJs {
      * The root node can be used to read and write model data.
      */
     val rootNode: INodeJS
+
+    fun getRootNodes(): Array<INodeJS>
 
     /**
      * Find the node for the given reference in the branch.

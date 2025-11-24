@@ -41,6 +41,28 @@ class RepositoriesManagerTest {
     }
 
     @Test
+    fun `deleting default branch keeps getConfig intact`() = runTest {
+        val repoId = RepositoryId("branch-get-nondefault-config")
+        val otherBranch = repoId.getBranchReference("versions/1.0.0")
+        @OptIn(RequiresTransaction::class)
+        repoManager.getTransactionManager().runWrite {
+            this@RepositoriesManagerTest.repoManager.createRepository(
+                repoId,
+                "testUser",
+                legacyGlobalStorage = true,
+            )
+            repoManager.forcePush(otherBranch, repoManager.getVersionHash(repoId.getBranchReference("master"))!!)
+            repoManager.removeBranches(repoId, setOf("master"))
+        }
+
+        @OptIn(RequiresTransaction::class)
+        val config = repoManager.getTransactionManager().runRead {
+            repoManager.getConfig(repoId, otherBranch)
+        }
+        assertTrue { config.legacyGlobalStorage }
+    }
+
+    @Test
     fun `repository data is removed when removing repository`() = runTest {
         val repoId = RepositoryId("abc")
         @OptIn(RequiresTransaction::class)

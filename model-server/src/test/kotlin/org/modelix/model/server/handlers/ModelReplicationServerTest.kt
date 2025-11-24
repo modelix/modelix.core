@@ -50,6 +50,7 @@ import org.modelix.model.client2.runWrite
 import org.modelix.model.client2.useVersionStreamFormat
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.server.api.BranchInfo
+import org.modelix.model.server.api.RepositoryConfig
 import org.modelix.model.server.api.v2.VersionDelta
 import org.modelix.model.server.api.v2.VersionDeltaStream
 import org.modelix.model.server.api.v2.VersionDeltaStreamV2
@@ -665,6 +666,61 @@ class ModelReplicationServerTest {
         // Assert
         assertEquals(HttpStatusCode.OK, response.status)
         assertContains(response.bodyAsText(), version!!.getContentHash())
+    }
+
+    @Test
+    fun `getRepositoryConfig returns 404 if no branch exists`() = runWithTestModelServer { _, fixture ->
+        // Arrange
+        val repositoryId = RepositoryId("repo1")
+
+        var version: IVersion? = null
+        @OptIn(RequiresTransaction::class)
+        fixture.repositoriesManager.getTransactionManager().runWrite {
+            version = fixture.repositoriesManager.createRepository(repositoryId, null)
+            fixture.repositoriesManager.removeBranches(repositoryId, setOf("master"))
+        }
+
+        // Act
+        val client = createClient { install(ContentNegotiation) { json() } }
+        val response = client.get {
+            url {
+                appendPathSegments("v2", "repositories", repositoryId.id, "config")
+            }
+            useVersionStreamFormat()
+            contentType(ContentType.Application.Json)
+        }
+
+        // Assert
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `getRepositoryConfig works for non-default branch`() = runWithTestModelServer { _, fixture ->
+        // Arrange
+        val repositoryId = RepositoryId("repo1")
+        val otherBranch = repositoryId.getBranchReference("otherBranch")
+
+        var version: IVersion? = null
+        @OptIn(RequiresTransaction::class)
+        fixture.repositoriesManager.getTransactionManager().runWrite {
+            version = fixture.repositoriesManager.createRepository(repositoryId, null, legacyGlobalStorage = true)
+            fixture.repositoriesManager.forcePush(otherBranch, version.getContentHash())
+            fixture.repositoriesManager.removeBranches(repositoryId, setOf("master"))
+        }
+
+        // Act
+        val client = createClient { install(ContentNegotiation) { json() } }
+        val response = client.get {
+            url {
+                appendPathSegments("v2", "repositories", repositoryId.id, "config")
+            }
+            useVersionStreamFormat()
+            contentType(ContentType.Application.Json)
+        }
+
+        // Assert
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(true, response.body<RepositoryConfig>().legacyGlobalStorage)
     }
 }
 

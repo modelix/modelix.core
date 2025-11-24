@@ -383,8 +383,11 @@ class ModelReplicationServer(
         val updatedConfig =
             @OptIn(RequiresTransaction::class)
             runWrite {
+                val repositoryId = RepositoryId(repository)
+                val branch = repositoriesManager.getBranches(repositoryId).firstOrNull()
+                    ?: throw BranchNotFoundException(RepositoryId.DEFAULT_BRANCH, repository)
                 repositoriesManager.migrateRepository(newConfig, call.getUserName())
-                repositoriesManager.getConfig(RepositoryId(repository))
+                repositoriesManager.getConfig(repositoryId, branch)
             }
         call.respond(updatedConfig)
     }
@@ -394,7 +397,10 @@ class ModelReplicationServer(
         val config =
             @OptIn(RequiresTransaction::class)
             runRead {
-                repositoriesManager.getConfig(RepositoryId(repository))
+                val repositoryId = RepositoryId(repository)
+                val branch = repositoriesManager.getBranches(repositoryId).firstOrNull()
+                    ?: throw BranchNotFoundException(RepositoryId.DEFAULT_BRANCH, repository)
+                repositoriesManager.getConfig(RepositoryId(repository), branch)
             }
         call.respond(config)
     }

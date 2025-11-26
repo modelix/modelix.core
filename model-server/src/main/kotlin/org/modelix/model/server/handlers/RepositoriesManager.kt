@@ -638,7 +638,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         }
         val treeData = version.obj.data.getTree(TreeType.MAIN).resolveNow().data
         return RepositoryConfig(
-            legacyNameBasedRoles = treeData.usesRoleIds,
+            legacyNameBasedRoles = !treeData.usesRoleIds,
             legacyGlobalStorage = isIsolated(repositoryId) == false,
             nodeIdType = if (treeData.trieWithNodeRefIds != null) RepositoryConfig.NodeIdType.STRING else RepositoryConfig.NodeIdType.INT64,
             primaryTreeType = if (treeData.trieWithNodeRefIds != null) RepositoryConfig.TreeType.PATRICIA_TRIE else RepositoryConfig.TreeType.HASH_ARRAY_MAPPED_TRIE,

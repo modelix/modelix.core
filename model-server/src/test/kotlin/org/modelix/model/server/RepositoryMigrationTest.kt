@@ -158,4 +158,58 @@ class RepositoryMigrationTest {
         // After migration the repository should use the IDs that were provided in the import data.
         assertEquals(modelData.root.toJson(), version2.getModelTree().asModelSingleThreaded().getRootNode().asData().toJson())
     }
+
+    @Test
+    fun `migrate global to isolated storage`() = runTest {
+        val repositoryManager = RepositoriesManager(InMemoryStoreClient())
+        val repositoryId = RepositoryId(config.repositoryId)
+        val branchRef = repositoryId.getBranchReference()
+
+        // Create repository with global storage (legacyGlobalStorage = true)
+        val globalConfig = config.copy(legacyGlobalStorage = true)
+
+        @OptIn(RequiresTransaction::class)
+        val version1 = repositoryManager.getTransactionManager().runWrite {
+            val emptyVersion = repositoryManager.createRepository(globalConfig, null)
+            emptyVersion.runWrite(IdGenerator.newInstance(456), author = null) {
+                modelData.load(it)
+            }!!.also {
+                repositoryManager.mergeChanges(branchRef, it.getContentHash())
+            }
+        }
+
+        // Verify initial config has global storage
+        @OptIn(RequiresTransaction::class)
+        val configBeforeMigration = repositoryManager.getTransactionManager().runRead {
+            repositoryManager.getConfig(repositoryId, branchRef)
+        }
+        assertEquals(true, configBeforeMigration.legacyGlobalStorage, "Repository should start with global storage")
+
+        // Migrate to isolated storage
+        @OptIn(RequiresTransaction::class)
+        repositoryManager.getTransactionManager().runWrite {
+            repositoryManager.migrateRepository(
+                globalConfig.copy(legacyGlobalStorage = false),
+                null,
+            )
+        }
+
+        // Verify config after migration has isolated storage
+        @OptIn(RequiresTransaction::class)
+        val configAfterMigration = repositoryManager.getTransactionManager().runRead {
+            repositoryManager.getConfig(repositoryId, branchRef)
+        }
+        assertEquals(false, configAfterMigration.legacyGlobalStorage, "Repository should have isolated storage after migration")
+
+        // Verify data is preserved after migration
+        @OptIn(RequiresTransaction::class)
+        val version2 = repositoryManager.getTransactionManager().runRead {
+            repositoryManager.getVersion(branchRef)!!
+        }
+        assertEquals(
+            expectedImportData,
+            version2.getModelTree().asModelSingleThreaded().getRootNode().asData().toJson(),
+            "Data should be preserved after migration",
+        )
+    }
 }

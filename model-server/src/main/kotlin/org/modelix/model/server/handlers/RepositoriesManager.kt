@@ -474,12 +474,11 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
 
     /**
      * Possible migrations:
-     * - name<-->id based roles: not possible without the metamodel
-     * - global-->isolated storage: copy all reachable objects
-     * - isolated storage --> global storage: possible, but no use cases for it
-     * - int64-->string node IDs: create new version with different tree implementation and copy all content
-     * - string-->int64 node IDs: bulk sync into new version with reassigned IDs
-     * - changed model ID: bulk sync into new version with reassigned IDs
+     * - name<-->id based roles: not supported (requires metamodel to map role names to role IDs)
+     * - global<-->isolated storage: works (copies all reachable objects and updates repository lists)
+     * - int64-->string node IDs: works (references preserved as strings)
+     * - string-->int64 node IDs: works only if string IDs are valid hex-encoded int64 values
+     * - changed model ID: not supported (NodeAssociationForIdMigration cannot resolve nodes across different model IDs)
      */
     @RequiresTransaction
     override fun migrateRepository(
@@ -487,29 +486,149 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         author: String?,
     ) {
         val repositoryId = RepositoryId(newConfig.repositoryId)
-        val oldConfig = getConfig(repositoryId, repositoryId.getBranchReference(getBranchNames(repositoryId).first()))
+        val currentConfig = getConfig(repositoryId, repositoryId.getBranchReference())
 
-        if (oldConfig.nodeIdType == RepositoryConfig.NodeIdType.INT64 && newConfig.nodeIdType == RepositoryConfig.NodeIdType.STRING) {
-            val branches = getBranches(repositoryId)
-            for (branch in branches) {
-                val oldVersion = getVersion(branch) ?: continue
-                val sourceModel = oldVersion.getModelTree().asModelSingleThreaded()
-                val targetTree = createEmptyTree(newConfig).asMutableSingleThreaded()
-                val targetModel = targetTree.asModel()
-                ModelSynchronizer(
-                    sourceRoot = sourceModel.getRootNode(),
-                    targetRoot = targetModel.getRootNode(),
-                    nodeAssociation = NodeAssociationForIdMigration(targetModel),
-                ).synchronize()
-                val newVersion = IVersion.builder()
-                    .tree(targetTree.getTransaction().tree)
-                    .baseVersion(oldVersion)
-                    .author(author)
-                    .currentTime()
-                    .build()
-                putVersionHash(branch, newVersion.getContentHash())
+        // Validate that the migration is supported
+        validateMigration(currentConfig, newConfig)
+
+        val currentIsolated = isIsolated(repositoryId)!!
+        val targetIsolated = !newConfig.legacyGlobalStorage
+
+        // Handle storage migration first
+        if (currentIsolated != targetIsolated) {
+            migrateStorage(repositoryId, currentIsolated, targetIsolated)
+        }
+
+        // Skip tree migration if nothing relevant has changed
+        if (currentConfig.legacyNameBasedRoles == newConfig.legacyNameBasedRoles &&
+            currentConfig.nodeIdType == newConfig.nodeIdType &&
+            currentConfig.modelId == newConfig.modelId
+        ) {
+            return
+        }
+
+        // Perform tree migration for other config changes
+        val branches = getBranches(repositoryId)
+        for (branch in branches) {
+            val oldVersion = getVersion(branch) ?: continue
+            val sourceModel = oldVersion.getModelTree().asModelSingleThreaded()
+            val targetTree = createEmptyTree(newConfig).asMutableSingleThreaded()
+            val targetModel = targetTree.asModel()
+            ModelSynchronizer(
+                sourceRoot = sourceModel.getRootNode(),
+                targetRoot = targetModel.getRootNode(),
+                nodeAssociation = NodeAssociationForIdMigration(targetModel),
+            ).synchronize()
+            val newVersion = IVersion.builder()
+                .tree(targetTree.getTransaction().tree)
+                .baseVersion(oldVersion)
+                .author(author)
+                .currentTime()
+                .build()
+            putVersionHash(branch, newVersion.getContentHash())
+        }
+    }
+
+    private fun validateMigration(currentConfig: RepositoryConfig, newConfig: RepositoryConfig) {
+        // Check for role storage migration (name-based <-> id-based)
+        if (currentConfig.legacyNameBasedRoles != newConfig.legacyNameBasedRoles) {
+            throw UnsupportedMigrationException(
+                "Migration between name-based and id-based role storage is not supported. " +
+                    "This requires a metamodel to map role names to role IDs.",
+            )
+        }
+
+        // Check for model ID changes
+        if (currentConfig.modelId != newConfig.modelId) {
+            throw UnsupportedMigrationException(
+                "Changing the model ID is not supported. " +
+                    "Node references include the model ID and cannot be resolved across different model IDs.",
+            )
+        }
+
+        // Note: Storage migration (global <-> isolated) is supported and handled separately
+        // Note: int64 -> string node IDs is supported
+        // Note: string -> int64 node IDs is supported if strings are valid hex-encoded int64 values
+        //       (validation happens at runtime during the migration)
+    }
+
+    @RequiresTransaction
+    private fun migrateStorage(repositoryId: RepositoryId, fromIsolated: Boolean, toIsolated: Boolean) {
+        // Collect branches, version hashes, and branch names BEFORE updating repository lists
+        val branches = getBranches(repositoryId)
+        val versionHashes = branches.mapNotNull { getVersionHash(it) }.toSet()
+        val branchNames = getBranchNames(repositoryId)
+
+        if (fromIsolated && !toIsolated) {
+            // isolated → global: copy all objects from this repository to global storage
+            stores.genericStore.copyRepositoryObjects(repositoryId, RepositoryId(""))
+        }
+
+        // Update repository lists
+        val fromRepositories = getRepositories(fromIsolated)
+        val toRepositories = getRepositories(toIsolated)
+        stores.getGlobalStoreClient().put(
+            repositoriesListKey(fromIsolated),
+            (fromRepositories - repositoryId).joinToString("\n") { it.id },
+        )
+        stores.getGlobalStoreClient().put(
+            repositoriesListKey(toIsolated),
+            (toRepositories + repositoryId).joinToString("\n") { it.id },
+        )
+
+        // Update branch list
+        stores.genericStore.put(branchListKey(repositoryId, fromIsolated), null)
+        stores.genericStore.put(branchListKey(repositoryId, toIsolated), branchNames.joinToString("\n"))
+
+        // Migrate version hashes to new storage location
+        for (branch in branches) {
+            val versionHash = stores.genericStore[branchKey(branch, fromIsolated)]
+            if (versionHash != null) {
+                stores.genericStore.put(branchKey(branch, toIsolated), versionHash, false)
+                stores.genericStore.put(branchKey(branch, fromIsolated), null, false)
             }
         }
+
+        if (!fromIsolated && toIsolated) {
+            // global → isolated: Copy only objects reachable from this repository's versions
+            copyReachableObjectsToIsolatedStorage(repositoryId, versionHashes)
+        }
+    }
+
+    @RequiresTransaction
+    private fun copyReachableObjectsToIsolatedStorage(repositoryId: RepositoryId, versionHashes: Set<String>) {
+        if (versionHashes.isEmpty()) return
+
+        val sourceStore = stores.getAsyncStore(null) // global storage
+        val objectsToCopy = mutableMapOf<ObjectInRepository, String>()
+
+        // Collect all reachable object hashes from the repository's versions
+        val reachableHashes = mutableSetOf<String>()
+
+        for (versionHash in versionHashes) {
+            // Add the version hash itself
+            reachableHashes.add(versionHash)
+
+            // Load the version and collect all objects it references
+            val version = CLVersion.loadFromHash(versionHash, sourceStore)
+
+            // Use diff with empty list to get all objects reachable from this version
+            version.diff(emptyList()).iterateBlocking(sourceStore) { obj ->
+                reachableHashes.add(obj.getHashString())
+            }
+        }
+
+        // Copy all reachable objects to isolated storage
+        for (hash in reachableHashes) {
+            val globalKey = ObjectInRepository.global(hash)
+            val value = stores.genericStore[globalKey]
+            if (value != null) {
+                val isolatedKey = ObjectInRepository(repositoryId.id, hash)
+                objectsToCopy[isolatedKey] = value
+            }
+        }
+
+        stores.genericStore.putAll(objectsToCopy, silent = true)
     }
 
     @RequiresTransaction

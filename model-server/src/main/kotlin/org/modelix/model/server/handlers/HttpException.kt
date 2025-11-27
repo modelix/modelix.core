@@ -175,3 +175,18 @@ class ObjectValueNotFoundException(objectHash: String, cause: Throwable? = null)
         type = "/problems/object-value-not-found",
         cause = cause,
     )
+
+/**
+ * An [HttpException] indicating that a requested repository migration is not supported.
+ *
+ * @param reason description of why the migration is not supported
+ * @param cause The causing exception for the bad request or null if none.
+ */
+class UnsupportedMigrationException(reason: String, cause: Throwable? = null) :
+    HttpException(
+        HttpStatusCode.NotImplemented,
+        title = "Unsupported repository migration",
+        details = reason,
+        type = "/problems/unsupported-migration",
+        cause = cause,
+    )

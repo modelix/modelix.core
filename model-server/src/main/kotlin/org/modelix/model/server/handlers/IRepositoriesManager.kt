@@ -75,7 +75,7 @@ interface IRepositoriesManager {
     fun getTransactionManager(): ITransactionManager
 
     @RequiresTransaction
-    fun migrateRepository(newConfig: RepositoryConfig, author: String?)
+    fun migrateRepository(newConfig: RepositoryConfig, branch: BranchReference, author: String?)
 
     @RequiresTransaction
     fun getConfig(repositoryId: RepositoryId, branchReference: BranchReference): RepositoryConfig

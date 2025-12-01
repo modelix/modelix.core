@@ -386,7 +386,7 @@ class ModelReplicationServer(
                 val repositoryId = RepositoryId(repository)
                 val branch = repositoriesManager.getBranches(repositoryId).firstOrNull()
                     ?: throw BranchNotFoundException(RepositoryId.DEFAULT_BRANCH, repository)
-                repositoriesManager.migrateRepository(newConfig, call.getUserName())
+                repositoriesManager.migrateRepository(newConfig, branch, call.getUserName())
                 repositoriesManager.getConfig(repositoryId, branch)
             }
         call.respond(updatedConfig)

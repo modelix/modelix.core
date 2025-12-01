@@ -27,7 +27,10 @@ data class RepositoryConfig(
      * structure can be chosen for the model.
      */
     @Deprecated("Not implemented yet. Tree type is chosen based on the nodeIdType.")
-    val primaryTreeType: TreeType = TreeType.PATRICIA_TRIE,
+    val primaryTreeType: TreeType = when (nodeIdType) {
+        NodeIdType.INT64 -> TreeType.HASH_ARRAY_MAPPED_TRIE
+        NodeIdType.STRING -> TreeType.PATRICIA_TRIE
+    },
 
     /**
      * Is assigned when the repository is created and cannot be changed later.

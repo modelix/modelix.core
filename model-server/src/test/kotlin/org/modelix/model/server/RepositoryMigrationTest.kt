@@ -2,6 +2,7 @@ package org.modelix.model.server
 
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.test.runTest
+import org.modelix.model.IVersion
 import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PNodeReference
@@ -16,6 +17,7 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mutable.asModelSingleThreaded
+import org.modelix.model.mutable.asMutableSingleThreaded
 import org.modelix.model.server.api.RepositoryConfig
 import org.modelix.model.server.api.RepositoryConfig.NodeIdType
 import org.modelix.model.server.handlers.IdsApiImpl
@@ -114,8 +116,9 @@ class RepositoryMigrationTest {
         newConfig: RepositoryConfig,
     ): CLVersion {
         return repositoryManager.getTransactionManager().runWrite {
-            repositoryManager.migrateRepository(newConfig, null)
-            repositoryManager.getVersion(RepositoryId(newConfig.repositoryId).getBranchReference())!!
+            val branch = RepositoryId(newConfig.repositoryId).getBranchReference()
+            repositoryManager.migrateRepository(newConfig, branch, null)
+            repositoryManager.getVersion(branch)!!
         }
     }
 
@@ -205,6 +208,68 @@ class RepositoryMigrationTest {
 
         // Verify data is preserved after migration
         assertEquals(expectedImportData, extractNodeData(version2), "Data should be preserved after migration")
+    }
+
+    @Test
+    fun `migrate roundtrip with client on repo with multiple branches`() = testApplication {
+        application {
+            try {
+                installDefaultServerPlugins()
+                val repoManager = RepositoriesManager(InMemoryStoreClient())
+                ModelReplicationServer(repoManager).init(this)
+                IdsApiImpl(repoManager).init(this)
+            } catch (ex: Throwable) {
+                ex.printStackTrace()
+            }
+        }
+
+        // Given I have a repository with global storage (legacyGlobalStorage = true)
+        val modelClient = ModelClientV2.builder().url("http://localhost/v2").client(client).build().also { it.init() }
+        val repositoryManager = RepositoriesManager(InMemoryStoreClient())
+        val repositoryId = RepositoryId(config.repositoryId)
+
+        val mainConfig = config.copy(nodeIdType = NodeIdType.STRING, legacyGlobalStorage = true, legacyNameBasedRoles = false)
+
+        val emptyVersion = modelClient.initRepository(mainConfig)
+
+        val versionWithData = emptyVersion.runWrite(IdGenerator.newInstance(456), author = null) {
+            this@RepositoryMigrationTest.modelData.load(it)
+        }!! as CLVersion
+
+        // and I have a branch main with (legacyNameBasedRoles = false)
+        modelClient.push(
+            RepositoryId(mainConfig.repositoryId).getBranchReference("main"),
+            versionWithData,
+            null,
+            force = true,
+        )
+
+        // and I have a branch master with (legacyNameBasedRoles = true)
+        val masterConfig = mainConfig.copy(legacyNameBasedRoles = true)
+        modelClient.push(
+            branch = RepositoryId(mainConfig.repositoryId).getBranchReference("master"),
+            version = repositoryManager.run {
+                val createEmptyTree = masterConfig.createEmptyTree()
+                createEmptyTree.asObject().data.usesRoleIds
+                val value = createEmptyTree.asMutableSingleThreaded().getTransaction().tree
+                value.asObject().data.usesRoleIds
+                IVersion.builder()
+                    .tree(value)
+                    .baseVersion(versionWithData)
+                    .currentTime()
+                    .build()
+            },
+            baseVersion = null,
+            force = true,
+        )
+
+        // When I fetch the config and send it back to the server
+        val configBeforeMigration = modelClient.getRepositoryConfig(repositoryId)
+        assertEquals(configBeforeMigration.legacyNameBasedRoles, false)
+        val configAfterMigration = modelClient.changeRepositoryConfig(configBeforeMigration)
+
+        // Then the configs have stayed the same
+        assertEquals(configBeforeMigration, configAfterMigration)
     }
 
     @Test

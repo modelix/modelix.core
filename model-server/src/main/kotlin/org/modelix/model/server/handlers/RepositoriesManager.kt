@@ -483,10 +483,11 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
     @RequiresTransaction
     override fun migrateRepository(
         newConfig: RepositoryConfig,
+        branch: BranchReference,
         author: String?,
     ) {
         val repositoryId = RepositoryId(newConfig.repositoryId)
-        val currentConfig = getConfig(repositoryId, repositoryId.getBranchReference())
+        val currentConfig = getConfig(repositoryId, branch)
 
         // Validate that the migration is supported
         validateMigration(currentConfig, newConfig)

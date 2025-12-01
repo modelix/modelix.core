@@ -26,7 +26,7 @@ class Int64ModelTree(nodesMap: IPersistentMap<Long, NodeObjectData<Long>>, treeI
             id = getId(),
             int64Hamt = nodesMap.asObject().ref.upcast(),
             trieWithNodeRefIds = null,
-            usesRoleIds = true,
+            usesRoleIds = useRoleIds,
         ).asObject(graph)
     }
     override fun getNodeIdType(): IDataTypeConfiguration<Long> = LongDataTypeConfiguration()
@@ -49,7 +49,7 @@ class DefaultModelTree(
             id = getId(),
             int64Hamt = null,
             trieWithNodeRefIds = nodesMap.asObject().ref.upcast(),
-            usesRoleIds = true,
+            usesRoleIds = useRoleIds,
         ).asObject(graph)
     }
     override fun getNodeIdType(): IDataTypeConfiguration<INodeReference> = NodeReferenceDataTypeConfig()

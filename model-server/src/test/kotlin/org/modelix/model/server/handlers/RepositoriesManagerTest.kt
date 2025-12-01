@@ -4,6 +4,8 @@ import io.mockk.spyk
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.server.api.RepositoryConfig
+import org.modelix.model.server.api.RepositoryConfig.NodeIdType
 import org.modelix.model.server.store.IRepositoryAwareStore
 import org.modelix.model.server.store.InMemoryStoreClient
 import org.modelix.model.server.store.RequiresTransaction
@@ -61,6 +63,70 @@ class RepositoriesManagerTest {
         }
         assertTrue { config.legacyGlobalStorage }
     }
+
+    fun testConfigGetsCreatedAsSpecified(config: RepositoryConfig) = runTest {
+        val repoId = RepositoryId(config.repositoryId)
+        val branch = repoId.getBranchReference()
+        @OptIn(RequiresTransaction::class)
+        repoManager.getTransactionManager().runWrite {
+            this@RepositoriesManagerTest.repoManager.createRepository(
+                config,
+                "testUser",
+            )
+        }
+
+        @OptIn(RequiresTransaction::class)
+        val newConfig = repoManager.getTransactionManager().runRead {
+            repoManager.getConfig(repoId, branch)
+        }
+        assertEquals(config, newConfig)
+    }
+
+    @Test
+    fun `createRepository as specified with legacyNameBasedRoles=true`() =
+        testConfigGetsCreatedAsSpecified(
+            RepositoryConfig(
+                repositoryId = "createRepository1",
+                modelId = "",
+                repositoryName = "createRepository1",
+                legacyNameBasedRoles = true,
+            ),
+        )
+
+    @Test
+    fun `createRepository as specified with legacyNameBasedRoles=false`() =
+        testConfigGetsCreatedAsSpecified(
+            RepositoryConfig(
+                repositoryId = "createRepository2",
+                modelId = "",
+                repositoryName = "createRepository2",
+                legacyNameBasedRoles = false,
+            ),
+        )
+
+    @Test
+    fun `createRepository as specified with legacyNameBasedRoles=false for INT64`() =
+        testConfigGetsCreatedAsSpecified(
+            RepositoryConfig(
+                repositoryId = "createRepository3",
+                modelId = "",
+                repositoryName = "createRepository3",
+                nodeIdType = NodeIdType.INT64,
+                legacyNameBasedRoles = false,
+            ),
+        )
+
+    @Test
+    fun `createRepository as specified with legacyNameBasedRoles=true for INT64`() =
+        testConfigGetsCreatedAsSpecified(
+            RepositoryConfig(
+                repositoryId = "createRepository4",
+                modelId = "",
+                repositoryName = "createRepository4",
+                nodeIdType = NodeIdType.INT64,
+                legacyNameBasedRoles = true,
+            ),
+        )
 
     @Test
     fun `repository data is removed when removing repository`() = runTest {

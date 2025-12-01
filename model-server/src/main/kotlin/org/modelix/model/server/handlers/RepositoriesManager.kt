@@ -177,7 +177,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         )
         stores.genericStore.put(branchListKey(repositoryId, isolated), masterBranch.branchName, false)
 
-        val tree = createEmptyTree(config)
+        val tree = config.createEmptyTree()
 
         val initialVersion = CLVersion.builder()
             .time(Clock.System.now())
@@ -190,13 +190,13 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         return initialVersion
     }
 
-    private fun createEmptyTree(config: RepositoryConfig): IGenericModelTree<INodeReference> {
+    fun RepositoryConfig.createEmptyTree(): IGenericModelTree<INodeReference> {
         return IGenericModelTree.builder()
-            .treeId(config.modelId)
-            .storeRoleNames(config.legacyNameBasedRoles)
-            .graph(LazyLoadingObjectGraph(getAsyncStore(RepositoryId(config.repositoryId))))
+            .treeId(modelId)
+            .storeRoleNames(legacyNameBasedRoles)
+            .graph(LazyLoadingObjectGraph(getAsyncStore(RepositoryId(repositoryId))))
             .let {
-                when (config.nodeIdType) {
+                when (nodeIdType) {
                     RepositoryConfig.NodeIdType.INT64 -> it.withInt64Ids().build().withIdTranslation()
                     RepositoryConfig.NodeIdType.STRING -> it.withNodeReferenceIds().build()
                 }
@@ -512,7 +512,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         for (branch in branches) {
             val oldVersion = getVersion(branch) ?: continue
             val sourceModel = oldVersion.getModelTree().asModelSingleThreaded()
-            val targetTree = createEmptyTree(newConfig).asMutableSingleThreaded()
+            val targetTree = newConfig.createEmptyTree().asMutableSingleThreaded()
             val targetModel = targetTree.asModel()
             ModelSynchronizer(
                 sourceRoot = sourceModel.getRootNode(),

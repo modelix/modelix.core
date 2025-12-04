@@ -5,6 +5,7 @@ import kotlinx.datetime.Instant
 import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.datastructures.model.IModelTree
 import org.modelix.datastructures.model.MutationParameters
+import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.model.IVersion
 import org.modelix.model.TreeId
 import org.modelix.model.api.INodeReference
@@ -167,6 +168,14 @@ class VersionedModelTree(
             set(value) {
                 throw UnsupportedOperationException()
             }
+
+        /**
+         * Changes to the tree are not recorded as operations and will not be re-applied during conflict resolution.
+         */
+        @DelicateModelixApi
+        fun unsafeSetTree(newTree: IGenericModelTree<INodeReference>) {
+            t.tree = newTree
+        }
 
         override fun getIdGenerator(): INodeIdGenerator<INodeReference> {
             return t.getIdGenerator()

@@ -1,5 +1,8 @@
 package org.modelix.model.client2
 
+import org.modelix.datastructures.model.DefaultModelTree
+import org.modelix.datastructures.model.IGenericModelTree
+import org.modelix.datastructures.model.Int64ModelTree
 import org.modelix.datastructures.model.getDescendants
 import org.modelix.datastructures.objects.asObject
 import org.modelix.kotlin.utils.DelicateModelixApi
@@ -17,6 +20,7 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.lazy.runWriteOnTree
 import org.modelix.model.mutable.DummyIdGenerator
+import org.modelix.model.mutable.VersionedModelTree
 import org.modelix.model.mutable.moveChildren
 import org.modelix.model.mutable.setProperty
 import org.modelix.model.mutable.setReferenceTarget
@@ -50,6 +54,10 @@ suspend fun IModelClientV2.migrateRoles(
     },
 )
 
+/**
+ * Ensure this executed without concurrently active clients so that no merges can happen.
+ */
+@OptIn(DelicateModelixApi::class)
 suspend fun IModelClientV2.migrateRoles(
     branch: BranchReference,
     roleReplacement: IRoleReplacement,
@@ -65,41 +73,45 @@ suspend fun IModelClientV2.migrateRoles(
         ),
     )
 
-    val newVersion = oldVersion.runWriteOnTree(nodeIdGenerator = DummyIdGenerator<INodeReference>(), getUserId()) { newTree ->
-        val oldTree = newTree.getTransaction().tree
-        oldTree.getDescendants(oldTree.getRootNodeId(), true)
-            .flatMap { IStream.of(it).zipWith(oldTree.getConceptReference(it)) { nodeId, concept -> nodeId to concept } }
-            .flatMap { (nodeId, concept) ->
-                oldTree.getChildren(nodeId).flatMap { childId ->
-                    IStream.of(childId)
-                        .zipWith(oldTree.getRoleInParent(childId).firstOrDefault { NullChildLinkReference }) { id, role -> id to role }
-                }.toList().forEach { children ->
-                    val childrenByRole = children.groupBy { it.second }
-                    for ((oldRole, childrenInOldRole) in childrenByRole) {
-                        val newRole = if (oldRole.matches(NullChildLinkReference)) {
-                            NullChildLinkReference
-                        } else {
-                            roleReplacement.replaceRole(concept, oldRole)
+    val newVersion = oldVersion
+        .runWriteOnTree(nodeIdGenerator = DummyIdGenerator<INodeReference>(), getUserId()) { newTree ->
+            val oldTree = newTree.getTransaction().tree
+
+            (newTree.getWriteTransaction() as VersionedModelTree.VersionedWriteTransaction).unsafeSetTree(newTree.getTransaction().tree.withUseRoleIds(true))
+
+            oldTree.getDescendants(oldTree.getRootNodeId(), true)
+                .flatMap { IStream.of(it).zipWith(oldTree.getConceptReference(it)) { nodeId, concept -> nodeId to concept } }
+                .flatMap { (nodeId, concept) ->
+                    oldTree.getChildren(nodeId).flatMap { childId ->
+                        IStream.of(childId)
+                            .zipWith(oldTree.getRoleInParent(childId).firstOrDefault { NullChildLinkReference }) { id, role -> id to role }
+                    }.toList().forEach { children ->
+                        val childrenByRole = children.groupBy { it.second }
+                        for ((oldRole, childrenInOldRole) in childrenByRole) {
+                            val newRole = if (oldRole.matches(NullChildLinkReference)) {
+                                NullChildLinkReference
+                            } else {
+                                roleReplacement.replaceRole(concept, oldRole)
+                            }
+                            if (oldRole == newRole) continue
+                            newTree.getWriteTransaction().moveChildren(nodeId, newRole, -1, childrenInOldRole.map { it.first })
                         }
-                        if (oldRole == newRole) continue
-                        newTree.getWriteTransaction().moveChildren(nodeId, newRole, -1, childrenInOldRole.map { it.first })
-                    }
-                }.andThen(
-                    oldTree.getProperties(nodeId).forEach { (oldRole, value) ->
-                        val newRole = roleReplacement.replaceRole(concept, oldRole)
-                        if (oldRole == newRole) return@forEach
-                        newTree.setProperty(nodeId, oldRole, null)
-                        newTree.setProperty(nodeId, newRole, value)
                     }.andThen(
-                        oldTree.getReferenceTargets(nodeId).forEach { (oldRole, value) ->
+                        oldTree.getProperties(nodeId).forEach { (oldRole, value) ->
                             val newRole = roleReplacement.replaceRole(concept, oldRole)
-                            newTree.setReferenceTarget(nodeId, oldRole, null)
-                            newTree.setReferenceTarget(nodeId, newRole, value)
-                        },
-                    ),
-                ).andThenUnit()
-            }.drainAll().executeBlocking(oldTree)
-    }.replaceMainTree { it.copy(usesRoleIds = true) }
+                            if (oldRole == newRole) return@forEach
+                            newTree.setProperty(nodeId, oldRole, null)
+                            newTree.setProperty(nodeId, newRole, value)
+                        }.andThen(
+                            oldTree.getReferenceTargets(nodeId).forEach { (oldRole, value) ->
+                                val newRole = roleReplacement.replaceRole(concept, oldRole)
+                                newTree.setReferenceTarget(nodeId, oldRole, null)
+                                newTree.setReferenceTarget(nodeId, newRole, value)
+                            },
+                        ),
+                    ).andThenUnit()
+                }.drainAll().executeBlocking(oldTree)
+        }
 
     push(branch, newVersion, oldVersion)
     return newVersion
@@ -122,4 +134,12 @@ private fun CPVersion.replaceMainTree(modifier: (CPTree) -> CPTree): CPVersion {
     val newData = modifier(mainTreeRef.data)
     val newRef = mainTreeRef.graph.fromCreated(newData)
     return copy(treeRefs = treeRefs + (TreeType.MAIN to newRef))
+}
+
+fun <NodeId> IGenericModelTree<*>.withUseRoleIds(useRoleIds: Boolean): IGenericModelTree<NodeId> {
+    return when (this) {
+        is Int64ModelTree -> Int64ModelTree(this.nodesMap, this.getId(), useRoleIds)
+        is DefaultModelTree -> DefaultModelTree(this.nodesMap, this.getId(), useRoleIds)
+        else -> throw IllegalArgumentException("unknown tree type: $this")
+    } as IGenericModelTree<NodeId>
 }

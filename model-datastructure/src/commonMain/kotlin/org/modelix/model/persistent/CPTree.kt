@@ -109,7 +109,7 @@ data class CPTree(
             val config = PatriciaTrieConfig(
                 graph = graph,
                 keyConfig = nodeIdType,
-                valueConfig = ObjectReferenceDataTypeConfiguration(graph, NodeObjectData.Deserializer(graph, nodeIdType, treeId, usesRoleIds)),
+                valueConfig = ObjectReferenceDataTypeConfiguration(graph, NodeObjectData.Deserializer(graph, nodeIdType, treeId)),
             )
             return PatriciaNode.Deserializer(config)
         }
@@ -121,7 +121,7 @@ data class CPTree(
                 keyConfig = nodeIdType,
                 valueConfig = ObjectReferenceDataTypeConfiguration(
                     graph = graph,
-                    deserializer = NodeObjectData.Deserializer(graph, nodeIdType, treeId, usesRoleIds),
+                    deserializer = NodeObjectData.Deserializer(graph, nodeIdType, treeId),
                 ),
             ).deserializer
         }

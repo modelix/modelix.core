@@ -28,17 +28,16 @@ abstract class ModelTreeBuilder<NodeId> private constructor(protected val common
         override fun build(): IGenericModelTree<Long> {
             val nodeIdType = LongDataTypeConfiguration()
             val root = NodeObjectData<Long>(
-                deserializer = NodeObjectData.Deserializer(common.graph, nodeIdType, common.treeId, useRoleIds = common.storeRoleIds),
+                deserializer = NodeObjectData.Deserializer(common.graph, nodeIdType, common.treeId),
                 id = ITree.ROOT_ID,
                 concept = null,
                 containment = null,
-                useRoleIds = common.storeRoleIds,
             ).asObject(common.graph)
 
             val config = HamtNode.Config(
                 graph = common.graph,
                 keyConfig = nodeIdType,
-                valueConfig = ObjectReferenceDataTypeConfiguration(common.graph, NodeObjectData.Deserializer(common.graph, nodeIdType, common.treeId, useRoleIds = common.storeRoleIds)),
+                valueConfig = ObjectReferenceDataTypeConfiguration(common.graph, NodeObjectData.Deserializer(common.graph, nodeIdType, common.treeId)),
             )
             return HamtInternalNode.createEmpty(config)
                 .put(root.data.id, root.ref, common.graph)
@@ -53,16 +52,15 @@ abstract class ModelTreeBuilder<NodeId> private constructor(protected val common
         override fun build(): IGenericModelTree<INodeReference> {
             val nodeIdType = NodeReferenceDataTypeConfig()
             val root = NodeObjectData<INodeReference>(
-                deserializer = NodeObjectData.Deserializer(common.graph, nodeIdType, common.treeId, useRoleIds = common.storeRoleIds),
+                deserializer = NodeObjectData.Deserializer(common.graph, nodeIdType, common.treeId),
                 id = PNodeReference(ITree.ROOT_ID, common.treeId.id),
                 concept = null,
                 containment = null,
-                useRoleIds = common.storeRoleIds,
             ).asObject(common.graph)
             val config = PatriciaTrieConfig(
                 graph = common.graph,
                 keyConfig = nodeIdType,
-                valueConfig = ObjectReferenceDataTypeConfiguration(common.graph, NodeObjectData.Deserializer(common.graph, nodeIdType, common.treeId, useRoleIds = common.storeRoleIds)),
+                valueConfig = ObjectReferenceDataTypeConfiguration(common.graph, NodeObjectData.Deserializer(common.graph, nodeIdType, common.treeId)),
             )
             return PatriciaTrie(config)
                 .put(root.data.id, root.ref)

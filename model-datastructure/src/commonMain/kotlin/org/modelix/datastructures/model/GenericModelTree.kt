@@ -11,6 +11,7 @@ import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
+import org.modelix.model.api.IRoleReference
 import org.modelix.model.api.LocalPNodeReference
 import org.modelix.model.api.PNodeReference
 import org.modelix.model.api.meta.NullConcept
@@ -202,8 +203,8 @@ abstract class GenericModelTree<NodeId>(
         val childrenChanges: IStream.Many<ChildrenChangedEvent<NodeId>> = newChildren.zipWith(oldChildren) { newChildrenList, oldChildrenList ->
             val oldChildren: MutableMap<String?, MutableList<NodeObjectData<NodeId>>> = HashMap()
             val newChildren: MutableMap<String?, MutableList<NodeObjectData<NodeId>>> = HashMap()
-            oldChildrenList.forEach { oldChildren.getOrPut(it.containment?.second?.getIdOrNameOrNull(), { ArrayList() }).add(it) }
-            newChildrenList.forEach { newChildren.getOrPut(it.containment?.second?.getIdOrNameOrNull(), { ArrayList() }).add(it) }
+            oldChildrenList.forEach { oldChildren.getOrPut(it.containment?.second, { ArrayList() }).add(it) }
+            newChildrenList.forEach { newChildren.getOrPut(it.containment?.second, { ArrayList() }).add(it) }
 
             val roles: MutableSet<String?> = HashSet()
             roles.addAll(oldChildren.keys)
@@ -299,11 +300,10 @@ abstract class GenericModelTree<NodeId>(
     ): IStream.One<IPersistentMap<NodeId, NodeObjectData<NodeId>>> {
         val newNodes = newIds.zip(concepts).map { (childId, concept) ->
             childId to NodeObjectData<NodeId>(
-                deserializer = NodeObjectData.Deserializer(graph, this.nodesMap.getKeyTypeConfig(), getId(), useRoleIds = useRoleIds),
+                deserializer = NodeObjectData.Deserializer(graph, this.nodesMap.getKeyTypeConfig(), getId()),
                 id = childId,
                 concept = concept.takeIf { it != NullConcept.getReference() },
-                containment = parentId to role,
-                useRoleIds = useRoleIds,
+                containment = parentId to role.chooseIdOrNameOrNull(),
             )
         }
 
@@ -346,11 +346,11 @@ abstract class GenericModelTree<NodeId>(
         .exceptionIfEmpty { NodeNotFoundException(nodesMap.getKeyTypeConfig().serialize(id)) }
 
     private fun setPropertyValue(nodeId: NodeId, role: IPropertyReference, value: String?): IStream.One<IPersistentMap<NodeId, NodeObjectData<NodeId>>> {
-        return updateNode(nodeId) { IStream.of(it.withPropertyValue(role, value)) }
+        return updateNode(nodeId) { IStream.of(it.withPropertyValue(role, useRoleIds = useRoleIds, value)) }
     }
 
     private fun setReferenceTarget(sourceId: NodeId, role: IReferenceLinkReference, target: INodeReference?): IStream.One<IPersistentMap<NodeId, NodeObjectData<NodeId>>> {
-        return updateNode(sourceId) { IStream.of(it.withReferenceTarget(role, target)) }
+        return updateNode(sourceId) { IStream.of(it.withReferenceTarget(role, useRoleIds = useRoleIds, target)) }
     }
 
     private fun moveChild(
@@ -398,7 +398,7 @@ abstract class GenericModelTree<NodeId>(
             }.wrap()
             val withUpdatedRole = withChildAdded.flatMapOne { tree ->
                 tree.updateNode(childId) {
-                    IStream.of(it.copy(containment = newParentId to newRole))
+                    IStream.of(it.copy(containment = newParentId to newRole.chooseIdOrNameOrNull()))
                 }
             }
             withUpdatedRole
@@ -423,4 +423,7 @@ abstract class GenericModelTree<NodeId>(
             updateNodeInMap(mapWithoutRemovedNodes, parentId) { it.withChildRemoved(nodeId) }
         }.flatten().wrap()
     }
+
+    private fun IRoleReference.chooseIdOrName() = if (useRoleIds) getIdOrName() else getNameOrId()
+    private fun IChildLinkReference.chooseIdOrNameOrNull() = if (useRoleIds) getIdOrNameOrNull() else getNameOrIdOrNull()
 }

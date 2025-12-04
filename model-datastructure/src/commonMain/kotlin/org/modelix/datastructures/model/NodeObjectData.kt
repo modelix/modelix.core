@@ -35,22 +35,26 @@ data class NodeObjectData<NodeId>(
     val deserializer: Deserializer<NodeId>? = null,
     val id: NodeId,
     val concept: ConceptReference? = null,
-    val containment: Pair<NodeId, IChildLinkReference>? = null,
+    val containment: Pair<NodeId, String?>? = null,
     val children: LargeList<NodeId>? = null,
     val properties: List<Pair<String, String>> = emptyList(),
     val references: List<Pair<String, INodeReference>> = emptyList(),
-    val useRoleIds: Boolean,
 ) : IObjectData {
 
     init {
+        // ensure consistent encoding nullable values
         require(concept == null || concept.getUID() != NullConcept.getUID())
-        require(containment == null || containment.second == NullChildLinkReference || containment.second.getIdOrNameOrNull() != "null")
+        require(
+            containment == null || containment.second == null || !IChildLinkReference.fromString(containment.second).matches(
+                NullChildLinkReference,
+            ),
+        )
     }
 
     val parentId: NodeId? get() = containment?.first
-    val roleInParent: IChildLinkReference get() = containment?.second ?: NullChildLinkReference
+    val roleInParent: IChildLinkReference get() = containment?.second?.let { IChildLinkReference.fromString(it) } ?: NullChildLinkReference
 
-    private fun getRoleInParentAsString(): String? = roleInParent.chooseIdOrNameOrNull()
+    private fun getRoleInParentAsString(): String? = containment?.second
 
     fun getChildIds(): IStream.Many<NodeId> = children?.getElements() ?: IStream.empty()
 
@@ -74,7 +78,7 @@ data class NodeObjectData<NodeId>(
         return references.find { role.matches(it.first) }?.second
     }
 
-    fun withPropertyValue(role: IPropertyReference, value: String?): NodeObjectData<NodeId> {
+    fun withPropertyValue(role: IPropertyReference, useRoleIds: Boolean, value: String?): NodeObjectData<NodeId> {
         var index = properties.indexOfFirst { role.matches(it.first) }
         return if (value == null) {
             if (index < 0) {
@@ -86,16 +90,16 @@ data class NodeObjectData<NodeId>(
             // persist ID only to prevent ObjectHash changes when metamodel elements are renamed
             @OptIn(DelicateModelixApi::class)
             val newProperties = if (index < 0) {
-                properties + (role.chooseIdOrName() to value)
+                properties + (role.chooseIdOrName(useRoleIds) to value)
             } else {
-                properties.take(index) + (role.chooseIdOrName() to value) + properties.drop(index + 1)
+                properties.take(index) + (role.chooseIdOrName(useRoleIds) to value) + properties.drop(index + 1)
             }
             // sorted to get a stable ObjectHash and avoid non-determinism in algorithms working with the model (e.g. sync)
             copy(properties = newProperties.sortedBy { it.first })
         }
     }
 
-    fun withReferenceTarget(role: IReferenceLinkReference, value: INodeReference?): NodeObjectData<NodeId> {
+    fun withReferenceTarget(role: IReferenceLinkReference, useRoleIds: Boolean, value: INodeReference?): NodeObjectData<NodeId> {
         var index = references.indexOfFirst { role.matches(it.first) }
         return if (value == null) {
             if (index < 0) {
@@ -107,17 +111,17 @@ data class NodeObjectData<NodeId>(
             // persist ID only to prevent ObjectHash changes when metamodel elements are renamed
             @OptIn(DelicateModelixApi::class)
             val newReferences = if (index < 0) {
-                references + (role.chooseIdOrName() to value)
+                references + (role.chooseIdOrName(useRoleIds) to value)
             } else {
-                references.take(index) + (role.chooseIdOrName() to value) + references.drop(index + 1)
+                references.take(index) + (role.chooseIdOrName(useRoleIds) to value) + references.drop(index + 1)
             }
             // sorted to get a stable ObjectHash and avoid non-determinism in algorithms working with the model (e.g. sync)
             copy(references = newReferences.sortedBy { it.first })
         }
     }
 
-    private fun IRoleReference.chooseIdOrName() = if (useRoleIds) getIdOrName() else getNameOrId()
-    private fun IChildLinkReference.chooseIdOrNameOrNull() = if (useRoleIds) getIdOrNameOrNull() else getNameOrIdOrNull()
+    private fun IRoleReference.chooseIdOrName(useRoleIds: Boolean) = if (useRoleIds) getIdOrName() else getNameOrId()
+    private fun IChildLinkReference.chooseIdOrNameOrNull(useRoleIds: Boolean) = if (useRoleIds) getIdOrNameOrNull() else getNameOrIdOrNull()
 
     fun withChildRemoved(childId: NodeId): IStream.One<NodeObjectData<NodeId>> {
         return getChildIds().filter { !deserializer!!.nodeIdTypeConfig.equal(it, childId) }.toList().map { newChildren ->
@@ -135,7 +139,6 @@ data class NodeObjectData<NodeId>(
         val graph: IObjectGraph,
         val nodeIdTypeConfig: IDataTypeConfiguration<NodeId>,
         val treeId: TreeId,
-        val useRoleIds: Boolean,
     ) : IObjectDeserializer<NodeObjectData<NodeId>> {
         val referenceTypeConfig = LegacyNodeReferenceDataTypeConfig(treeId)
         val largeListConfig = LargeListConfig(graph, nodeIdTypeConfig)
@@ -173,11 +176,10 @@ data class NodeObjectData<NodeId>(
                     deserializer = this@Deserializer,
                     id = value.id,
                     concept = value.concept,
-                    containment = decodeNullId(value.parent)?.let { it to IChildLinkReference.fromString(value.role) },
+                    containment = decodeNullId(value.parent)?.let { it to value.role },
                     children = value.children,
                     properties = value.properties.toList(),
                     references = value.references.toList(),
-                    useRoleIds = useRoleIds,
                 )
             }
         }

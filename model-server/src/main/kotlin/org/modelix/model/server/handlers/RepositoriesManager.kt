@@ -38,6 +38,7 @@ import org.modelix.model.mutable.asMutableSingleThreaded
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.persistent.SerializationUtil
 import org.modelix.model.server.api.RepositoryConfig
+import org.modelix.model.server.store.GlobalStorageMigration
 import org.modelix.model.server.store.IRepositoryAwareStore
 import org.modelix.model.server.store.ITransactionManager
 import org.modelix.model.server.store.ObjectInRepository
@@ -554,7 +555,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
     }
 
     @RequiresTransaction
-    private fun migrateStorage(repositoryId: RepositoryId, fromIsolated: Boolean, toIsolated: Boolean) {
+    fun migrateStorage(repositoryId: RepositoryId, fromIsolated: Boolean, toIsolated: Boolean) {
         // Collect branches, version hashes, and branch names BEFORE updating repository lists
         val branches = getBranches(repositoryId)
         val versionHashes = branches.mapNotNull { getVersionHash(it) }.toSet()
@@ -592,44 +593,8 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
 
         if (!fromIsolated && toIsolated) {
             // global → isolated: Copy only objects reachable from this repository's versions
-            copyReachableObjectsToIsolatedStorage(repositoryId, versionHashes)
+            GlobalStorageMigration(stores).copyReachableObjectsToIsolatedStorage(repositoryId, versionHashes)
         }
-    }
-
-    @RequiresTransaction
-    private fun copyReachableObjectsToIsolatedStorage(repositoryId: RepositoryId, versionHashes: Set<String>) {
-        if (versionHashes.isEmpty()) return
-
-        val sourceStore = stores.getAsyncStore(null) // global storage
-        val objectsToCopy = mutableMapOf<ObjectInRepository, String>()
-
-        // Collect all reachable object hashes from the repository's versions
-        val reachableHashes = mutableSetOf<String>()
-
-        for (versionHash in versionHashes) {
-            // Add the version hash itself
-            reachableHashes.add(versionHash)
-
-            // Load the version and collect all objects it references
-            val version = CLVersion.loadFromHash(versionHash, sourceStore)
-
-            // Use diff with empty list to get all objects reachable from this version
-            version.diff(emptyList()).iterateBlocking(sourceStore) { obj ->
-                reachableHashes.add(obj.getHashString())
-            }
-        }
-
-        // Copy all reachable objects to isolated storage
-        for (hash in reachableHashes) {
-            val globalKey = ObjectInRepository.global(hash)
-            val value = stores.genericStore[globalKey]
-            if (value != null) {
-                val isolatedKey = ObjectInRepository(repositoryId.id, hash)
-                objectsToCopy[isolatedKey] = value
-            }
-        }
-
-        stores.genericStore.putAll(objectsToCopy, silent = true)
     }
 
     @RequiresTransaction

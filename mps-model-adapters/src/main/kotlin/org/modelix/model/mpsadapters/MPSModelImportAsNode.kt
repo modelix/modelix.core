@@ -9,6 +9,7 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IWritableNode
+import org.modelix.mps.multiplatform.model.MPSModelImportReference
 
 data class MPSModelImportAsNode(val importedModel: SModelReference, val importingModel: SModel) : MPSGenericNodeAdapter<MPSModelImportAsNode>() {
 
@@ -60,8 +61,8 @@ data class MPSModelImportAsNode(val importedModel: SModelReference, val importin
 
     override fun getNodeReference(): INodeReference {
         return MPSModelImportReference(
-            importedModel = importedModel,
-            importingModel = importingModel.reference,
+            importedModel = importedModel.toModelix(),
+            importingModel = importingModel.reference.toModelix(),
         )
     }
 

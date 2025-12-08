@@ -1,13 +1,14 @@
 package org.modelix.mps.multiplatform.model
 
 import org.modelix.model.api.INodeReference
+import org.modelix.model.api.NodeReferenceConverter
 
 data class MPSNodeReference(val modelReference: MPSModelReference?, val nodeId: String) : INodeReference() {
-    companion object {
+    companion object : NodeReferenceConverter<MPSNodeReference> {
 
         const val PREFIX = "mps"
 
-        fun tryConvert(ref: INodeReference): MPSNodeReference? {
+        override fun tryConvert(ref: INodeReference): MPSNodeReference? {
             if (ref is MPSNodeReference) return ref
             val serialized = ref.serialize()
             val serializedMPSRef = when {

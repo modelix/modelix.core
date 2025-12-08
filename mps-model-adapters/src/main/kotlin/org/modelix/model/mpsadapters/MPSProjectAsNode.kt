@@ -11,6 +11,7 @@ import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IWritableNode
 import org.modelix.mps.api.ModelixMpsApi
 import org.modelix.mps.multiplatform.model.MPSModuleReference
+import org.modelix.mps.multiplatform.model.MPSProjectReference
 
 data class MPSProjectAsNode(val project: IMPSProject) : MPSGenericNodeAdapter<IMPSProject>() {
 

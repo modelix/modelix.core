@@ -23,6 +23,7 @@ import org.modelix.model.api.IReadableNode
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.NullChildLinkReference
+import org.modelix.mps.multiplatform.model.MPSRepositoryReference
 
 fun SRepository.asLegacyNode(): INode = MPSRepositoryAsNode(this).asLegacyNode()
 fun SRepository.asWritableNode(): IWritableNode = MPSRepositoryAsNode(this)

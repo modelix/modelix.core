@@ -16,10 +16,9 @@ import org.modelix.model.api.NullChildLinkReference
 import org.modelix.model.api.remove
 import org.modelix.model.api.syncNewChild
 import org.modelix.model.api.syncNewChildren
-import org.modelix.model.mpsadapters.MPSProjectModuleReference
-import org.modelix.model.mpsadapters.MPSProjectReference
-import org.modelix.model.mpsadapters.toModelix
 import org.modelix.mps.multiplatform.model.MPSModuleReference
+import org.modelix.mps.multiplatform.model.MPSProjectModuleReference
+import org.modelix.mps.multiplatform.model.MPSProjectReference
 
 class SyncTargetModel(val models: List<IMutableModel>) : IMutableModel {
     private val repositoryNode: RepositoryWrapper = RepositoryWrapper()
@@ -339,7 +338,7 @@ class SyncTargetModel(val models: List<IMutableModel>) : IMutableModel {
                 role.matches(BuiltinLanguages.MPSRepositoryConcepts.Project.projectModules.toReference()) -> {
                     return delegates().first().syncNewChildren(role, index, specs).map {
                         val id = MPSProjectModuleReference.convert(it.getNodeReference())
-                        it.setReferenceTargetRef(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference(), id.moduleRef.toModelix())
+                        it.setReferenceTargetRef(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference(), id.moduleRef)
                         ProjectModuleWrapper(this, id)
                     }
                 }
@@ -351,14 +350,14 @@ class SyncTargetModel(val models: List<IMutableModel>) : IMutableModel {
     inner class ProjectModuleWrapper(val project: ProjectWrapper, val id: MPSProjectModuleReference) : WrapperBase() {
         override fun delegates(): Sequence<IWritableNode> = project.delegates()
             .flatMap { it.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Project.projectModules.toReference()) }
-            .filter { it.getReferenceTargetRef(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference()) == id.moduleRef.toModelix() }
+            .filter { it.getReferenceTargetRef(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference()) == id.moduleRef }
 
         fun getOrCreateDelegate(): IWritableNode {
             return delegates().firstOrNull()
                 ?: project.delegates().first().syncNewChild(getContainmentLink(), -1, NewNodeSpec(this))
         }
 
-        private fun targetModule() = tryResolveNode(id.moduleRef.toModelix())
+        private fun targetModule() = tryResolveNode(id.moduleRef)
 
         override fun getModel(): IMutableModel {
             return this@SyncTargetModel
@@ -381,7 +380,7 @@ class SyncTargetModel(val models: List<IMutableModel>) : IMutableModel {
 
         override fun getReferenceTargetRef(role: IReferenceLinkReference): INodeReference? {
             if (role.matches(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference())) {
-                return id.moduleRef.toModelix()
+                return id.moduleRef
             }
             return null
         }
@@ -391,7 +390,7 @@ class SyncTargetModel(val models: List<IMutableModel>) : IMutableModel {
         }
 
         override fun getAllReferenceTargetRefs(): List<Pair<IReferenceLinkReference, INodeReference>> {
-            return listOfNotNull(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference() to id.moduleRef.toModelix())
+            return listOfNotNull(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference() to id.moduleRef)
         }
 
         override fun getParent(): IWritableNode? {

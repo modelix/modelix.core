@@ -38,7 +38,6 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
 import org.modelix.model.mpsadapters.MPSProjectAdapter
 import org.modelix.model.mpsadapters.MPSProjectAsNode
-import org.modelix.model.mpsadapters.MPSProjectReference
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import org.modelix.model.mpsadapters.computeRead
 import org.modelix.model.mutable.DummyIdGenerator
@@ -51,6 +50,7 @@ import org.modelix.model.sync.bulk.IdentityPreservingNodeAssociation
 import org.modelix.model.sync.bulk.ModelSynchronizer
 import org.modelix.model.sync.bulk.NodeAssociationToModelServer
 import org.modelix.mps.model.sync.bulk.MPSProjectSyncMask
+import org.modelix.mps.multiplatform.model.MPSProjectReference
 import org.modelix.streams.iterateSuspending
 import java.util.concurrent.atomic.AtomicBoolean
 

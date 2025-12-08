@@ -8,13 +8,13 @@ import org.jetbrains.mps.openapi.model.SNodeReference
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
-import org.modelix.model.api.INodeReference
-import org.modelix.model.api.NodeReference
 import org.modelix.mps.multiplatform.model.MPSModelReference
 import org.modelix.mps.multiplatform.model.MPSModuleReference
 import org.modelix.mps.multiplatform.model.MPSNodeReference
+import org.modelix.mps.multiplatform.model.MPSProjectReference
 
-fun SModuleReference.toModelix() = MPSModuleReference(moduleId.toString())
+fun SModuleId.toModelix() = MPSModuleReference(toString())
+fun SModuleReference.toModelix() = moduleId.toModelix()
 fun MPSModuleReference.toMPS(): SModuleReference = PersistenceFacade.getInstance().createModuleReference(
     PersistenceFacade.getInstance().createModuleId(moduleId),
     null,
@@ -54,153 +54,22 @@ fun SModuleReference.withoutNames(): String {
     return StringUtil.escapeRefChars(moduleId.toString())
 }
 
-data class MPSDevKitDependencyReference(
-    val usedModuleId: SModuleId,
-    val userModule: SModuleReference? = null,
-    val userModel: SModelReference? = null,
-) : INodeReference() {
+fun MPSDevKitDependencyReference(
+    usedModuleId: SModuleId,
+    userModule: SModuleReference? = null,
+    userModel: SModelReference? = null,
+) = org.modelix.mps.multiplatform.model.MPSDevKitDependencyReference(usedModuleId.toModelix(), userModule?.toModelix(), userModel?.toModelix())
 
-    companion object {
-        internal const val PREFIX = "mps-devkit"
-        internal const val SEPARATOR = "#IN#"
-    }
+fun MPSJavaModuleFacetReference(moduleReference: SModuleReference) = org.modelix.mps.multiplatform.model.MPSJavaModuleFacetReference(moduleReference.toModelix())
 
-    override fun serialize(): String {
-        val importer = userModule?.let { "mps-module:${it.withoutNames()}" }
-            ?: userModel?.let { "mps-model:${it.withoutNames()}" }
-            ?: error("importer not found")
+fun MPSProjectReference(projectName: String) = org.modelix.mps.multiplatform.model.MPSProjectReference(projectName)
+fun MPSProjectReference(project: IMPSProject) = MPSProjectReference(project.getName())
+fun MPSProjectReference(project: org.jetbrains.mps.openapi.project.Project) = MPSProjectReference(MPSProjectAdapter(project))
 
-        return "$PREFIX:$usedModuleId$SEPARATOR$importer"
-    }
-}
+fun MPSProjectModuleReference(moduleRef: SModuleReference, projectRef: MPSProjectReference) = org.modelix.mps.multiplatform.model.MPSProjectModuleReference(moduleRef.toModelix(), projectRef)
 
-data class MPSJavaModuleFacetReference(val moduleReference: SModuleReference) : INodeReference() {
-
-    companion object {
-        internal const val PREFIX = "mps-java-facet"
-    }
-
-    override fun serialize(): String {
-        return "$PREFIX:${moduleReference.withoutNames()}"
-    }
-}
-
-data class MPSModelImportReference(
-    val importedModel: SModelReference,
-    val importingModel: SModelReference,
-) : INodeReference() {
-
-    companion object {
-        internal const val PREFIX = "mps-model-import"
-        internal const val SEPARATOR = "#IN#"
-    }
-
-    override fun serialize(): String {
-        return "$PREFIX:${importedModel.withoutNames()}$SEPARATOR${importingModel.withoutNames()}"
-    }
-}
-
-data class MPSModuleDependencyReference(
-    val usedModuleId: SModuleId,
-    val userModuleReference: SModuleReference,
-) : INodeReference() {
-
-    companion object {
-        internal const val PREFIX = "mps-module-dep"
-        internal const val SEPARATOR = "#IN#"
-    }
-
-    override fun serialize(): String {
-        return "$PREFIX:$usedModuleId$SEPARATOR${userModuleReference.withoutNames()}"
-    }
-}
-
-data class MPSProjectReference(val projectName: String) : INodeReference() {
-
-    companion object {
-        internal const val PREFIX = "mps-project"
-        internal const val PREFIX_COLON = "$PREFIX:"
-
-        fun tryConvert(ref: INodeReference): MPSProjectReference? {
-            if (ref is MPSProjectReference) return ref
-            val serialized = ref.serialize()
-            return if (serialized.startsWith(PREFIX_COLON)) {
-                MPSProjectReference(serialized.substringAfter(PREFIX_COLON))
-            } else {
-                null
-            }
-        }
-
-        fun convert(ref: INodeReference): MPSProjectReference = requireNotNull(tryConvert(ref)) {
-            "Not a project reference: $ref"
-        }
-    }
-
-    constructor(project: IMPSProject) : this(project.getName())
-    constructor(project: org.jetbrains.mps.openapi.project.Project) : this(MPSProjectAdapter(project))
-
-    override fun serialize(): String {
-        return "$PREFIX:$projectName"
-    }
-}
-
-data class MPSProjectModuleReference(val moduleRef: SModuleReference, val projectRef: MPSProjectReference) : INodeReference() {
-
-    constructor(moduleRef: MPSModuleReference, projectRef: MPSProjectReference) : this(moduleRef.toMPS(), projectRef)
-
-    companion object {
-        internal const val PREFIX = "mps-project-module"
-        internal const val PREFIX_COLON = "$PREFIX:"
-        internal const val SEPARATOR = "#IN#"
-
-        fun tryConvert(ref: INodeReference): MPSProjectModuleReference? {
-            if (ref is MPSProjectModuleReference) return ref
-            val serialized = ref.serialize()
-            if (!serialized.startsWith(PREFIX_COLON)) return null
-            val moduleRef = serialized
-                .substringAfter(PREFIX_COLON)
-                .substringBefore(SEPARATOR)
-                .let { MPSReferenceParser.parseSModuleReference(it) }
-            val projectRef = NodeReference(serialized.substringAfter(SEPARATOR))
-                .let { MPSProjectReference.tryConvert(it) }
-                .let { requireNotNull(it) { "Invalid project reference: $it" } }
-            return MPSProjectModuleReference(moduleRef, projectRef)
-        }
-
-        fun convert(ref: INodeReference) = requireNotNull(tryConvert(ref)) {
-            "Not a project module: $ref"
-        }
-    }
-
-    override fun serialize(): String {
-        return "$PREFIX:${moduleRef.withoutNames()}$SEPARATOR${projectRef.serialize()}"
-    }
-}
-
-data class MPSSingleLanguageDependencyReference(
-    val usedModuleId: SModuleId,
-    val userModule: SModuleReference? = null,
-    val userModel: SModelReference? = null,
-) : INodeReference() {
-
-    companion object {
-        internal const val PREFIX = "mps-lang"
-        internal const val SEPARATOR = "#IN#"
-    }
-
-    override fun serialize(): String {
-        val importer = userModule?.let { "mps-module:${it.withoutNames()}" }
-            ?: userModel?.let { "mps-model:${it.withoutNames()}" }
-            ?: error("importer not found")
-
-        return "$PREFIX:$usedModuleId$SEPARATOR$importer"
-    }
-}
-
-object MPSRepositoryReference : INodeReference() {
-    internal const val PREFIX = "mps-repository"
-
-    override fun serialize(): String {
-        return "$PREFIX:repository"
-    }
-}
+fun MPSSingleLanguageDependencyReference(
+    usedModuleId: SModuleId,
+    userModule: SModuleReference? = null,
+    userModel: SModelReference? = null,
+) = org.modelix.mps.multiplatform.model.MPSSingleLanguageDependencyReference(usedModuleId.toModelix(), userModule?.toModelix(), userModel?.toModelix())

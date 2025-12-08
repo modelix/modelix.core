@@ -66,3 +66,10 @@ class NodeReferenceKSerializer : KSerializer<INodeReference> {
 }
 
 class UnresolvableNodeReferenceException(val reference: INodeReference) : IllegalArgumentException("Node not found: $reference")
+
+interface NodeReferenceConverter<E : INodeReference> {
+    fun tryConvert(ref: INodeReference): E?
+    fun convert(ref: INodeReference): E = requireNotNull(tryConvert(ref)) {
+        "Reference cannot be converted to $this: $ref"
+    }
+}

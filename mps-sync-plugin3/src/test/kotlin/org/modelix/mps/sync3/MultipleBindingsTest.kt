@@ -7,12 +7,12 @@ import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.runWriteOnModel
 import org.modelix.model.client2.runWriteOnTree
 import org.modelix.model.lazy.RepositoryId
-import org.modelix.model.mpsadapters.MPSProjectModuleReference
 import org.modelix.model.mpsadapters.MPSProjectReference
 import org.modelix.model.mutable.getRootNode
 import org.modelix.model.mutable.setProperty
 import org.modelix.mps.multiplatform.model.MPSIdGenerator
 import org.modelix.mps.multiplatform.model.MPSModuleReference
+import org.modelix.mps.multiplatform.model.MPSProjectModuleReference
 import kotlin.io.path.writeText
 
 class MultipleBindingsTest : ProjectSyncTestBase() {

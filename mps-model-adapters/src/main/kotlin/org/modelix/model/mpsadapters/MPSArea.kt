@@ -14,13 +14,20 @@ import org.modelix.model.api.IConcept
 import org.modelix.model.api.IConceptReference
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
-import org.modelix.model.api.NodeReference
 import org.modelix.model.area.IArea
 import org.modelix.model.area.IAreaListener
 import org.modelix.model.area.IAreaReference
+import org.modelix.mps.multiplatform.model.MPSDevKitDependencyReference
+import org.modelix.mps.multiplatform.model.MPSJavaModuleFacetReference
+import org.modelix.mps.multiplatform.model.MPSModelImportReference
 import org.modelix.mps.multiplatform.model.MPSModelReference
+import org.modelix.mps.multiplatform.model.MPSModuleDependencyReference
 import org.modelix.mps.multiplatform.model.MPSModuleReference
 import org.modelix.mps.multiplatform.model.MPSNodeReference
+import org.modelix.mps.multiplatform.model.MPSProjectModuleReference
+import org.modelix.mps.multiplatform.model.MPSProjectReference
+import org.modelix.mps.multiplatform.model.MPSRepositoryReference
+import org.modelix.mps.multiplatform.model.MPSSingleLanguageDependencyReference
 
 data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
 
@@ -162,89 +169,38 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
     }
 
     private fun resolveMPSDevKitDependencyReference(ref: INodeReference): MPSDevKitDependencyAsNode? {
-        if (ref is MPSDevKitDependencyReference) {
-            return when {
-                ref.userModule != null -> ref.userModule.resolve(repository)
-                    ?.let { MPSModuleAsNode(it).findDevKitDependency(ref.usedModuleId) }
-                ref.userModel != null -> ref.userModel.resolve(repository)
-                    ?.let { MPSModelAsNode(it).findDevKitDependency(ref.usedModuleId) }
-                else -> error("No importer found.")
-            }
-        }
-        val serialized = ref.serialize()
-        val serializedModuleId = serialized.substringAfter("${MPSDevKitDependencyReference.PREFIX}:")
-            .substringBefore(MPSDevKitDependencyReference.SEPARATOR)
-
-        val importer = serialized.substringAfter(MPSDevKitDependencyReference.SEPARATOR)
-        val foundImporter = resolveNode(NodeReference(importer))?.asWritableNode()
-
-        val moduleId = PersistenceFacade.getInstance().createModuleId(serializedModuleId)
-
-        return when (foundImporter) {
-            is MPSModelAsNode -> foundImporter.findDevKitDependency(moduleId)
-            is MPSModuleAsNode<*> -> foundImporter.findDevKitDependency(moduleId)
-            else -> null
+        val ref = MPSDevKitDependencyReference.tryConvert(ref) ?: return null
+        val userModule = ref.userModule
+        val userModel = ref.userModel
+        return when {
+            userModule != null -> userModule.toMPS().resolve(repository)
+                ?.let { MPSModuleAsNode(it).findDevKitDependency(ref.usedModuleId.toMPS().moduleId) }
+            userModel != null -> userModel.toMPS().resolve(repository)
+                ?.let { MPSModelAsNode(it).findDevKitDependency(ref.usedModuleId.toMPS().moduleId) }
+            else -> error("No importer found.")
         }
     }
 
     private fun resolveMPSJavaModuleFacetReference(ref: INodeReference): MPSJavaModuleFacetAsNode? {
-        val moduleRef = if (ref is MPSJavaModuleFacetReference) {
-            ref.moduleReference
-        } else {
-            val serialized = ref.serialize()
-            val serializedModuleRef = serialized.substringAfter("${MPSJavaModuleFacetReference.PREFIX}:")
-            MPSReferenceParser.parseSModuleReference(serializedModuleRef)
-        }
-
-        val facet = moduleRef.resolve(repository)?.getFacetOfType(JavaModuleFacet.FACET_TYPE)
+        val ref = MPSJavaModuleFacetReference.tryConvert(ref) ?: return null
+        val facet = ref.moduleReference.toMPS().resolve(repository)?.getFacetOfType(JavaModuleFacet.FACET_TYPE)
         return facet?.let { MPSJavaModuleFacetAsNode(it as JavaModuleFacet) }
     }
 
     private fun resolveMPSModelImportReference(ref: INodeReference): MPSModelImportAsNode? {
-        val serialized = ref.serialize()
-        val importedModelRef = if (ref is MPSModelImportReference) {
-            ref.importedModel
-        } else {
-            val serializedModelRef = serialized
-                .substringAfter("${MPSModelImportReference.PREFIX}:")
-                .substringBefore(MPSModelImportReference.SEPARATOR)
-            MPSReferenceParser.parseSModelReference(serializedModelRef)
-        }
+        val ref = MPSModelImportReference.tryConvert(ref) ?: return null
 
-        val importingModelRef = if (ref is MPSModelImportReference) {
-            ref.importingModel
-        } else {
-            val serializedModelRef = serialized.substringAfter(MPSModelImportReference.SEPARATOR)
-            MPSReferenceParser.parseSModelReference(serializedModelRef)
-        }
+        val importingModel = ref.importingModel.toMPS().resolve(repository) ?: return null
+        if (!ModelImports(importingModel).importedModels.contains(ref.importedModel.toMPS())) return null
 
-        val importingModel = importingModelRef.resolve(repository) ?: return null
-        if (!ModelImports(importingModel).importedModels.contains(importedModelRef)) return null
-
-        return MPSModelImportAsNode(importedModel = importedModelRef, importingModel = importingModel)
+        return MPSModelImportAsNode(importedModel = ref.importedModel.toMPS(), importingModel = importingModel)
     }
 
     private fun resolveMPSModuleDependencyReference(ref: INodeReference): MPSModuleDependencyAsNode? {
-        val serialized = ref.serialize()
-        val usedModuleId = if (ref is MPSModuleDependencyReference) {
-            ref.usedModuleId
-        } else {
-            val serializedModuleId = serialized
-                .substringAfter("${MPSModuleDependencyReference.PREFIX}:")
-                .substringBefore(MPSModuleDependencyReference.SEPARATOR)
-            PersistenceFacade.getInstance().createModuleId(serializedModuleId)
-        }
-
-        val userModuleReference = if (ref is MPSModuleDependencyReference) {
-            ref.userModuleReference
-        } else {
-            val serializedModuleRef = serialized.substringAfter(MPSModuleDependencyReference.SEPARATOR)
-            MPSReferenceParser.parseSModuleReference(serializedModuleRef)
-        }
-
-        return userModuleReference.resolve(repository)
+        val ref = MPSModuleDependencyReference.tryConvert(ref) ?: return null
+        return ref.userModuleReference.toMPS().resolve(repository)
             ?.let { MPSModuleAsNode(it) }
-            ?.findModuleDependency(usedModuleId)
+            ?.findModuleDependency(ref.usedModuleId.toMPS().moduleId)
     }
 
     private fun resolveMPSModuleReferenceReference(ref: INodeReference): MPSModuleReferenceAsNode? {
@@ -281,28 +237,15 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
     }
 
     private fun resolveMPSSingleLanguageDependencyReference(ref: INodeReference): MPSSingleLanguageDependencyAsNode? {
-        if (ref is MPSSingleLanguageDependencyReference) {
-            return when {
-                ref.userModule != null -> ref.userModule.resolve(repository)
-                    ?.let { MPSModuleAsNode(it).findSingleLanguageDependency(ref.usedModuleId) }
-                ref.userModel != null -> ref.userModel.resolve(repository)
-                    ?.let { MPSModelAsNode(it).findSingleLanguageDependency(ref.usedModuleId) }
-                else -> error("No importer found.")
-            }
-        }
-        val serialized = ref.serialize()
-        val serializedModuleId = serialized.substringAfter("${MPSSingleLanguageDependencyReference.PREFIX}:")
-            .substringBefore(MPSSingleLanguageDependencyReference.SEPARATOR)
-
-        val importer = serialized.substringAfter(MPSSingleLanguageDependencyReference.SEPARATOR)
-        val foundImporter = resolveNode(NodeReference(importer))?.asWritableNode()
-
-        val moduleId = PersistenceFacade.getInstance().createModuleId(serializedModuleId)
-
-        return when (foundImporter) {
-            is MPSModelAsNode -> foundImporter.findSingleLanguageDependency(moduleId)
-            is MPSModuleAsNode<*> -> foundImporter.findSingleLanguageDependency(moduleId)
-            else -> null
+        val ref = MPSSingleLanguageDependencyReference.tryConvert(ref) ?: return null
+        val userModule = ref.userModule
+        val userModel = ref.userModel
+        return when {
+            userModule != null -> userModule.toMPS().resolve(repository)
+                ?.let { MPSModuleAsNode(it).findSingleLanguageDependency(ref.usedModuleId.toMPS().moduleId) }
+            userModel != null -> userModel.toMPS().resolve(repository)
+                ?.let { MPSModelAsNode(it).findSingleLanguageDependency(ref.usedModuleId.toMPS().moduleId) }
+            else -> error("No importer found.")
         }
     }
 

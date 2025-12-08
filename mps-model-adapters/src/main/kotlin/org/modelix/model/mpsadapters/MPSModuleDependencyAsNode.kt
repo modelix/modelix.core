@@ -13,6 +13,7 @@ import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IWritableNode
+import org.modelix.mps.multiplatform.model.MPSModuleDependencyReference
 
 data class MPSModuleDependencyAsNode(
     val owner: SModule,
@@ -167,8 +168,8 @@ data class MPSModuleDependencyAsNode(
 
     override fun getNodeReference(): INodeReference {
         return MPSModuleDependencyReference(
-            usedModuleId = moduleReference.moduleId,
-            userModuleReference = owner.moduleReference,
+            usedModuleId = moduleReference.moduleId.toModelix(),
+            userModuleReference = owner.moduleReference.toModelix(),
         )
     }
 

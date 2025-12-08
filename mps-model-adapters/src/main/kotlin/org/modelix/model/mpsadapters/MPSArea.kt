@@ -18,7 +18,9 @@ import org.modelix.model.api.NodeReference
 import org.modelix.model.area.IArea
 import org.modelix.model.area.IAreaListener
 import org.modelix.model.area.IAreaReference
+import org.modelix.mps.multiplatform.model.MPSModelImportReference
 import org.modelix.mps.multiplatform.model.MPSModelReference
+import org.modelix.mps.multiplatform.model.MPSModuleDependencyReference
 import org.modelix.mps.multiplatform.model.MPSModuleReference
 import org.modelix.mps.multiplatform.model.MPSNodeReference
 
@@ -203,7 +205,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
     private fun resolveMPSModelImportReference(ref: INodeReference): MPSModelImportAsNode? {
         val serialized = ref.serialize()
         val importedModelRef = if (ref is MPSModelImportReference) {
-            ref.importedModel
+            ref.importedModel.toMPS()
         } else {
             val serializedModelRef = serialized
                 .substringAfter("${MPSModelImportReference.PREFIX}:")
@@ -212,7 +214,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
         }
 
         val importingModelRef = if (ref is MPSModelImportReference) {
-            ref.importingModel
+            ref.importingModel.toMPS()
         } else {
             val serializedModelRef = serialized.substringAfter(MPSModelImportReference.SEPARATOR)
             MPSReferenceParser.parseSModelReference(serializedModelRef)
@@ -227,7 +229,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
     private fun resolveMPSModuleDependencyReference(ref: INodeReference): MPSModuleDependencyAsNode? {
         val serialized = ref.serialize()
         val usedModuleId = if (ref is MPSModuleDependencyReference) {
-            ref.usedModuleId
+            PersistenceFacade.getInstance().createModuleId(ref.usedModuleId)
         } else {
             val serializedModuleId = serialized
                 .substringAfter("${MPSModuleDependencyReference.PREFIX}:")
@@ -236,7 +238,7 @@ data class MPSArea(val repository: SRepository) : IArea, IAreaReference {
         }
 
         val userModuleReference = if (ref is MPSModuleDependencyReference) {
-            ref.userModuleReference
+            ref.userModuleReference.toMPS()
         } else {
             val serializedModuleRef = serialized.substringAfter(MPSModuleDependencyReference.SEPARATOR)
             MPSReferenceParser.parseSModuleReference(serializedModuleRef)

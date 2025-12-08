@@ -23,6 +23,7 @@ module.exports = {
         "mps-model-adapters",
         "mps-model-server",
         "mps-sync-plugin",
+        "mps-multiplatform-lib",
         "openapi",
         "streams",
         "ts-model-api",

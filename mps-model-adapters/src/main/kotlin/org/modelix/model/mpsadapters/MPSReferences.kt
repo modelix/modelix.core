@@ -85,36 +85,6 @@ data class MPSJavaModuleFacetReference(val moduleReference: SModuleReference) : 
     }
 }
 
-data class MPSModelImportReference(
-    val importedModel: SModelReference,
-    val importingModel: SModelReference,
-) : INodeReference() {
-
-    companion object {
-        internal const val PREFIX = "mps-model-import"
-        internal const val SEPARATOR = "#IN#"
-    }
-
-    override fun serialize(): String {
-        return "$PREFIX:${importedModel.withoutNames()}$SEPARATOR${importingModel.withoutNames()}"
-    }
-}
-
-data class MPSModuleDependencyReference(
-    val usedModuleId: SModuleId,
-    val userModuleReference: SModuleReference,
-) : INodeReference() {
-
-    companion object {
-        internal const val PREFIX = "mps-module-dep"
-        internal const val SEPARATOR = "#IN#"
-    }
-
-    override fun serialize(): String {
-        return "$PREFIX:$usedModuleId$SEPARATOR${userModuleReference.withoutNames()}"
-    }
-}
-
 data class MPSProjectReference(val projectName: String) : INodeReference() {
 
     companion object {

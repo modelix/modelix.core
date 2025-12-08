@@ -1,4 +1,4 @@
 export { useModelsFromJson } from "./useModelsFromJson";
 export { useModelClient } from "./useModelClient";
-export { useReplicatedModel } from "./useReplicatedModel";
+export { useReplicatedModels, useReplicatedModel } from "./useReplicatedModels";
 export { useReadonlyVersion } from "./useReadonlyVersion";

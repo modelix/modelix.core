@@ -13,6 +13,7 @@ plugins {
     alias(libs.plugins.detekt)
     alias(libs.plugins.kotlinx.kover)
     alias(libs.plugins.npm.publish) apply false
+    id("org.jetbrains.gradle.plugin.idea-ext") version "1.1.9" apply false
 }
 
 group = "org.modelix"

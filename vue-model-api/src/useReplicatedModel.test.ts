@@ -24,6 +24,7 @@ test("test wrapper backwards compatibility", (done) => {
 
       const branch = {
         rootNode,
+        getRootNodes: () => [rootNode],
         addListener: jest.fn(),
         removeListener: jest.fn(),
         resolveNode: jest.fn(),

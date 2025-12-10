@@ -25,6 +25,10 @@ class SuccessfulBranchJS {
     this.rootNode.setPropertyValue(toRoleJS("branchId"), branchId);
   }
 
+  getRootNodes() {
+    return [this.rootNode];
+  }
+
   addListener = jest.fn();
 }
 
@@ -58,12 +62,12 @@ test("test branch connects", (done) => {
   const { client } = useModelClient("anURL", () =>
     Promise.resolve(new SuccessfulClientJS() as unknown as ClientJS),
   );
-  const { rootNode, replicatedModel } = useReplicatedModels(client, [
+  const { rootNodes, replicatedModel } = useReplicatedModels(client, [
     new ReplicatedModelParameters("aRepository", "aBranch", IdSchemeJS.MODELIX),
   ]);
   watchEffect(() => {
-    if (rootNode.value !== null && replicatedModel.value !== null) {
-      expect(rootNode.value.getPropertyValue(toRoleJS("branchId"))).toBe(
+    if (rootNodes.value.length > 0 && replicatedModel.value !== null) {
+      expect(rootNodes.value[0].getPropertyValue(toRoleJS("branchId"))).toBe(
         "aBranch",
       );
       done();

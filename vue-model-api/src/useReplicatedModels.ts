@@ -19,24 +19,23 @@ function isDefined<T>(value: T | null | undefined): value is T {
 }
 
 /**
- * Creates a replicated model for a given repository and branch.
+ * Creates replicated models for the given repositories and branches.
  * A replicated model exposes a branch that can be used to read and write model data.
  * The written model data is automatically synced to the model server.
- * Changed from the model server are automatically synced to the branch in the replicated model
+ * Changes from the model server are automatically synced to the branch in the replicated model.
  *
- * Also creates root node that uses Vues reactivity and can be used in Vue like a reactive object.
+ * Also creates root nodes that use Vue's reactivity and can be used in Vue like reactive objects.
  * Changes to model data trigger recalculation of computed properties or re-rendering of components using that data.
  *
- * Calling the returned dispose function stops syncing the root node to the underlying branch on the server.
+ * Calling the returned dispose function stops syncing the root nodes to the underlying branches on the server.
  *
  * @param client - Reactive reference of a client to a model server.
- * @param repositoryId - Reactive reference of a repositoryId on the model server.
- * @param branchId - Reactive reference of a branchId in the repository of the model server.
+ * @param models - Reactive reference to an array of ReplicatedModelParameters.
  *
  * @returns {Object} values Wrapper around different returned values.
- * @returns {Ref<ReplicatedModelJS | null>} values.rootNode  Reactive reference to the replicated model for the specified branch.
- * @returns {Ref<INodeJS | null>} values.rootNode  Reactive reference to the root node with Vue.js reactivity for the specified branch.
- * @returns {() => void} values.dispose A function to manually dispose the root node.
+ * @returns {Ref<ReplicatedModelJS | null>} values.replicatedModel  Reactive reference to the replicated model for the specified branches.
+ * @returns {Ref<INodeJS[]>} values.rootNodes  Reactive reference to an array of root nodes with Vue.js reactivity for the specified branches.
+ * @returns {() => void} values.dispose A function to manually dispose the root nodes.
  * @returns {Ref<unknown>} values.error Reactive reference to a connection error.
  */
 export function useReplicatedModels(
@@ -44,14 +43,14 @@ export function useReplicatedModels(
   models: MaybeRefOrGetter<ReplicatedModelParameters[] | null | undefined>,
 ): {
   replicatedModel: Ref<ReplicatedModelJS | null>;
-  rootNode: Ref<INodeJS | null>;
+  rootNodes: Ref<INodeJS[]>;
   dispose: () => void;
   error: Ref<unknown>;
 } {
   // Use `replicatedModel` to access the replicated model without tracking overhead of Vue.js.
   let replicatedModel: ReplicatedModelJS | null = null;
   const replicatedModelRef: Ref<ReplicatedModelJS | null> = shallowRef(null);
-  const rootNodeRef: Ref<INodeJS | null> = shallowRef(null);
+  const rootNodesRef: Ref<INodeJS[]> = shallowRef([]);
   const errorRef: Ref<unknown> = shallowRef(null);
 
   const dispose = () => {
@@ -61,7 +60,7 @@ export function useReplicatedModels(
       replicatedModel.dispose();
     }
     replicatedModelRef.value = null;
-    rootNodeRef.value = null;
+    rootNodesRef.value = [];
     errorRef.value = null;
   };
 
@@ -97,10 +96,12 @@ export function useReplicatedModels(
           }
           handleChange(change, cache);
         });
-        const unreactiveRootNode = branch.rootNode;
-        const reactiveRootNode = toReactiveINodeJS(unreactiveRootNode, cache);
+        const unreactiveRootNodes = branch.getRootNodes();
+        const reactiveRootNodes = unreactiveRootNodes.map((node) =>
+          toReactiveINodeJS(node, cache),
+        );
         replicatedModelRef.value = replicatedModel;
-        rootNodeRef.value = reactiveRootNode;
+        rootNodesRef.value = reactiveRootNodes;
       } else {
         connectedReplicatedModel.dispose();
       }
@@ -114,7 +115,7 @@ export function useReplicatedModels(
 
   return {
     replicatedModel: replicatedModelRef,
-    rootNode: rootNodeRef,
+    rootNodes: rootNodesRef,
     dispose,
     error: errorRef,
   };
@@ -172,5 +173,15 @@ export function useReplicatedModel(
     ];
   });
 
-  return useReplicatedModels(client, models);
+  const result = useReplicatedModels(client, models);
+
+  // Extract the single root node from the array for backward compatibility
+  const rootNode = computed(() => result.rootNodes.value[0] ?? null);
+
+  return {
+    replicatedModel: result.replicatedModel,
+    rootNode: rootNode,
+    dispose: result.dispose,
+    error: result.error,
+  };
 }

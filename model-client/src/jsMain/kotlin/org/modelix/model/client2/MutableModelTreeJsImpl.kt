@@ -68,7 +68,7 @@ internal class ChangeListener(
         val node = model.tryResolveNode(nodeId)
         if (node == null) {
             // Log or handle the case where node cannot be resolved
-            console.log("Warning: Could not resolve node $nodeId in composite model")
+            println("Warning: Could not resolve node $nodeId in composite model")
             // Fall back to the old behavior for this tree
             return toNodeJs(NodeInMutableModel(tree, nodeId).asLegacyNode())
         }

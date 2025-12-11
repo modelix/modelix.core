@@ -55,6 +55,7 @@ class AuthorizationTest {
             {
               "realm": "$REALM",
               "enabled": true,
+              "sslRequired": "none",
               "clients": [
                 {
                   "clientId": "$CLIENT_ID",
@@ -276,9 +277,9 @@ class AuthorizationTest {
         val token = obtainTokenForTestUser()
         val decodedToken = JWT.decode(token)
         val keyIdInToken = decodedToken.keyId
-        val keyIdNotUsedInToken = keycloakAdminClient.realm(REALM).keys().keyMetadata.keys
-            .map { it.kid }
-            .first { it != keyIdInToken }
+        // Use a fake key ID that doesn't exist instead of querying the admin API
+        // The admin API requires HTTPS even in dev mode for the master realm
+        val keyIdNotUsedInToken = "fake-key-id-that-does-not-exist"
         val modelixAuthorizationConfig: IModelixAuthorizationConfig.() -> Unit = {
             permissionSchema = ModelServerPermissionSchema.SCHEMA
             jwkUri = URI("$keycloakBaseUrl/realms/$REALM/protocol/openid-connect/certs")

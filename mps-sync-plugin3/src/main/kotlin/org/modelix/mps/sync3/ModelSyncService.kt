@@ -86,6 +86,30 @@ class ModelSyncService(val project: Project) :
     }
 
     @Synchronized
+    override fun updateBinding(oldBranchRef: BranchReference, newBranchRef: BranchReference, resetLocalState: Boolean) {
+        updateState {
+            it.bindings.none { it.key.branchRef == oldBranchRef } &&
+                throw IllegalArgumentException("No binding for $oldBranchRef")
+
+            it.copy(
+                bindings = it.bindings.mapKeys { (key, _) ->
+                    if (key.branchRef == oldBranchRef) {
+                        key.copy(branchRef = newBranchRef)
+                    } else {
+                        key
+                    }
+                }.mapValues { (key, value) ->
+                    if (resetLocalState && key.branchRef == newBranchRef) {
+                        value.copy(versionHash = null)
+                    } else {
+                        value
+                    }
+                },
+            )
+        }
+    }
+
+    @Synchronized
     fun loadState(newState: SyncServiceState) {
         val oldState: SyncServiceState = this.loadedState
         val enabledBindings = newState.bindings.filter { it.value.enabled }

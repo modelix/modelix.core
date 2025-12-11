@@ -1,9 +1,9 @@
 import { org } from "@modelix/model-client";
 import type { INodeJS } from "@modelix/ts-model-api";
 import { toRoleJS } from "@modelix/ts-model-api";
-import { watchEffect, type Ref, ref } from "vue";
+import { watchEffect, type Ref, ref, computed } from "vue";
 import { useModelClient } from "./useModelClient";
-import { useReplicatedModels } from "./useReplicatedModels";
+import { useReplicatedModel, useReplicatedModels } from "./useReplicatedModels";
 import IdSchemeJS = org.modelix.model.client2.IdSchemeJS;
 import ReplicatedModelParameters = org.modelix.model.client2.ReplicatedModelParameters;
 
@@ -180,5 +180,211 @@ describe("does not start model", () => {
     await new Promise(process.nextTick);
     // It should not call startReplicatedModels, but it might trigger dispose()
     expect(startReplicatedModels).not.toHaveBeenCalled();
+  });
+});
+
+describe("useReplicatedModels reactivity", () => {
+  test("single model reactivity works with useReplicatedModel wrapper", (done) => {
+    class SuccessfulClientJS {
+      startReplicatedModels(
+        parameters: ReplicatedModelParameters[],
+      ): Promise<ReplicatedModelJS> {
+        const branchId = parameters[0].branchId;
+        const rootNode = loadModelsFromJson([JSON.stringify({ root: {} })]);
+        rootNode.setPropertyValue(toRoleJS("testProp"), "initialValue");
+
+        let listener: ((change: any) => void) | null = null;
+
+        const branch = {
+          rootNode,
+          getRootNodes: () => [rootNode],
+          addListener: (fn: (change: any) => void) => {
+            listener = fn;
+          },
+          removeListener: jest.fn(),
+          resolveNode: jest.fn(),
+        };
+
+        const replicatedModel = {
+          getBranch: () => branch,
+          dispose: jest.fn(),
+          getCurrentVersionInformation: jest.fn(),
+        } as unknown as ReplicatedModelJS;
+
+        // Simulate a property change after a delay
+        setTimeout(() => {
+          rootNode.setPropertyValue(toRoleJS("testProp"), "changedValue");
+          if (listener) {
+            listener({
+              node: rootNode,
+              role: "testProp",
+              constructor: { name: "PropertyChanged" },
+            });
+          }
+        }, 50);
+
+        return Promise.resolve(replicatedModel);
+      }
+    }
+
+    const { client } = useModelClient("anURL", () =>
+      Promise.resolve(new SuccessfulClientJS() as unknown as ClientJS),
+    );
+
+    const { rootNode } = useReplicatedModel(
+      client,
+      "aRepository",
+      "aBranch",
+      IdSchemeJS.MODELIX,
+    );
+
+    let changeDetected = false;
+
+    watchEffect(() => {
+      if (rootNode.value !== null) {
+        const propValue = rootNode.value.getPropertyValue(toRoleJS("testProp"));
+        if (propValue === "changedValue") {
+          changeDetected = true;
+          expect(changeDetected).toBe(true);
+          done();
+        }
+      }
+    });
+  });
+
+  test("multiple models can be used together", (done) => {
+    class SuccessfulClientJS {
+      startReplicatedModels(
+        parameters: ReplicatedModelParameters[],
+      ): Promise<ReplicatedModelJS> {
+        const rootNodes = parameters.map((params) => {
+          const node = loadModelsFromJson([JSON.stringify({ root: {} })]);
+          node.setPropertyValue(toRoleJS("modelId"), params.branchId);
+          return node;
+        });
+
+        const branch = {
+          rootNode: rootNodes[0],
+          getRootNodes: () => rootNodes,
+          addListener: jest.fn(),
+          removeListener: jest.fn(),
+          resolveNode: jest.fn(),
+        };
+
+        const replicatedModel = {
+          getBranch: () => branch,
+          dispose: jest.fn(),
+          getCurrentVersionInformation: jest.fn(),
+        } as unknown as ReplicatedModelJS;
+
+        return Promise.resolve(replicatedModel);
+      }
+    }
+
+    const { client } = useModelClient("anURL", () =>
+      Promise.resolve(new SuccessfulClientJS() as unknown as ClientJS),
+    );
+
+    const modelsParams = ref([
+      new org.modelix.model.client2.ReplicatedModelParameters(
+        "repo1",
+        "branch1",
+        IdSchemeJS.MODELIX,
+      ),
+      new org.modelix.model.client2.ReplicatedModelParameters(
+        "repo2",
+        "branch2",
+        IdSchemeJS.MODELIX,
+      ),
+    ]);
+
+    const { rootNodes } = useReplicatedModels(client, modelsParams);
+
+    watchEffect(() => {
+      if (rootNodes.value.length === 2) {
+        expect(rootNodes.value[0].getPropertyValue(toRoleJS("modelId"))).toBe("branch1");
+        expect(rootNodes.value[1].getPropertyValue(toRoleJS("modelId"))).toBe("branch2");
+        done();
+      }
+    });
+  });
+
+  test("changes in composite model trigger reactivity", (done) => {
+    class SuccessfulClientJS {
+      startReplicatedModels(
+        parameters: ReplicatedModelParameters[],
+      ): Promise<ReplicatedModelJS> {
+        const rootNodes = parameters.map((params) => {
+          const node = loadModelsFromJson([JSON.stringify({ root: {} })]);
+          node.setPropertyValue(toRoleJS("counter"), "0");
+          return node;
+        });
+
+        let listener: ((change: any) => void) | null = null;
+
+        const branch = {
+          rootNode: rootNodes[0],
+          getRootNodes: () => rootNodes,
+          addListener: (fn: (change: any) => void) => {
+            listener = fn;
+          },
+          removeListener: jest.fn(),
+          resolveNode: jest.fn(),
+        };
+
+        const replicatedModel = {
+          getBranch: () => branch,
+          dispose: jest.fn(),
+          getCurrentVersionInformation: jest.fn(),
+        } as unknown as ReplicatedModelJS;
+
+        // Simulate property change in second model
+        setTimeout(() => {
+          rootNodes[1].setPropertyValue(toRoleJS("counter"), "1");
+          if (listener) {
+            listener({
+              node: rootNodes[1],
+              role: "counter",
+              constructor: { name: "PropertyChanged" },
+            });
+          }
+        }, 50);
+
+        return Promise.resolve(replicatedModel);
+      }
+    }
+
+    const { client } = useModelClient("anURL", () =>
+      Promise.resolve(new SuccessfulClientJS() as unknown as ClientJS),
+    );
+
+    const modelsParams = ref([
+      new org.modelix.model.client2.ReplicatedModelParameters(
+        "repo1",
+        "branch1",
+        IdSchemeJS.MODELIX,
+      ),
+      new org.modelix.model.client2.ReplicatedModelParameters(
+        "repo2",
+        "branch2",
+        IdSchemeJS.MODELIX,
+      ),
+    ]);
+
+    const { rootNodes } = useReplicatedModels(client, modelsParams);
+
+    const computedValue = computed(() => {
+      if (rootNodes.value.length >= 2) {
+        return rootNodes.value[1].getPropertyValue(toRoleJS("counter"));
+      }
+      return null;
+    });
+
+    watchEffect(() => {
+      if (computedValue.value === "1") {
+        expect(computedValue.value).toBe("1");
+        done();
+      }
+    });
   });
 });

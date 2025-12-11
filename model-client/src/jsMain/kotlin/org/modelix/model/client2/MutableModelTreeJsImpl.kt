@@ -30,7 +30,7 @@ internal class MutableModelTreeJsImpl(
 
     private val model = CompositeModel(trees.map { it.asModel() })
     private val changeListeners = trees.map { tree ->
-        ChangeListener(tree) { change ->
+        ChangeListener(tree, model) { change ->
             changeHandlers.forEach { it(change) }
         }.also { tree.addListener(it) }
         // TODO missing removeListener call
@@ -57,11 +57,22 @@ internal class MutableModelTreeJsImpl(
     private fun IWritableNode.toJS() = toNodeJs(AutoTransactionsNode(this, model).asLegacyNode())
 }
 
-internal class ChangeListener(private val tree: IMutableModelTree, private val changeCallback: (ChangeJS) -> Unit) :
-    IGenericMutableModelTree.Listener<INodeReference> {
+internal class ChangeListener(
+    private val tree: IMutableModelTree,
+    private val model: CompositeModel,
+    private val changeCallback: (ChangeJS) -> Unit
+) : IGenericMutableModelTree.Listener<INodeReference> {
 
     fun nodeIdToInode(nodeId: INodeReference): INodeJS {
-        return toNodeJs(NodeInMutableModel(tree, nodeId).asLegacyNode())
+        // Use the composite model to resolve nodes from any tree
+        val node = model.tryResolveNode(nodeId)
+        if (node == null) {
+            // Log or handle the case where node cannot be resolved
+            console.log("Warning: Could not resolve node $nodeId in composite model")
+            // Fall back to the old behavior for this tree
+            return toNodeJs(NodeInMutableModel(tree, nodeId).asLegacyNode())
+        }
+        return toNodeJs(AutoTransactionsNode(node, model).asLegacyNode())
     }
 
     override fun treeChanged(oldTree: IGenericModelTree<INodeReference>, newTree: IGenericModelTree<INodeReference>) {

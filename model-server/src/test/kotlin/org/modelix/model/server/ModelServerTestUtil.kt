@@ -46,3 +46,17 @@ fun runWithNettyServer(
         nettyServer.stop()
     }
 }
+
+fun runTestApplication(block: suspend ApplicationTestBuilder.() -> Unit) {
+    val previousDevMode = System.getProperty("io.ktor.development")
+    System.setProperty("io.ktor.development", "false")
+    try {
+        io.ktor.server.testing.testApplication(block)
+    } finally {
+        if (previousDevMode == null) {
+            System.clearProperty("io.ktor.development")
+        } else {
+            System.setProperty("io.ktor.development", previousDevMode)
+        }
+    }
+}

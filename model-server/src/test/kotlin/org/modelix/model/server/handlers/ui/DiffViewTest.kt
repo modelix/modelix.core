@@ -17,7 +17,6 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.ApplicationTestBuilder
-import io.ktor.server.testing.testApplication
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.every
@@ -42,6 +41,7 @@ import org.modelix.model.persistent.CPNode
 import org.modelix.model.persistent.CPNodeRef
 import org.modelix.model.server.handlers.RepositoriesManager
 import org.modelix.model.server.installDefaultServerPlugins
+import org.modelix.model.server.runTestApplication
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -308,7 +308,7 @@ class DiffViewTest {
     val v1 = createCLVersion { it }
     val v2 = createCLVersion(v1) { it }
 
-    private fun runDiffViewTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
+    private fun runDiffViewTest(block: suspend ApplicationTestBuilder.() -> Unit) = runTestApplication {
         application {
             installDefaultServerPlugins()
             DiffView(repositoriesManager).init(this)

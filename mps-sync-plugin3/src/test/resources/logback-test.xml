@@ -19,4 +19,5 @@
     <logger name="com.github.dockerjava" level="WARN"/>
     <logger name="com.github.dockerjava.zerodep.shaded.org.apache.hc.client5.http.wire" level="OFF"/>
     <logger name="org.eclipse.jgit" level="WARN"/>
+    <logger name="org.modelix" level="TRACE"/>
 </configuration>

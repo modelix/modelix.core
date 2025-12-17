@@ -135,3 +135,5 @@ data class MPSConcept(val concept: SAbstractConceptAdapter) : IConcept {
         }
     }
 }
+
+fun SAbstractConcept.toModelix() = MPSConcept(this)

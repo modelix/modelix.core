@@ -16,11 +16,26 @@ import org.modelix.model.api.NullChildLinkReference
 import org.modelix.model.api.remove
 import org.modelix.model.api.syncNewChild
 import org.modelix.model.api.syncNewChildren
+import org.modelix.model.mpsadapters.MPSProjectAsNode
 import org.modelix.mps.multiplatform.model.MPSModuleReference
 import org.modelix.mps.multiplatform.model.MPSProjectModuleReference
 import org.modelix.mps.multiplatform.model.MPSProjectReference
 
-class SyncTargetModel(val models: List<IMutableModel>) : IMutableModel {
+data class SyncTargetConfig(
+    val model: IMutableModel,
+    val readonly: Boolean,
+
+    /**
+     * @see BindingState.projectId
+     */
+    val projectId: MPSProjectReference,
+)
+
+class SyncTargetModel(
+    val project: MPSProjectAsNode,
+    val targetConfigs: List<SyncTargetConfig>,
+) : IMutableModel {
+    private val models: List<IMutableModel> get() = targetConfigs.map { it.model }
     private val repositoryNode: RepositoryWrapper = RepositoryWrapper()
 
     override fun getRootNode(): IWritableNode = repositoryNode
@@ -74,17 +89,15 @@ class SyncTargetModel(val models: List<IMutableModel>) : IMutableModel {
         }
 
         fun getMPSModules(): List<IWritableNode> {
-            return getRepositories()
-                .flatMap { it.getChildren(modulesRole) }
-                .distinctBy { it.getNodeReference() }
+            return targetConfigs.flatMap { config ->
+                config.model.getRootNodes().flatMap { repositoryNode ->
+                    repositoryNode.getChildren(modulesRole).map { ModuleWrapper(it, config) }
+                }
+            }.distinctBy { it.getNodeReference() }
         }
 
         fun getMPSProjects(): List<IWritableNode> {
-            return getRepositories()
-                .flatMap { it.getChildren(projectsRole) }
-                .map { it.getNodeReference() }
-                .distinct()
-                .map { ProjectWrapper(MPSProjectReference.convert(it)) }
+            return listOf(ProjectWrapper(project.getNodeReference()))
         }
 
         override fun getAllChildren(): List<IWritableNode> {
@@ -219,38 +232,77 @@ class SyncTargetModel(val models: List<IMutableModel>) : IMutableModel {
         }
     }
 
-    inner class ProjectWrapper(val id: MPSProjectReference) : WrapperBase() {
-        override fun delegates(): Sequence<IWritableNode> = models.asSequence().mapNotNull { it.tryResolveNode(id) }
+    /**
+     * One local MPS project can have bindings to multiple server side projects in different repositories.
+     * This class provides a merged representation of all server side projects as a single project so that it can be
+     * more easily synchronized with the single local MPS project.
+     */
+    inner class ProjectWrapper(val localId: MPSProjectReference) : WrapperBase() {
+        override fun delegates(): Sequence<IWritableNode> = targetConfigs.asSequence().mapNotNull {
+            it.model.tryResolveNode(it.projectId)
+        }
+
+        override fun getOrCreateDelegate(): IWritableNode = delegates().firstOrNull()
+            ?: targetConfigs.filterNot { it.readonly }.first().let { config ->
+                config.model.getRootNode().syncNewChild(
+                    role = BuiltinLanguages.MPSRepositoryConcepts.Repository.projects.toReference(),
+                    index = 0,
+                    sourceNode = NewNodeSpec(
+                        conceptRef = BuiltinLanguages.MPSRepositoryConcepts.Project.getReference(),
+                        preferredNodeReference = config.projectId,
+                    ),
+                )
+            }
 
         override fun getModel() = this@SyncTargetModel
 
-        private fun getProjectModules(): List<IWritableNode> {
-            return models.flatMapIndexed { index, model ->
-                val projectNode = model.tryResolveNode(id)
-                if (projectNode == null) {
-                    if (index == 0) {
+        private fun getProjectModules(): List<List<IWritableNode>> {
+            return targetConfigs.map { targetConfig ->
+                val serverSideProjectId = targetConfig.projectId
+                if (serverSideProjectId == null) {
+                    // If the binding doesn't specify a project ID, project nodes are ignored for that repository and
+                    // all modules are considered being part of the binding.
+                    targetConfig.model.getRootNode()
+                        .getChildren(BuiltinLanguages.MPSRepositoryConcepts.Repository.modules.toReference())
+                        .map { it.getNodeReference() }
+                } else {
+                    val projectNode = targetConfig.model.tryResolveNode(serverSideProjectId)
+                    if (projectNode == null) {
                         emptyList()
                     } else {
-                        model.getRootNode()
-                            .getChildren(BuiltinLanguages.MPSRepositoryConcepts.Repository.modules.toReference())
-                            .map { it.getNodeReference() }
+                        projectNode
+                            .getChildren(BuiltinLanguages.MPSRepositoryConcepts.Project.projectModules.toReference())
+                            .mapNotNull {
+                                it.getReferenceTargetRef(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference())
+                            }
                     }
-                } else {
-                    projectNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Project.projectModules.toReference())
-                        .mapNotNull { it.getReferenceTargetRef(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference()) }
                 }.map {
-                    ProjectModuleWrapper(this, MPSProjectModuleReference(MPSModuleReference.convert(it), id))
+                    ProjectModuleWrapper(this, MPSProjectModuleReference(MPSModuleReference.convert(it), localId))
                 }
             }
         }
 
+        private fun getAllModuleIds(): List<Set<INodeReference>> {
+            return targetConfigs.map { targetConfig ->
+                (
+                    targetConfig.model.getRootNodes()
+                        .flatMap { it.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Repository.modules.toReference()) }
+                        .map { it.getNodeReference() } +
+                        targetConfig.model.getRootNodes()
+                            .flatMap { it.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Repository.projects.toReference()) }
+                            .flatMap { it.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Project.projectModules.toReference()) }
+                            .mapNotNull { it.getReferenceTargetRef(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference()) }
+                    ).toSet()
+            }
+        }
+
         override fun getAllChildren(): List<IWritableNode> {
-            return getProjectModules()
+            return getProjectModules().flatten()
         }
 
         override fun getChildren(role: IChildLinkReference): List<IWritableNode> {
             if (role.matches(BuiltinLanguages.MPSRepositoryConcepts.Project.projectModules.toReference())) {
-                return getProjectModules()
+                return getProjectModules().flatten()
             }
             return emptyList()
         }
@@ -267,13 +319,9 @@ class SyncTargetModel(val models: List<IMutableModel>) : IMutableModel {
 
         override fun changeConcept(newConcept: ConceptReference): IWritableNode {
             require(newConcept == BuiltinLanguages.MPSRepositoryConcepts.Project.getReference()) {
-                "Unexpected concept change:$newConcept"
+                "Unexpected concept change: $newConcept"
             }
             return this
-        }
-
-        override fun setPropertyValue(property: IPropertyReference, value: String?) {
-            throw UnsupportedOperationException("$property = $value")
         }
 
         override fun moveChild(
@@ -314,7 +362,7 @@ class SyncTargetModel(val models: List<IMutableModel>) : IMutableModel {
         }
 
         override fun getNodeReference(): INodeReference {
-            return id
+            return localId
         }
 
         override fun getConcept(): IConcept {
@@ -336,10 +384,22 @@ class SyncTargetModel(val models: List<IMutableModel>) : IMutableModel {
         ): List<IWritableNode> {
             when {
                 role.matches(BuiltinLanguages.MPSRepositoryConcepts.Project.projectModules.toReference()) -> {
-                    return delegates().first().syncNewChildren(role, index, specs).map {
-                        val id = MPSProjectModuleReference.convert(it.getNodeReference())
-                        it.setReferenceTargetRef(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference(), id.moduleRef)
-                        ProjectModuleWrapper(this, id)
+                    val moduleOwners = getAllModuleIds().withIndex().flatMap { (configIndex, modules) ->
+                        modules.map { it to configIndex }
+                    }.toMap()
+
+                    return specs.groupBy { moduleOwners[it.preferredOrCurrentRef] ?: 0 }.flatMap { (ownerIndex, specs) ->
+                        val targetConfig = targetConfigs[ownerIndex]
+                        val projectNode = targetConfig.model.tryResolveNode(targetConfig.projectId)
+                            ?: targetConfig.model.getRootNode().addNewChild(
+                                BuiltinLanguages.MPSRepositoryConcepts.Repository.projects.toReference(), -1,
+                                BuiltinLanguages.MPSRepositoryConcepts.Project.getReference(),
+                            )
+                        projectNode.syncNewChildren(role, -1, specs).map {
+                            val id = MPSProjectModuleReference.convert(it.getNodeReference())
+                            it.setReferenceTargetRef(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference(), id.moduleRef)
+                            ProjectModuleWrapper(this, MPSProjectModuleReference(id.moduleRef, localId))
+                        }
                     }
                 }
                 else -> throw UnsupportedOperationException("role = $role")
@@ -352,7 +412,7 @@ class SyncTargetModel(val models: List<IMutableModel>) : IMutableModel {
             .flatMap { it.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Project.projectModules.toReference()) }
             .filter { it.getReferenceTargetRef(BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference()) == id.moduleRef }
 
-        fun getOrCreateDelegate(): IWritableNode {
+        override fun getOrCreateDelegate(): IWritableNode {
             return delegates().firstOrNull()
                 ?: project.delegates().first().syncNewChild(getContainmentLink(), -1, NewNodeSpec(this))
         }
@@ -467,7 +527,11 @@ class SyncTargetModel(val models: List<IMutableModel>) : IMutableModel {
 
     private fun IWritableNode.unwrap() = if (this is NodeWrapper) this.node else this
 
-    inner class NodeWrapper(private val model: IMutableModel, val node: IWritableNode) : IWritableNode by node, ISyncTargetNode {
+    open inner class NodeWrapper(private val model: IMutableModel, val node: IWritableNode) : IWritableNode by node, ISyncTargetNode {
+        init {
+            require(node !is NodeWrapper)
+        }
+
         private fun IWritableNode.wrap() = NodeWrapper(model, this)
         private fun Iterable<IWritableNode>.wrap() = map { it.wrap() }
 
@@ -559,8 +623,29 @@ class SyncTargetModel(val models: List<IMutableModel>) : IMutableModel {
         }
     }
 
+    inner class ModuleWrapper(node: IWritableNode, val owner: SyncTargetConfig) : NodeWrapper(owner.model, node) {
+        override fun isReadOnly(): Boolean {
+            return owner.readonly || node.isReadOnly()
+        }
+
+        override fun getPropertyValue(property: IPropertyReference): String? {
+            if (property.matches(BuiltinLanguages.MPSRepositoryConcepts.Module.isReadOnly.toReference()) && owner.readonly) {
+                return true.toString()
+            }
+            return super.getPropertyValue(property)
+        }
+
+        override fun setPropertyValue(property: IPropertyReference, value: String?) {
+            if (property.matches(BuiltinLanguages.MPSRepositoryConcepts.Module.isReadOnly.toReference())) {
+                return // changes not supported
+            }
+            return super.setPropertyValue(property, value)
+        }
+    }
+
     abstract inner class WrapperBase : IWritableNode, ISyncTargetNode {
         abstract fun delegates(): Sequence<IWritableNode>
+        open fun getOrCreateDelegate(): IWritableNode = delegates().first()
 
         override fun getPropertyValue(property: IPropertyReference): String? {
             return delegates().firstNotNullOfOrNull { it.getPropertyValue(property) }
@@ -587,21 +672,21 @@ class SyncTargetModel(val models: List<IMutableModel>) : IMutableModel {
         }
 
         override fun setPropertyValue(property: IPropertyReference, value: String?) {
-            delegates().first().setPropertyValue(property, value)
+            getOrCreateDelegate().setPropertyValue(property, value)
         }
 
         override fun setReferenceTarget(
             role: IReferenceLinkReference,
             target: IWritableNode?,
         ) {
-            delegates().first().setReferenceTarget(role, target?.unwrap())
+            getOrCreateDelegate().setReferenceTarget(role, target?.unwrap())
         }
 
         override fun setReferenceTargetRef(
             role: IReferenceLinkReference,
             target: INodeReference?,
         ) {
-            delegates().first().setReferenceTargetRef(role, target)
+            getOrCreateDelegate().setReferenceTargetRef(role, target)
         }
     }
 }

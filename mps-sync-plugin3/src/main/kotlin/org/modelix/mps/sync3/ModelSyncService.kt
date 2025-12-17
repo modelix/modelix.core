@@ -236,6 +236,7 @@ class ModelSyncService(val project: Project) :
                         it.children.add(Element("repository").also { it.text = bindingEntry.key.branchRef.repositoryId.id })
                         it.children.add(Element("branch").also { it.text = bindingEntry.key.branchRef.branchName })
                         it.children.add(Element("versionHash").also { it.text = bindingEntry.value.versionHash })
+                        it.children.add(Element("readonly").also { it.text = bindingEntry.key.readonly.toString() })
                     }
                 },
             )
@@ -256,6 +257,7 @@ class ModelSyncService(val project: Project) :
                                 repositoryId,
                                 element.getChild("branch")?.text ?: return@mapNotNull null,
                             ),
+                            readonly = element.getChild("readonly")?.text.toBoolean(),
                         ) to BindingState(
                             versionHash = element.getChild("versionHash")?.text,
                             enabled = element.getChild("enabled")?.text.toBoolean(),
@@ -462,9 +464,10 @@ suspend fun jobLoop(
     }
 }
 
-data class BindingId(val connectionProperties: ModelServerConnectionProperties, val branchRef: BranchReference) {
+data class BindingId(val connectionProperties: ModelServerConnectionProperties, val branchRef: BranchReference, val readonly: Boolean = false) {
     override fun toString(): String {
-        return "BindingId($connectionProperties, ${branchRef.repositoryId}, ${branchRef.branchName})"
+        val readonlyStr = if (readonly) " readonly" else ""
+        return "BindingId($connectionProperties, ${branchRef.repositoryId}, ${branchRef.branchName}$readonlyStr)"
     }
 }
 

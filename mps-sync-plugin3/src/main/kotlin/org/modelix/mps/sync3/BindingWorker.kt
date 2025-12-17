@@ -154,6 +154,10 @@ class BindingWorker(
 
     private inline fun <R> forEachTarget(body: SyncTarget.() -> R): List<R> = syncTargets.map { body(it) }
     private inline fun <R> forEachTargetIndexed(body: SyncTarget.(index: Int) -> R): List<R> = syncTargets.withIndex().map { body(it.value, it.index) }
+    private inline fun forEachTargetIndexedMaybeReadonly(body: SyncTarget.(index: Int) -> IVersion): List<NewVersionSpec> =
+        forEachTargetIndexed { index ->
+            NewVersionSpec(body(this, index), bindingId.readonly)
+        }
 
     private suspend fun checkInSync(): String? {
         check(activated.get()) { "Binding is deactivated" }
@@ -268,7 +272,7 @@ class BindingWorker(
                 // Binding was never activated before. Overwrite local changes or do initial upload.
 
                 val existingRemoteVersions = forEachTargetIndexed { client().pullIfExists(branchRef) }
-                val createdRemoteVersions = forEachTargetIndexed { index ->
+                val createdRemoteVersions = forEachTargetIndexedMaybeReadonly { index ->
                     existingRemoteVersions[index] ?: client().initRepository(branchRef.repositoryId)
                 }
 
@@ -291,7 +295,7 @@ class BindingWorker(
                 // push local changes that happened while the binding was deactivated
                 val localChanges = doSyncFromMPS(createdBaseVersions, incremental = false)
 
-                val mergedVersions = forEachTargetIndexed { index ->
+                val mergedVersions = forEachTargetIndexedMaybeReadonly { index ->
                     val baseVersion = createdBaseVersions[index]
                     val localChange = localChanges?.get(index)?.takeIf { it != baseVersion }
                     if (localChange != null) {
@@ -311,7 +315,7 @@ class BindingWorker(
 
     suspend fun syncToMPS(incremental: Boolean): List<IVersion> {
         return runSync { oldVersions ->
-            val newVersions = forEachTargetIndexed { index ->
+            val newVersions = forEachTargetIndexedMaybeReadonly { index ->
                 val oldVersion = oldVersions?.get(index)
                 client().pull(branchRef, oldVersion)
             }
@@ -332,13 +336,15 @@ class BindingWorker(
         }
     }
 
-    private suspend fun doSyncToMPS(oldVersions: List<IVersion?>, newVersions: List<IVersion>, incremental: Boolean) {
+    data class NewVersionSpec(val version: IVersion, val readonly: Boolean) : IVersion by version
+
+    private suspend fun doSyncToMPS(oldVersions: List<IVersion?>, newVersions: List<NewVersionSpec>, incremental: Boolean) {
         if (oldVersions.zip(newVersions).all { it.first?.getContentHash() == it.second.getContentHash() }) return
 
         LOG.debug { "Updating MPS project from $oldVersions to $newVersions" }
 
         val newTrees = newVersions.map { it.getModelTree() }
-        val sourceModel = SyncTargetModel(newTrees.map { it.asModelSingleThreaded() })
+        val sourceModel = SyncTargetModel(newVersions.map { MaybeReadonlyIModel(it.getModelTree().asModelSingleThreaded(), it.readonly) })
         val baseVersions = oldVersions
         val filter = if (baseVersions.all { it != null } && incremental) {
             val invalidationTree = DefaultInvalidationTree(sourceModel.getRootNode().getNodeReference(), 100_000)
@@ -446,7 +452,7 @@ class BindingWorker(
             fun sync(invalidationTree: ModelSynchronizer.IIncrementalUpdateInformation): List<IVersion>? {
                 val idGenerator = DummyIdGenerator<INodeReference>()
                 val versionedTrees = oldVersions.map { VersionedModelTree(it, idGenerator) }
-                val model = SyncTargetModel(versionedTrees.map { it.asModel() })
+                val model = SyncTargetModel(versionedTrees.map { MaybeReadonlyIModel(it.asModel(), false) })
                 model.executeWrite {
                     val targetRoot = model.getRootNode()
                     MPSProjectAsNode.runWithProject(mpsProject) {

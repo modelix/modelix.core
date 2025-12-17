@@ -146,6 +146,11 @@ object BuiltinLanguages {
                 uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/2206727074858242373",
             ).also(this::addProperty)
 
+            val readonlyStubModule = SimpleProperty(
+                "readonlyStubModule",
+                uid = "0a7577d1-d4e5-431d-98b1-fae38f9aee80/474657388638618895/4225291355523310000",
+            ).also(this::addProperty)
+
             val models = SimpleChildLink(
                 simpleName = "models",
                 isMultiple = true,

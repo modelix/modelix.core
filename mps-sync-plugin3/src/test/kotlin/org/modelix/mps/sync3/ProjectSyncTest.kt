@@ -881,6 +881,7 @@ class ProjectSyncTest : ProjectSyncTestBase() {
                   <repository>${branchRef.repositoryId.id}</repository>
                   <branch>${branchRef.branchName}</branch>
                   <versionHash>${version1.getContentHash()}</versionHash>
+                  <readonly>false</readonly>
                 </binding>
               </component>
             </project>

@@ -4,10 +4,10 @@ import org.modelix.datastructures.model.MutationParameters
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.client2.ModelClientV2
-import org.modelix.model.client2.runWriteOnModel
 import org.modelix.model.client2.runWriteOnTree
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.MPSProjectReference
+import org.modelix.model.mutable.IMutableModelTree
 import org.modelix.model.mutable.getRootNode
 import org.modelix.model.mutable.setProperty
 import org.modelix.mps.multiplatform.model.MPSIdGenerator
@@ -15,14 +15,20 @@ import org.modelix.mps.multiplatform.model.MPSModuleReference
 import org.modelix.mps.multiplatform.model.MPSProjectModuleReference
 import kotlin.io.path.writeText
 
-class MultipleBindingsTest : ProjectSyncTestBase() {
+/**
+ * This covers the use case where, in addition to the primary repository, a read-only library is loaded from a
+ * second repository.
+ * The library repository is expected to also contain a project, but its ID and name isn't relevant and doesn't have
+ * to match the local project name.
+ */
+class LibraryRepositoryTest : ProjectSyncTestBase() {
 
     private fun IWritableNode.addNewModule(name: String) = addNewChild(BuiltinLanguages.MPSRepositoryConcepts.Repository.modules.toReference(), -1, BuiltinLanguages.MPSRepositoryConcepts.Solution.getReference()).also {
         it.setPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference(), MPSModuleReference.tryConvert(it.getNodeReference())!!.moduleId)
         it.setPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference(), name)
     }
 
-    fun `test no overlap`() = runWithModelServer { port ->
+    fun `test checkout`() = runWithModelServer { port ->
         val client = ModelClientV2.builder().url("http://localhost:$port").lazyAndBlockingQueries().build()
         val branchRefMain = RepositoryId("main-repository").getBranchReference()
         val branchRefLib = RepositoryId("lib-repository").getBranchReference()
@@ -31,52 +37,14 @@ class MultipleBindingsTest : ProjectSyncTestBase() {
         client.runWriteOnTree(branchRefMain, nodeIdGenerator = { MPSIdGenerator(client.getIdGenerator(), it) }) { tree ->
             val repo = tree.getRootNode()
             repo.changeConcept(BuiltinLanguages.MPSRepositoryConcepts.Repository.getReference())
-
-            val module1 = repo.addNewModule("module1")
-            val module2 = repo.addNewModule("module2")
-
-            val t = tree.getWriteTransaction()
-            t.mutate(
-                MutationParameters.AddNew(
-                    t.tree.getRootNodeId(),
-                    BuiltinLanguages.MPSRepositoryConcepts.Repository.projects.toReference(),
-                    -1,
-                    listOf(MPSProjectReference("test-project") to BuiltinLanguages.MPSRepositoryConcepts.Project.getReference()),
-                ),
-            )
-            t.setProperty(MPSProjectReference("test-project"), BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference(), "test-project")
-
-            t.mutate(
-                MutationParameters.AddNew(
-                    MPSProjectReference("test-project"),
-                    BuiltinLanguages.MPSRepositoryConcepts.Project.projectModules.toReference(),
-                    -1,
-                    listOf(
-                        MPSProjectModuleReference(MPSModuleReference.convert(module1.getNodeReference()), MPSProjectReference("test-project")) to BuiltinLanguages.MPSRepositoryConcepts.ProjectModule.getReference(),
-                        MPSProjectModuleReference(MPSModuleReference.convert(module2.getNodeReference()), MPSProjectReference("test-project")) to BuiltinLanguages.MPSRepositoryConcepts.ProjectModule.getReference(),
-                    ),
-                ),
-            )
-            t.mutate(
-                MutationParameters.Reference(
-                    MPSProjectModuleReference(MPSModuleReference.convert(module1.getNodeReference()), MPSProjectReference("test-project")),
-                    BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference(),
-                    module1.getNodeReference(),
-                ),
-            )
-            t.mutate(
-                MutationParameters.Reference(
-                    MPSProjectModuleReference(MPSModuleReference.convert(module2.getNodeReference()), MPSProjectReference("test-project")),
-                    BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference(),
-                    module2.getNodeReference(),
-                ),
-            )
+            createProjectAndModules(tree, "main-project", listOf("main.module1", "main.module2"))
         }
-        client.runWriteOnModel(branchRefLib, nodeIdGenerator = { MPSIdGenerator(client.getIdGenerator(), it) }) { repo ->
+        client.runWriteOnTree(branchRefLib, nodeIdGenerator = { MPSIdGenerator(client.getIdGenerator(), it) }) { tree ->
+            val repo = tree.getRootNode()
             repo.changeConcept(BuiltinLanguages.MPSRepositoryConcepts.Repository.getReference())
-            val module3 = repo.addNewModule("module3")
-            val module4 = repo.addNewModule("module4")
+            createProjectAndModules(tree, "lib-project", listOf("lib.module3", "lib.module4"))
         }
+        val expectedLibHash = client.pullHash(branchRefLib)
 
         openTestProject(null, projectName = "test-project") { projectDir ->
             projectDir.resolve(".mps").resolve("modelix.xml").writeText(
@@ -95,6 +63,7 @@ class MultipleBindingsTest : ProjectSyncTestBase() {
                       <url>http://localhost:$port</url>
                       <repository>${branchRefLib.repositoryId.id}</repository>
                       <branch>${branchRefLib.branchName}</branch>
+                      <readonly>true</readonly>
                     </binding>
                   </component>
                 </project>
@@ -108,14 +77,60 @@ class MultipleBindingsTest : ProjectSyncTestBase() {
 
         assertContainsElements(
             readAction { mpsProject.repository.modules.map { it.moduleName }.toSet() },
-            "module1",
-            "module2",
-            "module3",
-            "module4",
+            "main.module1",
+            "main.module2",
+            "lib.module3",
+            "lib.module4",
         )
         assertEquals(
-            setOf("module1", "module2", "module3", "module4"),
-            readAction { mpsProject.projectModules.map { it.moduleName }.toSet() },
+            setOf(
+                "main.module1" to false,
+                "main.module2" to false,
+                "lib.module3" to true,
+                "lib.module4" to true,
+            ),
+            readAction { mpsProject.projectModules.map { it.moduleName to it.isReadOnly }.toSet() },
         )
+
+        // lib repository is read only and should remain unchanged
+        assertEquals(expectedLibHash, client.pullHash(branchRefLib))
+    }
+
+    fun createProjectAndModules(tree: IMutableModelTree, projectName: String, moduleNames: List<String>) {
+        val repo = tree.getRootNode()
+        repo.changeConcept(BuiltinLanguages.MPSRepositoryConcepts.Repository.getReference())
+
+        val modules = moduleNames.map { repo.addNewModule(it) }
+
+        val t = tree.getWriteTransaction()
+        t.mutate(
+            MutationParameters.AddNew(
+                t.tree.getRootNodeId(),
+                BuiltinLanguages.MPSRepositoryConcepts.Repository.projects.toReference(),
+                -1,
+                listOf(MPSProjectReference(projectName) to BuiltinLanguages.MPSRepositoryConcepts.Project.getReference()),
+            ),
+        )
+        t.setProperty(MPSProjectReference(projectName), BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference(), projectName)
+
+        t.mutate(
+            MutationParameters.AddNew(
+                MPSProjectReference(projectName),
+                BuiltinLanguages.MPSRepositoryConcepts.Project.projectModules.toReference(),
+                -1,
+                modules.map {
+                    MPSProjectModuleReference(MPSModuleReference.convert(it.getNodeReference()), MPSProjectReference(projectName)) to BuiltinLanguages.MPSRepositoryConcepts.ProjectModule.getReference()
+                },
+            ),
+        )
+        for (module in modules) {
+            t.mutate(
+                MutationParameters.Reference(
+                    MPSProjectModuleReference(MPSModuleReference.convert(module.getNodeReference()), MPSProjectReference(projectName)),
+                    BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference(),
+                    module.getNodeReference(),
+                ),
+            )
+        }
     }
 }

@@ -66,6 +66,7 @@ data class MPSRepositoryAsNode(@get:JvmName("getRepository_") val repository: SR
                                 requireNotNull(sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())) {
                                     "Solution has no ID: ${sourceNode.getNode()}"
                                 }.let { ModuleId.fromString(it) },
+                                sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.isReadOnly.toReference()).toBoolean(),
                             ).let { MPSModuleAsNode(it) }
                         }
                         BuiltinLanguages.MPSRepositoryConcepts.Language.getReference() -> {
@@ -111,7 +112,7 @@ data class MPSRepositoryAsNode(@get:JvmName("getRepository_") val repository: SR
             },
             BuiltinLanguages.MPSRepositoryConcepts.Repository.projects.toReference() to object : IChildAccessor<SRepository> {
                 override fun read(element: SRepository): List<IWritableNode> {
-                    return MPSProjectAsNode.getContextProjects().map { MPSProjectAsNode(it) }
+                    return MPSProjectAsNode.getContextProjectNodes()
                 }
 
                 override fun addNew(element: SRepository, index: Int, sourceNode: SpecWithResolvedConcept): IWritableNode {

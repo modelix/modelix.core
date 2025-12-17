@@ -20,23 +20,23 @@ import jetbrains.mps.vfs.IFile
 
 class SolutionProducer(private val myProject: IMPSProject) {
 
-    fun create(name: String, id: ModuleId): Solution {
+    fun create(name: String, id: ModuleId, readOnly: Boolean = false): Solution {
         val basePath = checkNotNull(myProject.getBasePath()) { "Project has no base path: $myProject" }
         val projectBaseDir = myProject.getFileSystem().getFile(basePath)
         val solutionBaseDir = projectBaseDir.findChild("solutions").findChild(name)
-        return create(name, id, solutionBaseDir)
+        return create(name, id, solutionBaseDir, readOnly)
     }
 
-    fun create(namespace: String, id: ModuleId, moduleDir: IFile): Solution {
+    fun create(namespace: String, id: ModuleId, moduleDir: IFile, readOnly: Boolean): Solution {
         val descriptorFile = moduleDir.findChild(namespace + MPSExtentions.DOT_SOLUTION)
-        val descriptor: SolutionDescriptor = createSolutionDescriptor(namespace, id, descriptorFile)
+        val descriptor: SolutionDescriptor = createSolutionDescriptor(namespace, id, descriptorFile, readOnly)
         val module = GeneralModuleFactory().instantiate(descriptor, descriptorFile) as Solution
         myProject.addModule(module)
         module.save()
         return module
     }
 
-    private fun createSolutionDescriptor(namespace: String, id: ModuleId, descriptorFile: IFile): SolutionDescriptor {
+    private fun createSolutionDescriptor(namespace: String, id: ModuleId, descriptorFile: IFile, readOnly: Boolean): SolutionDescriptor {
         val descriptor = SolutionDescriptor()
         // using outputPath instead of outputRoot for backwards compatibility
         // descriptor.outputRoot = "\${module}/source_gen"
@@ -53,6 +53,7 @@ class SolutionProducer(private val myProject: IMPSProject) {
 
         descriptor.modelRootDescriptors.add(DefaultModelRoot.createDescriptor(modelsDir.parent!!, modelsDir))
         descriptor.outputPath = descriptorFile.parent!!.findChild("source_gen").path
+        descriptor.readOnlyStubModule(readOnly)
         return descriptor
     }
 }

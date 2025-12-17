@@ -66,6 +66,7 @@ data class MPSRepositoryAsNode(@get:JvmName("getRepository_") val repository: SR
                                 requireNotNull(sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference())) {
                                     "Solution has no ID: ${sourceNode.getNode()}"
                                 }.let { ModuleId.fromString(it) },
+                                sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Module.readonlyStubModule.toReference()).toBoolean(),
                             ).let { MPSModuleAsNode(it) }
                         }
                         BuiltinLanguages.MPSRepositoryConcepts.Language.getReference() -> {

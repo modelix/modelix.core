@@ -21,7 +21,10 @@ class MPSProjectSyncMask(val projects: List<MPSProject>, val isMPSSide: Boolean)
                 role.matches(BuiltinLanguages.MPSRepositoryConcepts.Repository.tempModules.toReference()) -> emptyList()
                 role.matches(BuiltinLanguages.MPSRepositoryConcepts.Repository.modules.toReference()) -> {
                     if (isMPSSide) {
-                        val included = projects.flatMap { it.projectModules }.map { MPSModuleAsNode(it).getNodeReference().serialize() }.toSet()
+                        val included = projects
+                            .flatMap { it.projectModules }
+                            .filterNot { it.isReadOnly }
+                            .map { MPSModuleAsNode(it).getNodeReference().serialize() }.toSet()
                         children.filter { included.contains(it.getNodeReference().serialize()) }
                     } else {
                         children

@@ -20,7 +20,7 @@ import org.jdom.Element
 import org.modelix.model.IVersion
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.lazy.BranchReference
-import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.mpsadapters.MPSProjectAsNode
 import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.oauth.OAuthConfigBuilder
 import org.modelix.model.oauth.TokenProvider
@@ -200,76 +200,20 @@ class ModelSyncService(val project: Project) :
         return worker.getOrPut {
             it ?: BindingWorker(
                 coroutinesScope,
-                mpsProject,
+                MPSProjectAsNode(mpsProject),
                 syncTargets = bindings.map { (id, state) ->
                     SyncTarget(
                         serverConnection = addServer(id.connectionProperties.copy(repositoryId = id.branchRef.repositoryId)),
                         bindingId = id,
                         initialVersionHash = state?.versionHash,
+                        readonly = state?.readonly ?: false,
+                        projectId = state?.projectId,
                     )
                 },
                 continueOnError = { IModelSyncService.continueOnError ?: true },
             )
         }
     }
-
-    data class SyncServiceState(
-        val bindings: Map<BindingId, BindingState> = emptyMap(),
-    ) {
-        fun toXml() = Element("model-sync").also {
-            it.children.addAll(
-                bindings.map { bindingEntry ->
-                    Element("binding").also {
-                        it.children.add(Element("enabled").also { it.text = bindingEntry.value.enabled.toString() })
-                        it.children.add(
-                            Element("url").also {
-                                it.text = bindingEntry.key.connectionProperties.url
-                                it.setAttribute("repositoryScoped", "${bindingEntry.key.connectionProperties.repositoryId != null}")
-                            },
-                        )
-                        bindingEntry.key.connectionProperties.oauthClientId?.let { oauthClientId ->
-                            it.children.add(Element("oauthClientId").also { it.text = oauthClientId })
-                        }
-                        bindingEntry.key.connectionProperties.oauthClientSecret?.let { oauthClientSecret ->
-                            it.children.add(Element("oauthClientSecret").also { it.text = oauthClientSecret })
-                        }
-                        it.children.add(Element("repository").also { it.text = bindingEntry.key.branchRef.repositoryId.id })
-                        it.children.add(Element("branch").also { it.text = bindingEntry.key.branchRef.branchName })
-                        it.children.add(Element("versionHash").also { it.text = bindingEntry.value.versionHash })
-                    }
-                },
-            )
-        }
-        companion object {
-            fun fromXml(element: Element): SyncServiceState {
-                return SyncServiceState(
-                    element.getChildren("binding").mapNotNull<Element, Pair<BindingId, BindingState>> { element ->
-                        val repositoryId = RepositoryId(element.getChild("repository")?.text ?: return@mapNotNull null)
-                        BindingId(
-                            connectionProperties = ModelServerConnectionProperties(
-                                url = element.getChild("url")?.text ?: return@mapNotNull null,
-                                repositoryId = repositoryId.takeIf { element.getChild("url")?.getAttribute("repositoryScoped")?.value != "false" },
-                                oauthClientId = element.getChild("oauthClientId")?.text,
-                                oauthClientSecret = element.getChild("oauthClientSecret")?.text,
-                            ),
-                            branchRef = BranchReference(
-                                repositoryId,
-                                element.getChild("branch")?.text ?: return@mapNotNull null,
-                            ),
-                        ) to BindingState(
-                            versionHash = element.getChild("versionHash")?.text,
-                            enabled = element.getChild("enabled")?.text.toBoolean(),
-                        )
-                    }.toMap(),
-                )
-            }
-        }
-    }
-
-    data class BindingState(
-        val versionHash: String? = null,
-        val enabled: Boolean = false,
-    )
 
     inner class Connection(val connection: AppLevelModelSyncService.ServerConnection) : IServerConnection {
         override fun setTokenProvider(tokenProvider: TokenProvider) {
@@ -459,12 +403,6 @@ suspend fun jobLoop(
             LOG.warn("Exception during synchronization", ex)
             backoffStrategy.failed()
         }
-    }
-}
-
-data class BindingId(val connectionProperties: ModelServerConnectionProperties, val branchRef: BranchReference) {
-    override fun toString(): String {
-        return "BindingId($connectionProperties, ${branchRef.repositoryId}, ${branchRef.branchName})"
     }
 }
 

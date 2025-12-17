@@ -9,7 +9,7 @@ import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IWritableNode
 
-data class MPSProjectModuleAsNode(val project: IMPSProject, val module: SModule) : MPSGenericNodeAdapter<MPSProjectModuleAsNode>() {
+data class MPSProjectModuleAsNode(val projectNode: MPSProjectAsNode, val module: SModule) : MPSGenericNodeAdapter<MPSProjectModuleAsNode>() {
 
     companion object {
         private val propertyAccessors: List<Pair<IPropertyReference, IPropertyAccessor<MPSProjectModuleAsNode>>> = listOf(
@@ -43,6 +43,8 @@ data class MPSProjectModuleAsNode(val project: IMPSProject, val module: SModule)
         )
     }
 
+    val project: IMPSProject get() = projectNode.project
+
     override fun getElement(): MPSProjectModuleAsNode {
         return this
     }
@@ -60,7 +62,7 @@ data class MPSProjectModuleAsNode(val project: IMPSProject, val module: SModule)
     }
 
     override fun getParent(): MPSProjectAsNode {
-        return MPSProjectAsNode(project)
+        return projectNode
     }
 
     override fun getNodeReference(): INodeReference {

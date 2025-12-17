@@ -53,6 +53,7 @@ import org.modelix.mps.model.sync.bulk.MPSProjectSyncMask
 import org.modelix.mps.multiplatform.model.MPSProjectReference
 import org.modelix.streams.iterateSuspending
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.collections.map
 
 class SyncTarget(
     val serverConnection: ModelSyncService.Connection,
@@ -278,7 +279,7 @@ class BindingWorker(
                     doSyncToServer(createdRemoteVersions, incremental = false) ?: createdRemoteVersions
                 } else {
                     LOG.debug { "Repository exists. Will checkout version $createdRemoteVersions" }
-                    doSyncToMPS(baseVersions, createdRemoteVersions, incremental = false)
+                    doSyncToMPS(baseVersions, createdRemoteVersions.toNewVersionSpecList(), incremental = false)
                     createdRemoteVersions
                 }
             } else {
@@ -302,7 +303,7 @@ class BindingWorker(
                 }
 
                 // load remote changes into MPS
-                doSyncToMPS(createdBaseVersions, mergedVersions, incremental = false)
+                doSyncToMPS(createdBaseVersions, mergedVersions.toNewVersionSpecList(), incremental = false)
 
                 mergedVersions
             }
@@ -315,7 +316,7 @@ class BindingWorker(
                 val oldVersion = oldVersions?.get(index)
                 client().pull(branchRef, oldVersion)
             }
-            doSyncToMPS(oldVersions ?: syncTargets.map { null }, newVersions, incremental)
+            doSyncToMPS(oldVersions ?: syncTargets.map { null }, newVersions.toNewVersionSpecList(), incremental)
             newVersions
         }
     }
@@ -332,13 +333,15 @@ class BindingWorker(
         }
     }
 
-    private suspend fun doSyncToMPS(oldVersions: List<IVersion?>, newVersions: List<IVersion>, incremental: Boolean) {
+    data class NewVersionSpec(val version: IVersion, val readonly: Boolean) : IVersion by version
+
+    private suspend fun doSyncToMPS(oldVersions: List<IVersion?>, newVersions: List<NewVersionSpec>, incremental: Boolean) {
         if (oldVersions.zip(newVersions).all { it.first?.getContentHash() == it.second.getContentHash() }) return
 
         LOG.debug { "Updating MPS project from $oldVersions to $newVersions" }
 
         val newTrees = newVersions.map { it.getModelTree() }
-        val sourceModel = SyncTargetModel(newTrees.map { it.asModelSingleThreaded() })
+        val sourceModel = SyncTargetModel(newVersions.map { MaybeReadonlyIModel(it.getModelTree().asModelSingleThreaded(), it.readonly) })
         val baseVersions = oldVersions
         val filter = if (baseVersions.all { it != null } && incremental) {
             val invalidationTree = DefaultInvalidationTree(sourceModel.getRootNode().getNodeReference(), 100_000)
@@ -446,7 +449,7 @@ class BindingWorker(
             fun sync(invalidationTree: ModelSynchronizer.IIncrementalUpdateInformation): List<IVersion>? {
                 val idGenerator = DummyIdGenerator<INodeReference>()
                 val versionedTrees = oldVersions.map { VersionedModelTree(it, idGenerator) }
-                val model = SyncTargetModel(versionedTrees.map { it.asModel() })
+                val model = SyncTargetModel(versionedTrees.map { MaybeReadonlyIModel(it.asModel(), false) })
                 model.executeWrite {
                     val targetRoot = model.getRootNode()
                     MPSProjectAsNode.runWithProject(mpsProject) {
@@ -547,6 +550,10 @@ class BindingWorker(
             ?: node.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())
             ?: "0"
     }
+
+    private fun List<IVersion>.toNewVersionSpecList(): List<NewVersionSpec> =
+        zip(forEachTarget { bindingId.readonly })
+            .map { (v, r) -> NewVersionSpec(v, r) }
 }
 
 private fun IVersion.isInitialVersion() = (this as CLVersion).baseVersion == null

@@ -20,7 +20,8 @@ import org.modelix.mps.multiplatform.model.MPSModuleReference
 import org.modelix.mps.multiplatform.model.MPSProjectModuleReference
 import org.modelix.mps.multiplatform.model.MPSProjectReference
 
-class SyncTargetModel(val models: List<IMutableModel>) : IMutableModel {
+data class MaybeReadonlyIModel(val model: IMutableModel, val readonly: Boolean) : IMutableModel by model
+class SyncTargetModel(val models: List<MaybeReadonlyIModel>) : IMutableModel {
     private val repositoryNode: RepositoryWrapper = RepositoryWrapper()
 
     override fun getRootNode(): IWritableNode = repositoryNode
@@ -74,9 +75,11 @@ class SyncTargetModel(val models: List<IMutableModel>) : IMutableModel {
         }
 
         fun getMPSModules(): List<IWritableNode> {
-            return getRepositories()
-                .flatMap { it.getChildren(modulesRole) }
-                .distinctBy { it.getNodeReference() }
+            return models.flatMap { model ->
+                NodeWrapper(model, model.getRootNode())
+                    .getChildren(modulesRole)
+                    .map { ModuleWrapper(model, it, model.readonly) }
+            }.distinctBy { it.getNodeReference() }
         }
 
         fun getMPSProjects(): List<IWritableNode> {
@@ -467,7 +470,7 @@ class SyncTargetModel(val models: List<IMutableModel>) : IMutableModel {
 
     private fun IWritableNode.unwrap() = if (this is NodeWrapper) this.node else this
 
-    inner class NodeWrapper(private val model: IMutableModel, val node: IWritableNode) : IWritableNode by node, ISyncTargetNode {
+    open inner class NodeWrapper(private val model: IMutableModel, val node: IWritableNode) : IWritableNode by node, ISyncTargetNode {
         private fun IWritableNode.wrap() = NodeWrapper(model, this)
         private fun Iterable<IWritableNode>.wrap() = map { it.wrap() }
 
@@ -556,6 +559,24 @@ class SyncTargetModel(val models: List<IMutableModel>) : IMutableModel {
             specs: List<NewNodeSpec>,
         ): List<IWritableNode> {
             return node.syncNewChildren(role, index, specs).wrap()
+        }
+    }
+
+    inner class ModuleWrapper(model: IMutableModel, node: IWritableNode, val readonly: Boolean) : NodeWrapper(model, node) {
+        override fun getPropertyValue(property: IPropertyReference): String? {
+            if (property.matches(BuiltinLanguages.MPSRepositoryConcepts.Module.readonlyStubModule.toReference())) {
+                return readonly.toString()
+            } else {
+                return super.getPropertyValue(property)
+            }
+        }
+
+        override fun setPropertyValue(property: IPropertyReference, value: String?) {
+            if (property.matches(BuiltinLanguages.MPSRepositoryConcepts.Module.readonlyStubModule.toReference())) {
+                return // not supported
+            } else {
+                return super.setPropertyValue(property, value)
+            }
         }
     }
 

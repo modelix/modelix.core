@@ -95,6 +95,7 @@ class MultipleBindingsTest : ProjectSyncTestBase() {
                       <url>http://localhost:$port</url>
                       <repository>${branchRefLib.repositoryId.id}</repository>
                       <branch>${branchRefLib.branchName}</branch>
+                      <readonly>true</readonly>
                     </binding>
                   </component>
                 </project>
@@ -114,8 +115,13 @@ class MultipleBindingsTest : ProjectSyncTestBase() {
             "module4",
         )
         assertEquals(
-            setOf("module1", "module2", "module3", "module4"),
-            readAction { mpsProject.projectModules.map { it.moduleName }.toSet() },
+            setOf(
+                "module1" to false,
+                "module2" to false,
+                "module3" to true,
+                "module4" to true,
+            ),
+            readAction { mpsProject.projectModules.map { it.moduleName to it.isReadOnly }.toSet() },
         )
     }
 }

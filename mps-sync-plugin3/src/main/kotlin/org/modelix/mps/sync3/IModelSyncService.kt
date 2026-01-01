@@ -36,6 +36,7 @@ interface IModelSyncService {
     fun getServerConnections(): List<IServerConnection>
     fun getUsedServerConnections(): List<IServerConnection>
     fun getBindings(): List<IBinding>
+    fun updateBinding(oldBranchRef: BranchReference, newBranchRef: BranchReference, resetLocalState: Boolean = false)
 }
 
 data class ModelServerConnectionProperties(

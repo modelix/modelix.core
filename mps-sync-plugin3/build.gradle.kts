@@ -55,6 +55,7 @@ dependencies {
     testImplementation(libs.kotlin.coroutines.test)
     testImplementation(libs.logback.classic)
     testImplementation(kotlin("test"))
+    testImplementation(libs.mockk)
     testImplementation(project(":authorization"), excludeMPSLibraries)
     testImplementation(project(":model-server"), excludeMPSLibraries)
     testImplementation(libs.ktor.client.cio, excludeMPSLibraries)

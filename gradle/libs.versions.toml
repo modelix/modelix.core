@@ -151,7 +151,7 @@ reaktive-testing = { group = "org.modelix.reaktive", name = "reaktive-testing", 
 reaktive-annotations = { group = "org.modelix.reaktive", name = "reaktive-annotations", version.ref = "reaktive" }
 reaktive-coroutines-interop = { group = "org.modelix.reaktive", name = "coroutines-interop", version.ref = "reaktive" }
 
-nimbus-jose-jwt = { group = "com.nimbusds", name = "nimbus-jose-jwt", version = "10.6" }
+nimbus-jose-jwt = { group = "com.nimbusds", name = "nimbus-jose-jwt", version = "10.7" }
 bouncycastle-bcpkix = { group = "org.bouncycastle", name = "bcpkix-lts8on", version = "2.73.10" }
 
 kotlincrypto-sha2 = { module = "org.kotlincrypto.hash:sha2", version = "0.8.0" }

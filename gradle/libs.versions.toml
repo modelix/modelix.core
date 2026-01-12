@@ -40,7 +40,7 @@ xmlunit = "2.11.0"
 kotest = "6.0.7"
 reaktive = "2.2.0"
 testcontainers = "1.21.4"
-keycloak = "26.0.7"
+keycloak = "26.0.8"
 arrow = "2.2.1.1"
 
 [libraries]

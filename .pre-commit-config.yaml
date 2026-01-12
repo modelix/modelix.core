@@ -24,7 +24,7 @@ repos:
         additional_dependencies: ["@commitlint/config-angular"]
         args: ["--config", "./commitlint.config.js"]
   - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-    rev: v2.15.0
+    rev: v2.16.0
     hooks:
       - id: pretty-format-kotlin
         args:

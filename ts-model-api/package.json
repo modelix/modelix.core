@@ -32,7 +32,7 @@
     "generateKotlin": "dukat -m \"@modelix/ts-model-api\" -d build/dukat dist/*.d.ts"
   },
   "devDependencies": {
-    "@types/node": "^25.0.3",
+    "@types/node": "^25.0.7",
     "dukat": "^0.5.8-rc.4",
     "husky": "^9.1.7",
     "shx": "^0.4.0",

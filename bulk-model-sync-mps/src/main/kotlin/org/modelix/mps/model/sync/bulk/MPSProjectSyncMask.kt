@@ -23,7 +23,6 @@ class MPSProjectSyncMask(val projects: List<MPSProject>, val isMPSSide: Boolean)
                     if (isMPSSide) {
                         val included = projects
                             .flatMap { it.projectModules }
-                            .filterNot { it.isReadOnly }
                             .map { MPSModuleAsNode(it).getNodeReference().serialize() }.toSet()
                         children.filter { included.contains(it.getNodeReference().serialize()) }
                     } else {

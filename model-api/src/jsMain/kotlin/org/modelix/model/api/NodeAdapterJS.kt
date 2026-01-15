@@ -68,7 +68,10 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
         return node.reference.serialize()
     }
 
-    override fun getRoleInParent(): ChildRole? = node.roleInParent
+    override fun getRoleInParent(): ChildRole? {
+        val role = node.roleInParent ?: return null
+        return IChildLinkReference.fromLegacyApi(role).getIdOrName()
+    }
 
     override fun getParent(): INodeJS? = node.parent?.let { NodeAdapterJS(it) }
 
@@ -102,7 +105,7 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
     }
 
     override fun getReferenceRoles(): Array<ReferenceRole> {
-        return node.getReferenceRoles().toTypedArray()
+        return node.getReferenceRoles().map { IReferenceLinkReference.fromLegacyApi(it).getIdOrName() as ReferenceRole }.toTypedArray()
     }
 
     override fun getReferenceTargetNode(role: ReferenceRole): INodeJS? {
@@ -127,7 +130,7 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
     }
 
     override fun getPropertyRoles(): Array<PropertyRole> {
-        return node.getPropertyRoles().toTypedArray()
+        return node.getPropertyRoles().map { IPropertyReference.fromLegacyApi(it).getIdOrName() as PropertyRole }.toTypedArray()
     }
 
     override fun getPropertyValue(role: PropertyRole): String? {

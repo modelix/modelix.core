@@ -29,7 +29,7 @@ dependencies {
     implementation(libs.kotlin.logging, excludeMPSLibraries)
     implementation(libs.kotlin.datetime, excludeMPSLibraries)
     implementation("org.eclipse.jgit:org.eclipse.jgit:7.5.0.202512021534-r")
-    implementation("com.github.ajalt.clikt:clikt:5.0.3")
+    implementation("com.github.ajalt.clikt:clikt:5.1.0")
 
     compileOnly(
         fileTree(mpsHomeDir).matching {

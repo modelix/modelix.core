@@ -15,7 +15,7 @@ dependencies {
     implementation(libs.kotlin.logging)
     implementation(libs.kotlin.datetime)
     implementation("org.eclipse.jgit:org.eclipse.jgit:7.5.0.202512021534-r")
-    api("com.github.ajalt.clikt:clikt:5.0.3")
+    api("com.github.ajalt.clikt:clikt:5.1.0")
 
     compileOnly(
         fileTree(mpsHomeDir).matching {

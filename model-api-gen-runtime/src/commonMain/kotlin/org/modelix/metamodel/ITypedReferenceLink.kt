@@ -2,6 +2,7 @@ package org.modelix.metamodel
 
 import org.modelix.model.api.INode
 import org.modelix.model.api.IReferenceLink
+import org.modelix.model.api.async.IAsyncNode
 
 interface ITypedReferenceLink<out TargetT : ITypedNode> : ITypedConceptFeature {
     fun untyped(): IReferenceLink
@@ -22,3 +23,6 @@ fun <TargetT : ITypedNode> INode.setReferenceTarget(link: ITypedReferenceLink<Ta
 
 class ReferenceNotSetException(val node: INode, val link: ITypedReferenceLink<*>) :
     Exception("Node $node has no reference target in role ${link.untyped().name}")
+
+fun IAsyncNode.getReferenceTarget(reference: ITypedReferenceLink<ITypedNode>) =
+    getReferenceTarget(reference.untyped().toReference())

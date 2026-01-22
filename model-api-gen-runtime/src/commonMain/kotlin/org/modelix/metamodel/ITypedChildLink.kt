@@ -2,6 +2,7 @@ package org.modelix.metamodel
 
 import org.modelix.model.api.IChildLink
 import org.modelix.model.api.INode
+import org.modelix.model.api.async.IAsyncNode
 import org.modelix.model.api.remove
 
 interface ITypedChildLink<out ChildT : ITypedNode> : ITypedConceptFeature {
@@ -37,3 +38,6 @@ fun <ChildT : ITypedNode, ChildConceptT : INonAbstractConcept<ChildT>> INode.add
 
 class ChildNotSetException(val node: INode, val link: ITypedMandatorySingleChildLink<*>) :
     Exception("Node $node has no child in role ${link.untyped().name}")
+
+fun IAsyncNode.getChildren(link: ITypedChildLink<ITypedNode>) =
+    getChildren(link.untyped().toReference())

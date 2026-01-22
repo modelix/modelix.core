@@ -17,7 +17,7 @@ jobs:
           key: release-${{ hashFiles('package.json') }}-${{ hashFiles('package-lock.json') }}
       - name: Install dependencies
         run: npm ci
-      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
       - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
 
 #  openapi-linting:

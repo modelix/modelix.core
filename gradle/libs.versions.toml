@@ -117,7 +117,7 @@ ignite-core = { group = "org.apache.ignite", name = "ignite-core", version.ref =
 ignite-spring = { group = "org.apache.ignite", name = "ignite-spring", version.ref = "ignite" }
 ignite-indexing = { group = "org.apache.ignite", name = "ignite-indexing", version.ref = "ignite" }
 
-logback-classic = { group = "ch.qos.logback", name = "logback-classic", version = "1.5.25" }
+logback-classic = { group = "ch.qos.logback", name = "logback-classic", version = "1.5.26" }
 postgresql = { group = "org.postgresql", name = "postgresql", version = "42.7.9" }
 jcommander = { group = "com.beust", name = "jcommander", version = "1.82" }
 junit = { group = "junit", name = "junit", version = "4.13.2" }

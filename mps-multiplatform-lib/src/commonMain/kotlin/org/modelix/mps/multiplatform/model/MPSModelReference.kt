@@ -73,7 +73,7 @@ data class MPSModelReference(val moduleReference: MPSModuleReference?, val model
             return arrayOf<String?>(moduleId, modelID, moduleName, modelName)
         }
 
-        fun random() = MPSModelReference(null, randomUUID())
+        fun random(): MPSModelReference = MPSModelReference(null, "r:" + randomUUID())
     }
 
     override fun serialize(): String {

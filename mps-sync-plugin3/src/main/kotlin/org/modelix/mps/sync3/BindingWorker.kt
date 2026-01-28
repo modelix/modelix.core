@@ -5,7 +5,6 @@ import com.intellij.openapi.application.ModalityState
 import io.ktor.client.plugins.ResponseException
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.CancellationException
-import jetbrains.mps.project.MPSProject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -36,7 +35,6 @@ import org.modelix.model.api.getOriginalReference
 import org.modelix.model.area.PArea
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.CLVersion
-import org.modelix.model.mpsadapters.MPSProjectAdapter
 import org.modelix.model.mpsadapters.MPSProjectAsNode
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import org.modelix.model.mpsadapters.computeRead
@@ -53,11 +51,14 @@ import org.modelix.mps.model.sync.bulk.MPSProjectSyncMask
 import org.modelix.mps.multiplatform.model.MPSProjectReference
 import org.modelix.streams.iterateSuspending
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.collections.map
 
 class SyncTarget(
     val serverConnection: ModelSyncService.Connection,
     val bindingId: BindingId,
     val initialVersionHash: String?,
+    val readonly: Boolean,
+    val projectId: MPSProjectReference?,
 ) {
     suspend fun client() = serverConnection.getClient()
     val branchRef: BranchReference get() = bindingId.branchRef
@@ -65,7 +66,7 @@ class SyncTarget(
 
 class BindingWorker(
     val coroutinesScope: CoroutineScope,
-    val mpsProject: MPSProject,
+    val mpsProject: MPSProjectAsNode,
     val syncTargets: List<SyncTarget>,
     val continueOnError: () -> Boolean,
 ) {
@@ -82,7 +83,7 @@ class BindingWorker(
     private var previousSyncStack: List<IReadableNode> = emptyList()
     private var status: List<IBinding.Status> = syncTargets.map { IBinding.Status.Disabled }
 
-    private val repository: SRepository get() = mpsProject.repository
+    private val repository: SRepository get() = mpsProject.project.getRepository()
 
     init {
         require(syncTargets.isNotEmpty())
@@ -173,10 +174,12 @@ class BindingWorker(
         check(syncJob?.isActive == true) { "Synchronization is not active" }
         var reason = checkInSync()
         var i = 0
+        var delay = 10.0
         while (reason != null) {
             i++
             if (i % 10 == 0) LOG.debug { "Still waiting for the synchronization to finish: $reason" }
-            delay(100)
+            delay(delay.toLong())
+            delay = (delay * 1.5).coerceAtMost(3000.0)
             reason = checkInSync()
         }
         return lastSyncedVersion.getValue()!!
@@ -225,8 +228,19 @@ class BindingWorker(
         // continuous sync to MPS
         val latestHashes: List<Flow<String>> = forEachTargetIndexed<Flow<String>> { index ->
             channelFlow {
+                // The `combine` operator returns the latest values of all flows whenever one of them changes, but it
+                // only starts streaming values when each stream returned at least one value.
+                // If we don't send a first value here, changes are not detected until the first pollHash call for each
+                // repository timed out. The synchronization is effectively blocked for the first ~30 seconds.
+                channel.send(lastSyncedVersion.getValue()?.get(index)?.getContentHash() ?: "")
+
                 launchLoop {
-                    channel.send(client().pollHash(branchRef, lastSyncedVersion.getValue()?.get(index)))
+                    val lastKnownVersion = lastSyncedVersion.getValue()?.get(index)
+                    channel.send(
+                        client().pollHash(branchRef, lastKnownVersion).also { hash ->
+                            LOG.trace { "pollHash($branchRef, $lastKnownVersion) -> $hash" }
+                        },
+                    )
                 }
             }
         }
@@ -338,7 +352,22 @@ class BindingWorker(
         LOG.debug { "Updating MPS project from $oldVersions to $newVersions" }
 
         val newTrees = newVersions.map { it.getModelTree() }
-        val sourceModel = SyncTargetModel(newTrees.map { it.asModelSingleThreaded() })
+        val sourceModel = SyncTargetModel(
+            mpsProject,
+            newVersions.zip(syncTargets).map { (newVersion, syncTarget) ->
+                val model = newVersion.getModelTree().asModelSingleThreaded()
+                val projectNode: () -> IWritableNode? = {
+                    findMatchingProjectNode(model.getRootNode()) as IWritableNode?
+                }
+                SyncTargetConfig(
+                    model = model,
+                    readonly = syncTarget.readonly,
+                    projectId = syncTarget.projectId
+                        ?: projectNode()?.getNodeReference()?.let { MPSProjectReference.tryConvert(it) }
+                        ?: mpsProject.getNodeReference(),
+                )
+            },
+        )
         val baseVersions = oldVersions
         val filter = if (baseVersions.all { it != null } && incremental) {
             val invalidationTree = DefaultInvalidationTree(sourceModel.getRootNode().getNodeReference(), 100_000)
@@ -380,8 +409,8 @@ class BindingWorker(
                 val projectNode: IReadableNode? = findMatchingProjectNode(sourceRoot)
                 if (projectNode != null) {
                     val projectId = getProjectId(projectNode)
-                    if (projectId != getProjectId(MPSProjectAsNode(mpsProject))) {
-                        MPSProjectAdapter(mpsProject).setName(projectId)
+                    if (projectId != mpsProject.getNodeReference().projectName) {
+                        mpsProject.project.setName(projectId)
                     }
                 }
 
@@ -412,7 +441,7 @@ class BindingWorker(
         ApplicationManager.getApplication().invokeAndWait({
             ApplicationManager.getApplication().runWriteAction {
                 repository.modelAccess.executeUndoTransparentCommand {
-                    MPSProjectAsNode.runWithProject(mpsProject) {
+                    MPSProjectAsNode.runWithProjectNode(mpsProject) {
                         result += body()
                     }
                 }
@@ -446,27 +475,35 @@ class BindingWorker(
             fun sync(invalidationTree: ModelSynchronizer.IIncrementalUpdateInformation): List<IVersion>? {
                 val idGenerator = DummyIdGenerator<INodeReference>()
                 val versionedTrees = oldVersions.map { VersionedModelTree(it, idGenerator) }
-                val model = SyncTargetModel(versionedTrees.map { it.asModel() })
+                val model = SyncTargetModel(
+                    mpsProject,
+                    versionedTrees.zip(syncTargets).map { (versionedTree, syncTarget) ->
+                        val model = versionedTree.asModel()
+                        val projectNode: () -> IWritableNode? = {
+                            model.executeRead {
+                                findMatchingProjectNode(model.getRootNode()) as IWritableNode?
+                            }
+                        }
+                        SyncTargetConfig(
+                            model = model,
+                            readonly = syncTarget.readonly,
+                            projectId = syncTarget.projectId
+                                ?: projectNode()?.getNodeReference()?.let { MPSProjectReference.tryConvert(it) }
+                                ?: mpsProject.getNodeReference(),
+                        )
+                    },
+                )
                 model.executeWrite {
                     val targetRoot = model.getRootNode()
-                    MPSProjectAsNode.runWithProject(mpsProject) {
-                        val sourceRoot = MPSRepositoryAsNode(mpsProject.repository)
+                    MPSProjectAsNode.runWithProjectNode(mpsProject) {
+                        val sourceRoot = MPSRepositoryAsNode(mpsProject.project.getRepository())
 
                         val legacyMutableTree = (targetRoot.getModel().asArea() as? PArea)?.branch
 
-                        val projectNode: IWritableNode? = findMatchingProjectNode(targetRoot) as IWritableNode?
                         val nodeAssociation = if (legacyMutableTree != null) {
-                            NodeAssociationToModelServer(legacyMutableTree).also { nodeAssociation ->
-                                // handled renamed projects
-                                if (projectNode != null && !nodeAssociation.matches(MPSProjectAsNode(mpsProject), projectNode)) {
-                                    nodeAssociation.associate(MPSProjectAsNode(mpsProject), projectNode)
-                                }
-                            }
+                            NodeAssociationToModelServer(legacyMutableTree)
                         } else {
-                            var overrides = mapOf(sourceRoot.getNodeReference() to targetRoot.getNodeReference())
-                            if (projectNode != null) {
-                                overrides += MPSProjectAsNode(mpsProject).getNodeReference() to projectNode.getNodeReference()
-                            }
+                            val overrides = mapOf(sourceRoot.getNodeReference() to targetRoot.getNodeReference())
                             IdentityPreservingNodeAssociation(targetRoot.getModel(), overrides)
                         }
 
@@ -535,8 +572,8 @@ class BindingWorker(
             0 -> null
             1 -> projectNodes.single()
             else -> projectNodes.find {
-                getProjectId(it) == getProjectId(MPSProjectAsNode(mpsProject))
-            }
+                getProjectId(it) == getProjectId(mpsProject)
+            } ?: projectNodes.first()
         }
     }
 

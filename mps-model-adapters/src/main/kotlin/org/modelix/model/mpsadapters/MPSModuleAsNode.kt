@@ -31,6 +31,7 @@ import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.data.asData
 import org.modelix.mps.api.ModelixMpsApi
+import org.modelix.mps.multiplatform.model.MPSModelReference
 
 fun MPSModuleAsNode(module: SModule) = MPSModuleAsNode.create(module)
 
@@ -107,6 +108,22 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                     (element as Solution).moduleDescriptor.compileInMPS = value.toBoolean()
                 }
             },
+            BuiltinLanguages.MPSRepositoryConcepts.Module.isReadOnly.toReference() to object : IPropertyAccessor<SModule> {
+                override fun read(element: SModule): String? {
+                    return element.isReadOnly.takeIf { it }?.toString()
+                }
+
+                override fun write(element: SModule, value: String?) {
+                    if (read(element).toBoolean() == value.toBoolean()) return
+                    check(element is Solution) {
+                        "Property 'isReadOnly' can only be changed on Solutions, but ${element.moduleName} is a ${element.javaClass.simpleName}"
+                    }
+                    check(!element.isPackaged) {
+                        "Property 'isReadOnly' can't be changed on packaged modules. [module=${element.moduleName}]"
+                    }
+                    element.moduleDescriptor.readOnlyStubModule(value.toBoolean())
+                }
+            },
         )
 
         private val referenceAccessors = listOf<Pair<IReferenceLinkReference, IReferenceAccessor<SModule>>>()
@@ -123,8 +140,10 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                     return element.createModel(
                         name = sourceNode.getNode().getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())
                             ?: "${element.moduleName}.unnamed",
-                        id = sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id.toReference())
-                            ?.let { PersistenceFacade.getInstance().createModelId(it) } ?: SModelId.generate(),
+                        id = MPSModelReference.tryConvert(sourceNode.getNode().getNodeReference())?.toMPS()?.modelId
+                            ?: sourceNode.getNode().getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.Model.id.toReference())
+                                ?.let { PersistenceFacade.getInstance().createModelId(it) }
+                            ?: SModelId.generate(),
                     ).let { MPSModelAsNode(it) }
                 }
 

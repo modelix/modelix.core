@@ -39,12 +39,12 @@ internal class MutableModelTreeJsImpl(
     override val rootNode: INodeJS get() = getRootNodes().single()
 
     override fun getRootNodes(): Array<INodeJS> {
-        return model.getRootNodes().map { it.toJS() }.toTypedArray()
+        return model.executeRead { model.getRootNodes().map { it.toJS() }.toTypedArray() }
     }
 
     override fun resolveNode(reference: INodeReferenceJS): INodeJS? {
         val referenceObject = NodeReference(reference as String)
-        return model.tryResolveNode(referenceObject)?.toJS()
+        return model.executeRead { model.tryResolveNode(referenceObject)?.toJS() }
     }
 
     override fun addListener(handler: ChangeHandler) {

@@ -50,8 +50,8 @@ class LibraryRepositoryTest : ProjectSyncTestBase() {
             setOf(
                 "main.module1" to false,
                 "main.module2" to false,
-                "lib.module3" to true,
-                "lib.module4" to true,
+                "lib.module3" to false,
+                "lib.module4" to false,
             ),
             readAction { mpsProject.projectModules.map { it.moduleName to it.isReadOnly }.toSet() },
         )
@@ -78,8 +78,8 @@ class LibraryRepositoryTest : ProjectSyncTestBase() {
             setOf(
                 "main.module1" to false,
                 "main.module2" to false,
-                "lib.module3" to true,
-                "lib.module4" to true,
+                "lib.module3" to false,
+                "lib.module4" to false,
             ),
             readAction { mpsProject.projectModules.map { it.moduleName to it.isReadOnly }.toSet() },
         )
@@ -121,8 +121,8 @@ class LibraryRepositoryTest : ProjectSyncTestBase() {
                 "main.module1" to false,
                 "main.module2" to false,
                 "main.newModule" to false,
-                "lib.module3" to true,
-                "lib.module4" to true,
+                "lib.module3" to false,
+                "lib.module4" to false,
             ),
             readAction { mpsProject.projectModules.map { it.moduleName to it.isReadOnly }.toSet() },
         )
@@ -146,8 +146,8 @@ class LibraryRepositoryTest : ProjectSyncTestBase() {
             setOf(
                 "main.module1" to false,
                 "main.module2" to false,
-                "lib.module3" to true,
-                "lib.module4" to true,
+                "lib.module3" to false,
+                "lib.module4" to false,
             ),
             readAction { mpsProject.projectModules.map { it.moduleName to it.isReadOnly }.toSet() },
         )
@@ -188,9 +188,9 @@ class LibraryRepositoryTest : ProjectSyncTestBase() {
             setOf(
                 "main.module1" to false,
                 "main.module2" to false,
-                "lib.module3" to true,
-                "lib.module4" to true,
-                "lib.newModule" to true,
+                "lib.module3" to false,
+                "lib.module4" to false,
+                "lib.newModule" to false,
             ),
             readAction { mpsProject.projectModules.map { it.moduleName to it.isReadOnly }.toSet() },
         )
@@ -226,6 +226,38 @@ class LibraryRepositoryTest : ProjectSyncTestBase() {
         val classNode = modelA.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.toReference()).first()
         assertEquals(classConcept.toModelix().getReference(), classNode.getConceptReference())
         assertEquals("MyClass", classNode.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference()))
+    }
+
+    fun `test add root node to library model in MPS`() = runTest { port, client ->
+        openProjectWithBindings(port)
+
+        val service = IModelSyncService.getInstance(mpsProject)
+        assertEquals(2, service.getBindings().size)
+        service.getBindings().forEach { it.flush() }
+
+        // add new root node
+        val classConcept = MetaAdapterFactory.getConcept(-0xcf9e5ac6dd9b33bL, -0x5bbc06ad3150a7eaL, 0xf8c108ca66L, "jetbrains.mps.baseLanguage.structure.ClassConcept")
+        writeAction {
+            val module = mpsProject.projectModules.first { it.moduleName == "lib.module3" }
+            val model = module.models.first { it.name.simpleName == "modelA" }
+            model.addRootNode(
+                model.createNode(classConcept).also {
+                    it.setProperty(SNodeUtil.property_INamedConcept_name, "MyClass")
+                },
+            )
+        }
+
+        service.getBindings().forEach { it.flush() }
+
+        val version = client.pull(branchRefLib, null)
+        val repositoryNode = version.getModelTree().asModelSingleThreaded().getRootNode()
+        val module1 = repositoryNode.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Repository.modules.toReference())
+            .first { it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference()) == "lib.module3" }
+        val modelA = module1.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.models.toReference())
+            .first { it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference()) == "lib.module3.modelA" }
+        val classNode = modelA.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.toReference()).firstOrNull()
+        val className = classNode?.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())
+        assertNull("ClassConcept $className found, but shouldn't exist", classNode)
     }
 
     private fun IWritableNode.addNewModule(name: String, modelNames: List<String> = emptyList()): IWritableNode {

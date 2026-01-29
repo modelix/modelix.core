@@ -641,20 +641,6 @@ class SyncTargetModel(
         override fun isReadOnly(): Boolean {
             return owner.readonly || node.isReadOnly()
         }
-
-        override fun getPropertyValue(property: IPropertyReference): String? {
-            if (property.matches(BuiltinLanguages.MPSRepositoryConcepts.Module.isReadOnly.toReference()) && owner.readonly) {
-                return true.toString()
-            }
-            return super.getPropertyValue(property)
-        }
-
-        override fun setPropertyValue(property: IPropertyReference, value: String?) {
-            if (property.matches(BuiltinLanguages.MPSRepositoryConcepts.Module.isReadOnly.toReference())) {
-                return // changes not supported
-            }
-            return super.setPropertyValue(property, value)
-        }
     }
 
     abstract inner class WrapperBase : IWritableNode, ISyncTargetNode {

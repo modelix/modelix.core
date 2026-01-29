@@ -12,6 +12,7 @@ import org.modelix.model.api.IReferenceLinkReference
 import org.modelix.model.api.ISyncTargetNode
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.NewNodeSpec
+import org.modelix.model.api.NodeReference
 import org.modelix.model.api.NullChildLinkReference
 import org.modelix.model.api.remove
 import org.modelix.model.api.syncNewChild
@@ -35,6 +36,7 @@ class SyncTargetModel(
     val project: MPSProjectAsNode,
     val targetConfigs: List<SyncTargetConfig>,
 ) : IMutableModel {
+    private val rootRef = NodeReference("sync-root")
     private val models: List<IMutableModel> get() = targetConfigs.map { it.model }
     private val repositoryNode: RepositoryWrapper = RepositoryWrapper()
 
@@ -43,7 +45,16 @@ class SyncTargetModel(
     override fun getRootNodes(): List<IWritableNode> = listOf(getRootNode())
 
     override fun tryResolveNode(ref: INodeReference): IWritableNode? {
-        return models.firstNotNullOfOrNull { m -> m.tryResolveNode(ref)?.let { NodeWrapper(m, it) } }
+        if (ref == rootRef) return repositoryNode
+        if (models.any { it.getRootNode().getNodeReference() == ref }) return repositoryNode
+        return models.firstNotNullOfOrNull { m ->
+            m.tryResolveNode(ref)?.let { node ->
+                if (node.getContainmentLink().matches(BuiltinLanguages.MPSRepositoryConcepts.Repository.projects.toReference())) {
+                    return ProjectWrapper(project.getNodeReference())
+                }
+                NodeWrapper(m, node)
+            }
+        }
     }
 
     override fun <R> executeRead(body: () -> R): R {
@@ -184,7 +195,7 @@ class SyncTargetModel(
         }
 
         override fun getNodeReference(): INodeReference {
-            return delegate.getNodeReference()
+            return rootRef
         }
 
         override fun getConcept(): IConcept {
@@ -530,6 +541,9 @@ class SyncTargetModel(
     open inner class NodeWrapper(private val model: IMutableModel, val node: IWritableNode) : IWritableNode by node, ISyncTargetNode {
         init {
             require(node !is NodeWrapper)
+            require(node.getNodeReference() != model.getRootNode().getNodeReference()) {
+                "${RepositoryWrapper::javaClass.name} should be used for $node"
+            }
         }
 
         private fun IWritableNode.wrap() = NodeWrapper(model, this)

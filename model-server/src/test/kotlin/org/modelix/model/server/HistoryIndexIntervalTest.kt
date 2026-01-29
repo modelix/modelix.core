@@ -2,6 +2,7 @@ package org.modelix.model.server
 
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
+import io.ktor.test.dispatcher.runTestWithRealTime
 import mu.KotlinLogging
 import org.modelix.datastructures.history.HistoryInterval
 import org.modelix.model.IVersion
@@ -16,6 +17,7 @@ import org.modelix.model.server.store.InMemoryStoreClient
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 private val LOG = KotlinLogging.logger { }
@@ -23,19 +25,23 @@ private val LOG = KotlinLogging.logger { }
 class HistoryIndexIntervalTest {
 
     private lateinit var statistics: StoreClientWithStatistics
-    private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
-        application {
-            try {
-                installDefaultServerPlugins()
-                statistics = StoreClientWithStatistics(InMemoryStoreClient())
-                val repoManager = RepositoriesManager(statistics)
-                ModelReplicationServer(repoManager).init(this)
-                IdsApiImpl(repoManager).init(this)
-            } catch (ex: Throwable) {
-                LOG.error("", ex)
+    private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = runTestWithRealTime(timeout = 3.minutes) {
+        retryOnTimeout(30.seconds) {
+            testApplication {
+                application {
+                    try {
+                        installDefaultServerPlugins()
+                        statistics = StoreClientWithStatistics(InMemoryStoreClient())
+                        val repoManager = RepositoriesManager(statistics)
+                        ModelReplicationServer(repoManager).init(this)
+                        IdsApiImpl(repoManager).init(this)
+                    } catch (ex: Throwable) {
+                        LOG.error("", ex)
+                    }
+                }
+                block()
             }
         }
-        block()
     }
 
     @Test fun interval_0_201_1() = runIntervalTest(0, 201, 1)

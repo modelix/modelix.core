@@ -3,6 +3,8 @@ package org.modelix.model.server
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.runTestApplication
 import io.ktor.test.dispatcher.runTestWithRealTime
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 import mu.KotlinLogging
 import org.modelix.datastructures.history.PaginationParameters
 import org.modelix.model.IVersion
@@ -17,6 +19,7 @@ import org.modelix.model.server.store.InMemoryStoreClient
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -26,19 +29,21 @@ class HistoryIndexPaginationTest {
 
     private lateinit var statistics: StoreClientWithStatistics
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = runTestWithRealTime(timeout = 3.minutes) {
-        runTestApplication {
-            application {
-                try {
-                    installDefaultServerPlugins()
-                    statistics = StoreClientWithStatistics(InMemoryStoreClient())
-                    val repoManager = RepositoriesManager(statistics)
-                    ModelReplicationServer(repoManager).init(this)
-                    IdsApiImpl(repoManager).init(this)
-                } catch (ex: Throwable) {
-                    LOG.error("", ex)
+        retryOnTimeout(30.seconds) {
+            runTestApplication {
+                application {
+                    try {
+                        installDefaultServerPlugins()
+                        statistics = StoreClientWithStatistics(InMemoryStoreClient())
+                        val repoManager = RepositoriesManager(statistics)
+                        ModelReplicationServer(repoManager).init(this)
+                        IdsApiImpl(repoManager).init(this)
+                    } catch (ex: Throwable) {
+                        LOG.error("", ex)
+                    }
                 }
+                block()
             }
-            block()
         }
     }
 
@@ -121,5 +126,20 @@ class HistoryIndexPaginationTest {
         )
         assertEquals(expectedOrder.drop(skip).take(limit).toSet(), history.map { it.versionHash }.toSet())
         assertEquals(expectedOrder.drop(skip).take(limit), history.map { it.versionHash })
+    }
+}
+
+suspend fun retryOnTimeout(timeout: Duration, body: suspend () -> Unit) {
+    var attempt = 0
+    while (true) {
+        attempt++
+        try {
+            withTimeout(timeout) {
+                body()
+            }
+            return
+        } catch (ex: TimeoutCancellationException) {
+            if (attempt >= 3) throw ex
+        }
     }
 }

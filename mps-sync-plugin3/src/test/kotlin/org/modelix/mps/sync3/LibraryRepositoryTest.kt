@@ -128,6 +128,74 @@ class LibraryRepositoryTest : ProjectSyncTestBase() {
         )
     }
 
+    fun `test add module in lib repository`() = runTest { port, client ->
+        openProjectWithBindings(port)
+
+        val service = IModelSyncService.getInstance(mpsProject)
+        assertEquals(2, service.getBindings().size)
+        service.getBindings().forEach { it.flush() }
+
+        assertContainsElements(
+            readAction { mpsProject.repository.modules.map { it.moduleName }.toSet() },
+            "main.module1",
+            "main.module2",
+            "lib.module3",
+            "lib.module4",
+        )
+        assertEquals(
+            setOf(
+                "main.module1" to false,
+                "main.module2" to false,
+                "lib.module3" to true,
+                "lib.module4" to true,
+            ),
+            readAction { mpsProject.projectModules.map { it.moduleName to it.isReadOnly }.toSet() },
+        )
+
+        // add new module
+        client.runWriteOnTree(branchRefLib, nodeIdGenerator = { MPSIdGenerator(client.getIdGenerator(), it) }) { tree ->
+            val repo = tree.getRootNode()
+            val t = tree.getWriteTransaction()
+            val module = repo.addNewModule("lib.newModule")
+            t.mutate(
+                MutationParameters.AddNew(
+                    MPSProjectReference("lib-project"),
+                    BuiltinLanguages.MPSRepositoryConcepts.Project.projectModules.toReference(),
+                    -1,
+                    listOf(MPSProjectModuleReference(MPSModuleReference.convert(module.getNodeReference()), MPSProjectReference("lib-project")) to BuiltinLanguages.MPSRepositoryConcepts.ProjectModule.getReference()),
+                ),
+            )
+            t.mutate(
+                MutationParameters.Reference(
+                    MPSProjectModuleReference(MPSModuleReference.convert(module.getNodeReference()), MPSProjectReference("lib-project")),
+                    BuiltinLanguages.MPSRepositoryConcepts.ModuleReference.module.toReference(),
+                    module.getNodeReference(),
+                ),
+            )
+        }
+
+        service.getBindings().forEach { it.flush() }
+
+        assertContainsElements(
+            readAction { mpsProject.repository.modules.map { it.moduleName }.toSet() },
+            "main.module1",
+            "main.module2",
+            "lib.module3",
+            "lib.module4",
+            "lib.newModule",
+        )
+        assertEquals(
+            setOf(
+                "main.module1" to false,
+                "main.module2" to false,
+                "lib.module3" to true,
+                "lib.module4" to true,
+                "lib.newModule" to true,
+            ),
+            readAction { mpsProject.projectModules.map { it.moduleName to it.isReadOnly }.toSet() },
+        )
+    }
+
     fun `test add root node in MPS`() = runTest { port, client ->
         openProjectWithBindings(port)
 

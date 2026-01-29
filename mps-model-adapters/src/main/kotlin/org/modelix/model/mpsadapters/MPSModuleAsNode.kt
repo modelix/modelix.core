@@ -108,22 +108,6 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
                     (element as Solution).moduleDescriptor.compileInMPS = value.toBoolean()
                 }
             },
-            BuiltinLanguages.MPSRepositoryConcepts.Module.isReadOnly.toReference() to object : IPropertyAccessor<SModule> {
-                override fun read(element: SModule): String? {
-                    return element.isReadOnly.takeIf { it }?.toString()
-                }
-
-                override fun write(element: SModule, value: String?) {
-                    if (read(element).toBoolean() == value.toBoolean()) return
-                    check(element is Solution) {
-                        "Property 'isReadOnly' can only be changed on Solutions, but ${element.moduleName} is a ${element.javaClass.simpleName}"
-                    }
-                    check(!element.isPackaged) {
-                        "Property 'isReadOnly' can't be changed on packaged modules. [module=${element.moduleName}]"
-                    }
-                    element.moduleDescriptor.readOnlyStubModule(value.toBoolean())
-                }
-            },
         )
 
         private val referenceAccessors = listOf<Pair<IReferenceLinkReference, IReferenceAccessor<SModule>>>()
@@ -460,6 +444,11 @@ data class MPSLanguageAsNode(override val module: Language) : MPSModuleAsNode<La
 }
 data class MPSSolutionAsNode(override val module: Solution) : MPSModuleAsNode<Solution>() {
     override fun getConcept(): IConcept = BuiltinLanguages.MPSRepositoryConcepts.Solution
+    override fun isReadOnly(): Boolean {
+        // Solutions synchronized from a read-only binding are marked as read-only to prevent the user from editing
+        // them, but writing should still be allowed by the synchronizer itself.
+        return module.isPackaged
+    }
 }
 data class MPSDevkitAsNode(override val module: DevKit) : MPSModuleAsNode<DevKit>() {
     companion object {

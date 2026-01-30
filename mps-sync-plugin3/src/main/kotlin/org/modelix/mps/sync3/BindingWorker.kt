@@ -5,6 +5,7 @@ import com.intellij.openapi.application.ModalityState
 import io.ktor.client.plugins.ResponseException
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -75,7 +76,7 @@ class BindingWorker(
     }
 
     private val activated = AtomicBoolean(false)
-    private val lastSyncedVersion = ValueWithMutex<List<IVersion>?>(null)
+    private val lastSyncedVersion = ValueWithMutex<List<SynchronizedVersions>?>(null)
     private var syncJob: Job? = null
     private var syncToServerTask: ValidatingJob? = null
     private var invalidatingListener: MyInvalidatingListener? = null
@@ -91,10 +92,10 @@ class BindingWorker(
 
     fun getCurrentVersionHash(): List<String>? = getCurrentVersion()?.map { it.getContentHash() }
     fun getCurrentVersionHash(bindingId: BindingId): String? = getCurrentVersion(bindingId)?.let { it.getContentHash() }
-    fun getCurrentVersion(): List<IVersion>? = lastSyncedVersion.getValue()
+    fun getCurrentVersion(): List<IVersion>? = lastSyncedVersion.getValue()?.map { it.remoteVersion }
     fun getCurrentVersion(bindingId: BindingId): IVersion? = lastSyncedVersion.getValue()?.let { versions ->
         val index = syncTargets.indexOfFirst { it.bindingId == bindingId }
-        versions[index]
+        versions[index].remoteVersion
     }
     fun initialVersionHash(bindingId: BindingId) = syncTargets.find { it.bindingId == bindingId }?.initialVersionHash
     fun isActive(): Boolean = activated.get()
@@ -165,7 +166,9 @@ class BindingWorker(
         forEachTargetIndexed { index ->
             val version = versions[index]
             val remoteVersion = client().pullHash(branchRef)
-            if (remoteVersion != version.getContentHash()) return "Local version (${version.getContentHash()} differs from remote version ($remoteVersion)"
+            if (remoteVersion != version.remoteVersion.getContentHash()) {
+                return "Local version ($version differs from remote version ($remoteVersion)"
+            }
         }
         return null
     }
@@ -182,7 +185,7 @@ class BindingWorker(
             delay = (delay * 1.5).coerceAtMost(3000.0)
             reason = checkInSync()
         }
-        return lastSyncedVersion.getValue()!!
+        return lastSyncedVersion.getValue()!!.map { it.localVersion }
     }
 
     suspend fun forceSync(push: Boolean) {
@@ -193,11 +196,11 @@ class BindingWorker(
         }
     }
 
-    private suspend fun <R : List<IVersion>?> runSync(body: suspend (List<IVersion>?) -> R): R = lastSyncedVersion.updateValue { oldVersions ->
+    private suspend fun <R : List<SynchronizedVersions>?> runSync(body: suspend (List<SynchronizedVersions>?) -> R): R = lastSyncedVersion.updateValue { oldVersions ->
         try {
             status = IBinding.Status.Syncing(::getSyncProgress).let { s -> syncTargets.map { s } }
             body(oldVersions).also { newVersions ->
-                status = (newVersions ?: syncTargets.map { null }).map { IBinding.Status.Synced(it?.getContentHash() ?: "null") }
+                status = (newVersions ?: syncTargets.map { null }).map { IBinding.Status.Synced(it?.localVersion?.getContentHash() ?: "null") }
             }
         } catch (ex: Throwable) {
             status = forEachTarget {
@@ -227,15 +230,15 @@ class BindingWorker(
 
         // continuous sync to MPS
         val latestHashes: List<Flow<String>> = forEachTargetIndexed<Flow<String>> { index ->
-            channelFlow {
+            channelFlow<String> {
                 // The `combine` operator returns the latest values of all flows whenever one of them changes, but it
                 // only starts streaming values when each stream returned at least one value.
                 // If we don't send a first value here, changes are not detected until the first pollHash call for each
                 // repository timed out. The synchronization is effectively blocked for the first ~30 seconds.
-                channel.send(lastSyncedVersion.getValue()?.get(index)?.getContentHash() ?: "")
+                channel.send(lastSyncedVersion.getValue()?.get(index)?.remoteVersion?.getContentHash() ?: "")
 
                 launchLoop {
-                    val lastKnownVersion = lastSyncedVersion.getValue()?.get(index)
+                    val lastKnownVersion = lastSyncedVersion.getValue()?.get(index)?.remoteVersion
                     channel.send(
                         client().pollHash(branchRef, lastKnownVersion).also { hash ->
                             LOG.trace { "pollHash($branchRef, $lastKnownVersion) -> $hash" }
@@ -246,7 +249,7 @@ class BindingWorker(
         }
         launch {
             latestHashes.combine().collect { newHashes ->
-                if (newHashes != lastSyncedVersion.getValue()?.map { it.getContentHash() }) {
+                if (newHashes != lastSyncedVersion.getValue()?.map { it.remoteVersion.getContentHash() }) {
                     LOG.debug { "New remote version detected: $newHashes" }
                     syncToMPS(incremental = true)
                 }
@@ -266,11 +269,11 @@ class BindingWorker(
     }
 
     private suspend fun initialSync() {
-        runSync<List<IVersion>?> { oldVersions ->
+        runSync<List<SynchronizedVersions>?> { oldVersions ->
             LOG.debug { "Running initial synchronization" }
 
             val baseVersions = forEachTargetIndexed { index ->
-                oldVersions?.get(index)
+                oldVersions?.get(index)?.localVersion
                     ?: initialVersionHash?.let { client().loadVersion(branchRef.repositoryId, it, null) }
             }
 
@@ -289,52 +292,97 @@ class BindingWorker(
                 if (existingRemoteVersions.first().let { it == null || it.isInitialVersion() }) {
                     LOG.debug { "Repository doesn't exist. Will copy the local project to the server." }
                     // repository doesn't exist -> copy the local project to the server
-                    doSyncToServer(createdRemoteVersions, incremental = false) ?: createdRemoteVersions
+                    doSyncToServer(createdRemoteVersions.map { SynchronizedVersions(it, it) }, incremental = false)
+                        ?: createdRemoteVersions.map { SynchronizedVersions(it, it) }
                 } else {
                     LOG.debug { "Repository exists. Will checkout version $createdRemoteVersions" }
                     doSyncToMPS(baseVersions, createdRemoteVersions, incremental = false)
-                    createdRemoteVersions
+                    createdRemoteVersions.map { SynchronizedVersions(it, it) }
                 }
             } else {
                 // Binding was activated before. Preserve local changes.
 
-                val createdBaseVersions = forEachTargetIndexed { index ->
+                val createdBaseVersions: List<SynchronizedVersions> = forEachTargetIndexed { index ->
                     baseVersions[index] ?: client().initRepository(branchRef.repositoryId)
-                }
+                }.map { SynchronizedVersions(it, it) }
 
                 // push local changes that happened while the binding was deactivated
                 val localChanges = doSyncFromMPS(createdBaseVersions, incremental = false)
 
-                val mergedVersions = forEachTargetIndexed { index ->
+                val mergedVersions: List<SynchronizedVersions> = forEachTargetIndexed { index ->
                     val baseVersion = createdBaseVersions[index]
-                    val localChange = localChanges?.get(index)?.takeIf { it != baseVersion }
-                    if (localChange != null) {
-                        client().push(branchRef, localChange, baseVersion)
+                    val localChange = localChanges?.get(index)?.takeIf { it.localVersion != baseVersion }
+                    val merged = if (localChange == null || syncTargets[index].readonly) {
+                        client().pull(branchRef, baseVersion.remoteVersion)
                     } else {
-                        client().pull(branchRef, baseVersion)
+                        client().push(branchRef, localChange.localVersion, baseVersion.remoteVersion)
                     }
+                    SynchronizedVersions(
+                        remoteVersion = merged,
+                        localVersion = localChange?.localVersion ?: merged,
+                    )
                 }
 
                 // load remote changes into MPS
-                doSyncToMPS(createdBaseVersions, mergedVersions, incremental = false)
+                doSyncToMPS(
+                    oldVersions = createdBaseVersions.map { it.localVersion },
+                    newVersions = mergedVersions.map { it.remoteVersion },
+                    incremental = false,
+                )
 
                 mergedVersions
             }
         }
     }
 
-    suspend fun syncToMPS(incremental: Boolean): List<IVersion> {
+    suspend fun syncToMPS(incremental: Boolean): List<SynchronizedVersions> {
         return runSync { oldVersions ->
-            val newVersions = forEachTargetIndexed { index ->
-                val oldVersion = oldVersions?.get(index)
-                client().pull(branchRef, oldVersion)
+            val oldVersions = oldVersions ?: syncTargets.map { null }
+            val latestRemoteVersions = forEachTargetIndexed { index ->
+                client().pull(branchRef, oldVersions[index]?.remoteVersion)
             }
-            doSyncToMPS(oldVersions ?: syncTargets.map { null }, newVersions, incremental)
-            newVersions
+            val transitions: List<Pair<IVersion?, IVersion>> = latestRemoteVersions.zip(oldVersions).zip(syncTargets).map {
+                val latestRemoteVersion = it.first.first
+                val lastSyncResult = it.first.second
+                val target = it.second
+                if (target.readonly) {
+                    // A binding being read-only just means that changes aren't pushed to the server. Local changes are
+                    // still allowed.
+                    // We preserve the local changes as long as there are no remote changes. If the remote version
+                    // changes, we have two options:
+                    // - A. merge it with the local changes.
+                    // - B. drop the local changes and override them with the remote version.
+                    // Option A sounds reasonable, but users aren't supposed to make changes to read-only bindings.
+                    // It's just difficult to prevent that. Local changes would only be preserved until a restart of
+                    // MPS. It's more consistent not to pretend that they are preserved and just drop them in both
+                    // cases.
+                    // We could also ignore all changes and not even create a local version, but then we don't know
+                    // what to revert when a new remote version arrives. Reverting all changes immediately is probably
+                    // very confusing for the users.
+                    if (lastSyncResult?.localVersion == null || latestRemoteVersion.getContentHash() != lastSyncResult.remoteVersion.getContentHash()) {
+                        // Drop possible local changes and move to the new remote version.
+                        lastSyncResult?.localVersion to latestRemoteVersion
+                    } else {
+                        // Stay on the local version
+                        lastSyncResult.localVersion to lastSyncResult.localVersion
+                    }
+                } else {
+                    // Regular bindings are expected to be always in sync with the remote version
+                    // (localVersion == remoteVersion) and can just apply the new version received from the server.
+                    lastSyncResult?.localVersion to latestRemoteVersion
+                }
+            }
+            doSyncToMPS(transitions.map { it.first }, transitions.map { it.second }, incremental)
+            latestRemoteVersions.zip(transitions).map {
+                SynchronizedVersions(
+                    remoteVersion = it.first,
+                    localVersion = it.second.second,
+                )
+            }
         }
     }
 
-    suspend fun syncToServer(incremental: Boolean): List<IVersion>? {
+    suspend fun syncToServer(incremental: Boolean): List<SynchronizedVersions>? {
         return runSync { oldVersions ->
             if (oldVersions == null) {
                 // have to wait for initial sync
@@ -465,16 +513,16 @@ class BindingWorker(
     /**
      * @return null if nothing changed
      */
-    private suspend fun doSyncFromMPS(oldVersions: List<IVersion>, incremental: Boolean): List<IVersion>? {
+    private suspend fun doSyncFromMPS(oldVersions: List<SynchronizedVersions>, incremental: Boolean): List<SynchronizedVersions>? {
         check(lastSyncedVersion.isLocked())
 
         LOG.debug { "Commiting MPS changes" }
 
         val clients = forEachTarget { client() }
         val newVersions = repository.computeRead {
-            fun sync(invalidationTree: ModelSynchronizer.IIncrementalUpdateInformation): List<IVersion>? {
+            fun sync(invalidationTree: ModelSynchronizer.IIncrementalUpdateInformation): List<SynchronizedVersions>? {
                 val idGenerator = DummyIdGenerator<INodeReference>()
-                val versionedTrees = oldVersions.map { VersionedModelTree(it, idGenerator) }
+                val versionedTrees = oldVersions.map { VersionedModelTree(it.localVersion, idGenerator) }
                 val model = SyncTargetModel(
                     mpsProject,
                     versionedTrees.zip(syncTargets).map { (versionedTree, syncTarget) ->
@@ -520,7 +568,7 @@ class BindingWorker(
                 }
 
                 return oldVersions.zip(versionedTrees, clients).map { (oldVersion, mutableTree, client) ->
-                    mutableTree.createVersion(client.getUserId()) ?: oldVersion
+                    mutableTree.createVersion(client.getUserId())?.let { SynchronizedVersions(oldVersion.remoteVersion, it) } ?: oldVersion
                 }.takeIf { it != oldVersions }
             }
 
@@ -543,12 +591,23 @@ class BindingWorker(
     /**
      * @return null if nothing changed
      */
-    private suspend fun doSyncToServer(oldVersions: List<IVersion>, incremental: Boolean): List<IVersion>? {
+    private suspend fun doSyncToServer(oldVersions: List<SynchronizedVersions>, incremental: Boolean): List<SynchronizedVersions>? {
         return doSyncFromMPS(oldVersions, incremental)?.let { newVersions ->
             coroutineScope {
                 forEachTargetIndexed { index ->
-                    async {
-                        client().push(branchRef, newVersions[index], oldVersions[index])
+                    if (readonly) {
+                        CompletableDeferred(newVersions[index])
+                    } else {
+                        async {
+                            SynchronizedVersions(
+                                remoteVersion = client().push(
+                                    branch = branchRef,
+                                    version = newVersions[index].localVersion,
+                                    baseVersion = oldVersions[index].remoteVersion,
+                                ),
+                                localVersion = newVersions[index].localVersion,
+                            )
+                        }
                     }
                 }.awaitAll()
             }
@@ -598,5 +657,26 @@ private fun <T> List<Flow<T>>.combine(): Flow<List<T>> {
         1 -> this[0].map { listOf(it) }
         2 -> this[0].combine(this[1]) { a, b -> listOf(a, b) }
         else -> subList(0, size - 1).combine().combine(last()) { a, b -> a + b }
+    }
+}
+
+/**
+ * Mostly used for allowing the local version to diverge in case of read-only bindings.
+ */
+data class SynchronizedVersions(
+    /**
+     * The last version that was received from the server.
+     */
+    val remoteVersion: IVersion,
+
+    /**
+     * The version that represents the state of MPS at the end of the last synchronization.
+     */
+    val localVersion: IVersion,
+) {
+    override fun toString(): String {
+        val hash1 = remoteVersion.getContentHash()
+        val hash2 = localVersion.getContentHash()
+        return if (hash1 == hash2) hash1 else "$hash1/$hash2"
     }
 }

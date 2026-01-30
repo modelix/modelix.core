@@ -14,6 +14,7 @@ import org.modelix.model.mutable.IMutableModelTree
 import org.modelix.model.mutable.asModelSingleThreaded
 import org.modelix.model.mutable.getRootNode
 import org.modelix.model.mutable.setProperty
+import org.modelix.mps.api.ModelixMpsApi
 import org.modelix.mps.multiplatform.model.MPSIdGenerator
 import org.modelix.mps.multiplatform.model.MPSModelReference
 import org.modelix.mps.multiplatform.model.MPSModuleReference
@@ -30,12 +31,12 @@ class LibraryRepositoryTest : ProjectSyncTestBase() {
 
     private val branchRefMain = RepositoryId("main-repository").getBranchReference()
     private val branchRefLib = RepositoryId("lib-repository").getBranchReference()
+    private val service: IModelSyncService get() = IModelSyncService.getInstance(mpsProject)
 
     fun `test checkout`() = runTest { port, client ->
         val expectedLibHash = client.pullHash(branchRefLib)
         openProjectWithBindings(port)
 
-        val service = IModelSyncService.getInstance(mpsProject)
         assertEquals(2, service.getBindings().size)
         service.getBindings().forEach { it.flush() }
 
@@ -63,7 +64,6 @@ class LibraryRepositoryTest : ProjectSyncTestBase() {
     fun `test add module in main repository`() = runTest { port, client ->
         openProjectWithBindings(port)
 
-        val service = IModelSyncService.getInstance(mpsProject)
         assertEquals(2, service.getBindings().size)
         service.getBindings().forEach { it.flush() }
 
@@ -131,7 +131,6 @@ class LibraryRepositoryTest : ProjectSyncTestBase() {
     fun `test add module in lib repository`() = runTest { port, client ->
         openProjectWithBindings(port)
 
-        val service = IModelSyncService.getInstance(mpsProject)
         assertEquals(2, service.getBindings().size)
         service.getBindings().forEach { it.flush() }
 
@@ -199,7 +198,6 @@ class LibraryRepositoryTest : ProjectSyncTestBase() {
     fun `test add root node in MPS`() = runTest { port, client ->
         openProjectWithBindings(port)
 
-        val service = IModelSyncService.getInstance(mpsProject)
         assertEquals(2, service.getBindings().size)
         service.getBindings().forEach { it.flush() }
 
@@ -258,6 +256,53 @@ class LibraryRepositoryTest : ProjectSyncTestBase() {
         val classNode = modelA.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.toReference()).firstOrNull()
         val className = classNode?.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference())
         assertNull("ClassConcept $className found, but shouldn't exist", classNode)
+    }
+
+    fun `test reopen project after local library changes`() = runTest { port, client ->
+        openProjectWithBindings(port)
+
+        assertEquals(2, service.getBindings().size)
+        service.getBindings().forEach { it.flush() }
+
+        // add new root node
+        val classConcept = MetaAdapterFactory.getConcept(-0xcf9e5ac6dd9b33bL, -0x5bbc06ad3150a7eaL, 0xf8c108ca66L, "jetbrains.mps.baseLanguage.structure.ClassConcept")
+        writeAction {
+            val module = mpsProject.projectModules.first { it.moduleName == "lib.module3" }
+            val model = module.models.first { it.name.simpleName == "modelA" }
+            model.addRootNode(
+                model.createNode(classConcept).also {
+                    it.setProperty(SNodeUtil.property_INamedConcept_name, "MyClass")
+                },
+            )
+        }
+
+        service.getBindings().forEach { it.flush() }
+
+        // check that the root node still exists
+        readAction {
+            val module = mpsProject.projectModules.first { it.moduleName == "lib.module3" }
+            val model = module.models.first { it.name.simpleName == "modelA" }
+            assertEquals(1, model.rootNodes.count())
+            assertEquals("MyClass", model.rootNodes.first().name)
+        }
+
+        assertEquals(1, ModelixMpsApi.getMPSProjects().size)
+        assertEquals(1, com.intellij.openapi.project.ProjectManager.getInstance().openProjects.size)
+        project.close()
+        assertEquals(0, ModelixMpsApi.getMPSProjects().size)
+        assertEquals(0, com.intellij.openapi.project.ProjectManager.getInstance().openProjects.size)
+
+        openProjectWithBindings(port)
+        assertEquals(1, ModelixMpsApi.getMPSProjects().size)
+        assertEquals(1, com.intellij.openapi.project.ProjectManager.getInstance().openProjects.size)
+        service.getBindings().forEach { it.flush() }
+
+        // root node should be reverted (removed)
+        readAction {
+            val module = mpsProject.projectModules.first { it.moduleName == "lib.module3" }
+            val model = module.models.first { it.name.simpleName == "modelA" }
+            assertEquals(0, model.rootNodes.count())
+        }
     }
 
     private fun IWritableNode.addNewModule(name: String, modelNames: List<String> = emptyList()): IWritableNode {

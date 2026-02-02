@@ -115,8 +115,9 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
         return node.getReferenceTargetRef(role as String)?.serialize()
     }
 
+    @OptIn(ExperimentalJsExport::class)
     override fun setReferenceTargetNode(role: ReferenceRole, target: INodeJS?) {
-        val unwrappedTarget = if (target == null) null else (target as NodeAdapterJS).node
+        val unwrappedTarget = if (target == null) null else JSNodeConverter.toINode(target)
         // TODO use IReferenceLink instead of String
         node.setReferenceTarget(role as String, unwrappedTarget)
     }
@@ -140,13 +141,12 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
         node.setPropertyValue(role as String, value)
     }
 
+    @OptIn(ExperimentalJsExport::class)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class.js != other::class.js) return false
 
-        other as NodeAdapterJS
-
-        if (node != other.node) return false
+        if (node != JSNodeConverter.toINode(other)) return false
 
         return true
     }

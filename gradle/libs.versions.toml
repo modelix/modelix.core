@@ -20,7 +20,7 @@ shadow = { id = "com.gradleup.shadow", version = "9.3.1" }
 intellij = { id = "org.jetbrains.intellij", version = "1.17.4" }
 intellij2 = { id = "org.jetbrains.intellij.platform", version = "2.11.0" }
 openapi-generator = {id = "org.openapi.generator", version.ref = "openapi"}
-kotlinx-kover = { id = "org.jetbrains.kotlinx.kover", version = "0.9.4" }
+kotlinx-kover = { id = "org.jetbrains.kotlinx.kover", version = "0.9.5" }
 docker-compose = { id = "com.avast.gradle.docker-compose" , version = "0.17.12" }
 jib = { id = "com.google.cloud.tools.jib", version = "3.5.2" }
 

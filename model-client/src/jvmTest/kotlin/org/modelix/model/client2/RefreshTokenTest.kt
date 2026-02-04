@@ -30,6 +30,7 @@ import org.modelix.kotlin.utils.filterNotNullValues
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.oauth.IAuthRequestHandler
+import java.net.BindException
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -75,55 +76,57 @@ class RefreshTokenTest {
         }
 
         suspend fun runWithServer(body: suspend (port: Int) -> Unit) {
-            // real server need instead of ktor.test because the PKCE flow is implemented by a non-ktor client
-            val server = embeddedServer(Netty, port = Random.nextInt(20000, 60000)) {
-                install(ContentNegotiation) {
-                    json()
-                }
-                install(CallLogging)
-                routing {
-                    post("/token") {
-                        val receivedParameters = call.receiveParameters()
-                        if (receivedParameters["grant_type"] == "authorization_code") {
-                            if (receivedParameters["code"] == "abc") {
-                                call.respondNextToken()
-                            } else {
-                                call.respond(HttpStatusCode.BadRequest)
-                            }
-                        } else if (receivedParameters["grant_type"] == "refresh_token") {
-                            if (validRefreshTokens.contains(receivedParameters["refresh_token"])) {
-                                call.respondNextToken()
-                            } else {
-                                call.respond(HttpStatusCode.BadRequest)
-                            }
-                        } else {
-                            call.respond(HttpStatusCode.BadRequest)
-                        }
+            // real server needed instead of ktor.test because the PKCE flow is implemented by a non-ktor client
+            val server = retryOnException(BindException::class.java) {
+                embeddedServer(Netty, port = Random.nextInt(20000, 60000)) {
+                    install(ContentNegotiation) {
+                        json()
                     }
+                    install(CallLogging)
+                    routing {
+                        post("/token") {
+                            val receivedParameters = call.receiveParameters()
+                            if (receivedParameters["grant_type"] == "authorization_code") {
+                                if (receivedParameters["code"] == "abc") {
+                                    call.respondNextToken()
+                                } else {
+                                    call.respond(HttpStatusCode.BadRequest)
+                                }
+                            } else if (receivedParameters["grant_type"] == "refresh_token") {
+                                if (validRefreshTokens.contains(receivedParameters["refresh_token"])) {
+                                    call.respondNextToken()
+                                } else {
+                                    call.respond(HttpStatusCode.BadRequest)
+                                }
+                            } else {
+                                call.respond(HttpStatusCode.BadRequest)
+                            }
+                        }
 
-                    get("/v2/repositories/{repository-id}/branches") {
-                        val authHeader = call.request.parseAuthorizationHeader()
-                        if (authHeader is HttpAuthHeader.Single && authHeader.authScheme == "Bearer" && validAccessTokens.contains(authHeader.blob)) {
-                            call.respondText(expectedBranches.joinToString("\n") { it.branchName })
-                        } else {
-                            val port = engine.resolvedConnectors().single().port
-                            call.respond(
-                                UnauthorizedResponse(
-                                    HttpAuthHeader.Parameterized(
-                                        "Bearer",
-                                        mapOf(
-                                            HttpAuthHeader.Parameters.Realm to "modelix",
-                                            "error" to "invalid_token",
-                                            "authorization_uri" to "http://localhost:$port/auth",
-                                            "token_uri" to "http://localhost:$port/token",
-                                        ).filterNotNullValues(),
+                        get("/v2/repositories/{repository-id}/branches") {
+                            val authHeader = call.request.parseAuthorizationHeader()
+                            if (authHeader is HttpAuthHeader.Single && authHeader.authScheme == "Bearer" && validAccessTokens.contains(authHeader.blob)) {
+                                call.respondText(expectedBranches.joinToString("\n") { it.branchName })
+                            } else {
+                                val port = engine.resolvedConnectors().single().port
+                                call.respond(
+                                    UnauthorizedResponse(
+                                        HttpAuthHeader.Parameterized(
+                                            "Bearer",
+                                            mapOf(
+                                                HttpAuthHeader.Parameters.Realm to "modelix",
+                                                "error" to "invalid_token",
+                                                "authorization_uri" to "http://localhost:$port/auth",
+                                                "token_uri" to "http://localhost:$port/token",
+                                            ).filterNotNullValues(),
+                                        ),
                                     ),
-                                ),
-                            )
+                                )
+                            }
                         }
                     }
-                }
-            }.startSuspend()
+                }.startSuspend()
+            }
             try {
                 body(server.engine.resolvedConnectors().single().port)
             } finally {
@@ -191,57 +194,59 @@ class RefreshTokenTest {
 
         suspend fun runWithServer(body: suspend (port: Int) -> Unit) {
             // real server need instead of ktor.test because the PKCE flow is implemented by a non-ktor client
-            val server = embeddedServer(Netty, port = Random.nextInt(20000, 60000)) {
-                install(ContentNegotiation) {
-                    json()
-                }
-                install(CallLogging)
-                routing {
-                    post("/token") {
-                        val receivedParameters = call.receiveParameters()
-                        if (receivedParameters["grant_type"] == "authorization_code") {
-                            if (receivedParameters["code"] == "abc") {
-                                check(validRefreshTokens.isEmpty()) {
-                                    "Should use refresh token to fetch new tokens"
+            val server = retryOnException(BindException::class.java) {
+                embeddedServer(Netty, port = Random.nextInt(20000, 60000)) {
+                    install(ContentNegotiation) {
+                        json()
+                    }
+                    install(CallLogging)
+                    routing {
+                        post("/token") {
+                            val receivedParameters = call.receiveParameters()
+                            if (receivedParameters["grant_type"] == "authorization_code") {
+                                if (receivedParameters["code"] == "abc") {
+                                    check(validRefreshTokens.isEmpty()) {
+                                        "Should use refresh token to fetch new tokens"
+                                    }
+                                    call.respondNextToken()
+                                } else {
+                                    call.respond(HttpStatusCode.BadRequest)
                                 }
-                                call.respondNextToken()
+                            } else if (receivedParameters["grant_type"] == "refresh_token") {
+                                if (validRefreshTokens.contains(receivedParameters["refresh_token"])) {
+                                    call.respondNextToken()
+                                } else {
+                                    call.respond(HttpStatusCode.BadRequest)
+                                }
                             } else {
                                 call.respond(HttpStatusCode.BadRequest)
                             }
-                        } else if (receivedParameters["grant_type"] == "refresh_token") {
-                            if (validRefreshTokens.contains(receivedParameters["refresh_token"])) {
-                                call.respondNextToken()
-                            } else {
-                                call.respond(HttpStatusCode.BadRequest)
-                            }
-                        } else {
-                            call.respond(HttpStatusCode.BadRequest)
                         }
-                    }
 
-                    get("/v2/repositories/{repository-id}/branches") {
-                        val authHeader = call.request.parseAuthorizationHeader()
-                        if (authHeader is HttpAuthHeader.Single && authHeader.authScheme == "Bearer" && validAccessTokens.contains(authHeader.blob)) {
-                            call.respondText(expectedBranches.joinToString("\n") { it.branchName })
-                        } else {
-                            val port = engine.resolvedConnectors().single().port
-                            call.respond(
-                                UnauthorizedResponse(
-                                    HttpAuthHeader.Parameterized(
-                                        "Bearer",
-                                        mapOf(
-                                            HttpAuthHeader.Parameters.Realm to "modelix",
-                                            "error" to "invalid_token",
-                                            "authorization_uri" to "http://localhost:$port/auth",
-                                            "token_uri" to "http://localhost:$port/token",
-                                        ).filterNotNullValues(),
+                        get("/v2/repositories/{repository-id}/branches") {
+                            val authHeader = call.request.parseAuthorizationHeader()
+                            if (authHeader is HttpAuthHeader.Single && authHeader.authScheme == "Bearer" && validAccessTokens.contains(authHeader.blob)) {
+                                call.respondText(expectedBranches.joinToString("\n") { it.branchName })
+                            } else {
+                                val port = engine.resolvedConnectors().single().port
+                                call.respond(
+                                    UnauthorizedResponse(
+                                        HttpAuthHeader.Parameterized(
+                                            "Bearer",
+                                            mapOf(
+                                                HttpAuthHeader.Parameters.Realm to "modelix",
+                                                "error" to "invalid_token",
+                                                "authorization_uri" to "http://localhost:$port/auth",
+                                                "token_uri" to "http://localhost:$port/token",
+                                            ).filterNotNullValues(),
+                                        ),
                                     ),
-                                ),
-                            )
+                                )
+                            }
                         }
                     }
-                }
-            }.startSuspend()
+                }.startSuspend()
+            }
             try {
                 body(server.engine.resolvedConnectors().single().port)
             } finally {
@@ -279,6 +284,17 @@ class RefreshTokenTest {
                 assertEquals(expectedBranches, actualBranches2)
                 assertTrue(nextTokenSuffix >= 3, "No token refresh happened")
             }
+        }
+    }
+}
+
+private inline fun <R> retryOnException(exceptionType: Class<out Throwable>, body: () -> R): R {
+    var attempt = 0
+    while (true) {
+        try {
+            return body()
+        } catch (ex: Throwable) {
+            if (++attempt >= 3 || !exceptionType.isAssignableFrom(ex::class.java)) throw ex
         }
     }
 }

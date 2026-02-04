@@ -10,15 +10,16 @@ import org.modelix.datastructures.model.NodeAddedEvent
 import org.modelix.datastructures.model.NodeRemovedEvent
 import org.modelix.datastructures.model.PropertyChangedEvent
 import org.modelix.datastructures.model.ReferenceChangedEvent
-import org.modelix.model.api.AutoTransactionsNode
 import org.modelix.model.api.CompositeModel
 import org.modelix.model.api.INodeReference
 import org.modelix.model.api.IWritableNode
 import org.modelix.model.api.NodeReference
+import org.modelix.model.api.withAutoTransactions
 import org.modelix.model.mutable.IGenericMutableModelTree
 import org.modelix.model.mutable.IMutableModelTree
 import org.modelix.model.mutable.NodeInMutableModel
 import org.modelix.model.mutable.asModel
+import org.modelix.model.mutable.withAutoTransactions
 import org.modelix.streams.iterateBlocking
 
 internal class MutableModelTreeJsImpl(
@@ -28,9 +29,9 @@ internal class MutableModelTreeJsImpl(
 
     private val changeHandlers = mutableSetOf<ChangeHandler>()
 
-    private val model = CompositeModel(trees.map { it.asModel() })
+    private val model = CompositeModel(trees.map { it.asModel() }).withAutoTransactions()
     private val changeListeners = trees.map { tree ->
-        ChangeListener(tree) { change ->
+        ChangeListener(tree.withAutoTransactions()) { change ->
             changeHandlers.forEach { it(change) }
         }.also { tree.addListener(it) }
         // TODO missing removeListener call
@@ -54,7 +55,7 @@ internal class MutableModelTreeJsImpl(
         changeHandlers.remove(handler)
     }
 
-    private fun IWritableNode.toJS() = toNodeJs(AutoTransactionsNode(this, model).asLegacyNode())
+    private fun IWritableNode.toJS() = toNodeJs(this.withAutoTransactions().asLegacyNode())
 }
 
 internal class ChangeListener(private val tree: IMutableModelTree, private val changeCallback: (ChangeJS) -> Unit) :

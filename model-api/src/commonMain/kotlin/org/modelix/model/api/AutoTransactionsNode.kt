@@ -1,15 +1,15 @@
 package org.modelix.model.api
 
-class AutoTransactionsNode(val node: IWritableNode, private val model: IMutableModel) : IWritableNode {
-    private fun IWritableNode.wrap() = AutoTransactionsNode(this, model)
+class AutoTransactionsNode(val node: IWritableNode) : IWritableNode {
+    private fun IWritableNode.wrap() = AutoTransactionsNode(this)
     private fun List<IWritableNode>.wrap() = map { it.wrap() }
     private fun IWritableNode.unwrap() = if (this is AutoTransactionsNode) this.node else this
 
-    private fun <R> read(body: () -> R): R = model.executeRead(body)
-    private fun <R> write(body: () -> R): R = model.executeWrite(body)
+    private fun <R> read(body: () -> R): R = node.getModel().executeRead(body)
+    private fun <R> write(body: () -> R): R = node.getModel().executeWrite(body)
 
     override fun getModel(): IMutableModel {
-        return model
+        return AutoTransactionsModel(node.getModel())
     }
 
     override fun getAllChildren(): List<IWritableNode> {
@@ -133,14 +133,46 @@ class AutoTransactionsNode(val node: IWritableNode, private val model: IMutableM
         other as AutoTransactionsNode
 
         if (node != other.node) return false
-        if (model != other.model) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = node.hashCode()
-        result = 31 * result + model.hashCode()
-        return result
+        return node.hashCode()
     }
 }
+
+fun IWritableNode.withAutoTransactions() = AutoTransactionsNode(this)
+
+class AutoTransactionsModel(val model: IMutableModel) : IMutableModel {
+    override fun getRootNode(): IWritableNode = AutoTransactionsNode(model.getRootNode())
+
+    override fun getRootNodes(): List<IWritableNode> = model.getRootNodes().map { AutoTransactionsNode(it) }
+
+    override fun tryResolveNode(ref: INodeReference): IWritableNode? {
+        return model.tryResolveNode(ref)?.let { AutoTransactionsNode(it) }
+    }
+
+    override fun <R> executeRead(body: () -> R): R = model.executeRead(body)
+
+    override fun <R> executeWrite(body: () -> R): R = model.executeWrite(body)
+
+    override fun canRead(): Boolean = model.canRead()
+
+    override fun canWrite(): Boolean = model.canWrite()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as AutoTransactionsModel
+
+        return model == other.model
+    }
+
+    override fun hashCode(): Int {
+        return model.hashCode()
+    }
+}
+
+fun IMutableModel.withAutoTransactions(): IMutableModel = AutoTransactionsModel(this)

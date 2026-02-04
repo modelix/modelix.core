@@ -2,6 +2,7 @@ package org.modelix.model.mutable
 
 import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.datastructures.model.MutationParameters
+import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.model.TreeId
 import org.modelix.model.api.IModel
 import org.modelix.model.api.IMutableModel
@@ -65,6 +66,22 @@ class SingleThreadMutableModelTree<NodeId>(
     }
 }
 
+/**
+ * Allows access to the model without starting a transactions. In unit tests consider using [asMutableThreadSafe] to
+ * also test the correct usage of transactions.
+ */
+@DelicateModelixApi
 fun <T> IGenericModelTree<T>.asMutableSingleThreaded(): IGenericMutableModelTree<T> = SingleThreadMutableModelTree(this)
+
+/**
+ * Allows access to the model without starting a transactions. In unit tests consider using [asMutableThreadSafe] to
+ * also test the correct usage of transactions.
+ */
+@DelicateModelixApi
 fun IGenericModelTree<INodeReference>.asModelSingleThreaded(): IMutableModel = asMutableSingleThreaded().asModel()
-fun IGenericModelTree<INodeReference>.asReadOnlyModel(): IModel = asModelSingleThreaded()
+
+fun IGenericModelTree<INodeReference>.asReadOnlyModel(): IModel {
+    // OptIn is valid because read-only models aren't supposed to require transactions.
+    @OptIn(DelicateModelixApi::class)
+    return asModelSingleThreaded()
+}

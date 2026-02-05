@@ -113,8 +113,12 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
     }
 
     override fun setReferenceTargetNode(role: ReferenceRole, target: INodeJS?) {
-        val unwrappedTarget = if (target == null) null else (target as NodeAdapterJS).node
-        node.asWritableNode().setReferenceTarget(toReferenceLink(role), unwrappedTarget?.asWritableNode())
+        if (target is NodeAdapterJS) {
+            node.asWritableNode().setReferenceTarget(toReferenceLink(role), target.node.asWritableNode())
+        } else {
+            val targetRef = target?.getReference()
+            setReferenceTargetRef(role, targetRef)
+        }
     }
 
     override fun setReferenceTargetRef(role: ReferenceRole, target: INodeReferenceJS?) {

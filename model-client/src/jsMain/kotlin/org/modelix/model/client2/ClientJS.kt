@@ -70,6 +70,7 @@ fun loadModelsFromJsonAsBranch(json: Array<String>): MutableModelTreeJs {
  *
  * @param url URL to the V2 endpoint of the model server.
  * e.g., http://localhost:28102/v2
+ * @param bearerTokenProvider provider for the bearer token
  */
 @JsExport
 fun connectClient(url: String, bearerTokenProvider: (() -> Promise<String?>)? = null): Promise<ClientJS> {
@@ -86,13 +87,30 @@ fun connectClient(url: String, bearerTokenProvider: (() -> Promise<String?>)? = 
     }
 }
 
+/**
+ * ID generation scheme for the JS client.
+ */
 @JsExport
-sealed class IdSchemeJS() {
+sealed class IdSchemeJS {
+    /**
+     * MPS ID generation scheme.
+     */
     object MPS : IdSchemeJS()
+
+    /**
+     * Modelix ID generation scheme.
+     */
     object MODELIX : IdSchemeJS()
+
+    /**
+     * Read-only ID generation scheme.
+     */
     object READONLY : IdSchemeJS()
 }
 
+/**
+ * Combines version information with a model tree.
+ */
 @JsExport
 data class VersionInformationWithModelTree(
     /**
@@ -137,20 +155,73 @@ interface ClientJS {
      */
     fun initRepository(repositoryId: String, useRoleIds: Boolean = true): Promise<Unit>
 
+    /**
+     * Loads a specific version of the model in read-only mode.
+     *
+     * @param repositoryId ID of the repository.
+     * @param versionHash Hash of the version to load.
+     * @return A promise resolving to the version information and tree.
+     */
     fun loadReadonlyVersion(repositoryId: String, versionHash: String): Promise<VersionInformationWithModelTree>
 
+    /**
+     * Retrieves a range of version history.
+     */
     fun getHistoryRange(repositoryId: String, headVersion: String, skip: Int, limit: Int): Promise<Array<VersionInformationJS>>
+
+    /**
+     * Retrieves history sessions.
+     */
     fun getHistorySessions(repositoryId: String, headVersion: String, delaySeconds: Int, skip: Int, limit: Int): Promise<Array<HistoryIntervalJS>>
+
+    /**
+     * Retrieves history for fixed intervals.
+     */
     fun getHistoryForFixedIntervals(repositoryId: String, headVersion: String, intervalDurationSeconds: Int, skip: Int, limit: Int): Promise<Array<HistoryIntervalJS>>
+
+    /**
+     * Retrieves history for provided intervals.
+     */
     fun getHistoryForProvidedIntervals(repositoryId: String, headVersion: String, splitAt: Array<Date>): Promise<Array<HistoryIntervalJS>>
 
+    /**
+     * Retrieves history range for a branch.
+     */
     fun getHistoryRangeForBranch(repositoryId: String, branchId: String, skip: Int, limit: Int): Promise<Array<VersionInformationJS>>
+
+    /**
+     * Retrieves history sessions for a branch.
+     */
     fun getHistorySessionsForBranch(repositoryId: String, branchId: String, delaySeconds: Int, skip: Int, limit: Int): Promise<Array<HistoryIntervalJS>>
+
+    /**
+     * Retrieves history for fixed intervals for a branch.
+     */
     fun getHistoryForFixedIntervalsForBranch(repositoryId: String, branchId: String, intervalDurationSeconds: Int, skip: Int, limit: Int): Promise<Array<HistoryIntervalJS>>
+
+    /**
+     * Retrieves history for provided intervals for a branch.
+     */
     fun getHistoryForProvidedIntervalsForBranch(repositoryId: String, branchId: String, splitAt: Array<Date>): Promise<Array<HistoryIntervalJS>>
 
+    /**
+     * Reverts the branch to a specific version.
+     *
+     * @param repositoryId ID of the repository.
+     * @param branchId ID of the branch.
+     * @param targetVersionHash Hash of the version to revert to.
+     * @return A promise resolving to the new version hash.
+     */
     fun revertTo(repositoryId: String, branchId: String, targetVersionHash: String): Promise<String>
 
+    /**
+     * Computes the difference between two versions as mutation parameters.
+     *
+     * @param repositoryId ID of the repository.
+     * @param newVersion Hash of the new version.
+     * @param oldVersion Hash of the old version.
+     * @return A promise resolving to an array of mutation parameters.
+     */
     fun diffAsMutationParameters(repositoryId: String, newVersion: String, oldVersion: String): Promise<Array<MutationParametersJS>>
 
     /**
@@ -205,9 +276,15 @@ interface ClientJS {
      *
      * @param repositoryId Repository ID of the branch to replicate.
      * @param branchId ID of the branch to replicate.
+     * @param idScheme The ID scheme to use for generating node IDs.
      */
     fun startReplicatedModel(repositoryId: String, branchId: String, idScheme: IdSchemeJS): Promise<ReplicatedModelJS>
 
+    /**
+     * Starts replicated models for the given parameters.
+     *
+     * @param parameters configuration for the replicated models
+     */
     fun startReplicatedModels(parameters: Array<ReplicatedModelParameters>): Promise<ReplicatedModelJS>
 
     /**
@@ -216,6 +293,15 @@ interface ClientJS {
     fun dispose()
 }
 
+/**
+ * Configuration for a replicated model.
+ *
+ * @property repositoryId The ID of the repository.
+ * @property branchId The ID of the branch to replicate. Mutually exclusive with [versionHash].
+ * @property idScheme The ID scheme to use.
+ * @property readonly If true, the model will be read-only.
+ * @property versionHash The hash of the version to load properties from. Mutually exclusive with [branchId].
+ */
 @JsExport
 data class ReplicatedModelParameters(
     val repositoryId: String,
@@ -490,6 +576,9 @@ interface MutableModelTreeJs {
      */
     val rootNode: INodeJS
 
+    /**
+     * Get all root nodes in the branch.
+     */
     fun getRootNodes(): Array<INodeJS>
 
     /**

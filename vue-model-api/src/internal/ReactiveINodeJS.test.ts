@@ -2,6 +2,7 @@ import { useModelsFromJson } from "../useModelsFromJson";
 import { computed, isReactive, reactive } from "vue";
 import { runGarbageCollection } from "./runGarbageCollection";
 import { toRoleJS } from "@modelix/ts-model-api";
+import { ReadOnlyNodeJS } from "../ReadonlyNodeJS";
 
 const root = {
   root: {
@@ -187,4 +188,17 @@ test("garbage collection does not break reactivity", async () => {
   getChild().setPropertyValue(toRoleJS("name"), "secondName");
 
   expect(computedChildNames.value).toEqual("secondName");
+});
+
+test("can setReferenceTargetNode to a readonly node", async () => {
+  const rootNode = useRootNode();
+  const child0 = rootNode.getChildren(toRoleJS("children1"))[0];
+  const child2 = rootNode.getChildren(toRoleJS("children1"))[1];
+  const readonlyNode = new ReadOnlyNodeJS(child2, () => {});
+
+  child0.setReferenceTargetNode(toRoleJS("aReference"), readonlyNode);
+
+  expect(
+    child0.getReferenceTargetNode(toRoleJS("aReference"))?.getReference(),
+  ).toEqual(child2.getReference());
 });

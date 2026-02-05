@@ -94,7 +94,16 @@ sealed class IdSchemeJS() {
 }
 
 @JsExport
-data class VersionInformationWithModelTree(val version: VersionInformationJS, val tree: MutableModelTreeJs)
+data class VersionInformationWithModelTree(
+    /**
+     * The version information.
+     */
+    val version: VersionInformationJS,
+    /**
+     * The model tree associated with the version.
+     */
+    val tree: MutableModelTreeJs,
+)
 
 /**
  * JS-API for [ModelClientV2].
@@ -104,6 +113,7 @@ data class VersionInformationWithModelTree(val version: VersionInformationJS, va
  * See https://issues.modelix.org/issue/MODELIX-962
  */
 @JsExport
+@Suppress("TooManyFunctions")
 interface ClientJS {
 
     /**
@@ -211,6 +221,10 @@ data class ReplicatedModelParameters(
     val repositoryId: String,
     val branchId: String,
     val idScheme: IdSchemeJS,
+    /**
+     * Whether the model is read-only.
+     */
+    val readonly: Boolean = false,
 )
 
 internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {

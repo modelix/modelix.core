@@ -47,7 +47,7 @@ test("test wrapper backwards compatibility", (done) => {
       // Mock implementation that returns a dummy object with a branch
       const branchId = parameters[0].branchId;
       const rootNode = loadModelsFromJson([JSON.stringify({ root: {} })]);
-      rootNode.setPropertyValue(toRoleJS("branchId"), branchId);
+      rootNode.setPropertyValue(toRoleJS("branchId"), branchId ?? undefined);
 
       const branch = {
         rootNode,

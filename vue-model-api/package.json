@@ -28,7 +28,8 @@
     "registry": "https://artifacts.itemis.cloud/repository/npm-open/"
   },
   "dependencies": {
-    "@modelix/model-client": "file:../model-client/build/npmDevPackage/model-client.tgz"
+    "@modelix/model-client": "file:../model-client/build/npmDevPackage/model-client.tgz",
+    "@modelix/ts-model-api": "file:../ts-model-api"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.13",

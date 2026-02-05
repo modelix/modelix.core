@@ -275,4 +275,8 @@ export class ReactiveINodeJS implements INodeJS {
       maybeRef.value = this.propertyGetter(role);
     }
   }
+
+  get node() {
+    return this.unreactiveNode;
+  }
 }

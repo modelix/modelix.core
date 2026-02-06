@@ -7,6 +7,7 @@ import type { ReactiveINodeJS } from "./internal/ReactiveINodeJS";
 import { toReactiveINodeJS } from "./internal/ReactiveINodeJS";
 import { Cache } from "./internal/Cache";
 import { handleChange } from "./internal/handleChange";
+import { ReadOnlyNodeJS } from "./ReadonlyNodeJS";
 
 type ClientJS = org.modelix.model.client2.ClientJS;
 type ReplicatedModelJS = org.modelix.model.client2.ReplicatedModelJS;
@@ -66,6 +67,7 @@ export function useReplicatedModels(
 
   useLastPromiseEffect<{
     replicatedModel: ReplicatedModelJS;
+    params: ReplicatedModelParameters[];
     cache: Cache<ReactiveINodeJS>;
   }>(
     () => {
@@ -81,10 +83,14 @@ export function useReplicatedModels(
       const cache = new Cache<ReactiveINodeJS>();
       return clientValue
         .startReplicatedModels(modelsValue)
-        .then((replicatedModel) => ({ replicatedModel, cache }));
+        .then((replicatedModel) => ({
+          replicatedModel,
+          params: modelsValue,
+          cache,
+        }));
     },
     (
-      { replicatedModel: connectedReplicatedModel, cache },
+      { replicatedModel: connectedReplicatedModel, params, cache },
       isResultOfLastStartedPromise,
     ) => {
       if (isResultOfLastStartedPromise) {
@@ -97,9 +103,16 @@ export function useReplicatedModels(
           handleChange(change, cache);
         });
         const unreactiveRootNodes = branch.getRootNodes();
-        const reactiveRootNodes = unreactiveRootNodes.map((node) =>
-          toReactiveINodeJS(node, cache),
-        );
+        const reactiveRootNodes = unreactiveRootNodes.map((node, index) => {
+          const reactiveNode = toReactiveINodeJS(node, cache);
+          const param = params[index];
+          if (param && param.readonly) {
+            return new ReadOnlyNodeJS(reactiveNode, () =>
+              console.warn("Cannot modify a readonly node."),
+            );
+          }
+          return reactiveNode;
+        });
         replicatedModelRef.value = replicatedModel;
         rootNodesRef.value = reactiveRootNodes;
       } else {

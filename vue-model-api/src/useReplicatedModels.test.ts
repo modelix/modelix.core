@@ -4,6 +4,7 @@ import { toRoleJS } from "@modelix/ts-model-api";
 import { watchEffect, type Ref, ref } from "vue";
 import { useModelClient } from "./useModelClient";
 import { useReplicatedModels } from "./useReplicatedModels";
+import { ReadOnlyNodeJS } from "./ReadonlyNodeJS";
 import IdSchemeJS = org.modelix.model.client2.IdSchemeJS;
 import ReplicatedModelParameters = org.modelix.model.client2.ReplicatedModelParameters;
 
@@ -182,3 +183,87 @@ describe("does not start model", () => {
     expect(startReplicatedModels).not.toHaveBeenCalled();
   });
 });
+
+test("rootNodes are returned in order and wrapped if readonly", (done) => {
+  class MultiRootBranchJS {
+    private roots: INodeJS[];
+    constructor(params: ReplicatedModelParameters[]) {
+      this.roots = params.map((p) => {
+        const node = loadModelsFromJson([JSON.stringify({ root: {} })]);
+        node.setPropertyValue(toRoleJS("branchId"), p.branchId);
+        return node;
+      });
+    }
+    getRootNodes() {
+      return this.roots;
+    }
+    addListener = jest.fn();
+    resolveNode = jest.fn();
+    removeListener = jest.fn();
+    get rootNode() {
+      return this.roots[0];
+    }
+  }
+
+  class MultiRootReplicatedModelJS {
+    private branch: BranchJS;
+    constructor(params: ReplicatedModelParameters[]) {
+      this.branch = new MultiRootBranchJS(params) as unknown as BranchJS;
+    }
+    getBranch() {
+      return this.branch;
+    }
+    dispose = jest.fn();
+  }
+
+  class MultiRootClientJS {
+    startReplicatedModels(
+      params: ReplicatedModelParameters[],
+    ): Promise<ReplicatedModelJS> {
+      return Promise.resolve(
+        new MultiRootReplicatedModelJS(params) as unknown as ReplicatedModelJS,
+      );
+    }
+  }
+
+  const { client } = useModelClient("url", () =>
+    Promise.resolve(new MultiRootClientJS() as unknown as ClientJS),
+  );
+
+  const param1 = new ReplicatedModelParameters(
+    "repo",
+    "branch1",
+    IdSchemeJS.MODELIX,
+  );
+  const param2 = new ReplicatedModelParameters(
+    "repo",
+    "branch2",
+    IdSchemeJS.MODELIX,
+    true,
+  );
+  const param3 = new ReplicatedModelParameters(
+    "repo3",
+    "branch3",
+    IdSchemeJS.MODELIX,
+  );
+  const { rootNodes } = useReplicatedModels(client, [param1, param2, param3]);
+
+  watchEffect(() => {
+    if (rootNodes.value.length === 3) {
+      expect(rootNodes.value[0].getPropertyValue(toRoleJS("branchId"))).toBe(
+        "branch1",
+      );
+      expect(rootNodes.value[1].getPropertyValue(toRoleJS("branchId"))).toBe(
+        "branch2",
+      );
+      expect(rootNodes.value[2].getPropertyValue(toRoleJS("branchId"))).toBe(
+        "branch3",
+      );
+
+      expect(rootNodes.value[0] instanceof ReadOnlyNodeJS).toBe(false);
+      expect(rootNodes.value[1] instanceof ReadOnlyNodeJS).toBe(true);
+      expect(rootNodes.value[2] instanceof ReadOnlyNodeJS).toBe(false);
+      done();
+    }
+  });
+}, 30000);

@@ -62,7 +62,7 @@ internal class ChangeListener(private val tree: IMutableModelTree, private val c
     IGenericMutableModelTree.Listener<INodeReference> {
 
     fun nodeIdToInode(nodeId: INodeReference): INodeJS {
-        return toNodeJs(NodeInMutableModel(tree, nodeId).asLegacyNode())
+        return toNodeJs(NodeInMutableModel(tree, nodeId).withAutoTransactions().asLegacyNode())
     }
 
     override fun treeChanged(oldTree: IGenericModelTree<INodeReference>, newTree: IGenericModelTree<INodeReference>) {

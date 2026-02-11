@@ -246,27 +246,27 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
     private fun getText(): @NlsContexts.Label String {
         val service = IModelSyncService.getInstance(project)
         var result: String? = null
-        for (connection in service.getServerConnections()) {
-            for (binding in connection.getBindings()) {
-                if (binding.isEnabled()) {
-                    when (connection.getStatus()) {
-                        IServerConnection.Status.CONNECTED -> {}
-                        IServerConnection.Status.DISCONNECTED -> return "Disconnected"
-                        IServerConnection.Status.AUTHORIZATION_REQUIRED -> {
-                            return "Click to log in"
-                        }
-                    }
-                    result = when (val status = binding.getStatus()) {
-                        IBinding.Status.Disabled -> "Disabled"
-                        IBinding.Status.Initializing -> "Initializing"
-                        is IBinding.Status.Synced -> "Synchronized: ${status.versionHash.take(5)}"
-                        is IBinding.Status.Syncing -> "Synchronizing: ${status.progress()}"
-                        is IBinding.Status.Error -> "Synchronization failed: ${status.message}"
-                        is IBinding.Status.NoPermission -> "${status.user} has no permission on ${binding.getBranchRef().repositoryId}"
+        service.getUsedServerConnections()
+            .flatMap { it.getBindings() }
+            // readonly comes first so that the result version hash is reliably the one from the modifiable binding
+            .sortedByDescending { service.isReadonly(it) }
+            .forEach { binding ->
+                when (binding.getConnection().getStatus()) {
+                    IServerConnection.Status.CONNECTED -> {}
+                    IServerConnection.Status.DISCONNECTED -> return "Disconnected"
+                    IServerConnection.Status.AUTHORIZATION_REQUIRED -> {
+                        return "Click to log in"
                     }
                 }
+                result = when (val status = binding.getStatus()) {
+                    IBinding.Status.Disabled -> "Disabled"
+                    IBinding.Status.Initializing -> "Initializing"
+                    is IBinding.Status.Synced -> "Synchronized: ${status.versionHash.take(5)}"
+                    is IBinding.Status.Syncing -> "Synchronizing: ${status.progress()}"
+                    is IBinding.Status.Error -> "Synchronization failed: ${status.message}"
+                    is IBinding.Status.NoPermission -> "${status.user} has no permission on ${binding.getBranchRef().repositoryId}"
+                }
             }
-        }
         return result ?: "Not Synchronized"
     }
 }

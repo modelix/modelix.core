@@ -86,6 +86,12 @@ class ModelSyncService(val project: Project) :
     }
 
     @Synchronized
+    override fun isReadonly(binding: IBinding): Boolean {
+        binding as Binding
+        return loadedState.bindings[binding.id]?.readonly == true
+    }
+
+    @Synchronized
     override fun switchBranch(oldBranchRef: BranchReference, newBranchRef: BranchReference, dropLocalChanges: Boolean) {
         updateState {
             it.bindings.none { it.key.branchRef == oldBranchRef } &&

@@ -277,19 +277,16 @@ class BindingWorker(
                     ?: initialVersionHash?.let { client().loadVersion(branchRef.repositoryId, it, null) }
             }
 
-            // The first binding is the primary binding where new modules are created.
-            // All other bindings are considered libraries where only existing modules are synchronized. They are not
-            // relevant for the decision in which direction we have to synchronize initially.
-            val primaryBaseVersion = baseVersions.first()
-            if (primaryBaseVersion == null) {
-                // Binding was never activated before. Overwrite local changes or do initial upload.
+            if (baseVersions.contains(null)) {
+                // Binding was never activated before or branch was switched.
+                // Overwrite local changes or do initial upload.
 
                 val existingRemoteVersions = forEachTargetIndexed { client().pullIfExists(branchRef) }
                 val createdRemoteVersions = forEachTargetIndexed { index ->
                     existingRemoteVersions[index] ?: client().initRepository(branchRef.repositoryId)
                 }
 
-                if (existingRemoteVersions.first().let { it == null || it.isInitialVersion() }) {
+                if (existingRemoteVersions.all { it == null || it.isInitialVersion() }) {
                     LOG.debug { "Repository doesn't exist. Will copy the local project to the server." }
                     // repository doesn't exist -> copy the local project to the server
                     doSyncToServer(createdRemoteVersions.map { SynchronizedVersions(it, it) }, incremental = false)

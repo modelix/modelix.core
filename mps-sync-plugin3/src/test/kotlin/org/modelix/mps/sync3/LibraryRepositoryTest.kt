@@ -5,6 +5,7 @@ import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import org.modelix.datastructures.model.MutationParameters
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IWritableNode
+import org.modelix.model.api.getName
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.client2.runWriteOnTree
 import org.modelix.model.lazy.RepositoryId
@@ -305,6 +306,49 @@ class LibraryRepositoryTest : ProjectSyncTestBase() {
         }
     }
 
+    fun `test switch lib branch`() = runTest { port, client ->
+        // create new branch from master
+        val branchRefLib2 = branchRefLib.repositoryId.getBranchReference("second-branch")
+        client.pull(branchRefLib, null).let {
+            client.push(branchRefLib2, it, it)
+        }
+        // make some changes so that it's different from the master branch
+        client.runWriteOnTree(branchRefLib2, nodeIdGenerator = { MPSIdGenerator(client.getIdGenerator(), it) }) { tree ->
+            val repo = tree.getRootNode()
+            val model = repo.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Repository.modules.toReference())
+                .single { it.getName() == "lib.module3" }
+                .getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.models.toReference())
+                .single { it.getName() == "lib.module3.modelA" }
+            val classConcept = MetaAdapterFactory.getConcept(-0xcf9e5ac6dd9b33bL, -0x5bbc06ad3150a7eaL, 0xf8c108ca66L, "jetbrains.mps.baseLanguage.structure.ClassConcept").toModelix()
+            model
+                .addNewChild(BuiltinLanguages.MPSRepositoryConcepts.Model.rootNodes.toReference(), 0, classConcept.getReference())
+                .setPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference(), "MyNewClass")
+        }
+
+        openProjectWithBindings(port)
+
+        assertEquals(2, service.getBindings().size)
+        service.getBindings().forEach { it.flush() }
+
+        readAction {
+            assertEquals(
+                null,
+                mpsProject.projectModules.single { it.moduleName == "lib.module3" }.models.single { it.name.longName == "lib.module3.modelA" }.rootNodes.firstOrNull()?.name,
+            )
+        }
+
+        IModelSyncService.getInstance(mpsProject).switchBranch(branchRefLib, branchRefLib2, dropLocalChanges = true)
+
+        service.getBindings().forEach { it.flush() }
+
+        readAction {
+            assertEquals(
+                "MyNewClass",
+                mpsProject.projectModules.single { it.moduleName == "lib.module3" }.models.single { it.name.longName == "lib.module3.modelA" }.rootNodes.single().name,
+            )
+        }
+    }
+
     private fun IWritableNode.addNewModule(name: String, modelNames: List<String> = emptyList()): IWritableNode {
         return addNewChild(
             BuiltinLanguages.MPSRepositoryConcepts.Repository.modules.toReference(),
@@ -335,7 +379,7 @@ class LibraryRepositoryTest : ProjectSyncTestBase() {
     }
 
     private fun runTest(body: suspend (port: Int, client: ModelClientV2) -> Unit) = runWithModelServer { port ->
-        val client = ModelClientV2.builder().url("http://localhost:$port").lazyAndBlockingQueries().build()
+        val client = ModelClientV2.builder().url("http://localhost:$port").lazyAndBlockingQueries().build().also { it.init() }
         client.initRepository(branchRefMain.repositoryId)
         client.initRepository(branchRefLib.repositoryId)
         client.runWriteOnTree(branchRefMain, nodeIdGenerator = { MPSIdGenerator(client.getIdGenerator(), it) }) { tree ->

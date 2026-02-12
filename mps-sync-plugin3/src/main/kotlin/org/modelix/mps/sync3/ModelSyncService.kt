@@ -87,6 +87,7 @@ class ModelSyncService(val project: Project) :
 
     @Synchronized
     override fun switchBranch(oldBranchRef: BranchReference, newBranchRef: BranchReference, dropLocalChanges: Boolean) {
+        updateCurrentVersions()
         updateState {
             it.bindings.none { it.key.branchRef == oldBranchRef } &&
                 throw IllegalArgumentException("No binding for $oldBranchRef")

@@ -74,7 +74,7 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
     override fun getParent(): INodeJS? = node.parent?.let { NodeAdapterJS(it) }
 
     override fun getChildren(role: ChildRole?): Array<INodeJS> {
-        return node.asReadableNode().getChildren(toChildLink(role)).map { NodeAdapterJS(it.asLegacyNode()) }.toTypedArray()
+        return node.asReadableNode().getChildren(IChildLinkReference.fromRoleOrString(role)).map { NodeAdapterJS(it.asLegacyNode()) }.toTypedArray()
     }
 
     override fun getAllChildren(): Array<INodeJS> {
@@ -82,12 +82,12 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
     }
 
     override fun moveChild(role: ChildRole?, index: Number, child: INodeJS) {
-        node.asWritableNode().moveChild(toChildLink(role), index.toInt(), (child as NodeAdapterJS).node.asWritableNode())
+        node.asWritableNode().moveChild(IChildLinkReference.fromRoleOrString(role), index.toInt(), (child as NodeAdapterJS).node.asWritableNode())
     }
 
     override fun addNewChild(role: ChildRole?, index: Number, concept: IConceptJS?): INodeJS {
         val conceptRef = concept?.getUID()?.let { ConceptReference(it) } ?: NullConcept.getReference()
-        return node.asWritableNode().addNewChild(toChildLink(role), index.toInt(), conceptRef)
+        return node.asWritableNode().addNewChild(IChildLinkReference.fromRoleOrString(role), index.toInt(), conceptRef)
             .let { NodeAdapterJS(it.asLegacyNode()) }
     }
 
@@ -104,22 +104,22 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
     }
 
     override fun getReferenceTargetNode(role: ReferenceRole): INodeJS? {
-        return node.asReadableNode().getReferenceTarget(toReferenceLink(role))
+        return node.asReadableNode().getReferenceTarget(IReferenceLinkReference.fromRoleOrString(role))
             ?.let { NodeAdapterJS(it.asLegacyNode()) }
     }
 
     override fun getReferenceTargetRef(role: ReferenceRole): INodeReferenceJS? {
-        return node.asReadableNode().getReferenceTargetRef(toReferenceLink(role))?.serialize()
+        return node.asReadableNode().getReferenceTargetRef(IReferenceLinkReference.fromRoleOrString(role))?.serialize()
     }
 
     override fun setReferenceTargetNode(role: ReferenceRole, target: INodeJS?) {
         val unwrappedTarget = if (target == null) null else (target as NodeAdapterJS).node
-        node.asWritableNode().setReferenceTarget(toReferenceLink(role), unwrappedTarget?.asWritableNode())
+        node.asWritableNode().setReferenceTarget(IReferenceLinkReference.fromRoleOrString(role), unwrappedTarget?.asWritableNode())
     }
 
     override fun setReferenceTargetRef(role: ReferenceRole, target: INodeReferenceJS?) {
         node.asWritableNode().setReferenceTargetRef(
-            toReferenceLink(role),
+            IReferenceLinkReference.fromRoleOrString(role),
             target
                 ?.let { INodeReferenceSerializer.deserialize(it as String) },
         )
@@ -130,11 +130,11 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
     }
 
     override fun getPropertyValue(role: PropertyRole): String? {
-        return node.asReadableNode().getPropertyValue(toPropertyReference(role)) ?: undefined
+        return node.asReadableNode().getPropertyValue(IPropertyReference.fromRoleOrString(role)) ?: undefined
     }
 
     override fun setPropertyValue(role: PropertyRole, value: String?) {
-        node.asWritableNode().setPropertyValue(toPropertyReference(role), value)
+        node.asWritableNode().setPropertyValue(IPropertyReference.fromRoleOrString(role), value)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -150,30 +150,5 @@ class NodeAdapterJS(val node: INode) : INodeJS_ {
 
     override fun hashCode(): Int {
         return node.hashCode()
-    }
-
-    private fun toPropertyReference(role: PropertyRole): IPropertyReference = when (role) {
-        is String -> IPropertyReference.fromString(role)
-        is IPropertyReference -> role
-        is IProperty -> role.toReference()
-        is IPropertyDefinition -> role.toReference()
-        else -> error("Not a property role: $role")
-    }
-
-    private fun toReferenceLink(role: ReferenceRole): IReferenceLinkReference = when (role) {
-        is String -> IReferenceLinkReference.fromString(role)
-        is IReferenceLinkReference -> role
-        is IReferenceLink -> role.toReference()
-        is IReferenceLinkDefinition -> role.toReference()
-        else -> error("Not a reference role: $role")
-    }
-
-    private fun toChildLink(role: ChildRole): IChildLinkReference = when (role) {
-        is String -> IChildLinkReference.fromString(role)
-        is IChildLinkReference -> role
-        is IChildLink -> role.toReference()
-        is IChildLinkDefinition -> role.toReference()
-        null -> NullChildLinkReference
-        else -> error("Not a child role: $role")
     }
 }

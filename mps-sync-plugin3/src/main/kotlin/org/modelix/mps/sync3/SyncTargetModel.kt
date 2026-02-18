@@ -30,17 +30,19 @@ data class SyncTargetConfig(
      * @see BindingState.projectId
      */
     val projectId: MPSProjectReference,
+    val bindingId: BindingId,
 )
 
 class SyncTargetModel(
     val project: MPSProjectAsNode,
     val targetConfigs: List<SyncTargetConfig>,
+    val moduleOwners: ModuleToBindingMapping,
 ) : IMutableModel {
     private val rootRef = NodeReference("sync-root")
     private val models: List<IMutableModel> get() = targetConfigs.map { it.model }
     private val repositoryNode: RepositoryWrapper = RepositoryWrapper()
 
-    override fun getRootNode(): IWritableNode = repositoryNode
+    override fun getRootNode(): RepositoryWrapper = repositoryNode
 
     override fun getRootNodes(): List<IWritableNode> = listOf(getRootNode())
 
@@ -99,7 +101,7 @@ class SyncTargetModel(
             return models.map { NodeWrapper(it, it.getRootNode()) }
         }
 
-        fun getMPSModules(): List<IWritableNode> {
+        fun getMPSModules(): List<ModuleWrapper> {
             return targetConfigs.flatMap { config ->
                 config.model.getRootNodes().flatMap { repositoryNode ->
                     repositoryNode.getChildren(modulesRole).map { ModuleWrapper(it, config) }
@@ -107,7 +109,7 @@ class SyncTargetModel(
             }.distinctBy { it.getNodeReference() }
         }
 
-        fun getMPSProjects(): List<IWritableNode> {
+        fun getMPSProjects(): List<ProjectWrapper> {
             return listOf(ProjectWrapper(project.getNodeReference()))
         }
 
@@ -638,6 +640,12 @@ class SyncTargetModel(
     }
 
     inner class ModuleWrapper(node: IWritableNode, val owner: SyncTargetConfig) : NodeWrapper(owner.model, node) {
+        init {
+            MPSModuleReference.tryConvert(node.getNodeReference())?.let {
+                moduleOwners.assign(it, owner.bindingId)
+            }
+        }
+
         override fun isReadOnly(): Boolean {
             return owner.readonly || node.isReadOnly()
         }

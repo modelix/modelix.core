@@ -110,6 +110,27 @@ class LibraryRepositoryTest : ProjectSyncTestBase() {
         )
     }
 
+    fun `test can get binding for module`() = runTest { port, client ->
+        openProjectWithBindings(port)
+
+        assertEquals(2, service.getBindings().size)
+        service.getBindings().forEach { it.flush() }
+
+        assertEquals(
+            setOf(
+                "main.module1" to false,
+                "main.module2" to false,
+                "lib.module3" to true,
+                "lib.module4" to true,
+            ),
+            readAction {
+                mpsProject.projectModules.map {
+                    it.moduleName to IModelSyncService.getInstance(mpsProject).getBinding(it)?.isReadonly()
+                }.toSet()
+            },
+        )
+    }
+
     fun `test add module in main repository`() = runTest { port, client ->
         openProjectWithBindings(port)
 

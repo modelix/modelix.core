@@ -4,11 +4,15 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import jetbrains.mps.ide.project.ProjectHelper
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.mps.openapi.module.SModule
+import org.jetbrains.mps.openapi.module.SModuleId
 import org.modelix.model.IVersion
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.mpsadapters.toModelix
 import org.modelix.model.oauth.OAuthConfigBuilder
+import org.modelix.mps.multiplatform.model.MPSModuleReference
 import java.io.Closeable
 
 interface IModelSyncService {
@@ -38,6 +42,10 @@ interface IModelSyncService {
     fun getBindings(): List<IBinding>
     fun isReadonly(binding: IBinding): Boolean
     fun switchBranch(oldBranchRef: BranchReference, newBranchRef: BranchReference, dropLocalChanges: Boolean = false)
+
+    fun getBinding(moduleId: MPSModuleReference): IBinding?
+    fun getBinding(moduleId: SModuleId): IBinding? = getBinding(moduleId.toModelix())
+    fun getBinding(module: SModule): IBinding? = getBinding(module.moduleId)
 }
 
 data class ModelServerConnectionProperties(
@@ -102,6 +110,7 @@ interface IBinding : Closeable {
 
     fun getSyncProgress(): String?
     fun getStatus(): Status
+    fun isReadonly(): Boolean
 
     sealed class Status {
         object Disabled : Status()

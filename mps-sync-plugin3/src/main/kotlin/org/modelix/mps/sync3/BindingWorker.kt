@@ -49,6 +49,7 @@ import org.modelix.model.sync.bulk.IdentityPreservingNodeAssociation
 import org.modelix.model.sync.bulk.ModelSynchronizer
 import org.modelix.model.sync.bulk.NodeAssociationToModelServer
 import org.modelix.mps.model.sync.bulk.MPSProjectSyncMask
+import org.modelix.mps.multiplatform.model.MPSModuleReference
 import org.modelix.mps.multiplatform.model.MPSProjectReference
 import org.modelix.streams.iterateSuspending
 import java.util.concurrent.atomic.AtomicBoolean
@@ -83,6 +84,7 @@ class BindingWorker(
     private var activeSynchronizer: ModelSynchronizer? = null
     private var previousSyncStack: List<IReadableNode> = emptyList()
     private var status: List<IBinding.Status> = syncTargets.map { IBinding.Status.Disabled }
+    private val moduleOwners = ModuleToBindingMapping()
 
     private val repository: SRepository get() = mpsProject.project.getRepository()
 
@@ -124,6 +126,8 @@ class BindingWorker(
     }
 
     fun getStatus(): List<IBinding.Status> = status
+
+    fun getBinding(module: MPSModuleReference): BindingId? = moduleOwners.getBinding(module)
 
     private fun ModelSynchronizer.synchronizeAndStoreInstance() {
         try {
@@ -426,8 +430,10 @@ class BindingWorker(
                     projectId = syncTarget.projectId
                         ?: projectNode()?.getNodeReference()?.let { MPSProjectReference.tryConvert(it) }
                         ?: mpsProject.getNodeReference(),
+                    bindingId = syncTarget.bindingId,
                 )
             },
+            moduleOwners = moduleOwners,
         )
         val baseVersions = oldVersions
         val filter = if (baseVersions.all { it != null } && incremental) {
@@ -551,8 +557,10 @@ class BindingWorker(
                             projectId = syncTarget.projectId
                                 ?: projectNode()?.getNodeReference()?.let { MPSProjectReference.tryConvert(it) }
                                 ?: mpsProject.getNodeReference(),
+                            bindingId = syncTarget.bindingId,
                         )
                     },
+                    moduleOwners = moduleOwners,
                 )
                 model.executeWrite {
                     val targetRoot = model.getRootNode()

@@ -24,6 +24,7 @@ import org.modelix.model.mpsadapters.MPSProjectAsNode
 import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.oauth.OAuthConfigBuilder
 import org.modelix.model.oauth.TokenProvider
+import org.modelix.mps.multiplatform.model.MPSModuleReference
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.ExperimentalTime
 
@@ -87,8 +88,7 @@ class ModelSyncService(val project: Project) :
 
     @Synchronized
     override fun isReadonly(binding: IBinding): Boolean {
-        binding as Binding
-        return loadedState.bindings[binding.id]?.readonly == true
+        return binding.isReadonly()
     }
 
     @Synchronized
@@ -220,6 +220,13 @@ class ModelSyncService(val project: Project) :
                 continueOnError = { IModelSyncService.continueOnError ?: true },
             )
         }
+    }
+
+    override fun getBinding(moduleId: MPSModuleReference): IBinding? {
+        return worker.get()
+            ?.getBinding(moduleId)
+            ?.takeIf { loadedState.bindings.containsKey(it) }
+            ?.let { Binding(it) }
     }
 
     inner class Connection(val connection: AppLevelModelSyncService.ServerConnection) : IServerConnection {
@@ -371,6 +378,10 @@ class ModelSyncService(val project: Project) :
 
         override fun getStatus(): IBinding.Status {
             return worker.get()?.getStatus()[indexInWorker()] ?: IBinding.Status.Disabled
+        }
+
+        override fun isReadonly(): Boolean {
+            return loadedState.bindings[id]?.readonly == true
         }
 
         private fun getService(): ModelSyncService = this@ModelSyncService

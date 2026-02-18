@@ -31,7 +31,7 @@ import kotlin.io.path.writeText
 class LibraryRepositoryTest : ProjectSyncTestBase() {
 
     private val branchRefMain = RepositoryId("main-repository").getBranchReference()
-    private val branchRefLib = RepositoryId("lib-repository").getBranchReference()
+    private var branchRefLib = RepositoryId("lib-repository").getBranchReference()
     private val service: IModelSyncService get() = IModelSyncService.getInstance(mpsProject)
 
     fun `test checkout`() = runTest { port, client ->
@@ -60,6 +60,54 @@ class LibraryRepositoryTest : ProjectSyncTestBase() {
 
         // lib repository is read only and should remain unchanged
         assertEquals(expectedLibHash, client.pullHash(branchRefLib))
+    }
+
+    fun `test checkout with non-existing library branch`() = runTest { port, client ->
+        branchRefLib = branchRefLib.repositoryId.getBranchReference("non-existing-branch")
+        openProjectWithBindings(port)
+        service.getBindings().forEach { it.flush() }
+
+        assertContainsElements(
+            readAction { mpsProject.repository.modules.map { it.moduleName }.toSet() },
+            "main.module1",
+            "main.module2",
+            "lib.module3",
+            "lib.module4",
+        )
+        assertEquals(
+            setOf(
+                "main.module1" to false,
+                "main.module2" to false,
+                "lib.module3" to false,
+                "lib.module4" to false,
+            ),
+            readAction { mpsProject.projectModules.map { it.moduleName to it.isReadOnly }.toSet() },
+        )
+    }
+
+    fun `test checkout with non-existing library repository`() = runTest { port, client ->
+        branchRefLib = RepositoryId("non-existing-repository").getBranchReference("non-existing-branch")
+        openProjectWithBindings(port)
+        service.getBindings().forEach { it.flush() }
+
+        val modulesInMpsRepo = readAction { mpsProject.repository.modules.map { it.moduleName }.toSet() }
+        assertContainsElements(
+            modulesInMpsRepo,
+            "main.module1",
+            "main.module2",
+        )
+        assertDoesntContain(
+            modulesInMpsRepo,
+            "lib.module3",
+            "lib.module4",
+        )
+        assertEquals(
+            setOf(
+                "main.module1" to false,
+                "main.module2" to false,
+            ),
+            readAction { mpsProject.projectModules.map { it.moduleName to it.isReadOnly }.toSet() },
+        )
     }
 
     fun `test add module in main repository`() = runTest { port, client ->

@@ -122,6 +122,7 @@ interface IModelClientV2 {
     suspend fun pullIfExists(branch: BranchReference): IVersion?
 
     suspend fun pullHash(branch: BranchReference): String
+    suspend fun pullHashIfExists(branch: BranchReference): String?
 
     /**
      * While `pull` returns immediately `poll` returns as soon as a new version, that is different from the given

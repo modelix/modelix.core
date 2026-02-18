@@ -514,7 +514,7 @@ class ModelReplicationServerTest {
             response.shouldHaveContentType(branchV1ContentType)
             response.body<BranchV1>() shouldBe BranchV1(
                 "master",
-                fixture.repositoriesManager.pollVersionHash(repositoryId.getBranchReference("master"), null),
+                fixture.repositoriesManager.pollVersionHash(repositoryId.getBranchReference("master"), null)!!,
             )
         }
     }

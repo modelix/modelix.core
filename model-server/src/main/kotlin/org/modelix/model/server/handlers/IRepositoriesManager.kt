@@ -51,7 +51,7 @@ interface IRepositoriesManager {
 
     @RequiresTransaction
     fun getVersionHash(branch: BranchReference): String?
-    suspend fun pollVersionHash(branch: BranchReference, lastKnown: String?): String
+    suspend fun pollVersionHash(branch: BranchReference, lastKnown: String?): String?
 
     @RequiresTransaction
     fun forcePush(branch: BranchReference, newVersionHash: String)

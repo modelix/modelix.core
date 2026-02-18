@@ -1,10 +1,12 @@
 package org.modelix.model.api
 
+import ReferenceRole
+
 @JsExport
 sealed class MapWithRoleKey<V : Any>(private val type: IRoleReferenceFactory<*>) {
     private val entries = ArrayList<Pair<IRoleReference, V>>()
 
-    private fun get(role: IRoleReference): V? {
+    private fun _get(role: IRoleReference): V? {
         val index = entries.indexOfFirst { it.first.matches(role) }
         if (index < 0) return null
 
@@ -15,7 +17,7 @@ sealed class MapWithRoleKey<V : Any>(private val type: IRoleReferenceFactory<*>)
         return entries[index].second
     }
 
-    private fun put(role: IRoleReference, value: V) {
+    private fun _put(role: IRoleReference, value: V) {
         val index = entries.indexOfFirst { it.first.matches(role) }
         if (index >= 0) {
             entries[index] = role.merge(entries[index].first) to value
@@ -24,17 +26,17 @@ sealed class MapWithRoleKey<V : Any>(private val type: IRoleReferenceFactory<*>)
         }
     }
 
-    fun put(roleString: String, value: V) {
-        put(type.fromString(roleString), value)
+    fun put(role: ReferenceRole, value: V) {
+        _put(type.fromRoleOrString(role), value)
     }
 
-    fun get(roleString: String): V? {
-        return get(type.fromString(roleString))
+    fun get(role: ReferenceRole): V? {
+        return _get(type.fromRoleOrString(role))
     }
 
-    fun getOrPut(roleString: String, initializer: () -> V): V {
-        val role = type.fromString(roleString)
-        return get(role) ?: initializer().also { put(role.merge(role), it) }
+    fun getOrPut(role: ReferenceRole, initializer: () -> V): V {
+        val convertedRole = type.fromRoleOrString(role)
+        return _get(convertedRole) ?: initializer().also { _put(convertedRole.merge(convertedRole), it) }
     }
 }
 

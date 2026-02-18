@@ -138,6 +138,22 @@ interface IRoleReferenceFactory<E : IRoleReference> {
     fun fromIdAndName(id: String?, name: String?): E
     fun fromLegacyApi(value: String?): E = IRoleReference.decodeStringFromLegacyApi(value, this)
     fun fromString(value: String?): E = fromLegacyApi(value)
+
+    /**
+     * Convert a role object, string representation, or legacy role interface into this reference type.
+     * Handles IRoleReference objects, IRoleDefinition objects, and string representations uniformly.
+     * @param value can be a String, IRoleReference, IRoleDefinition, or null
+     * @return converted reference
+     */
+    fun fromRoleOrString(value: Any?): E {
+        return when (value) {
+            is String -> fromString(value)
+            is IRoleReference -> value as? E ?: fromString(value.stringForLegacyApi())
+            is IRoleDefinition -> fromRoleOrString(value.toReference())
+            null -> fromNull()
+            else -> error("Unsupported role type: ${value::class}")
+        }
+    }
 }
 
 fun IRoleReference.matches(other: IRoleReference): Boolean {

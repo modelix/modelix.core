@@ -448,9 +448,8 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
         }
     }
 
-    override suspend fun pollVersionHash(branch: BranchReference, lastKnown: String?): String {
+    override suspend fun pollVersionHash(branch: BranchReference, lastKnown: String?): String? {
         return pollEntry(stores.genericStore, branchKey(branch), lastKnown)
-            ?: throw IllegalStateException("No version found for branch '${branch.branchName}' in repository '${branch.repositoryId}'")
     }
 
     override suspend fun computeDelta(repository: RepositoryId?, versionHash: String, filter: ObjectDeltaFilter): ObjectData {

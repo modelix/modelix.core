@@ -699,14 +699,31 @@ class ModelClientV2(
     }
 
     override suspend fun pullHash(branch: BranchReference): String {
-        val response = httpClient.get {
+        return httpClient.prepareGet {
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName, "hash")
             }
+        }.execute { response ->
+            response.body<String>()
+                .also { LOG.debug { "${clientId.toString(16)}.pullHash($branch) -> $it" } }
         }
-        val receivedHash: String = response.body()
-        return receivedHash
+    }
+
+    override suspend fun pullHashIfExists(branch: BranchReference): String? {
+        return httpClient.prepareGet {
+            expectSuccess = false
+            url {
+                takeFrom(baseUrl)
+                appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName, "hash")
+            }
+        }.execute { response ->
+            when (response.status) {
+                HttpStatusCode.NotFound -> null
+                HttpStatusCode.OK -> response.body<String>()
+                else -> throw ResponseException(response, response.bodyAsText())
+            }.also { LOG.debug { "${clientId.toString(16)}.pullHashIfExists($branch) -> $it" } }
+        }
     }
 
     override suspend fun pollHash(branch: BranchReference, lastKnownVersion: IVersion?): String {

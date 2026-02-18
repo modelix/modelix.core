@@ -495,6 +495,13 @@ class ModelReplicationServer(
         checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
         val branchRef = repositoryId(repository).getBranchReference(branch)
         val newVersionHash = repositoriesManager.pollVersionHash(branchRef, lastKnown)
+        if (newVersionHash == null) {
+            call.respond(
+                HttpStatusCode.NotFound,
+                "Branch $branch in repository $repository doesn't exist",
+            )
+            return
+        }
         call.respondDelta(RepositoryId(repository), newVersionHash, ObjectDeltaFilter(lastKnown))
     }
 
@@ -531,6 +538,13 @@ class ModelReplicationServer(
         checkPermission(ModelServerPermissionSchema.repository(repository).branch(branch).pull)
         val branchRef = repositoryId(repository).getBranchReference(branch)
         val newVersionHash = repositoriesManager.pollVersionHash(branchRef, lastKnown)
+        if (newVersionHash == null) {
+            call.respond(
+                HttpStatusCode.NotFound,
+                "Branch $branch in repository $repository doesn't exist",
+            )
+            return
+        }
         call.respondText(newVersionHash)
     }
 

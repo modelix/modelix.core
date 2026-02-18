@@ -165,7 +165,7 @@ class BindingWorker(
         if (invalidatingListener?.hasAnyInvalidations() != false) return "There are pending changes in MPS"
         forEachTargetIndexed { index ->
             val version = versions[index]
-            val remoteVersion = client().pullHash(branchRef)
+            val remoteVersion = client().pullHashIfExists(branchRef)
             if (remoteVersion != version.remoteVersion.getContentHash()) {
                 return "Local version ($version differs from remote version ($remoteVersion)"
             }
@@ -283,7 +283,7 @@ class BindingWorker(
 
                 val existingRemoteVersions = forEachTargetIndexed { client().pullIfExists(branchRef) }
                 val createdRemoteVersions = forEachTargetIndexed { index ->
-                    existingRemoteVersions[index] ?: client().initRepository(branchRef.repositoryId)
+                    existingRemoteVersions[index] ?: createBranch(this)
                 }
 
                 if (existingRemoteVersions.all { it == null || it.isInitialVersion() }) {
@@ -300,7 +300,7 @@ class BindingWorker(
                 // Binding was activated before. Preserve local changes.
 
                 val createdBaseVersions: List<SynchronizedVersions> = forEachTargetIndexed { index ->
-                    baseVersions[index] ?: client().initRepository(branchRef.repositoryId)
+                    baseVersions[index] ?: createBranch(this)
                 }.map { SynchronizedVersions(it, it) }
 
                 // push local changes that happened while the binding was deactivated
@@ -330,6 +330,22 @@ class BindingWorker(
                 mergedVersions
             }
         }
+    }
+
+    private suspend fun createBranch(syncTarget: SyncTarget): IVersion {
+        val client = syncTarget.client()
+        val branch = syncTarget.branchRef
+        val masterBranch = branch.repositoryId.getBranchReference()
+        // branch already exists
+        return client.pullIfExists(branch)
+            // clone from master
+            ?: client.pullIfExists(masterBranch)?.also { client.push(branch, it, it) }
+            // create new repository
+            ?: client.initRepository(branch.repositoryId).also {
+                if (branch != masterBranch) {
+                    client.push(branch, it, it)
+                }
+            }
     }
 
     suspend fun syncToMPS(incremental: Boolean): List<SynchronizedVersions> {

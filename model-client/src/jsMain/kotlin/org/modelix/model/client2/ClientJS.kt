@@ -94,7 +94,16 @@ sealed class IdSchemeJS() {
 }
 
 @JsExport
-data class VersionInformationWithModelTree(val version: VersionInformationJS, val tree: MutableModelTreeJs)
+data class VersionInformationWithModelTree(
+    /**
+     * The version information.
+     */
+    val version: VersionInformationJS,
+    /**
+     * The model tree associated with the version.
+     */
+    val tree: MutableModelTreeJs,
+)
 
 /**
  * JS-API for [ModelClientV2].
@@ -104,6 +113,7 @@ data class VersionInformationWithModelTree(val version: VersionInformationJS, va
  * See https://issues.modelix.org/issue/MODELIX-962
  */
 @JsExport
+@Suppress("TooManyFunctions")
 interface ClientJS {
 
     /**
@@ -211,10 +221,14 @@ data class ReplicatedModelParameters(
     val repositoryId: String,
     val branchId: String? = null,
     val idScheme: IdSchemeJS,
+    val readonly: Boolean = false,
     val versionHash: String? = null,
 ) {
     init {
         require((branchId != null) xor (versionHash != null)) { "Exactly one of branchId or versionHash must be provided" }
+        if (versionHash != null) {
+            require(readonly) { "versionHash requires readonly=true" }
+        }
     }
 }
 

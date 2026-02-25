@@ -1,12 +1,24 @@
 package org.modelix.model.api
 
-class AutoTransactionsNode(val node: IWritableNode) : IWritableNode {
-    private fun IWritableNode.wrap() = AutoTransactionsNode(this)
+class AutoTransactionsNode(val node: IWritableNode, val transactionsManager: ITransactionManager) : IWritableNode {
+    init {
+        require(node !is AutoTransactionsNode) { "Double wrapping prevented: $node" }
+    }
+
+    private fun IWritableNode.wrap() = wrapNode(this)
+    private fun wrapNode(node: IWritableNode): AutoTransactionsNode {
+        return if (node is AutoTransactionsNode) {
+            require(node.transactionsManager == transactionsManager)
+            node
+        } else {
+            AutoTransactionsNode(node, transactionsManager)
+        }
+    }
     private fun List<IWritableNode>.wrap() = map { it.wrap() }
     private fun IWritableNode.unwrap() = if (this is AutoTransactionsNode) this.node else this
 
-    private fun <R> read(body: () -> R): R = node.getModel().executeRead(body)
-    private fun <R> write(body: () -> R): R = node.getModel().executeWrite(body)
+    private fun <R> read(body: () -> R): R = transactionsManager.executeRead(body)
+    private fun <R> write(body: () -> R): R = transactionsManager.executeWrite(body)
 
     override fun getModel(): IMutableModel {
         return AutoTransactionsModel(node.getModel())
@@ -22,6 +34,10 @@ class AutoTransactionsNode(val node: IWritableNode) : IWritableNode {
 
     override fun getLocalReferenceTarget(role: IReferenceLinkReference): IWritableNode? {
         return read { node.getLocalReferenceTarget(role)?.wrap() }
+    }
+
+    override fun getReferenceTarget(role: IReferenceLinkReference): IWritableNode? {
+        return read { super.getReferenceTarget(role)?.wrap() }
     }
 
     override fun getAllReferenceTargets(): List<Pair<IReferenceLinkReference, IWritableNode>> {
@@ -142,15 +158,20 @@ class AutoTransactionsNode(val node: IWritableNode) : IWritableNode {
     }
 }
 
-fun IWritableNode.withAutoTransactions() = AutoTransactionsNode(this)
+fun IWritableNode.withAutoTransactions() = if (this is AutoTransactionsNode) this else withAutoTransactions(getModel())
+fun IWritableNode.withAutoTransactions(transactionsManager: ITransactionManager) = AutoTransactionsNode(this, transactionsManager)
 
 class AutoTransactionsModel(val model: IMutableModel) : IMutableModel {
-    override fun getRootNode(): IWritableNode = AutoTransactionsNode(model.getRootNode())
+    init {
+        require(model !is AutoTransactionsModel) { "Double wrapping prevented: $model" }
+    }
 
-    override fun getRootNodes(): List<IWritableNode> = model.getRootNodes().map { AutoTransactionsNode(it) }
+    override fun getRootNode(): IWritableNode = AutoTransactionsNode(model.getRootNode(), model)
+
+    override fun getRootNodes(): List<IWritableNode> = model.getRootNodes().map { AutoTransactionsNode(it, model) }
 
     override fun tryResolveNode(ref: INodeReference): IWritableNode? {
-        return model.tryResolveNode(ref)?.let { AutoTransactionsNode(it) }
+        return model.tryResolveNode(ref)?.let { AutoTransactionsNode(it, model) }
     }
 
     override fun <R> executeRead(body: () -> R): R = model.executeRead(body)

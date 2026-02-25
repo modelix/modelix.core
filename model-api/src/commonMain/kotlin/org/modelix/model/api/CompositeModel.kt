@@ -1,6 +1,8 @@
 package org.modelix.model.api
 
 class CompositeModel(models: List<IModel>) : IMutableModel {
+    constructor(vararg models: IModel) : this(models.toList())
+
     val models: List<IMutableModel> = models.flatMap {
         it as IMutableModel
         when (it) {
@@ -22,11 +24,11 @@ class CompositeModel(models: List<IModel>) : IMutableModel {
     }
 
     override fun <R> executeRead(body: () -> R): R {
-        return executeRead(models, body)
+        return IModel.runWith(this) { executeRead(models, body) }
     }
 
     override fun <R> executeWrite(body: () -> R): R {
-        return executeWrite(models, body)
+        return IModel.runWith(this) { executeWrite(models, body) }
     }
 
     private fun <R> executeRead(remainingModels: List<IModel>, body: () -> R): R {

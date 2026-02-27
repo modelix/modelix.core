@@ -95,21 +95,23 @@ class MPSModelExporter(private val outputFolder: File) {
         return data
     }
 
-    private fun exportNode(node: SNode): NodeData {
-        val id: String = node.reference.toString()
-        val concept: String = "mps:" + MetaIdHelper.getConcept(SNodeOperations.getConcept(node)).serialize()
-        val role = node.containmentLink?.name ?: "rootNodes"
-        val children: List<NodeData> = SNodeOperations.getChildren(node).map { exportNode(it) }
-        val properties: MutableMap<String, String> = LinkedHashMap()
-        val references: MutableMap<String, String> = LinkedHashMap()
-        properties["#mpsNodeId#"] = node.nodeId.toString()
-        for (property: SProperty in node.properties) {
-            properties[property.name] = node.getProperty(property) ?: continue
+    companion object {
+        fun exportNode(node: SNode): NodeData {
+            val id: String = node.reference.toString()
+            val concept: String = "mps:" + MetaIdHelper.getConcept(SNodeOperations.getConcept(node)).serialize()
+            val role = node.containmentLink?.name ?: "rootNodes"
+            val children: List<NodeData> = SNodeOperations.getChildren(node).map { exportNode(it) }
+            val properties: MutableMap<String, String> = LinkedHashMap()
+            val references: MutableMap<String, String> = LinkedHashMap()
+            properties["#mpsNodeId#"] = node.nodeId.toString()
+            for (property: SProperty in node.properties) {
+                properties[property.name] = node.getProperty(property) ?: continue
+            }
+            for (reference: SReference in node.references) {
+                references[reference.link.name] = reference.targetNodeReference.toString()
+            }
+            return NodeData(id, concept, role, children, properties, references)
         }
-        for (reference: SReference in node.references) {
-            references[reference.link.name] = reference.targetNodeReference.toString()
-        }
-        return NodeData(id, concept, role, children, properties, references)
     }
 
     private object CONCEPTS {

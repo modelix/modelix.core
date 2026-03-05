@@ -22,6 +22,7 @@ import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.mpsadapters.MPSProjectAsNode
 import org.modelix.model.oauth.IAuthConfig
+import org.modelix.model.oauth.ITokenProvider
 import org.modelix.model.oauth.OAuthConfigBuilder
 import org.modelix.model.oauth.TokenProvider
 import org.modelix.mps.multiplatform.model.MPSModuleReference
@@ -230,7 +231,12 @@ class ModelSyncService(val project: Project) :
     }
 
     inner class Connection(val connection: AppLevelModelSyncService.ServerConnection) : IServerConnection {
+        @Deprecated("Provide an ITokenProvider")
         override fun setTokenProvider(tokenProvider: TokenProvider) {
+            connection.setAuthorizationConfig(IAuthConfig.fromTokenProvider(tokenProvider))
+        }
+
+        override fun setTokenProvider(tokenProvider: ITokenProvider) {
             connection.setAuthorizationConfig(IAuthConfig.fromTokenProvider(tokenProvider))
         }
 

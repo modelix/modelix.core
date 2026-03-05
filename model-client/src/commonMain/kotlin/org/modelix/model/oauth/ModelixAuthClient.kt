@@ -24,15 +24,16 @@ expect class ModelixAuthClient() {
     )
 }
 
-internal fun installAuthWithAuthTokenProvider(config: HttpClientConfig<*>, authTokenProvider: suspend () -> String?) {
+internal fun installAuthWithAuthTokenProvider(config: HttpClientConfig<*>, authConfig: TokenProviderAuthConfig) {
     config.apply {
         install(Auth) {
             bearer {
                 loadTokens {
-                    authTokenProvider()?.let { authToken -> BearerTokens(authToken, "") }
+                    authConfig.provider.getToken(authConfig.tokenParameters)
+                        ?.let { authToken -> BearerTokens(authToken, "") }
                 }
                 refreshTokens {
-                    val providedToken = authTokenProvider()
+                    val providedToken = authConfig.provider.getToken(authConfig.tokenParameters)
                     if (providedToken != null && providedToken != this.oldTokens?.accessToken) {
                         BearerTokens(providedToken, "")
                     } else {

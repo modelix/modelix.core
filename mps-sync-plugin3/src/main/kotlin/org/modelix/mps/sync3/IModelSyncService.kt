@@ -11,6 +11,7 @@ import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.toModelix
+import org.modelix.model.oauth.ITokenProvider
 import org.modelix.model.oauth.OAuthConfigBuilder
 import org.modelix.mps.multiplatform.model.MPSModuleReference
 import java.io.Closeable
@@ -59,7 +60,9 @@ data class ModelServerConnectionProperties(
 )
 
 interface IServerConnection : Closeable {
+    @Deprecated("Provide an ITokenProvider")
     fun setTokenProvider(tokenProvider: (suspend () -> String?))
+    fun setTokenProvider(tokenProvider: ITokenProvider)
     fun configureOAuth(body: OAuthConfigBuilder.() -> Unit)
 
     fun activate()

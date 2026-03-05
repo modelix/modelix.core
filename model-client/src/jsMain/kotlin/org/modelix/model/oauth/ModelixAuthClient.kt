@@ -10,8 +10,8 @@ actual class ModelixAuthClient {
         authConfig: IAuthConfig,
     ) {
         when (authConfig) {
-            is OAuthConfig -> UnsupportedOperationException("JS client doesn't support OAuth2")
-            is TokenProviderAuthConfig -> installAuthWithAuthTokenProvider(config, authConfig.provider)
+            is OAuthConfig -> throw UnsupportedOperationException("JS client doesn't support OAuth2")
+            is TokenProviderAuthConfig -> installAuthWithAuthTokenProvider(config, authConfig)
         }
     }
 }

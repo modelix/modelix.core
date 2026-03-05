@@ -34,6 +34,7 @@ import io.ktor.http.contentType
 import io.ktor.http.takeFrom
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.readUTF8Line
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
@@ -52,6 +53,7 @@ import org.modelix.datastructures.objects.IObjectGraph
 import org.modelix.datastructures.objects.Object
 import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.kotlin.utils.DeprecationInfo
+import org.modelix.kotlin.utils.JvmSynchronized
 import org.modelix.kotlin.utils.WeakValueMap
 import org.modelix.kotlin.utils.getOrPut
 import org.modelix.kotlin.utils.runSynchronized
@@ -79,12 +81,17 @@ import org.modelix.model.mutable.IMutableModelTree
 import org.modelix.model.mutable.INodeIdGenerator
 import org.modelix.model.mutable.ModelixIdGenerator
 import org.modelix.model.mutable.getRootNode
+import org.modelix.model.oauth.GlobalTokenParameters
 import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.oauth.IAuthRequestHandler
+import org.modelix.model.oauth.ITokenParameters
+import org.modelix.model.oauth.ITokenProvider
 import org.modelix.model.oauth.ModelixAuthClient
 import org.modelix.model.oauth.OAuthConfig
 import org.modelix.model.oauth.OAuthConfigBuilder
+import org.modelix.model.oauth.TokenParameters
 import org.modelix.model.oauth.TokenProvider
+import org.modelix.model.oauth.TokenProviderAdapter
 import org.modelix.model.oauth.TokenProviderAuthConfig
 import org.modelix.model.operations.OTBranch
 import org.modelix.model.persistent.CPVersion
@@ -108,7 +115,7 @@ import kotlin.time.Duration.Companion.seconds
 class VersionNotFoundException(val versionHash: String) : Exception("Version $versionHash not found")
 
 class ModelClientV2(
-    val httpClient: HttpClient,
+    val httpClientProvider: IHttpClientProvider,
     val baseUrl: String,
     private var clientProvidedUserId: String?,
     var defaultGraphConfig: ModelClientGraphConfig,
@@ -152,7 +159,7 @@ class ModelClientV2(
     }
 
     override suspend fun getServerId(): String {
-        return httpClient.get {
+        return httpClientProvider.getHttpClient().get {
             url {
                 takeFrom(baseUrl)
                 appendPathSegments("server-id")
@@ -161,7 +168,7 @@ class ModelClientV2(
     }
 
     private suspend fun updateClientId() {
-        this.clientId = httpClient.post {
+        this.clientId = httpClientProvider.getHttpClient().post {
             url {
                 takeFrom(baseUrl)
                 appendPathSegments("generate-client-id")
@@ -171,7 +178,7 @@ class ModelClientV2(
     }
 
     suspend fun updateUserId() {
-        serverProvidedUserId = httpClient.get {
+        serverProvidedUserId = httpClientProvider.getHttpClient().get {
             url {
                 takeFrom(baseUrl)
                 appendPathSegments("user-id")
@@ -229,7 +236,7 @@ class ModelClientV2(
 
     override suspend fun initRepository(config: RepositoryConfig): IVersion {
         val repositoryId = RepositoryId(config.repositoryId)
-        return httpClient.preparePost {
+        return httpClientProvider.getHttpClient(RepositoryId(config.repositoryId)).preparePost {
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", repositoryId.id, "init")
@@ -246,7 +253,7 @@ class ModelClientV2(
         source: RepositoryId,
         target: RepositoryId?,
     ): RepositoryId {
-        return httpClient.preparePost {
+        return httpClientProvider.getHttpClient(source).preparePost {
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", source.id, "fork")
@@ -261,7 +268,7 @@ class ModelClientV2(
 
     override suspend fun changeRepositoryConfig(config: RepositoryConfig): RepositoryConfig {
         val repositoryId = RepositoryId(config.repositoryId)
-        return httpClient.preparePost {
+        return httpClientProvider.getHttpClient(RepositoryId(config.repositoryId)).preparePost {
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", repositoryId.id, "config")
@@ -274,7 +281,7 @@ class ModelClientV2(
     }
 
     override suspend fun getRepositoryConfig(repository: RepositoryId): RepositoryConfig {
-        return httpClient.prepareGet {
+        return httpClientProvider.getHttpClient(repository).prepareGet {
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", repository.id, "config")
@@ -283,7 +290,7 @@ class ModelClientV2(
     }
 
     override suspend fun listRepositories(): List<RepositoryId> {
-        return httpClient.get {
+        return httpClientProvider.getHttpClient().get {
             url {
                 takeFrom(baseUrl)
                 appendPathSegments("repositories")
@@ -293,7 +300,7 @@ class ModelClientV2(
 
     override suspend fun deleteRepository(repository: RepositoryId): Boolean {
         try {
-            return httpClient.post {
+            return httpClientProvider.getHttpClient(repository).post {
                 url {
                     takeFrom(baseUrl)
                     appendPathSegmentsEncodingSlash("repositories", repository.id, "delete")
@@ -306,7 +313,7 @@ class ModelClientV2(
     }
 
     override suspend fun listBranches(repository: RepositoryId): List<BranchReference> {
-        return httpClient.get {
+        return httpClientProvider.getHttpClient(repository).get {
             // only accept text/plain, not application/json
             accept(ContentType.Text.Plain)
             exclude(ContentType.Application.Json)
@@ -318,7 +325,7 @@ class ModelClientV2(
     }
 
     override suspend fun listBranchesWithHashes(repository: RepositoryId): List<BranchInfo> {
-        return httpClient.get {
+        return httpClientProvider.getHttpClient(repository).get {
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", repository.id, "branches")
@@ -328,7 +335,7 @@ class ModelClientV2(
 
     override suspend fun deleteBranch(branch: BranchReference): Boolean {
         try {
-            return httpClient.delete {
+            return httpClientProvider.getHttpClient(branch).delete {
                 url {
                     takeFrom(baseUrl)
                     appendPathSegmentsEncodingSlash(
@@ -380,7 +387,7 @@ class ModelClientV2(
                 delay: Duration,
                 pagination: PaginationParameters,
             ): List<HistoryInterval> {
-                return httpClient.prepareGet {
+                return httpClientProvider.getHttpClient(repositoryId).prepareGet {
                     url {
                         takeFrom(baseUrl)
                         appendPathSegments("repositories", repositoryId.id, "versions", headVersion.toString(), "history", "sessions")
@@ -402,7 +409,7 @@ class ModelClientV2(
                 interval: Duration,
                 pagination: PaginationParameters,
             ): List<HistoryInterval> {
-                return httpClient.prepareGet {
+                return httpClientProvider.getHttpClient(repositoryId).prepareGet {
                     url {
                         takeFrom(baseUrl)
                         appendPathSegments("repositories", repositoryId.id, "versions", headVersion.toString(), "history", "intervals")
@@ -423,7 +430,7 @@ class ModelClientV2(
                 timeRange: ClosedRange<Instant>?,
                 pagination: PaginationParameters,
             ): List<HistoryEntry> {
-                return httpClient.prepareGet {
+                return httpClientProvider.getHttpClient(repositoryId).prepareGet {
                     url {
                         takeFrom(baseUrl)
                         appendPathSegments("repositories", repositoryId.id, "versions", headVersion.toString(), "history", "entries")
@@ -440,7 +447,7 @@ class ModelClientV2(
             }
 
             override suspend fun splitAt(splitPoints: List<Instant>): List<HistoryInterval> {
-                return httpClient.preparePost {
+                return httpClientProvider.getHttpClient(repositoryId).preparePost {
                     url {
                         takeFrom(baseUrl)
                         appendPathSegments("repositories", repositoryId.id, "versions", headVersion.toString(), "history", "intervals")
@@ -457,6 +464,11 @@ class ModelClientV2(
         repositoryId: RepositoryId?,
         versionHash: ObjectHash,
     ): Object<HistoryIndexNode> {
+        val httpClient = if (repositoryId == null) {
+            httpClientProvider.getHttpClient()
+        } else {
+            httpClientProvider.getHttpClient(repositoryId)
+        }
         return httpClient.prepareGet {
             url {
                 takeFrom(baseUrl)
@@ -482,7 +494,7 @@ class ModelClientV2(
         branch: BranchReference,
         versionHash: ObjectHash,
     ): ObjectHash {
-        return httpClient.preparePost {
+        return httpClientProvider.getHttpClient(branch).preparePost {
             url {
                 takeFrom(baseUrl)
                 appendPathSegments("repositories", branch.repositoryId.id, "branches", branch.branchName, "revert")
@@ -521,6 +533,11 @@ class ModelClientV2(
         baseVersion: IVersion?,
     ): IVersion {
         checkCreatedByThisClient(baseVersion, repositoryId)
+        val httpClient = if (repositoryId == null) {
+            httpClientProvider.getHttpClient()
+        } else {
+            httpClientProvider.getHttpClient(repositoryId)
+        }
         return httpClient.prepareGet {
             url {
                 takeFrom(baseUrl)
@@ -541,7 +558,7 @@ class ModelClientV2(
 
     override suspend fun getObjects(repository: RepositoryId, keys: Sequence<org.modelix.model.server.api.v2.ObjectHash>): Map<org.modelix.model.server.api.v2.ObjectHash, SerializedObject> {
         LOG.debug { "${clientId.toString(16)}.getObjects($repository)" }
-        return httpClient.preparePost {
+        return httpClientProvider.getHttpClient(repository).preparePost {
             url {
                 takeFrom(baseUrl)
                 appendPathSegments("repositories", repository.id, "objects", "getAll")
@@ -584,7 +601,7 @@ class ModelClientV2(
             VersionDelta(version.getContentHash(), null, objectsMap = lastChunk.toMap())
         }
 
-        return httpClient.preparePost {
+        return httpClientProvider.getHttpClient(branch).preparePost {
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
@@ -630,7 +647,7 @@ class ModelClientV2(
         val chunkEntries = ArrayList<ObjectHashAndSerializedObject>()
 
         suspend fun sendChunk() {
-            httpClient.put {
+            httpClientProvider.getHttpClient(repository).put {
                 url {
                     takeFrom(baseUrl)
                     appendPathSegmentsEncodingSlash("repositories", repository.id, "objects")
@@ -660,7 +677,7 @@ class ModelClientV2(
     override suspend fun pull(branch: BranchReference, lastKnownVersion: IVersion?, filter: ObjectDeltaFilter): IVersion {
         require(lastKnownVersion is CLVersion?)
         checkCreatedByThisClient(lastKnownVersion, branch.repositoryId)
-        return httpClient.prepareGet {
+        return httpClientProvider.getHttpClient(branch).prepareGet {
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName)
@@ -680,7 +697,7 @@ class ModelClientV2(
     }
 
     override suspend fun pullIfExists(branch: BranchReference): IVersion? {
-        return httpClient.prepareGet {
+        return httpClientProvider.getHttpClient(branch).prepareGet {
             expectSuccess = false
             url {
                 takeFrom(baseUrl)
@@ -699,7 +716,7 @@ class ModelClientV2(
     }
 
     override suspend fun pullHash(branch: BranchReference): String {
-        return httpClient.prepareGet {
+        return httpClientProvider.getHttpClient(branch).prepareGet {
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName, "hash")
@@ -711,7 +728,7 @@ class ModelClientV2(
     }
 
     override suspend fun pullHashIfExists(branch: BranchReference): String? {
-        return httpClient.prepareGet {
+        return httpClientProvider.getHttpClient(branch).prepareGet {
             expectSuccess = false
             url {
                 takeFrom(baseUrl)
@@ -732,7 +749,7 @@ class ModelClientV2(
     }
 
     override suspend fun pollHash(branch: BranchReference, lastKnownHash: String?): String {
-        val response = httpClient.get {
+        val response = httpClientProvider.getHttpClient(branch).get {
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName, "pollHash")
@@ -749,7 +766,7 @@ class ModelClientV2(
         require(lastKnownVersion is CLVersion?)
         checkCreatedByThisClient(lastKnownVersion, branch.repositoryId)
         LOG.debug { "${clientId.toString(16)}.poll($branch, $lastKnownVersion)" }
-        return httpClient.prepareGet {
+        return httpClientProvider.getHttpClient(branch).prepareGet {
             url {
                 takeFrom(baseUrl)
                 appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName, "poll")
@@ -774,7 +791,7 @@ class ModelClientV2(
             takeFrom(baseUrl)
             appendPathSegmentsEncodingSlash("repositories", branch.repositoryId.id, "branches", branch.branchName, "query")
         }
-        return ModelQLClient.builder().httpClient(httpClient).url(url.buildString()).build().query(body)
+        return ModelQLClient.builder().httpClient(httpClientProvider.getHttpClient(branch)).url(url.buildString()).build().query(body)
     }
 
     override suspend fun <R> query(repositoryId: RepositoryId, versionHash: String, body: (IMonoStep<INode>) -> IMonoStep<R>): R {
@@ -782,7 +799,7 @@ class ModelClientV2(
             takeFrom(baseUrl)
             appendPathSegmentsEncodingSlash("repositories", repositoryId.id, "versions", versionHash, "query")
         }
-        return ModelQLClient.builder().httpClient(httpClient).url(url.buildString()).build().query(body)
+        return ModelQLClient.builder().httpClient(httpClientProvider.getHttpClient(repositoryId)).url(url.buildString()).build().query(body)
     }
 
     override fun getFrontendUrl(branch: BranchReference): Url {
@@ -793,7 +810,7 @@ class ModelClientV2(
     }
 
     override fun close() {
-        httpClient.close()
+        httpClientProvider.close()
     }
 
     private suspend fun createVersion(repository: RepositoryId, baseVersion: CLVersion?, delta: VersionDeltaStream): CLVersion {
@@ -846,13 +863,19 @@ abstract class ModelClientV2Builder {
     protected var connectTimeout: Duration = 1.seconds
     protected var requestTimeout: Duration = 300.seconds
     protected var defaultGraphConfig = ModelClientGraphConfig()
+    protected val authClient by lazy { ModelixAuthClient() }
 
     // 0 and 1 mean "disable retries"
     protected var retries: UInt = 3U
 
     fun build(): ModelClientV2 {
         return ModelClientV2(
-            httpClient = httpClient?.config { configureHttpClient(this) } ?: createHttpClient(),
+            httpClientProvider = object : CachingHttpClientProvider() {
+                override fun createInstance(tokenParameters: ITokenParameters): HttpClient {
+                    return httpClient?.config { configureHttpClient(this, tokenParameters) }
+                        ?: createHttpClient(tokenParameters)
+                }
+            },
             baseUrl = baseUrl,
             clientProvidedUserId = userId,
             defaultGraphConfig = defaultGraphConfig,
@@ -879,7 +902,10 @@ abstract class ModelClientV2Builder {
         return this
     }
 
-    fun authToken(provider: TokenProvider) = also {
+    @Deprecated("Provide an ITokenProvider")
+    fun authToken(provider: TokenProvider) = authToken(TokenProviderAdapter(provider))
+
+    fun authToken(provider: ITokenProvider) = also {
         authConfig = TokenProviderAuthConfig(provider)
     }
 
@@ -970,7 +996,7 @@ abstract class ModelClientV2Builder {
         return this
     }
 
-    protected open fun configureHttpClient(config: HttpClientConfig<*>) {
+    protected open fun configureHttpClient(config: HttpClientConfig<*>, tokenParameters: ITokenParameters) {
         config.apply {
             expectSuccess = true
             followRedirects = false
@@ -1001,11 +1027,11 @@ abstract class ModelClientV2Builder {
                     }
                 }
             }
-            authConfig?.let { ModelixAuthClient().installAuth(this, it) }
+            authConfig?.withTokenParameters(tokenParameters)?.let { authClient.installAuth(this, it) }
         }
     }
 
-    protected abstract fun createHttpClient(): HttpClient
+    protected abstract fun createHttpClient(tokenParameters: ITokenParameters): HttpClient
 
     companion object {
         private val LOG = KotlinLogging.logger {}
@@ -1020,8 +1046,56 @@ abstract class ModelClientV2Builder {
     }
 }
 
+interface IHttpClientProvider : Closable {
+    fun getHttpClient(): HttpClient
+    fun getHttpClient(repository: RepositoryId): HttpClient
+    fun getHttpClient(branch: BranchReference): HttpClient
+}
+
+abstract class CachingHttpClientProvider : IHttpClientProvider {
+    private var serverInstance: HttpClient? = null
+    private val repositoryInstances = HashMap<RepositoryId, HttpClient>()
+    private val branchInstances = HashMap<BranchReference, HttpClient>()
+    private var closed: Boolean = false
+
+    abstract fun createInstance(tokenParameters: ITokenParameters): HttpClient
+
+    @JvmSynchronized
+    override fun getHttpClient(): HttpClient {
+        checkClosed()
+        return serverInstance ?: createInstance(GlobalTokenParameters()).also { serverInstance = it }
+    }
+
+    @JvmSynchronized
+    override fun getHttpClient(repository: RepositoryId): HttpClient {
+        checkClosed()
+        return repositoryInstances.getOrPut(repository) { createInstance(TokenParameters(repository)) }
+    }
+
+    @JvmSynchronized
+    override fun getHttpClient(branch: BranchReference): HttpClient {
+        checkClosed()
+        return branchInstances.getOrPut(branch) { createInstance(TokenParameters(branch)) }
+    }
+
+    private fun checkClosed() {
+        if (closed) throw CancellationException("Already closed")
+    }
+
+    @JvmSynchronized
+    override fun close() {
+        closed = true
+        serverInstance?.close()
+        serverInstance = null
+        repositoryInstances.values.forEach { it.close() }
+        repositoryInstances.clear()
+        branchInstances.values.forEach { it.close() }
+        branchInstances.clear()
+    }
+}
+
 expect class ModelClientV2PlatformSpecificBuilder() : ModelClientV2Builder {
-    override fun createHttpClient(): HttpClient
+    override fun createHttpClient(tokenParameters: ITokenParameters): HttpClient
 }
 
 fun VersionDelta.checkObjectHashes() {

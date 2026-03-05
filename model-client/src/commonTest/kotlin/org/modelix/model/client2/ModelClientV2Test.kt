@@ -33,7 +33,7 @@ class ModelClientV2Test {
         val exception = assertFailsWith<CancellationException> {
             modelClient.init()
         }
-        assertEquals("Parent job is Completed", exception.message)
+        assertEquals("Already closed", exception.message)
     }
 
     @Test

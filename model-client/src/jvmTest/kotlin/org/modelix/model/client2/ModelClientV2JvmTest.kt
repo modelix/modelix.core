@@ -29,12 +29,12 @@ class ModelClientV2JvmTest {
         val firstException = assertFailsWith<CancellationException> {
             modelClient.init()
         }
-        assertEquals("Parent job is Completed", firstException.message)
+        assertEquals("Already closed", firstException.message)
         // `Closable` implies that `.close` method is idempotent.
         modelClient.close()
         val secondException = assertFailsWith<CancellationException> {
             modelClient.init()
         }
-        assertEquals("Parent job is Completed", secondException.message)
+        assertEquals("Already closed", secondException.message)
     }
 }

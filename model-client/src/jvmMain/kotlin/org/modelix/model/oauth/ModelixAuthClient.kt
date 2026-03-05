@@ -33,6 +33,7 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.modelix.kotlin.utils.runSynchronized
 import org.modelix.kotlin.utils.urlEncode
 import java.net.SocketException
 import java.net.SocketTimeoutException
@@ -44,16 +45,19 @@ actual class ModelixAuthClient {
     }
     private val httpTransport: HttpTransport = NetHttpTransport()
     private val jsonFactory: JsonFactory = GsonFactory()
-    private var lastCredentials: Credential? = null
+    private var lastCredentials = HashMap<TokenCacheKey, Credential>()
 
-    fun getTokens(): Credential? {
-        return lastCredentials?.takeIf { !it.isExpired() }
+    @Synchronized
+    fun getTokens(config: OAuthConfig): Credential? {
+        return lastCredentials[config.getCacheKey()]?.takeIf { !it.isExpired() }
     }
 
+    @Synchronized
     private fun Credential.isExpired(): Boolean {
         return (expiresInSeconds ?: return false) < 60
     }
 
+    @Synchronized
     private fun Credential.refreshIfExpired(): Credential? {
         return if (isExpired()) {
             alwaysRefresh()
@@ -62,6 +66,7 @@ actual class ModelixAuthClient {
         }
     }
 
+    @Synchronized
     fun Credential.alwaysRefresh(): Credential? {
         for (attempt in 1..3) {
             try {
@@ -77,12 +82,13 @@ actual class ModelixAuthClient {
         return null
     }
 
-    suspend fun getAndMaybeRefreshTokens(): Credential? {
-        return lastCredentials?.refreshIfExpired()
+    @Synchronized
+    fun getAndMaybeRefreshTokens(config: OAuthConfig): Credential? {
+        return lastCredentials[config.getCacheKey()]?.refreshIfExpired()
     }
 
     suspend fun refreshTokensOrReauthorize(config: OAuthConfig): Credential? {
-        return lastCredentials?.alwaysRefresh() ?: authorize(config)
+        return runSynchronized(this) { lastCredentials[config.getCacheKey()]?.alwaysRefresh() } ?: authorize(config)
     }
 
     suspend fun authorize(config: OAuthConfig): Credential? {
@@ -110,7 +116,9 @@ actual class ModelixAuthClient {
                     val tokens = cancelable({ receiver.stop() }) {
                         AuthorizationCodeInstalledApp(flow, receiver, browser).authorize(null)
                     }
-                    lastCredentials = tokens
+                    runSynchronized(this@ModelixAuthClient) {
+                        lastCredentials[config.getCacheKey()] = tokens
+                    }
                     return@withContext tokens
                 } catch (ex: SocketException) {
                     LOG.info("Port $port already in use. Trying next one.")
@@ -127,7 +135,7 @@ actual class ModelixAuthClient {
         authConfig: IAuthConfig,
     ) {
         when (authConfig) {
-            is TokenProviderAuthConfig -> installAuthWithAuthTokenProvider(config, authConfig.provider)
+            is TokenProviderAuthConfig -> installAuthWithAuthTokenProvider(config, authConfig)
             is OAuthConfig -> installAuthWithPKCEFlow(config, authConfig)
         }
     }
@@ -139,11 +147,19 @@ actual class ModelixAuthClient {
         var currentAuthConfig = initialAuthConfig
 
         fun String.fillParameters(): String {
-            return if (initialAuthConfig.repositoryId == null) {
-                this
-            } else {
-                replace("{repositoryId}", initialAuthConfig.repositoryId.id.urlEncode())
+            val tokenParameters = currentAuthConfig.tokenParameters ?: return this
+            var result = this
+            if (result.contains("{repositoryId}")) {
+                result = result.replace("{repositoryId}", tokenParameters.getRepositoryId().orEmpty().urlEncode())
             }
+            if (result.contains("{branchName}")) {
+                result = result.replace("{branchName}", tokenParameters.getBranchName().orEmpty().urlEncode())
+            }
+            return result
+        }
+
+        fun OAuthConfig.fillParameters(): OAuthConfig {
+            return copy(tokenUrl = tokenUrl?.fillParameters(), authorizationUrl = authorizationUrl?.fillParameters())
         }
 
         config.apply {
@@ -152,7 +168,7 @@ actual class ModelixAuthClient {
                     loadTokens {
                         // A potentially expired token is already refreshed here to avoid a 401 response.
                         // When a 401 response is received, we always (re-)execute the PKCE flow.
-                        getAndMaybeRefreshTokens()?.let { BearerTokens(it.accessToken, it.refreshToken) }
+                        getAndMaybeRefreshTokens(currentAuthConfig)?.let { BearerTokens(it.accessToken, it.refreshToken) }
                     }
                     refreshTokens {
                         try {
@@ -181,7 +197,7 @@ actual class ModelixAuthClient {
                                 LOG.warn { "No client ID configured" }
                                 return@refreshTokens null
                             }
-                            val tokens = refreshTokensOrReauthorize(currentAuthConfig)
+                            val tokens = refreshTokensOrReauthorize(currentAuthConfig.fillParameters())
                             checkNotNull(tokens) { "No tokens received" }
 
                             LOG.info("Access Token: " + tokens.accessToken)

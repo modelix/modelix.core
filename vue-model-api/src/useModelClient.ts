@@ -11,9 +11,10 @@ type ClientJS = org.modelix.model.client2.ClientJS;
  * Creates a model client for a given URL.
  *
  * The URL is reactive and if it changes, the client is automatically disposed and a new client for the updated URL is created.
+ * If the URL is `null` or `undefined`, no client is created.
  *
- * @param url - Reactive reference of an URL to a model server.
- * @param getClient - Function how to create a cliente given an URL.
+ * @param url - Reactive reference of a URL to a model server. When `null` or `undefined`, no client is created.
+ * @param getClient - Function how to create a client given an URL.
  *
  * Defaults to connecting directly to the modelix model server under the given URL.
  *
@@ -23,7 +24,7 @@ type ClientJS = org.modelix.model.client2.ClientJS;
  * @returns {Ref<unknown>} values.error Reactive reference to a client connection error.
  */
 export function useModelClient(
-  url: MaybeRefOrGetter<string>,
+  url: MaybeRefOrGetter<string | null | undefined>,
   getClient: (url: string) => Promise<ClientJS> = connectClient,
 ): {
   client: Ref<ClientJS | null>;
@@ -44,7 +45,9 @@ export function useModelClient(
   useLastPromiseEffect(
     () => {
       dispose();
-      return getClient(toValue(url));
+      const urlValue = toValue(url);
+      if (!urlValue) return undefined;
+      return getClient(urlValue);
     },
     (createdClient, isResultOfLastStartedPromise) => {
       if (isResultOfLastStartedPromise) {

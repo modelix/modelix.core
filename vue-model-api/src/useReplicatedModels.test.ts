@@ -214,7 +214,7 @@ describe("URL-based client with getToken", () => {
     );
   });
 
-  test("getToken is called with the model params before connecting", async () => {
+  test("each model param gets its own tokenProvider wrapping getToken", async () => {
     const params = new ReplicatedModelParameters(
       "aRepository",
       "aBranch",
@@ -228,8 +228,17 @@ describe("URL-based client with getToken", () => {
     await new Promise(process.nextTick);
     await new Promise(process.nextTick);
 
+    expect(startReplicatedModels).toHaveBeenCalledTimes(1);
+    const calledWith = startReplicatedModels.mock.calls[0][0];
+
+    // Each param should have tokenProvider set.
+    expect(typeof calledWith[0].tokenProvider).toBe("function");
+    expect(calledWith[0].repositoryId).toBe("aRepository");
+    expect(calledWith[0].branchId).toBe("aBranch");
+
+    // Invoking tokenProvider should delegate to getToken with the original param.
+    await calledWith[0].tokenProvider();
     expect(getToken).toHaveBeenCalledWith(params);
-    expect(startReplicatedModels).toHaveBeenCalledWith([params]);
   });
 
   test("the same ClientJS instance is reused when only models change", async () => {
@@ -245,6 +254,7 @@ describe("URL-based client with getToken", () => {
 
     // createClient should have been called exactly once for the URL.
     expect(createClient).toHaveBeenCalledTimes(1);
+    expect(startReplicatedModels).toHaveBeenCalledTimes(1);
 
     // Switch the branch — this should reuse the existing ClientJS.
     models.value = [
@@ -260,13 +270,12 @@ describe("URL-based client with getToken", () => {
 
     // Still only one client creation — the existing client is shared.
     expect(createClient).toHaveBeenCalledTimes(1);
-    // getToken should have been called once per connection attempt.
-    expect(getToken).toHaveBeenCalledTimes(2);
-    // The second call should carry the new branch params.
-    expect(getToken).toHaveBeenNthCalledWith(
-      2,
-      new ReplicatedModelParameters("aRepository", "aNewBranch", IdSchemeJS.MODELIX),
-    );
+    // startReplicatedModels should be called again for the new branch.
+    expect(startReplicatedModels).toHaveBeenCalledTimes(2);
+    // The second call should carry the new branch params with tokenProvider.
+    const secondCallParams = startReplicatedModels.mock.calls[1][0];
+    expect(secondCallParams[0].branchId).toBe("aNewBranch");
+    expect(typeof secondCallParams[0].tokenProvider).toBe("function");
   });
 
   test("a new ClientJS is created when the URL changes", async () => {
@@ -284,6 +293,7 @@ describe("URL-based client with getToken", () => {
     await new Promise(process.nextTick);
 
     expect(createClient).toHaveBeenCalledTimes(1);
+    expect(createClient).toHaveBeenCalledWith("https://model-server/v2");
 
     url.value = "https://other-server/v2";
 
@@ -291,9 +301,6 @@ describe("URL-based client with getToken", () => {
     await new Promise(process.nextTick);
 
     expect(createClient).toHaveBeenCalledTimes(2);
-    expect(createClient).toHaveBeenLastCalledWith(
-      "https://other-server/v2",
-      expect.any(Function),
-    );
+    expect(createClient).toHaveBeenNthCalledWith(2, "https://other-server/v2");
   });
 });

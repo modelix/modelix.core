@@ -4,6 +4,11 @@ package org.modelix.model.client2
 
 import INodeJS
 import INodeReferenceJS
+import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
+import io.ktor.client.engine.js.Js
+import io.ktor.client.plugins.api.createClientPlugin
+import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.await
@@ -41,8 +46,70 @@ import kotlin.js.Promise
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Same as [loadModelsFromJsonAsBranch] but directly returns the [MutableModelTreeJs.rootNode] of the created branch.
+ * Extracts the binding key from a request URL path.
+ *
+ * Binding keys have the form `{repositoryId}/{branchId}` and are extracted from the path pattern
+ * `/repositories/{repositoryId}/branches/{branchId}`.
+ *
+ * Returns `null` for requests that are not associated with a specific branch (e.g. `/v2/server-id`).
  */
+internal fun extractBindingKey(path: String): String? {
+    val match = Regex("/repositories/([^/]+)/branches/([^/]+)").find(path) ?: return null
+    return "${match.groupValues[1]}/${match.groupValues[2]}"
+}
+
+/** Configuration for [PerBindingAuthPlugin]. */
+internal class PerBindingAuthConfig {
+    var getToken: suspend (bindingKey: String?) -> String? = { null }
+}
+
+/**
+ * Custom Ktor client plugin that adds `Authorization: Bearer <token>` headers per branch binding.
+ *
+ * For requests that target a specific repository/branch, the token is looked up by binding key.
+ * For other requests (e.g. `/v2/server-id`), the global token is used as a fallback.
+ * The token provider is invoked on **every** request, ensuring tokens are always fresh without
+ * relying on Ktor's internal bearer-token cache.
+ */
+internal val PerBindingAuthPlugin = createClientPlugin("PerBindingAuth", ::PerBindingAuthConfig) {
+    onRequest { request, _ ->
+        val bindingKey = extractBindingKey(request.url.encodedPath)
+        val token = pluginConfig.getToken(bindingKey)
+        if (token != null) {
+            request.headers[HttpHeaders.Authorization] = "Bearer $token"
+        }
+    }
+}
+
+/**
+ * A [ModelClientV2Builder] that installs [PerBindingAuthPlugin] to support per-binding tokens.
+ *
+ * The [tokenSelector] is called for every HTTP request. It receives the binding key
+ * (`{repositoryId}/{branchId}`) extracted from the request URL, or `null` for non-binding
+ * requests. The implementation should return the appropriate bearer token or `null` for
+ * unauthenticated requests.
+ */
+private class ClientJSInternalBuilder(
+    private val tokenSelector: suspend (bindingKey: String?) -> String?,
+) : ModelClientV2Builder() {
+    override fun createHttpClient(): HttpClient {
+        return HttpClient(Js) {
+            configureHttpClient(this)
+        }
+    }
+
+    override fun configureHttpClient(config: HttpClientConfig<*>) {
+        // Install the standard plugins (JSON, timeout, retry, compression).
+        // authConfig is intentionally kept null so ModelixAuthClient is NOT installed;
+        // authentication is handled exclusively by PerBindingAuthPlugin below.
+        super.configureHttpClient(config)
+        config.install(PerBindingAuthPlugin) {
+            getToken = tokenSelector
+        }
+    }
+}
+
+
 @JsExport
 fun loadModelsFromJson(json: Array<String>): INodeJS {
     val branch = loadModelsFromJsonAsBranch(json)
@@ -70,19 +137,28 @@ fun loadModelsFromJsonAsBranch(json: Array<String>): MutableModelTreeJs {
  *
  * @param url URL to the V2 endpoint of the model server.
  * e.g., http://localhost:28102/v2
+ * @param bearerTokenProvider Optional global token provider used for requests that are not
+ *   associated with a specific model binding (e.g. `/v2/server-id`). Per-binding tokens take
+ *   precedence over this provider and can be supplied via
+ *   [ReplicatedModelParameters.tokenProvider] when calling [ClientJS.startReplicatedModels].
  */
 @JsExport
 fun connectClient(url: String, bearerTokenProvider: (() -> Promise<String?>)? = null): Promise<ClientJS> {
     return GlobalScope.promise {
-        val clientBuilder = ModelClientV2.builder()
-            .url(url)
+        val bindingTokenProviders = mutableMapOf<String, suspend () -> String?>()
+        val globalToken: (suspend () -> String?)? = bearerTokenProvider?.let { bp -> { bp().await() } }
 
-        if (bearerTokenProvider != null) {
-            clientBuilder.authToken { bearerTokenProvider().await() }
-        }
+        val clientBuilder = ClientJSInternalBuilder { bindingKey ->
+            if (bindingKey != null) {
+                bindingTokenProviders[bindingKey]?.invoke() ?: globalToken?.invoke()
+            } else {
+                globalToken?.invoke()
+            }
+        }.url(url)
+
         val client = clientBuilder.build()
         client.init()
-        return@promise ClientJSImpl(client)
+        return@promise ClientJSImpl(client, bindingTokenProviders)
     }
 }
 
@@ -207,13 +283,33 @@ interface ClientJS {
 }
 
 @JsExport
-data class ReplicatedModelParameters(
+class ReplicatedModelParameters(
     val repositoryId: String,
     val branchId: String,
     val idScheme: IdSchemeJS,
+    /**
+     * Optional bearer-token provider for this specific binding.
+     *
+     * When provided, this callback is invoked on **every individual HTTP request**
+     * (each GET, POST, etc.) that targets the `repositoryId`/`branchId` combination —
+     * not just once per [startReplicatedModels] call. This ensures a fresh token is used
+     * for each request without relying on Ktor's internal bearer-token cache. It takes
+     * precedence over the global token provider supplied to [connectClient].
+     *
+     * Pass `null` (or omit this parameter) to use the global token from [connectClient].
+     */
+    val tokenProvider: (() -> Promise<String?>)? = null,
 )
 
-internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
+internal class ClientJSImpl(
+    private val modelClient: ModelClientV2,
+    /**
+     * Mutable map shared with [connectClient]'s [PerBindingAuthPlugin] token selector.
+     * Entries are added here when [startReplicatedModels] is called with per-binding token
+     * providers, making the plugin immediately route the right token for each branch's requests.
+     */
+    private val bindingTokenProviders: MutableMap<String, suspend () -> String?> = mutableMapOf(),
+) : ClientJS {
 
     override fun setClientProvidedUserId(userId: String) {
         modelClient.setClientProvidedUserId(userId)
@@ -288,6 +384,14 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
     override fun startReplicatedModels(parameters: Array<ReplicatedModelParameters>): Promise<ReplicatedModelJS> {
         return GlobalScope.promise {
             val models = parameters.map { parameters ->
+                // Register a per-binding token provider if one was supplied with the parameters.
+                // The shared bindingTokenProviders map is read by PerBindingAuthPlugin on every
+                // HTTP request, so the registration takes effect immediately.
+                parameters.tokenProvider?.let { jsProvider ->
+                    val key = "${parameters.repositoryId}/${parameters.branchId}"
+                    bindingTokenProviders[key] = { jsProvider().await() }
+                }
+
                 val modelClient = modelClient
                 val branchReference = RepositoryId(parameters.repositoryId).getBranchReference(parameters.branchId)
                 val idGenerator: (TreeId) -> INodeIdGenerator<INodeReference> = when (parameters.idScheme) {

@@ -3,6 +3,7 @@ package org.modelix.model.client2
 import GeneratedConcept
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class ClientJSTest {
 
@@ -56,5 +57,18 @@ class ClientJSTest {
 
         // Assert
         assertEquals(child0.getReferenceTargetNode("aReference"), child1)
+    }
+
+    @Test
+    fun extractBindingKey_returnsKeyForBranchRequest() {
+        val key = extractBindingKey("/v2/repositories/myRepo/branches/main/delta")
+        assertEquals("myRepo/main", key)
+    }
+
+    @Test
+    fun extractBindingKey_returnsNullForNonBranchRequest() {
+        assertNull(extractBindingKey("/v2/server-id"))
+        assertNull(extractBindingKey("/v2/client-id"))
+        assertNull(extractBindingKey("/v2/repositories/myRepo"))
     }
 }

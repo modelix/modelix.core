@@ -182,3 +182,118 @@ describe("does not start model", () => {
     expect(startReplicatedModels).not.toHaveBeenCalled();
   });
 });
+
+describe("URL-based client with getToken", () => {
+  // Shared mock for startReplicatedModels across all tests in this describe block.
+  const startReplicatedModels = jest.fn((parameters: ReplicatedModelParameters[]) => {
+    const branchId = parameters[0]?.branchId ?? "defaultBranch";
+    return Promise.resolve(
+      new SuccessfulReplicatedModelJS(branchId) as unknown as ReplicatedModelJS,
+    );
+  });
+
+  class MockClientJS {
+    startReplicatedModels(
+      parameters: ReplicatedModelParameters[],
+    ): Promise<ReplicatedModelJS> {
+      return startReplicatedModels(parameters);
+    }
+  }
+
+  let mockClientInstance: MockClientJS;
+
+  // createClient mock — returns the same client instance every call (simulating
+  // a shared, reused ClientJS per URL).
+  let createClient: jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockClientInstance = new MockClientJS();
+    createClient = jest.fn((_url: string) =>
+      Promise.resolve(mockClientInstance as unknown as ClientJS),
+    );
+  });
+
+  test("getToken is called with the model params before connecting", async () => {
+    const params = new ReplicatedModelParameters(
+      "aRepository",
+      "aBranch",
+      IdSchemeJS.MODELIX,
+    );
+    const getToken = jest.fn(() => Promise.resolve("token-for-aBranch"));
+
+    useReplicatedModels("https://model-server/v2", [params], getToken, createClient);
+
+    // Wait for the async client creation and model connection to settle.
+    await new Promise(process.nextTick);
+    await new Promise(process.nextTick);
+
+    expect(getToken).toHaveBeenCalledWith(params);
+    expect(startReplicatedModels).toHaveBeenCalledWith([params]);
+  });
+
+  test("the same ClientJS instance is reused when only models change", async () => {
+    const models = ref<ReplicatedModelParameters[]>([
+      new ReplicatedModelParameters("aRepository", "aBranch", IdSchemeJS.MODELIX),
+    ]);
+    const getToken = jest.fn(() => Promise.resolve("a-token"));
+
+    useReplicatedModels("https://model-server/v2", models, getToken, createClient);
+
+    await new Promise(process.nextTick);
+    await new Promise(process.nextTick);
+
+    // createClient should have been called exactly once for the URL.
+    expect(createClient).toHaveBeenCalledTimes(1);
+
+    // Switch the branch — this should reuse the existing ClientJS.
+    models.value = [
+      new ReplicatedModelParameters(
+        "aRepository",
+        "aNewBranch",
+        IdSchemeJS.MODELIX,
+      ),
+    ];
+
+    await new Promise(process.nextTick);
+    await new Promise(process.nextTick);
+
+    // Still only one client creation — the existing client is shared.
+    expect(createClient).toHaveBeenCalledTimes(1);
+    // getToken should have been called once per connection attempt.
+    expect(getToken).toHaveBeenCalledTimes(2);
+    // The second call should carry the new branch params.
+    expect(getToken).toHaveBeenNthCalledWith(
+      2,
+      new ReplicatedModelParameters("aRepository", "aNewBranch", IdSchemeJS.MODELIX),
+    );
+  });
+
+  test("a new ClientJS is created when the URL changes", async () => {
+    const url = ref("https://model-server/v2");
+    const getToken = jest.fn(() => Promise.resolve("a-token"));
+
+    useReplicatedModels(
+      url,
+      [new ReplicatedModelParameters("aRepository", "aBranch", IdSchemeJS.MODELIX)],
+      getToken,
+      createClient,
+    );
+
+    await new Promise(process.nextTick);
+    await new Promise(process.nextTick);
+
+    expect(createClient).toHaveBeenCalledTimes(1);
+
+    url.value = "https://other-server/v2";
+
+    await new Promise(process.nextTick);
+    await new Promise(process.nextTick);
+
+    expect(createClient).toHaveBeenCalledTimes(2);
+    expect(createClient).toHaveBeenLastCalledWith(
+      "https://other-server/v2",
+      expect.any(Function),
+    );
+  });
+});

@@ -1,4 +1,4 @@
-import type { org } from "@modelix/model-client";
+import { org } from "@modelix/model-client";
 import type { INodeJS } from "@modelix/ts-model-api";
 import { useLastPromiseEffect } from "./internal/useLastPromiseEffect";
 import type { MaybeRefOrGetter, Ref } from "vue";
@@ -7,12 +7,16 @@ import type { ReactiveINodeJS } from "./internal/ReactiveINodeJS";
 import { toReactiveINodeJS } from "./internal/ReactiveINodeJS";
 import { Cache } from "./internal/Cache";
 import { handleChange } from "./internal/handleChange";
+import { useModelClient } from "./useModelClient";
 
 type ClientJS = org.modelix.model.client2.ClientJS;
 type ReplicatedModelJS = org.modelix.model.client2.ReplicatedModelJS;
 type ChangeJS = org.modelix.model.client2.ChangeJS;
 type ReplicatedModelParameters =
   org.modelix.model.client2.ReplicatedModelParameters;
+
+const { ReplicatedModelParameters: ReplicatedModelParametersCtor } =
+  org.modelix.model.client2;
 
 function isDefined<T>(value: T | null | undefined): value is T {
   return value !== null && value !== undefined;
@@ -29,8 +33,25 @@ function isDefined<T>(value: T | null | undefined): value is T {
  *
  * Calling the returned dispose function stops syncing the root nodes to the underlying branches on the server.
  *
- * @param client - Reactive reference of a client to a model server.
- * @param models - Reactive reference to an array of ReplicatedModelParameters.
+ * When a server URL string is passed as `client`, a single {@link ClientJS} is created and
+ * **shared across all models and across branch switches** via {@link useModelClient}. This
+ * preserves the version cache so that switching branches only fetches the delta, and cross-model
+ * references continue to resolve correctly.
+ *
+ * If `getToken` is also supplied, a fresh token is obtained by calling `getToken(params)` before
+ * every HTTP request for that binding via {@link ReplicatedModelParameters.tokenProvider}. Each
+ * model in the `models` array receives an independent token provider, so concurrent connections
+ * to different repositories or branches each use their own credentials.
+ *
+ * @param client - Reactive reference of a client to a model server, or a server URL string.
+ *   When a URL string is provided a {@link ClientJS} is created internally via
+ *   {@link useModelClient} and reused until the URL changes.
+ * @param models - Reactive reference to an array of {@link ReplicatedModelParameters}.
+ * @param getToken - Optional callback that returns a bearer token for a given
+ *   {@link ReplicatedModelParameters}. Only used when `client` is a URL string. Called on every
+ *   HTTP request for the corresponding binding so the token is always fresh.
+ * @param createClient - Internal seam for testing; defaults to {@link connectClient} via
+ *   {@link useModelClient}.
  *
  * @returns {Object} values Wrapper around different returned values.
  * @returns {Ref<ReplicatedModelJS | null>} values.replicatedModel  Reactive reference to the replicated model for the specified branches.
@@ -39,49 +60,110 @@ function isDefined<T>(value: T | null | undefined): value is T {
  * @returns {Ref<unknown>} values.error Reactive reference to a connection error.
  */
 export function useReplicatedModels(
-  client: MaybeRefOrGetter<ClientJS | null | undefined>,
+  client: MaybeRefOrGetter<ClientJS | string | null | undefined>,
   models: MaybeRefOrGetter<ReplicatedModelParameters[] | null | undefined>,
+  getToken?: (params: ReplicatedModelParameters) => Promise<string | null>,
+  createClient?: (url: string) => Promise<ClientJS>,
 ): {
   replicatedModel: Ref<ReplicatedModelJS | null>;
   rootNodes: Ref<INodeJS[]>;
   dispose: () => void;
   error: Ref<unknown>;
 } {
-  // Use `replicatedModel` to access the replicated model without tracking overhead of Vue.js.
+  // ---------------------------------------------------------------------------
+  // URL-based client lifecycle (mirrors useModelClient internally).
+  // When `client` is a URL string, useModelClient creates and disposes the
+  // ClientJS automatically when the URL changes — preserving the version cache
+  // across branch switches and enabling cross-model reference resolution.
+  // When `client` is a ClientJS, the getter always returns null so no
+  // extra client is managed here.
+  // ---------------------------------------------------------------------------
+  const { client: urlClientRef, dispose: disposeUrlClient } = useModelClient(
+    () => {
+      const c = toValue(client);
+      return typeof c === "string" ? c : null;
+    },
+    createClient,
+  );
+
+  // ---------------------------------------------------------------------------
+  // Replicated-model state
+  // ---------------------------------------------------------------------------
   let replicatedModel: ReplicatedModelJS | null = null;
   const replicatedModelRef: Ref<ReplicatedModelJS | null> = shallowRef(null);
   const rootNodesRef: Ref<INodeJS[]> = shallowRef([]);
   const errorRef: Ref<unknown> = shallowRef(null);
 
-  const dispose = () => {
-    // Using `replicatedModelRef.value` here would create a circular dependency.
-    // `toRaw` does not work on `Ref<>`.
+  const disposeReplicatedModel = () => {
     if (replicatedModel !== null) {
       replicatedModel.dispose();
     }
+    replicatedModel = null;
     replicatedModelRef.value = null;
     rootNodesRef.value = [];
     errorRef.value = null;
   };
 
+  const dispose = () => {
+    disposeReplicatedModel();
+    disposeUrlClient();
+  };
+
+  // ---------------------------------------------------------------------------
+  // Effect: connect/reconnect when client or models change.
+  // Re-runs whenever `client`, `urlClientRef` (the resolved URL client), or
+  // `models` changes.
+  // ---------------------------------------------------------------------------
   useLastPromiseEffect<{
     replicatedModel: ReplicatedModelJS;
     cache: Cache<ReactiveINodeJS>;
   }>(
     () => {
-      dispose();
-      const clientValue = toValue(client);
-      if (!isDefined(clientValue)) {
+      disposeReplicatedModel();
+
+      const clientOrUrl = toValue(client);
+      if (!isDefined(clientOrUrl)) {
         return;
       }
+
       const modelsValue = toValue(models);
       if (!isDefined(modelsValue)) {
         return;
       }
+
+      let resolvedClient: ClientJS;
+
+      if (typeof clientOrUrl === "string") {
+        // Reactive read — re-runs this effect when the URL client becomes ready.
+        const urlClient = urlClientRef.value;
+        if (urlClient === null) {
+          return; // Client not yet ready; will re-run once useModelClient resolves.
+        }
+        resolvedClient = urlClient;
+      } else {
+        resolvedClient = clientOrUrl;
+      }
+
+      // Attach per-binding token providers.  Each model receives an independent
+      // provider callback so concurrent connections to different branches each
+      // use their own fresh credentials.
+      const paramsWithTokens =
+        getToken !== undefined
+          ? modelsValue.map(
+              (p) =>
+                new ReplicatedModelParametersCtor(
+                  p.repositoryId,
+                  p.branchId,
+                  p.idScheme,
+                  () => getToken(p),
+                ),
+            )
+          : modelsValue;
+
       const cache = new Cache<ReactiveINodeJS>();
-      return clientValue
-        .startReplicatedModels(modelsValue)
-        .then((replicatedModel) => ({ replicatedModel, cache }));
+      return resolvedClient
+        .startReplicatedModels(paramsWithTokens)
+        .then((rm) => ({ replicatedModel: rm, cache }));
     },
     (
       { replicatedModel: connectedReplicatedModel, cache },

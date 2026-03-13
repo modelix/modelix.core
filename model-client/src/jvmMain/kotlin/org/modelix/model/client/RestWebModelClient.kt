@@ -46,7 +46,6 @@ import org.modelix.model.KeyValueStoreCache
 import org.modelix.model.api.IIdGenerator
 import org.modelix.model.lazy.IDeserializingKeyValueStore
 import org.modelix.model.lazy.createObjectStoreCache
-import org.modelix.model.oauth.ModelixAuthClient
 import org.modelix.model.persistent.HashUtil
 import org.modelix.model.sleep
 import org.modelix.model.util.StreamUtils.toStream
@@ -149,13 +148,12 @@ class RestWebModelClient @JvmOverloads constructor(
                 },
             )
         }
-        val modelixAuthClient = ModelixAuthClient()
         install(Auth) {
             bearer {
                 loadTokens {
                     val tp = authTokenProvider
                     if (tp == null) {
-                        modelixAuthClient.getTokens()?.let { BearerTokens(it.accessToken, it.refreshToken) }
+                        null
                     } else {
                         val token = tp()
                         if (token == null) {

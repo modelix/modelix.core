@@ -464,7 +464,7 @@ class ModelClientV2Test {
         }
 
         suspend fun <R> sendRequest(mapper: suspend (HttpResponse) -> R): R {
-            return modelClient.httpClient.prepareGet {
+            return modelClient.httpClientProvider.getHttpClient(branch).prepareGet {
                 url {
                     takeFrom(modelClient.baseUrl)
                     appendPathSegments("repositories", branch.repositoryId.id, "branches", branch.branchName)

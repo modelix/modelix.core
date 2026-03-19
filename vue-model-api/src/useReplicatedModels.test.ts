@@ -53,7 +53,7 @@ test("test branch connects", (done) => {
       const branchId = parameters[0].branchId;
       return Promise.resolve(
         new SuccessfulReplicatedModelJS(
-          branchId,
+          branchId!,
         ) as unknown as ReplicatedModelJS,
       );
     }

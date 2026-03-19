@@ -209,9 +209,14 @@ interface ClientJS {
 @JsExport
 data class ReplicatedModelParameters(
     val repositoryId: String,
-    val branchId: String,
+    val branchId: String? = null,
     val idScheme: IdSchemeJS,
-)
+    val versionHash: String? = null,
+) {
+    init {
+        require((branchId != null) xor (versionHash != null)) { "Exactly one of branchId or versionHash must be provided" }
+    }
+}
 
 internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
 
@@ -289,13 +294,20 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
         return GlobalScope.promise {
             val models = parameters.map { parameters ->
                 val modelClient = modelClient
-                val branchReference = RepositoryId(parameters.repositoryId).getBranchReference(parameters.branchId)
+                val repositoryId = RepositoryId(parameters.repositoryId)
+                val branchReference = parameters.branchId?.let { repositoryId.getBranchReference(it) }
                 val idGenerator: (TreeId) -> INodeIdGenerator<INodeReference> = when (parameters.idScheme) {
                     IdSchemeJS.READONLY -> { treeId -> DummyIdGenerator() }
                     IdSchemeJS.MODELIX -> { treeId -> ModelixIdGenerator(modelClient.getIdGenerator(), treeId) }
                     IdSchemeJS.MPS -> { treeId -> MPSIdGenerator(modelClient.getIdGenerator(), treeId) }
                 }
-                modelClient.getReplicatedModel(branchReference, idGenerator).also { it.start() }
+                ReplicatedModel(
+                    client = modelClient,
+                    branchRefOrNull = branchReference,
+                    idGenerator = idGenerator,
+                    versionHash = parameters.versionHash,
+                    repositoryId = repositoryId,
+                ).also { it.start() }
             }
             ReplicatedModelJSImpl(models)
         }

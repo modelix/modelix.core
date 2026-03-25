@@ -70,6 +70,7 @@ class BindingWorker(
     val coroutinesScope: CoroutineScope,
     val mpsProject: MPSProjectAsNode,
     val syncTargets: List<SyncTarget>,
+    val moduleMappings: IModuleToBindingMapping,
     val continueOnError: () -> Boolean,
 ) {
     companion object {
@@ -84,7 +85,6 @@ class BindingWorker(
     private var activeSynchronizer: ModelSynchronizer? = null
     private var previousSyncStack: List<IReadableNode> = emptyList()
     private var status: List<IBinding.Status> = syncTargets.map { IBinding.Status.Disabled }
-    private val moduleOwners = ModuleToBindingMapping()
 
     private val repository: SRepository get() = mpsProject.project.getRepository()
 
@@ -127,7 +127,7 @@ class BindingWorker(
 
     fun getStatus(): List<IBinding.Status> = status
 
-    fun getBinding(module: MPSModuleReference): BindingId? = moduleOwners.getBinding(module)
+    fun getBinding(module: MPSModuleReference): BindingId? = moduleMappings.getBinding(module)
 
     private fun ModelSynchronizer.synchronizeAndStoreInstance() {
         try {
@@ -433,7 +433,7 @@ class BindingWorker(
                     bindingId = syncTarget.bindingId,
                 )
             },
-            moduleOwners = moduleOwners,
+            moduleOwners = moduleMappings,
         )
         val baseVersions = oldVersions
         val filter = if (baseVersions.all { it != null } && incremental) {
@@ -560,7 +560,7 @@ class BindingWorker(
                             bindingId = syncTarget.bindingId,
                         )
                     },
-                    moduleOwners = moduleOwners,
+                    moduleOwners = moduleMappings,
                 )
                 model.executeWrite {
                     val targetRoot = model.getRootNode()

@@ -36,7 +36,7 @@ data class SyncTargetConfig(
 class SyncTargetModel(
     val project: MPSProjectAsNode,
     val targetConfigs: List<SyncTargetConfig>,
-    val moduleOwners: ModuleToBindingMapping,
+    val moduleOwners: IModuleToBindingMapping,
 ) : IMutableModel {
     private val rootRef = NodeReference("sync-root")
     private val models: List<IMutableModel> get() = targetConfigs.map { it.model }

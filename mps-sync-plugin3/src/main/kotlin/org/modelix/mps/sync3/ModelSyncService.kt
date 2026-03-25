@@ -21,6 +21,7 @@ import org.modelix.model.IVersion
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.mpsadapters.MPSProjectAsNode
+import org.modelix.model.mpsadapters.toMPS
 import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.oauth.OAuthConfigBuilder
 import org.modelix.model.oauth.TokenProvider
@@ -41,6 +42,18 @@ class ModelSyncService(val project: Project) :
     private var loadedState: SyncServiceState = SyncServiceState()
     private val worker: AtomicReference<BindingWorker?> = AtomicReference(null)
     private val coroutinesScope = CoroutineScope(Dispatchers.IO)
+    private val moduleMappings = object : IModuleToBindingMapping {
+        override fun assign(
+            module: MPSModuleReference,
+            binding: BindingId,
+        ) {
+            updateState { it.assignModuleOwner(module.toMPS().moduleId, binding) }
+        }
+
+        override fun getBinding(module: MPSModuleReference): BindingId? {
+            return loadedState.getModuleOwner(module.toMPS().moduleId) as? BindingId
+        }
+    }
 
     @Synchronized
     override fun addServer(properties: ModelServerConnectionProperties): Connection {
@@ -217,6 +230,7 @@ class ModelSyncService(val project: Project) :
                         projectId = state?.projectId,
                     )
                 },
+                moduleMappings = moduleMappings,
                 continueOnError = { IModelSyncService.continueOnError ?: true },
             )
         }

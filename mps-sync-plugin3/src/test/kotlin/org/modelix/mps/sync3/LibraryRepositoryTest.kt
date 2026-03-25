@@ -1,7 +1,10 @@
 package org.modelix.mps.sync3
 
+import com.intellij.configurationStore.saveSettings
+import jetbrains.mps.project.ModuleId
 import jetbrains.mps.smodel.SNodeUtil
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
+import kotlinx.coroutines.runBlocking
 import org.modelix.datastructures.model.MutationParameters
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IWritableNode
@@ -20,6 +23,8 @@ import org.modelix.mps.multiplatform.model.MPSIdGenerator
 import org.modelix.mps.multiplatform.model.MPSModelReference
 import org.modelix.mps.multiplatform.model.MPSModuleReference
 import org.modelix.mps.multiplatform.model.MPSProjectModuleReference
+import java.nio.file.Path
+import kotlin.io.path.readText
 import kotlin.io.path.writeText
 
 /**
@@ -33,6 +38,7 @@ class LibraryRepositoryTest : ProjectSyncTestBase() {
     private val branchRefMain = RepositoryId("main-repository").getBranchReference()
     private var branchRefLib = RepositoryId("lib-repository").getBranchReference()
     private val service: IModelSyncService get() = IModelSyncService.getInstance(mpsProject)
+    private val createdModuleRefs = ArrayList<MPSModuleReference>()
 
     fun `test checkout`() = runTest { port, client ->
         val expectedLibHash = client.pullHash(branchRefLib)
@@ -418,12 +424,90 @@ class LibraryRepositoryTest : ProjectSyncTestBase() {
         }
     }
 
+    fun `test module mapping is persisted`() = runTest { port, client ->
+        val expectedMainHash = client.pullHash(branchRefMain)
+        val expectedLibHash = client.pullHash(branchRefLib)
+        openProjectWithBindings(port)
+
+        assertEquals(2, service.getBindings().size)
+        service.getBindings().forEach { it.flush() }
+
+        saveSettings(project, true)
+        val actual = Path.of(project.basePath).resolve(".mps").resolve("modelix.xml").readText()
+        val expected =
+            """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <project version="4">
+              <component name="modelix-sync">
+                <binding>
+                  <enabled>true</enabled>
+                  <url repositoryScoped="true">http://localhost:$port</url>
+                  <repository>${branchRefMain.repositoryId.id}</repository>
+                  <branch>${branchRefMain.branchName}</branch>
+                  <versionHash>$expectedMainHash</versionHash>
+                  <readonly>false</readonly>
+                  <module>${createdModuleRefs[0].moduleId}</module>
+                  <module>${createdModuleRefs[1].moduleId}</module>
+                </binding>
+                <binding>
+                  <enabled>true</enabled>
+                  <url repositoryScoped="true">http://localhost:$port</url>
+                  <repository>${branchRefLib.repositoryId.id}</repository>
+                  <branch>${branchRefLib.branchName}</branch>
+                  <versionHash>$expectedLibHash</versionHash>
+                  <readonly>true</readonly>
+                  <module>${createdModuleRefs[2].moduleId}</module>
+                  <module>${createdModuleRefs[3].moduleId}</module>
+                </binding>
+              </component>
+            </project>
+            """.trimIndent()
+        assertEquals(expected, actual)
+    }
+
+    fun `test module readonly status can be queried when offline`(): Unit = runBlocking {
+        openTestProject(null, projectName = "test-project") { projectDir ->
+            projectDir.resolve(".mps").resolve("modelix.xml").writeText(
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <project version="4">
+                  <component name="modelix-sync">
+                    <binding>
+                      <enabled>true</enabled>
+                      <url repositoryScoped="true">http://localhost:0</url>
+                      <repository>${branchRefMain.repositoryId.id}</repository>
+                      <branch>${branchRefMain.branchName}</branch>
+                      <readonly>false</readonly>
+                      <module>00000000-0000-0000-0000-000000000001</module>
+                      <module>00000000-0000-0000-0000-000000000002</module>
+                    </binding>
+                    <binding>
+                      <enabled>true</enabled>
+                      <url repositoryScoped="true">http://localhost:0</url>
+                      <repository>${branchRefLib.repositoryId.id}</repository>
+                      <branch>${branchRefLib.branchName}</branch>
+                      <readonly>true</readonly>
+                      <module>00000000-0000-0000-0000-000000000003</module>
+                      <module>00000000-0000-0000-0000-000000000004</module>
+                    </binding>
+                  </component>
+                </project>
+                """.trimIndent(),
+            )
+        }
+
+        assertEquals(false, IModelSyncService.getInstance(project).getBinding(ModuleId.fromString("00000000-0000-0000-0000-000000000001"))?.isReadonly())
+        assertEquals(true, IModelSyncService.getInstance(project).getBinding(ModuleId.fromString("00000000-0000-0000-0000-000000000003"))?.isReadonly())
+        assertEquals(null, IModelSyncService.getInstance(project).getBinding(ModuleId.fromString("00000000-0000-0000-0000-000000000005"))?.isReadonly())
+    }
+
     private fun IWritableNode.addNewModule(name: String, modelNames: List<String> = emptyList()): IWritableNode {
         return addNewChild(
             BuiltinLanguages.MPSRepositoryConcepts.Repository.modules.toReference(),
             -1,
             BuiltinLanguages.MPSRepositoryConcepts.Solution.getReference(),
         ).also { module ->
+            createdModuleRefs += MPSModuleReference.convert(module.getNodeReference())
             module.setPropertyValue(
                 BuiltinLanguages.MPSRepositoryConcepts.Module.id.toReference(),
                 MPSModuleReference.tryConvert(module.getNodeReference())!!.moduleId,

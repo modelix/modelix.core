@@ -13,8 +13,8 @@ data class SyncServiceState(
      * Modules that exist locally, but aren't synchronized to any repository.
      */
     val localModules: Set<SModuleId> = emptySet(),
-) : IModuleMappings {
-    override fun getAllModuleOwners(): Map<SModuleId, IModuleOwnerId> {
+) {
+    fun getAllModuleOwners(): Map<SModuleId, IModuleOwnerId> {
         return (
             bindings.flatMap { binding ->
                 binding.value.ownedModules.map { it to binding.key }
@@ -22,7 +22,7 @@ data class SyncServiceState(
             ).toMap()
     }
 
-    override fun getModuleOwner(moduleId: SModuleId): IModuleOwnerId? {
+    fun getModuleOwner(moduleId: SModuleId): IModuleOwnerId? {
         return getAllModuleOwners()[moduleId]
     }
 

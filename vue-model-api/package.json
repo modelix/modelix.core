@@ -37,7 +37,7 @@
     "jest": "^30.3.0",
     "prettier": "3.8.1",
     "ts-jest": "^29.4.6",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.2"
   },
   "prettier-comment": "// IMPORTANT: keep Prettier version in sync with the version in .pre-commit-config.yaml",
   "peerDependencies": {

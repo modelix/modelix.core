@@ -81,10 +81,8 @@ import org.modelix.model.mutable.IMutableModelTree
 import org.modelix.model.mutable.INodeIdGenerator
 import org.modelix.model.mutable.ModelixIdGenerator
 import org.modelix.model.mutable.getRootNode
-import org.modelix.model.oauth.GlobalTokenParameters
 import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.oauth.IAuthRequestHandler
-import org.modelix.model.oauth.ITokenParameters
 import org.modelix.model.oauth.ITokenProvider
 import org.modelix.model.oauth.ModelixAuthClient
 import org.modelix.model.oauth.OAuthConfig
@@ -871,7 +869,7 @@ abstract class ModelClientV2Builder {
     fun build(): ModelClientV2 {
         return ModelClientV2(
             httpClientProvider = object : CachingHttpClientProvider() {
-                override fun createInstance(tokenParameters: ITokenParameters): HttpClient {
+                override fun createInstance(tokenParameters: TokenParameters): HttpClient {
                     return httpClient?.config { configureHttpClient(this, tokenParameters) }
                         ?: createHttpClient(tokenParameters)
                 }
@@ -996,7 +994,7 @@ abstract class ModelClientV2Builder {
         return this
     }
 
-    protected open fun configureHttpClient(config: HttpClientConfig<*>, tokenParameters: ITokenParameters) {
+    protected open fun configureHttpClient(config: HttpClientConfig<*>, tokenParameters: TokenParameters) {
         config.apply {
             expectSuccess = true
             followRedirects = false
@@ -1031,7 +1029,7 @@ abstract class ModelClientV2Builder {
         }
     }
 
-    protected abstract fun createHttpClient(tokenParameters: ITokenParameters): HttpClient
+    protected abstract fun createHttpClient(tokenParameters: TokenParameters): HttpClient
 
     companion object {
         private val LOG = KotlinLogging.logger {}
@@ -1058,12 +1056,12 @@ abstract class CachingHttpClientProvider : IHttpClientProvider {
     private val branchInstances = HashMap<BranchReference, HttpClient>()
     private var closed: Boolean = false
 
-    abstract fun createInstance(tokenParameters: ITokenParameters): HttpClient
+    abstract fun createInstance(tokenParameters: TokenParameters): HttpClient
 
     @JvmSynchronized
     override fun getHttpClient(): HttpClient {
         checkClosed()
-        return serverInstance ?: createInstance(GlobalTokenParameters()).also { serverInstance = it }
+        return serverInstance ?: createInstance(TokenParameters()).also { serverInstance = it }
     }
 
     @JvmSynchronized
@@ -1095,7 +1093,7 @@ abstract class CachingHttpClientProvider : IHttpClientProvider {
 }
 
 expect class ModelClientV2PlatformSpecificBuilder() : ModelClientV2Builder {
-    override fun createHttpClient(tokenParameters: ITokenParameters): HttpClient
+    override fun createHttpClient(tokenParameters: TokenParameters): HttpClient
 }
 
 fun VersionDelta.checkObjectHashes() {

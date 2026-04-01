@@ -22,7 +22,7 @@ class ModelixAuthClientTest {
         assertFailsWith<CancellationException> {
             withTimeout(500.milliseconds) {
                 // The implementation of authorize calls java.util.concurrent.Semaphore.acquireUninterruptibly
-                // which blocks the thread forever is the callback URL is never called.
+                // which blocks the thread forever if the callback URL is never called.
                 // The ModelixAuthClient launches an additional coroutine that catches the cancellation and invokes
                 // Semaphore.release to unblock the thread.
                 client.authorize(

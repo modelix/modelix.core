@@ -9,7 +9,6 @@ import org.jetbrains.mps.openapi.module.SModuleId
 import org.modelix.model.IVersion
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.lazy.BranchReference
-import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.mpsadapters.toModelix
 import org.modelix.model.oauth.ITokenProvider
 import org.modelix.model.oauth.OAuthConfigBuilder
@@ -31,11 +30,8 @@ interface IModelSyncService {
         }
     }
 
-    fun addServer(url: String, repositoryId: RepositoryId? = null): IServerConnection = addServer(
-        ModelServerConnectionProperties(
-            url = url,
-            repositoryId = repositoryId,
-        ),
+    fun addServer(url: String): IServerConnection = addServer(
+        ModelServerConnectionProperties(url = url, branchRef = null),
     )
     fun addServer(properties: ModelServerConnectionProperties): IServerConnection
     fun getServerConnections(): List<IServerConnection>
@@ -51,10 +47,7 @@ interface IModelSyncService {
 
 data class ModelServerConnectionProperties(
     val url: String,
-    /**
-     * Is forwarded to the token endpoint.
-     */
-    val repositoryId: RepositoryId? = null,
+    val branchRef: BranchReference?,
     val oauthClientId: String? = null,
     val oauthClientSecret: String? = null,
 )

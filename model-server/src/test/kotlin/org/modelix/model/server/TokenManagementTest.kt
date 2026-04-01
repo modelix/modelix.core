@@ -5,13 +5,11 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.request.get
 import io.ktor.http.buildUrl
-import io.ktor.http.parameters
 import io.ktor.http.takeFrom
 import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.response.respond
-import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.ApplicationTestBuilder
@@ -29,8 +27,8 @@ import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.oauth.IAuthRequestHandler
-import org.modelix.model.oauth.ITokenParameters
 import org.modelix.model.oauth.ITokenProvider
+import org.modelix.model.oauth.TokenParameters
 import org.modelix.model.server.handlers.IdsApiImpl
 import org.modelix.model.server.handlers.ModelReplicationServer
 import org.modelix.model.server.handlers.RepositoriesManager
@@ -78,7 +76,7 @@ class TokenManagementTest {
             .url("http://localhost/v2")
             .client(client)
             .authToken(object : ITokenProvider {
-                override suspend fun getToken(parameters: ITokenParameters): String {
+                override suspend fun getToken(parameters: TokenParameters): String {
                     return createModelixAccessToken(
                         hmac512key = "my-hmac-key",
                         user = "token-test@modelix.org",
@@ -108,6 +106,10 @@ class TokenManagementTest {
         client.initRepository(repoId2)
         assertEquals(3, createdTokens.size)
         assertEquals(listOf(ModelServerPermissionSchema.repository("repo2").write.fullId), getPermissions(2))
+
+        // Previously created token should be reused even if a different token was used in the meantime.
+        assertEquals(listOf(repoId1.getBranchReference()), client.listBranches(repoId1))
+        assertEquals(3, createdTokens.size)
     }
 
     @Test
@@ -197,6 +199,10 @@ class TokenManagementTest {
             client.initRepository(repoId2)
             assertEquals(3, createdTokens.size)
             assertEquals(listOf(ModelServerPermissionSchema.repository("repo2").write.fullId), getPermissions(2))
+
+            // Previously created token should be reused even if a different token was used in the meantime.
+            assertEquals(listOf(repoId1.getBranchReference()), client.listBranches(repoId1))
+            assertEquals(3, createdTokens.size)
         }
     }
 }

@@ -441,7 +441,7 @@ class LibraryRepositoryTest : ProjectSyncTestBase() {
               <component name="modelix-sync">
                 <binding>
                   <enabled>true</enabled>
-                  <url repositoryScoped="true">http://localhost:$port</url>
+                  <url>http://localhost:$port</url>
                   <repository>${branchRefMain.repositoryId.id}</repository>
                   <branch>${branchRefMain.branchName}</branch>
                   <versionHash>$expectedMainHash</versionHash>
@@ -451,7 +451,7 @@ class LibraryRepositoryTest : ProjectSyncTestBase() {
                 </binding>
                 <binding>
                   <enabled>true</enabled>
-                  <url repositoryScoped="true">http://localhost:$port</url>
+                  <url>http://localhost:$port</url>
                   <repository>${branchRefLib.repositoryId.id}</repository>
                   <branch>${branchRefLib.branchName}</branch>
                   <versionHash>$expectedLibHash</versionHash>

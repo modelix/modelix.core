@@ -32,7 +32,7 @@ class ModelSyncServiceTest {
 
         val connectionProps = ModelServerConnectionProperties(
             url = "http://localhost:8080",
-            repositoryId = repositoryId,
+            branchRef = oldBranchRef,
         )
 
         // Create initial state with a binding using the old branch reference (disabled to avoid worker creation)
@@ -78,11 +78,11 @@ class ModelSyncServiceTest {
 
         val connectionProps1 = ModelServerConnectionProperties(
             url = "http://localhost:8080",
-            repositoryId = repositoryId1,
+            branchRef = oldBranchRef,
         )
         val connectionProps2 = ModelServerConnectionProperties(
             url = "http://localhost:8080",
-            repositoryId = repositoryId2,
+            branchRef = newBranchRef,
         )
 
         // Create initial state with two bindings (disabled to avoid worker creation)
@@ -145,7 +145,7 @@ class ModelSyncServiceTest {
 
         val connectionProps = ModelServerConnectionProperties(
             url = "http://localhost:8080",
-            repositoryId = repositoryId,
+            branchRef = oldBranchRef,
         )
 
         val expectedVersionHash = "preserved-hash-123"
@@ -197,7 +197,7 @@ class ModelSyncServiceTest {
 
         val connectionProps = ModelServerConnectionProperties(
             url = "http://localhost:8080",
-            repositoryId = repositoryId,
+            branchRef = nonExistentBranchRef,
         )
 
         // Create initial state with a binding that doesn't match (disabled to avoid worker creation)
@@ -273,7 +273,7 @@ class ModelSyncServiceTest {
 
         val connectionProps = ModelServerConnectionProperties(
             url = "http://localhost:8080",
-            repositoryId = repositoryId,
+            branchRef = oldBranchRef,
         )
 
         val originalVersionHash = "original-hash-123"
@@ -324,7 +324,7 @@ class ModelSyncServiceTest {
 
         val connectionProps = ModelServerConnectionProperties(
             url = "http://localhost:8080",
-            repositoryId = repositoryId,
+            branchRef = oldBranchRef,
         )
 
         val originalVersionHash = "original-hash-456"
@@ -377,11 +377,11 @@ class ModelSyncServiceTest {
 
         val connectionProps1 = ModelServerConnectionProperties(
             url = "http://localhost:8080",
-            repositoryId = repositoryId1,
+            branchRef = oldBranchRef,
         )
         val connectionProps2 = ModelServerConnectionProperties(
             url = "http://localhost:8080",
-            repositoryId = repositoryId2,
+            branchRef = newBranchRef,
         )
 
         val versionHash1 = "hash-to-be-cleared"

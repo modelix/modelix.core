@@ -47,7 +47,6 @@ data class SyncServiceState(
                     bindingElement.children.add(
                         Element("url").also {
                             it.text = bindingEntry.key.connectionProperties.url
-                            it.setAttribute("repositoryScoped", "${bindingEntry.key.connectionProperties.repositoryId != null}")
                         },
                     )
                     bindingEntry.key.connectionProperties.oauthClientId?.let { oauthClientId ->
@@ -77,16 +76,16 @@ data class SyncServiceState(
             return SyncServiceState(
                 bindings = element.getChildren("binding").mapNotNull<Element, Pair<BindingId, BindingState>> { element ->
                     val repositoryId = RepositoryId(element.getChild("repository")?.text ?: return@mapNotNull null)
+                    val branchRef = BranchReference(
+                        repositoryId,
+                        element.getChild("branch")?.text ?: return@mapNotNull null,
+                    )
                     BindingId(
                         connectionProperties = ModelServerConnectionProperties(
                             url = element.getChild("url")?.text ?: return@mapNotNull null,
-                            repositoryId = repositoryId.takeIf { element.getChild("url")?.getAttribute("repositoryScoped")?.value != "false" },
+                            branchRef = branchRef,
                             oauthClientId = element.getChild("oauthClientId")?.text,
                             oauthClientSecret = element.getChild("oauthClientSecret")?.text,
-                        ),
-                        branchRef = BranchReference(
-                            repositoryId,
-                            element.getChild("branch")?.text ?: return@mapNotNull null,
                         ),
                     ) to BindingState(
                         versionHash = element.getChild("versionHash")?.text,
@@ -119,9 +118,18 @@ data class BindingState(
     val ignoredModules: Set<SModuleId> = emptySet(),
 )
 
-data class BindingId(val connectionProperties: ModelServerConnectionProperties, val branchRef: BranchReference) : IModuleOwnerId {
+data class BindingId(val connectionProperties: ModelServerConnectionProperties) : IModuleOwnerId {
+    init {
+        requireNotNull(connectionProperties.branchRef) {
+            "No branch specified"
+        }
+    }
+    val branchRef: BranchReference get() = connectionProperties.branchRef!!
+
+    fun withBranch(newBranch: BranchReference) = copy(connectionProperties = connectionProperties.copy(branchRef = newBranch))
+
     override fun toString(): String {
-        return "BindingId($connectionProperties, ${branchRef.repositoryId}, ${branchRef.branchName})"
+        return "BindingId($connectionProperties)"
     }
 }
 

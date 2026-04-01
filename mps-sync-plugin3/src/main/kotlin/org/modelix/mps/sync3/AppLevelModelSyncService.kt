@@ -13,6 +13,7 @@ import org.modelix.model.oauth.IAuthConfig
 import org.modelix.model.oauth.IAuthRequestHandler
 import org.modelix.model.oauth.OAuthConfig
 import org.modelix.model.oauth.OAuthConfigBuilder
+import org.modelix.model.oauth.TokenParameters
 
 @Service(Service.Level.APP)
 class AppLevelModelSyncService() : Disposable {
@@ -49,7 +50,7 @@ class AppLevelModelSyncService() : Disposable {
             clientId(properties.oauthClientId ?: "external-mps")
             properties.oauthClientSecret?.let { clientSecret(it) }
             authRequestHandler(authRequestHandler)
-            properties.repositoryId?.let { repositoryId(it) }
+            properties.branchRef?.let { tokenParameters(TokenParameters(it)) }
         }
         private val connectionCheckingJob = coroutinesScope.launchLoop(
             BackoffStrategy(

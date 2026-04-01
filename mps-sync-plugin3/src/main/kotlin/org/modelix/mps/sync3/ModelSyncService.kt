@@ -115,7 +115,7 @@ class ModelSyncService(val project: Project) :
             it.copy(
                 bindings = it.bindings.mapKeys { (key, _) ->
                     if (key.branchRef == oldBranchRef) {
-                        key.copy(branchRef = newBranchRef)
+                        key.withBranch(newBranchRef)
                     } else {
                         key
                     }
@@ -224,7 +224,7 @@ class ModelSyncService(val project: Project) :
                 MPSProjectAsNode(mpsProject),
                 syncTargets = bindings.map { (id, state) ->
                     SyncTarget(
-                        serverConnection = addServer(id.connectionProperties.copy(repositoryId = id.branchRef.repositoryId)),
+                        serverConnection = addServer(id.connectionProperties),
                         bindingId = id,
                         initialVersionHash = state?.versionHash,
                         readonly = state?.readonly ?: false,
@@ -297,7 +297,7 @@ class ModelSyncService(val project: Project) :
         }
 
         override fun bind(branchRef: BranchReference, lastSyncedVersionHash: String?): IBinding {
-            val id = BindingId(connection.properties, branchRef)
+            val id = BindingId(connection.properties.copy(branchRef = branchRef))
             updateBindingState(id) { oldBinding ->
                 BindingState(
                     versionHash = lastSyncedVersionHash ?: oldBinding.versionHash,

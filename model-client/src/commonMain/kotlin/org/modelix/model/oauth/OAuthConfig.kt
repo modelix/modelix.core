@@ -19,14 +19,14 @@ sealed interface IAuthConfig {
         }
     }
 
-    fun withTokenParameters(parameters: ITokenParameters): IAuthConfig
+    fun withTokenParameters(parameters: TokenParameters): IAuthConfig
 }
 
 class TokenProviderAuthConfig(
     val provider: ITokenProvider,
-    val tokenParameters: ITokenParameters = GlobalTokenParameters(),
+    val tokenParameters: TokenParameters = TokenParameters(),
 ) : IAuthConfig {
-    override fun withTokenParameters(parameters: ITokenParameters): IAuthConfig {
+    override fun withTokenParameters(parameters: TokenParameters): IAuthConfig {
         return TokenProviderAuthConfig(provider, parameters)
     }
 }
@@ -36,7 +36,7 @@ data class OAuthConfig(
     val clientSecret: String? = null,
     val authorizationUrl: String? = null,
     val tokenUrl: String? = null,
-    val tokenParameters: ITokenParameters? = null,
+    val tokenParameters: TokenParameters? = null,
     val scopes: Set<String> = emptySet(),
     val authRequestHandler: IAuthRequestHandler? = null,
 ) : IAuthConfig {
@@ -48,7 +48,7 @@ data class OAuthConfig(
         scopes = scopes,
     )
 
-    override fun withTokenParameters(parameters: ITokenParameters): IAuthConfig {
+    override fun withTokenParameters(parameters: TokenParameters): IAuthConfig {
         return copy(tokenParameters = parameters)
     }
 }
@@ -66,7 +66,7 @@ typealias TokenProvider = suspend () -> String?
 
 interface ITokenProvider {
     suspend fun getToken(): String? = null
-    suspend fun getToken(parameters: ITokenParameters): String? = getToken()
+    suspend fun getToken(parameters: TokenParameters): String? = getToken()
 }
 
 class TokenProviderAdapter(val provider: suspend () -> String?) : ITokenProvider {
@@ -78,7 +78,18 @@ interface ITokenParameters {
     fun getBranchName(): String?
 }
 
-class TokenParameters(private val repositoryId: RepositoryId?, private val branchName: String?) : ITokenParameters {
+data class TokenParameters(private val repositoryId: RepositoryId?, private val branchName: String?) : ITokenParameters {
+    constructor(repositoryId: RepositoryId) : this(repositoryId, null)
+    constructor(branchReference: BranchReference) : this(branchReference.repositoryId, branchReference.branchName)
+    constructor() : this(null, null)
+
+    override fun getRepositoryId(): String? = repositoryId?.id
+
+    override fun getBranchName(): String? = branchName
+}
+
+class DependencyTrackingTokenParameters(private val repositoryId: RepositoryId?, private val branchName: String?) :
+    ITokenParameters {
     constructor(repositoryId: RepositoryId) : this(repositoryId, null)
     constructor(branchReference: BranchReference) : this(branchReference.repositoryId, branchReference.branchName)
 
@@ -95,17 +106,12 @@ class TokenParameters(private val repositoryId: RepositoryId?, private val branc
         return branchName
     }
 
-    fun createCacheKey(): Any {
-        return listOf(
-            repositoryId?.id?.takeIf { dependsOnRepositoryId },
+    fun getUsedParameters(): TokenParameters {
+        return TokenParameters(
+            repositoryId?.takeIf { dependsOnRepositoryId },
             branchName?.takeIf { dependsOnBranchName },
         )
     }
-}
-
-class GlobalTokenParameters : ITokenParameters {
-    override fun getRepositoryId(): String? = null
-    override fun getBranchName(): String? = null
 }
 
 class OAuthConfigBuilder(initial: OAuthConfig?) {
@@ -125,7 +131,7 @@ class OAuthConfigBuilder(initial: OAuthConfig?) {
             branchName = null,
         ),
     )
-    fun tokenParameters(parameters: ITokenParameters) = also { config = config.copy(tokenParameters = parameters) }
+    fun tokenParameters(parameters: TokenParameters) = also { config = config.copy(tokenParameters = parameters) }
     fun oidcUrl(url: String) = authorizationUrl(url.trimEnd('/') + "/auth").tokenUrl(url.trimEnd('/') + "/token")
     fun authRequestHandler(handler: IAuthRequestHandler?) = also { config = config.copy(authRequestHandler = handler) }
 

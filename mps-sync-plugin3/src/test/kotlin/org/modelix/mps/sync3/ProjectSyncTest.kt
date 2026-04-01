@@ -695,7 +695,7 @@ class ProjectSyncTest : ProjectSyncTestBase() {
         AppLevelModelSyncService.getInstance().getOrCreateConnection(
             ModelServerConnectionProperties(
                 url = "http://localhost:$port",
-                repositoryId = branchRef.repositoryId,
+                branchRef = branchRef,
             ),
         ).setAuthorizationConfig(
             IAuthConfig.fromTokenProvider {
@@ -722,11 +722,11 @@ class ProjectSyncTest : ProjectSyncTestBase() {
         var tokenExpiration = now()
         val branchRef = RepositoryId("sync-test").getBranchReference("branchA")
 
-        fun initConnection(repositoryId: RepositoryId?) {
+        fun initConnection(b: BranchReference?) {
             AppLevelModelSyncService.getInstance().getOrCreateConnection(
                 ModelServerConnectionProperties(
                     url = "http://localhost:$port",
-                    repositoryId = repositoryId,
+                    branchRef = b,
                 ),
             ).setAuthorizationConfig(
                 IAuthConfig.fromTokenProvider {
@@ -744,7 +744,7 @@ class ProjectSyncTest : ProjectSyncTestBase() {
             )
         }
         initConnection(null)
-        initConnection(branchRef.repositoryId)
+        initConnection(branchRef)
 
         openTestProject("initial")
         val binding = IModelSyncService.getInstance(mpsProject)
@@ -877,7 +877,7 @@ class ProjectSyncTest : ProjectSyncTestBase() {
               <component name="modelix-sync">
                 <binding>
                   <enabled>true</enabled>
-                  <url repositoryScoped="false">http://localhost:$port</url>
+                  <url>http://localhost:$port</url>
                   <repository>${branchRef.repositoryId.id}</repository>
                   <branch>${branchRef.branchName}</branch>
                   <versionHash>${version1.getContentHash()}</versionHash>

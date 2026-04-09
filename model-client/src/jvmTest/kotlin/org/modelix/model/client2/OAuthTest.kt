@@ -16,6 +16,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.modelix.model.api.ITree
 import org.modelix.model.lazy.RepositoryId
+import org.modelix.model.oauth.IAuthRequest
 import org.modelix.model.oauth.IAuthRequestHandler
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.Network
@@ -37,9 +38,9 @@ class OAuthTest {
             .oauth {
                 clientId("external-mps")
                 authRequestHandler(object : IAuthRequestHandler {
-                    override fun browse(url: String) {
+                    override fun browse(request: IAuthRequest) {
                         runBlocking {
-                            handleOAuthLogin(url, "user1", "abc")
+                            handleOAuthLogin(request.getUrl(), "user1", "abc")
                         }
                     }
                 })

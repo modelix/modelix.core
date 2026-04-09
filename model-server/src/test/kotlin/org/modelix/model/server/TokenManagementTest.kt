@@ -26,6 +26,7 @@ import org.modelix.authorization.createModelixAccessToken
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.oauth.IAuthConfig
+import org.modelix.model.oauth.IAuthRequest
 import org.modelix.model.oauth.IAuthRequestHandler
 import org.modelix.model.oauth.ITokenProvider
 import org.modelix.model.oauth.TokenParameters
@@ -167,9 +168,9 @@ class TokenManagementTest {
                 .authConfig(
                     IAuthConfig.oauth {
                         authRequestHandler(object : IAuthRequestHandler {
-                            override fun browse(url: String) {
+                            override fun browse(request: IAuthRequest) {
                                 // https://localhost/realms/modelix/protocol/openid-connect/auth?client_id=my-client-id&code_challenge=YzBhqU2-lRzCkoSLVc0BGN3_AlwU5YUpYS1_m_6FMbI&code_challenge_method=S256&redirect_uri=http://127.0.0.1:64186/Callback&response_type=code&scope=email
-                                val redirectUri = io.ktor.http.Url(url).parameters["redirect_uri"]!!
+                                val redirectUri = io.ktor.http.Url(request.getUrl()).parameters["redirect_uri"]!!
                                 val callbackWithCode = buildUrl {
                                     takeFrom(redirectUri)
                                     parameters.append("code", "abc")

@@ -143,5 +143,11 @@ interface IAuthRequestHandler {
      * Open the URL where the user can log in. The OAuth server will redirect the user to a callback URL to transmit
      * the authorization code.
      */
-    fun browse(url: String)
+    fun browse(request: IAuthRequest)
+}
+
+interface IAuthRequest {
+    fun getUrl(): String
+    fun cancel()
+    fun isActive(): Boolean
 }

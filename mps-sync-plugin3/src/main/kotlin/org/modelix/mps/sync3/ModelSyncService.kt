@@ -23,6 +23,7 @@ import org.modelix.model.lazy.BranchReference
 import org.modelix.model.mpsadapters.MPSProjectAsNode
 import org.modelix.model.mpsadapters.toMPS
 import org.modelix.model.oauth.IAuthConfig
+import org.modelix.model.oauth.IAuthRequest
 import org.modelix.model.oauth.ITokenProvider
 import org.modelix.model.oauth.OAuthConfigBuilder
 import org.modelix.model.oauth.TokenProvider
@@ -279,16 +280,16 @@ class ModelSyncService(val project: Project) :
         }
 
         override fun getStatus(): IServerConnection.Status {
-            return if (connection.isConnected()) {
-                IServerConnection.Status.CONNECTED
-            } else if (connection.getPendingAuthRequest() != null) {
+            return if (connection.getPendingAuthRequest().isNotEmpty()) {
                 IServerConnection.Status.AUTHORIZATION_REQUIRED
+            } else if (connection.isConnected()) {
+                IServerConnection.Status.CONNECTED
             } else {
                 IServerConnection.Status.DISCONNECTED
             }
         }
 
-        override fun getPendingAuthRequest(): String? {
+        override fun getPendingAuthRequests(): List<IAuthRequest> {
             return connection.getPendingAuthRequest()
         }
 

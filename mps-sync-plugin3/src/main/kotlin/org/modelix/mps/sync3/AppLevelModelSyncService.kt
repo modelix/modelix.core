@@ -7,13 +7,16 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
+import org.modelix.model.api.runSynchronized
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.oauth.IAuthConfig
+import org.modelix.model.oauth.IAuthRequest
 import org.modelix.model.oauth.IAuthRequestHandler
 import org.modelix.model.oauth.OAuthConfig
 import org.modelix.model.oauth.OAuthConfigBuilder
 import org.modelix.model.oauth.TokenParameters
+import java.util.Collections
 
 @Service(Service.Level.APP)
 class AppLevelModelSyncService() : Disposable {
@@ -77,7 +80,6 @@ class AppLevelModelSyncService() : Disposable {
             try {
                 getClient().getServerId()
                 connected = true
-                authRequestHandler.clear()
             } catch (ex: Throwable) {
                 connected = false
             }
@@ -103,7 +105,7 @@ class AppLevelModelSyncService() : Disposable {
 
         fun disconnect() {
             checkDisposed()
-            authRequestHandler.clear()
+            authRequestHandler.cancelAll()
             runBlocking {
                 client.updateValue {
                     it?.close()
@@ -125,9 +127,9 @@ class AppLevelModelSyncService() : Disposable {
             runBlocking { client.updateValue { null } }
         }
 
-        fun getPendingAuthRequest(): String? {
+        fun getPendingAuthRequest(): List<IAuthRequest> {
             checkDisposed()
-            return authRequestHandler.getPendingRequest()
+            return authRequestHandler.getPendingRequests()
         }
 
         fun dispose() {
@@ -140,15 +142,25 @@ class AppLevelModelSyncService() : Disposable {
 }
 
 private class AsyncAuthRequestHandler : IAuthRequestHandler {
-    private var pendingUrl: String? = null
+    private val pendingRequests = Collections.synchronizedCollection(LinkedHashSet<IAuthRequest>())
 
-    override fun browse(url: String) {
-        pendingUrl = url
+    private fun cleanup() {
+        runSynchronized(pendingRequests) {
+            pendingRequests.removeIf { !it.isActive() }
+        }
     }
 
-    fun getPendingRequest(): String? = pendingUrl
+    override fun browse(request: IAuthRequest) {
+        cleanup()
+        pendingRequests.add(request)
+    }
 
-    fun clear() {
-        pendingUrl = null
+    fun getPendingRequests(): List<IAuthRequest> {
+        cleanup()
+        return pendingRequests.toList()
+    }
+
+    fun cancelAll() {
+        pendingRequests.filter { it.isActive() }.forEach { it.cancel() }
     }
 }

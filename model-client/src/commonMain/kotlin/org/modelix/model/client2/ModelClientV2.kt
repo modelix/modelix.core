@@ -82,6 +82,7 @@ import org.modelix.model.mutable.INodeIdGenerator
 import org.modelix.model.mutable.ModelixIdGenerator
 import org.modelix.model.mutable.getRootNode
 import org.modelix.model.oauth.IAuthConfig
+import org.modelix.model.oauth.IAuthRequest
 import org.modelix.model.oauth.IAuthRequestHandler
 import org.modelix.model.oauth.ITokenProvider
 import org.modelix.model.oauth.ModelixAuthClient
@@ -917,8 +918,8 @@ abstract class ModelClientV2Builder {
                 null
             } else {
                 object : IAuthRequestHandler {
-                    override fun browse(url: String) {
-                        browser(url)
+                    override fun browse(request: IAuthRequest) {
+                        browser(request.getUrl())
                     }
                 }
             },

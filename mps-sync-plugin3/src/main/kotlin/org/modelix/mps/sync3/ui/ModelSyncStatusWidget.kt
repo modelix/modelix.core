@@ -61,13 +61,13 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
     init {
         object : ClickListener() {
             override fun onClick(e: MouseEvent, clickCount: Int): Boolean {
-                val urls = IModelSyncService.getInstance(project).getUsedServerConnections()
-                    .mapNotNull { it.getPendingAuthRequest() }.toSet()
-                if (urls.isNotEmpty()) {
+                val authRequests = IModelSyncService.getInstance(project).getUsedServerConnections()
+                    .flatMap { it.getPendingAuthRequests() }.toSet()
+                if (authRequests.isNotEmpty()) {
                     val desktop = Desktop.getDesktop()
                     if (desktop.isSupported(Desktop.Action.BROWSE)) {
-                        for (url in urls) {
-                            desktop.browse(URI.create(url))
+                        for (authRequest in authRequests) {
+                            desktop.browse(URI.create(authRequest.getUrl()))
                         }
                     }
                     return true
@@ -123,7 +123,9 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
     }
 
     private fun authorizationRequired(): Boolean {
-        return IModelSyncService.getInstance(project).getUsedServerConnections().any { it.getPendingAuthRequest() != null }
+        return IModelSyncService.getInstance(project)
+            .getUsedServerConnections()
+            .any { it.getPendingAuthRequests().isNotEmpty() }
     }
 
     override fun getPresentation(): StatusBarWidget.WidgetPresentation? {
@@ -167,14 +169,14 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
                                     +connection.getStatus().toString()
                                 }
                             }
-                            connection.getPendingAuthRequest()?.let { url ->
+                            connection.getPendingAuthRequests().forEach { request ->
                                 tr {
                                     td {
                                         styleX = "font-weight: bold"
                                         +"Authorization URL: "
                                     }
                                     td {
-                                        +url
+                                        +request.getUrl()
                                     }
                                 }
                             }

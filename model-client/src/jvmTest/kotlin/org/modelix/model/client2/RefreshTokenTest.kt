@@ -29,6 +29,7 @@ import kotlinx.serialization.Serializable
 import org.modelix.kotlin.utils.filterNotNullValues
 import org.modelix.model.lazy.RepositoryId
 import org.modelix.model.oauth.IAuthConfig
+import org.modelix.model.oauth.IAuthRequest
 import org.modelix.model.oauth.IAuthRequestHandler
 import java.net.BindException
 import kotlin.random.Random
@@ -138,9 +139,9 @@ class RefreshTokenTest {
             ModelClientV2.builder().url("http://localhost:$port").authConfig(
                 IAuthConfig.oauth {
                     authRequestHandler(object : IAuthRequestHandler {
-                        override fun browse(url: String) {
+                        override fun browse(request: IAuthRequest) {
                             // https://localhost/realms/modelix/protocol/openid-connect/auth?client_id=my-client-id&code_challenge=YzBhqU2-lRzCkoSLVc0BGN3_AlwU5YUpYS1_m_6FMbI&code_challenge_method=S256&redirect_uri=http://127.0.0.1:64186/Callback&response_type=code&scope=email
-                            val redirectUri = Url(url).parameters["redirect_uri"]!!
+                            val redirectUri = Url(request.getUrl()).parameters["redirect_uri"]!!
                             val callbackWithCode = buildUrl {
                                 takeFrom(redirectUri)
                                 parameters.append("code", "abc")
@@ -259,11 +260,11 @@ class RefreshTokenTest {
                 IAuthConfig.oauth {
                     authRequestHandler(object : IAuthRequestHandler {
                         var loginAlreadyRequested = false
-                        override fun browse(url: String) {
+                        override fun browse(request: IAuthRequest) {
                             check(!loginAlreadyRequested) { "Should use refresh token to fetch new tokens" }
                             loginAlreadyRequested = true
                             // https://localhost/realms/modelix/protocol/openid-connect/auth?client_id=my-client-id&code_challenge=YzBhqU2-lRzCkoSLVc0BGN3_AlwU5YUpYS1_m_6FMbI&code_challenge_method=S256&redirect_uri=http://127.0.0.1:64186/Callback&response_type=code&scope=email
-                            val redirectUri = Url(url).parameters["redirect_uri"]!!
+                            val redirectUri = Url(request.getUrl()).parameters["redirect_uri"]!!
                             val callbackWithCode = buildUrl {
                                 takeFrom(redirectUri)
                                 parameters.append("code", "abc")

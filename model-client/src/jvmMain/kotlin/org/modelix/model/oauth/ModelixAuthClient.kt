@@ -28,105 +28,172 @@ import io.ktor.http.buildUrl
 import io.ktor.http.isSecure
 import io.ktor.http.takeFrom
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.modelix.kotlin.utils.runSynchronized
 import org.modelix.kotlin.utils.urlEncode
 import java.net.SocketException
 import java.net.SocketTimeoutException
+import java.util.Collections
 
 @Suppress("UndocumentedPublicClass") // already documented in the expected declaration
 actual class ModelixAuthClient {
     companion object {
         private val LOG = mu.KotlinLogging.logger { }
     }
-    private val httpTransport: HttpTransport = NetHttpTransport()
-    private val jsonFactory: JsonFactory = GsonFactory()
-    private var lastCredentials = HashMap<TokenCacheKey, Credential>()
 
-    @Synchronized
-    fun getTokens(config: OAuthConfig): Credential? {
-        return lastCredentials[config.getCacheKey()]?.takeIf { !it.isExpired() }
-    }
+    private class CachedTokens {
+        private val httpTransport: HttpTransport = NetHttpTransport()
+        private val jsonFactory: JsonFactory = GsonFactory()
+        private var lastCredentials: Credential? = null
+        private val authMutex = Mutex()
 
-    @Synchronized
-    private fun Credential.isExpired(): Boolean {
-        return (expiresInSeconds ?: return false) < 60
-    }
-
-    @Synchronized
-    private fun Credential.refreshIfExpired(): Credential? {
-        return if (isExpired()) {
-            alwaysRefresh()
-        } else {
-            this.takeIf { it.accessToken != null }
+        fun getTokens(config: OAuthConfig): Credential? {
+            return lastCredentials?.takeIf { !it.isExpired() }
         }
-    }
 
-    @Synchronized
-    fun Credential.alwaysRefresh(): Credential? {
-        for (attempt in 1..3) {
-            try {
-                val success = refreshToken()
-                if (success) return this
-            } catch (e: SocketTimeoutException) {
-                LOG.warn(e) { "Token refresh timed out" }
-            } catch (e: TokenResponseException) {
-                LOG.warn("Could not refresh the access token: ${e.details}")
-                break
+        fun getAndMaybeRefreshTokens(config: OAuthConfig): Credential? {
+            return lastCredentials?.refreshIfExpired()
+        }
+
+        suspend fun refreshTokensOrReauthorize(config: OAuthConfig): Credential? {
+            return lastCredentials?.alwaysRefresh() ?: authorize(config)
+        }
+
+        suspend fun authorize(config: OAuthConfig): Credential? {
+            lastCredentials = null
+            return withContext(Dispatchers.IO) {
+                authMutex.withLock {
+                    lastCredentials?.let { return@withLock it }
+                    val flow = AuthorizationCodeFlow.Builder(
+                        BearerToken.authorizationHeaderAccessMethod(),
+                        httpTransport,
+                        jsonFactory,
+                        GenericUrl(config.tokenUrl),
+                        ClientParametersAuthentication(config.clientId, config.clientSecret),
+                        config.clientId,
+                        config.authorizationUrl,
+                    )
+                        .setScopes(config.scopes)
+                        .enablePKCE()
+                        .build()
+
+                    repeat(100) { n ->
+                        val port = 26815 + n
+                        try {
+                            val receiver: LocalServerReceiver = LocalServerReceiver.Builder().setHost("localhost").setPort(port).build()
+                            val tokens = cancelable({ receiver.stop() }) {
+                                val scope = this
+                                val browser = config.authRequestHandler?.let {
+                                    AuthorizationCodeInstalledApp.Browser { url ->
+                                        it.browse(object : IAuthRequest {
+                                            override fun getUrl(): String = url
+                                            override fun cancel() = scope.cancel()
+                                            override fun isActive() = scope.isActive
+                                        })
+                                    }
+                                } ?: AuthorizationCodeInstalledApp.DefaultBrowser()
+                                AuthorizationCodeInstalledApp(flow, receiver, browser).authorize(null)
+                            }
+                            lastCredentials = tokens
+                            return@withContext tokens
+                        } catch (ex: SocketException) {
+                            LOG.info("Port $port already in use. Trying next one.")
+                            LOG.debug("Login failed with socket exception, which is expected, if we can not open the callback port.", ex)
+                        }
+                    }
+                    throw IllegalStateException("Couldn't find an available port for the redirect URL")
+                }
             }
         }
-        return null
+
+        private fun Credential.isExpired(): Boolean {
+            return (expiresInSeconds ?: return false) < 60
+        }
+
+        private fun Credential.refreshIfExpired(): Credential? {
+            return if (isExpired()) {
+                alwaysRefresh()
+            } else {
+                this.takeIf { it.accessToken != null }
+            }
+        }
+
+        private fun Credential.alwaysRefresh(): Credential? {
+            for (attempt in 1..3) {
+                try {
+                    val success = refreshToken()
+                    if (success) return this
+                } catch (e: SocketTimeoutException) {
+                    LOG.warn(e) { "Token refresh timed out" }
+                } catch (e: TokenResponseException) {
+                    LOG.warn("Could not refresh the access token: ${e.details}")
+                    break
+                }
+            }
+            return null
+        }
+
+        /**
+         * [blockingCall] is expected to be uninterruptible by typical platform mechanisms, but by some special call done
+         * by [onCancel].
+         */
+        private suspend fun <R> cancelable(onCancel: suspend () -> Unit, blockingCall: CoroutineScope.() -> R): R {
+            return coroutineScope {
+                var cancellationEx: CancellationException? = null
+                var blockingCallReturned = false
+                val cancellationHandlerJob = launch(Dispatchers.IO) {
+                    try {
+                        awaitCancellation()
+                    } catch (ex: CancellationException) {
+                        if (!blockingCallReturned) {
+                            cancellationEx = ex
+                            onCancel()
+                        }
+                    }
+                }
+                withContext(Dispatchers.IO) {
+                    try {
+                        return@withContext blockingCall()
+                    } catch (ex: Throwable) {
+                        throw cancellationEx ?: ex
+                    } finally {
+                        blockingCallReturned = true
+                        cancellationHandlerJob.cancel()
+                    }
+                }
+            }
+        }
     }
 
-    @Synchronized
+    private val cachedTokens: MutableMap<TokenCacheKey, CachedTokens> = Collections.synchronizedMap(HashMap<TokenCacheKey, CachedTokens>())
+
+    private fun getCachedTokens(config: OAuthConfig) = runSynchronized(cachedTokens) {
+        cachedTokens.getOrPut(config.getCacheKey()) { CachedTokens() }
+    }
+
+    fun getTokens(config: OAuthConfig): Credential? {
+        return getCachedTokens(config).getTokens(config)
+    }
+
     fun getAndMaybeRefreshTokens(config: OAuthConfig): Credential? {
-        return lastCredentials[config.getCacheKey()]?.refreshIfExpired()
+        return getCachedTokens(config).getAndMaybeRefreshTokens(config)
     }
 
     suspend fun refreshTokensOrReauthorize(config: OAuthConfig): Credential? {
-        return runSynchronized(this) { lastCredentials[config.getCacheKey()]?.alwaysRefresh() } ?: authorize(config)
+        return getCachedTokens(config).refreshTokensOrReauthorize(config)
     }
 
     suspend fun authorize(config: OAuthConfig): Credential? {
-        return withContext(Dispatchers.IO) {
-            val flow = AuthorizationCodeFlow.Builder(
-                BearerToken.authorizationHeaderAccessMethod(),
-                httpTransport,
-                jsonFactory,
-                GenericUrl(config.tokenUrl),
-                ClientParametersAuthentication(config.clientId, config.clientSecret),
-                config.clientId,
-                config.authorizationUrl,
-            )
-                .setScopes(config.scopes)
-                .enablePKCE()
-                .build()
-
-            repeat(100) { n ->
-                val port = 26815 + n
-                try {
-                    val receiver: LocalServerReceiver = LocalServerReceiver.Builder().setHost("localhost").setPort(port).build()
-                    val browser = config.authRequestHandler?.let {
-                        AuthorizationCodeInstalledApp.Browser { url -> it.browse(url) }
-                    } ?: AuthorizationCodeInstalledApp.DefaultBrowser()
-                    val tokens = cancelable({ receiver.stop() }) {
-                        AuthorizationCodeInstalledApp(flow, receiver, browser).authorize(null)
-                    }
-                    runSynchronized(this@ModelixAuthClient) {
-                        lastCredentials[config.getCacheKey()] = tokens
-                    }
-                    return@withContext tokens
-                } catch (ex: SocketException) {
-                    LOG.info("Port $port already in use. Trying next one.")
-                    LOG.debug("Login failed with socket exception, which is expected, if we can not open the callback port.", ex)
-                }
-            }
-            throw IllegalStateException("Couldn't find an available port for the redirect URL")
-        }
+        return getCachedTokens(config).authorize(config)
     }
 
     @Suppress("UndocumentedPublicFunction") // already documented in the expected declaration
@@ -235,36 +302,5 @@ actual class ModelixAuthClient {
                 else -> protocol
             }
         }.toString()
-    }
-
-    /**
-     * [blockingCall] is expected to be uninterruptible by typical platform mechanisms, but by some special call done
-     * by [onCancel].
-     */
-    private suspend fun <R> cancelable(onCancel: suspend () -> Unit, blockingCall: () -> R): R {
-        return coroutineScope {
-            var cancellationEx: CancellationException? = null
-            var blockingCallReturned = false
-            val cancellationHandlerJob = launch(Dispatchers.IO) {
-                try {
-                    awaitCancellation()
-                } catch (ex: CancellationException) {
-                    if (!blockingCallReturned) {
-                        cancellationEx = ex
-                        onCancel()
-                    }
-                }
-            }
-            withContext(Dispatchers.IO) {
-                try {
-                    return@withContext blockingCall()
-                } catch (ex: Throwable) {
-                    throw cancellationEx ?: ex
-                } finally {
-                    blockingCallReturned = true
-                    cancellationHandlerJob.cancel()
-                }
-            }
-        }
     }
 }

@@ -10,6 +10,7 @@ import org.modelix.model.IVersion
 import org.modelix.model.client2.IModelClientV2
 import org.modelix.model.lazy.BranchReference
 import org.modelix.model.mpsadapters.toModelix
+import org.modelix.model.oauth.IAuthRequest
 import org.modelix.model.oauth.ITokenProvider
 import org.modelix.model.oauth.OAuthConfigBuilder
 import org.modelix.mps.multiplatform.model.MPSModuleReference
@@ -62,7 +63,7 @@ interface IServerConnection : Closeable {
     fun deactivate()
     fun remove()
     fun getStatus(): Status
-    fun getPendingAuthRequest(): String?
+    fun getPendingAuthRequests(): List<IAuthRequest>
 
     override fun close() = deactivate()
 

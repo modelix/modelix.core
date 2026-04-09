@@ -3,6 +3,7 @@ package org.modelix.model.client2
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import org.modelix.model.oauth.IAuthRequest
 import org.modelix.model.oauth.IAuthRequestHandler
 import org.modelix.model.oauth.ModelixAuthClient
 import org.modelix.model.oauth.OAuthConfig
@@ -30,7 +31,7 @@ class ModelixAuthClientTest {
                         tokenUrl = "http://localhost/token",
                         authorizationUrl = "http://localhost/auth",
                         authRequestHandler = object : IAuthRequestHandler {
-                            override fun browse(url: String) {
+                            override fun browse(request: IAuthRequest) {
                                 browseCalled = true
                             }
                         },

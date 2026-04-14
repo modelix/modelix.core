@@ -16,6 +16,6 @@
     "typescript-eslint": "^8.58.1"
   },
   "dependencies": {
-    "@stoplight/spectral-cli": "^6.15.0"
+    "@stoplight/spectral-cli": "^6.15.1"
   }
 }

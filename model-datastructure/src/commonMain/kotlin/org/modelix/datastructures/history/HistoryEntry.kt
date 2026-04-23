@@ -9,4 +9,5 @@ data class HistoryEntry(
     val versionHash: ObjectHash,
     val time: Instant,
     val author: String?,
+    val attributes: Map<String, String> = emptyMap(),
 )

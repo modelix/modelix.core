@@ -1,7 +1,10 @@
 package org.modelix.model.client2
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotEquals
+import kotlin.test.assertSame
 
 class ReplicatedModelParametersTest {
 
@@ -60,5 +63,43 @@ class ReplicatedModelParametersTest {
                 versionHash = "hash",
             )
         }
+    }
+
+    @Test
+    fun test_equals_same_versionAttributes_supplier() {
+        val supplier: () -> Array<AttributeEntryJS> = { arrayOf(AttributeEntryJS("env", "ci")) }
+        val a = ReplicatedModelParameters(
+            repositoryId = "repo",
+            branchId = "branch",
+            idScheme = IdSchemeJS.MODELIX,
+            versionAttributes = supplier,
+        )
+        val b = ReplicatedModelParameters(
+            repositoryId = "repo",
+            branchId = "branch",
+            idScheme = IdSchemeJS.MODELIX,
+            versionAttributes = supplier,
+        )
+        assertEquals(a, b)
+        assertEquals(a.hashCode(), b.hashCode())
+        assertSame(a.versionAttributes, b.versionAttributes)
+    }
+
+    @Test
+    fun test_not_equals_different_versionAttributes_suppliers() {
+        // Two distinct lambdas with the same body are not equal — reference equality applies.
+        val a = ReplicatedModelParameters(
+            repositoryId = "repo",
+            branchId = "branch",
+            idScheme = IdSchemeJS.MODELIX,
+            versionAttributes = { arrayOf(AttributeEntryJS("env", "ci")) },
+        )
+        val b = ReplicatedModelParameters(
+            repositoryId = "repo",
+            branchId = "branch",
+            idScheme = IdSchemeJS.MODELIX,
+            versionAttributes = { arrayOf(AttributeEntryJS("env", "ci")) },
+        )
+        assertNotEquals(a, b)
     }
 }

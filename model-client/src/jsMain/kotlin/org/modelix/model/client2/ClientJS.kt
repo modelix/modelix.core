@@ -223,6 +223,12 @@ data class ReplicatedModelParameters(
     val idScheme: IdSchemeJS,
     val readonly: Boolean = false,
     val versionHash: String? = null,
+    /**
+     * Supplier invoked once per new local version to obtain the attributes to stamp on it.
+     * Called from a write-locked coroutine on every commit — must be cheap and thread-safe.
+     * Return an empty array to stamp no attributes.
+     */
+    val versionAttributes: () -> Array<AttributeEntryJS> = { emptyArray() },
 ) {
     init {
         require((branchId != null) xor (versionHash != null)) { "Exactly one of branchId or versionHash must be provided" }
@@ -230,6 +236,36 @@ data class ReplicatedModelParameters(
             require(readonly) { "versionHash requires readonly=true" }
         }
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is ReplicatedModelParameters) return false
+        return repositoryId == other.repositoryId &&
+            branchId == other.branchId &&
+            idScheme == other.idScheme &&
+            readonly == other.readonly &&
+            versionHash == other.versionHash &&
+            versionAttributes === other.versionAttributes
+    }
+
+    override fun hashCode(): Int {
+        var result = repositoryId.hashCode()
+        result = 31 * result + branchId.hashCode()
+        result = 31 * result + idScheme.hashCode()
+        result = 31 * result + readonly.hashCode()
+        result = 31 * result + versionHash.hashCode()
+        result = 31 * result + versionAttributes.hashCode()
+        return result
+    }
+}
+
+private fun buildVersionAttributesMap(entries: Array<AttributeEntryJS>): Map<String, String> {
+    val map = LinkedHashMap<String, String>(entries.size)
+    for (entry in entries) {
+        require(!map.containsKey(entry.key)) { "Duplicate version attribute key" }
+        map[entry.key] = entry.value
+    }
+    return map
 }
 
 internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
@@ -315,17 +351,18 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
                     IdSchemeJS.MODELIX -> { treeId -> ModelixIdGenerator(modelClient.getIdGenerator(), treeId) }
                     IdSchemeJS.MPS -> { treeId -> MPSIdGenerator(modelClient.getIdGenerator(), treeId) }
                 }
+                val versionAttributes: () -> Map<String, String> = { buildVersionAttributesMap(parameters.versionAttributes()) }
                 if (branchReference == null) {
                     if (parameters.versionHash != null) {
                         modelClient.loadVersion(repositoryId, parameters.versionHash, null)
                             .let { IReplicatedOrReadonlyModel.Readonly(it) }
                     } else {
-                        modelClient.getReplicatedModel(repositoryId.getBranchReference(), idGenerator)
+                        modelClient.getReplicatedModel(repositoryId.getBranchReference(), idGenerator, versionAttributes = versionAttributes)
                             .also { it.start() }
                             .let { IReplicatedOrReadonlyModel.Replicated(it) }
                     }
                 } else {
-                    modelClient.getReplicatedModel(branchReference, idGenerator)
+                    modelClient.getReplicatedModel(branchReference, idGenerator, versionAttributes = versionAttributes)
                         .also { it.start() }
                         .let { IReplicatedOrReadonlyModel.Replicated(it) }
                 }
@@ -342,6 +379,7 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
                     version.getAuthor(),
                     version.getTimestamp()?.toJSDate(),
                     version.getContentHash(),
+                    version.getAttributes().toAttributeEntriesJS(),
                 ),
                 MutableModelTreeJsImpl(version.getModelTree().asMutableReadonly()),
             )
@@ -366,6 +404,7 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
                         it.author,
                         it.time.toJSDate(),
                         it.versionHash.toString(),
+                        it.attributes.toAttributeEntriesJS(),
                     )
                 }
                 .toTypedArray()

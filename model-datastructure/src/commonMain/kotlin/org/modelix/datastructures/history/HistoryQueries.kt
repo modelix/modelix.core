@@ -28,29 +28,31 @@ class HistoryQueries(val historyIndex: suspend () -> Object<HistoryIndexNode>) :
         val interval = delay / 2
 
         runUntilLimit {
-            index.data.splitAtInterval(EquidistantIntervalsSpec(interval).withTimeRangeFilter(timeRange)).iterateSuspending(index.graph) {
-                if (previousMinTime - it.maxTime >= delay) {
+            index.data.splitAtInterval(EquidistantIntervalsSpec(interval).withTimeRangeFilter(timeRange)).iterateSuspending(index.graph) { node ->
+                if (previousMinTime - node.maxTime >= delay) {
                     if (sessions.lastIndex >= pagination.asRange().last) throw LimitReached()
                     sessions += HistoryInterval(
-                        firstVersionHash = it.firstVersion.getHash(),
-                        lastVersionHash = it.lastVersion.getHash(),
-                        size = it.size,
-                        minTime = it.minTime,
-                        maxTime = it.maxTime,
-                        authors = it.authors,
+                        firstVersionHash = node.firstVersion.getHash(),
+                        lastVersionHash = node.lastVersion.getHash(),
+                        size = node.size,
+                        minTime = node.minTime,
+                        maxTime = node.maxTime,
+                        authors = node.authors,
+                        attributes = node.attributes,
                     )
                 } else {
                     val entry = sessions[sessions.lastIndex]
                     sessions[sessions.lastIndex] = HistoryInterval(
-                        firstVersionHash = it.firstVersion.getHash(),
+                        firstVersionHash = node.firstVersion.getHash(),
                         lastVersionHash = entry.lastVersionHash,
-                        size = entry.size + it.size,
-                        minTime = minOf(entry.minTime, it.minTime),
-                        maxTime = maxOf(entry.maxTime, it.maxTime),
-                        authors = entry.authors + it.authors,
+                        size = entry.size + node.size,
+                        minTime = minOf(entry.minTime, node.minTime),
+                        maxTime = maxOf(entry.maxTime, node.maxTime),
+                        authors = entry.authors + node.authors,
+                        attributes = HistoryIndexNode.unionAttributes(entry.attributes, node.attributes),
                     )
                 }
-                previousMinTime = it.minTime
+                previousMinTime = node.minTime
             }
         }
 
@@ -74,29 +76,31 @@ class HistoryQueries(val historyIndex: suspend () -> Object<HistoryIndexNode>) :
         var previousIntervalId: Long = Long.MAX_VALUE
 
         runUntilLimit {
-            index.data.splitAtInterval(intervalsSpec).iterateSuspending(index.graph) {
-                val intervalId = intervalsSpec.getIntervalIndex(it.maxTime)
+            index.data.splitAtInterval(intervalsSpec).iterateSuspending(index.graph) { node ->
+                val intervalId = intervalsSpec.getIntervalIndex(node.maxTime)
                 check(intervalId <= previousIntervalId)
                 if (intervalId == previousIntervalId) {
                     val entry = mergedEntries[mergedEntries.lastIndex]
                     mergedEntries[mergedEntries.lastIndex] = HistoryInterval(
-                        firstVersionHash = it.firstVersion.getHash(),
+                        firstVersionHash = node.firstVersion.getHash(),
                         lastVersionHash = entry.lastVersionHash,
-                        size = entry.size + it.size,
-                        minTime = minOf(entry.minTime, it.minTime),
-                        maxTime = maxOf(entry.maxTime, it.maxTime),
-                        authors = entry.authors + it.authors,
+                        size = entry.size + node.size,
+                        minTime = minOf(entry.minTime, node.minTime),
+                        maxTime = maxOf(entry.maxTime, node.maxTime),
+                        authors = entry.authors + node.authors,
+                        attributes = HistoryIndexNode.unionAttributes(entry.attributes, node.attributes),
                     )
                 } else {
                     if (mergedEntries.lastIndex >= pagination.asRange().last) throw LimitReached()
                     previousIntervalId = intervalId
                     mergedEntries += HistoryInterval(
-                        firstVersionHash = it.firstVersion.getHash(),
-                        lastVersionHash = it.lastVersion.getHash(),
-                        size = it.size,
-                        minTime = it.minTime,
-                        maxTime = it.maxTime,
-                        authors = it.authors,
+                        firstVersionHash = node.firstVersion.getHash(),
+                        lastVersionHash = node.lastVersion.getHash(),
+                        size = node.size,
+                        minTime = node.minTime,
+                        maxTime = node.maxTime,
+                        authors = node.authors,
+                        attributes = node.attributes,
                     )
                 }
             }
@@ -121,6 +125,7 @@ class HistoryQueries(val historyIndex: suspend () -> Object<HistoryIndexNode>) :
                     versionHash = it.getHash(),
                     time = version.getTimestamp() ?: Instant.fromEpochSeconds(0L),
                     author = version.getAuthor(),
+                    attributes = version.getAttributes(),
                 )
             }
             .toList()

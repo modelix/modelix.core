@@ -35,9 +35,6 @@ internal class ReplicatedModelJSImpl(private val models: List<IReplicatedOrReado
     }
 
     private fun IVersion.toVersionInformationJS(): VersionInformationJS {
-        val currentVersion = this
-        val currentVersionAuthor = currentVersion.getAuthor()
-        val currentVersionTime = currentVersion.getTimestamp()?.toJSDate()
-        return VersionInformationJS(currentVersionAuthor, currentVersionTime, currentVersion.getContentHash())
+        return VersionInformationJS(getAuthor(), getTimestamp()?.toJSDate(), getContentHash(), getAttributes().toAttributeEntriesJS())
     }
 }

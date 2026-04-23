@@ -107,6 +107,7 @@ class HistoryIndexSessionsTest {
                         .tree(currentVersion.getModelTree())
                         .author("user1")
                         .time(nextTimestamp)
+                        .attribute("user", "user1")
                         .build()
                     currentVersion = modelClient.push(branchRef, newVersion, currentVersion)
                 }
@@ -117,6 +118,7 @@ class HistoryIndexSessionsTest {
                         .tree(currentVersion.getModelTree())
                         .author("user2")
                         .time(nextTimestamp)
+                        .attribute("user", "user2")
                         .build()
                     currentVersion = modelClient.push(branchRef, newVersion, currentVersion)
                 }
@@ -144,6 +146,7 @@ class HistoryIndexSessionsTest {
                     minTime = version.getTimestamp()!!,
                     maxTime = version.getTimestamp()!!,
                     authors = setOfNotNull(version.getAuthor()),
+                    attributes = mergeAttributes(emptyMap(), version.getAttributes()),
                 )
             } else {
                 val lastInterval = acc.last()
@@ -154,6 +157,7 @@ class HistoryIndexSessionsTest {
                     minTime = lastInterval.minTime,
                     maxTime = version.getTimestamp()!!,
                     authors = lastInterval.authors + listOfNotNull(version.getAuthor()),
+                    attributes = mergeAttributes(lastInterval.attributes, version.getAttributes()),
                 )
             }
         }.reversed().drop(skip).take(limit)

@@ -59,6 +59,9 @@ import org.modelix.model.mutable.asModel
  * @property branchRef the model server branch to fetch the data from
  * @property providedScope the CoroutineScope to use for the suspendable tasks
  * @property initialRemoteVersion the last version on the server from which we want to start the synchronization
+ * @property versionAttributes supplier invoked once per new local version to obtain the attributes to stamp on it.
+ *   The returned map is snapshotted at version-build time. The supplier must be cheap and thread-safe
+ *   because it is called from a write-locked coroutine on every commit.
  */
 class ReplicatedModel(
     val client: IModelClientV2,
@@ -66,6 +69,7 @@ class ReplicatedModel(
     val idGenerator: (TreeId) -> INodeIdGenerator<INodeReference>,
     private val providedScope: CoroutineScope? = null,
     initialRemoteVersion: CLVersion? = null,
+    private val versionAttributes: () -> Map<String, String> = { emptyMap() },
 ) : Closeable {
     private val scope = providedScope ?: CoroutineScope(Dispatchers.Default)
     private var state = State.New
@@ -75,7 +79,7 @@ class ReplicatedModel(
 
     init {
         if (initialRemoteVersion != null) {
-            localModel = LocalModel(initialRemoteVersion, client.getIdGenerator(), idGenerator(initialRemoteVersion.getModelTree().getId())) { client.getUserId() }
+            localModel = LocalModel(initialRemoteVersion, client.getIdGenerator(), idGenerator(initialRemoteVersion.getModelTree().getId()), { client.getUserId() }, versionAttributes)
         }
     }
 
@@ -93,7 +97,7 @@ class ReplicatedModel(
 
         if (localModel == null) {
             val initialVersion = remoteVersion.pull()
-            localModel = LocalModel(initialVersion, client.getIdGenerator(), idGenerator(initialVersion.getModelTree().getId())) { client.getUserId() }
+            localModel = LocalModel(initialVersion, client.getIdGenerator(), idGenerator(initialVersion.getModelTree().getId()), { client.getUserId() }, versionAttributes)
         }
 
         // receive changes from the server
@@ -205,18 +209,26 @@ class ReplicatedModel(
     }
 }
 
-fun IModelClientV2.getReplicatedModel(branchRef: BranchReference, idGenerator: (TreeId) -> INodeIdGenerator<INodeReference>): ReplicatedModel {
-    return ReplicatedModel(this, branchRef, idGenerator)
+/**
+ * @param versionAttributes supplier invoked once per new local version. Must be cheap and thread-safe.
+ * @see ReplicatedModel
+ */
+fun IModelClientV2.getReplicatedModel(branchRef: BranchReference, idGenerator: (TreeId) -> INodeIdGenerator<INodeReference>, versionAttributes: () -> Map<String, String> = { emptyMap() }): ReplicatedModel {
+    return ReplicatedModel(this, branchRef, idGenerator, versionAttributes = versionAttributes)
 }
 
-fun IModelClientV2.getReplicatedModel(branchRef: BranchReference, idGenerator: (TreeId) -> INodeIdGenerator<INodeReference>, scope: CoroutineScope): ReplicatedModel {
-    return ReplicatedModel(this, branchRef, idGenerator, scope)
+/**
+ * @param versionAttributes supplier invoked once per new local version. Must be cheap and thread-safe.
+ * @see ReplicatedModel
+ */
+fun IModelClientV2.getReplicatedModel(branchRef: BranchReference, idGenerator: (TreeId) -> INodeIdGenerator<INodeReference>, scope: CoroutineScope, versionAttributes: () -> Map<String, String> = { emptyMap() }): ReplicatedModel {
+    return ReplicatedModel(this, branchRef, idGenerator, scope, versionAttributes = versionAttributes)
 }
 
 /**
  * Manages the locks during the creation and merge of versions.
  */
-private class LocalModel(initialVersion: CLVersion, val versionIdGenerator: IIdGenerator, val idGenerator: INodeIdGenerator<INodeReference>, val author: () -> String?) {
+private class LocalModel(initialVersion: CLVersion, val versionIdGenerator: IIdGenerator, val idGenerator: INodeIdGenerator<INodeReference>, val author: () -> String?, val versionAttributes: () -> Map<String, String> = { emptyMap() }) {
 
     /**
      * The state of the local model is the state of localVersion.getTree() plus the pending changes in
@@ -302,6 +314,7 @@ private class LocalModel(initialVersion: CLVersion, val versionIdGenerator: IIdG
             .currentTime()
             .tree(tree)
             .operations(ops.map { it.getOriginalOp() })
+            .also { builder -> versionAttributes().forEach { (k, v) -> builder.attribute(k, v) } }
             .buildLegacy()
         localVersion = newVersion
         return newVersion

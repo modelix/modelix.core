@@ -86,13 +86,14 @@ class HistoryIndexIntervalTest {
         val initialVersion = modelClient.initRepository(RepositoryConfig(repositoryId = repositoryId.id, repositoryName = repositoryId.id, modelId = "61bd6cb0-33ff-45d8-9d1b-2149fdb01d16"))
         var currentVersion = initialVersion
 
-        repeat(100) {
+        repeat(100) { i ->
             run {
                 val newVersion = IVersion.builder()
                     .baseVersion(currentVersion)
                     .tree(currentVersion.getModelTree())
                     .author("user1")
                     .time(currentVersion.getTimestamp()!! + rand.nextInt(0, 3).seconds)
+                    .attribute("user", "user1-$i")
                     .build()
                 currentVersion = modelClient.push(branchRef, newVersion, currentVersion)
             }
@@ -102,6 +103,7 @@ class HistoryIndexIntervalTest {
                     .tree(currentVersion.getModelTree())
                     .author("user2")
                     .time(currentVersion.getTimestamp()!! + rand.nextInt(0, 3).seconds)
+                    .attribute("user", "user2-$i")
                     .build()
                 currentVersion = modelClient.push(branchRef, newVersion, currentVersion)
             }
@@ -120,6 +122,7 @@ class HistoryIndexIntervalTest {
                     minTime = versions.minOf { it.getTimestamp()!! },
                     maxTime = versions.maxOf { it.getTimestamp()!! },
                     authors = versions.mapNotNull { it.getAuthor() }.toSet(),
+                    attributes = versions.fold(emptyMap()) { acc, v -> mergeAttributes(acc, v.getAttributes()) },
                 )
             }
             .reversed()

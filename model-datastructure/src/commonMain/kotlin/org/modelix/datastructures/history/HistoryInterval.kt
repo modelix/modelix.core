@@ -18,4 +18,9 @@ data class HistoryInterval(
     val minTime: Instant,
     val maxTime: Instant,
     val authors: Set<String>,
+    /**
+     * Aggregated attributes from all versions in this interval.
+     * Maps each attribute key to the set of all distinct values seen across versions.
+     */
+    val attributes: Map<String, Set<String>> = emptyMap(),
 )

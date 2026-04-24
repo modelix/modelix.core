@@ -116,6 +116,12 @@ constructor(private val idGenerator: IIdGenerator?) {
                 .autoMerge(commonBase.obj.ref, leftVersion.obj.ref, rightVersion.obj.ref)
                 .operations(appliedOps.map { it.getOriginalOp() })
                 .currentTime()
+                .also { builder ->
+                    // Union both sides; right-wins on conflict so the incoming change's
+                    // attributes take precedence over the local branch's attributes.
+                    (leftVersion.getAttributes() + rightVersion.getAttributes())
+                        .forEach { (k, v) -> builder.attribute(k, v) }
+                }
                 .buildLegacy()
         }
         if (mergedVersion == null) {

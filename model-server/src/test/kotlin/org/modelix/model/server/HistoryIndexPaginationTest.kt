@@ -102,6 +102,7 @@ class HistoryIndexPaginationTest {
                     .tree(currentVersion.getModelTree())
                     .author("user1")
                     .time(currentVersion.getTimestamp()!! + rand.nextInt(0, 3).seconds)
+                    .attribute("user", "user1")
                     .build()
                 currentVersion = modelClient.push(branchRef, newVersion, currentVersion)
             }
@@ -111,12 +112,15 @@ class HistoryIndexPaginationTest {
                     .tree(currentVersion.getModelTree())
                     .author("user2")
                     .time(currentVersion.getTimestamp()!! + rand.nextInt(0, 3).seconds)
+                    .attribute("user", "user2")
                     .build()
                 currentVersion = modelClient.push(branchRef, newVersion, currentVersion)
             }
         }
 
-        val expectedOrder = currentVersion.historyAsSequence().map { it.getObjectHash() }.toList()
+        val expectedHistory = currentVersion.historyAsSequence().toList()
+        val expectedOrder = expectedHistory.map { it.getObjectHash() }
+        val expectedAttributes = expectedHistory.map { it.getAttributes() }
 
         val history = modelClient.queryHistory(
             repositoryId = repositoryId,
@@ -126,6 +130,7 @@ class HistoryIndexPaginationTest {
         )
         assertEquals(expectedOrder.drop(skip).take(limit).toSet(), history.map { it.versionHash }.toSet())
         assertEquals(expectedOrder.drop(skip).take(limit), history.map { it.versionHash })
+        assertEquals(expectedAttributes.drop(skip).take(limit), history.map { it.attributes })
     }
 }
 

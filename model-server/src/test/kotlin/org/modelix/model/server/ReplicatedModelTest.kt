@@ -5,11 +5,16 @@ import io.ktor.server.testing.testApplication
 import io.ktor.util.reflect.instanceOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertFalse
+import org.modelix.datastructures.model.MutationParameters
 import org.modelix.model.api.ChildLinkReferenceByName
 import org.modelix.model.api.ConceptReference
+import org.modelix.model.api.IPropertyReference
 import org.modelix.model.api.ITree
 import org.modelix.model.api.PBranch
 import org.modelix.model.client2.ModelClientV2
@@ -32,6 +37,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 class ReplicatedModelTest {
 
@@ -118,6 +124,83 @@ class ReplicatedModelTest {
             // Step 5: check, eventually we must have 1 "hello" child
             val children = getHelloChildrenOfRootNode(tree)
             assertEquals(1, children.size)
+        }
+    }
+
+    @Test
+    fun versionAttributesAreStoredOnCreatedVersions() = runTest {
+        val client = createModelClient()
+        val repositoryId = RepositoryId(UUID.randomUUID().toString())
+        val branchReference = repositoryId.getBranchReference()
+        client.initRepository(repositoryId)
+
+        val attrs = mapOf("env" to "staging", "pipeline" to "ci-42")
+        val scope = CoroutineScope(Dispatchers.Default)
+        try {
+            ReplicatedModel(
+                client,
+                branchReference,
+                idGenerator = { ModelixIdGenerator(client.getIdGenerator(), it) },
+                providedScope = scope,
+                versionAttributes = { attrs },
+            ).use { replicatedModel ->
+                val tree = replicatedModel.start()
+                tree.runWrite { t ->
+                    t.mutate(MutationParameters.Property(t.tree.getRootNodeId(), IPropertyReference.fromName("test"), "value"))
+                }
+                withTimeout(5000.milliseconds) {
+                    while (replicatedModel.getCurrentVersion().getAttributes() != attrs) {
+                        delay(50.milliseconds)
+                    }
+                }
+                assertEquals(attrs, replicatedModel.getCurrentVersion().getAttributes())
+            }
+        } finally {
+            scope.cancel()
+        }
+    }
+
+    @Test
+    fun versionAttributesCanChangeBetweenVersions() = runTest {
+        val client = createModelClient()
+        val repositoryId = RepositoryId(UUID.randomUUID().toString())
+        val branchReference = repositoryId.getBranchReference()
+        client.initRepository(repositoryId)
+
+        val currentAttrs = mutableMapOf("run" to "1")
+        val scope = CoroutineScope(Dispatchers.Default)
+        try {
+            ReplicatedModel(
+                client,
+                branchReference,
+                idGenerator = { ModelixIdGenerator(client.getIdGenerator(), it) },
+                providedScope = scope,
+                versionAttributes = { currentAttrs.toMap() },
+            ).use { replicatedModel ->
+                val tree = replicatedModel.start()
+
+                // First write — closure returns run=1
+                tree.runWrite { t ->
+                    t.mutate(MutationParameters.Property(t.tree.getRootNodeId(), IPropertyReference.fromName("a"), "1"))
+                }
+                withTimeout(5000) {
+                    while (replicatedModel.getCurrentVersion().getAttributes() != mapOf("run" to "1")) delay(50)
+                }
+                assertEquals(mapOf("run" to "1"), replicatedModel.getCurrentVersion().getAttributes())
+
+                // Mutate the source map — closure now returns run=2
+                currentAttrs["run"] = "2"
+
+                tree.runWrite { t ->
+                    t.mutate(MutationParameters.Property(t.tree.getRootNodeId(), IPropertyReference.fromName("a"), "2"))
+                }
+                withTimeout(5000) {
+                    while (replicatedModel.getCurrentVersion().getAttributes() != mapOf("run" to "2")) delay(50)
+                }
+                assertEquals(mapOf("run" to "2"), replicatedModel.getCurrentVersion().getAttributes())
+            }
+        } finally {
+            scope.cancel()
         }
     }
 

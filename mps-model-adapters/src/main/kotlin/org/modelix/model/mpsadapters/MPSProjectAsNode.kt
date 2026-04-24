@@ -1,6 +1,7 @@
 package org.modelix.model.mpsadapters
 
 import jetbrains.mps.project.ModuleId
+import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.kotlin.utils.ContextValue
 import org.modelix.model.api.BuiltinLanguages
@@ -123,6 +124,8 @@ data class MPSProjectAsNode(private val id: MPSProjectReference, val project: IM
     }
 
     constructor(mpsProject: org.jetbrains.mps.openapi.project.Project) : this(MPSProjectAdapter(mpsProject))
+
+    override fun getOwningMPSModule(): SModule? = null
 
     override fun getElement(): MPSProjectAsNode {
         return this

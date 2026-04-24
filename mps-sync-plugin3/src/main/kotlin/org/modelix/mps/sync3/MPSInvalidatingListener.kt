@@ -34,6 +34,7 @@ import org.modelix.model.mpsadapters.MPSModuleAsNode
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import org.modelix.model.mpsadapters.asReadableNode
 import org.modelix.model.sync.bulk.DefaultInvalidationTree
+import org.modelix.model.sync.bulk.ModelSynchronizer
 import java.util.concurrent.atomic.AtomicBoolean
 
 private val LOG = mu.KotlinLogging.logger { }
@@ -49,6 +50,7 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
     private val invalidationTree: DefaultInvalidationTree =
         DefaultInvalidationTree(MPSRepositoryAsNode(repository).getNodeReference().toSerialized())
     private var synchronizationErrorHappened: Boolean = false
+    private val changedModules: MutableSet<SModuleReference> = HashSet()
 
     fun hasAnyInvalidations() = synchronized(invalidationTree) { invalidationTree.hasAnyInvalidations() }
 
@@ -56,17 +58,18 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
         synchronizationErrorHappened = true
     }
 
-    fun <R> runSync(body: (DefaultInvalidationTree) -> R): R {
+    fun <R> runSync(body: (ModelSynchronizer.IIncrementalUpdateInformation) -> R): R {
         check(!syncActive.getAndSet(true)) { "Synchronization is already running" }
         try {
             synchronized(invalidationTree) {
                 synchronizationErrorHappened = false
-                return body(invalidationTree).also {
+                return body(MetadataUpdateFilter(changedModules, invalidationTree)).also {
                     if (synchronizationErrorHappened) {
                         LOG.trace { "Synchronization wasn't successful. Preserving invalidations." }
                     } else {
                         LOG.trace { "Resetting invalidations" }
                         invalidationTree.reset()
+                        changedModules.clear()
                     }
                 }
             }
@@ -95,14 +98,21 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
 
     private fun invalidate(model: SModel, includingDescendants: Boolean = false) {
         invalidate(MPSModelAsNode(model), includingDescendants)
+        metaDataChanged(model.module)
     }
 
     private fun invalidate(module: SModule, includingDescendants: Boolean = false) {
         invalidate(MPSModuleAsNode(module), includingDescendants)
+        metaDataChanged(module)
     }
 
     private fun invalidate(repository: SRepository, includingDescendants: Boolean = false) {
         invalidate(MPSRepositoryAsNode(repository), includingDescendants)
+    }
+
+    private fun metaDataChanged(module: SModule?) {
+        if (module == null) return
+        changedModules.add(module.moduleReference)
     }
 
     override fun addListener(model: SModel) {

@@ -2,6 +2,7 @@ package org.modelix.model.mpsadapters
 
 import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelReference
+import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -38,6 +39,8 @@ data class MPSModelImportAsNode(val importedModel: SModelReference, val importin
             },
         )
     }
+
+    override fun getOwningMPSModule(): SModule? = importingModel.module
 
     override fun getElement(): MPSModelImportAsNode {
         return this

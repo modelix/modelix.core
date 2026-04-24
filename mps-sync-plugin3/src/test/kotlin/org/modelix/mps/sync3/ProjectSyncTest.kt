@@ -11,6 +11,7 @@ import jetbrains.mps.core.tool.environment.util.SetLibraryContributor
 import jetbrains.mps.ide.MPSCoreComponents
 import jetbrains.mps.ide.project.ProjectHelper
 import jetbrains.mps.library.contributor.LibDescriptor
+import jetbrains.mps.project.Solution
 import jetbrains.mps.smodel.Language
 import jetbrains.mps.smodel.MPSModuleRepository
 import jetbrains.mps.smodel.ModelImports
@@ -293,6 +294,52 @@ class ProjectSyncTest : ProjectSyncTestBase() {
         assertEquals(MPSProperty(nameProperty).getUID(), change.role.getUID())
         assertEquals("MyClass", version1.getModelTree().getProperty(change.nodeId, change.role).getBlocking(version1.getModelTree()))
         assertEquals("Changed", version2.getModelTree().getProperty(change.nodeId, change.role).getBlocking(version1.getModelTree()))
+    }
+
+    fun `test language version change`(): Unit = runWithModelServer { port ->
+        val branchRef = RepositoryId("sync-test").getBranchReference()
+        openTestProject("initial")
+        val service = IModelSyncService.getInstance(mpsProject)
+        val connection = service.addServer("http://localhost:$port")
+        val binding = connection.bind(branchRef)
+        val version1 = binding.flush()
+
+        readAction {
+            val solution = mpsProject.projectModules.first { it.moduleName == "NewSolution" }
+            val bl = solution.usedLanguages.first { it.qualifiedName == "jetbrains.mps.baseLanguage" }
+            assertEquals(11, solution.getUsedLanguageVersion(bl))
+        }
+
+        version1.getModelTree().asReadOnlyModel().let { model ->
+            val modules = model.getRootNode().getChildren(BuiltinLanguages.MPSRepositoryConcepts.Repository.modules.toReference())
+            val solution = modules.first { it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference()) == "NewSolution" }
+            val languageDependencies = solution.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.languageDependencies.toReference())
+            val bl = languageDependencies.first { it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name.toReference()) == "jetbrains.mps.baseLanguage" }
+            val langVersion = bl.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version.toReference())
+            assertEquals("11", langVersion)
+        }
+
+        writeAction {
+            val solution = mpsProject.projectModules.first { it.moduleName == "NewSolution" } as Solution
+            val bl = solution.usedLanguages.first { it.qualifiedName == "jetbrains.mps.baseLanguage" }
+
+            // https://github.com/JetBrains/MPS/blob/51dec876eaa578ea51a438e2f247595bbbf272fc/core/kernel/kernelSolution/source_gen/jetbrains/mps/smodel/ModuleDependencyVersions.java#L184-L194
+            solution.moduleDescriptor.languageVersions[bl] = 0
+            solution.setChanged()
+
+            assertEquals(0, solution.getUsedLanguageVersion(bl))
+        }
+
+        val version2 = binding.flush()
+
+        version2.getModelTree().asReadOnlyModel().let { model ->
+            val modules = model.getRootNode().getChildren(BuiltinLanguages.MPSRepositoryConcepts.Repository.modules.toReference())
+            val solution = modules.first { it.getPropertyValue(BuiltinLanguages.jetbrains_mps_lang_core.INamedConcept.name.toReference()) == "NewSolution" }
+            val languageDependencies = solution.getChildren(BuiltinLanguages.MPSRepositoryConcepts.Module.languageDependencies.toReference())
+            val bl = languageDependencies.first { it.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.LanguageDependency.name.toReference()) == "jetbrains.mps.baseLanguage" }
+            val langVersion = bl.getPropertyValue(BuiltinLanguages.MPSRepositoryConcepts.SingleLanguageDependency.version.toReference())
+            assertEquals("0", langVersion)
+        }
     }
 
     fun `test descendants of new node are synchronized`() = runChangeInMpsTest { classNode ->

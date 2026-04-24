@@ -142,6 +142,8 @@ data class MPSModuleDependencyAsNode(
         )
     }
 
+    override fun getOwningMPSModule(): SModule? = owner
+
     override fun getContainmentLink(): IChildLinkReference {
         return BuiltinLanguages.MPSRepositoryConcepts.Module.dependencies.toReference()
     }

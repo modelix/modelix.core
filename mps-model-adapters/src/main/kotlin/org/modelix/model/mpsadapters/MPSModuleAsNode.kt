@@ -293,6 +293,8 @@ abstract class MPSModuleAsNode<E : SModule> : MPSGenericNodeAdapter<E>() {
         return module.isReadOnly
     }
 
+    override fun getOwningMPSModule(): SModule? = module
+
     override fun getElement(): E {
         return module
     }

@@ -44,6 +44,10 @@ data class MPSDevKitDependencyAsNode(
         require(moduleImporter != null || modelImporter != null)
     }
 
+    override fun getOwningMPSModule(): SModule? {
+        return moduleImporter ?: modelImporter?.module
+    }
+
     override fun getElement(): MPSDevKitDependencyAsNode = this
 
     override fun getPropertyAccessors(): List<Pair<IPropertyReference, IPropertyAccessor<MPSDevKitDependencyAsNode>>> {

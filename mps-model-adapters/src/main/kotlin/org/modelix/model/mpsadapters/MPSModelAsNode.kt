@@ -12,6 +12,7 @@ import org.jetbrains.mps.openapi.model.SModel
 import org.jetbrains.mps.openapi.model.SModelId
 import org.jetbrains.mps.openapi.model.SModelName
 import org.jetbrains.mps.openapi.model.SModelReference
+import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.persistence.PersistenceFacade
 import org.modelix.model.api.BuiltinLanguages
@@ -196,6 +197,8 @@ data class MPSModelAsNode(val model: SModel) : MPSGenericNodeAdapter<SModel>() {
             },
         )
     }
+
+    override fun getOwningMPSModule(): SModule? = model.module
 
     override fun getElement(): SModel {
         return model

@@ -45,6 +45,8 @@ data class MPSProjectModuleAsNode(val projectNode: MPSProjectAsNode, val module:
 
     val project: IMPSProject get() = projectNode.project
 
+    override fun getOwningMPSModule(): SModule? = null
+
     override fun getElement(): MPSProjectModuleAsNode {
         return this
     }

@@ -84,6 +84,8 @@ data class MPSSingleLanguageDependencyAsNode(
         }
     }
 
+    override fun getOwningMPSModule(): SModule? = moduleImporter ?: modelImporter?.module
+
     override fun getElement(): MPSSingleLanguageDependencyAsNode = this
 
     override fun getPropertyAccessors() = propertyAccessors

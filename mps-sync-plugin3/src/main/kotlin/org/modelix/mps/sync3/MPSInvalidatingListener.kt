@@ -34,6 +34,7 @@ import org.modelix.model.mpsadapters.MPSModuleAsNode
 import org.modelix.model.mpsadapters.MPSRepositoryAsNode
 import org.modelix.model.mpsadapters.asReadableNode
 import org.modelix.model.sync.bulk.DefaultInvalidationTree
+import org.modelix.model.sync.bulk.ModelSynchronizer
 import java.util.concurrent.atomic.AtomicBoolean
 
 private val LOG = mu.KotlinLogging.logger { }
@@ -49,6 +50,7 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
     private val invalidationTree: DefaultInvalidationTree =
         DefaultInvalidationTree(MPSRepositoryAsNode(repository).getNodeReference().toSerialized())
     private var synchronizationErrorHappened: Boolean = false
+    private val changedModules: MutableSet<SModuleReference> = HashSet()
 
     fun hasAnyInvalidations() = synchronized(invalidationTree) { invalidationTree.hasAnyInvalidations() }
 
@@ -56,17 +58,18 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
         synchronizationErrorHappened = true
     }
 
-    fun <R> runSync(body: (DefaultInvalidationTree) -> R): R {
+    fun <R> runSync(body: (ModelSynchronizer.IIncrementalUpdateInformation) -> R): R {
         check(!syncActive.getAndSet(true)) { "Synchronization is already running" }
         try {
             synchronized(invalidationTree) {
                 synchronizationErrorHappened = false
-                return body(invalidationTree).also {
+                return body(MetadataUpdateFilter(changedModules, invalidationTree)).also {
                     if (synchronizationErrorHappened) {
                         LOG.trace { "Synchronization wasn't successful. Preserving invalidations." }
                     } else {
                         LOG.trace { "Resetting invalidations" }
                         invalidationTree.reset()
+                        changedModules.clear()
                     }
                 }
             }
@@ -95,14 +98,21 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
 
     private fun invalidate(model: SModel, includingDescendants: Boolean = false) {
         invalidate(MPSModelAsNode(model), includingDescendants)
+        metaDataChanged(model.module)
     }
 
     private fun invalidate(module: SModule, includingDescendants: Boolean = false) {
         invalidate(MPSModuleAsNode(module), includingDescendants)
+        metaDataChanged(module)
     }
 
     private fun invalidate(repository: SRepository, includingDescendants: Boolean = false) {
         invalidate(MPSRepositoryAsNode(repository), includingDescendants)
+    }
+
+    private fun metaDataChanged(module: SModule?) {
+        if (module == null) return
+        changedModules.add(module.moduleReference)
     }
 
     override fun addListener(model: SModel) {
@@ -133,15 +143,15 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
         repository.removeRepositoryListener(srepositoryListener)
     }
 
-    override fun propertyChanged(e: SPropertyChangeEvent) {
+    override fun propertyChanged(e: SPropertyChangeEvent) = ignoreExceptions {
         invalidate(e.node)
     }
 
-    override fun referenceChanged(e: SReferenceChangeEvent) {
+    override fun referenceChanged(e: SReferenceChangeEvent) = ignoreExceptions {
         invalidate(e.node)
     }
 
-    override fun nodeAdded(e: SNodeAddEvent) {
+    override fun nodeAdded(e: SNodeAddEvent) = ignoreExceptions {
         val parent = e.parent
         if (parent != null) {
             invalidate(parent)
@@ -151,7 +161,7 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
         invalidate(e.child, true)
     }
 
-    override fun nodeRemoved(e: SNodeRemoveEvent) {
+    override fun nodeRemoved(e: SNodeRemoveEvent) = ignoreExceptions {
         val parent = e.parent
         if (parent != null) {
             invalidate(parent)
@@ -164,27 +174,27 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
     override fun beforeModelDisposed(model: SModel) {}
     override fun beforeModelRenamed(event: SModelRenamedEvent) {}
     override fun beforeRootRemoved(event: SModelRootEvent) {}
-    override fun childAdded(event: SModelChildEvent) {
+    override fun childAdded(event: SModelChildEvent) = ignoreExceptions {
         invalidate(event.parent)
         invalidate(event.child, true)
     }
-    override fun childRemoved(event: SModelChildEvent) { invalidate(event.parent) }
-    override fun devkitAdded(event: SModelDevKitEvent) { invalidate(event.model) }
-    override fun devkitRemoved(event: SModelDevKitEvent) { invalidate(event.model) }
+    override fun childRemoved(event: SModelChildEvent) = ignoreExceptions { invalidate(event.parent) }
+    override fun devkitAdded(event: SModelDevKitEvent) = ignoreExceptions { invalidate(event.model) }
+    override fun devkitRemoved(event: SModelDevKitEvent) = ignoreExceptions { invalidate(event.model) }
     override fun getPriority(): SModelListener.SModelListenerPriority {
         return SModelListener.SModelListenerPriority.CLIENT
     }
 
-    override fun importAdded(event: SModelImportEvent) { invalidate(event.model) }
-    override fun importRemoved(event: SModelImportEvent) { invalidate(event.model) }
-    override fun languageAdded(event: SModelLanguageEvent) { invalidate(event.model) }
-    override fun languageRemoved(event: SModelLanguageEvent) { invalidate(event.model) }
+    override fun importAdded(event: SModelImportEvent) = ignoreExceptions { invalidate(event.model) }
+    override fun importRemoved(event: SModelImportEvent) = ignoreExceptions { invalidate(event.model) }
+    override fun languageAdded(event: SModelLanguageEvent) = ignoreExceptions { invalidate(event.model) }
+    override fun languageRemoved(event: SModelLanguageEvent) = ignoreExceptions { invalidate(event.model) }
     override fun modelLoadingStateChanged(model: SModel, state: ModelLoadingState) {}
-    override fun modelRenamed(event: SModelRenamedEvent) { invalidate(event.model) }
+    override fun modelRenamed(event: SModelRenamedEvent) = ignoreExceptions { invalidate(event.model) }
     override fun modelSaved(model: SModel) {}
-    override fun propertyChanged(event: SModelPropertyEvent) { invalidate(event.node) }
-    override fun referenceAdded(event: SModelReferenceEvent) { invalidate(event.reference.sourceNode) }
-    override fun referenceRemoved(event: SModelReferenceEvent) { invalidate(event.reference.sourceNode) }
+    override fun propertyChanged(event: SModelPropertyEvent) = ignoreExceptions { invalidate(event.node) }
+    override fun referenceAdded(event: SModelReferenceEvent) = ignoreExceptions { invalidate(event.reference.sourceNode) }
+    override fun referenceRemoved(event: SModelReferenceEvent) = ignoreExceptions { invalidate(event.reference.sourceNode) }
 
     @Deprecated("")
     override fun rootAdded(event: SModelRootEvent) {
@@ -195,7 +205,7 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
     }
 
     override fun modelLoaded(model: SModel, partially: Boolean) {}
-    override fun modelReplaced(model: SModel) {
+    override fun modelReplaced(model: SModel) = ignoreExceptions {
         invalidate(MPSModelAsNode(model), includingDescendants = true)
     }
 
@@ -204,7 +214,7 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
     override fun modelDetached(model: SModel, repository: SRepository) {}
     override fun conflictDetected(model: SModel) {}
     override fun problemsDetected(model: SModel, problems: Iterable<SModel.Problem>) {}
-    override fun modelAdded(module: SModule, model: SModel) {
+    override fun modelAdded(module: SModule, model: SModel) = ignoreExceptions {
         invalidate(module)
         invalidate(model, true)
     }
@@ -215,28 +225,36 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
         invalidate(module)
     }
     override fun beforeModelRenamed(module: SModule, model: SModel, reference: SModelReference) {}
-    override fun modelRenamed(module: SModule, model: SModel, reference: SModelReference) {
+    override fun modelRenamed(module: SModule, model: SModel, reference: SModelReference) = ignoreExceptions {
         invalidate(model)
     }
 
-    override fun dependencyAdded(module: SModule, dependency: SDependency) { invalidate(module) }
-    override fun dependencyRemoved(module: SModule, dependency: SDependency) { invalidate(module) }
-    override fun languageAdded(module: SModule, language: SLanguage) { invalidate(module) }
-    override fun languageRemoved(module: SModule, language: SLanguage) { invalidate(module) }
-    override fun moduleChanged(module: SModule) { invalidate(module) }
+    override fun dependencyAdded(module: SModule, dependency: SDependency) = ignoreExceptions { invalidate(module) }
+    override fun dependencyRemoved(module: SModule, dependency: SDependency) = ignoreExceptions { invalidate(module) }
+    override fun languageAdded(module: SModule, language: SLanguage) = ignoreExceptions { invalidate(module) }
+    override fun languageRemoved(module: SModule, language: SLanguage) = ignoreExceptions { invalidate(module) }
+    override fun moduleChanged(module: SModule) = ignoreExceptions { invalidate(module) }
 
     /**
      * For compatibility with MPS 2020.3, SRepositoryListenerBase is used because SRepositoryListener had the additional
      * methods updateStarted and updateFinished in that version.
      */
     private val srepositoryListener = object : SRepositoryListenerBase() {
-        override fun moduleAdded(module: SModule) {
+        override fun moduleAdded(module: SModule) = ignoreExceptions {
             invalidate(repository)
             invalidate(module, true)
         }
         override fun beforeModuleRemoved(module: SModule) {}
-        override fun moduleRemoved(reference: SModuleReference) { invalidate(repository) }
+        override fun moduleRemoved(reference: SModuleReference) = ignoreExceptions { invalidate(repository) }
         override fun commandStarted(repository: SRepository) {}
         override fun commandFinished(repository: SRepository) {}
+    }
+
+    private inline fun ignoreExceptions(body: () -> Unit) {
+        try {
+            body()
+        } catch (ex: Throwable) {
+            LOG.error(ex) { "Exception in listener" }
+        }
     }
 }

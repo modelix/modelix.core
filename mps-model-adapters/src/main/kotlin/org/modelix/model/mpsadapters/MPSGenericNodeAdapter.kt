@@ -3,6 +3,7 @@ package org.modelix.model.mpsadapters
 import org.jetbrains.mps.openapi.language.SConcept
 import org.jetbrains.mps.openapi.model.SModelReference
 import org.jetbrains.mps.openapi.model.SNodeId
+import org.jetbrains.mps.openapi.module.SModule
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IMutableModel
@@ -18,6 +19,8 @@ import org.modelix.mps.api.ModelixMpsApi
 import org.modelix.mps.multiplatform.model.MPSNodeReference
 
 abstract class MPSGenericNodeAdapter<E> : IWritableNode, ISyncTargetNode {
+
+    abstract fun getOwningMPSModule(): SModule?
 
     protected abstract fun getElement(): E
     protected abstract fun getPropertyAccessors(): List<Pair<IPropertyReference, IPropertyAccessor<E>>>

@@ -125,6 +125,8 @@ data class MPSRepositoryAsNode(@get:JvmName("getRepository_") val repository: SR
         )
     }
 
+    override fun getOwningMPSModule(): SModule? = null
+
     override fun getElement(): SRepository = repository
 
     override fun getPropertyAccessors() = propertyAccessors

@@ -1,5 +1,6 @@
 package org.modelix.model.mpsadapters
 
+import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleId
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.modelix.model.api.BuiltinLanguages
@@ -20,6 +21,9 @@ data class MPSModuleReferenceAsNode(
     private val containmentLink: IChildLinkReference,
     val target: SModuleReference,
 ) : MPSGenericNodeAdapter<MPSModuleReferenceAsNode>() {
+
+    override fun getOwningMPSModule(): SModule? = parent.module
+
     override fun getElement(): MPSModuleReferenceAsNode {
         return this
     }

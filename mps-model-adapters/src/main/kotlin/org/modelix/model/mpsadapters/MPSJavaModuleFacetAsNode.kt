@@ -4,6 +4,7 @@ import jetbrains.mps.project.facets.JavaModuleFacet
 import jetbrains.mps.smodel.Generator
 import jetbrains.mps.util.MacroHelper
 import jetbrains.mps.util.MacrosFactory
+import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.persistence.Memento
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.IChildLinkReference
@@ -54,6 +55,8 @@ data class MPSJavaModuleFacetAsNode(val facet: JavaModuleFacet) : MPSGenericNode
         private val referenceAccessors = listOf<Pair<IReferenceLinkReference, IReferenceAccessor<JavaModuleFacet>>>()
         private val childAccessors = listOf<Pair<IChildLinkReference, IChildAccessor<JavaModuleFacet>>>()
     }
+
+    override fun getOwningMPSModule(): SModule? = facet.module
 
     override fun getElement(): JavaModuleFacet = facet
 

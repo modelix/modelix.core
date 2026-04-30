@@ -49,7 +49,7 @@ class HistoryQueries(val historyIndex: suspend () -> Object<HistoryIndexNode>) :
                         minTime = minOf(entry.minTime, node.minTime),
                         maxTime = maxOf(entry.maxTime, node.maxTime),
                         authors = entry.authors + node.authors,
-                        attributes = HistoryIndexNode.unionAttributes(entry.attributes, node.attributes),
+                        attributes = entry.attributes + node.attributes,
                     )
                 }
                 previousMinTime = node.minTime
@@ -88,7 +88,7 @@ class HistoryQueries(val historyIndex: suspend () -> Object<HistoryIndexNode>) :
                         minTime = minOf(entry.minTime, node.minTime),
                         maxTime = maxOf(entry.maxTime, node.maxTime),
                         authors = entry.authors + node.authors,
-                        attributes = HistoryIndexNode.unionAttributes(entry.attributes, node.attributes),
+                        attributes = entry.attributes + node.attributes,
                     )
                 } else {
                     if (mergedEntries.lastIndex >= pagination.asRange().last) throw LimitReached()

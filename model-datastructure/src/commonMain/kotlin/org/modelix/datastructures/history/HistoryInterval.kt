@@ -22,5 +22,5 @@ data class HistoryInterval(
      * Aggregated attributes from all versions in this interval.
      * Maps each attribute key to the set of all distinct values seen across versions.
      */
-    val attributes: Map<String, Set<String>> = emptyMap(),
+    val attributes: AttributesAggregation = AttributesAggregation.EMPTY,
 )

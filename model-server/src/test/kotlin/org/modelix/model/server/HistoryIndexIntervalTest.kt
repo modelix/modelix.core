@@ -4,6 +4,7 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.ktor.test.dispatcher.runTestWithRealTime
 import mu.KotlinLogging
+import org.modelix.datastructures.history.AttributesAggregation
 import org.modelix.datastructures.history.HistoryInterval
 import org.modelix.model.IVersion
 import org.modelix.model.client2.IModelClientV2
@@ -122,7 +123,9 @@ class HistoryIndexIntervalTest {
                     minTime = versions.minOf { it.getTimestamp()!! },
                     maxTime = versions.maxOf { it.getTimestamp()!! },
                     authors = versions.mapNotNull { it.getAuthor() }.toSet(),
-                    attributes = versions.fold(emptyMap()) { acc, v -> mergeAttributes(acc, v.getAttributes()) },
+                    attributes = versions.fold(AttributesAggregation.EMPTY) { acc, v ->
+                        acc + AttributesAggregation.of(v.getAttributes())
+                    },
                 )
             }
             .reversed()

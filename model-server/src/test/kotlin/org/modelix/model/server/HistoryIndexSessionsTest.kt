@@ -4,6 +4,7 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.runTestApplication
 import io.ktor.test.dispatcher.runTestWithRealTime
 import mu.KotlinLogging
+import org.modelix.datastructures.history.AttributesAggregation
 import org.modelix.datastructures.history.HistoryInterval
 import org.modelix.model.IVersion
 import org.modelix.model.client2.IModelClientV2
@@ -146,7 +147,7 @@ class HistoryIndexSessionsTest {
                     minTime = version.getTimestamp()!!,
                     maxTime = version.getTimestamp()!!,
                     authors = setOfNotNull(version.getAuthor()),
-                    attributes = mergeAttributes(emptyMap(), version.getAttributes()),
+                    attributes = AttributesAggregation.of(version.getAttributes()),
                 )
             } else {
                 val lastInterval = acc.last()
@@ -157,7 +158,7 @@ class HistoryIndexSessionsTest {
                     minTime = lastInterval.minTime,
                     maxTime = version.getTimestamp()!!,
                     authors = lastInterval.authors + listOfNotNull(version.getAuthor()),
-                    attributes = mergeAttributes(lastInterval.attributes, version.getAttributes()),
+                    attributes = lastInterval.attributes + AttributesAggregation.of(version.getAttributes()),
                 )
             }
         }.reversed().drop(skip).take(limit)

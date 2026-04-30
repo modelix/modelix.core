@@ -73,7 +73,7 @@ internal fun Map<String, String>.toAttributeEntriesJS(): Array<AttributeEntryJS>
  * contributed different values for the same key.
  */
 @JsExport
-class AggregatedAttributeEntryJS(val key: String, val values: Array<String>)
+class AggregatedAttributeEntryJS(val key: String, val firstValues: Array<String>, val lastValues: Array<String>)
 
 @JsExport
 class HistoryIntervalJS(
@@ -100,5 +100,7 @@ fun HistoryInterval.toJS() = HistoryIntervalJS(
     minTime = minTime.toJSDate(),
     maxTime = maxTime.toJSDate(),
     authors = authors.toTypedArray(),
-    attributes = attributes.entries.map { AggregatedAttributeEntryJS(it.key, it.value.toTypedArray()) }.toTypedArray(),
+    attributes = attributes.getEntries().map {
+        AggregatedAttributeEntryJS(it.key, it.value.first.toTypedArray(), it.value.last.toTypedArray())
+    }.toTypedArray(),
 )

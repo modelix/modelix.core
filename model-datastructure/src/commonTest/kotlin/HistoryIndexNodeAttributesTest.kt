@@ -1,4 +1,6 @@
 import kotlinx.datetime.Instant
+import org.modelix.datastructures.history.AttributeValuesAggregation
+import org.modelix.datastructures.history.AttributesAggregation
 import org.modelix.datastructures.history.HistoryIndexNode
 import org.modelix.datastructures.history.merge
 import org.modelix.datastructures.model.IGenericModelTree
@@ -46,14 +48,14 @@ class HistoryIndexNodeAttributesTest {
     fun `of() populates attributes from version`() {
         val v = createInitialVersion(mapOf("env" to "ci", "run" to "42"))
         val node = HistoryIndexNode.of(v.obj)
-        assertEquals(mapOf("env" to setOf("ci"), "run" to setOf("42")), node.attributes)
+        assertEquals(AttributesAggregation.of(mapOf("env" to "ci", "run" to "42")), node.attributes)
     }
 
     @Test
     fun `of() produces empty attributes when version has none`() {
         val v = createInitialVersion()
         val node = HistoryIndexNode.of(v.obj)
-        assertEquals(emptyMap(), node.attributes)
+        assertEquals(AttributesAggregation.EMPTY, node.attributes)
     }
 
     // --- aggregation through merge/concat ---
@@ -66,8 +68,8 @@ class HistoryIndexNodeAttributesTest {
         val node = HistoryIndexNode.of(v1.obj).asObject(graph)
             .merge(HistoryIndexNode.of(v2.obj).asObject(graph))
             .getBlocking(graph)
-        assertEquals(setOf("staging", "prod"), node.data.attributes["env"])
-        assertEquals(setOf("1"), node.data.attributes["run"])
+        assertEquals(AttributeValuesAggregation.of("staging", "prod"), node.data.attributes.getValues("env"))
+        assertEquals(AttributeValuesAggregation.of("1"), node.data.attributes.getValues("run"))
     }
 
     @Test
@@ -79,8 +81,8 @@ class HistoryIndexNodeAttributesTest {
         val node = HistoryIndexNode.of(v1.obj).asObject(graph)
             .merge(HistoryIndexNode.of(v2.obj).asObject(graph))
             .getBlocking(graph)
-        assertEquals(setOf("a", "b"), node.data.attributes["env"])
-        assertEquals(setOf("1"), node.data.attributes["run"])
+        assertEquals(AttributeValuesAggregation.of("a", "b"), node.data.attributes["env"])
+        assertEquals(AttributeValuesAggregation.of("1"), node.data.attributes["run"])
     }
 
     // --- serialization round-trip ---
@@ -120,7 +122,7 @@ class HistoryIndexNodeAttributesTest {
         val serialized = HistoryIndexNode.of(v.obj).serialize()
         // When attributes are empty, no trailing field is added — deserialization returns empty map
         val restored = HistoryIndexNode.deserialize(serialized, graph)
-        assertEquals(emptyMap(), restored.attributes)
+        assertEquals(AttributesAggregation.EMPTY, restored.attributes)
     }
 
     @Test

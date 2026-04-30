@@ -28,7 +28,7 @@ sealed class HistoryIndexNode : IObjectData {
     abstract val firstVersion: ObjectReference<CPVersion>
     abstract val lastVersion: ObjectReference<CPVersion>
     abstract val authors: Set<String>
-    abstract val attributes: Map<String, Set<String>>
+    abstract val attributes: AttributesAggregation
     abstract val size: Long
     abstract val height: Long
     abstract val minTime: Instant
@@ -61,7 +61,7 @@ sealed class HistoryIndexNode : IObjectData {
             firstVersion = firstVersion,
             lastVersion = other.lastVersion,
             authors = authors + other.authors,
-            attributes = unionAttributes(attributes, other.attributes),
+            attributes = attributes + other.attributes,
             size = size + other.size,
             height = max(height, other.height) + 1,
             minTime = minTime,
@@ -89,7 +89,7 @@ sealed class HistoryIndexNode : IObjectData {
                     val versionRefs = parts[1].split(Separators.LEVEL2)
                         .map { referenceFactory.fromHashString(it, CPVersion) }
                     val times = parts[5].split(Separators.LEVEL2).map { Instant.fromEpochSeconds(it.toLong()) }
-                    return HistoryIndexRangeNode(
+                    HistoryIndexRangeNode(
                         firstVersion = versionRefs[0],
                         lastVersion = versionRefs.getOrElse(1) { versionRefs[0] },
                         authors = parts[2].split(Separators.LEVEL2).mapNotNull { it.urlDecode() }.toSet(),
@@ -99,7 +99,7 @@ sealed class HistoryIndexNode : IObjectData {
                         maxTime = times.getOrElse(1) { times[0] },
                         child1 = referenceFactory.fromHashString(parts[6], HistoryIndexNode),
                         child2 = referenceFactory.fromHashString(parts[7], HistoryIndexNode),
-                        attributes = parts.getOrNull(8)?.let { deserializeAttributes(it) } ?: emptyMap(),
+                        attributes = parts.getOrNull(8)?.let { deserializeAttributes(it) } ?: AttributesAggregation.EMPTY,
                     )
                 }
                 "L" -> {
@@ -108,7 +108,7 @@ sealed class HistoryIndexNode : IObjectData {
                             .map { referenceFactory.fromHashString(it, CPVersion) },
                         authors = parts[2].split(Separators.LEVEL2).mapNotNull { it.urlDecode() }.toSet(),
                         time = Instant.fromEpochSeconds(parts[3].toLong()),
-                        attributes = parts.getOrNull(4)?.let { deserializeAttributes(it) } ?: emptyMap(),
+                        attributes = parts.getOrNull(4)?.let { deserializeAttributes(it) } ?: AttributesAggregation.EMPTY,
                     )
                 }
                 else -> error("Unknown type: " + parts[0])
@@ -121,7 +121,7 @@ sealed class HistoryIndexNode : IObjectData {
                 versions = listOf(version.ref),
                 authors = setOfNotNull(version.data.author),
                 time = time,
-                attributes = version.data.attributes.mapValues { setOf(it.value) },
+                attributes = AttributesAggregation.of(version.data.attributes),
             )
         }
 
@@ -133,37 +133,39 @@ sealed class HistoryIndexNode : IObjectData {
          * Serializes `Map<String, Set<String>>` as a LEVEL2-separated list of `urlEncode(key)=urlEncode(val1);urlEncode(val2)` entries.
          * Returns empty string for an empty map.
          */
-        internal fun serializeAttributes(attributes: Map<String, Set<String>>): String {
+        internal fun serializeAttributes(attributes: AttributesAggregation): String {
             if (attributes.isEmpty()) return ""
-            return attributes.entries.sortedBy { it.key }.joinToString(Separators.LEVEL2) { (key, values) ->
-                key.urlEncode() + Separators.MAPPING + values.sorted().joinToString(Separators.LEVEL3) { it.urlEncode() }
+            return attributes.getEntries().sortedBy { it.key }.joinToString(Separators.LEVEL2) { (key, values) ->
+                key.urlEncode() +
+                    Separators.MAPPING +
+                    values.first.sorted().joinToString(Separators.LEVEL4) { it.urlEncode() } +
+                    Separators.LEVEL3 +
+                    values.last.sorted().joinToString(Separators.LEVEL4) { it.urlEncode() }
             }
         }
 
         /**
          * Deserializes the output of [serializeAttributes]. Returns empty map for an empty string.
          */
-        internal fun deserializeAttributes(serialized: String): Map<String, Set<String>> {
-            if (serialized.isEmpty()) return emptyMap()
+        internal fun deserializeAttributes(serialized: String): AttributesAggregation {
+            if (serialized.isEmpty()) return AttributesAggregation.EMPTY
             return serialized.split(Separators.LEVEL2).mapNotNull { entry ->
                 val eqIdx = entry.indexOf(Separators.MAPPING)
                 if (eqIdx < 0) return@mapNotNull null
                 val key = entry.substring(0, eqIdx).urlDecode() ?: return@mapNotNull null
-                val values = entry.substring(eqIdx + 1)
-                    .split(Separators.LEVEL3)
+                val firstAndLast = entry.substring(eqIdx + 1).split(Separators.LEVEL3)
+                val firstValues = firstAndLast[0]
+                    .split(Separators.LEVEL4)
+                    .filter { it.isNotEmpty() }
                     .mapNotNull { it.urlDecode() }
                     .toSet()
-                key to values
-            }.toMap()
-        }
-
-        internal fun unionAttributes(
-            a: Map<String, Set<String>>,
-            b: Map<String, Set<String>>,
-        ): Map<String, Set<String>> {
-            if (a.isEmpty()) return b
-            if (b.isEmpty()) return a
-            return (a.keys + b.keys).associateWith { key -> (a[key] ?: emptySet()) + (b[key] ?: emptySet()) }
+                val lastValues = firstAndLast[1]
+                    .split(Separators.LEVEL4)
+                    .filter { it.isNotEmpty() }
+                    .mapNotNull { it.urlDecode() }
+                    .toSet()
+                key to AttributeValuesAggregation(firstValues, lastValues)
+            }.toMap().let { AttributesAggregation(it) }
         }
     }
 }
@@ -177,7 +179,7 @@ data class HistoryIndexLeafNode(
     val versions: List<ObjectReference<CPVersion>>,
     override val authors: Set<String>,
     val time: Instant,
-    override val attributes: Map<String, Set<String>> = emptyMap(),
+    override val attributes: AttributesAggregation,
 ) : HistoryIndexNode() {
     override val size: Long get() = versions.size.toLong()
     override val height: Long get() = 1
@@ -210,7 +212,7 @@ data class HistoryIndexLeafNode(
                         versions = listOf(it.ref),
                         authors = setOfNotNull(it.data.author),
                         time = time,
-                        attributes = it.data.attributes.mapValues { (_, v) -> setOf(v) },
+                        attributes = AttributesAggregation.of(it.data.attributes),
                     )
                 }
         }
@@ -254,7 +256,7 @@ data class HistoryIndexLeafNode(
                         versions = (versions + other.versions).distinctBy { it.getHash() }.toList(),
                         authors = authors + other.authors,
                         time = time,
-                        attributes = unionAttributes(attributes, other.attributes),
+                        attributes = attributes + other.attributes,
                     ).asObject(self.graph).let { IStream.of(it) }
                 }
             }
@@ -305,7 +307,7 @@ data class HistoryIndexRangeNode(
      * Aggregated attributes from all versions in this subtree.
      * Maps each attribute key to the set of all distinct values seen across versions.
      */
-    override val attributes: Map<String, Set<String>> = emptyMap(),
+    override val attributes: AttributesAggregation,
 ) : HistoryIndexNode() {
 
     init {

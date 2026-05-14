@@ -51,7 +51,7 @@ jobs:
           git checkout model-server-openapi/specifications
       - name: Run oasdiff
         id: breaking
-        uses: oasdiff/oasdiff-action/breaking@0b59b343a8d675602f20f0ed4a64dda45edcc0d2 # main
+        uses: oasdiff/oasdiff-action/breaking@6147a58e5d1249a12f42fc864ab791d571a30015 # main
         with:
           base: 'model-server-openapi/specifications-before/*.yaml'
           revision: 'model-server-openapi/specifications/*.yaml'

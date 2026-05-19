@@ -37,7 +37,7 @@
     "dukat": "^0.5.8-rc.4",
     "jest": "^30.4.1",
     "prettier": "3.8.3",
-    "ts-jest": "^29.4.9",
+    "ts-jest": "^29.4.10",
     "typescript": "^5.9.3"
   },
   "prettier-comment": "// IMPORTANT: keep Prettier version in sync with the version in .pre-commit-config.yaml",

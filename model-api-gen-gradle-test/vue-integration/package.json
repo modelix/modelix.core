@@ -10,7 +10,7 @@
     "@types/jest": "^30.0.0",
     "jest": "^30.4.2",
     "prettier": "3.8.3",
-    "ts-jest": "^29.4.9"
+    "ts-jest": "^29.4.10"
   },
   "overrides": {
     "@modelix/model-client": "file:../../model-client/build/npmDevPackage/model-client.tgz",

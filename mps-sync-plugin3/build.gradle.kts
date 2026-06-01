@@ -3,7 +3,6 @@ import org.modelix.buildtools.KnownModuleIds
 import org.modelix.buildtools.buildStubsSolutionJar
 import org.modelix.copyMps
 import org.modelix.mpsHomeDir
-import org.modelix.mpsMajorVersion
 import org.modelix.mpsPlatformVersion
 import kotlin.io.resolve
 import kotlin.jvm.java
@@ -63,7 +62,7 @@ dependencies {
 
 tasks {
     patchPluginXml {
-        sinceBuild.set("213")
+        sinceBuild.set("222")
         untilBuild.set("241.*")
     }
 
@@ -78,11 +77,6 @@ tasks {
     test {
         dependsOn(":model-server:jibDockerBuild")
         jvmArgs("-Dmodelix.model.server.image=modelix/model-server:$version")
-        onlyIf {
-            !setOf(
-                "2020.3", // incompatible with the intellij plugin
-            ).contains(mpsMajorVersion)
-        }
         jvmArgs("-Dintellij.platform.load.app.info.from.resources=true")
         jvmArgs("-Xmx1000m")
 

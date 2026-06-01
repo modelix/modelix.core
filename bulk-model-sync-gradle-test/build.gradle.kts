@@ -24,7 +24,7 @@ val copyTestRepo by tasks.registering(Sync::class) {
 }
 
 mpsBuild {
-    mpsVersion("2021.2.5")
+    mpsVersion("2022.2.4")
 }
 
 modelSync {

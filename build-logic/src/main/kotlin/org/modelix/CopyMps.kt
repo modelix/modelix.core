@@ -23,10 +23,7 @@ val Project.mpsVersion: String get() {
             requireNotNull(
                 mapOf(
                     // https://artifacts.itemis.cloud/service/rest/repository/browse/maven-mps/com/jetbrains/mps/
-                    "2020.3" to "2020.3.6",
-                    "2021.1" to "2021.1.4",
-                    "2021.2" to "2021.2.6",
-                    "2021.3" to "2021.3.5",
+                    // We only support MPS 2022.2+, which runs on JDK 17. Older versions ran on JDK 11 (see MODELIX_JDK_VERSION).
                     "2022.2" to "2022.2.4",
                     "2022.3" to "2022.3.3",
                     "2023.2" to "2023.2.2",
@@ -41,8 +38,6 @@ val Project.mpsVersion: String get() {
 val Project.mpsPlatformVersion: Int get() {
     return mpsVersion.replace(Regex("""20(\d\d)\.(\d+).*"""), "$1$2").toInt()
 }
-
-val Project.mpsJavaVersion: Int get() = if (mpsPlatformVersion >= 223) 17 else 11
 
 val Project.mpsHomeDir: Provider<Directory> get() {
     if (project != rootProject) return rootProject.mpsHomeDir

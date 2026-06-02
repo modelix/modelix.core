@@ -121,6 +121,7 @@ tasks {
                 moduleDependency(KnownModuleIds.MPS_IDEA)
                 moduleDependency(KnownModuleIds.MPS_Core)
                 moduleDependency(KnownModuleIds.MPS_Platform)
+                moduleDependency(KnownModuleIds.org_jdom)
             }
         }
     }

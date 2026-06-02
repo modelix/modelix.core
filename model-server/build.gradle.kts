@@ -17,6 +17,39 @@ description = "Model Server offering access to model storage"
 
 defaultTasks.add("build")
 
+// Apache Ignite accesses proprietary JDK APIs that the module system keeps inaccessible by default.
+// These flags open up those APIs and must be passed to every JVM that starts Ignite
+// (tests, `run`, install scripts, container).
+// List taken verbatim from the Ignite documentation:
+// https://ignite.apache.org/docs/latest/quick-start/java#running-ignite-with-java-11-or-later
+val igniteJvmArgs = listOf(
+    "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED",
+    "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED",
+    "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
+    "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED",
+    "--add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED",
+    "--add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED",
+    "--add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED",
+    "--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED",
+    "--add-opens=java.base/java.io=ALL-UNNAMED",
+    "--add-opens=java.base/java.nio=ALL-UNNAMED",
+    "--add-opens=java.base/java.net=ALL-UNNAMED",
+    "--add-opens=java.base/java.util=ALL-UNNAMED",
+    "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED",
+    "--add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED",
+    "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED",
+    "--add-opens=java.base/java.lang=ALL-UNNAMED",
+    "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED",
+    "--add-opens=java.base/java.math=ALL-UNNAMED",
+    "--add-opens=java.sql/java.sql=ALL-UNNAMED",
+    "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
+    "--add-opens=java.base/java.time=ALL-UNNAMED",
+    "--add-opens=java.base/java.text=ALL-UNNAMED",
+    "--add-opens=java.logging/java.util.logging=ALL-UNNAMED",
+    "--add-opens=java.management/sun.management=ALL-UNNAMED",
+    "--add-opens=java.desktop/java.awt.font=ALL-UNNAMED",
+)
+
 val mpsExtensionsVersion: String by project
 
 dependencies {
@@ -111,6 +144,8 @@ tasks.named("assemble") {
 
 application {
     mainClass.set("org.modelix.model.server.Main")
+    // Propagates to the `run` task and the generated start scripts (installDist / distributions).
+    applicationDefaultJvmArgs = igniteJvmArgs
 }
 
 publishing {
@@ -142,13 +177,15 @@ tasks.test {
     // See https://stackoverflow.com/questions/76387714/apache-ignite-failing-on-startup
     environment("IGNITE_OVERRIDE_CONSISTENT_ID", "node00")
     environment("KEYCLOAK_VERSION", libs.versions.keycloak.get())
+    jvmArgs(igniteJvmArgs)
 }
 
 jib {
-    from.image = "registry.access.redhat.com/ubi8/openjdk-11:1.21-1.1736337912"
+    from.image = "registry.access.redhat.com/ubi8/openjdk-17:1.20-2.1729094551"
     to.image = "modelix/model-server:$version"
     to.tags = setOf("test")
     container {
         ports = listOf("28101")
+        jvmFlags = igniteJvmArgs
     }
 }

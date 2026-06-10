@@ -1,5 +1,6 @@
 package org.modelix.mps.sync3.ui
 
+import com.intellij.ide.BrowserUtil
 import com.intellij.ide.DataManager
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
@@ -28,10 +29,8 @@ import org.modelix.mps.api.ModelixMpsApi
 import org.modelix.mps.sync3.IBinding
 import org.modelix.mps.sync3.IModelSyncService
 import org.modelix.mps.sync3.IServerConnection
-import java.awt.Desktop
 import java.awt.Point
 import java.awt.event.MouseEvent
-import java.net.URI
 import java.util.concurrent.TimeUnit
 import javax.swing.Icon
 import javax.swing.JComponent
@@ -64,11 +63,10 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
                 val authRequests = IModelSyncService.getInstance(project).getUsedServerConnections()
                     .flatMap { it.getPendingAuthRequests() }.toSet()
                 if (authRequests.isNotEmpty()) {
-                    val desktop = Desktop.getDesktop()
-                    if (desktop.isSupported(Desktop.Action.BROWSE)) {
-                        for (authRequest in authRequests) {
-                            desktop.browse(URI.create(authRequest.getUrl()))
-                        }
+                    // java.awt.Desktop.BROWSE is unavailable on many Linux setups; BrowserUtil uses it on
+                    // Windows/macOS where it works, and falls back to xdg-open etc. on Linux
+                    for (authRequest in authRequests) {
+                        BrowserUtil.browse(authRequest.getUrl())
                     }
                     return true
                 } else {

@@ -9,7 +9,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.net.URL
 
-class NonExistingFile(private val parent: IFile, private val name: String) : IFile {
+class NonExistingFile(private val parent: IFile, private val name: String) : IFileBase() {
     override fun getFileSystem(): FileSystem {
         TODO("Not yet implemented")
     }

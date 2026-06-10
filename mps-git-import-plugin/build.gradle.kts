@@ -47,7 +47,7 @@ dependencies {
 tasks {
     patchPluginXml {
         sinceBuild.set("241")
-        untilBuild.set("241.*")
+        untilBuild.set("251.*")
     }
 
     buildSearchableOptions {

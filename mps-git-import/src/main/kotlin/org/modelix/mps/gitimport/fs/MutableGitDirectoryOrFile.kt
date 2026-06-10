@@ -25,7 +25,7 @@ class MutableGitDirectoryOrFile(
     private val gitFS: MutableGitFS,
     private val parent: MutableGitDirectoryOrFile?,
     private val name: String,
-) : IFile {
+) : IFileBase() {
     private var content: Content = NonExisting()
 
     override fun getName() = name

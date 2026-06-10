@@ -24,6 +24,12 @@ jobs:
           - "2023.3"
           - "2024.1"
           - "2025.1"
+        include:
+          # mps-git-import only supports MPS 2024.1+ (see sinceBuild in mps-git-import-plugin/build.gradle.kts)
+          - version: "2024.1"
+            additional-tasks: ":mps-git-import:build :mps-git-import-plugin:build"
+          - version: "2025.1"
+            additional-tasks: ":mps-git-import:build :mps-git-import-plugin:build"
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -46,6 +52,7 @@ jobs:
           :mps-model-adapters:build
           :mps-model-adapters-plugin:build
           :mps-sync-plugin3:build
+          ${{ matrix.additional-tasks }}
           -Pmps.version.major=${{ matrix.version }}
       - name: Archive test report
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

@@ -22,7 +22,7 @@ class GitObjectAsVirtualFile(
     private val isDirectory: Boolean,
     private val objectId: AnyObjectId,
     private val repository: Repository,
-) : IFile {
+) : IFileBase() {
     private val children: Sequence<GitObjectAsVirtualFile> = if (!isDirectory) {
         emptySequence()
     } else {

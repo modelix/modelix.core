@@ -88,6 +88,63 @@ fun Project.copyMps(): File {
         }
     }
 
+    // The gradle-intellij-plugin 1.x reads the launch information from product-info.json and injects it into the
+    // forked test JVM. Two pieces of that, meant for launching the real IDE, break the test executor on 2025.1+;
+    // MPS <= 2024.1 ships no product-info.json, so the plugin injects neither and the tests pass. Both are sanitized
+    // here, keeping the file present and valid (it also serves as the PathManager marker).
+    val productInfo = mpsHomeDir.get().asFile.resolve("product-info.json")
+    if (productInfo.exists()) {
+        @Suppress("UNCHECKED_CAST")
+        val json = groovy.json.JsonSlurper().parse(productInfo) as MutableMap<String, Any?>
+        val launches = json["launch"] as? List<*> ?: emptyList<Any?>()
+        for (launch in launches.filterIsInstance<MutableMap<String, Any?>>()) {
+            // resolveIdeHomeVariable assumes every additionalJvmArgument is "key=value" and does split("=")[1],
+            // so an argument without "=" (e.g. -XX:+UseCompressedOops) throws IndexOutOfBoundsException while
+            // configuring the test task. Drop them; OpenedPackages provides the --add-opens the platform needs.
+            if (launch.containsKey("additionalJvmArguments")) {
+                launch["additionalJvmArguments"] = emptyList<String>()
+            }
+            // The plugin passes every line of the referenced .vmoptions file to the JVM verbatim, including the
+            // "#Common IntelliJ Platform options:" comment lines. The launcher treats such a token as the main
+            // class, so the -Djava.system.class.loader=com.intellij.util.lang.PathClassLoader it also sets cannot
+            // be resolved (the -cp argfile after the token is ignored) and the VM aborts during initialization.
+            // Strip comment and blank lines, keeping the real options (heap sizes, GC settings, ...).
+            val vmOptionsPath = (launch["vmOptionsFilePath"] as? String)?.removePrefix("../")
+            val vmOptionsFile = vmOptionsPath?.let { mpsHomeDir.get().asFile.resolve(it) }
+            if (vmOptionsFile != null && vmOptionsFile.exists()) {
+                val kept = vmOptionsFile.readLines().filter { it.isNotBlank() && !it.trimStart().startsWith("#") }
+                vmOptionsFile.writeText(kept.joinToString("\n", postfix = "\n"))
+            }
+        }
+
+        // The Maven MPS distribution declares only a Linux/amd64 launch entry. The plugin refuses to
+        // run on a host whose os.arch has no matching launch entry, which blocks running the IDE tests
+        // locally on e.g. Apple Silicon. Add an entry for the current host (cloned from the existing
+        // one, so it inherits the sanitized fields) when none matches. On CI (Linux/amd64) the entry
+        // already exists, so this is a no-op.
+        val mutableLaunches = launches.filterIsInstance<MutableMap<String, Any?>>()
+        if (mutableLaunches.isNotEmpty()) {
+            val osName = System.getProperty("os.name").lowercase()
+            val currentOs = when {
+                osName.contains("win") -> "Windows"
+                osName.contains("mac") || osName.contains("darwin") -> "macOS"
+                else -> "Linux"
+            }
+            val currentArch = System.getProperty("os.arch")
+            val hasMatch = mutableLaunches.any { it["os"] == currentOs && it["arch"] == currentArch }
+            if (!hasMatch) {
+                @Suppress("UNCHECKED_CAST")
+                val launchList = json["launch"] as MutableList<Any?>
+                val hostLaunch = LinkedHashMap(mutableLaunches.first())
+                hostLaunch["os"] = currentOs
+                hostLaunch["arch"] = currentArch
+                launchList.add(hostLaunch)
+            }
+        }
+
+        productInfo.writeText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(json)))
+    }
+
     // The build number of a local IDE is expected to contain a product code, otherwise an exception is thrown.
     val buildTxt = mpsHomeDir.get().asFile.resolve("build.txt")
     val buildNumber = buildTxt.readText()

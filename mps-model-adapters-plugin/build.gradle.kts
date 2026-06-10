@@ -1,9 +1,10 @@
 import org.jetbrains.intellij.tasks.PrepareSandboxTask
 import org.modelix.buildtools.KnownModuleIds
 import org.modelix.buildtools.buildStubsSolutionJar
+import org.modelix.configureMpsTestClasspath
+import org.modelix.configureMpsTestTask
 import org.modelix.copyMps
 import org.modelix.excludeMPSLibraries
-import org.modelix.mpsHomeDir
 import org.modelix.mpsMajorVersion
 import kotlin.io.resolve
 import kotlin.jvm.java
@@ -25,6 +26,8 @@ dependencies {
     testImplementation(kotlin("test"))
 }
 
+configureMpsTestClasspath()
+
 intellij {
     localPath = copyMps().absolutePath
     instrumentCode = false
@@ -45,19 +48,11 @@ tasks {
     }
 
     test {
+        configureMpsTestTask()
         onlyIf {
             !setOf(
                 "2022.2", // hangs when executed on CI
             ).contains(mpsMajorVersion)
-        }
-        jvmArgs("-Dintellij.platform.load.app.info.from.resources=true")
-
-        val arch = System.getProperty("os.arch")
-        val jnaDir = mpsHomeDir.get().asFile.resolve("lib/jna/$arch")
-        if (jnaDir.exists()) {
-            jvmArgs("-Djna.boot.library.path=${jnaDir.absolutePath}")
-            jvmArgs("-Djna.noclasspath=true")
-            jvmArgs("-Djna.nosys=true")
         }
     }
 

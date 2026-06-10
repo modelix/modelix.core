@@ -1,5 +1,6 @@
 package org.modelix.mps.model.sync.bulk
 
+import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.project.ProjectManager
 import jetbrains.mps.ide.ThreadUtils
 import jetbrains.mps.ide.project.ProjectHelper
@@ -7,6 +8,8 @@ import jetbrains.mps.smodel.SNodeUtil
 import jetbrains.mps.smodel.StaticReference
 import jetbrains.mps.smodel.adapter.ids.MetaIdHelper
 import jetbrains.mps.smodel.adapter.ids.SConceptId
+import jetbrains.mps.smodel.adapter.ids.SLanguageId
+import jetbrains.mps.smodel.adapter.ids.SPropertyId
 import jetbrains.mps.smodel.adapter.structure.MetaAdapterFactory
 import jetbrains.mps.smodel.adapter.structure.concept.SConceptAdapterById
 import jetbrains.mps.smodel.language.ConceptRegistry
@@ -43,33 +46,35 @@ import java.io.File
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
 
+@Suppress("MagicNumber")
+private val conceptIdOfINamedConcept = SConceptId(SLanguageId(-0x3154ae6ada15b0deL, -0x646defc46a3573f4L), 0x110396eaaa4L)
+
+@Suppress("MagicNumber")
+private val conceptIdOfIResolveInfo = SConceptId(SLanguageId(-0x3154ae6ada15b0deL, -0x646defc46a3573f4L), 0x116b17c6e46L)
+
 /**
  * Identifier of the `name` property in the `INamedConcept` concept.
  * See https://github.com/JetBrains/MPS/blob/5bb20b8a104c08206490e0f3fad70304fa0e0151/core/kernel/kernelSolution/source_gen/jetbrains/mps/util/SNodeOperations.java#L355
  */
 @Suppress("MagicNumber")
 private val namePropertyOfINamedConceptConcept = MetaAdapterFactory.getProperty(
-    -0x3154ae6ada15b0deL,
-    -0x646defc46a3573f4L,
-    0x110396eaaa4L,
-    0x110396ec041L,
+    SPropertyId(conceptIdOfINamedConcept, 0x110396ec041L),
     "name",
 )
 
 /**
- * Identifier of the `resolveInfo` property in the `IResolveInfoConcept` concept.
- * See https://github.com/JetBrains/MPS/blob/5bb20b8a104c08206490e0f3fad70304fa0e0151/core/kernel/kernelSolution/source_gen/jetbrains/mps/util/SNodeOperations.java#L355
+ * Identifier of the `resolveInfo` property in the `IResolveInfo` concept.
+ * See https://github.com/JetBrains/MPS/blob/5bb20b8a104c08206490e0f3fad70304fa0e0151/core/kernel/kernelSolution/source_gen/jetbrains/mps/util/SNodeOperations.java#L354
  */
 @Suppress("MagicNumber")
 private val resolveInfoPropertyOfIResolveInfoConcept = MetaAdapterFactory.getProperty(
-    -0x3154ae6ada15b0deL,
-    -0x646defc46a3573f4L,
-    0x116b17c6e46L,
-    0x116b17cd415L,
+    SPropertyId(conceptIdOfIResolveInfo, 0x116b17cd415L),
     "resolveInfo",
 )
 
 object MPSBulkSynchronizer {
+
+    private const val MPS_2025_1_BASELINE_VERSION = 251
 
     @JvmStatic
     fun exportRepository() {
@@ -220,7 +225,7 @@ object MPSBulkSynchronizer {
 
     private fun persistChanges(repository: SRepository) = executeCommandWithExceptionHandling(repository) {
         println("Persisting changes...")
-        enableWorkaroundForFilePerRootPersistence(repository)
+        enableWorkaroundForUnloadedConcepts(repository)
         updateUnsetResolveInfo(repository)
         repository.saveAll()
         println("Changes persisted.")
@@ -311,10 +316,7 @@ object MPSBulkSynchronizer {
      * and produce unwanted file changes.
      */
     private fun updateUnsetResolveInfo(repository: SRepository) {
-        val changedModels = repository.modules.asSequence()
-            .flatMap { it.models }
-            .mapNotNull { it as? EditableSModel }
-            .filter { it.isChanged }
+        val changedModels = filterChangedModels(repository)
         val references = changedModels
             .flatMap { org.jetbrains.mps.openapi.model.SNodeUtil.getDescendants(it) }
             .flatMap { it.references }
@@ -340,37 +342,70 @@ object MPSBulkSynchronizer {
     }
 
     /**
-     * Workaround for MPS not being able to read the name property of the node during the save process
-     * in case FilePerRootPersistence is used.
-     * This is because the concept is not properly loaded,
-     * and in the MPS code it checks if the concept is a subconcept of INamedConcept.
-     * Without this workaround, the id of the root node will be used instead of the name, resulting in renamed files.
+     * Registers a dummy [INamedConcept] descriptor for concepts that aren't loaded, so MPS can read a node's name
+     * during save even though the concept's language isn't available. MPS checks for a subconcept of INamedConcept
+     * in two places that matter here:
+     *
+     *  - file-per-root persistence uses the root node's name for the file name (otherwise the node id is used, renaming
+     *    files);
+     *
+     *  - since MPS 2025.1, [org.jetbrains.mps.openapi.model.SModel] save rebuilds the resolve info of every reference
+     *    from its target node (see SaveOptions and ResolveInfoUpdater); for an unloaded target concept this would
+     *    otherwise produce no name and drop the `resolve` attribute.
+     *
+     * The descriptor reports the concept as both INamedConcept and IResolveInfo: the `.mps` file records only which
+     * property a node uses, not the concept's super-concepts, so MPS cannot tell that an unloaded concept implements
+     * either. Reporting both lets the save-time computation read whichever of `name`/`resolveInfo` the node actually
+     * has (the other simply yields nothing).
      */
     @JvmStatic
-    private fun enableWorkaroundForFilePerRootPersistence(repository: SRepository) {
+    private fun enableWorkaroundForUnloadedConcepts(repository: SRepository) {
         val structureRegistry: StructureRegistry = ConceptRegistry.getInstance().readField("myStructureRegistry")
-        val myConceptDescriptorsById: MutableMap<SConceptId, ConceptDescriptor> = structureRegistry.readField("myConceptDescriptorsById")
+        val myConceptDescriptorsById: MutableMap<SConceptId, ConceptDescriptor> =
+            structureRegistry.readField("myConceptDescriptorsById")
 
-        repository.modules
-            .asSequence()
-            .flatMap { it.models }
-            .mapNotNull { it as? EditableSModel }
-            .filter { it.isChanged }
-            .flatMap { it.rootNodes }
-            .mapNotNull { (it.concept as? SConceptAdapterById) }
-            .forEach {
-                myConceptDescriptorsById.putIfAbsent(it.id, DummyNamedConceptDescriptor(it))
+        val changedModels = filterChangedModels(repository)
+
+        val conceptsToRegister = mutableSetOf<SConceptAdapterById>()
+
+        // MPS 2025.1+ rebuilds reference resolve info during save, so there the reference targets' (possibly unloaded)
+        // concepts need a descriptor. On older versions updateUnsetResolveInfo alone sets the resolve info, and
+        // registering target descriptors would make their concepts appear valid, causing updateUnsetResolveInfo to skip
+        // them.
+        val shouldAddReferenceTargets = ApplicationInfo.getInstance().build.baselineVersion >= MPS_2025_1_BASELINE_VERSION
+
+        for (model in changedModels) {
+            for (root in model.rootNodes) {
+                (root.concept as? SConceptAdapterById)?.let { conceptsToRegister.add(it) }
+
+                if (shouldAddReferenceTargets) {
+                    org.jetbrains.mps.openapi.model.SNodeUtil.getDescendants(root).asSequence()
+                        .flatMap { it.references }
+                        .mapNotNullTo(conceptsToRegister) { it.targetNode?.concept as? SConceptAdapterById }
+                }
             }
+        }
+
+        conceptsToRegister.forEach {
+            myConceptDescriptorsById.putIfAbsent(it.id, DummyNamedConceptDescriptor(it))
+        }
     }
+
+    private fun filterChangedModels(repository: SRepository): Sequence<EditableSModel> = repository.modules.asSequence()
+        .flatMap { it.models }
+        .filterIsInstance<EditableSModel>()
+        .filter { it.isChanged }
 
     @Suppress("UNCHECKED_CAST")
     private fun <R> Any.readField(name: String): R {
         return this::class.java.getDeclaredField(name).also { it.isAccessible = true }.get(this) as R
     }
 
-    private class DummyNamedConceptDescriptor(concept: SConceptAdapterById) : ConceptDescriptor by IllegalConceptDescriptor(concept.id, concept.qualifiedName) {
+    private class DummyNamedConceptDescriptor(concept: SConceptAdapterById) :
+        ConceptDescriptor by IllegalConceptDescriptor(concept.id, concept.qualifiedName) {
+
         override fun isAssignableTo(other: SConceptId?): Boolean {
-            return MetaIdHelper.getConcept(SNodeUtil.concept_INamedConcept) == other
+            return other == conceptIdOfINamedConcept || other == conceptIdOfIResolveInfo
         }
 
         override fun getSuperConceptId(): SConceptId {
@@ -378,11 +413,11 @@ object MPSBulkSynchronizer {
         }
 
         override fun getAncestorsIds(): MutableSet<SConceptId> {
-            return mutableSetOf(MetaIdHelper.getConcept(SNodeUtil.concept_INamedConcept))
+            return mutableSetOf(conceptIdOfINamedConcept, conceptIdOfIResolveInfo)
         }
 
         override fun getParentsIds(): MutableList<SConceptId> {
-            return mutableListOf(MetaIdHelper.getConcept(SNodeUtil.concept_INamedConcept))
+            return mutableListOf(conceptIdOfINamedConcept, conceptIdOfIResolveInfo)
         }
     }
 

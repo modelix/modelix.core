@@ -31,6 +31,7 @@ val Project.mpsVersion: String get() {
                     "2023.3" to "2023.3.2",
                     "2024.1" to "2024.1.1",
                     "2024.3" to "2024.3",
+                    "2025.1" to "2025.1.2",
                 )[it],
             ) { "Unknown MPS version: $it" }
         }

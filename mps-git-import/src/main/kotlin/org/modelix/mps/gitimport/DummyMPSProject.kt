@@ -5,7 +5,7 @@ import jetbrains.mps.project.persistence.ProjectDescriptorPersistence
 import jetbrains.mps.project.structure.project.ModulePath
 import jetbrains.mps.util.MacrosFactory
 import jetbrains.mps.vfs.IFile
-import jetbrains.mps.vfs.IFileSystem
+import jetbrains.mps.vfs.openapi.FileSystem
 import org.jetbrains.mps.openapi.module.SModule
 import org.jetbrains.mps.openapi.module.SModuleReference
 import org.jetbrains.mps.openapi.module.SRepository
@@ -73,8 +73,8 @@ class DummyMPSProject(
         return moduleEntries.mapNotNull { it.resolve() }
     }
 
-    override fun getFileSystem(): IFileSystem {
-        return projectDir.fs
+    override fun getFileSystem(): FileSystem {
+        return projectDir.fileSystem
     }
 
     override fun getBasePath(): String? {

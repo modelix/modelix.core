@@ -151,6 +151,10 @@ data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
 
     override fun removeChild(child: IWritableNode) {
         require(child is MPSWritableNode) { "child must be an MPSWritableNode" }
+        // A node whose model is already gone (e.g. its containing model was deleted earlier in the
+        // same synchronization) is effectively already removed. On MPS 2025.1+ detaching it would
+        // make its references direct against a null source model and throw an NPE, so skip it.
+        if (child.node.model == null) return
         node.removeChild(child.node)
     }
 

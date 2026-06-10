@@ -1,6 +1,8 @@
 import org.jetbrains.intellij.tasks.PrepareSandboxTask
 import org.modelix.buildtools.KnownModuleIds
 import org.modelix.buildtools.buildStubsSolutionJar
+import org.modelix.configureMpsTestClasspath
+import org.modelix.configureMpsTestTask
 import org.modelix.copyMps
 import org.modelix.mpsHomeDir
 import org.modelix.mpsPlatformVersion
@@ -60,6 +62,8 @@ dependencies {
     testImplementation(libs.ktor.client.cio, excludeMPSLibraries)
 }
 
+configureMpsTestClasspath()
+
 tasks {
     patchPluginXml {
         sinceBuild.set("222")
@@ -75,18 +79,10 @@ tasks {
     }
 
     test {
+        configureMpsTestTask()
         dependsOn(":model-server:jibDockerBuild")
         jvmArgs("-Dmodelix.model.server.image=modelix/model-server:$version")
-        jvmArgs("-Dintellij.platform.load.app.info.from.resources=true")
         jvmArgs("-Xmx1000m")
-
-        val arch = System.getProperty("os.arch")
-        val jnaDir = mpsHomeDir.get().asFile.resolve("lib/jna/$arch")
-        if (jnaDir.exists()) {
-            jvmArgs("-Djna.boot.library.path=${jnaDir.absolutePath}")
-            jvmArgs("-Djna.noclasspath=true")
-            jvmArgs("-Djna.nosys=true")
-        }
     }
 
     val mpsPluginDir = project.findProperty("mps$mpsPlatformVersion.plugins.dir")?.toString()?.let { file(it) }

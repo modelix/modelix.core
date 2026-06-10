@@ -1,3 +1,5 @@
+import org.modelix.configureMpsTestClasspath
+import org.modelix.configureMpsTestTask
 import org.modelix.copyMps
 import org.modelix.excludeMPSLibraries
 import org.modelix.mpsMajorVersion
@@ -25,6 +27,8 @@ dependencies {
     testImplementation(libs.modelix.mpsApi)
 }
 
+configureMpsTestClasspath()
+
 intellij {
     localPath = copyMps().absolutePath
     instrumentCode = false
@@ -39,11 +43,11 @@ tasks {
     }
 
     test {
+        configureMpsTestTask()
         onlyIf {
             !setOf(
                 "2022.2", // hangs when executed on CI
             ).contains(mpsMajorVersion)
         }
-        jvmArgs("-Dintellij.platform.load.app.info.from.resources=true")
     }
 }

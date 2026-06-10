@@ -4,6 +4,7 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleDependency
 import org.gradle.api.file.Directory
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.exclude
 import java.io.File
@@ -108,4 +109,54 @@ val excludeMPSLibraries: (ModuleDependency).() -> Unit = {
     exclude("org.jetbrains.kotlin", "kotlin-stdlib-jdk7")
     exclude("org.jetbrains.kotlin", "kotlin-stdlib-jdk8")
     exclude("org.jetbrains", "annotations")
+}
+
+/**
+ * Project-level classpath adjustments for modules whose tests boot MPS via the gradle-intellij-plugin
+ * 1.x (mps-sync-plugin3, mps-model-adapters-plugin, bulk-model-sync-lib/mps-test). Only needed on
+ * MPS 2025.1+ (platform >= 251). Configure the test tasks themselves with [configureMpsTestTask].
+ */
+fun Project.configureMpsTestClasspath() {
+    if (mpsPlatformVersion < 251) return
+
+    // MPS 2025.1+ loads platform services (e.g. SettingsController) from module descriptors in
+    // lib/modules/*.jar. The 1.x plugin doesn't put these on the test classpath, so add them
+    // explicitly; without them the test application fails to boot. Older MPS has no lib/modules.
+    dependencies.add(
+        "testRuntimeOnly",
+        fileTree(mpsHomeDir).matching { include("lib/modules/*.jar") },
+    )
+
+    // MPS bundles JetBrains' coroutines fork (lib/util-8.jar) whose BuildersKt has
+    // runBlockingWithParallelismCompensation, which the platform calls during boot. The vanilla
+    // kotlinx-coroutines-core pulled in transitively lacks that method, so keep it off the test
+    // runtime classpath and let MPS's bundled coroutines win.
+    configurations.named("testRuntimeClasspath").configure {
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core-jvm")
+    }
+}
+
+/**
+ * Configures a single test task that boots MPS via the gradle-intellij-plugin 1.x. Pair it with
+ * [configureMpsTestClasspath] on the owning project.
+ */
+fun Test.configureMpsTestTask() {
+    // Use a provider to avoid eagerly resolving the MPS home dir
+    jvmArgumentProviders.add {
+        buildList {
+            // JNA's native libraries live under lib/jna/<arch> in the MPS home. Point the test JVM there
+            // so JNA loads the bundled library instead of trying to unpack one from the classpath.
+            // Older MPS versions (2022.2) ship no lib/jna and keep the natives inside the classpath jar,
+            // so the properties must not be set there — jna.noclasspath would leave JNA with no library.
+            val jnaDir = project.mpsHomeDir.get().asFile.resolve("lib/jna/${System.getProperty("os.arch")}")
+            if (jnaDir.exists()) {
+                add("-Djna.boot.library.path=${jnaDir.absolutePath}")
+                add("-Djna.noclasspath=true")
+                add("-Djna.nosys=true")
+            }
+
+            add("-Dintellij.platform.load.app.info.from.resources=true")
+        }
+    }
 }

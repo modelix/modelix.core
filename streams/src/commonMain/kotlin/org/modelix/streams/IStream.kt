@@ -108,7 +108,7 @@ interface IStream<out E> {
         override fun doOnBeforeError(consumer: (Throwable) -> Unit): One<E>
     }
 
-    companion object : IStreamBuilder by DeferredStreamBuilder() {
+    companion object : IStreamBuilder by StreamBuilderImpl {
     }
 }
 

@@ -17,6 +17,7 @@ import org.modelix.streams.engine.drive
 import org.modelix.streams.engine.driveSuspending
 import org.modelix.streams.engine.flatMapStep
 import org.modelix.streams.engine.mapValues
+import org.modelix.streams.engine.memoStep
 import org.modelix.streams.engine.recover
 import org.modelix.streams.engine.zipN
 
@@ -168,7 +169,12 @@ internal class StreamImpl<E>(val build: (Execution) -> Step<E>) : IStreamInterna
     override fun orNull(): IStream.One<E?> =
         StreamImpl { execution -> build(execution).mapValues { values -> if (values.isEmpty()) listOf(null) else listOf(values.single()) } }
 
-    override fun cached(): IStream.One<E> = this
+    @Suppress("UNCHECKED_CAST")
+    override fun cached(): IStream.One<E> {
+        val self = this
+        val token = Any()
+        return StreamImpl { execution -> memoStep(execution, token) { self.build(execution) as Step<Any?> } as Step<E> }
+    }
 
     @DelicateModelixApi
     override fun iterateBlocking(visitor: (E) -> Unit) {

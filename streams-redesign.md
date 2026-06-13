@@ -196,8 +196,10 @@ not results.
    server-side iterations (e.g. walking all objects) this raises peak memory. *If this matters for a hot path, the
    clean fix is to add genuine per-round streaming to just the `iterate*` drivers without disturbing the rest of the
    engine.*
-2. **`cached()` is currently a no-op.** Fetch-level dedup (the expensive part) is handled by the per-run cache; only
-   pure-recompute memoization is lost.
+2. **`cached()` multicasts (evaluates once per run).** A stream consumed by multiple branches is resolved once via a
+   shared memo cell (`MemoCell`) that the round driver advances at most once per round, so work *and side effects* are
+   not duplicated and the result is shared. ModelQL depends on this for shared/side-effecting query steps (see
+   `ModelQLClientTest.testCaching`).
 3. **`take` / `skip` operate on materialized results** — they do not prune upstream fetches.
 4. **`SimpleStreamExecutor` now batches** per source/round — strictly fewer round-trips than before.
 
@@ -207,7 +209,6 @@ not results.
   pathological deep *pure* `flatMap` chain that never blocks would still recurse natively; the fix is to encode `Step`
   as a stack-safe free monad (explicit interpreter loop) if needed.
 - **Optional streaming `iterate*`** — see tradeoff #1.
-- **Restore `cached()` memoization** if ModelQL recompute cost proves material.
 - **Retire the executor entirely.** With the executor no longer required to run a stream (§5), `IStreamExecutor` /
   `IStreamExecutorProvider` could be removed over time — the remaining users are `enqueue` (fetch-leaf creation) and
   ModelQL's `getInstance()`-based "current executor" lookup, both of which can be reworked.

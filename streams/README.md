@@ -99,7 +99,9 @@ These follow from the engine resolving each query fully (no incremental emission
 
 1. `iterate` / `iterateSuspending` fully materialize before visiting — higher peak memory for very large iterations.
    The clean fix, if a hot path needs it, is per-round streaming in just the `iterate*` drivers.
-2. `cached()` is currently a no-op; fetch-level dedup (the expensive part) is handled by the per-run cache.
+2. `cached()` multicasts: a stream consumed by multiple branches is evaluated once per run (via a shared memo cell
+   advanced at most once per round), so side effects and work aren't duplicated. ModelQL relies on this for shared
+   query steps.
 3. `take` / `skip` operate on materialized results (don't prune upstream fetches).
 4. Within-round stack safety covers fetch-dependent chains (the common case). A pathological deep *pure* `flatMap`
    chain that never blocks would still recurse; the fix is to encode `Step` as a stack-safe free monad if needed.

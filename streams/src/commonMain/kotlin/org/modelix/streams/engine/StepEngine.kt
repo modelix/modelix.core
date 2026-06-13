@@ -41,7 +41,12 @@ internal class Pending private constructor(
         val fetches = HashMap<IBulkExecutor<Any?, Any?>, MutableSet<Any?>>()
         for ((source, keys) in this.fetches) fetches.getOrPut(source) { HashSet() }.addAll(keys)
         for ((source, keys) in other.fetches) fetches.getOrPut(source) { HashSet() }.addAll(keys)
-        return Pending(fetches, this.asyncActions + other.asyncActions)
+        // Dedupe async leaves by token so a memoized leaf shared across branches runs only once per round.
+        val seen = HashSet<Any>()
+        val actions = ArrayList<AsyncAction>(this.asyncActions.size + other.asyncActions.size)
+        for (action in this.asyncActions) if (seen.add(action.token)) actions.add(action)
+        for (action in other.asyncActions) if (seen.add(action.token)) actions.add(action)
+        return Pending(fetches, actions)
     }
 
     companion object {
@@ -146,6 +151,10 @@ private val MISSING = Any()
 internal class Execution {
     private val fetchCaches = HashMap<IBulkExecutor<Any?, Any?>, HashMap<Any?, Any?>>()
     private val asyncResults = HashMap<Any, List<Any?>>()
+    private val memoCells = HashMap<Any, MemoCell>()
+
+    /** Returns the shared memo cell for [token], initializing it (running [init] once) on first access. */
+    fun memoCell(token: Any, init: () -> Step<Any?>): MemoCell = memoCells.getOrPut(token) { MemoCell(init()) }
 
     @Suppress("UNCHECKED_CAST")
     private fun cacheFor(source: IBulkExecutor<*, *>) =
@@ -188,6 +197,33 @@ internal fun asyncStep(
         asyncStep(execution, token, produceBlocking, produceSuspending)
     }
 }
+
+/**
+ * Shared, single-advancing progress of a memoized stream. Every reference to a cached stream produces a *view* of the
+ * same cell; the cell's inner step is advanced at most once per round (regardless of how many views resume it), so the
+ * underlying computation — and any side effects in it — runs exactly once and its result is multicast to all
+ * consumers. This is the [org.modelix.streams.IStream.One.cached] mechanism.
+ */
+internal class MemoCell(var step: Step<Any?>) {
+    fun advanceFrom(snapshot: Step<Any?>) {
+        if (step === snapshot && snapshot is Blocked) {
+            step = snapshot.resume()
+        }
+    }
+
+    fun view(): Step<Any?> = when (val snapshot = step) {
+        is Done -> snapshot
+        is Failed -> snapshot
+        is Blocked -> Blocked(snapshot.pending) {
+            advanceFrom(snapshot)
+            view()
+        }
+    }
+}
+
+/** A leaf that resolves the inner stream of a [org.modelix.streams.IStream.One.cached] call once, shared per run. */
+internal fun memoStep(execution: Execution, token: Any, init: () -> Step<Any?>): Step<Any?> =
+    execution.memoCell(token, init).view()
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Drivers

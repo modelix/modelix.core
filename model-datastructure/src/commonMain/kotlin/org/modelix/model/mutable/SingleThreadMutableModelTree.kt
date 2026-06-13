@@ -58,7 +58,7 @@ class SingleThreadMutableModelTree<NodeId>(
 
     override fun mutate(parameters: MutationParameters<NodeId>) {
         val oldTree = tree
-        val newTree = tree.mutate(parameters).getBlocking(tree)
+        val newTree = tree.mutate(parameters).getBlocking()
         tree = newTree
         for (listener in listeners) {
             listener.treeChanged(oldTree, newTree)

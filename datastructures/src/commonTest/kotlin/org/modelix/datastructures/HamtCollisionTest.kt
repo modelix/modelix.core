@@ -27,19 +27,19 @@ class HamtCollisionTest {
         )
         var tree: HamtTree<Long, String> = HamtTree(HamtInternalNode.createEmpty(config))
 
-        tree = tree.put(0b000000000, "a").getBlocking(tree)
-        tree = tree.put(0b000000001, "b").getBlocking(tree)
-        tree = tree.put(0b000000011, "c").getBlocking(tree)
-        tree = tree.put(0b100000000, "d").getBlocking(tree)
-        tree = tree.put(0b100000001, "e").getBlocking(tree)
-        tree = tree.put(0b100000011, "f").getBlocking(tree)
+        tree = tree.put(0b000000000, "a").getBlocking()
+        tree = tree.put(0b000000001, "b").getBlocking()
+        tree = tree.put(0b000000011, "c").getBlocking()
+        tree = tree.put(0b100000000, "d").getBlocking()
+        tree = tree.put(0b100000001, "e").getBlocking()
+        tree = tree.put(0b100000011, "f").getBlocking()
 
-        assertEquals("a", tree.get(0b000000000).getBlocking(tree))
-        assertEquals("b", tree.get(0b000000001).getBlocking(tree))
-        assertEquals("c", tree.get(0b000000011).getBlocking(tree))
-        assertEquals("d", tree.get(0b100000000).getBlocking(tree))
-        assertEquals("e", tree.get(0b100000001).getBlocking(tree))
-        assertEquals("f", tree.get(0b100000011).getBlocking(tree))
+        assertEquals("a", tree.get(0b000000000).getBlocking())
+        assertEquals("b", tree.get(0b000000001).getBlocking())
+        assertEquals("c", tree.get(0b000000011).getBlocking())
+        assertEquals("d", tree.get(0b100000000).getBlocking())
+        assertEquals("e", tree.get(0b100000001).getBlocking())
+        assertEquals("f", tree.get(0b100000011).getBlocking())
     }
 
     /**
@@ -60,22 +60,22 @@ class HamtCollisionTest {
         )
         var tree: HamtTree<Long, String> = HamtTree(HamtInternalNode.createEmpty(config))
 
-        tree = tree.put(0b00, "a").getBlocking(tree)
-        tree = tree.put(0b01, "b").getBlocking(tree)
-        tree = tree.put(0b10, "c").getBlocking(tree)
-        tree = tree.put(0b11, "d").getBlocking(tree)
+        tree = tree.put(0b00, "a").getBlocking()
+        tree = tree.put(0b01, "b").getBlocking()
+        tree = tree.put(0b10, "c").getBlocking()
+        tree = tree.put(0b11, "d").getBlocking()
 
-        assertEquals("a", tree.get(0b00).getBlocking(tree))
-        assertEquals("b", tree.get(0b01).getBlocking(tree))
-        assertEquals("c", tree.get(0b10).getBlocking(tree))
-        assertEquals("d", tree.get(0b11).getBlocking(tree))
+        assertEquals("a", tree.get(0b00).getBlocking())
+        assertEquals("b", tree.get(0b01).getBlocking())
+        assertEquals("c", tree.get(0b10).getBlocking())
+        assertEquals("d", tree.get(0b11).getBlocking())
 
-        tree = tree.put(0b01, "changed").getBlocking(tree)
+        tree = tree.put(0b01, "changed").getBlocking()
 
-        assertEquals("a", tree.get(0b00).getBlocking(tree))
-        assertEquals("changed", tree.get(0b01).getBlocking(tree))
-        assertEquals("c", tree.get(0b10).getBlocking(tree))
-        assertEquals("d", tree.get(0b11).getBlocking(tree))
+        assertEquals("a", tree.get(0b00).getBlocking())
+        assertEquals("changed", tree.get(0b01).getBlocking())
+        assertEquals("c", tree.get(0b10).getBlocking())
+        assertEquals("d", tree.get(0b11).getBlocking())
     }
 }
 

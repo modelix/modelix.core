@@ -52,7 +52,7 @@ scheduler and nothing allocated.
 
 The driver (`Execution.drive` / `driveSuspending`) is a loop where each iteration is one batch round:
 
-1. issue **one bulk call per data source** (chunked to `batchSize`), and run any async leaves;
+1. issue **one bulk call per data source** (chunked to that source's `IBulkExecutor.batchSize`), and run any async leaves;
 2. fill the per-run cache (so each key is fetched at most once — dedup within *and* across rounds);
 3. `resume()` and repeat until `Done`.
 
@@ -60,7 +60,10 @@ The loop is the **trampoline** that keeps fetch-dependent chains stack-safe rega
 
 Batching is **structural**: a fetch leaf carries its own data source, so the driver groups fetches per source per
 round regardless of which executor runs it. `BulkRequestStreamExecutor.enqueue(key)` is simply a fetch leaf bound to
-its `IBulkExecutor`.
+its `IBulkExecutor`. Because the source is carried by the stream, the **batch size lives on `IBulkExecutor`** (not on
+the executor), and **terminal operations don't need an executor**: `getBlocking()` / `getSuspending()` /
+`iterateBlocking { }` / `iterateSuspending { }` / `executeBlocking()` drive the self-contained stream directly. The
+executor-taking overloads are `@Deprecated` and kept for compatibility.
 
 ## Public API
 
@@ -68,9 +71,11 @@ Cardinality is encoded in the type: `IStream.Many` (0+), `IStream.ZeroOrOne` (0.
 `IStream.One` (exactly 1), and `IStream.Completable` (completion, no value).
 
 - Builders: `IStream.of`, `empty`, `many`, `zip`, `fromFlow`, `singleFromCoroutine`, …
-- Execution: `IStreamExecutor` (`query`, `iterate`, suspending variants), `SimpleStreamExecutor`,
-  `BulkRequestStreamExecutor`, `IExecutableStream`.
-- Batchable source: `IBulkExecutor<K, V>` (`execute` + `executeSuspending`).
+- Terminals (no executor needed): `getBlocking()`, `getSuspending()`, `iterateBlocking { }`,
+  `iterateSuspending { }`, `executeBlocking()`. The `*(executor)` overloads remain, deprecated.
+- Executors (still available; `BulkRequestStreamExecutor` also provides `enqueue`): `IStreamExecutor`,
+  `SimpleStreamExecutor`, `BulkRequestStreamExecutor`, `IExecutableStream`.
+- Batchable source: `IBulkExecutor<K, V>` (`execute` + `executeSuspending` + `batchSize`).
 
 ## Layout
 

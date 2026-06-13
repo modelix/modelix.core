@@ -33,7 +33,7 @@ class HamtTest {
                     if (expected.isNotEmpty()) {
                         val key = expected.keys.random(rand)
                         // println("remove $key")
-                        tree = tree.remove(key).getBlocking(tree)
+                        tree = tree.remove(key).getBlocking()
                         expected.remove(key)
                     }
                 }
@@ -41,13 +41,13 @@ class HamtTest {
                     val key = "k" + rand.nextInt(keyRange).toString()
                     val value = "v" + rand.nextInt(valueRange).toString()
                     // println("insert $key -> $value")
-                    tree = tree.put(key, value).getBlocking(tree)
+                    tree = tree.put(key, value).getBlocking()
                     expected[key] = value
                 }
             }
 
             for (entry in expected.entries) {
-                assertEquals(entry.value, tree.get(entry.key).getBlocking(tree), "for key ${entry.key}")
+                assertEquals(entry.value, tree.get(entry.key).getBlocking(), "for key ${entry.key}")
             }
         }
     }

@@ -13,10 +13,10 @@ data class BTree<K, V>(val root: BTreeNode<K, V>) : IStreamExecutorProvider by r
     fun validate() {
         graph.getStreamExecutor().query {
             root.validate(true)
-            check(root.getEntries().toList().getBlocking(graph).map { it.key }.toSet().size == root.getEntries().map { it.key }.count().getBlocking(graph)) {
+            check(root.getEntries().toList().getBlocking().map { it.key }.toSet().size == root.getEntries().map { it.key }.count().getBlocking()) {
                 "duplicate entries: $root"
             }
-            check(root.getEntries().map { it.key }.toList().getBlocking(graph).sortedWith(root.config.keyConfiguration) == root.getEntries().map { it.key }.toList().getBlocking(graph)) {
+            check(root.getEntries().map { it.key }.toList().getBlocking().sortedWith(root.config.keyConfiguration) == root.getEntries().map { it.key }.toList().getBlocking()) {
                 "not sorted: $this"
             }
             IStream.of(Unit)

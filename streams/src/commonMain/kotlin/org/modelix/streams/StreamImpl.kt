@@ -43,12 +43,12 @@ internal class StreamImpl<E>(val build: (Execution) -> Step<E>) : IStreamInterna
 
     override fun asFlow(): Flow<E> = flow {
         val execution = Execution()
-        for (value in execution.driveSuspending(build(execution), Int.MAX_VALUE)) emit(value)
+        for (value in execution.driveSuspending(build(execution))) emit(value)
     }
 
     override fun asSequence(): Sequence<E> {
         val execution = Execution()
-        return execution.drive(build(execution), Int.MAX_VALUE).asSequence()
+        return execution.drive(build(execution)).asSequence()
     }
 
     override fun toList(): IStream.One<List<E>> = StreamImpl { execution -> build(execution).mapValues { listOf(it) } }
@@ -173,20 +173,20 @@ internal class StreamImpl<E>(val build: (Execution) -> Step<E>) : IStreamInterna
     @DelicateModelixApi
     override fun iterateBlocking(visitor: (E) -> Unit) {
         val execution = Execution()
-        execution.drive(build(execution), Int.MAX_VALUE).forEach(visitor)
+        execution.drive(build(execution)).forEach(visitor)
     }
 
     @DelicateModelixApi
     override suspend fun iterateSuspending(visitor: suspend (E) -> Unit) {
         val execution = Execution()
-        execution.driveSuspending(build(execution), Int.MAX_VALUE).forEach { visitor(it) }
+        execution.driveSuspending(build(execution)).forEach { visitor(it) }
     }
 
     @Suppress("UNCHECKED_CAST")
     @DelicateModelixApi
     override fun getBlocking(): E {
         val execution = Execution()
-        val values = execution.drive(build(execution), Int.MAX_VALUE)
+        val values = execution.drive(build(execution))
         return (if (values.isEmpty()) null else values.first()) as E
     }
 
@@ -194,7 +194,7 @@ internal class StreamImpl<E>(val build: (Execution) -> Step<E>) : IStreamInterna
     @DelicateModelixApi
     override suspend fun getSuspending(): E {
         val execution = Execution()
-        val values = execution.driveSuspending(build(execution), Int.MAX_VALUE)
+        val values = execution.driveSuspending(build(execution))
         return (if (values.isEmpty()) null else values.first()) as E
     }
 }
@@ -208,12 +208,12 @@ internal class CompletableImpl(val build: (Execution) -> Step<Any?>) : IStreamIn
 
     override fun asFlow(): Flow<Any?> = flow {
         val execution = Execution()
-        for (value in execution.driveSuspending(build(execution), Int.MAX_VALUE)) emit(value)
+        for (value in execution.driveSuspending(build(execution))) emit(value)
     }
 
     override fun asSequence(): Sequence<Any?> {
         val execution = Execution()
-        return execution.drive(build(execution), Int.MAX_VALUE).asSequence()
+        return execution.drive(build(execution)).asSequence()
     }
 
     override fun toList(): IStream.One<List<Any?>> = StreamImpl { execution -> build(execution).mapValues { listOf(it) } }
@@ -236,25 +236,25 @@ internal class CompletableImpl(val build: (Execution) -> Step<Any?>) : IStreamIn
     @DelicateModelixApi
     override fun iterateBlocking(visitor: (Any?) -> Unit) {
         val execution = Execution()
-        execution.drive(build(execution), Int.MAX_VALUE).forEach(visitor)
+        execution.drive(build(execution)).forEach(visitor)
     }
 
     @DelicateModelixApi
     override suspend fun iterateSuspending(visitor: suspend (Any?) -> Unit) {
         val execution = Execution()
-        execution.driveSuspending(build(execution), Int.MAX_VALUE).forEach { visitor(it) }
+        execution.driveSuspending(build(execution)).forEach { visitor(it) }
     }
 
     @DelicateModelixApi
     override fun executeBlocking() {
         val execution = Execution()
-        execution.drive(build(execution), Int.MAX_VALUE)
+        execution.drive(build(execution))
     }
 
     @DelicateModelixApi
     override suspend fun executeSuspending() {
         val execution = Execution()
-        execution.driveSuspending(build(execution), Int.MAX_VALUE)
+        execution.driveSuspending(build(execution))
     }
 }
 

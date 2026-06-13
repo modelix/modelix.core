@@ -67,7 +67,7 @@ class HistoryIndexTest {
         val graph = version1.graph
         val history1 = HistoryIndexNode.of(version1.obj, version2.obj).asObject(graph)
         val history2 = HistoryIndexNode.of(version3.obj).asObject(graph)
-        val history = history1.merge(history2).getBlocking(graph)
+        val history = history1.merge(history2).getBlocking()
         assertEquals(3, history.size)
         assertEquals(3, history.height)
     }
@@ -82,7 +82,7 @@ class HistoryIndexTest {
         val history = HistoryIndexNode.of(version1.obj, version2.obj).asObject(graph)
             .merge(HistoryIndexNode.of(version3.obj).asObject(graph))
             .merge(HistoryIndexNode.of(version4.obj).asObject(graph))
-            .getBlocking(graph)
+            .getBlocking()
         assertEquals(4, history.size)
         assertEquals(4, history.height)
     }
@@ -99,7 +99,7 @@ class HistoryIndexTest {
             .merge(HistoryIndexNode.of(version3.obj).asObject(graph))
             .merge(HistoryIndexNode.of(version4.obj).asObject(graph))
             .merge(HistoryIndexNode.of(version5.obj).asObject(graph))
-            .getBlocking(graph)
+            .getBlocking()
         assertEquals(5, history.size)
         assertEquals(4, history.height)
     }
@@ -135,16 +135,16 @@ class HistoryIndexTest {
             .merge(HistoryIndexNode.of(version4b.obj).asObject(graph))
             .merge(HistoryIndexNode.of(version5b.obj).asObject(graph))
             .merge(HistoryIndexNode.of(version6b.obj).asObject(graph))
-            .getBlocking(graph)
+            .getBlocking()
         val history = historyA
             .merge(historyB)
             .merge(HistoryIndexNode.of(version7.obj).asObject(graph))
             .merge(HistoryIndexNode.of(version8.obj).asObject(graph))
-            .getBlocking(graph)
+            .getBlocking()
 
         assertEquals(
             listOf(version1, version2, version3a, version3b, version4a, version4b, version5a, version5b, version6b, version7, version8).map { it.getObjectHash() },
-            history.data.getAllVersions().map { it.getHash() }.toList().getBlocking(graph),
+            history.data.getAllVersions().map { it.getHash() }.toList().getBlocking(),
         )
         assertEquals(11, history.size)
         assertEquals(5, history.height)
@@ -158,12 +158,12 @@ class HistoryIndexTest {
         }
         val graph = versions.first().graph
         val history = versions.drop(1).fold(HistoryIndexNode.of(versions.first().asObject()).asObject(graph)) { acc, it ->
-            acc.merge(HistoryIndexNode.of(it.asObject()).asObject(graph)).getBlocking(graph)
+            acc.merge(HistoryIndexNode.of(it.asObject()).asObject(graph)).getBlocking()
         }
         assertEquals(versions.size.toLong(), history.size)
         assertEquals(
             versions.map { it.getObjectHash() },
-            history.data.getAllVersions().map { it.getHash() }.toList().getBlocking(graph),
+            history.data.getAllVersions().map { it.getHash() }.toList().getBlocking(),
         )
         assertEquals(11, history.height)
     }
@@ -176,12 +176,12 @@ class HistoryIndexTest {
         }
         val graph = versions.first().graph
         val history = versions.drop(1).shuffled(Random(78234554)).fold(HistoryIndexNode.of(versions.first().asObject()).asObject(graph)) { acc, it ->
-            acc.merge(HistoryIndexNode.of(it.asObject()).asObject(graph)).getBlocking(graph)
+            acc.merge(HistoryIndexNode.of(it.asObject()).asObject(graph)).getBlocking()
         }
         assertEquals(versions.size.toLong(), history.size)
         assertEquals(
             versions.map { it.getObjectHash() },
-            history.data.getAllVersions().map { it.getHash() }.toList().getBlocking(graph),
+            history.data.getAllVersions().map { it.getHash() }.toList().getBlocking(),
         )
         assertEquals(13, history.height)
     }
@@ -198,7 +198,7 @@ class HistoryIndexTest {
         assertEquals(versions.size.toLong(), history.size)
         assertEquals(
             versions.map { it.getObjectHash() },
-            history.data.getAllVersions().map { it.getHash() }.toList().getBlocking(graph),
+            history.data.getAllVersions().map { it.getHash() }.toList().getBlocking(),
         )
         assertEquals(11, history.height)
     }
@@ -215,7 +215,7 @@ class HistoryIndexTest {
         assertEquals(versions.size.toLong(), history.size)
         assertEquals(
             versions.map { it.getObjectHash() },
-            history.data.getAllVersions().map { it.getHash() }.toList().getBlocking(graph),
+            history.data.getAllVersions().map { it.getHash() }.toList().getBlocking(),
         )
         assertEquals(14, history.height)
     }
@@ -228,6 +228,6 @@ class HistoryIndexTest {
         val centerIndex = versions.size / 2
         return buildHistory(versions.subList(0, centerIndex))
             .merge(buildHistory(versions.subList(centerIndex, versions.size)))
-            .getBlocking(graph)
+            .getBlocking()
     }
 }

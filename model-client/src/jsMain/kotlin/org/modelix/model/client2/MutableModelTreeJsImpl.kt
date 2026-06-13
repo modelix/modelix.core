@@ -66,7 +66,7 @@ internal class ChangeListener(private val tree: IMutableModelTree, private val c
     }
 
     override fun treeChanged(oldTree: IGenericModelTree<INodeReference>, newTree: IGenericModelTree<INodeReference>) {
-        newTree.getChanges(oldTree, false).iterateBlocking(newTree) {
+        newTree.getChanges(oldTree, false).iterateBlocking {
             when (it) {
                 is ConceptChangedEvent<INodeReference> -> changeCallback(ConceptChanged(nodeIdToInode(it.nodeId)))
                 is ContainmentChangedEvent<INodeReference> -> changeCallback(ContainmentChanged(nodeIdToInode(it.nodeId)))

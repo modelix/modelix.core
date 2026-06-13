@@ -63,20 +63,20 @@ open class AddNewChildrenOp(val position: PositionInRole, val childIdsAndConcept
     }
 
     override fun captureIntend(tree: IModelTree): IOperationIntend {
-        val children = tree.getChildren(position.nodeId.toGlobal(tree.getId()), position.role).toList().getBlocking(tree)
+        val children = tree.getChildren(position.nodeId.toGlobal(tree.getId()), position.role).toList().getBlocking()
         return Intend(CapturedInsertPosition(position.index, children.toList()))
     }
 
     inner class Intend(val capturedPosition: CapturedInsertPosition) : IOperationIntend {
         override fun restoreIntend(tree: IModelTree): List<IOperation> {
-            val parentExists = tree.containsNode(position.nodeId.toGlobal(tree.getId())).getBlocking(tree)
-            val childExists = IStream.many(childIdsAndConcepts).flatMap { tree.containsNode(it.first) }.toList().getBlocking(tree)
+            val parentExists = tree.containsNode(position.nodeId.toGlobal(tree.getId())).getBlocking()
+            val childExists = IStream.many(childIdsAndConcepts).flatMap { tree.containsNode(it.first) }.toList().getBlocking()
             val targetPosition = if (parentExists) {
                 val newIndex = if (position.index < 0) {
                     position.index
                 } else {
                     capturedPosition.findIndex(
-                        tree.getChildren(position.nodeId.toGlobal(tree.getId()), position.role).toList().getBlocking(tree),
+                        tree.getChildren(position.nodeId.toGlobal(tree.getId()), position.role).toList().getBlocking(),
                         position.index,
                     )
                 }
@@ -91,7 +91,7 @@ open class AddNewChildrenOp(val position: PositionInRole, val childIdsAndConcept
                 // handle already existing child IDs
                 childIdsAndConcepts.zip(childExists).asReversed().flatMap { (idAndConcept, exists) ->
                     val (childId, childConcept) = idAndConcept
-                    val currentContainment = tree.getContainment(childId).getBlocking(tree)
+                    val currentContainment = tree.getContainment(childId).getBlocking()
 
                     // If the containment is correct, ignore the index to avoid unnecessary changes. As part of the
                     // conflict resolution algorithm we are allowed to make any decision. There are no right or wrong
@@ -105,7 +105,7 @@ open class AddNewChildrenOp(val position: PositionInRole, val childIdsAndConcept
                     }
 
                     if (exists) {
-                        if (tree.getAncestors(targetPosition.nodeId.toGlobal(tree.getId()), false).contains(childId.toGlobal(tree.getId())).getBlocking(tree)) {
+                        if (tree.getAncestors(targetPosition.nodeId.toGlobal(tree.getId()), false).contains(childId.toGlobal(tree.getId())).getBlocking()) {
                             emptyList()
                         } else {
                             listOf(MoveNodeOp(childId, targetPosition))

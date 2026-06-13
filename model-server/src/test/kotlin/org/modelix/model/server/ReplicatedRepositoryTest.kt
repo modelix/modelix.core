@@ -454,7 +454,7 @@ private fun getChildren(modelTree: IMutableModelTree): SortedSet<INodeReference>
     getChildren(it.tree)
 }
 private fun getChildren(modelTree: IGenericModelTree<INodeReference>): SortedSet<INodeReference> =
-    modelTree.getChildren(modelTree.getRootNodeId()).toList().getBlocking(modelTree)
+    modelTree.getChildren(modelTree.getRootNodeId()).toList().getBlocking()
         .toSortedSet(compareBy { it.serialize() })
 
 private fun IMutableModelTree.treeHash(): String = runRead { t -> t.tree.asObject().getHashString() }

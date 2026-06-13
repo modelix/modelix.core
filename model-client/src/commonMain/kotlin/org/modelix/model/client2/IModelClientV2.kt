@@ -153,5 +153,5 @@ interface IModelClientV2 {
 @DelicateModelixApi
 suspend fun IModelClientV2.diffAsMutationParameters(repositoryId: RepositoryId, newVersion: ObjectHash, oldVersion: ObjectHash): List<MutationParameters<INodeReference>> {
     val version = lazyLoadVersion(repositoryId, newVersion.toString()) as CLVersion
-    return version.historyAsMutationParameters(oldVersion).toList().getSuspending(version.graph)
+    return version.historyAsMutationParameters(oldVersion).toList().getSuspending()
 }

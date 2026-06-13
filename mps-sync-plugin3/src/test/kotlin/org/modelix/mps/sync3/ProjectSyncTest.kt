@@ -198,7 +198,7 @@ class ProjectSyncTest : ProjectSyncTestBase() {
         assertNotEquals(version2.getObjectHash(), version3.getObjectHash())
 
         // version4 is the result of merging version3 into version2
-        val diff = version4.getModelTree().getChanges(version2.getModelTree(), false).toList().getBlocking(version4.getModelTree())
+        val diff = version4.getModelTree().getChanges(version2.getModelTree(), false).toList().getBlocking()
         assertEquals(emptyList<ModelChangeEvent<*>>(), diff)
         assertEquals(version2.getTreeReference().getHash(), version4.getTreeReference().getHash())
 
@@ -291,8 +291,8 @@ class ProjectSyncTest : ProjectSyncTestBase() {
         assertEquals(1, changes.size)
         val change = changes.single() as PropertyChangedEvent<INodeReference>
         assertEquals(MPSProperty(nameProperty).getUID(), change.role.getUID())
-        assertEquals("MyClass", version1.getModelTree().getProperty(change.nodeId, change.role).getBlocking(version1.getModelTree()))
-        assertEquals("Changed", version2.getModelTree().getProperty(change.nodeId, change.role).getBlocking(version1.getModelTree()))
+        assertEquals("MyClass", version1.getModelTree().getProperty(change.nodeId, change.role).getBlocking())
+        assertEquals("Changed", version2.getModelTree().getProperty(change.nodeId, change.role).getBlocking())
     }
 
     fun `test descendants of new node are synchronized`() = runChangeInMpsTest { classNode ->

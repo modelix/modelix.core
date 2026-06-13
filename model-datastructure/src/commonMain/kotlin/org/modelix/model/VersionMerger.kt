@@ -107,7 +107,7 @@ constructor(private val idGenerator: IIdGenerator?) {
                     }
                 }
             } + transaction.tree.getChildren(transaction.tree.getRootNodeId(), ITree.DETACHED_NODES_LINK)
-                .toList().getBlocking(transaction.tree)
+                .toList().getBlocking()
                 .map { DeleteNodeOp(it).apply(mutableTree) }
 
             mergedVersion = CLVersion.builder()

@@ -194,11 +194,11 @@ internal fun asyncStep(
 // ---------------------------------------------------------------------------------------------------------------------
 
 /**
- * Drives a step to completion blocking. Each loop iteration is one round: one bulk call per source (chunked to
- * [batchSize]) plus any async leaves, then resume. The loop is the trampoline that keeps fetch-dependent chains
- * stack-safe regardless of depth.
+ * Drives a step to completion blocking. Each loop iteration is one round: one bulk call per source (chunked to that
+ * source's [IBulkExecutor.batchSize]) plus any async leaves, then resume. The loop is the trampoline that keeps
+ * fetch-dependent chains stack-safe regardless of depth.
  */
-internal fun <T> Execution.drive(initial: Step<T>, batchSize: Int): List<T> {
+internal fun <T> Execution.drive(initial: Step<T>): List<T> {
     var step = initial
     while (true) {
         when (val current = step) {
@@ -206,7 +206,7 @@ internal fun <T> Execution.drive(initial: Step<T>, batchSize: Int): List<T> {
             is Failed -> throw current.cause
             is Blocked -> {
                 for ((source, keys) in current.pending.fetches) {
-                    for (chunk in keys.chunked(batchSize)) {
+                    for (chunk in keys.chunked(source.batchSize)) {
                         @Suppress("UNCHECKED_CAST")
                         val results = source.execute(chunk) as Map<Any?, Any?>
                         fillFetch(source, chunk.toSet(), results)
@@ -221,7 +221,7 @@ internal fun <T> Execution.drive(initial: Step<T>, batchSize: Int): List<T> {
     }
 }
 
-internal suspend fun <T> Execution.driveSuspending(initial: Step<T>, batchSize: Int): List<T> {
+internal suspend fun <T> Execution.driveSuspending(initial: Step<T>): List<T> {
     var step = initial
     while (true) {
         when (val current = step) {
@@ -229,7 +229,7 @@ internal suspend fun <T> Execution.driveSuspending(initial: Step<T>, batchSize: 
             is Failed -> throw current.cause
             is Blocked -> {
                 for ((source, keys) in current.pending.fetches) {
-                    for (chunk in keys.chunked(batchSize)) {
+                    for (chunk in keys.chunked(source.batchSize)) {
                         @Suppress("UNCHECKED_CAST")
                         val results = source.executeSuspending(chunk) as Map<Any?, Any?>
                         fillFetch(source, chunk.toSet(), results)

@@ -1,6 +1,9 @@
 package org.modelix.streams
 
 import org.modelix.kotlin.utils.ContextValue
+import org.modelix.streams.engine.Execution
+import org.modelix.streams.engine.drive
+import org.modelix.streams.engine.driveSuspending
 
 /**
  * There reason that there are three different types of implementations if they all have different execution semantics.
@@ -88,26 +91,90 @@ fun IStreamExecutor.asProvider(): IStreamExecutorProvider = SimpleStreamExecutor
 // fun <T> IStream.One<T>.getSynchronous(executor: IStreamExecutorProvider): T = getSynchronous(executor.getStreamExecutor())
 // fun <T> IStream.One<T>.getSynchronous(executor: IStreamExecutor): T = executor.query { this }
 
+// Terminal operations. The stream carries its own data source(s), so no executor is required to run it: each call
+// drives a fresh execution, batching fetches per source per round (chunked to IBulkExecutor.batchSize). The
+// executor-taking overloads are retained for compatibility and delegate to these.
+
+fun <T> IStream.One<T>.getBlocking(): T {
+    val execution = Execution()
+    return execution.drive(asStep(execution)).single()
+}
+
+fun <T> IStream.ZeroOrOne<T>.getBlocking(): T? {
+    val execution = Execution()
+    return execution.drive(asStep(execution)).firstOrNull()
+}
+
+suspend fun <T> IStream.One<T>.getSuspending(): T {
+    val execution = Execution()
+    return execution.driveSuspending(asStep(execution)).single()
+}
+
+suspend fun <T> IStream.ZeroOrOne<T>.getSuspending(): T? {
+    val execution = Execution()
+    return execution.driveSuspending(asStep(execution)).firstOrNull()
+}
+
+fun <T> IStream.Many<T>.iterateBlocking(visitor: (T) -> Unit) {
+    val execution = Execution()
+    execution.drive(asStep(execution)).forEach(visitor)
+}
+
+suspend fun <T> IStream.Many<T>.iterateSuspending(visitor: suspend (T) -> Unit) {
+    val execution = Execution()
+    execution.driveSuspending(asStep(execution)).forEach { visitor(it) }
+}
+
+fun IStream.Completable.executeBlocking() {
+    val execution = Execution()
+    execution.drive(asStep(execution))
+}
+
+suspend fun IStream.Completable.executeSuspending() {
+    val execution = Execution()
+    execution.driveSuspending(asStep(execution))
+}
+
+private const val EXECUTOR_DEPRECATION = "The executor is no longer required; the stream carries its own data source(s)."
+
+@Deprecated(EXECUTOR_DEPRECATION, ReplaceWith("getBlocking()"))
 fun <T> IStream.One<T>.getBlocking(executor: IStreamExecutorProvider): T = getBlocking(executor.getStreamExecutor())
+
+@Deprecated(EXECUTOR_DEPRECATION, ReplaceWith("getBlocking()"))
 fun <T> IStream.One<T>.getBlocking(executor: IStreamExecutor): T = executor.query { this }
 
+@Deprecated(EXECUTOR_DEPRECATION, ReplaceWith("getBlocking()"))
 fun <T> IStream.ZeroOrOne<T>.getBlocking(executor: IStreamExecutorProvider): T? = getBlocking(executor.getStreamExecutor())
+
+@Deprecated(EXECUTOR_DEPRECATION, ReplaceWith("getBlocking()"))
 fun <T> IStream.ZeroOrOne<T>.getBlocking(executor: IStreamExecutor): T? = executor.query { this.orNull() }
 
+@Deprecated(EXECUTOR_DEPRECATION, ReplaceWith("getSuspending()"))
 suspend fun <T> IStream.One<T>.getSuspending(executor: IStreamExecutorProvider): T = getSuspending(executor.getStreamExecutor())
+
+@Deprecated(EXECUTOR_DEPRECATION, ReplaceWith("getSuspending()"))
 suspend fun <T> IStream.One<T>.getSuspending(executor: IStreamExecutor): T = executor.querySuspending { this }
 
+@Deprecated(EXECUTOR_DEPRECATION, ReplaceWith("getSuspending()"))
 suspend fun <T> IStream.ZeroOrOne<T>.getSuspending(executor: IStreamExecutorProvider): T? = getSuspending(executor.getStreamExecutor())
+
+@Deprecated(EXECUTOR_DEPRECATION, ReplaceWith("getSuspending()"))
 suspend fun <T> IStream.ZeroOrOne<T>.getSuspending(executor: IStreamExecutor): T? = executor.querySuspending { this.orNull() }
 
-// fun <T> IStream.Many<T>.iterateSynchronous(executor: IStreamExecutorProvider, visitor: (T) -> Unit): Unit = iterateSynchronous(executor.getStreamExecutor(), visitor)
-// fun <T> IStream.Many<T>.iterateSynchronous(executor: IStreamExecutor, visitor: (T) -> Unit): Unit = executor.iterate({ this }, visitor)
-
+@Deprecated(EXECUTOR_DEPRECATION, ReplaceWith("iterateBlocking(visitor)"))
 fun <T> IStream.Many<T>.iterateBlocking(executor: IStreamExecutorProvider, visitor: (T) -> Unit): Unit = iterateBlocking(executor.getStreamExecutor(), visitor)
+
+@Deprecated(EXECUTOR_DEPRECATION, ReplaceWith("iterateBlocking(visitor)"))
 fun <T> IStream.Many<T>.iterateBlocking(executor: IStreamExecutor, visitor: (T) -> Unit): Unit = executor.iterate({ this }, visitor)
 
+@Deprecated(EXECUTOR_DEPRECATION, ReplaceWith("executeBlocking()"))
 fun IStream.Completable.executeBlocking(executor: IStreamExecutorProvider): Unit = executor.execute { this }
+
+@Deprecated(EXECUTOR_DEPRECATION, ReplaceWith("executeSuspending()"))
 suspend fun IStream.Completable.executeSuspending(executor: IStreamExecutorProvider): Unit = executor.executeSuspending { this }
 
+@Deprecated(EXECUTOR_DEPRECATION, ReplaceWith("iterateSuspending(visitor)"))
 suspend fun <T> IStream.Many<T>.iterateSuspending(executor: IStreamExecutorProvider, visitor: suspend (T) -> Unit): Unit = iterateSuspending(executor.getStreamExecutor(), visitor)
+
+@Deprecated(EXECUTOR_DEPRECATION, ReplaceWith("iterateSuspending(visitor)"))
 suspend fun <T> IStream.Many<T>.iterateSuspending(executor: IStreamExecutor, visitor: suspend (T) -> Unit): Unit = executor.iterateSuspending({ this }, visitor)

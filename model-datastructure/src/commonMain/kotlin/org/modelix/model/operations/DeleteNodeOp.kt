@@ -33,8 +33,8 @@ class DeleteNodeOp(val childId: INodeReference) : AbstractOperation(), IOperatio
     }
 
     override fun restoreIntend(tree: IModelTree): List<IOperation> {
-        if (!tree.containsNode(childId.toGlobal(tree.getId())).getBlocking(tree)) return listOf(NoOp())
-        val allChildren = tree.getChildren(childId.toGlobal(tree.getId())).toList().getBlocking(tree)
+        if (!tree.containsNode(childId.toGlobal(tree.getId())).getBlocking()) return listOf(NoOp())
+        val allChildren = tree.getChildren(childId.toGlobal(tree.getId())).toList().getBlocking()
         if (allChildren.isNotEmpty()) {
             val targetPos = getDetachedNodesEndPosition(tree)
             return allChildren

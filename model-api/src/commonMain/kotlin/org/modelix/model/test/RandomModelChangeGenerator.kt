@@ -100,7 +100,7 @@ class RandomModelChangeGenerator(val rootNode: INode, private val rand: Random) 
             .map { it.asRegularNode() }
             .filter(condition)
             .firstOrNull()
-            .getBlocking(rootNode.asAsyncNode())
+            .getBlocking()
     }
 }
 

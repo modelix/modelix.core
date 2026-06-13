@@ -87,9 +87,9 @@ class ObjectDiffTest {
             newTree = changeGenerator2.applyRandomChange(newTree, null)
         }
 
-        val diff = newTree.getTreeObject().objectDiff(initialTree.getTreeObject()).toList().getBlocking(store1)
-        val initialObjects = initialTree.getTreeObject().getDescendantsAndSelf().toList().getBlocking(store1)
-        val newObjects = newTree.getTreeObject().getDescendantsAndSelf().toList().getBlocking(store1)
+        val diff = newTree.getTreeObject().objectDiff(initialTree.getTreeObject()).toList().getBlocking()
+        val initialObjects = initialTree.getTreeObject().getDescendantsAndSelf().toList().getBlocking()
+        val newObjects = newTree.getTreeObject().getDescendantsAndSelf().toList().getBlocking()
         val unnecessaryObjects = (diff.associateBy { it.getHashString() } - newObjects.map { it.getHashString() }.toSet()).values.toSet()
 
         assertEquals(emptySet(), unnecessaryObjects)

@@ -144,20 +144,20 @@ class DuplicateImportConflictTest : TreeTestBase() {
     }
 
     private fun <NodeId> assertSameTree(tree1: IGenericModelTree<NodeId>, tree2: IGenericModelTree<NodeId>) {
-        val changes = tree2.getChanges(tree1, false).toList().getBlocking(tree2)
+        val changes = tree2.getChanges(tree1, false).toList().getBlocking()
 
         for (changeEvent in changes) {
             when (changeEvent) {
                 is ChildrenChangedEvent<NodeId> -> {
-                    val children1 = tree1.getChildren(changeEvent.nodeId, changeEvent.role).toList().getBlocking(tree1)
-                    val children2 = tree2.getChildren(changeEvent.nodeId, changeEvent.role).toList().getBlocking(tree2)
+                    val children1 = tree1.getChildren(changeEvent.nodeId, changeEvent.role).toList().getBlocking()
+                    val children2 = tree2.getChildren(changeEvent.nodeId, changeEvent.role).toList().getBlocking()
                     println(changeEvent)
                     println("    children1: $children1")
                     println("    children2: $children2")
                 }
                 is ReferenceChangedEvent<NodeId> -> {
-                    val target1 = tree1.getReferenceTarget(changeEvent.nodeId, changeEvent.role).getBlocking(tree1)
-                    val target2 = tree2.getReferenceTarget(changeEvent.nodeId, changeEvent.role).getBlocking(tree2)
+                    val target1 = tree1.getReferenceTarget(changeEvent.nodeId, changeEvent.role).getBlocking()
+                    val target2 = tree2.getReferenceTarget(changeEvent.nodeId, changeEvent.role).getBlocking()
                     println(changeEvent)
                     println("    target1: $target1")
                     println("    target2: $target2")

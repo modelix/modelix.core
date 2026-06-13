@@ -29,7 +29,7 @@ class VersionAttributesTest {
         val restoredVersion = graph2.loadObjects(
             rootHash = originalVersion.getObjectHash(),
             rootDeserializer = CPVersion,
-            receivedObjects = originalVersion.asObject().getDescendantsAndSelf().toMap({ it.getHash() }, { it.data.serialize() }).getBlocking(graph1),
+            receivedObjects = originalVersion.asObject().getDescendantsAndSelf().toMap({ it.getHash() }, { it.data.serialize() }).getBlocking(),
         ).let { CLVersion(it) }
 
         assertEquals(mapOf(key to value), restoredVersion.getAttributes())
@@ -55,7 +55,7 @@ class VersionAttributesTest {
         val restoredVersion = graph2.loadObjects(
             rootHash = originalVersion.getObjectHash(),
             rootDeserializer = CPVersion,
-            receivedObjects = originalVersion.asObject().getDescendantsAndSelf().toMap({ it.getHash() }, { it.data.serialize() }).getBlocking(graph1),
+            receivedObjects = originalVersion.asObject().getDescendantsAndSelf().toMap({ it.getHash() }, { it.data.serialize() }).getBlocking(),
         ).let { CLVersion(it) }
 
         assertEquals(attrs, restoredVersion.getAttributes())

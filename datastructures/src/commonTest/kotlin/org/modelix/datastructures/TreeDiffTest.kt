@@ -29,7 +29,7 @@ class TreeDiffTest {
         val restoringGraph = FullyLoadedObjectGraph()
         val initialDiff = tree.asObject().getDescendantsAndSelf()
             .map { it.getHash() to it.data.serialize() }
-            .toList().getBlocking(tree).toMap()
+            .toList().getBlocking().toMap()
         val restoringConfig = PatriciaTrieConfig(
             restoringGraph,
             StringDataTypeConfiguration(),
@@ -40,11 +40,11 @@ class TreeDiffTest {
         fun assertTree() {
             val diff = tree.asObject().objectDiff(restoredTree.asObject())
                 .map { it.getHash() to it.data.serialize() }
-                .toList().getBlocking(tree).toMap()
+                .toList().getBlocking().toMap()
             restoredTree = PatriciaTrie(restoringGraph.loadObjects(tree.asObject().getHash(), restoringDeserializer, diff))
 
             val expectedEntries = addedEntries.associateWith { values[it]!! }
-            val actualEntries = restoredTree.getAll().toList().getBlocking(tree).toMap()
+            val actualEntries = restoredTree.getAll().toList().getBlocking().toMap()
             assertEquals(expectedEntries, actualEntries)
         }
 
@@ -53,13 +53,13 @@ class TreeDiffTest {
                 val key = removedEntries.random(rand)
                 removedEntries.remove(key)
                 addedEntries.add(key)
-                tree = tree.put(key, values[key]!!).getBlocking(tree)
+                tree = tree.put(key, values[key]!!).getBlocking()
                 assertTree()
             } else {
                 val key = addedEntries.random(rand)
                 removedEntries.add(key)
                 addedEntries.remove(key)
-                tree = tree.remove(key).getBlocking(tree)
+                tree = tree.remove(key).getBlocking()
                 assertTree()
             }
         }
@@ -85,7 +85,7 @@ class TreeDiffTest {
             for (previousTree in (1..5).map { previousTrees.random(rand) }) {
                 val diff = tree.asObject().objectDiff(previousTree.asObject())
                     .map { it.getHash() to it.data.serialize() }
-                    .toList().getBlocking(tree)
+                    .toList().getBlocking()
 
                 val duplicateObjects = diff.groupBy { it.first }.filter { it.value.size > 1 }.map { it.value.first() }
                 assertEquals(emptyList(), duplicateObjects)
@@ -98,13 +98,13 @@ class TreeDiffTest {
                 val key = removedEntries.random(rand)
                 removedEntries.remove(key)
                 addedEntries.add(key)
-                tree = tree.put(key, values[key]!!).getBlocking(tree)
+                tree = tree.put(key, values[key]!!).getBlocking()
                 assertTree()
             } else {
                 val key = addedEntries.random(rand)
                 removedEntries.add(key)
                 addedEntries.remove(key)
-                tree = tree.remove(key).getBlocking(tree)
+                tree = tree.remove(key).getBlocking()
                 assertTree()
             }
         }

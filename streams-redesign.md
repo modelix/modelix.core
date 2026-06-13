@@ -163,7 +163,30 @@ These were latent couplings to a transitive dependency, not uses of the `streams
 
 ---
 
-## 5. Behavioral tradeoffs
+## 5. Follow-up: the executor is no longer required to run a stream
+
+Because batching is now structural — a fetch leaf carries its own `IBulkExecutor` source — a `Step` is fully
+self-contained. The `IStreamExecutor` passed to the terminal operations no longer carries any batching context; it
+only supplied a batch size and (for `BulkRequestStreamExecutor`) set `IStreamExecutor.CONTEXT`. Two changes removed
+that residual coupling:
+
+- **Batch size moved onto the source.** `IBulkExecutor` now declares `val batchSize` (default
+  `DEFAULT_BULK_REQUEST_BATCH_SIZE = 5000`); the driver chunks each source's keys to *its own* batch size. The driver
+  no longer takes a batch-size parameter. `BulkRequestStreamExecutor(source, batchSize)` keeps working — it exposes
+  the constructor batch size on the source the leaves bind to.
+- **Executor-less terminals.** New `getBlocking()` / `getSuspending()` / `iterateBlocking { }` /
+  `iterateSuspending { }` / `executeBlocking()` / `executeSuspending()` drive a fresh execution directly. The
+  `*(executor: IStreamExecutor | IStreamExecutorProvider)` overloads are `@Deprecated(ReplaceWith(...))` and keep their
+  original behavior for compatibility.
+
+All in-repo call sites (~180, mostly `getBlocking`) were migrated to the executor-less form. `IStreamExecutor` /
+`IStreamExecutorProvider` and `BulkRequestStreamExecutor.enqueue` remain — `enqueue` is still how fetch leaves are
+created, and `IStreamExecutor.CONTEXT` is still set during `BulkRequestStreamExecutor` runs because ModelQL resolves
+the "current executor" via `IStreamExecutor.getInstance()`.
+
+---
+
+## 6. Behavioral tradeoffs
 
 These follow from the "no incremental emission" decision and are intentional. They change performance characteristics,
 not results.
@@ -178,10 +201,13 @@ not results.
 3. **`take` / `skip` operate on materialized results** — they do not prune upstream fetches.
 4. **`SimpleStreamExecutor` now batches** per source/round — strictly fewer round-trips than before.
 
-## 6. Known limitations / future work
+## 7. Known limitations / future work
 
 - **Within-round stack safety.** The round driver trampolines across `Blocked` (the common fetch-dependent case). A
   pathological deep *pure* `flatMap` chain that never blocks would still recurse natively; the fix is to encode `Step`
   as a stack-safe free monad (explicit interpreter loop) if needed.
 - **Optional streaming `iterate*`** — see tradeoff #1.
 - **Restore `cached()` memoization** if ModelQL recompute cost proves material.
+- **Retire the executor entirely.** With the executor no longer required to run a stream (§5), `IStreamExecutor` /
+  `IStreamExecutorProvider` could be removed over time — the remaining users are `enqueue` (fetch-leaf creation) and
+  ModelQL's `getInstance()`-based "current executor" lookup, both of which can be reworked.

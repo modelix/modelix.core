@@ -57,7 +57,7 @@ private fun createNewTreeData(
             HamtInternalNode.createEmpty(config)
                 .put(root.id, graph.fromCreated(root), graph)
                 .orNull()
-                .getBlocking(graph)!!,
+                .getBlocking()!!,
         ),
         trieWithNodeRefIds = null,
         usesRoleIds = useRoleIds,

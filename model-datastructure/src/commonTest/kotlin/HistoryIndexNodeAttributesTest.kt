@@ -67,7 +67,7 @@ class HistoryIndexNodeAttributesTest {
         val graph = v1.graph
         val node = HistoryIndexNode.of(v1.obj).asObject(graph)
             .merge(HistoryIndexNode.of(v2.obj).asObject(graph))
-            .getBlocking(graph)
+            .getBlocking()
         assertEquals(AttributeValuesAggregation.of("staging", "prod"), node.data.attributes.getValues("env"))
         assertEquals(AttributeValuesAggregation.of("1"), node.data.attributes.getValues("run"))
     }
@@ -80,7 +80,7 @@ class HistoryIndexNodeAttributesTest {
         val graph = v1.graph
         val node = HistoryIndexNode.of(v1.obj).asObject(graph)
             .merge(HistoryIndexNode.of(v2.obj).asObject(graph))
-            .getBlocking(graph)
+            .getBlocking()
         assertEquals(AttributeValuesAggregation.of("a", "b"), node.data.attributes["env"])
         assertEquals(AttributeValuesAggregation.of("1"), node.data.attributes["run"])
     }
@@ -104,7 +104,7 @@ class HistoryIndexNodeAttributesTest {
         val graph = v1.graph
         val original = HistoryIndexNode.of(v1.obj).asObject(graph)
             .merge(HistoryIndexNode.of(v2.obj).asObject(graph))
-            .getBlocking(graph)
+            .getBlocking()
         val serialized = original.data.serialize()
         // Range node serializes attributes in field index 8 (0-based, LEVEL1-delimited).
         // Extract and deserialize just that field rather than the full node, because the full

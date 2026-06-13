@@ -28,7 +28,7 @@ class HistoryQueries(val historyIndex: suspend () -> Object<HistoryIndexNode>) :
         val interval = delay / 2
 
         runUntilLimit {
-            index.data.splitAtInterval(EquidistantIntervalsSpec(interval).withTimeRangeFilter(timeRange)).iterateSuspending(index.graph) { node ->
+            index.data.splitAtInterval(EquidistantIntervalsSpec(interval).withTimeRangeFilter(timeRange)).iterateSuspending { node ->
                 if (previousMinTime - node.maxTime >= delay) {
                     if (sessions.lastIndex >= pagination.asRange().last) throw LimitReached()
                     sessions += HistoryInterval(
@@ -76,7 +76,7 @@ class HistoryQueries(val historyIndex: suspend () -> Object<HistoryIndexNode>) :
         var previousIntervalId: Long = Long.MAX_VALUE
 
         runUntilLimit {
-            index.data.splitAtInterval(intervalsSpec).iterateSuspending(index.graph) { node ->
+            index.data.splitAtInterval(intervalsSpec).iterateSuspending { node ->
                 val intervalId = intervalsSpec.getIntervalIndex(node.maxTime)
                 check(intervalId <= previousIntervalId)
                 if (intervalId == previousIntervalId) {
@@ -114,7 +114,7 @@ class HistoryQueries(val historyIndex: suspend () -> Object<HistoryIndexNode>) :
         pagination: PaginationParameters,
     ): List<HistoryEntry> {
         val index: Object<HistoryIndexNode> = historyIndex()
-        val inTimeRange = if (timeRange == null) index else index.getRange(timeRange).orNull().getSuspending(index.graph)
+        val inTimeRange = if (timeRange == null) index else index.getRange(timeRange).orNull().getSuspending()
         if (inTimeRange == null) return emptyList()
         return inTimeRange.data.getRange(pagination.asRange())
             .flatMapOrdered { it.getAllVersionsReversed() }
@@ -129,7 +129,7 @@ class HistoryQueries(val historyIndex: suspend () -> Object<HistoryIndexNode>) :
                 )
             }
             .toList()
-            .getSuspending(index.graph)
+            .getSuspending()
     }
 
     override suspend fun splitAt(splitPoints: List<Instant>): List<HistoryInterval> {

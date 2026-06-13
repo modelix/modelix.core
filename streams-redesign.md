@@ -4,8 +4,9 @@ This document records the redesign of the `streams` module: replacing its three 
 (Sequence / Flow / Reaktive) with a single round-based interpreter, while preserving the public API so that no
 downstream module required API-driven changes.
 
-The new engine was first prototyped in the [`streams2`](streams2/README.md) module; this document covers porting that
-design into `streams` and the migration of the wider codebase.
+The engine was first prototyped in a separate `streams2` module and then merged into `streams` (the prototype's
+parallel `IStream` API and engine were redundant once the design was proven). See [`streams/README.md`](streams/README.md)
+for the resulting design overview; this document covers the redesign and the migration of the wider codebase.
 
 ---
 
@@ -121,17 +122,20 @@ Deleted: `SequenceStreamBuilder`, `FlowStreamBuilder`, `ReaktiveStreamBuilder`, 
 `CompletableObservable`, `StreamExtensions` (Reaktive helpers). The Reaktive dependency was removed from
 `streams/build.gradle.kts`.
 
-### Why the engine lives in `streams`, not as a dependency on `streams2`
+### Why a single module (the `streams2` prototype was merged in)
 
-The engine was ported into `streams` rather than wiring `streams` → `streams2`, because:
+The engine was prototyped in a separate `streams2` module, then merged into `streams` rather than kept as a separate
+dependency, because:
 
-- the engine types must be `internal` to `streams`;
-- the real integration needs a **suspending driver** and **async leaves** that the minimal `streams2` prototype
-  deliberately omits;
+- the engine types are `internal` to `streams`;
+- the real integration needs a **suspending driver** and **async leaves** that the minimal prototype deliberately
+  omitted;
 - `streams`' `IBulkExecutor` already declares `executeSuspending`, which the engine uses directly;
-- it avoids two competing `IBulkExecutor` / `IStream` types across modules.
+- keeping both meant two competing `IBulkExecutor` / `IStream` hierarchies for no benefit — the prototype's API was a
+  strict subset of the one `streams` already exposes.
 
-`streams2` remains as the standalone, dependency-free reference implementation.
+The prototype's batching/dedup/stack-safety tests were kept, rewritten against the real `BulkRequestStreamExecutor`
+API (`BulkRequestBatchingTest`).
 
 ---
 

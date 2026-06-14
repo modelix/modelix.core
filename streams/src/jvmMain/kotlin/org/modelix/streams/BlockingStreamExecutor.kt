@@ -1,8 +1,6 @@
 package org.modelix.streams
 
 import org.modelix.streams.engine.Execution
-import org.modelix.streams.engine.drive
-import org.modelix.streams.engine.driveSuspending
 
 /**
  * JVM executor that always drives streams to completion blocking, resolving async leaves (e.g. flows) via

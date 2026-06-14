@@ -1,8 +1,6 @@
 package org.modelix.streams
 
 import org.modelix.streams.engine.Execution
-import org.modelix.streams.engine.drive
-import org.modelix.streams.engine.driveSuspending
 
 /**
  * Default executor. Fetches embedded in a stream (via [BulkRequestStreamExecutor.enqueue]) are batched per source per

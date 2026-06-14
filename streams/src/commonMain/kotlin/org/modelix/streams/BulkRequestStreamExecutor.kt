@@ -2,8 +2,6 @@ package org.modelix.streams
 
 import org.modelix.streams.engine.Execution
 import org.modelix.streams.engine.Step
-import org.modelix.streams.engine.drive
-import org.modelix.streams.engine.driveSuspending
 import org.modelix.streams.engine.fetchStep
 
 /** Default maximum number of keys requested in a single bulk call. */

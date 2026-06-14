@@ -51,7 +51,11 @@ Prior art for this pattern: Haxl (Haskell), ZIO Query / `ZQuery` (Scala), Stitch
 ### `Step` — the intermediate representation
 
 A stream is described lazily and interpreted in **rounds**. The core type
-([`streams/.../engine/StepEngine.kt`](streams/src/commonMain/kotlin/org/modelix/streams/engine/StepEngine.kt)):
+([`streams/.../engine/StepEngine.kt`](streams/src/commonMain/kotlin/org/modelix/streams/engine/StepEngine.kt)).
+
+> **Note:** this section describes the *first* cut. The `Blocked`/`Pending`/`resume` representation below was later
+> replaced by a lazily-evaluated node graph to restore a depth-first bounded request frontier — see §6a for the
+> current model. The applicative/monadic split and round-based batching described here are unchanged.
 
 ```kotlin
 sealed interface Step<out T>
@@ -203,11 +207,38 @@ not results.
 3. **`take` / `skip` operate on materialized results** — they do not prune upstream fetches.
 4. **`SimpleStreamExecutor` now batches** per source/round — strictly fewer round-trips than before.
 
+## 6a. Depth-first, bounded request frontier
+
+The first cut of the round driver expanded the *entire* breadth of a traversal level per round: it materialized a
+`Step` per child (the applicative `combineConcat` over a node's children) and fetched the whole level at once. That
+lost a property of the old `BulkRequestStreamExecutor.RequestQueue.sendNextBatch` — a depth-first traversal that kept
+the live request frontier bounded — so peak memory grew with the *width* of a tree level rather than its depth.
+
+The engine was reworked to restore it. `Step` is now a lazily-evaluated node graph (`Done` / `FetchStep` / `MapStep` /
+`FlatMapStep` / `ZipStep` / `FanStep` / `AsyncStep` / `Recover`/`OnError`/`MemoStep`) instead of `Blocked` +
+`resume`. The driver walks the graph each round collecting the first-unmet request of every pending branch into a
+shared pool, but:
+
+- it **stops adding requests once the pool reaches the source's `batchSize`** (the cap), and
+- **`FanStep` builds its children lazily** — left-to-right, dropped once resolved — so live *unresolved* children also
+  stay within the cap.
+
+Combinators still evaluate eagerly when their inputs are already `Done`, so a synchronous prefix (and its side effects)
+runs at build time in build order — several call sites depend on this (e.g. `HamtLeafNode.getChanges` sets a `var` in
+one synchronous stream and reads it in a later `deferZeroOrOne`). Only blocking children are deferred and bounded.
+
+The result: **peak request frontier `≤ batchSize`** regardless of level width, while sibling requests that fit under
+the cap still share one round (batching preserved); an unbounded cap collapses to one round per level. Verified by
+`FrontierSizeTest` (a wide+deep tree whose widest level far exceeds the cap) and `HamtGetChangesTest` /
+`BulkRequestBatchingTest` (batching + eager-evaluation semantics).
+
+The result list itself is still fully materialized — tradeoff #1 (streaming `iterate*`) is unchanged and orthogonal.
+
 ## 7. Known limitations / future work
 
-- **Within-round stack safety.** The round driver trampolines across `Blocked` (the common fetch-dependent case). A
-  pathological deep *pure* `flatMap` chain that never blocks would still recurse natively; the fix is to encode `Step`
-  as a stack-safe free monad (explicit interpreter loop) if needed.
+- **Within-round stack safety.** The driver trampolines across rounds (the common fetch-dependent case), and the
+  per-round walk recurses on traversal depth (bounded in practice) — matching the previous engine. A pathological deep
+  *pure* `flatMap` chain that never blocks would still recurse natively; the fix is an explicit-stack walk if needed.
 - **Optional streaming `iterate*`** — see tradeoff #1.
 - **Retire the executor entirely.** With the executor no longer required to run a stream (§5), `IStreamExecutor` /
   `IStreamExecutorProvider` could be removed over time — the remaining users are `enqueue` (fetch-leaf creation) and

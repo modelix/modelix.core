@@ -13,8 +13,7 @@ import org.modelix.streams.engine.Step
 import org.modelix.streams.engine.asyncStep
 import org.modelix.streams.engine.combineConcat
 import org.modelix.streams.engine.doOnError
-import org.modelix.streams.engine.drive
-import org.modelix.streams.engine.driveSuspending
+import org.modelix.streams.engine.fanOut
 import org.modelix.streams.engine.flatMapStep
 import org.modelix.streams.engine.mapValues
 import org.modelix.streams.engine.memoStep
@@ -61,7 +60,7 @@ internal class StreamImpl<E>(val build: (Execution) -> Step<E>) : IStreamInterna
         StreamImpl { execution -> build(execution).mapValues { it.map(mapper) } }
 
     override fun <R> flatMapOrdered(mapper: (E) -> IStream.Many<R>): IStream.Many<R> =
-        StreamImpl { execution -> build(execution).flatMapStep { values -> combineConcat(values.map { mapper(it).asStep(execution) }) } }
+        StreamImpl { execution -> build(execution).flatMapStep { values -> fanOut(values) { mapper(it).asStep(execution) } } }
 
     override fun concat(other: IStream.Many<E>): IStream.Many<E> =
         StreamImpl { execution -> combineConcat(listOf(build(execution), other.asStep(execution))) }
@@ -161,7 +160,7 @@ internal class StreamImpl<E>(val build: (Execution) -> Step<E>) : IStreamInterna
         StreamImpl { execution -> build(execution).flatMapStep { values -> mapper(values.single()).asStep(execution) } }
 
     override fun <R> flatMapZeroOrOne(mapper: (E) -> IStream.ZeroOrOne<R>): IStream.ZeroOrOne<R> =
-        StreamImpl { execution -> build(execution).flatMapStep { values -> combineConcat(values.map { mapper(it).asStep(execution) }) } }
+        StreamImpl { execution -> build(execution).flatMapStep { values -> fanOut(values) { mapper(it).asStep(execution) } } }
 
     override fun exceptionIfEmpty(exception: () -> Throwable): IStream.One<E> =
         StreamImpl { execution -> build(execution).mapValues { values -> if (values.isEmpty()) throw exception() else values } }

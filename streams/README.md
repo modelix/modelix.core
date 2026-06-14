@@ -32,31 +32,44 @@ The engine ([`engine/StepEngine.kt`](src/commonMain/kotlin/org/modelix/streams/e
 stream lazily and interprets it in **rounds**:
 
 ```kotlin
-sealed interface Step<out T>
-class Done<T>(val values: List<T>)                                // fully resolved
-class Blocked<T>(val pending: Pending, val resume: () -> Step<T>) // needs a round of work first
-class Failed(val cause: Throwable)
+sealed class Step<out T>                          // a node in a lazily-evaluated computation
+class Done<T>(val values: List<T>)                // fully resolved
+class FetchStep<T>(source, key)                   // a bulk-fetch leaf
+class MapStep / FlatMapStep / ZipStep / FanStep   // transform / dependency / applicative join / fan-out
+// + AsyncStep, RecoverStep, OnErrorStep, MemoStep
 ```
 
-`Pending` is the deduplicated work for one round: bulk fetches grouped by data source, plus async leaves. The
-combinators encode the applicative/monadic split:
+A `Step` is a node the driver walks. The combinators encode the applicative/monadic split:
 
 - `flatMapStep` (monadic) — defers the continuation into the next round.
-- `combineConcat` / `zipN` / `zip2` (applicative) — **union** the pending work of independent branches into the same
-  round. That union *is* the batch.
+- `combineConcat` / `zipN` / `fanOut` (applicative) — let the requests of independent branches be collected into the
+  same round. That *is* the batch.
 
-A subtree with no `Blocked` resolves straight to `Done`: the **synchronous fast path** for local data, with no
-scheduler and nothing allocated.
+Combinators evaluate **eagerly when their inputs are already `Done`** (the synchronous fast path for local data: no
+node allocated, side effects in `map`/`flatMap` lambdas run at build time in build order). A lazy node is built only
+when an input would block on a request.
 
 ## Execution
 
 The driver (`Execution.drive` / `driveSuspending`) is a loop where each iteration is one batch round:
 
-1. issue **one bulk call per data source** (chunked to that source's `IBulkExecutor.batchSize`), and run any async leaves;
-2. fill the per-run cache (so each key is fetched at most once — dedup within *and* across rounds);
-3. `resume()` and repeat until `Done`.
+1. **walk** the live node graph, collecting the first-unmet request of every pending branch into a shared pool;
+2. issue **one bulk call per data source** (chunked to that source's `IBulkExecutor.batchSize`), run any async leaves,
+   and fill the per-run cache (so each key is fetched at most once — dedup within *and* across rounds);
+3. walk again, until the root resolves.
 
-The loop is the **trampoline** that keeps fetch-dependent chains stack-safe regardless of depth.
+The loop is the **trampoline** across rounds, so fetch-dependent depth costs rounds, not stack.
+
+### Depth-first, bounded frontier
+
+The walk does **not** expand the whole breadth of a traversal at once. It stops adding requests to the round once the
+pool reaches the source's `batchSize` (the cap), and `FanStep` children are built lazily — instantiated left-to-right
+and dropped once resolved — so the number of live *unresolved* children never exceeds the cap either. Once a request
+resolves, the next walk descends deeper before expanding shallower siblings that didn't fit. The result is a
+depth-first traversal whose **peak request frontier is `≤ batchSize`**, independent of how wide a tree level is — the
+property the old `BulkRequestStreamExecutor.RequestQueue.sendNextBatch` provided. Sibling requests still share a round
+whenever they fit under the cap (the common case), so batching is preserved; with a cap above any level the behaviour
+collapses to one round per level. (See `FrontierSizeTest`.)
 
 Batching is **structural**: a fetch leaf carries its own data source, so the driver groups fetches per source per
 round regardless of which executor runs it. `BulkRequestStreamExecutor.enqueue(key)` is simply a fetch leaf bound to
@@ -97,11 +110,12 @@ src/commonMain/kotlin/org/modelix/streams/
 
 These follow from the engine resolving each query fully (no incremental emission):
 
-1. `iterate` / `iterateSuspending` fully materialize before visiting — higher peak memory for very large iterations.
-   The clean fix, if a hot path needs it, is per-round streaming in just the `iterate*` drivers.
+1. `iterate` / `iterateSuspending` fully materialize the *result* before visiting — higher peak memory for very large
+   iterations. Note this is independent of the request frontier, which **is** bounded (see "Depth-first, bounded
+   frontier" above): the fetch working set stays `≤ batchSize` even though the result list does not. The clean fix for
+   the result side, if a hot path needs it, is per-round streaming in just the `iterate*` drivers.
 2. `cached()` multicasts: a stream consumed by multiple branches is evaluated once per run (via a shared memo cell
-   advanced at most once per round), so side effects and work aren't duplicated. ModelQL relies on this for shared
-   query steps.
+   resolved once and reused), so side effects and work aren't duplicated. ModelQL relies on this for shared query steps.
 3. `take` / `skip` operate on materialized results (don't prune upstream fetches).
 4. Within-round stack safety covers fetch-dependent chains (the common case). A pathological deep *pure* `flatMap`
    chain that never blocks would still recurse; the fix is to encode `Step` as a stack-safe free monad if needed.

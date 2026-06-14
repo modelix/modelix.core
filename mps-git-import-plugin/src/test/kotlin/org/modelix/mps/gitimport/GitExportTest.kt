@@ -95,7 +95,7 @@ class GitExportTest : MPSTestBase() {
         val reimportedVersion = client.pull(modelixBranchReimport, null)
 
         // check that no changes got lost during the round-trip
-        val diff = reimportedVersion.getModelTree().getChanges(modifiedVersion.getModelTree(), false).toList().getSuspending(reimportedVersion.asObject().graph)
+        val diff = reimportedVersion.getModelTree().getChanges(modifiedVersion.getModelTree(), false).toList().getSuspending()
         val changes = ArrayList<String>()
         for (event in diff) {
             when (event) {
@@ -105,9 +105,9 @@ class GitExportTest : MPSTestBase() {
                 is NodeRemovedEvent<INodeReference> -> TODO()
                 is ChildrenChangedEvent<INodeReference> -> TODO()
                 is PropertyChangedEvent<INodeReference> -> {
-                    changes += modifiedVersion.getModelTree().getProperty(event.nodeId, event.role).getSuspending(modifiedVersion.asObject().graph) +
+                    changes += modifiedVersion.getModelTree().getProperty(event.nodeId, event.role).getSuspending() +
                         " -> " +
-                        reimportedVersion.getModelTree().getProperty(event.nodeId, event.role).getSuspending(reimportedVersion.asObject().graph)
+                        reimportedVersion.getModelTree().getProperty(event.nodeId, event.role).getSuspending()
                 }
                 is ReferenceChangedEvent<INodeReference> -> TODO()
             }

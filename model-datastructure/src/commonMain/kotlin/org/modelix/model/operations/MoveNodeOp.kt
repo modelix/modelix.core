@@ -44,24 +44,24 @@ class MoveNodeOp(val childId: INodeReference, val targetPosition: PositionInRole
     override fun captureIntend(tree: IModelTree): IOperationIntend {
         val capturedTargetPosition = CapturedInsertPosition(
             targetPosition.index,
-            tree.getChildren(targetPosition.nodeId.toGlobal(tree.getId()), targetPosition.role).toList().getBlocking(tree),
+            tree.getChildren(targetPosition.nodeId.toGlobal(tree.getId()), targetPosition.role).toList().getBlocking(),
         )
         return Intend(capturedTargetPosition)
     }
 
     inner class Intend(val capturedTargetPosition: CapturedInsertPosition) : IOperationIntend {
         override fun restoreIntend(tree: IModelTree): List<IOperation> {
-            if (!tree.containsNode(childId.toGlobal(tree.getId())).getBlocking(tree)) return emptyList()
+            if (!tree.containsNode(childId.toGlobal(tree.getId())).getBlocking()) return emptyList()
             val newSourcePosition = getNodePosition(tree, childId.toGlobal(tree.getId()))
-            if (!tree.containsNode(targetPosition.nodeId.toGlobal(tree.getId())).getBlocking(tree)) {
+            if (!tree.containsNode(targetPosition.nodeId.toGlobal(tree.getId())).getBlocking()) {
                 return listOf(
                     withPos(getDetachedNodesEndPosition(tree)),
                 )
             }
-            if (tree.getAncestors(targetPosition.nodeId.toGlobal(tree.getId()), false).contains(childId.toGlobal(tree.getId())).getBlocking(tree)) return emptyList()
-            val newTargetPosition = if (tree.containsNode(targetPosition.nodeId.toGlobal(tree.getId())).getBlocking(tree)) {
+            if (tree.getAncestors(targetPosition.nodeId.toGlobal(tree.getId()), false).contains(childId.toGlobal(tree.getId())).getBlocking()) return emptyList()
+            val newTargetPosition = if (tree.containsNode(targetPosition.nodeId.toGlobal(tree.getId())).getBlocking()) {
                 val newTargetIndex = capturedTargetPosition.findIndex(
-                    tree.getChildren(targetPosition.nodeId.toGlobal(tree.getId()), targetPosition.role).toList().getBlocking(tree),
+                    tree.getChildren(targetPosition.nodeId.toGlobal(tree.getId()), targetPosition.role).toList().getBlocking(),
                     targetPosition.index,
                 )
                 targetPosition.withIndex(newTargetIndex)

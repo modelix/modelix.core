@@ -1,10 +1,5 @@
 package org.modelix.model.api.async
 
-import com.badoo.reaktive.maybe.Maybe
-import com.badoo.reaktive.maybe.maybeOf
-import com.badoo.reaktive.maybe.maybeOfEmpty
-import com.badoo.reaktive.single.Single
-import com.badoo.reaktive.single.singleOf
 import org.modelix.model.api.ConceptReference
 import org.modelix.model.api.IChildLinkReference
 import org.modelix.model.api.IConcept
@@ -25,9 +20,6 @@ open class NodeAsAsyncNode(val node: INode) : IAsyncNode {
     override fun getStreamExecutor(): IStreamExecutor {
         return SimpleStreamExecutor
     }
-
-    private fun <T : Any> T?.asOptionalMono(): Maybe<T> = if (this != null) maybeOf(this) else maybeOfEmpty()
-    private fun <T> T.asMono(): Single<T> = singleOf(this)
 
     override fun asRegularNode(): INode = node
 

@@ -21,7 +21,7 @@ class SetPropertyOp(val nodeId: INodeReference, val role: IPropertyReference, va
     }
 
     override fun restoreIntend(tree: IModelTree): List<IOperation> {
-        return if (tree.containsNode(nodeId.toGlobal(tree.getId())).getBlocking(tree)) listOf(this) else listOf(NoOp())
+        return if (tree.containsNode(nodeId.toGlobal(tree.getId())).getBlocking()) listOf(this) else listOf(NoOp())
     }
 
     override fun captureIntend(tree: IModelTree) = this

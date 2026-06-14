@@ -295,7 +295,7 @@ private class TransactionAdapter(val transaction: IGenericMutableModelTree.Write
 
     override fun getChildren(parentId: Long, role: String?): Iterable<Long> {
         return transaction.tree.getChildren(parentId.translate(), IChildLinkReference.fromString(role))
-            .map { it.translate() }.toList().getBlocking(transaction.tree)
+            .map { it.translate() }.toList().getBlocking()
     }
 
     override fun getAllChildren(parentId: Long): Iterable<Long> {

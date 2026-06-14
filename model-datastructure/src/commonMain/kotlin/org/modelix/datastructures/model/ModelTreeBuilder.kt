@@ -42,7 +42,7 @@ abstract class ModelTreeBuilder<NodeId> private constructor(protected val common
             return HamtInternalNode.createEmpty(config)
                 .put(root.data.id, root.ref, common.graph)
                 .orNull()
-                .getBlocking(common.graph)!!
+                .getBlocking()!!
                 .let { HamtTree(it) }
                 .autoResolveValues()
                 .asModelTree(common.treeId, common.storeRoleIds)
@@ -64,7 +64,7 @@ abstract class ModelTreeBuilder<NodeId> private constructor(protected val common
             )
             return PatriciaTrie(config)
                 .put(root.data.id, root.ref)
-                .getBlocking(common.graph)
+                .getBlocking()
                 .autoResolveValues()
                 .asModelTree(common.treeId, common.storeRoleIds)
         }

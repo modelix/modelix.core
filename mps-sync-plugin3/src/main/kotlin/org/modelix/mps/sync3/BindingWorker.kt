@@ -446,7 +446,7 @@ class BindingWorker(
                     val node = sourceModel.tryResolveNode(nodeId) ?: return
                     invalidationTree.invalidate(node, false)
                 }
-                newTree.getChanges(baseVersion.getModelTree(), changesOnly = true).iterateSuspending(newTree.asObject().graph) { event ->
+                newTree.getChanges(baseVersion.getModelTree(), changesOnly = true).iterateSuspending { event ->
                     when (event) {
                         is ContainmentChangedEvent<INodeReference>, is NodeRemovedEvent<INodeReference>, is NodeAddedEvent<INodeReference> -> {
                             // There will be a ChildrenChangedEvent that indirectly handles these cases.

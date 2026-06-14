@@ -56,7 +56,7 @@ class BulkUpdateOp(
         override fun restoreIntend(tree: IModelTree): List<IOperation> {
             // The intended change is to put the model into the given state. Any concurrent change can just be
             // overwritten as long as the subtree root as the starting point still exists.
-            return if (tree.containsNode(subtreeRootId.toGlobal(tree.getId())).getBlocking(tree)) {
+            return if (tree.containsNode(subtreeRootId.toGlobal(tree.getId())).getBlocking()) {
                 listOf(getOriginalOp())
             } else {
                 listOf(NoOp())

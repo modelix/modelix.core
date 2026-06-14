@@ -511,7 +511,7 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
         version.historyAsMutationParameters(ObjectHash(oldVersion))
             .map { it.toJS() }
             .toList()
-            .getSuspending(version.graph)
+            .getSuspending()
             .toTypedArray()
     }
 }

@@ -126,7 +126,7 @@ sealed class HistoryIndexNode : IObjectData {
         }
 
         fun of(version1: Object<CPVersion>, version2: Object<CPVersion>): HistoryIndexNode {
-            return of(version1).asObject(version1.graph).merge(of(version2).asObject(version2.graph)).getBlocking(version1.graph).data
+            return of(version1).asObject(version1.graph).merge(of(version2).asObject(version2.graph)).getBlocking().data
         }
 
         /**

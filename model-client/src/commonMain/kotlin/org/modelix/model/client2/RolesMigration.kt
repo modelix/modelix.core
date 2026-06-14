@@ -110,7 +110,7 @@ suspend fun IModelClientV2.migrateRoles(
                             },
                         ),
                     ).andThenUnit()
-                }.drainAll().executeBlocking(oldTree)
+                }.drainAll().executeBlocking()
         }
 
     push(branch, newVersion, oldVersion)

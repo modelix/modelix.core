@@ -9,9 +9,6 @@ kotlin {
             dependencies {
                 implementation(project(":kotlin-utils"))
                 implementation(libs.kotlin.coroutines.core)
-
-                api(libs.reaktive)
-                api(libs.reaktive.coroutines.interop)
             }
         }
         commonTest {

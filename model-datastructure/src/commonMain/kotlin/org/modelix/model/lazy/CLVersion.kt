@@ -320,7 +320,7 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
         }
 
         fun loadFromHash(hash: ObjectHash, graph: IObjectGraph): CLVersion {
-            return requestFromHash(hash, graph).getBlocking(graph)
+            return requestFromHash(hash, graph).getBlocking()
         }
 
         fun requestFromHash(hash: ObjectHash, graph: IObjectGraph): IStream.One<CLVersion> {

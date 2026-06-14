@@ -361,14 +361,14 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
 
         // Deleting the root node isn't allowed
         val mainTree = newVersion.getModelTree()
-        check(mainTree.containsNode(mainTree.getRootNodeId()).getBlocking(mainTree))
+        check(mainTree.containsNode(mainTree.getRootNodeId()).getBlocking())
 
         // ensure there are no missing objects
         // newVersion.graph.getStreamExecutor().iterate({ newVersion.diff(oldVersion) }) { }
         if (oldVersion != null) {
             // If the object diff is buggy, client and server will skip over the same objects.
             // The model diff should also iterate over all new objects and is used for additional validation.
-            newVersion.getModelTree().getChanges(oldVersion.getModelTree(), false).iterateBlocking(newVersion.getModelTree()) { }
+            newVersion.getModelTree().getChanges(oldVersion.getModelTree(), false).iterateBlocking { }
         }
 
         // TODO check invariants of the model (consistent parent-child relations, single root, containment cycles)
@@ -380,7 +380,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
             check(newVersion.operations.count() == 0)
         } else {
             val mutableTree = baseVersion.getModelTree().asMutableSingleThreaded()
-            newVersion.operationsAsStream().iterateBlocking(mainTree) { op ->
+            newVersion.operationsAsStream().iterateBlocking { op ->
                 op.apply(mutableTree)
             }
             check(mutableTree.getTransaction().tree.getHash() == newVersion.getModelTree().getHash()) {
@@ -438,8 +438,8 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
             val newElement = HistoryIndexNode.of(version.obj).asObject(graph)
             val newIndex = when (parentIndices.size) {
                 0 -> newElement
-                1 -> parentIndices.single().merge(newElement).getBlocking(graph)
-                2 -> parentIndices[0].merge(parentIndices[1]).merge(newElement).getBlocking(graph)
+                1 -> parentIndices.single().merge(newElement).getBlocking()
+                2 -> parentIndices[0].merge(parentIndices[1]).merge(newElement).getBlocking()
                 else -> error("impossible")
             }
             newIndex.write()
@@ -613,7 +613,7 @@ class RepositoriesManager(val stores: StoreManager) : IRepositoriesManager {
             val version = CLVersion.loadFromHash(versionHash, sourceStore)
 
             // Use diff with empty list to get all objects reachable from this version
-            version.diff(emptyList()).iterateBlocking(sourceStore) { obj ->
+            version.diff(emptyList()).iterateBlocking { obj ->
                 reachableHashes.add(obj.getHashString())
             }
         }

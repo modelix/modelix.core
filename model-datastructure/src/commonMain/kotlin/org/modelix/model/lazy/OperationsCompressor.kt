@@ -56,7 +56,7 @@ class OperationsCompressor(val resultTree: Object<CPTree>) {
         }
 
         for (id in createdNodes) {
-            if (!resultTree.data.getModelTree().containsNode(id).getBlocking(resultTree.graph)) {
+            if (!resultTree.data.getModelTree().containsNode(id).getBlocking()) {
                 throw RuntimeException("Tree expected to contain node $id")
             }
         }

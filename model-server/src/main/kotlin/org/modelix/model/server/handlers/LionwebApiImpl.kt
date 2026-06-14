@@ -91,10 +91,7 @@ class LionwebApiImpl(val repoManager: IRepositoriesManager) : LionwebApi() {
 
         // TODO use an index to find the nodes by their foreign ID (aka original ID)
         if (foreignIds.isNotEmpty()) {
-//            version.obj.graph.getStreamExecutor().iterateSuspending({
-//                version.tree.nodesMap.getEntries().flatMap { it.second.resolve() }
-//                    .filter { foreignIds.contains(it.data.getPropertyValue(NodeData.ID_PROPERTY_KEY)) }
-//            }) {
+//            version.obj.graph.getStreamExecutor().iterateSuspending {
 //                modelixIds.add(it.data.id)
 //            }
         }

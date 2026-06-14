@@ -72,7 +72,7 @@ class BTreeTest {
 
         assertEquals(
             (100L..200L).map { it to it * 2 },
-            tree.getAll((100L..200L)).toList().getBlocking(tree),
+            tree.getAll((100L..200L)).toList().getBlocking(),
         )
     }
 }

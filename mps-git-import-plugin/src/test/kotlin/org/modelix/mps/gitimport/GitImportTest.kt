@@ -583,7 +583,7 @@ class GitImportTest : MPSTestBase() {
         for (version in latestVersion.historyAsSequence()) {
             for (parentVersion in version.getParentVersions()) {
                 val baseObjects = parentVersion.getModelTree().asObject().getDescendantsAndSelf().map { it.getHash() }.toList()
-                    .getBlocking(parentVersion.asObject().graph)
+                    .getBlocking()
                 val baseObjectsSet = baseObjects.toSet()
 
                 // no object is returned twice
@@ -602,13 +602,13 @@ class GitImportTest : MPSTestBase() {
                         it
                     }
                     .toList()
-                    .getBlocking(parentVersion.asObject().graph)
+                    .getBlocking()
 
                 // also the delta itself doesn't contain duplicate objects
                 val duplicateObjects: List<Object<IObjectData>> = deltaObjects.groupBy { it.getHash() }.filter { it.value.size > 1 }.map { it.value.first() }
                 if (duplicateObjects.isNotEmpty()) {
                     // place breakpoint here for debugging
-                    version.diff(parentVersion, filter).toList().getBlocking(parentVersion.asObject().graph)
+                    version.diff(parentVersion, filter).toList().getBlocking()
                 }
                 assertEquals(emptyList<Object<IObjectData>>(), duplicateObjects)
 
@@ -617,12 +617,12 @@ class GitImportTest : MPSTestBase() {
                 if (unnecessaryObjects.isNotEmpty()) {
                     // just for debugging
                     parentVersion.getModelTree().asObject().getDescendantsAndSelf().toList()
-                        .getBlocking(parentVersion.asObject().graph).joinToString("\n") { it.toString() }
+                        .getBlocking().joinToString("\n") { it.toString() }
                         .let { File("oldVersion.txt").writeText(it) }
                     version.getModelTree().asObject().getDescendantsAndSelf().toList()
-                        .getBlocking(parentVersion.asObject().graph).joinToString("\n") { it.toString() }
+                        .getBlocking().joinToString("\n") { it.toString() }
                         .let { File("newVersion.txt").writeText(it) }
-                    version.diff(parentVersion, filter).toList().getBlocking(parentVersion.asObject().graph)
+                    version.diff(parentVersion, filter).toList().getBlocking()
                 }
                 assertEquals(emptyList<Object<IObjectData>>(), unnecessaryObjects)
             }

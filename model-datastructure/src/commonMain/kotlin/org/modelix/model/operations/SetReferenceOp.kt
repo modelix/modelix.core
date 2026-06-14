@@ -22,7 +22,7 @@ class SetReferenceOp(val sourceId: INodeReference, val role: IReferenceLinkRefer
     }
 
     override fun restoreIntend(tree: IModelTree): List<IOperation> {
-        return if (tree.containsNode(sourceId.toGlobal(tree.getId())).getBlocking(tree)) listOf(this) else listOf(NoOp())
+        return if (tree.containsNode(sourceId.toGlobal(tree.getId())).getBlocking()) listOf(this) else listOf(NoOp())
     }
 
     override fun captureIntend(tree: IModelTree) = this

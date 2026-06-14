@@ -28,15 +28,15 @@ class AddNewChildSubtreeOp(
     }
 
     override fun apply(tree: IMutableModelTree): IAppliedOperation {
-        decompress().iterateBlocking(resultTreeHash.graph) { it.apply(tree) }
+        decompress().iterateBlocking { it.apply(tree) }
         return Applied()
     }
 
     fun decompress(): IStream.Many<IOperation> {
         val resultTree = getResultTree()
         return resultTree.getDescendants(childId.toGlobal(resultTree.getId()), true).flatMapOrdered { node ->
-            val parent = resultTree.getParent(node).getBlocking(resultTree)!!
-            val roleInParent = resultTree.getRoleInParent(node).getBlocking(resultTree)!!
+            val parent = resultTree.getParent(node).getBlocking()!!
+            val roleInParent = resultTree.getRoleInParent(node).getBlocking()!!
             val pos = PositionInRole(
                 parent,
                 roleInParent,
@@ -45,8 +45,8 @@ class AddNewChildSubtreeOp(
             decompressNode(resultTree, node, pos, false)
         } +
             resultTree.getDescendants(childId.toGlobal(resultTree.getId()), true).flatMapOrdered { node ->
-                val parent = resultTree.getParent(node).getBlocking(resultTree)!!
-                val roleInParent = resultTree.getRoleInParent(node).getBlocking(resultTree)!!
+                val parent = resultTree.getParent(node).getBlocking()!!
+                val roleInParent = resultTree.getRoleInParent(node).getBlocking()!!
                 val pos = PositionInRole(
                     parent,
                     roleInParent,
@@ -64,7 +64,7 @@ class AddNewChildSubtreeOp(
                 SetReferenceOp(node, role, target)
             }
         } else {
-            IStream.of(AddNewChildOp(position!!, node, tree.getConceptReference(node).getBlocking(tree))) +
+            IStream.of(AddNewChildOp(position!!, node, tree.getConceptReference(node).getBlocking())) +
                 tree.getProperties(node).map { (property, value) -> SetPropertyOp(node, property, value) }
         }
     }
@@ -82,20 +82,20 @@ class AddNewChildSubtreeOp(
                 .getDescendants(childId.toGlobal(resultTree.getId()), true)
                 .map { DeleteNodeOp(it) }
                 .toList()
-                .getBlocking(resultTree.asObject().graph)
+                .getBlocking()
                 .asReversed()
         }
     }
 
     override fun captureIntend(tree: IModelTree): IOperationIntend {
-        val children = tree.getChildren(position.nodeId.toGlobal(tree.getId()), position.role).toList().getBlocking(tree)
+        val children = tree.getChildren(position.nodeId.toGlobal(tree.getId()), position.role).toList().getBlocking()
         return Intend(CapturedInsertPosition(position.index, children))
     }
 
     inner class Intend(val capturedPosition: CapturedInsertPosition) : IOperationIntend {
         override fun restoreIntend(tree: IModelTree): List<IOperation> {
-            if (tree.containsNode(position.nodeId.toGlobal(tree.getId())).getBlocking(tree)) {
-                val newIndex = capturedPosition.findIndex(tree.getChildren(position.nodeId.toGlobal(tree.getId()), position.role).toList().getBlocking(tree))
+            if (tree.containsNode(position.nodeId.toGlobal(tree.getId())).getBlocking()) {
+                val newIndex = capturedPosition.findIndex(tree.getChildren(position.nodeId.toGlobal(tree.getId()), position.role).toList().getBlocking())
                 return listOf(withPosition(position.withIndex(newIndex)))
             } else {
                 return listOf(withPosition(getDetachedNodesEndPosition(tree)))

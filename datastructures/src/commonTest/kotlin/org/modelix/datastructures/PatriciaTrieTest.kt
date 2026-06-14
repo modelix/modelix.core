@@ -25,10 +25,10 @@ class PatriciaTrieTest {
 
         fun assertTree() {
             val expectedEntries = addedEntries.associateWith { values[it]!! }
-            val actualEntries = tree.getAll().toList().getBlocking(tree).toMap()
+            val actualEntries = tree.getAll().toList().getBlocking().toMap()
             assertEquals(expectedEntries, actualEntries)
 
-            val expectedTree = addedEntries.fold(initialTree) { acc, it -> acc.put(it, values[it]!!).getBlocking(tree) }
+            val expectedTree = addedEntries.fold(initialTree) { acc, it -> acc.put(it, values[it]!!).getBlocking() }
             assertEquals(expectedTree, tree)
 
             assertEquals(expectedTree.asObject().getHash(), tree.asObject().getHash())
@@ -39,13 +39,13 @@ class PatriciaTrieTest {
                 val key = removedEntries.random(rand)
                 removedEntries.remove(key)
                 addedEntries.add(key)
-                tree = tree.put(key, values[key]!!).getBlocking(tree)
+                tree = tree.put(key, values[key]!!).getBlocking()
                 assertTree()
             } else {
                 val key = addedEntries.random(rand)
                 removedEntries.add(key)
                 addedEntries.remove(key)
-                tree = tree.remove(key).getBlocking(tree)
+                tree = tree.remove(key).getBlocking()
                 assertTree()
             }
         }
@@ -56,55 +56,55 @@ class PatriciaTrieTest {
     @Test
     fun `slice with shorter prefix and single entry`() {
         var tree: PatriciaTrie<String, String> = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
-        tree = tree.put("abcdef", "1").getBlocking(tree)
+        tree = tree.put("abcdef", "1").getBlocking()
 
-        assertEquals("1", tree.slice("abc").flatMapZeroOrOne { it.get("abcdef") }.getBlocking(tree))
+        assertEquals("1", tree.slice("abc").flatMapZeroOrOne { it.get("abcdef") }.getBlocking())
     }
 
     @Test
     fun `slice with shorter prefix and two entries`() {
         var tree: PatriciaTrie<String, String> = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
-        tree = tree.put("abcdef", "1").getBlocking(tree)
-        tree = tree.put("abcdeg", "2").getBlocking(tree)
+        tree = tree.put("abcdef", "1").getBlocking()
+        tree = tree.put("abcdeg", "2").getBlocking()
 
-        assertEquals("1", tree.slice("abc").flatMapZeroOrOne { it.get("abcdef") }.getBlocking(tree))
-        assertEquals("2", tree.slice("abc").flatMapZeroOrOne { it.get("abcdeg") }.getBlocking(tree))
+        assertEquals("1", tree.slice("abc").flatMapZeroOrOne { it.get("abcdef") }.getBlocking())
+        assertEquals("2", tree.slice("abc").flatMapZeroOrOne { it.get("abcdeg") }.getBlocking())
     }
 
     @Test
     fun `slice with prefix between two entries`() {
         var tree: PatriciaTrie<String, String> = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
-        tree = tree.put("ab", "1").getBlocking(tree)
-        tree = tree.put("abcdef", "2").getBlocking(tree)
+        tree = tree.put("ab", "1").getBlocking()
+        tree = tree.put("abcdef", "2").getBlocking()
 
-        assertEquals(null, tree.slice("abcd").flatMapZeroOrOne { it.get("ab") }.getBlocking(tree))
-        assertEquals("2", tree.slice("abcd").flatMapZeroOrOne { it.get("abcdef") }.getBlocking(tree))
+        assertEquals(null, tree.slice("abcd").flatMapZeroOrOne { it.get("ab") }.getBlocking())
+        assertEquals("2", tree.slice("abcd").flatMapZeroOrOne { it.get("abcdef") }.getBlocking())
     }
 
     @Test
     fun `slice with one before and two after`() {
         var tree: PatriciaTrie<String, String> = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
-        tree = tree.put("ab", "1").getBlocking(tree)
-        tree = tree.put("abcdef", "2").getBlocking(tree)
-        tree = tree.put("abcdeg", "3").getBlocking(tree)
+        tree = tree.put("ab", "1").getBlocking()
+        tree = tree.put("abcdef", "2").getBlocking()
+        tree = tree.put("abcdeg", "3").getBlocking()
 
-        assertEquals(null, tree.slice("abcd").flatMapZeroOrOne { it.get("ab") }.getBlocking(tree))
-        assertEquals("2", tree.slice("abcd").flatMapZeroOrOne { it.get("abcdef") }.getBlocking(tree))
-        assertEquals("3", tree.slice("abcd").flatMapZeroOrOne { it.get("abcdeg") }.getBlocking(tree))
+        assertEquals(null, tree.slice("abcd").flatMapZeroOrOne { it.get("ab") }.getBlocking())
+        assertEquals("2", tree.slice("abcd").flatMapZeroOrOne { it.get("abcdef") }.getBlocking())
+        assertEquals("3", tree.slice("abcd").flatMapZeroOrOne { it.get("abcdeg") }.getBlocking())
     }
 
     @Test
     fun `slice with two before and two after at existing split`() {
         var tree: PatriciaTrie<String, String> = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
-        tree = tree.put("a", "0").getBlocking(tree)
-        tree = tree.put("ab", "1").getBlocking(tree)
-        tree = tree.put("abcdef", "2").getBlocking(tree)
-        tree = tree.put("abcdeg", "3").getBlocking(tree)
+        tree = tree.put("a", "0").getBlocking()
+        tree = tree.put("ab", "1").getBlocking()
+        tree = tree.put("abcdef", "2").getBlocking()
+        tree = tree.put("abcdeg", "3").getBlocking()
 
-        assertEquals(null, tree.slice("ab").flatMapZeroOrOne { it.get("a") }.getBlocking(tree))
-        assertEquals("1", tree.slice("ab").flatMapZeroOrOne { it.get("ab") }.getBlocking(tree))
-        assertEquals("2", tree.slice("ab").flatMapZeroOrOne { it.get("abcdef") }.getBlocking(tree))
-        assertEquals("3", tree.slice("ab").flatMapZeroOrOne { it.get("abcdeg") }.getBlocking(tree))
+        assertEquals(null, tree.slice("ab").flatMapZeroOrOne { it.get("a") }.getBlocking())
+        assertEquals("1", tree.slice("ab").flatMapZeroOrOne { it.get("ab") }.getBlocking())
+        assertEquals("2", tree.slice("ab").flatMapZeroOrOne { it.get("abcdef") }.getBlocking())
+        assertEquals("3", tree.slice("ab").flatMapZeroOrOne { it.get("abcdeg") }.getBlocking())
     }
 
     @Test
@@ -127,16 +127,16 @@ class PatriciaTrieTest {
             "abcdC",
         )
         for (key in initialKeys) {
-            tree = tree.put(key, "value of $key").getBlocking(tree)
+            tree = tree.put(key, "value of $key").getBlocking()
         }
 
         assertEquals(
             initialKeys.associateWith { "value of $it" },
-            tree.getAll().toList().getBlocking(tree).toMap(),
+            tree.getAll().toList().getBlocking().toMap(),
         )
 
         for (key in initialKeys) {
-            assertEquals("value of $key", tree.get(key).getBlocking(tree))
+            assertEquals("value of $key", tree.get(key).getBlocking())
         }
 
         var replacementTree = PatriciaTrie.withStrings(IObjectGraph.FREE_FLOATING)
@@ -151,16 +151,16 @@ class PatriciaTrieTest {
             "abcdB93",
         )
         for (key in replacementKeys) {
-            replacementTree = replacementTree.put(key, "new value of $key").getBlocking(tree)
+            replacementTree = replacementTree.put(key, "new value of $key").getBlocking()
         }
-        tree = tree.replaceSlice("abcdB", replacementTree).getBlocking(tree)
+        tree = tree.replaceSlice("abcdB", replacementTree).getBlocking()
 
         assertEquals(
             initialKeys.filterNot { it.startsWith("abcdB") }.map { it to "value of $it" }
                 .plus(replacementKeys.map { it to "new value of $it" })
                 .sortedBy { it.first }
                 .joinToString("\n") { "${it.first} -> ${it.second}" },
-            tree.getAll().toList().getBlocking(tree).sortedBy { it.first }.joinToString("\n") { "${it.first} -> ${it.second}" },
+            tree.getAll().toList().getBlocking().sortedBy { it.first }.joinToString("\n") { "${it.first} -> ${it.second}" },
         )
     }
 }

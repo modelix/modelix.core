@@ -1,7 +1,7 @@
 package org.modelix.model.server
 
 import io.ktor.server.testing.ApplicationTestBuilder
-import io.ktor.server.testing.testApplication
+import io.ktor.server.testing.runTestApplication
 import io.ktor.test.dispatcher.runTestWithRealTime
 import mu.KotlinLogging
 import org.modelix.datastructures.history.AttributesAggregation
@@ -28,7 +28,7 @@ class HistoryIndexIntervalTest {
     private lateinit var statistics: StoreClientWithStatistics
     private fun runTest(block: suspend ApplicationTestBuilder.() -> Unit) = runTestWithRealTime(timeout = 3.minutes) {
         retryOnTimeout(30.seconds) {
-            testApplication {
+            runTestApplication {
                 application {
                     try {
                         installDefaultServerPlugins()

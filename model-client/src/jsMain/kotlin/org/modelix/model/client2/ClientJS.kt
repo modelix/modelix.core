@@ -15,6 +15,7 @@ import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.datastructures.model.historyAsMutationParameters
 import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.kotlin.utils.DelicateModelixApi
+import org.modelix.model.IVersion
 import org.modelix.model.TreeId
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
@@ -270,6 +271,22 @@ private fun buildVersionAttributesMap(entries: Array<AttributeEntryJS>): Map<Str
 
 internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
 
+    /**
+     * The most recently loaded readonly version per repository (#1042 B2a).
+     *
+     * Switching between readonly versions of the same repository reloads the whole version graph
+     * otherwise. By remembering the last loaded version and passing it as the delta base, the server
+     * only sends the delta and the surviving object graph of the still-alive client is reused.
+     * The memo lives and dies with this client, so the remembered version always shares the client's
+     * per-repository object graph (see [ModelClientV2.createVersion]).
+     */
+    private val lastReadonlyVersion = mutableMapOf<RepositoryId, IVersion>()
+
+    private suspend fun loadReadonlyVersionWithDelta(repositoryId: RepositoryId, versionHash: String): IVersion {
+        return modelClient.loadVersion(repositoryId, versionHash, lastReadonlyVersion[repositoryId])
+            .also { lastReadonlyVersion[repositoryId] = it }
+    }
+
     override fun setClientProvidedUserId(userId: String) {
         modelClient.setClientProvidedUserId(userId)
     }
@@ -354,7 +371,7 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
                 val versionAttributes: () -> Map<String, String> = { buildVersionAttributesMap(parameters.versionAttributes()) }
                 if (branchReference == null) {
                     if (parameters.versionHash != null) {
-                        modelClient.loadVersion(repositoryId, parameters.versionHash, null)
+                        loadReadonlyVersionWithDelta(repositoryId, parameters.versionHash)
                             .let { IReplicatedOrReadonlyModel.Readonly(it) }
                     } else {
                         modelClient.getReplicatedModel(repositoryId.getBranchReference(), idGenerator, versionAttributes = versionAttributes)
@@ -373,7 +390,7 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
 
     override fun loadReadonlyVersion(repositoryId: String, versionHash: String): Promise<VersionInformationWithModelTree> {
         return GlobalScope.promise {
-            val version = modelClient.loadVersion(RepositoryId(repositoryId), versionHash, null)
+            val version = loadReadonlyVersionWithDelta(RepositoryId(repositoryId), versionHash)
             VersionInformationWithModelTree(
                 VersionInformationJS(
                     version.getAuthor(),

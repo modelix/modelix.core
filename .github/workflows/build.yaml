@@ -67,7 +67,7 @@ jobs:
           node-version-file: '.nvmrc'
       - name: Combine SARIF files
         run: |
-          npx @microsoft/sarif-multitool merge --merge-runs --output-file merged.sarif  $(find . -iname '*.sarif*')
+          npx @microsoft/sarif-multitool@5.1.1 merge --output-file merged.sarif  $(find . -iname '*.sarif*')
         env:
           # Disables globalization support.
           # This makes the @microsoft/sarif-multitool work without ICU package installed.

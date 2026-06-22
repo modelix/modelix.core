@@ -367,15 +367,23 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
 fun IVersion.diff(knownVersions: List<IVersion>, filter: ObjectDeltaFilter = ObjectDeltaFilter()): IStream.Many<Object<IObjectData>> {
     this as CLVersion
 
-    val unknownHistory: List<CLVersion> = historyDiff(knownVersions).toList().map { it as CLVersion }
+    // Nothing to send if the peer already has the requested version.
+    if (knownVersions.any { it.getObjectHash() == getObjectHash() }) return IStream.empty()
 
-    if (unknownHistory.isEmpty()) return IStream.empty()
+    val unknownHistory: List<CLVersion> = historyDiff(knownVersions).toList().map { it as CLVersion }
 
     val allKnownVersions: MutableMap<ObjectHash, CLVersion> = knownVersions
         .associate { it.getObjectHash() to (it as CLVersion) }
         .toMutableMap()
 
-    val includedVersions = if (filter.includeHistory) unknownHistory else listOf(this)
+    // Always include the requested version itself. Going backward (the requested version is an ancestor of
+    // a known version) [unknownHistory] is empty, yet the requested version's tree still differs from the
+    // known versions and must be diffed and sent. Going forward [this] is already part of [unknownHistory].
+    val includedVersions = when {
+        !filter.includeHistory -> listOf(this)
+        unknownHistory.any { it.getObjectHash() == getObjectHash() } -> unknownHistory
+        else -> unknownHistory + this
+    }
     return IStream.many(includedVersions.reversed()).flatMap { version ->
         var result: IStream.Many<Object<IObjectData>> = IStream.of(version.asObject())
         if (filter.includeTrees) {

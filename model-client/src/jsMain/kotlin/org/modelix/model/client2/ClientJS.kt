@@ -16,6 +16,7 @@ import org.modelix.datastructures.model.historyAsMutationParameters
 import org.modelix.datastructures.objects.ObjectHash
 import org.modelix.kotlin.utils.DelicateModelixApi
 import org.modelix.model.IVersion
+import org.modelix.model.ObjectDeltaFilter
 import org.modelix.model.TreeId
 import org.modelix.model.api.INode
 import org.modelix.model.api.INodeReference
@@ -283,7 +284,16 @@ internal class ClientJSImpl(private val modelClient: ModelClientV2) : ClientJS {
     private val lastReadonlyVersion = mutableMapOf<RepositoryId, IVersion>()
 
     private suspend fun loadReadonlyVersionWithDelta(repositoryId: RepositoryId, versionHash: String): IVersion {
-        return modelClient.loadVersion(repositoryId, versionHash, lastReadonlyVersion[repositoryId])
+        val baseVersion = lastReadonlyVersion[repositoryId]
+        // Readonly browsing only needs the tree, not history or operations. Delta against the previously
+        // loaded version so only the changed tree objects are transferred (#1042).
+        val filter = ObjectDeltaFilter(
+            knownVersions = setOfNotNull(baseVersion?.getContentHash()),
+            includeOperations = false,
+            includeHistory = false,
+            includeTrees = true,
+        )
+        return modelClient.loadVersion(repositoryId, versionHash, baseVersion, filter)
             .also { lastReadonlyVersion[repositoryId] = it }
     }
 

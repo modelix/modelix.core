@@ -512,6 +512,19 @@ class ModelClientV2(
         return doLoadVersion(repositoryId, versionHash, baseVersion)
     }
 
+    /**
+     * Loads a version as a delta against [baseVersion] using an explicit [filter]. Used for readonly version
+     * browsing, where only the tree is needed (no history, no operations). See #1042.
+     */
+    suspend fun loadVersion(
+        repositoryId: RepositoryId,
+        versionHash: String,
+        baseVersion: IVersion?,
+        filter: ObjectDeltaFilter,
+    ): IVersion {
+        return doLoadVersion(repositoryId, versionHash, baseVersion, filter)
+    }
+
     override suspend fun lazyLoadVersion(
         repositoryId: RepositoryId,
         versionHash: String,
@@ -530,6 +543,7 @@ class ModelClientV2(
         repositoryId: RepositoryId?,
         versionHash: String,
         baseVersion: IVersion?,
+        filter: ObjectDeltaFilter? = null,
     ): IVersion {
         checkCreatedByThisClient(baseVersion, repositoryId)
         val httpClient = if (repositoryId == null) {
@@ -545,7 +559,10 @@ class ModelClientV2(
                 } else {
                     appendPathSegments("repositories", repositoryId.id, "versions", versionHash)
                 }
-                if (baseVersion != null) {
+                if (filter != null) {
+                    // The filter already carries the known/base versions; it fully describes what to send.
+                    parameters["filter"] = filter.toJson()
+                } else if (baseVersion != null) {
                     parameters["lastKnown"] = (baseVersion as CLVersion).getContentHash()
                 }
             }

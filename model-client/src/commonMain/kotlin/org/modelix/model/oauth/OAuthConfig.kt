@@ -44,7 +44,6 @@ data class OAuthConfig(
         clientId = clientId,
         clientSecret = clientSecret,
         authorizationUrl = authorizationUrl,
-        tokenUrl = tokenUrl,
         scopes = scopes,
     )
 
@@ -57,7 +56,6 @@ data class TokenCacheKey(
     val clientId: String?,
     val clientSecret: String?,
     val authorizationUrl: String?,
-    val tokenUrl: String?,
     val scopes: Set<String>,
 )
 

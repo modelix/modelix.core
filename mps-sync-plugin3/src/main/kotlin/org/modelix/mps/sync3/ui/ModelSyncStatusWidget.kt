@@ -262,7 +262,7 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
                     IBinding.Status.Disabled -> "Disabled"
                     IBinding.Status.Initializing -> "Initializing"
                     is IBinding.Status.Synced -> "Synchronized: ${status.versionHash.take(5)}"
-                    is IBinding.Status.Syncing -> "Synchronizing: ${status.progress()}"
+                    is IBinding.Status.Syncing -> formatSyncingStatusText(status.progress())
                     is IBinding.Status.Error -> "Synchronization failed: ${status.message}"
                     is IBinding.Status.NoPermission -> "${status.user} has no permission on ${binding.getBranchRef().repositoryId}"
                 }
@@ -279,3 +279,7 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
 var kotlinx.html.HTMLTag.styleX: String
     get() = attributes.get("style") ?: ""
     set(value) = attributes.set("style", value)
+
+internal fun formatSyncingStatusText(progress: String?): String {
+    return progress?.let { "Synchronizing: $it" } ?: "Synchronizing"
+}

@@ -217,6 +217,15 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
                                     tr {
                                         td {
                                             styleX = "font-weight: bold"
+                                            +"Access:"
+                                        }
+                                        td {
+                                            +if (binding.isReadonly()) "read-only" else "writable"
+                                        }
+                                    }
+                                    tr {
+                                        td {
+                                            styleX = "font-weight: bold"
                                             +"Version:"
                                         }
                                         td {

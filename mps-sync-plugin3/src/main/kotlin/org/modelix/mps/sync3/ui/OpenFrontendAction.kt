@@ -12,9 +12,17 @@ class OpenFrontendAction() : AnAction("Open in Browser") {
     fun getFrontendUrls(project: Project): List<String> {
         val service = IModelSyncService.getInstance(project)
 
-        return service.getBindings().filter { it.isEnabled() }.map {
-            ModelClientV2.getFrontendUrl(it.getConnection().getUrl(), it.getBranchRef())
-        }
+        // Order the bindings so the primary (writable) repository comes first, ahead of any
+        // read-only dependencies (e.g. a writable TARA followed by the read-only catalogs it
+        // depends on). "Open in Browser" then opens the first entry. This mirrors
+        // ModelSyncStatusWidget, which likewise orders by read-only state to single out the
+        // modifiable binding.
+        return service.getBindings()
+            .filter { it.isEnabled() }
+            .sortedBy { it.isReadonly() }
+            .map {
+                ModelClientV2.getFrontendUrl(it.getConnection().getUrl(), it.getBranchRef())
+            }
     }
 
     override fun update(e: AnActionEvent) {
@@ -22,8 +30,7 @@ class OpenFrontendAction() : AnAction("Open in Browser") {
     }
 
     override fun actionPerformed(e: AnActionEvent) {
-        for (url in getFrontendUrls(e.project ?: return)) {
-            BrowserUtil.open(url)
-        }
+        val url = getFrontendUrls(e.project ?: return).firstOrNull() ?: return
+        BrowserUtil.open(url)
     }
 }

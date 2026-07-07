@@ -814,6 +814,51 @@ class ProjectSyncTest : ProjectSyncTestBase() {
         assertEquals("http://my-frontend.example.com/sync-test/branchA/overview", URL(urls.single()).toURI().resolve(response.headers["Location"]).toString())
     }
 
+    fun `test open in browser lists the writable binding first`(): Unit = runWithModelServer { port ->
+        // A project with two active bindings: a read-only dependency catalog (listed first) and a
+        // writable TARA (listed second). "Open in Browser" opens the first returned URL, so the
+        // writable repository must be sorted ahead of the read-only one regardless of the order
+        // they were persisted in.
+        openTestProject("initial") { projectDir ->
+            projectDir.resolve(".mps").resolve("modelix.xml").writeText(
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <project version="4">
+                  <component name="modelix-sync">
+                    <binding>
+                      <enabled>true</enabled>
+                      <url>http://localhost:$port</url>
+                      <repository>readonly-catalog</repository>
+                      <branch>release</branch>
+                      <readonly>true</readonly>
+                    </binding>
+                    <binding>
+                      <enabled>true</enabled>
+                      <url>http://localhost:$port</url>
+                      <repository>writable-tara</repository>
+                      <branch>main</branch>
+                      <readonly>false</readonly>
+                    </binding>
+                  </component>
+                </project>
+                """.trimIndent(),
+            )
+        }
+
+        val action = OpenFrontendAction()
+        val urls = action.getFrontendUrls(project)
+
+        // The writable repository is first (the one "Open in Browser" opens); the read-only
+        // catalog follows.
+        assertEquals(
+            listOf(
+                "http://localhost:$port/v2/repositories/writable-tara/branches/main/frontend",
+                "http://localhost:$port/v2/repositories/readonly-catalog/branches/release/frontend",
+            ),
+            urls,
+        )
+    }
+
     fun `test loading enabled persisted binding`(): Unit = runPersistedBindingTest(true)
     fun `test loading disabled persisted binding`(): Unit = runPersistedBindingTest(false)
 

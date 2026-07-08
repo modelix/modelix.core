@@ -16,15 +16,11 @@ import com.intellij.ui.awt.RelativePoint
 import com.intellij.ui.popup.PopupFactoryImpl
 import com.intellij.util.Consumer
 import com.intellij.util.concurrency.EdtExecutorService
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
-import kotlinx.html.br
 import kotlinx.html.div
 import kotlinx.html.stream.createHTML
 import kotlinx.html.table
 import kotlinx.html.td
 import kotlinx.html.tr
-import org.modelix.model.lazy.CLVersion
 import org.modelix.mps.api.ModelixMpsApi
 import org.modelix.mps.sync3.IBinding
 import org.modelix.mps.sync3.IModelSyncService
@@ -142,107 +138,26 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
             }
             for (connection in connections) {
                 div {
-                    div {
-                        styleX = "font-weight: bold; text-decoration: underline;"
-                        +"Connection"
-                    }
-                    div {
-                        styleX = "padding-left: 20px"
-                        table {
-                            tr {
-                                td {
-                                    styleX = "font-weight: bold"
-                                    +"URL: "
-                                }
-                                td {
-                                    +connection.getUrl()
-                                }
+                    table {
+                        tr {
+                            td {
+                                styleX = "font-weight: bold"
+                                +connection.getUrl()
                             }
-                            tr {
-                                td {
-                                    styleX = "font-weight: bold"
-                                    +"Status: "
-                                }
-                                td {
-                                    +connection.getStatus().toString()
-                                }
-                            }
-                            connection.getPendingAuthRequests().forEach { request ->
-                                tr {
-                                    td {
-                                        styleX = "font-weight: bold"
-                                        +"Authorization URL: "
-                                    }
-                                    td {
-                                        +request.getUrl()
-                                    }
-                                }
+                            td {
+                                styleX = "padding-left: 20px"
+                                +connection.getStatus().toString()
                             }
                         }
                         for (binding in connection.getBindings()) {
-                            div {
-                                styleX = "font-weight: bold; text-decoration: underline;"
-                                +"Project Binding"
-                            }
-                            div {
-                                styleX = "padding-left: 20px"
-                                table {
-                                    tr {
-                                        td {
-                                            styleX = "font-weight: bold"
-                                            +"Repository:"
-                                        }
-                                        td {
-                                            +binding.getBranchRef().repositoryId.id
-                                        }
-                                    }
-                                    tr {
-                                        td {
-                                            styleX = "font-weight: bold"
-                                            +"Branch:"
-                                        }
-                                        td {
-                                            +binding.getBranchRef().branchName
-                                        }
-                                    }
-                                    tr {
-                                        td {
-                                            styleX = "font-weight: bold"
-                                            +"Enabled:"
-                                        }
-                                        td {
-                                            +if (binding.isEnabled()) "ENABLED" else "DISABLED"
-                                        }
-                                    }
-                                    tr {
-                                        td {
-                                            styleX = "font-weight: bold"
-                                            +"Access:"
-                                        }
-                                        td {
-                                            +if (binding.isReadonly()) "read-only" else "writable"
-                                        }
-                                    }
-                                    tr {
-                                        td {
-                                            styleX = "font-weight: bold"
-                                            +"Version:"
-                                        }
-                                        td {
-                                            val version = binding.getCurrentVersion()
-                                            if (version != null) {
-                                                +version.getContentHash()
-                                                br()
-                                                +(version as? CLVersion)
-                                                    ?.getTimestamp()
-                                                    ?.toLocalDateTime(TimeZone.currentSystemDefault())
-                                                    ?.toString()
-                                                    .orEmpty()
-                                                br()
-                                                +(version as? CLVersion)?.author.orEmpty()
-                                            }
-                                        }
-                                    }
+                            tr {
+                                td {
+                                    styleX = "padding-left: 20px"
+                                    +"${binding.getBranchRef().repositoryId.id} / ${binding.getBranchRef().branchName}"
+                                }
+                                td {
+                                    styleX = "padding-left: 20px"
+                                    +bindingStatusText(binding)
                                 }
                             }
                         }
@@ -250,6 +165,22 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
                 }
             }
         }.finalize()
+    }
+
+    /**
+     * A compact, single-line sync state for a binding. Read-only bindings are marked with a
+     * `(readonly)` suffix; writable bindings show no suffix (writable is the implicit default).
+     */
+    private fun bindingStatusText(binding: IBinding): String {
+        val status = when (val status = binding.getStatus()) {
+            IBinding.Status.Disabled -> "Disabled"
+            IBinding.Status.Initializing -> "Initializing"
+            is IBinding.Status.Synced -> "Synced ${status.versionHash.take(5)}"
+            is IBinding.Status.Syncing -> "Syncing ${status.progress().orEmpty()}"
+            is IBinding.Status.Error -> "Error: ${status.message.orEmpty()}"
+            is IBinding.Status.NoPermission -> "No permission for ${status.user.orEmpty()}"
+        }
+        return if (binding.isReadonly()) "$status (readonly)" else status
     }
 
     private fun getText(): @NlsContexts.Label String {

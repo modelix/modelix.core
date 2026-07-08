@@ -40,6 +40,9 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
     companion object {
         private val LOG = mu.KotlinLogging.logger { }
         const val ID = "ModelixSyncStatus"
+
+        /** Number of leading characters of a version hash shown in the status text and tooltip. */
+        private const val VERSION_HASH_DISPLAY_LENGTH = 5
         val ICON: Icon? = runCatching { ModelixMpsApi.loadIcon("org/modelix/mps/sync3/modelix16.svg", this::class.java) }
             .onFailure { LOG.error(it) { "Failed to load icon" } }
             .getOrNull()
@@ -184,7 +187,7 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
             IBinding.Status.Initializing -> "Initializing"
             is IBinding.Status.Synced -> {
                 formatLastChange(binding)?.let { details.add("last change: $it") }
-                "Synced ${status.versionHash.take(5)}"
+                "Synced ${status.versionHash.take(VERSION_HASH_DISPLAY_LENGTH)}"
             }
             is IBinding.Status.Syncing -> "Syncing ${status.progress().orEmpty()}"
             is IBinding.Status.Error -> "Error: ${status.message.orEmpty()}"
@@ -233,7 +236,7 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
                 result = when (val status = binding.getStatus()) {
                     IBinding.Status.Disabled -> "Disabled"
                     IBinding.Status.Initializing -> "Initializing"
-                    is IBinding.Status.Synced -> "Synchronized: ${status.versionHash.take(5)}"
+                    is IBinding.Status.Synced -> "Synchronized: ${status.versionHash.take(VERSION_HASH_DISPLAY_LENGTH)}"
                     is IBinding.Status.Syncing -> "Synchronizing: ${status.progress()}"
                     is IBinding.Status.Error -> "Synchronization failed: ${status.message}"
                     is IBinding.Status.NoPermission -> "${status.user} has no permission on ${binding.getBranchRef().repositoryId}"

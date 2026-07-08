@@ -16,11 +16,15 @@ import com.intellij.ui.awt.RelativePoint
 import com.intellij.ui.popup.PopupFactoryImpl
 import com.intellij.util.Consumer
 import com.intellij.util.concurrency.EdtExecutorService
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.html.div
 import kotlinx.html.stream.createHTML
 import kotlinx.html.table
 import kotlinx.html.td
 import kotlinx.html.tr
+import org.modelix.model.lazy.CLVersion
 import org.modelix.mps.api.ModelixMpsApi
 import org.modelix.mps.sync3.IBinding
 import org.modelix.mps.sync3.IModelSyncService
@@ -168,19 +172,47 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
     }
 
     /**
-     * A compact, single-line sync state for a binding. Read-only bindings are marked with a
-     * `(readonly)` suffix; writable bindings show no suffix (writable is the implicit default).
+     * A compact, single-line sync state for a binding. Extra details are folded into a
+     * parenthesized, comma-joined suffix: the last-change timestamp (only for the `Synced` status,
+     * when available) and `readonly` for read-only bindings. Writable bindings without a timestamp
+     * show no suffix (writable is the implicit default).
      */
     private fun bindingStatusText(binding: IBinding): String {
+        val details = mutableListOf<String>()
         val status = when (val status = binding.getStatus()) {
             IBinding.Status.Disabled -> "Disabled"
             IBinding.Status.Initializing -> "Initializing"
-            is IBinding.Status.Synced -> "Synced ${status.versionHash.take(5)}"
+            is IBinding.Status.Synced -> {
+                formatLastChange(binding)?.let { details.add("last change: $it") }
+                "Synced ${status.versionHash.take(5)}"
+            }
             is IBinding.Status.Syncing -> "Syncing ${status.progress().orEmpty()}"
             is IBinding.Status.Error -> "Error: ${status.message.orEmpty()}"
             is IBinding.Status.NoPermission -> "No permission for ${status.user.orEmpty()}"
         }
-        return if (binding.isReadonly()) "$status (readonly)" else status
+        if (binding.isReadonly()) details.add("readonly")
+        return if (details.isEmpty()) status else "$status (${details.joinToString(", ")})"
+    }
+
+    /**
+     * Formats the current version's timestamp in the system time zone. If the change happened
+     * today, only the time is shown (`HH:mm`), otherwise the full date and time (`dd.MM.yyyy HH:mm`).
+     * Returns `null` when no timestamp is available.
+     */
+    private fun formatLastChange(binding: IBinding): String? {
+        val timestamp = (binding.getCurrentVersion() as? CLVersion)?.getTimestamp() ?: return null
+        val zone = TimeZone.currentSystemDefault()
+        val dateTime = timestamp.toLocalDateTime(zone)
+        val today = Clock.System.now().toLocalDateTime(zone).date
+        val hour = dateTime.hour.toString().padStart(2, '0')
+        val minute = dateTime.minute.toString().padStart(2, '0')
+        val time = "$hour:$minute"
+        if (dateTime.date == today) {
+            return time
+        }
+        val day = dateTime.dayOfMonth.toString().padStart(2, '0')
+        val month = dateTime.monthNumber.toString().padStart(2, '0')
+        return "$day.$month.${dateTime.year} $time"
     }
 
     private fun getText(): @NlsContexts.Label String {

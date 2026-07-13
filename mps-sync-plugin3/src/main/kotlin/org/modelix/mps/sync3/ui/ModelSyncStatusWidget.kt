@@ -16,9 +16,9 @@ import com.intellij.ui.awt.RelativePoint
 import com.intellij.ui.popup.PopupFactoryImpl
 import com.intellij.util.Consumer
 import com.intellij.util.concurrency.EdtExecutorService
+import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.html.br
 import kotlinx.html.div
 import kotlinx.html.stream.createHTML
 import kotlinx.html.table
@@ -40,6 +40,9 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
     companion object {
         private val LOG = mu.KotlinLogging.logger { }
         const val ID = "ModelixSyncStatus"
+
+        /** Number of leading characters of a version hash shown in the status text and tooltip. */
+        private const val VERSION_HASH_DISPLAY_LENGTH = 5
         val ICON: Icon? = runCatching { ModelixMpsApi.loadIcon("org/modelix/mps/sync3/modelix16.svg", this::class.java) }
             .onFailure { LOG.error(it) { "Failed to load icon" } }
             .getOrNull()
@@ -142,98 +145,26 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
             }
             for (connection in connections) {
                 div {
-                    div {
-                        styleX = "font-weight: bold; text-decoration: underline;"
-                        +"Connection"
-                    }
-                    div {
-                        styleX = "padding-left: 20px"
-                        table {
-                            tr {
-                                td {
-                                    styleX = "font-weight: bold"
-                                    +"URL: "
-                                }
-                                td {
-                                    +connection.getUrl()
-                                }
+                    table {
+                        tr {
+                            td {
+                                styleX = "font-weight: bold"
+                                +connection.getUrl()
                             }
-                            tr {
-                                td {
-                                    styleX = "font-weight: bold"
-                                    +"Status: "
-                                }
-                                td {
-                                    +connection.getStatus().toString()
-                                }
-                            }
-                            connection.getPendingAuthRequests().forEach { request ->
-                                tr {
-                                    td {
-                                        styleX = "font-weight: bold"
-                                        +"Authorization URL: "
-                                    }
-                                    td {
-                                        +request.getUrl()
-                                    }
-                                }
+                            td {
+                                styleX = "padding-left: 20px"
+                                +connection.getStatus().toString()
                             }
                         }
                         for (binding in connection.getBindings()) {
-                            div {
-                                styleX = "font-weight: bold; text-decoration: underline;"
-                                +"Project Binding"
-                            }
-                            div {
-                                styleX = "padding-left: 20px"
-                                table {
-                                    tr {
-                                        td {
-                                            styleX = "font-weight: bold"
-                                            +"Repository:"
-                                        }
-                                        td {
-                                            +binding.getBranchRef().repositoryId.id
-                                        }
-                                    }
-                                    tr {
-                                        td {
-                                            styleX = "font-weight: bold"
-                                            +"Branch:"
-                                        }
-                                        td {
-                                            +binding.getBranchRef().branchName
-                                        }
-                                    }
-                                    tr {
-                                        td {
-                                            styleX = "font-weight: bold"
-                                            +"Enabled:"
-                                        }
-                                        td {
-                                            +if (binding.isEnabled()) "ENABLED" else "DISABLED"
-                                        }
-                                    }
-                                    tr {
-                                        td {
-                                            styleX = "font-weight: bold"
-                                            +"Version:"
-                                        }
-                                        td {
-                                            val version = binding.getCurrentVersion()
-                                            if (version != null) {
-                                                +version.getContentHash()
-                                                br()
-                                                +(version as? CLVersion)
-                                                    ?.getTimestamp()
-                                                    ?.toLocalDateTime(TimeZone.currentSystemDefault())
-                                                    ?.toString()
-                                                    .orEmpty()
-                                                br()
-                                                +(version as? CLVersion)?.author.orEmpty()
-                                            }
-                                        }
-                                    }
+                            tr {
+                                td {
+                                    styleX = "padding-left: 20px"
+                                    +"${binding.getBranchRef().repositoryId.id} / ${binding.getBranchRef().branchName}"
+                                }
+                                td {
+                                    styleX = "padding-left: 20px"
+                                    +bindingStatusText(binding)
                                 }
                             }
                         }
@@ -241,6 +172,50 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
                 }
             }
         }.finalize()
+    }
+
+    /**
+     * A compact, single-line sync state for a binding. Extra details are folded into a
+     * parenthesized, comma-joined suffix: the last-change timestamp (only for the `Synced` status,
+     * when available) and `readonly` for read-only bindings. Writable bindings without a timestamp
+     * show no suffix (writable is the implicit default).
+     */
+    private fun bindingStatusText(binding: IBinding): String {
+        val details = mutableListOf<String>()
+        val status = when (val status = binding.getStatus()) {
+            IBinding.Status.Disabled -> "Disabled"
+            IBinding.Status.Initializing -> "Initializing"
+            is IBinding.Status.Synced -> {
+                formatLastChange(binding)?.let { details.add("last change: $it") }
+                "Synced ${status.versionHash.take(VERSION_HASH_DISPLAY_LENGTH)}"
+            }
+            is IBinding.Status.Syncing -> "Syncing ${status.progress().orEmpty()}"
+            is IBinding.Status.Error -> "Error: ${status.message.orEmpty()}"
+            is IBinding.Status.NoPermission -> "No permission for ${status.user.orEmpty()}"
+        }
+        if (binding.isReadonly()) details.add("readonly")
+        return if (details.isEmpty()) status else "$status (${details.joinToString(", ")})"
+    }
+
+    /**
+     * Formats the current version's timestamp in the system time zone. If the change happened
+     * today, only the time is shown (`HH:mm`), otherwise the full date and time (`dd.MM.yyyy HH:mm`).
+     * Returns `null` when no timestamp is available.
+     */
+    private fun formatLastChange(binding: IBinding): String? {
+        val timestamp = (binding.getCurrentVersion() as? CLVersion)?.getTimestamp() ?: return null
+        val zone = TimeZone.currentSystemDefault()
+        val dateTime = timestamp.toLocalDateTime(zone)
+        val today = Clock.System.now().toLocalDateTime(zone).date
+        val hour = dateTime.hour.toString().padStart(2, '0')
+        val minute = dateTime.minute.toString().padStart(2, '0')
+        val time = "$hour:$minute"
+        if (dateTime.date == today) {
+            return time
+        }
+        val day = dateTime.dayOfMonth.toString().padStart(2, '0')
+        val month = dateTime.monthNumber.toString().padStart(2, '0')
+        return "$day.$month.${dateTime.year} $time"
     }
 
     private fun getText(): @NlsContexts.Label String {
@@ -261,7 +236,7 @@ class ModelSyncStatusWidget(val project: Project) : CustomStatusBarWidget, Statu
                 result = when (val status = binding.getStatus()) {
                     IBinding.Status.Disabled -> "Disabled"
                     IBinding.Status.Initializing -> "Initializing"
-                    is IBinding.Status.Synced -> "Synchronized: ${status.versionHash.take(5)}"
+                    is IBinding.Status.Synced -> "Synchronized: ${status.versionHash.take(VERSION_HASH_DISPLAY_LENGTH)}"
                     is IBinding.Status.Syncing -> "Synchronizing: ${status.progress()}"
                     is IBinding.Status.Error -> "Synchronization failed: ${status.message}"
                     is IBinding.Status.NoPermission -> "${status.user} has no permission on ${binding.getBranchRef().repositoryId}"

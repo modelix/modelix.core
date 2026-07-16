@@ -4,8 +4,19 @@ import type {ITypedNode} from "./TypedNode.js";
 import { TypedNode, UnknownTypedNode} from "./TypedNode.js";
 import type {IConceptJS} from "./IConceptJS.js";
 
+const GLOBAL_INSTANCE_KEY = "__modelix_LanguageRegistry_INSTANCE__";
+
 export class LanguageRegistry {
-  public static INSTANCE: LanguageRegistry = new LanguageRegistry();
+  public static readonly INSTANCE: LanguageRegistry = (() => {
+    const g = globalThis as unknown as Record<string, LanguageRegistry | undefined>;
+    let instance = g[GLOBAL_INSTANCE_KEY];
+    if (!instance) {
+      instance = new LanguageRegistry();
+      g[GLOBAL_INSTANCE_KEY] = instance;
+    }
+    return instance;
+  })();
+
   private languages: Map<string, GeneratedLanguage> = new Map();
   private nodeWrappers: Map<string, (node: INodeJS) => TypedNode> | undefined = undefined
   private concepts: Map<string, IConceptJS> | undefined = undefined

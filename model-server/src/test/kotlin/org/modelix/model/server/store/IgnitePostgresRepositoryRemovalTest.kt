@@ -150,4 +150,26 @@ class IgnitePostgresRepositoryRemovalTest {
             }
         }
     }
+
+    @Test
+    fun `schema initialization creates a valid repository index`() {
+        // The index is built with `CREATE INDEX CONCURRENTLY`. An interrupted CONCURRENTLY build
+        // leaves an INVALID (planner-unusable) index behind, so it is not enough that the index
+        // exists — it must also be marked valid (`pg_index.indisvalid = true`).
+        dbConnection.prepareStatement(
+            """
+                SELECT i.indisvalid
+                FROM pg_index i
+                WHERE i.indexrelid = to_regclass('modelix.model_repository_idx')
+            """.trimIndent(),
+        ).use {
+            val result = it.executeQuery()
+            assertTrue("Expected index `model_repository_idx` on modelix.model to exist after schema init.") {
+                result.next()
+            }
+            assertTrue("Expected index `model_repository_idx` to be valid (indisvalid) after schema init.") {
+                result.getBoolean("indisvalid")
+            }
+        }
+    }
 }

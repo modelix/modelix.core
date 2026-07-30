@@ -7,6 +7,8 @@
     "rootDir": "src",
     "outDir": "dist",
     // 2021 is needed for FinalizationRegistry
+    "module": "ESNext",
+    "moduleResolution": "Node",
     "target": "es2021"
   }
 }

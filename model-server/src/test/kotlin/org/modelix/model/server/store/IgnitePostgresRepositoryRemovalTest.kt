@@ -131,4 +131,23 @@ class IgnitePostgresRepositoryRemovalTest {
             store.runWrite { store.removeRepositoryObjects(RepositoryId("invalid")) }
         }
     }
+
+    @Test
+    fun `schema initialization creates an index on the repository column`() {
+        // Repository deletion runs `DELETE FROM model WHERE repository = ?`.
+        // Without an index leading with the `repository` column, that DELETE degrades to a
+        // sequential scan over the whole `model` table (all repositories), which times out for
+        // large deployments. Schema initialization must therefore create such an index.
+        dbConnection.prepareStatement(
+            """
+                SELECT 1 FROM pg_indexes
+                WHERE schemaname = 'modelix' AND tablename = 'model' AND indexname = 'model_repository_idx'
+            """.trimIndent(),
+        ).use {
+            val result = it.executeQuery()
+            assertTrue("Expected index `model_repository_idx` on modelix.model to exist after schema init.") {
+                result.isBeforeFirst
+            }
+        }
+    }
 }

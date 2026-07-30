@@ -79,6 +79,31 @@ internal class SqlUtils(private val connection: Connection) {
     }
 
     @Throws(SQLException::class)
+    fun isIndexExisting(schemaName: String, tableName: String, indexName: String): Boolean {
+        val metadata: DatabaseMetaData = connection.metaData
+        val indexRS: ResultSet = metadata.getIndexInfo(null, schemaName, tableName, false, false)
+        while (indexRS.next()) {
+            if (indexRS.getString("INDEX_NAME") == indexName) {
+                return true
+            }
+        }
+        return false
+    }
+
+    @Throws(SQLException::class)
+    fun ensureIndexIsPresent(
+        schemaName: String,
+        tableName: String,
+        indexName: String,
+        creationSql: String,
+    ) {
+        if (!isIndexExisting(schemaName, tableName, indexName)) {
+            val stmt = connection.createStatement()
+            stmt.execute(creationSql)
+        }
+    }
+
+    @Throws(SQLException::class)
     fun ensureSchemaIsPresent(schemaName: String, username: String) {
         if (!isSchemaExisting(schemaName)) {
             val stmt = connection.createStatement()
@@ -133,6 +158,17 @@ internal class SqlUtils(private val connection: Connection) {
                         add constraint model_pkey
                             primary key (key, repository);
                 """,
+            )
+            // The primary key `(key, repository)` is key-leading, so an equality filter on the
+            // trailing `repository` column cannot use it. Repository deletion runs
+            // `DELETE FROM model WHERE repository = ?`, which would otherwise degrade to a
+            // sequential scan over the entire table (all repositories) and time out for large
+            // deployments. A `repository`-leading index makes that DELETE an index scan.
+            ensureIndexIsPresent(
+                schemaName,
+                "model",
+                "model_repository_idx",
+                "CREATE INDEX IF NOT EXISTS model_repository_idx ON $schemaName.model (repository);",
             )
         } catch (e: SQLException) {
             LOG.error("Failed to initialize the database schema", e)

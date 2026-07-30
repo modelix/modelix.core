@@ -31,17 +31,25 @@ repos:
           # IMPORTANT: keep in sync with the version configured in build.gradle.kts
           - --ktlint-version=0.50.0
           - --autofix
-  - repo: https://github.com/pre-commit/mirrors-prettier
+  - repo: https://github.com/rbubley/mirrors-prettier
+    # Maintained fork of the now-archived pre-commit/mirrors-prettier.
     # IMPORTANT: keep in sync with the version configured in `vue-model-api/package.json`
-    rev: v3.1.0
+    rev: v3.9.5
     hooks:
       - id: prettier
+        # Node 24's npm refuses pre-commit's `npm install git+file://` hook
+        # bootstrap (EALLOWGIT). Pin this node hook to a Node 22 LTS toolchain
+        # whose npm still permits it; independent of the .nvmrc repo runtime.
+        language_version: "22.22.2"
         files: ^(vue-model-api)|(model-api-gen-gradle-test/vue-integration)|(model-client-js-test/model-client-connection)/
   - repo: "local"
     hooks:
       - id: eslint
         name: ESLint
-        language: node
+        # `language: system` runs the project's own `npm run lint` (deps from
+        # `npm ci`); a `language: node` local hook requires package.json/
+        # additional_dependencies under pre-commit >=4.6 and errors otherwise.
+        language: system
         entry: npm
         args: [ "run", "lint" ]
         types: [ file ]

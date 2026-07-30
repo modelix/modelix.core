@@ -131,4 +131,45 @@ class IgnitePostgresRepositoryRemovalTest {
             store.runWrite { store.removeRepositoryObjects(RepositoryId("invalid")) }
         }
     }
+
+    @Test
+    fun `schema initialization creates an index on the repository column`() {
+        // Repository deletion runs `DELETE FROM model WHERE repository = ?`.
+        // Without an index leading with the `repository` column, that DELETE degrades to a
+        // sequential scan over the whole `model` table (all repositories), which times out for
+        // large deployments. Schema initialization must therefore create such an index.
+        dbConnection.prepareStatement(
+            """
+                SELECT 1 FROM pg_indexes
+                WHERE schemaname = 'modelix' AND tablename = 'model' AND indexname = 'model_repository_idx'
+            """.trimIndent(),
+        ).use {
+            val result = it.executeQuery()
+            assertTrue("Expected index `model_repository_idx` on modelix.model to exist after schema init.") {
+                result.isBeforeFirst
+            }
+        }
+    }
+
+    @Test
+    fun `schema initialization creates a valid repository index`() {
+        // The index is built with `CREATE INDEX CONCURRENTLY`. An interrupted CONCURRENTLY build
+        // leaves an INVALID (planner-unusable) index behind, so it is not enough that the index
+        // exists — it must also be marked valid (`pg_index.indisvalid = true`).
+        dbConnection.prepareStatement(
+            """
+                SELECT i.indisvalid
+                FROM pg_index i
+                WHERE i.indexrelid = to_regclass('modelix.model_repository_idx')
+            """.trimIndent(),
+        ).use {
+            val result = it.executeQuery()
+            assertTrue("Expected index `model_repository_idx` on modelix.model to exist after schema init.") {
+                result.next()
+            }
+            assertTrue("Expected index `model_repository_idx` to be valid (indisvalid) after schema init.") {
+                result.getBoolean("indisvalid")
+            }
+        }
+    }
 }

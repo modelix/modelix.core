@@ -2,7 +2,6 @@ package org.modelix.model.lazy
 
 import org.modelix.datastructures.objects.Object
 import org.modelix.model.api.INodeReference
-import org.modelix.model.operations.AddNewChildOp
 import org.modelix.model.operations.AddNewChildSubtreeOp
 import org.modelix.model.operations.AddNewChildrenOp
 import org.modelix.model.operations.BulkUpdateOp
@@ -35,13 +34,23 @@ class OperationsCompressor(val resultTree: Object<CPTree>) {
 
         for (op in ops) {
             when (op) {
-                is UndoOp, is RevertToOp, is AddNewChildSubtreeOp, is DeleteNodeOp, is MoveNodeOp, is BulkUpdateOp, is AddNewChildrenOp -> return ops
+                is UndoOp, is RevertToOp, is AddNewChildSubtreeOp, is DeleteNodeOp, is MoveNodeOp, is BulkUpdateOp -> return ops
                 is NoOp -> {}
-                is AddNewChildOp -> {
+                // AddNewChildOp is a subclass of AddNewChildrenOp, so this branch handles both. Each created
+                // subtree root is replaced by an AddNewChildSubtreeOp. Children whose parent is itself a freshly
+                // created node are already part of an enclosing compressed subtree and only need to be remembered.
+                is AddNewChildrenOp -> {
                     if (!createdNodes.contains(op.position.nodeId)) {
-                        compressedOps += AddNewChildSubtreeOp(resultTree.ref, op.position, op.childId, op.concept)
+                        op.childIdsAndConcepts.forEachIndexed { index, (childId, concept) ->
+                            val childPosition = if (op.position.index < 0) {
+                                op.position
+                            } else {
+                                op.position.withIndex(op.position.index + index)
+                            }
+                            compressedOps += AddNewChildSubtreeOp(resultTree.ref, childPosition, childId, concept)
+                        }
                     }
-                    createdNodes.add(op.childId)
+                    op.childIdsAndConcepts.forEach { createdNodes.add(it.first) }
                 }
                 is SetPropertyOp -> {
                     if (!createdNodes.contains(op.nodeId)) compressedOps += op

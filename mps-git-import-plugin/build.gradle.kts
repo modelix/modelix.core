@@ -1,20 +1,8 @@
-import org.jetbrains.intellij.platform.gradle.TestFrameworkType
-import org.modelix.configureMpsTestClasspath
-import org.modelix.copyMps
 import org.modelix.mpsHomeDir
 import org.modelix.mpsMajorVersion
-import org.modelix.mpsPlatformVersion
 
 plugins {
-    `modelix-kotlin-jvm`
-    alias(libs.plugins.intellij)
-    `modelix-project-repositories`
-}
-
-repositories {
-    intellijPlatform {
-        localPlatformArtifacts()
-    }
+    `modelix-mps-plugin`
 }
 
 dependencies {
@@ -45,31 +33,6 @@ dependencies {
     testImplementation(libs.kotlin.coroutines.test)
     testImplementation(libs.logback.classic)
     testImplementation(kotlin("test"))
-
-    intellijPlatform {
-        local(copyMps())
-        testFramework(TestFrameworkType.Bundled)
-    }
-}
-
-configureMpsTestClasspath()
-
-intellijPlatform {
-    instrumentCode = false
-    buildSearchableOptions = false
-    pluginVerification {
-        ides {
-            // Without any IDEs configured, the recommended ones would be downloaded (e.g. by the IDE sync).
-            current()
-        }
-    }
-    autoReload = true
-    pluginConfiguration {
-        ideaVersion {
-            sinceBuild = "241"
-            untilBuild = "251.*"
-        }
-    }
 }
 
 tasks {
@@ -79,36 +42,6 @@ tasks {
         onlyIf {
             mpsMajorVersion == "2024.1"
         }
-        jvmArgs("-Dintellij.platform.load.app.info.from.resources=true")
         jvmArgs("-Xmx1000m")
-
-        val arch = System.getProperty("os.arch")
-        val jnaDir = mpsHomeDir.get().asFile.resolve("lib/jna/$arch")
-        if (jnaDir.exists()) {
-            jvmArgs("-Djna.boot.library.path=${jnaDir.absolutePath}")
-            jvmArgs("-Djna.noclasspath=true")
-            jvmArgs("-Djna.nosys=true")
-        }
-    }
-
-    val mpsPluginDir = project.findProperty("mps$mpsPlatformVersion.plugins.dir")?.toString()?.let { file(it) }
-    if (mpsPluginDir != null && mpsPluginDir.isDirectory) {
-        register<Sync>("installMpsPlugin") {
-            from(prepareSandbox.flatMap { it.pluginDirectory })
-            into(mpsPluginDir.resolve("mps-git-import-plugin"))
-        }
-    }
-}
-
-group = "org.modelix.mps"
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            artifactId = "mps-git-import-plugin"
-            artifact(tasks.buildPlugin) {
-                extension = "zip"
-            }
-        }
     }
 }

@@ -1,14 +1,8 @@
-import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import org.jetbrains.intellij.platform.gradle.tasks.PrepareSandboxTask
 import org.modelix.buildtools.KnownModuleIds
 import org.modelix.buildtools.buildStubsSolutionJar
-import org.modelix.configureMpsTestClasspath
-import org.modelix.configureMpsTestTask
-import org.modelix.copyMps
+import org.modelix.includeMetaInfFolder
 import org.modelix.mpsHomeDir
-import org.modelix.mpsPlatformVersion
-import kotlin.io.resolve
-import kotlin.jvm.java
 
 buildscript {
     dependencies {
@@ -17,15 +11,7 @@ buildscript {
 }
 
 plugins {
-    `modelix-kotlin-jvm`
-    alias(libs.plugins.intellij)
-    `modelix-project-repositories`
-}
-
-repositories {
-    intellijPlatform {
-        localPlatformArtifacts()
-    }
+    `modelix-mps-plugin`
 }
 
 dependencies {
@@ -66,56 +52,19 @@ dependencies {
     testImplementation(libs.ktor.client.cio, excludeMPSLibraries)
 
     intellijPlatform {
-        local(copyMps())
         bundledPlugin("jetbrains.mps.ide.java") // for loading stub models in tests
-        testFramework(TestFrameworkType.Bundled)
-    }
-}
-
-configureMpsTestClasspath()
-
-intellijPlatform {
-    instrumentCode = false
-    buildSearchableOptions = false
-    pluginVerification {
-        ides {
-            // Without any IDEs configured, the recommended ones would be downloaded (e.g. by the IDE sync).
-            current()
-        }
-    }
-    autoReload = true
-    pluginConfiguration {
-        ideaVersion {
-            sinceBuild = "241"
-            untilBuild = "251.*"
-        }
     }
 }
 
 tasks {
     test {
-        configureMpsTestTask()
         dependsOn(":model-server:jibDockerBuild")
         jvmArgs("-Dmodelix.model.server.image=modelix/model-server:$version")
         jvmArgs("-Xmx1000m")
     }
 
-    val mpsPluginDir = project.findProperty("mps$mpsPlatformVersion.plugins.dir")?.toString()?.let { file(it) }
-    if (mpsPluginDir != null && mpsPluginDir.isDirectory) {
-        register<Sync>("installMpsPlugin") {
-            from(prepareSandbox.flatMap { it.pluginDirectory })
-            into(mpsPluginDir.resolve("mps-sync-plugin3"))
-        }
-    }
-
     withType(PrepareSandboxTask::class.java) {
-        from(project.layout.projectDirectory.dir("src/main/resources/META-INF")) {
-            exclude("plugin.xml")
-            into(pluginName.map { "$it/META-INF" })
-        }
-        from(patchPluginXml.flatMap { it.outputFile }) {
-            into(pluginName.map { "$it/META-INF" })
-        }
+        includeMetaInfFolder()
 
         doLast {
             val ownJar: File = pluginJar.get().asFile
@@ -150,18 +99,5 @@ val pluginZipElements by configurations.creating {
 artifacts {
     add(pluginZipElements.name, tasks.buildPlugin) {
         this.builtBy(tasks.buildPlugin)
-    }
-}
-
-group = "org.modelix.mps"
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            artifactId = "mps-sync-plugin3"
-            artifact(tasks.buildPlugin) {
-                extension = "zip"
-            }
-        }
     }
 }

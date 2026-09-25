@@ -11,8 +11,6 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import java.io.File
-import java.util.*
-import java.util.Properties
 import javax.inject.Inject
 
 @CacheableTask
@@ -38,14 +36,7 @@ abstract class GenerateAntScriptForMpsMetaModelExport @Inject constructor(of: Ob
 
     @TaskAction
     fun generate() {
-        val mpsVersion = getMpsVersion()
-        val antLibs = if (mpsVersion < "2021.2") {
-            listOf("lib/ant/lib/ant-mps.jar", "lib/log4j.jar", "lib/jdom.jar")
-        } else if (mpsVersion < "2021.3") {
-            listOf("lib/ant/lib/ant-mps.jar", "lib/util.jar")
-        } else {
-            listOf("lib/ant/lib/ant-mps.jar", "lib/util.jar", "lib/3rd-party-rt.jar")
-        }
+        val antLibs = listOf("lib/ant/lib/ant-mps.jar", "lib/util.jar", "lib/3rd-party-rt.jar")
         antScriptFile.get().asFile.parentFile.mkdirs()
         antScriptFile.get().asFile.writeText(
             """
@@ -141,29 +132,5 @@ abstract class GenerateAntScriptForMpsMetaModelExport @Inject constructor(of: Ob
         )
     }
 
-    private fun getMpsBuildPropertiesFile() = File(mpsHome.get()).resolve("build.properties")
     private fun getMpsLanguagesDir() = File(mpsHome.get()).resolve("languages")
-
-    private fun getMpsVersion(): String {
-        val buildPropertiesFile = getMpsBuildPropertiesFile()
-        require(buildPropertiesFile.exists()) { "MPS build.properties file not found: ${buildPropertiesFile.absolutePath}" }
-        val buildProperties = Properties()
-        buildPropertiesFile.inputStream().use { buildProperties.load(it) }
-
-        return listOfNotNull(
-            buildProperties["mpsBootstrapCore.version.major"],
-            buildProperties["mpsBootstrapCore.version.minor"],
-            // buildProperties["mpsBootstrapCore.version.bugfixNr"],
-            buildProperties["mpsBootstrapCore.version.eap"],
-        )
-            .map { it.toString().trim('.') }
-            .filter { it.isNotEmpty() }
-            .joinToString(".")
-
-//        mpsBootstrapCore.version.major=2020
-//        mpsBootstrapCore.version.minor=3
-//        mpsBootstrapCore.version.bugfixNr=.6
-//        mpsBootstrapCore.version.eap=
-//        mpsBootstrapCore.version=2020.3
-    }
 }

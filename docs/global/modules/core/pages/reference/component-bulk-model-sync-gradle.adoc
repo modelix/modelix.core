@@ -100,7 +100,7 @@ This is handled by a different plugin that you can configure like this:
 [source]
 --
 mpsBuild {
-    mpsVersion("2021.2.5")
+    mpsVersion("2024.1.1")
 }
 --
 
@@ -185,7 +185,7 @@ Only available in ServerTarget.
 [source,kotlin]
 --
 mpsBuild {
-    mpsVersion("2021.2.5")
+    mpsVersion("2024.1.1")
 }
 
 modelSync {

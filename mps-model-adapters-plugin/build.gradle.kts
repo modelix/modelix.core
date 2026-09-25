@@ -5,7 +5,6 @@ import org.modelix.configureMpsTestClasspath
 import org.modelix.configureMpsTestTask
 import org.modelix.copyMps
 import org.modelix.excludeMPSLibraries
-import org.modelix.mpsMajorVersion
 import kotlin.io.resolve
 import kotlin.jvm.java
 
@@ -35,7 +34,7 @@ intellij {
 
 tasks {
     patchPluginXml {
-        sinceBuild.set("222")
+        sinceBuild.set("241")
         untilBuild.set("251.*")
     }
 
@@ -49,11 +48,6 @@ tasks {
 
     test {
         configureMpsTestTask()
-        onlyIf {
-            !setOf(
-                "2022.2", // hangs when executed on CI
-            ).contains(mpsMajorVersion)
-        }
     }
 
     val mpsPluginDir = project.findProperty("mps.plugins.dir")?.toString()?.let { file(it) }

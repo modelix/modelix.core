@@ -24,11 +24,7 @@ val Project.mpsVersion: String get() {
             requireNotNull(
                 mapOf(
                     // https://artifacts.itemis.cloud/service/rest/repository/browse/maven-mps/com/jetbrains/mps/
-                    // We only support MPS 2022.2+, which runs on JDK 17. Older versions ran on JDK 11 (see MODELIX_JDK_VERSION).
-                    "2022.2" to "2022.2.4",
-                    "2022.3" to "2022.3.3",
-                    "2023.2" to "2023.2.2",
-                    "2023.3" to "2023.3.2",
+                    // We only support MPS 2024.1+.
                     "2024.1" to "2024.1.1",
                     "2024.3" to "2024.3",
                     "2025.1" to "2025.1.2",
@@ -205,8 +201,7 @@ fun Test.configureMpsTestTask() {
         buildList {
             // JNA's native libraries live under lib/jna/<arch> in the MPS home. Point the test JVM there
             // so JNA loads the bundled library instead of trying to unpack one from the classpath.
-            // Older MPS versions (2022.2) ship no lib/jna and keep the natives inside the classpath jar,
-            // so the properties must not be set there — jna.noclasspath would leave JNA with no library.
+            // Only set the properties if the directory exists — jna.noclasspath would otherwise leave JNA with no library.
             val jnaDir = project.mpsHomeDir.get().asFile.resolve("lib/jna/${System.getProperty("os.arch")}")
             if (jnaDir.exists()) {
                 add("-Djna.boot.library.path=${jnaDir.absolutePath}")

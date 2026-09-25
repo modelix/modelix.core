@@ -2,7 +2,6 @@ import org.modelix.configureMpsTestClasspath
 import org.modelix.configureMpsTestTask
 import org.modelix.copyMps
 import org.modelix.excludeMPSLibraries
-import org.modelix.mpsMajorVersion
 
 plugins {
     `modelix-kotlin-jvm`
@@ -44,10 +43,5 @@ tasks {
 
     test {
         configureMpsTestTask()
-        onlyIf {
-            !setOf(
-                "2022.2", // hangs when executed on CI
-            ).contains(mpsMajorVersion)
-        }
     }
 }

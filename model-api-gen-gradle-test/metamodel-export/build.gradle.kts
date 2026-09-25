@@ -35,5 +35,5 @@ metamodel {
 }
 
 dependencies {
-    mps("com.jetbrains:mps:2022.2.4")
+    mps("com.jetbrains:mps:2024.1.1")
 }

@@ -47,7 +47,7 @@ class ExportFunctionalTest {
                 id("org.modelix.bulk-model-sync")
             }
             mpsBuild {
-                mpsVersion("2021.2.5")
+                mpsVersion("2024.1.1")
             }
         """.trimIndent()
 

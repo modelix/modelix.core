@@ -10,9 +10,7 @@ class ValidatingJob(private val validate: suspend () -> Unit) {
     private val dirty = Channel<Unit>(1)
 
     fun invalidate() {
-        // can't use trySend because it doesn't exist in MPS 2020.3
-        @Suppress("DEPRECATION_ERROR")
-        dirty.offer(Unit)
+        dirty.trySend(Unit)
     }
 
     suspend fun run() {

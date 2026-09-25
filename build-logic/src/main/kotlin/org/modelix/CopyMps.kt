@@ -19,25 +19,33 @@ val Project.mpsMajorVersion: String get() {
         ?: "2025.1"
 }
 
+/**
+ * The supported MPS versions (major version to the full version used for building and testing).
+ * https://artifacts.itemis.cloud/service/rest/repository/browse/maven-mps/com/jetbrains/mps/
+ */
+private val SUPPORTED_MPS_VERSIONS = mapOf(
+    "2024.1" to "2024.1.1",
+    "2024.3" to "2024.3",
+    "2025.1" to "2025.1.2",
+)
+
+private fun String.toMpsPlatformVersion(): Int = replace(Regex("""20(\d\d)\.(\d+).*"""), "$1$2").toInt()
+
+/** The oldest MPS platform version the MPS plugins are compatible with. */
+val MPS_PLUGIN_SINCE_BUILD: String = SUPPORTED_MPS_VERSIONS.keys.minOf { it.toMpsPlatformVersion() }.toString()
+
+/** The newest MPS platform version the MPS plugins are compatible with. */
+val MPS_PLUGIN_UNTIL_BUILD: String = SUPPORTED_MPS_VERSIONS.keys.maxOf { it.toMpsPlatformVersion() }.toString() + ".*"
+
 val Project.mpsVersion: String get() {
     if (project != rootProject) return rootProject.mpsVersion
     return project.findProperty("mps.version")?.toString()?.takeIf { it.isNotEmpty() }
         ?: mpsMajorVersion.let {
-            requireNotNull(
-                mapOf(
-                    // https://artifacts.itemis.cloud/service/rest/repository/browse/maven-mps/com/jetbrains/mps/
-                    // We only support MPS 2024.1+.
-                    "2024.1" to "2024.1.1",
-                    "2024.3" to "2024.3",
-                    "2025.1" to "2025.1.2",
-                )[it],
-            ) { "Unknown MPS version: $it" }
+            requireNotNull(SUPPORTED_MPS_VERSIONS[it]) { "Unknown MPS version: $it" }
         }
 }
 
-val Project.mpsPlatformVersion: Int get() {
-    return mpsVersion.replace(Regex("""20(\d\d)\.(\d+).*"""), "$1$2").toInt()
-}
+val Project.mpsPlatformVersion: Int get() = mpsVersion.toMpsPlatformVersion()
 
 val Project.mpsHomeDir: Provider<Directory> get() {
     if (project != rootProject) return rootProject.mpsHomeDir

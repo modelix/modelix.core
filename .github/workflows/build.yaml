@@ -38,7 +38,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew --build-cache build detektMain detektTest detektJsMain detektJsTest detektJvmMain detektJvmTest :koverHtmlReport :koverXmlReport -PciBuild=true
       - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action@c950f6fb443cb5af20a377fd0dfaa78838901040 # v2
+        uses: EnricoMi/publish-unit-test-result-action@d0a4676d0e0b938bc201470d88276b7c74c712b3 # v2
         # Also report in case the build failed
         if: always()
         with:

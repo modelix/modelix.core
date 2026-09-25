@@ -11,6 +11,7 @@ import org.modelix.mps.api.ModelixMpsApi
 import org.w3c.dom.Element
 import java.io.File
 import java.nio.file.Path
+import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.absolute
 import kotlin.io.path.extension
 import kotlin.io.path.isRegularFile
@@ -39,6 +40,7 @@ private fun filterFiles(files: Map<String, String>) = files.filter {
     }
 }
 
+@OptIn(ExperimentalPathApi::class)
 private fun Project.captureFileContents(): Map<String, String> {
     ApplicationManager.getApplication().invokeAndWait {
         ProjectHelper.fromIdeaProject(this)!!.modelAccess.runWriteAction {

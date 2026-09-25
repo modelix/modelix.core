@@ -24,11 +24,14 @@ class ModelQLTemplateInstance<in Context, out Template : IModelQLTemplate<*, Con
     val fragment: IRequestedFragment<Context>,
 )
 
-context(IFragmentBuilder<*, *>)
+context(fragmentBuilder: IFragmentBuilder<*, *>)
 fun <In, Context, Template : IModelQLTemplate<In, Context>> IMonoStep<In>.requestTemplate(template: Template): ModelQLTemplateInstance<Context, Template> {
-    val fragment = requestFragment<In, Context>(eager = true) {
-        with(template) {
-            buildFragment()
+    val input = this
+    val fragment = with(fragmentBuilder) {
+        input.requestFragment<In, Context>(eager = true) {
+            with(template) {
+                buildFragment()
+            }
         }
     }
     return ModelQLTemplateInstance<Context, Template>(template, fragment)

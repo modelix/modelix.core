@@ -13,7 +13,7 @@ val mps: Configuration by configurations.creating
 val kotlinGenDir = project.layout.buildDirectory.dir("metamodel/kotlin").get().asFile.apply { mkdirs() }
 
 dependencies {
-    mps("com.jetbrains:mps:2022.2.4")
+    mps("com.jetbrains:mps:2024.1.1")
     api("org.modelix:model-api-gen-runtime")
 }
 

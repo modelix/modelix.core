@@ -34,7 +34,7 @@ This How-To assumes a folder structure as follows
 [source,kotlin]
 --
 modelixCoreVersion=1.4.10
-mpsVersion=2021.3.2
+mpsVersion=2024.1.1
 
 [...]
 --

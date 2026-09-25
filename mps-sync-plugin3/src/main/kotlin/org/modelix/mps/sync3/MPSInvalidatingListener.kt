@@ -235,10 +235,6 @@ abstract class MPSInvalidatingListener(val repository: SRepository) :
     override fun languageRemoved(module: SModule, language: SLanguage) = ignoreExceptions { invalidate(module) }
     override fun moduleChanged(module: SModule) = ignoreExceptions { invalidate(module) }
 
-    /**
-     * For compatibility with MPS 2020.3, SRepositoryListenerBase is used because SRepositoryListener had the additional
-     * methods updateStarted and updateFinished in that version.
-     */
     private val srepositoryListener = object : SRepositoryListenerBase() {
         override fun moduleAdded(module: SModule) = ignoreExceptions {
             invalidate(repository)

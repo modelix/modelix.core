@@ -98,17 +98,3 @@ publishing {
         }
     }
 }
-
-// disable coroutines agent
-if (mpsPlatformVersion < 241) {
-    afterEvaluate {
-        val testTask = tasks.test.get()
-        val originalProviders = testTask.jvmArgumentProviders.toList()
-        testTask.jvmArgumentProviders.clear()
-        testTask.jvmArgumentProviders.add(object : CommandLineArgumentProvider {
-            override fun asArguments(): Iterable<String> {
-                return originalProviders.flatMap { it.asArguments() }.filterNot { it.contains("coroutines-javaagent.jar") }
-            }
-        })
-    }
-}

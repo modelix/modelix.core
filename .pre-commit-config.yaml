@@ -36,7 +36,7 @@ repos:
   - repo: https://github.com/rbubley/mirrors-prettier
     # Maintained fork of the now-archived pre-commit/mirrors-prettier.
     # IMPORTANT: keep in sync with the version configured in `vue-model-api/package.json`
-    rev: v3.9.5
+    rev: v3.9.9
     hooks:
       - id: prettier
         # Node 24's npm refuses pre-commit's `npm install git+file://` hook

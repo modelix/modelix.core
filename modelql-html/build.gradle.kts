@@ -44,11 +44,11 @@ kotlin {
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_11)
-        freeCompilerArgs.addAll("-Xjvm-default=all-compatibility", "-Xcontext-receivers")
+        freeCompilerArgs.addAll("-Xjvm-default=all-compatibility", "-Xcontext-parameters")
     }
 }
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon>().all {
     compilerOptions {
-        freeCompilerArgs.add("-Xcontext-receivers")
+        freeCompilerArgs.add("-Xcontext-parameters")
     }
 }

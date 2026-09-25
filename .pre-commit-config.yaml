@@ -27,6 +27,8 @@ repos:
     rev: v2.16.0
     hooks:
       - id: pretty-format-kotlin
+        # ktlint 0.50.0 can't parse context parameters
+        exclude: ^modelql-html/src/jvmMain/kotlin/org/modelix/modelql/html/HtmlTemplates\.kt$
         args:
           # IMPORTANT: keep in sync with the version configured in build.gradle.kts
           - --ktlint-version=0.50.0

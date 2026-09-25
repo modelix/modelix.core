@@ -1,3 +1,5 @@
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.modelix.configureMpsTestClasspath
 import org.modelix.copyMps
 import org.modelix.mpsHomeDir
 import org.modelix.mpsMajorVersion
@@ -9,9 +11,10 @@ plugins {
     `modelix-project-repositories`
 }
 
-intellij {
-    localPath = copyMps().absolutePath
-    instrumentCode = false
+repositories {
+    intellijPlatform {
+        localPlatformArtifacts()
+    }
 }
 
 dependencies {
@@ -42,22 +45,28 @@ dependencies {
     testImplementation(libs.kotlin.coroutines.test)
     testImplementation(libs.logback.classic)
     testImplementation(kotlin("test"))
+
+    intellijPlatform {
+        local(copyMps())
+        testFramework(TestFrameworkType.Bundled)
+    }
+}
+
+configureMpsTestClasspath()
+
+intellijPlatform {
+    instrumentCode = false
+    buildSearchableOptions = false
+    autoReload = true
+    pluginConfiguration {
+        ideaVersion {
+            sinceBuild = "241"
+            untilBuild = "251.*"
+        }
+    }
 }
 
 tasks {
-    patchPluginXml {
-        sinceBuild.set("241")
-        untilBuild.set("251.*")
-    }
-
-    buildSearchableOptions {
-        enabled = false
-    }
-
-    runIde {
-        autoReloadPlugins.set(true)
-    }
-
     test {
         dependsOn(":model-server:jibDockerBuild")
         jvmArgs("-Dmodelix.model.server.image=modelix/model-server:$version")
@@ -78,9 +87,8 @@ tasks {
 
     val mpsPluginDir = project.findProperty("mps$mpsPlatformVersion.plugins.dir")?.toString()?.let { file(it) }
     if (mpsPluginDir != null && mpsPluginDir.isDirectory) {
-        create<Sync>("installMpsPlugin") {
-            dependsOn(prepareSandbox)
-            from(project.layout.buildDirectory.dir("idea-sandbox/plugins/mps-git-import-plugin"))
+        register<Sync>("installMpsPlugin") {
+            from(prepareSandbox.flatMap { it.pluginDirectory })
             into(mpsPluginDir.resolve("mps-git-import-plugin"))
         }
     }

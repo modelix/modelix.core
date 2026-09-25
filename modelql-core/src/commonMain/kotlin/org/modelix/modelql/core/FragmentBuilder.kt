@@ -164,7 +164,8 @@ internal interface IUnboundFragmentInternal<In, Context> : IUnboundFragment<In, 
 }
 
 private class LazyFragment<In, Context>(fragmentBuilder: () -> FragmentBuilder<In, Context>) : IUnboundFragmentInternal<In, Context> {
-    private val actualFragment: FragmentBuilder<In, Context> by lazy { fragmentBuilder() }
+    private val actualFragmentLazy: Lazy<FragmentBuilder<In, Context>> = lazy { fragmentBuilder() }
+    private val actualFragment: FragmentBuilder<In, Context> get() = actualFragmentLazy.value
     override val queryReference: QueryReference<IMonoUnboundQuery<In, IZipOutput<*>>> = QueryReference(
         null,
         null,

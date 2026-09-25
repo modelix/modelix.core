@@ -879,7 +879,8 @@ abstract class ModelClientV2Builder {
     protected var connectTimeout: Duration = 1.seconds
     protected var requestTimeout: Duration = 300.seconds
     protected var defaultGraphConfig = ModelClientGraphConfig()
-    protected val authClient by lazy { ModelixAuthClient() }
+    private val authClientLazy: Lazy<ModelixAuthClient> = lazy { ModelixAuthClient() }
+    protected val authClient: ModelixAuthClient get() = authClientLazy.value
 
     // 0 and 1 mean "disable retries"
     protected var retries: UInt = 3U

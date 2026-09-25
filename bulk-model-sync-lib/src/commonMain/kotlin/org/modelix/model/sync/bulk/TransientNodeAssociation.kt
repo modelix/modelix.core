@@ -15,7 +15,8 @@ import org.modelix.model.data.NodeDataAsNode
  * This is the default implementation if the target model doesn't allow any optimizations.
  */
 class TransientNodeAssociation(val writeOriginalIds: Boolean, val targetModel: IMutableModel) : INodeAssociation {
-    private val associations: MutableMap<String, IWritableNode> by lazy {
+    private val associations: MutableMap<String, IWritableNode> get() = associationsLazy.value
+    private val associationsLazy: Lazy<MutableMap<String, IWritableNode>> = lazy {
         HashMap<String, IWritableNode>().also { map ->
             if (writeOriginalIds) {
                 targetModel.getRootNode().getDescendants(true).forEach { node ->

@@ -71,7 +71,9 @@ class ObjectReferenceImpl<E : IObjectData> private constructor(
     }
 
     private class Created<E : IObjectData>(val data: E) : State<E>() {
-        override val hash by lazy(LazyThreadSafetyMode.PUBLICATION) { ObjectHash.computeHash(data.serialize()) }
+        // Not `by lazy`, because in Kotlin/JS 2.3 each access of a delegated property creates a new property reference, which is slow.
+        private val lazyHash: Lazy<ObjectHash> = lazy(LazyThreadSafetyMode.PUBLICATION) { ObjectHash.computeHash(data.serialize()) }
+        override val hash: ObjectHash get() = lazyHash.value
         override val deserializer: IObjectDeserializer<E>
             get() = data.getDeserializer().upcast()
 

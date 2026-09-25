@@ -247,8 +247,8 @@ class SequenceStreamBuilder() : IStreamBuilder {
         }
 
         override fun cached(): IStream.One<E> {
-            val cached by lazy { wrapped.toList() }
-            return Wrapper(sequenceOf({ cached }).flatMap { it() })
+            val cached = lazy { wrapped.toList() }
+            return Wrapper(sequenceOf({ cached.value }).flatMap { it() })
         }
 
         override fun skip(count: Long): IStream.Many<E> {

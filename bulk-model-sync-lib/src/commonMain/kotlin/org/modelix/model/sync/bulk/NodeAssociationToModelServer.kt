@@ -17,7 +17,8 @@ private val LOG = mu.KotlinLogging.logger { }
 
 class NodeAssociationToModelServer(val branch: IBranch) : INodeAssociation {
 
-    private val associations: MutableMap<String, IWritableNode> by lazy {
+    private val associations: MutableMap<String, IWritableNode> get() = associationsLazy.value
+    private val associationsLazy: Lazy<MutableMap<String, IWritableNode>> = lazy {
         val map = HashMap<String, IWritableNode>()
         try {
             for (node in branch.getRootNode().getDescendants(true).map { it.asWritableNode() }) {

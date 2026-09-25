@@ -229,7 +229,8 @@ class ModelQLNodeWithKnownConcept(
 }
 
 abstract class ModelQLNodeWithConceptCache(client: ModelQLClient) : ModelQLNode(client) {
-    private val conceptRef: ConceptReference? by lazy { blockingQuery { it.conceptReference() } }
+    private val conceptRefLazy: Lazy<ConceptReference?> = lazy { blockingQuery { it.conceptReference() } }
+    private val conceptRef: ConceptReference? get() = conceptRefLazy.value
 
     override val concept: IConcept?
         get() = conceptRef?.resolve()

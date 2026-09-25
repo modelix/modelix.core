@@ -10,7 +10,10 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
+import org.gradle.work.DisableCachingByDefault
 import org.modelix.model.api.BuiltinLanguages
 import org.modelix.model.api.INode
 import org.modelix.model.api.PBranch
@@ -21,6 +24,7 @@ import org.modelix.model.sync.bulk.ModelExporter
 import org.modelix.model.sync.bulk.isModuleIncluded
 import kotlin.time.Duration.Companion.seconds
 
+@DisableCachingByDefault(because = "Depends on the content of the model server")
 abstract class ExportFromModelServer : DefaultTask() {
 
     @get:Input
@@ -31,6 +35,7 @@ abstract class ExportFromModelServer : DefaultTask() {
     abstract val repositoryId: Property<String>
 
     @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
     abstract val revisionFile: RegularFileProperty
 
     @get:OutputDirectory

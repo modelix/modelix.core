@@ -1,4 +1,5 @@
-import org.jetbrains.intellij.tasks.PrepareSandboxTask
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.tasks.PrepareSandboxTask
 import org.modelix.buildtools.KnownModuleIds
 import org.modelix.buildtools.buildStubsSolutionJar
 import org.modelix.configureMpsTestClasspath
@@ -21,12 +22,10 @@ plugins {
     `modelix-project-repositories`
 }
 
-intellij {
-    localPath = copyMps().absolutePath
-    instrumentCode = false
-    plugins = listOf(
-        "jetbrains.mps.ide.java", // for loading stub models in tests
-    )
+repositories {
+    intellijPlatform {
+        localPlatformArtifacts()
+    }
 }
 
 dependencies {
@@ -58,26 +57,36 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation(libs.mockk)
     testImplementation(project(":authorization"), excludeMPSLibraries)
-    testImplementation(project(":model-server"), excludeMPSLibraries)
+    testImplementation(project(":model-server")) {
+        excludeMPSLibraries()
+        // The old H2 version required by Apache Ignite conflicts with the H2 MVStore bundled with MPS.
+        // The model-server itself runs in a container, so it isn't needed in the tests.
+        exclude("com.h2database", "h2")
+    }
     testImplementation(libs.ktor.client.cio, excludeMPSLibraries)
+
+    intellijPlatform {
+        local(copyMps())
+        bundledPlugin("jetbrains.mps.ide.java") // for loading stub models in tests
+        testFramework(TestFrameworkType.Bundled)
+    }
 }
 
 configureMpsTestClasspath()
 
+intellijPlatform {
+    instrumentCode = false
+    buildSearchableOptions = false
+    autoReload = true
+    pluginConfiguration {
+        ideaVersion {
+            sinceBuild = "241"
+            untilBuild = "261.*"
+        }
+    }
+}
+
 tasks {
-    patchPluginXml {
-        sinceBuild.set("241")
-        untilBuild.set("251.*")
-    }
-
-    buildSearchableOptions {
-        enabled = false
-    }
-
-    runIde {
-        autoReloadPlugins.set(true)
-    }
-
     test {
         configureMpsTestTask()
         dependsOn(":model-server:jibDockerBuild")
@@ -87,28 +96,29 @@ tasks {
 
     val mpsPluginDir = project.findProperty("mps$mpsPlatformVersion.plugins.dir")?.toString()?.let { file(it) }
     if (mpsPluginDir != null && mpsPluginDir.isDirectory) {
-        create<Sync>("installMpsPlugin") {
-            dependsOn(prepareSandbox)
-            from(project.layout.buildDirectory.dir("idea-sandbox/plugins/mps-sync-plugin3"))
+        register<Sync>("installMpsPlugin") {
+            from(prepareSandbox.flatMap { it.pluginDirectory })
             into(mpsPluginDir.resolve("mps-sync-plugin3"))
         }
     }
 
     withType(PrepareSandboxTask::class.java) {
-        intoChild(pluginName.map { "$it/META-INF" })
-            .from(project.layout.projectDirectory.file("src/main/resources/META-INF"))
-            .exclude("plugin.xml")
-        intoChild(pluginName.map { "$it/META-INF" })
-            .from(patchPluginXml.flatMap { it.outputFiles })
+        from(project.layout.projectDirectory.dir("src/main/resources/META-INF")) {
+            exclude("plugin.xml")
+            into(pluginName.map { "$it/META-INF" })
+        }
+        from(patchPluginXml.flatMap { it.outputFile }) {
+            into(pluginName.map { "$it/META-INF" })
+        }
 
         doLast {
             val ownJar: File = pluginJar.get().asFile
-            val runtimeJars = configurations.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME).resolvedConfiguration.files + ownJar
+            val runtimeJars = configurations.runtimeClasspath.get().files + ownJar
             buildStubsSolutionJar {
                 solutionName("org.modelix.mps.sync.stubs")
                 solutionId("1dc413a4-9e7d-4996-bbda-f6b4e4e40808")
                 ideaPluginId("org.modelix.mps.sync3")
-                outputFolder(defaultDestinationDir.get().resolve(project.name).resolve("languages"))
+                outputFolder(pluginDirectory.get().asFile.resolve("languages"))
                 runtimeJars.forEach {
                     javaJar(it.name)
                 }

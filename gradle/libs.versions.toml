@@ -17,15 +17,14 @@ detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 npm-publish = { id = "dev.petuska.npm.publish", version = "3.5.3" }
 test-logger = { id = "com.adarshr.test-logger", version = "4.0.0" }
 shadow = { id = "com.gradleup.shadow", version = "9.4.2" }
-intellij = { id = "org.jetbrains.intellij", version = "1.17.4" }
-intellij2 = { id = "org.jetbrains.intellij.platform", version = "2.15.0" }
+intellij = { id = "org.jetbrains.intellij.platform", version = "2.19.0" }
 openapi-generator = {id = "org.openapi.generator", version.ref = "openapi"}
 kotlinx-kover = { id = "org.jetbrains.kotlinx.kover", version = "0.9.8" }
 docker-compose = { id = "com.avast.gradle.docker-compose" , version = "0.17.12" }
 jib = { id = "com.google.cloud.tools.jib", version = "3.5.3" }
 
 [versions]
-kotlin = "2.2.21"
+kotlin = "2.3.21"
 kotlinCoroutines="1.10.2"
 ktor="3.2.3"
 kotlinSerialization="1.9.0"
@@ -133,7 +132,7 @@ semver = { group = "org.semver", name = "api", version = "0.9.33"}
 
 modelix-buildtools-gradle = { group = "org.modelix.mps", name = "build-tools-gradle", version.ref = "modelixBuildtools"}
 modelix-buildtools-lib = { group = "org.modelix.mps", name = "build-tools-lib", version.ref = "modelixBuildtools"}
-modelix-mpsApi = { group = "org.modelix.mps", name = "stable-api", version = "1.4.0" }
+modelix-mpsApi = { group = "org.modelix.mps", name = "stable-api", version = "1.5.0" }
 
 micrometer-registry-prometheus = { group = "io.micrometer", name = "micrometer-registry-prometheus", version.ref = "micrometer"}
 

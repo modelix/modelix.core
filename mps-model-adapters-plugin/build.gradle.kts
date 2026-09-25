@@ -1,4 +1,5 @@
-import org.jetbrains.intellij.tasks.PrepareSandboxTask
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.tasks.PrepareSandboxTask
 import org.modelix.buildtools.KnownModuleIds
 import org.modelix.buildtools.buildStubsSolutionJar
 import org.modelix.configureMpsTestClasspath
@@ -20,55 +21,62 @@ plugins {
     `modelix-project-repositories`
 }
 
+repositories {
+    intellijPlatform {
+        localPlatformArtifacts()
+    }
+}
+
 dependencies {
     implementation(project(":mps-model-adapters"), excludeMPSLibraries)
     testImplementation(kotlin("test"))
+
+    intellijPlatform {
+        local(copyMps())
+        testFramework(TestFrameworkType.Bundled)
+    }
 }
 
 configureMpsTestClasspath()
 
-intellij {
-    localPath = copyMps().absolutePath
+intellijPlatform {
     instrumentCode = false
+    buildSearchableOptions = false
+    autoReload = true
+    pluginConfiguration {
+        ideaVersion {
+            sinceBuild = "241"
+            untilBuild = "261.*"
+        }
+    }
 }
 
 tasks {
-    patchPluginXml {
-        sinceBuild.set("241")
-        untilBuild.set("251.*")
-    }
-
-    buildSearchableOptions {
-        enabled = false
-    }
-
-    runIde {
-        autoReloadPlugins.set(true)
-    }
-
     test {
         configureMpsTestTask()
     }
 
     val mpsPluginDir = project.findProperty("mps.plugins.dir")?.toString()?.let { file(it) }
     if (mpsPluginDir != null && mpsPluginDir.isDirectory) {
-        create<Sync>("installMpsPlugin") {
-            dependsOn(prepareSandbox)
-            from(project.layout.buildDirectory.dir("idea-sandbox/plugins/mps-model-adapters-plugin"))
+        register<Sync>("installMpsPlugin") {
+            from(prepareSandbox.flatMap { it.pluginDirectory })
             into(mpsPluginDir.resolve("mps-model-adapters-plugin"))
         }
     }
 
     withType(PrepareSandboxTask::class.java) {
         dependsOn(":mps-repository-concepts:assembleMpsModules")
-        intoChild(pluginName.map { "$it/languages" })
-            .from(project(":mps-repository-concepts").layout.buildDirectory.map { it.dir("mpsbuild/packaged-modules") })
+        from(project(":mps-repository-concepts").layout.buildDirectory.dir("mpsbuild/packaged-modules")) {
+            into(pluginName.map { "$it/languages" })
+        }
 
-        intoChild(pluginName.map { "$it/META-INF" })
-            .from(project.layout.projectDirectory.file("src/main/resources/META-INF"))
-            .exclude("plugin.xml")
-        intoChild(pluginName.map { "$it/META-INF" })
-            .from(patchPluginXml.flatMap { it.outputFiles })
+        from(project.layout.projectDirectory.dir("src/main/resources/META-INF")) {
+            exclude("plugin.xml")
+            into(pluginName.map { "$it/META-INF" })
+        }
+        from(patchPluginXml.flatMap { it.outputFile }) {
+            into(pluginName.map { "$it/META-INF" })
+        }
 
         doLast {
             val ownJar: File = pluginJar.get().asFile
@@ -77,7 +85,7 @@ tasks {
             buildStubsSolutionJar {
                 solutionName("org.modelix.mps.model.adapters.stubs")
                 solutionId("83727c3c-e8b0-4bdd-a1fc-cb4fea831777")
-                outputFolder(defaultDestinationDir.get().resolve(project.name).resolve("languages"))
+                outputFolder(pluginDirectory.get().asFile.resolve("languages"))
                 classpathJars.forEach { classpathJar(it.name) }
                 stubModelJars.forEach { javaStubsJar(it.name) }
                 moduleDependency(KnownModuleIds.Annotations)

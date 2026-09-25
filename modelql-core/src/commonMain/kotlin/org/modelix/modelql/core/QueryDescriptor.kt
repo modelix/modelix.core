@@ -228,7 +228,8 @@ class QueryReference<Q : IUnboundQuery<*, *, *>>(
             field = value
         }
     private val creatingStacktrace = Exception()
-    override val query: Q by lazy {
+    override val query: Q get() = queryLazy.value
+    private val queryLazy: Lazy<Q> = lazy {
         providedQuery
             ?: (queryInitializer ?: throw IllegalStateException("query for ID $queryId not found", creatingStacktrace)).invoke()
             ?: throw RuntimeException("Query initializer returned null: $queryInitializer")

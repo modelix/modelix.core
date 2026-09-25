@@ -343,7 +343,9 @@ class DeferredStreamBuilder : IStreamBuilder {
         /**
          * Without caching of the converted stream [IStream.One.cached] doesn't work.
          */
-        private val converted: Pair<IStream<E>, IStreamBuilder> by lazy { converter.let { conversion(it!!) to it } }
+        // Not `by lazy`, because in Kotlin/JS 2.3 each access of a delegated property creates a new property reference, which is slow.
+        private val convertedLazy: Lazy<Pair<IStream<E>, IStreamBuilder>> = lazy { converter.let { conversion(it!!) to it } }
+        private val converted: Pair<IStream<E>, IStreamBuilder> get() = convertedLazy.value
 
         override fun convert(converter: IStreamBuilder): IStream<E> {
             this.converter = converter

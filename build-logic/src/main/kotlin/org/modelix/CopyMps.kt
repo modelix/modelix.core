@@ -258,6 +258,13 @@ fun Project.configureMpsTestClasspath() {
     tasks.withType(KotlinJvmCompile::class.java).configureEach {
         compilerOptions.apiVersion.set(MODELIX_KOTLIN_API_VERSION)
     }
+
+    // MPS bundles JNA (in lib/util-8.jar) together with its native library, which the test JVM is pointed at
+    // (see configureMpsTestTask). A different JNA version on the test classpath (e.g. from testcontainers) would be
+    // loaded first and fail with "There is an incompatible JNA native library installed on this system".
+    configurations.named("testRuntimeClasspath").configure {
+        exclude(group = "net.java.dev.jna", module = "jna")
+    }
 }
 
 /**

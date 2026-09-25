@@ -8,6 +8,7 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
+import org.gradle.work.DisableCachingByDefault
 import org.modelix.model.client2.ModelClientV2
 import org.modelix.model.lazy.RepositoryId
 
@@ -15,6 +16,7 @@ import org.modelix.model.lazy.RepositoryId
  * Determines which revision needs to be pulled from the model server.
  * The determined revision is written to [revisionFile].
  */
+@DisableCachingByDefault(because = "Depends on the current state of the model server")
 abstract class GetRevisionInfo : DefaultTask() {
 
     @get:Input

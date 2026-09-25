@@ -11,6 +11,7 @@ import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
+import org.gradle.work.DisableCachingByDefault
 import org.modelix.model.ModelFacade
 import org.modelix.model.api.INode
 import org.modelix.model.api.IProperty
@@ -24,6 +25,7 @@ import org.modelix.model.sync.bulk.importFilesAsRootChildren
 import org.modelix.model.sync.bulk.isModuleIncluded
 import kotlin.time.Duration.Companion.seconds
 
+@DisableCachingByDefault(because = "Modifies the model server")
 abstract class ImportIntoModelServer : DefaultTask() {
 
     @get:InputDirectory

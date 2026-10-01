@@ -1,5 +1,5 @@
 import org.gradle.internal.jvm.Jvm
-import org.modelix.mpsHomeDir
+import org.modelix.gradle.mpsplatform.mpsHomeDir
 
 plugins {
     base

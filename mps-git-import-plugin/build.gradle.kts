@@ -1,9 +1,13 @@
-import org.modelix.mpsHomeDir
-import org.modelix.mpsMajorVersion
+import org.modelix.gradle.mpsplatform.mpsHomeDir
+import org.modelix.gradle.mpsplatform.mpsMajorVersion
+import org.modelix.gradle.mpsplatform.publishMpsPlugin
 
 plugins {
     `modelix-mps-plugin`
+    id("org.modelix.mps.plugin")
 }
+
+publishMpsPlugin()
 
 dependencies {
     val excludeMPSLibraries: (ModuleDependency).() -> Unit = {

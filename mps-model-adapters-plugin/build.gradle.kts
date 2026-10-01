@@ -1,8 +1,9 @@
 import org.jetbrains.intellij.platform.gradle.tasks.PrepareSandboxTask
 import org.modelix.buildtools.KnownModuleIds
 import org.modelix.buildtools.buildStubsSolutionJar
-import org.modelix.excludeMPSLibraries
-import org.modelix.includeMetaInfFolder
+import org.modelix.gradle.mpsplatform.excludeMPSLibraries
+import org.modelix.gradle.mpsplatform.includeMetaInfFolder
+import org.modelix.gradle.mpsplatform.publishMpsPlugin
 
 buildscript {
     dependencies {
@@ -12,7 +13,10 @@ buildscript {
 
 plugins {
     `modelix-mps-plugin`
+    id("org.modelix.mps.plugin")
 }
+
+publishMpsPlugin()
 
 dependencies {
     implementation(project(":mps-model-adapters"), excludeMPSLibraries)

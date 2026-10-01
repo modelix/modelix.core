@@ -13,6 +13,8 @@ plugins {
     alias(libs.plugins.detekt)
     alias(libs.plugins.kotlinx.kover)
     alias(libs.plugins.npm.publish) apply false
+    alias(libs.plugins.modelix.mps.platform) apply false
+    alias(libs.plugins.modelix.mps.plugin) apply false
 }
 
 group = "org.modelix"

@@ -1,4 +1,4 @@
-import org.modelix.excludeMPSLibraries
+import org.modelix.gradle.mpsplatform.excludeMPSLibraries
 
 plugins {
     // We are not building an actual plugin here.
@@ -8,6 +8,7 @@ plugins {
     // and build something custom using the relevant parts.
     // For the time being, this solution works without much overhead and great benefit.)
     `modelix-mps-platform`
+    id("org.modelix.mps.platform")
 }
 
 dependencies {

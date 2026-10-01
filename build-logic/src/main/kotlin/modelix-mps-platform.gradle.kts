@@ -1,43 +1,18 @@
-import org.jetbrains.intellij.platform.gradle.TestFrameworkType
-import org.modelix.configureMpsTestClasspath
-import org.modelix.configureMpsTestTask
-import org.modelix.copyMps
+import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
+import org.modelix.MODELIX_KOTLIN_API_VERSION
 
-// Compiles against and runs the tests with the MPS selected by `mps.version.major`/`mps.version` (see CopyMps.kt).
-// Modules that build an actual MPS plugin apply `modelix-mps-plugin` instead.
+// The modelix specific settings for modules that compile against and run the tests with MPS.
+// Apply it together with `id("org.modelix.mps.platform")` (or `org.modelix.mps.plugin`) of modelix.mps-build-tools,
+// which is declared in the root project. It can't be applied here, because the build-logic can't use the included
+// build of modelix.mps-build-tools in the composite build.
 
 plugins {
     id("modelix-kotlin-jvm")
-    id("org.jetbrains.intellij.platform")
     id("modelix-project-repositories")
 }
 
-repositories {
-    intellijPlatform {
-        localPlatformArtifacts()
-    }
-}
-
-dependencies {
-    intellijPlatform {
-        local(copyMps())
-        testFramework(TestFrameworkType.Bundled)
-    }
-}
-
-intellijPlatform {
-    instrumentCode = false
-    buildSearchableOptions = false
-    pluginVerification {
-        ides {
-            // Without any IDEs configured, the recommended ones would be downloaded (e.g. by the IDE sync).
-            current()
-        }
-    }
-}
-
-configureMpsTestClasspath()
-
-tasks.test {
-    configureMpsTestTask()
+// The tests run with the Kotlin stdlib bundled with MPS, so the test code is restricted to the same
+// API version as the main code.
+tasks.withType<KotlinJvmCompile>().configureEach {
+    compilerOptions.apiVersion.set(MODELIX_KOTLIN_API_VERSION)
 }

@@ -20,6 +20,8 @@ import org.jetbrains.mps.openapi.language.SInterfaceConcept
 import org.jetbrains.mps.openapi.language.SProperty
 import org.jetbrains.mps.openapi.language.SReferenceLink
 import org.jetbrains.mps.openapi.model.SNode
+import org.modelix.metamodel.export.MPSModelExporter.Companion.exportNode
+import org.modelix.model.data.AnnotationData
 import org.modelix.model.data.ChildLinkData
 import org.modelix.model.data.ConceptData
 import org.modelix.model.data.EnumData
@@ -113,6 +115,9 @@ class MPSMetaModelExporter(private val outputFolder: File) {
                     }
                     fqName(it)
                 }
+            val smodelAttributes = SNodeOperations
+                .getChildren(concept, LINKS.smodelAttribute)
+                .map(::exportAnnotation)
             val metaProperties: MutableMap<String, String> = HashMap()
             if (SPropertyOperations.getString(concept, PROPS.conceptAlias) != null) {
                 metaProperties[ConceptData.ALIAS_KEY] =
@@ -127,6 +132,7 @@ class MPSMetaModelExporter(private val outputFolder: File) {
                 referenceLinks,
                 superConcepts,
                 deprecationMsg(concept),
+                smodelAttributes,
                 metaProperties,
             )
         }
@@ -172,6 +178,18 @@ class MPSMetaModelExporter(private val outputFolder: File) {
         jsonFile.writeText(languageData.toJson(), StandardCharsets.UTF_8)
     }
 
+    fun exportAnnotation(node: SNode): AnnotationData =
+        exportNode(node).let {
+            val annotationConcept = SNodeOperations.getConcept(node)
+            AnnotationData(
+                uid = MetaIdByDeclaration.getLinkId(node).toString(),
+                type = fqName(annotationConcept),
+                children = it.children,
+                properties = it.properties,
+                references = it.references,
+            )
+        }
+
     val output: List<LanguageData>
         get() = producedData.values.toList()
 
@@ -193,6 +211,10 @@ class MPSMetaModelExporter(private val outputFolder: File) {
             )
         }
         return fqName(target)
+    }
+
+    private fun fqName(concept: SConcept?): String {
+        return concept?.let { concept.language.sourceModule?.moduleName + "." + concept.name } ?: "unknown"
     }
 
     private fun fqName(element: SNode?): String {
@@ -228,6 +250,13 @@ class MPSMetaModelExporter(private val outputFolder: File) {
             -0x7c760bf823eea749L,
             0x1103556dcafL,
             "jetbrains.mps.lang.structure.structure.InterfaceConceptDeclaration",
+        )
+
+        val AttributeInfoConceptDeclaration: SConcept = MetaAdapterFactory.getConcept(
+            -4094437568663370681,
+            -8968368868337559369,
+            2992811758677295509,
+            "jetbrains.mps.lang.structure.structure.AttributeInfo",
         )
 
         val INamedConcept: SInterfaceConcept = MetaAdapterFactory.getInterfaceConcept(
@@ -295,6 +324,13 @@ class MPSMetaModelExporter(private val outputFolder: File) {
             0xeeb344f63fe016cL,
             "defaultMember",
         )
+        val smodelAttribute: SContainmentLink = MetaAdapterFactory.getContainmentLink(
+            -0x3154ae6ada15b0deL,
+            -0x646defc46a3573f4L,
+            0x10802efe25aL,
+            0x47bf8397520e5942L,
+            "smodelAttribute",
+        )
     }
 
     private object PROPS {
@@ -345,6 +381,13 @@ class MPSMetaModelExporter(private val outputFolder: File) {
             0x2e770ca32c607c60L,
             0x13b8f6fdce540e38L,
             "memberId",
+        )
+        val attributeInfoRole: SProperty = MetaAdapterFactory.getProperty(
+            -4094437568663370681,
+            -8968368868337559369,
+            2992811758677295509,
+            7588428831955550663,
+            "role",
         )
     }
 }

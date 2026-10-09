@@ -222,3 +222,46 @@ test("test wrapper backwards compatibility", (done) => {
     }
   });
 });
+
+test.each([
+  {
+    options: undefined,
+    method: "addListener",
+    otherMethod: "addListenerIncludingAddedAndRemovedNodes",
+  },
+  {
+    options: { updateReferencesToRemovedNodes: true },
+    method: "addListenerIncludingAddedAndRemovedNodes",
+    otherMethod: "addListener",
+  },
+] as const)(
+  "with options $options, the change handler is added with $method",
+  async ({ options, method, otherMethod }) => {
+    const branch = {
+      rootNode: loadModelsFromJson([JSON.stringify({ root: {} })]),
+      addListener: jest.fn(),
+      addListenerIncludingAddedAndRemovedNodes: jest.fn(),
+    };
+    const client = {
+      startReplicatedModel: () => Promise.resolve({ getBranch: () => branch }),
+    } as unknown as ClientJS;
+
+    const { rootNode } = useReplicatedModel(
+      client,
+      "aRepository",
+      "aBranch",
+      IdSchemeJS.MODELIX,
+      options,
+    );
+    await new Promise<void>((resolve) =>
+      watchEffect(() => {
+        if (rootNode.value !== null) {
+          resolve();
+        }
+      }),
+    );
+
+    expect(branch[method]).toHaveBeenCalled();
+    expect(branch[otherMethod]).not.toHaveBeenCalled();
+  },
+);

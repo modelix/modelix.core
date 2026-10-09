@@ -1,8 +1,17 @@
 import { useModelsFromJson } from "../useModelsFromJson";
 import { computed, isReactive, reactive } from "vue";
 import { runGarbageCollection } from "./runGarbageCollection";
+import type { INodeJS } from "@modelix/ts-model-api";
 import { toRoleJS } from "@modelix/ts-model-api";
 import { ReadOnlyNodeJS } from "../ReadonlyNodeJS";
+import { org } from "@modelix/model-client";
+import { Cache } from "./Cache";
+import { handleChange } from "./handleChange";
+import type { ReactiveINodeJS } from "./ReactiveINodeJS";
+import { toReactiveINodeJS } from "./ReactiveINodeJS";
+import type { ReactiveModelOptions } from "../ReactiveModelOptions";
+
+const { NodeAdded, NodeRemoved } = org.modelix.model.client2;
 
 const root = {
   root: {
@@ -201,4 +210,284 @@ test("can setReferenceTargetNode to a readonly node", async () => {
   expect(
     child0.getReferenceTargetNode(toRoleJS("aReference"))?.getReference(),
   ).toEqual(child2.getReference());
+});
+
+const modelWithReference = {
+  root: {
+    children: [
+      {
+        role: "holders",
+        references: { aReference: "target" },
+      },
+      {
+        role: "holders",
+        properties: { name: "otherHolder" },
+      },
+      {
+        role: "containers",
+        children: [
+          {
+            id: "target",
+            role: "items",
+            properties: { name: "target" },
+          },
+        ],
+      },
+    ],
+  },
+};
+
+const updateReferencesToRemovedNodes = { updateReferencesToRemovedNodes: true };
+
+// The holder is read through its parent, the target only through the reference,
+// so the target's parent "container" is never cached.
+function useModelWithReference(
+  options: ReactiveModelOptions = updateReferencesToRemovedNodes,
+) {
+  const rootNode = useModelsFromJson(
+    [JSON.stringify(modelWithReference)],
+    options,
+  );
+  const [holder, otherHolder] = rootNode.getChildren(toRoleJS("holders"));
+  return { rootNode, holder, otherHolder };
+}
+
+test("reference to a deleted node reads as unset", () => {
+  const { holder } = useModelWithReference();
+  const computedTargetName = computed(() =>
+    holder
+      .getReferenceTargetNode(toRoleJS("aReference"))
+      ?.getPropertyValue(toRoleJS("name")),
+  );
+  expect(computedTargetName.value).toBe("target");
+
+  holder.getReferenceTargetNode(toRoleJS("aReference"))!.remove();
+
+  expect(computedTargetName.value).toBeUndefined();
+  expect(holder.getReferenceTargetNode(toRoleJS("aReference"))).toBeNull();
+});
+
+test("without the option, a reference to a deleted node keeps the deleted node", () => {
+  const { holder } = useModelWithReference({});
+  const computedTargetNode = computed(() =>
+    holder.getReferenceTargetNode(toRoleJS("aReference")),
+  );
+  const target = computedTargetNode.value!;
+
+  target.remove();
+
+  expect(computedTargetNode.value).toBe(target);
+});
+
+test("reference into a deleted subtree reads as unset", () => {
+  const { rootNode, holder } = useModelWithReference();
+  const computedTargetNode = computed(() =>
+    holder.getReferenceTargetNode(toRoleJS("aReference")),
+  );
+  expect(computedTargetNode.value).not.toBeNull();
+
+  rootNode.getChildren(toRoleJS("containers"))[0].remove();
+
+  expect(computedTargetNode.value).toBeNull();
+});
+
+test("unrelated change to children does not update a valid reference", () => {
+  const { rootNode, holder } = useModelWithReference();
+  let evaluations = 0;
+  const computedTargetNode = computed(() => {
+    evaluations++;
+    return holder.getReferenceTargetNode(toRoleJS("aReference"));
+  });
+  const target = computedTargetNode.value;
+  expect(evaluations).toBe(1);
+
+  rootNode.addNewChild(toRoleJS("holders"), -1, undefined).remove();
+
+  expect(computedTargetNode.value).toBe(target);
+  expect(evaluations).toBe(1);
+});
+
+test("removing a holder together with its target reads the references as unset", () => {
+  const rootNode = useModelsFromJson(
+    [
+      JSON.stringify({
+        root: {
+          children: [
+            {
+              role: "holders",
+              references: { aReference: "target" },
+            },
+            {
+              role: "subtrees",
+              children: [
+                {
+                  role: "holders",
+                  references: { aReference: "target" },
+                },
+                { id: "target", role: "items" },
+              ],
+            },
+          ],
+        },
+      }),
+    ],
+    updateReferencesToRemovedNodes,
+  );
+  const outerHolder = rootNode.getChildren(toRoleJS("holders"))[0];
+  const subtree = rootNode.getChildren(toRoleJS("subtrees"))[0];
+  const innerHolder = subtree.getChildren(toRoleJS("holders"))[0];
+  const computedOuterTarget = computed(() =>
+    outerHolder.getReferenceTargetNode(toRoleJS("aReference")),
+  );
+  const computedInnerTarget = computed(() =>
+    innerHolder.getReferenceTargetNode(toRoleJS("aReference")),
+  );
+  expect(computedOuterTarget.value).not.toBeNull();
+  expect(computedInnerTarget.value).toBe(computedOuterTarget.value);
+
+  subtree.remove();
+
+  expect(computedOuterTarget.value).toBeNull();
+  expect(computedInnerTarget.value).toBeNull();
+});
+
+test("removing the former target of a reference does not update the reference", () => {
+  const { rootNode, holder } = useModelWithReference();
+  const container = rootNode.getChildren(toRoleJS("containers"))[0];
+  const oldTarget = container.getChildren(toRoleJS("items"))[0];
+  const newTarget = container.addNewChild(toRoleJS("items"), -1, undefined);
+  let evaluations = 0;
+  const computedTargetNode = computed(() => {
+    evaluations++;
+    return holder.getReferenceTargetNode(toRoleJS("aReference"));
+  });
+  expect(computedTargetNode.value).toBe(oldTarget);
+  holder.setReferenceTargetNode(toRoleJS("aReference"), newTarget);
+  expect(computedTargetNode.value).toBe(newTarget);
+  expect(evaluations).toBe(2);
+
+  oldTarget.remove();
+
+  expect(computedTargetNode.value).toBe(newTarget);
+  expect(evaluations).toBe(2);
+
+  newTarget.remove();
+
+  expect(computedTargetNode.value).toBeNull();
+  expect(evaluations).toBe(3);
+});
+
+test("changes that neither add nor remove nodes do not update a valid reference", () => {
+  const { rootNode, holder, otherHolder } = useModelWithReference();
+  let evaluations = 0;
+  const computedTargetNode = computed(() => {
+    evaluations++;
+    return holder.getReferenceTargetNode(toRoleJS("aReference"));
+  });
+  const target = computedTargetNode.value;
+
+  rootNode.moveChild(toRoleJS("holders"), -1, holder);
+  otherHolder.setPropertyValue(toRoleJS("name"), "renamed");
+  otherHolder.setReferenceTargetNode(toRoleJS("aReference"), holder);
+
+  expect(rootNode.getChildren(toRoleJS("holders"))).toEqual([
+    otherHolder,
+    holder,
+  ]);
+  expect(computedTargetNode.value).toBe(target);
+  expect(evaluations).toBe(1);
+});
+
+test("moving the target of a reference does not update the reference", () => {
+  const { rootNode, holder } = useModelWithReference();
+  let evaluations = 0;
+  const computedTargetNode = computed(() => {
+    evaluations++;
+    return holder.getReferenceTargetNode(toRoleJS("aReference"));
+  });
+  const target = computedTargetNode.value!;
+
+  rootNode.moveChild(toRoleJS("items"), -1, target);
+
+  expect(rootNode.getChildren(toRoleJS("items"))).toEqual([target]);
+  expect(computedTargetNode.value).toBe(target);
+  expect(evaluations).toBe(1);
+});
+
+test("a reference read outside a computed reads as unset in a computed after its target is removed", () => {
+  const { holder } = useModelWithReference();
+  holder.getReferenceTargetNode(toRoleJS("aReference"))!.remove();
+
+  const computedTargetNode = computed(() =>
+    holder.getReferenceTargetNode(toRoleJS("aReference")),
+  );
+
+  expect(computedTargetNode.value).toBeNull();
+});
+
+test("a new target that is removed before the reference is read again reads as unset", () => {
+  const { rootNode, holder } = useModelWithReference();
+  const computedTargetNode = computed(() =>
+    holder.getReferenceTargetNode(toRoleJS("aReference")),
+  );
+  expect(computedTargetNode.value).not.toBeNull();
+  const newTarget = rootNode.addNewChild(toRoleJS("items"), -1, undefined);
+  holder.setReferenceTargetNode(toRoleJS("aReference"), newTarget);
+
+  // The new target was never read through the reference before its removal.
+  newTarget.remove();
+
+  expect(computedTargetNode.value).toBeNull();
+});
+
+// The JS API cannot add a node with the reference of a removed node, as an undo does.
+// So these tests use fake nodes and pass the changes to `handleChange` directly.
+function useFakeModelWithReference() {
+  const nodesInModel = new Set(["target"]);
+  const target = { getReference: () => "target" } as unknown as INodeJS;
+  const holder = {
+    getReference: () => "holder",
+    getReferenceTargetNode: () => (nodesInModel.has("target") ? target : null),
+  } as unknown as INodeJS;
+  const cache = new Cache<ReactiveINodeJS>(true);
+  const reactiveHolder = toReactiveINodeJS(holder, cache);
+  const computedTargetReference = computed(() =>
+    reactiveHolder
+      .getReferenceTargetNode(toRoleJS("aReference"))
+      ?.getReference(),
+  );
+  function remove(node: INodeJS) {
+    nodesInModel.delete(node.getReference());
+    handleChange(new NodeRemoved(node), cache);
+  }
+  function add(node: INodeJS) {
+    nodesInModel.add(node.getReference());
+    handleChange(new NodeAdded(node), cache);
+  }
+  return { target, computedTargetReference, remove, add };
+}
+
+test("reference to a removed node resolves again when the node is added again", () => {
+  const { target, computedTargetReference, remove, add } =
+    useFakeModelWithReference();
+  expect(computedTargetReference.value).toBe("target");
+
+  remove(target);
+
+  expect(computedTargetReference.value).toBeUndefined();
+
+  add(target);
+
+  expect(computedTargetReference.value).toBe("target");
+});
+
+test("known limit: a reference first read while its target is removed stays unset when the target is added again", () => {
+  const { target, computedTargetReference, remove, add } =
+    useFakeModelWithReference();
+  remove(target);
+  expect(computedTargetReference.value).toBeUndefined();
+
+  add(target);
+
+  expect(computedTargetReference.value).toBeUndefined();
 });

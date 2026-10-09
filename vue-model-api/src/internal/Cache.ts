@@ -15,7 +15,11 @@ export class Cache<CachedT extends object> {
   private finalizationRegistry: FinalizationRegistry<string>;
   private map: Map<string, WeakRef<CachedT>>;
 
-  constructor() {
+  /**
+   * @param updateReferencesToRemovedNodes Whether the cached reactive nodes read references to removed nodes as unset.
+   * It is stored here, because all reactive nodes of a model share the cache.
+   */
+  constructor(public readonly updateReferencesToRemovedNodes = false) {
     this.map = new Map();
     this.finalizationRegistry = new FinalizationRegistry((key) =>
       this._remove(key),

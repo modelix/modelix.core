@@ -4,9 +4,13 @@ import { useLastPromiseEffect } from "./internal/useLastPromiseEffect";
 import type { MaybeRefOrGetter, Ref } from "vue";
 import { shallowRef, toValue } from "vue";
 import type { ReactiveINodeJS } from "./internal/ReactiveINodeJS";
-import { toReactiveINodeJS } from "./internal/ReactiveINodeJS";
+import {
+  RemovalTrackingCache,
+  toReactiveINodeJS,
+} from "./internal/ReactiveINodeJS";
 import { Cache } from "./internal/Cache";
-import { handleChange } from "./internal/handleChange";
+import { addChangeHandler, handleChange } from "./internal/handleChange";
+import type { ReactiveModelOptions } from "./ReactiveModelOptions";
 import { ReadOnlyNodeJS } from "./ReadonlyNodeJS";
 
 type ClientJS = org.modelix.model.client2.ClientJS;
@@ -32,6 +36,9 @@ function isDefined<T>(value: T | null | undefined): value is T {
  *
  * @param client - Reactive reference of a client to a model server.
  * @param models - Reactive reference to an array of ReplicatedModelParameters.
+ * @param options - Set `updateReferencesToRemovedNodes` to make `getReferenceTargetNode` read a reference
+ *   to a removed node as unset, so that a view showing it updates.
+ *   `getReferenceTargetRef` still returns the reference. It costs work for every added or removed node.
  *
  * @returns {Object} values Wrapper around different returned values.
  * @returns {Ref<ReplicatedModelJS | null>} values.replicatedModel  Reactive reference to the replicated model for the specified branches.
@@ -42,12 +49,17 @@ function isDefined<T>(value: T | null | undefined): value is T {
 export function useReplicatedModels(
   client: MaybeRefOrGetter<ClientJS | null | undefined>,
   models: MaybeRefOrGetter<ReplicatedModelParameters[] | null | undefined>,
+  options?: ReactiveModelOptions,
 ): {
   replicatedModel: Ref<ReplicatedModelJS | null>;
   rootNodes: Ref<INodeJS[]>;
   dispose: () => void;
   error: Ref<unknown>;
 } {
+  // Read once, so that changing `options` later does not change the behavior after a reconnect.
+  const updateReferencesToRemovedNodes =
+    options?.updateReferencesToRemovedNodes ?? false;
+
   // Use `replicatedModel` to access the replicated model without tracking overhead of Vue.js.
   let replicatedModel: ReplicatedModelJS | null = null;
   const replicatedModelRef: Ref<ReplicatedModelJS | null> = shallowRef(null);
@@ -80,7 +92,9 @@ export function useReplicatedModels(
       if (!isDefined(modelsValue)) {
         return;
       }
-      const cache = new Cache<ReactiveINodeJS>();
+      const cache = updateReferencesToRemovedNodes
+        ? new RemovalTrackingCache()
+        : new Cache<ReactiveINodeJS>();
       return clientValue
         .startReplicatedModels(modelsValue)
         .then((replicatedModel) => ({
@@ -96,7 +110,7 @@ export function useReplicatedModels(
       if (isResultOfLastStartedPromise) {
         replicatedModel = connectedReplicatedModel;
         const branch = replicatedModel.getBranch();
-        branch.addListener((change: ChangeJS) => {
+        addChangeHandler(branch, cache, (change: ChangeJS) => {
           if (cache === null) {
             throw Error("The cache is unexpectedly not set up.");
           }

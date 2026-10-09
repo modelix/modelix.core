@@ -31,6 +31,7 @@ class SuccessfulBranchJS {
   }
 
   addListener = jest.fn();
+  addListenerIncludingAddedAndRemovedNodes = jest.fn();
 }
 
 class SuccessfulReplicatedModelJS {
@@ -267,3 +268,46 @@ test("rootNodes are returned in order and wrapped if readonly", (done) => {
     }
   });
 }, 30000);
+
+test.each([
+  {
+    options: undefined,
+    method: "addListener",
+    otherMethod: "addListenerIncludingAddedAndRemovedNodes",
+  },
+  {
+    options: { updateReferencesToRemovedNodes: true },
+    method: "addListenerIncludingAddedAndRemovedNodes",
+    otherMethod: "addListener",
+  },
+] as const)(
+  "with options $options, the change handler is added with $method",
+  async ({ options, method, otherMethod }) => {
+    const replicatedModel = new SuccessfulReplicatedModelJS("aBranch");
+    const client = {
+      startReplicatedModels: () => Promise.resolve(replicatedModel),
+    } as unknown as ClientJS;
+
+    const { rootNodes } = useReplicatedModels(
+      client,
+      [
+        new ReplicatedModelParameters(
+          "aRepository",
+          "aBranch",
+          IdSchemeJS.MODELIX,
+        ),
+      ],
+      options,
+    );
+    await new Promise<void>((resolve) =>
+      watchEffect(() => {
+        if (rootNodes.value.length > 0) {
+          resolve();
+        }
+      }),
+    );
+
+    expect(replicatedModel.getBranch()[method]).toHaveBeenCalled();
+    expect(replicatedModel.getBranch()[otherMethod]).not.toHaveBeenCalled();
+  },
+);

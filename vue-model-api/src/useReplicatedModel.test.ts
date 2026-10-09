@@ -1,6 +1,7 @@
 import { org } from "@modelix/model-client";
 import { toRoleJS } from "@modelix/ts-model-api";
-import { watchEffect } from "vue";
+import type { Ref } from "vue";
+import { nextTick, ref, watchEffect } from "vue";
 import { useModelClient } from "./useModelClient";
 import { useReplicatedModel } from "./useReplicatedModel";
 import IdSchemeJS = org.modelix.model.client2.IdSchemeJS;
@@ -222,3 +223,89 @@ test("test wrapper backwards compatibility", (done) => {
     }
   });
 });
+
+test.each([
+  {
+    options: undefined,
+    method: "addListener",
+    otherMethod: "addListenerIncludingAddedAndRemovedNodes",
+  },
+  {
+    options: { updateReferencesToRemovedNodes: true },
+    method: "addListenerIncludingAddedAndRemovedNodes",
+    otherMethod: "addListener",
+  },
+] as const)(
+  "with options $options, the change handler is added with $method",
+  async ({ options, method, otherMethod }) => {
+    const branch = {
+      rootNode: loadModelsFromJson([JSON.stringify({ root: {} })]),
+      addListener: jest.fn(),
+      addListenerIncludingAddedAndRemovedNodes: jest.fn(),
+    };
+    const client = {
+      startReplicatedModel: () => Promise.resolve({ getBranch: () => branch }),
+    } as unknown as ClientJS;
+
+    const { rootNode } = useReplicatedModel(
+      client,
+      "aRepository",
+      "aBranch",
+      IdSchemeJS.MODELIX,
+      options,
+    );
+    await new Promise<void>((resolve) =>
+      watchEffect(() => {
+        if (rootNode.value !== null) {
+          resolve();
+        }
+      }),
+    );
+
+    expect(branch[method]).toHaveBeenCalled();
+    expect(branch[otherMethod]).not.toHaveBeenCalled();
+  },
+);
+
+test("changing the options after the call does not change how a reconnect adds the change handler", async () => {
+  const branch = {
+    rootNode: loadModelsFromJson([JSON.stringify({ root: {} })]),
+    addListener: jest.fn(),
+    addListenerIncludingAddedAndRemovedNodes: jest.fn(),
+  };
+  const client = {
+    startReplicatedModel: () =>
+      Promise.resolve({ getBranch: () => branch, dispose: () => {} }),
+  } as unknown as ClientJS;
+  const branchId = ref("aBranch");
+  const options = { updateReferencesToRemovedNodes: false };
+
+  const { rootNode } = useReplicatedModel(
+    client,
+    "aRepository",
+    branchId,
+    IdSchemeJS.MODELIX,
+    options,
+  );
+  await waitUntilConnected(rootNode);
+  options.updateReferencesToRemovedNodes = true;
+  branchId.value = "anotherBranch";
+  // Let the effect disconnect, before waiting for the reconnect.
+  await nextTick();
+  await waitUntilConnected(rootNode);
+
+  expect(branch.addListener).toHaveBeenCalledTimes(2);
+  expect(
+    branch.addListenerIncludingAddedAndRemovedNodes,
+  ).not.toHaveBeenCalled();
+});
+
+function waitUntilConnected(rootNode: Ref<unknown>) {
+  return new Promise<void>((resolve) =>
+    watchEffect(() => {
+      if (rootNode.value !== null) {
+        resolve();
+      }
+    }),
+  );
+}

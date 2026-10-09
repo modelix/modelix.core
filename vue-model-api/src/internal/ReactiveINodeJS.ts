@@ -7,7 +7,7 @@ import type {
 } from "@modelix/ts-model-api";
 import type { Ref } from "vue";
 import { markRaw, shallowRef } from "vue";
-import type { Cache } from "./Cache";
+import { Cache } from "./Cache";
 import type { Nullable } from "@modelix/model-client";
 import { org } from "@modelix/model-client";
 
@@ -64,7 +64,7 @@ export class ReactiveINodeJS implements INodeJS {
 
   constructor(
     public readonly unreactiveNode: INodeJS,
-    private readonly cache: Cache<ReactiveINodeJS>,
+    protected readonly cache: Cache<ReactiveINodeJS>,
   ) {
     // markRaw ensures, that Vue.js does not wrap this object again in a proxy
     // see. https://vuejs.org/api/reactivity-advanced.html#markraw
@@ -77,7 +77,7 @@ export class ReactiveINodeJS implements INodeJS {
   private referenceTargetRefGetter = (role: ReferenceRole) =>
     this.unreactiveNode.getReferenceTargetRef(role);
 
-  private referenceTargetNodeGetter = (role: ReferenceRole) => {
+  protected referenceTargetNodeGetter = (role: ReferenceRole) => {
     const unreactiveTargetNode =
       this.unreactiveNode.getReferenceTargetNode(role);
     return unreactiveTargetNode
@@ -278,5 +278,65 @@ export class ReactiveINodeJS implements INodeJS {
 
   get node() {
     return this.unreactiveNode;
+  }
+}
+
+/**
+ * A reactive node that reads a reference to a removed node as unset.
+ * It is only created with `updateReferencesToRemovedNodes`,
+ * so that the other reactive nodes cost the same as without this option.
+ */
+export class RemovalTrackingReactiveINodeJS extends ReactiveINodeJS {
+  // Whether this node was removed from the model.
+  // It is only created for nodes that are the target of a read reference.
+  // `declare` keeps it from being a field of every node.
+  declare private refForRemoved?: Ref<boolean>;
+
+  protected override referenceTargetNodeGetter = (role: ReferenceRole) => {
+    const unreactiveTargetNode =
+      this.unreactiveNode.getReferenceTargetNode(role);
+    if (!unreactiveTargetNode) {
+      return unreactiveTargetNode;
+    }
+    const targetNode = toReactiveINodeJS(
+      unreactiveTargetNode,
+      this.cache,
+    ) as RemovalTrackingReactiveINodeJS;
+    // The flag is created here, while the target node exists, and not when it is read.
+    // A dirty `computed` that is evaluated after the removal must not get a new `false`.
+    targetNode.refForRemoved ??= shallowRef(false);
+    return targetNode;
+  };
+
+  override getReferenceTargetNode(role: ReferenceRole): INodeJS | undefined {
+    const targetNode = super.getReferenceTargetNode(role) as
+      RemovalTrackingReactiveINodeJS | undefined;
+    // A removed node is not reported as a change of the references to it,
+    // so a reference to a removed node is read as unset here.
+    if (targetNode?.refForRemoved?.value) {
+      // Unset references are `null`, even though the declared type says `undefined`.
+      // See https://issues.modelix.org/issue/MODELIX-567/
+      return null as unknown as undefined;
+    }
+    return targetNode;
+  }
+
+  triggerChangeInRemoved(removed: boolean) {
+    if (this.refForRemoved) {
+      this.refForRemoved.value = removed;
+    }
+  }
+}
+
+/**
+ * The cache for reactive nodes with `updateReferencesToRemovedNodes`.
+ * It creates a {@link RemovalTrackingReactiveINodeJS} for every node.
+ */
+export class RemovalTrackingCache extends Cache<RemovalTrackingReactiveINodeJS> {
+  override memoize(node: INodeJS): RemovalTrackingReactiveINodeJS {
+    return super.memoize(
+      node,
+      () => new RemovalTrackingReactiveINodeJS(node, this),
+    );
   }
 }

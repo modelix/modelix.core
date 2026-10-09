@@ -201,4 +201,103 @@ class MutableModelTreeJsTest {
         // Assert
         assertEquals(1, childrenChanged)
     }
+
+    @Test
+    fun changeHandlerIncludingAddedAndRemovedNodesGetsEveryNodeOfARemovedSubtree() {
+        // Arrange
+        val data = """
+        {
+            "root": {
+                "children": [
+                    {
+                        "id": "subtreeRoot",
+                        "children": [
+                            {
+                                "id": "descendant"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+        """.trimIndent()
+        val branch = loadModelsFromJsonAsBranch(arrayOf(data))
+        val subtreeRoot = branch.rootNode.getAllChildren()[0]
+        val descendant = subtreeRoot.getAllChildren()[0]
+        var childrenChanged = 0
+        val removedNodeReferences = mutableListOf<Any?>()
+        branch.addListenerIncludingAddedAndRemovedNodes {
+            when (it) {
+                is ChildrenChanged -> childrenChanged++
+                // The reference of a removed node can still be read.
+                is NodeRemoved -> removedNodeReferences.add(it.node.getReference())
+                else -> {}
+            }
+        }
+        var changeCount = 0
+        branch.addListener { changeCount++ }
+
+        // Act
+        branch.rootNode.removeChild(subtreeRoot)
+
+        // Assert
+        assertEquals(1, childrenChanged)
+        assertEquals(
+            setOf<Any?>(subtreeRoot.getReference(), descendant.getReference()),
+            removedNodeReferences.toSet(),
+        )
+        assertEquals(2, removedNodeReferences.size)
+        // A handler added with `addListener` still gets only the change to the children.
+        assertEquals(1, changeCount)
+    }
+
+    @Test
+    fun changeHandlerIncludingAddedAndRemovedNodesGetsAnAddedNode() {
+        // Arrange
+        val branch = loadModelsFromJsonAsBranch(arrayOf(emptyRoot))
+        val addedNodeReferences = mutableListOf<Any?>()
+        val changeHandler: ChangeHandler = {
+            if (it is NodeAdded) {
+                addedNodeReferences.add(it.node.getReference())
+            }
+        }
+        branch.addListenerIncludingAddedAndRemovedNodes(changeHandler)
+        // Adding the handler again with `addListener` does not opt it out.
+        branch.addListener(changeHandler)
+
+        // Act
+        val childNode = branch.rootNode.addNewChild("aRole", -1, GeneratedConcept("aConceptUid"))
+
+        // Assert
+        assertEquals(listOf<Any?>(childNode.getReference()), addedNodeReferences)
+    }
+
+    @Test
+    fun changeHandlersAreCalledInTheOrderTheyWereAdded() {
+        // Arrange
+        val branch = loadModelsFromJsonAsBranch(arrayOf(emptyRoot))
+        val calledHandlers = mutableListOf<String>()
+        branch.addListenerIncludingAddedAndRemovedNodes { calledHandlers.add("includingAddedAndRemovedNodes") }
+        branch.addListener { calledHandlers.add("plain") }
+
+        // Act
+        branch.rootNode.setPropertyValue("aProperty", "aValue")
+
+        // Assert
+        assertEquals(listOf("includingAddedAndRemovedNodes", "plain"), calledHandlers)
+    }
+
+    @Test
+    fun changeHandlerIncludingAddedAndRemovedNodesCanBeRemoved() {
+        val branch = loadModelsFromJsonAsBranch(arrayOf(rootWithChild))
+        var changeCount = 0
+        val changeListener: ChangeHandler = { _ -> changeCount++ }
+        branch.addListenerIncludingAddedAndRemovedNodes(changeListener)
+        branch.removeListener(changeListener)
+
+        val aNode = branch.rootNode.getAllChildren()[0]
+        branch.rootNode.removeChild(aNode)
+
+        assertEquals(0, changeCount)
+    }
 }

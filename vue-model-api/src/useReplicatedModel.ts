@@ -6,7 +6,8 @@ import { shallowRef, toValue } from "vue";
 import type { ReactiveINodeJS } from "./internal/ReactiveINodeJS";
 import { toReactiveINodeJS } from "./internal/ReactiveINodeJS";
 import { Cache } from "./internal/Cache";
-import { handleChange } from "./internal/handleChange";
+import { addChangeHandler, handleChange } from "./internal/handleChange";
+import type { ReactiveModelOptions } from "./ReactiveModelOptions";
 
 type ClientJS = org.modelix.model.client2.ClientJS;
 type ReplicatedModelJS = org.modelix.model.client2.ReplicatedModelJS;
@@ -30,6 +31,9 @@ function isDefined<T>(value: T | null | undefined): value is T {
  * @param client - Reactive reference of a client to a model server.
  * @param repositoryId - Reactive reference of a repositoryId on the model server.
  * @param branchId - Reactive reference of a branchId in the repository of the model server.
+ * @param options - Set `updateReferencesToRemovedNodes` to make `getReferenceTargetNode` read a reference
+ *   to a removed node as unset, so that a view showing it updates.
+ *   `getReferenceTargetRef` still returns the reference. It costs work for every added or removed node.
  *
  * @returns {Object} values Wrapper around different returned values.
  * @returns {Ref<ReplicatedModelJS | null>} values.rootNode  Reactive reference to the replicated model for the specified branch.
@@ -44,6 +48,7 @@ export function useReplicatedModel(
   idScheme: MaybeRefOrGetter<
     org.modelix.model.client2.IdSchemeJS | null | undefined
   >,
+  options?: ReactiveModelOptions,
 ): {
   replicatedModel: Ref<ReplicatedModelJS | null>;
   rootNode: Ref<INodeJS | null>;
@@ -86,7 +91,9 @@ export function useReplicatedModel(
       if (!isDefined(idSchemeValue)) {
         return;
       }
-      const cache = new Cache<ReactiveINodeJS>();
+      const cache = new Cache<ReactiveINodeJS>(
+        options?.updateReferencesToRemovedNodes,
+      );
       return clientValue
         .startReplicatedModel(repositoryIdValue, branchIdValue, idSchemeValue)
         .then((replicatedModel) => ({ replicatedModel, cache }));
@@ -98,7 +105,7 @@ export function useReplicatedModel(
       if (isResultOfLastStartedPromise) {
         replicatedModel = connectedReplicatedModel;
         const branch = replicatedModel.getBranch();
-        branch.addListener((change: ChangeJS) => {
+        addChangeHandler(branch, cache, (change: ChangeJS) => {
           if (cache === null) {
             throw Error("The cache is unexpectedly not set up.");
           }

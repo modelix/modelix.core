@@ -61,6 +61,11 @@ export class ReactiveINodeJS implements INodeJS {
     Ref<INodeJS[]>
   >();
   private refForAllChildren: Ref<INodeJS[]> | undefined = undefined;
+  // Whether this node was removed from the model.
+  // It is only created with `updateReferencesToRemovedNodes`,
+  // for nodes that are the target of a read reference.
+  // It has no initializer, so that other nodes do not get this field.
+  private refForRemoved?: Ref<boolean>;
 
   constructor(
     public readonly unreactiveNode: INodeJS,
@@ -80,9 +85,16 @@ export class ReactiveINodeJS implements INodeJS {
   private referenceTargetNodeGetter = (role: ReferenceRole) => {
     const unreactiveTargetNode =
       this.unreactiveNode.getReferenceTargetNode(role);
-    return unreactiveTargetNode
-      ? toReactiveINodeJS(unreactiveTargetNode, this.cache)
-      : unreactiveTargetNode;
+    if (!unreactiveTargetNode) {
+      return unreactiveTargetNode;
+    }
+    const targetNode = toReactiveINodeJS(unreactiveTargetNode, this.cache);
+    // The flag is created here, while the target node exists, and not when it is read.
+    // A dirty `computed` that is evaluated after the removal must not get a new `false`.
+    if (this.cache.updateReferencesToRemovedNodes) {
+      targetNode.refForRemoved ??= shallowRef(false);
+    }
+    return targetNode;
   };
 
   private childrenGetter = (role: ChildRole | undefined) =>
@@ -178,7 +190,19 @@ export class ReactiveINodeJS implements INodeJS {
       role,
       this.referenceTargetNodeGetter,
     );
-    return ref.value;
+    const targetNode = ref.value;
+    // A removed node is not reported as a change of the references to it,
+    // so a reference to a removed node is read as unset here.
+    if (
+      this.cache.updateReferencesToRemovedNodes &&
+      targetNode instanceof ReactiveINodeJS &&
+      targetNode.refForRemoved?.value
+    ) {
+      // Unset references are `null`, even though the declared type says `undefined`.
+      // See https://issues.modelix.org/issue/MODELIX-567/
+      return null as unknown as undefined;
+    }
+    return targetNode;
   }
 
   getReferenceTargetRef(role: ReferenceRole): INodeReferenceJS | undefined {
@@ -266,6 +290,12 @@ export class ReactiveINodeJS implements INodeJS {
     );
     if (maybeTargetRefRef) {
       maybeTargetRefRef.value = this.referenceTargetRefGetter(role);
+    }
+  }
+
+  triggerChangeInRemoved(removed: boolean) {
+    if (this.refForRemoved) {
+      this.refForRemoved.value = removed;
     }
   }
 

@@ -29,6 +29,11 @@ internal class MutableModelTreeJsImpl(
 
     private val changeHandlers = mutableSetOf<ChangeHandler>()
 
+    // The listeners that report [NodeAdded] and [NodeRemoved] to the handlers added with
+    // [addListenerIncludingAddedAndRemovedNodes], one per tree.
+    // They are only created and registered for these handlers, so that other handlers cost nothing extra.
+    private var addedAndRemovedNodesListeners: MutableMap<ChangeHandler, List<Pair<IMutableModelTree, AddedAndRemovedNodesListener>>>? = null
+
     private val model = CompositeModel(trees.map { it.asModel() }).withAutoTransactions()
     private val changeListeners = trees.map { tree ->
         ChangeListener(tree.withAutoTransactions()) { change ->
@@ -51,8 +56,18 @@ internal class MutableModelTreeJsImpl(
     override fun addListener(handler: ChangeHandler) {
         changeHandlers.add(handler)
     }
+    override fun addListenerIncludingAddedAndRemovedNodes(handler: ChangeHandler) {
+        changeHandlers.add(handler)
+        val listeners = addedAndRemovedNodesListeners ?: mutableMapOf<ChangeHandler, List<Pair<IMutableModelTree, AddedAndRemovedNodesListener>>>()
+            .also { addedAndRemovedNodesListeners = it }
+        if (handler in listeners) return
+        listeners[handler] = trees.map { tree ->
+            tree to AddedAndRemovedNodesListener(tree.withAutoTransactions(), handler).also { tree.addListener(it) }
+        }
+    }
     override fun removeListener(handler: ChangeHandler) {
         changeHandlers.remove(handler)
+        addedAndRemovedNodesListeners?.remove(handler)?.forEach { (tree, listener) -> tree.removeListener(listener) }
     }
 
     private fun IWritableNode.toJS() = toNodeJs(this.withAutoTransactions().asLegacyNode())
@@ -75,6 +90,28 @@ internal class ChangeListener(private val tree: IMutableModelTree, private val c
                 is ChildrenChangedEvent<INodeReference> -> changeCallback(ChildrenChanged(nodeIdToInode(it.nodeId), it.role.stringForLegacyApi()))
                 is PropertyChangedEvent<INodeReference> -> changeCallback(PropertyChanged(nodeIdToInode(it.nodeId), it.role.stringForLegacyApi()))
                 is ReferenceChangedEvent<INodeReference> -> changeCallback(ReferenceChanged(nodeIdToInode(it.nodeId), it.role.stringForLegacyApi()))
+            }
+        }
+    }
+}
+
+/**
+ * Reports only [NodeAdded] and [NodeRemoved] to [changeCallback].
+ * The other changes are reported by [ChangeListener].
+ */
+internal class AddedAndRemovedNodesListener(private val tree: IMutableModelTree, private val changeCallback: (ChangeJS) -> Unit) :
+    IGenericMutableModelTree.Listener<INodeReference> {
+
+    private fun nodeIdToInode(nodeId: INodeReference): INodeJS {
+        return toNodeJs(NodeInMutableModel(tree, nodeId).asLegacyNode())
+    }
+
+    override fun treeChanged(oldTree: IGenericModelTree<INodeReference>, newTree: IGenericModelTree<INodeReference>) {
+        newTree.getChanges(oldTree, false).iterateBlocking(newTree) {
+            when (it) {
+                is NodeAddedEvent<INodeReference> -> changeCallback(NodeAdded(nodeIdToInode(it.nodeId)))
+                is NodeRemovedEvent<INodeReference> -> changeCallback(NodeRemoved(nodeIdToInode(it.nodeId)))
+                else -> {}
             }
         }
     }

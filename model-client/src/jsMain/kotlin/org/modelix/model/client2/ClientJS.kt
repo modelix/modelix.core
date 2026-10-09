@@ -577,7 +577,21 @@ interface MutableModelTreeJs {
     fun addListener(handler: ChangeHandler)
 
     /**
+     * Like [addListener], but the change handler is also called with [NodeAdded] and [NodeRemoved]
+     * for every node of an added or removed subtree.
+     * The order of these changes within one change of the branch,
+     * also relative to the other changes, is not specified.
+     * The handler is called more often than with [addListener],
+     * and the changes of the branch are computed once more for each such handler,
+     * so use it only when added or removed nodes have to be known.
+     * Once a handler is added with this method, it gets these changes until it is removed with [removeListener],
+     * even if it is also added with [addListener].
+     */
+    fun addListenerIncludingAddedAndRemovedNodes(handler: ChangeHandler)
+
+    /**
      * Remove a change handler from the branch.
+     * It removes handlers added with [addListener] and with [addListenerIncludingAddedAndRemovedNodes].
      */
     fun removeListener(handler: ChangeHandler)
 }

@@ -61,3 +61,20 @@ data class ContainmentChanged(override val node: INodeJS) : ChangeJS
  */
 @JsExport
 data class ConceptChanged(override val node: INodeJS) : ChangeJS
+
+/**
+ * Represents an added [node].
+ * Every node of an added subtree is reported, not only the root of the subtree.
+ * Only reported to handlers added with [MutableModelTreeJs.addListenerIncludingAddedAndRemovedNodes].
+ */
+@JsExport
+data class NodeAdded(override val node: INodeJS) : ChangeJS
+
+/**
+ * Represents a removed [node].
+ * Every node of a removed subtree is reported, not only the root of the subtree.
+ * Only reported to handlers added with [MutableModelTreeJs.addListenerIncludingAddedAndRemovedNodes].
+ * Only the reference of [node] can be read, because it is no longer part of the model.
+ */
+@JsExport
+data class NodeRemoved(override val node: INodeJS) : ChangeJS

@@ -1,5 +1,6 @@
 bin
 .gradle/
+**/bin/
 **/build
 /*/ignite/
 .DS_Store

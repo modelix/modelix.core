@@ -17,6 +17,17 @@ fun <TargetT : ITypedNode> INode.getReferenceTarget(link: ITypedReferenceLink<Ta
     if (target == null && !link.untyped().isOptional) throw ReferenceNotSetException(this, link)
     return target as TargetT
 }
+
+/**
+ * The target of [link] if it is set and its concept is provided by a registered generated language,
+ * and `null` if the reference is unset or the target's concept is unknown.
+ *
+ * Additive, opt-in *lenient* counterpart of [getReferenceTargetOrNull], which stays strict and
+ * reports an unknown target as an [org.modelix.metamodel.UnknownConceptException].
+ */
+fun <TargetT : ITypedNode> INode.getKnownReferenceTargetOrNull(link: ITypedReferenceLink<TargetT>): TargetT? {
+    return getReferenceTarget(link.untyped())?.typedOrNull(link.getTypedTargetConcept().getInstanceInterface())
+}
 fun <TargetT : ITypedNode> INode.setReferenceTarget(link: ITypedReferenceLink<TargetT>, target: TargetT?) {
     setReferenceTarget(link.untyped(), target?.unwrap())
 }

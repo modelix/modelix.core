@@ -5,18 +5,13 @@ import type {
   ReferenceRole,
   PropertyRole,
 } from "@modelix/ts-model-api";
-import type { Ref } from "vue";
-import { markRaw, shallowRef } from "vue";
-import type { Cache } from "./Cache";
+import type { ComputedRef } from "vue";
+import { computed, effectScope, markRaw } from "vue";
 import type { Nullable } from "@modelix/model-client";
 import { org } from "@modelix/model-client";
-
-export function toReactiveINodeJS(
-  node: INodeJS,
-  cache: Cache<ReactiveINodeJS>,
-): ReactiveINodeJS {
-  return cache.memoize(node, () => new ReactiveINodeJS(node, cache));
-}
+import type { DependencyKey } from "./DependencyKey";
+import { TrackedValue } from "./DependencyKey";
+import type { ReactiveModel } from "./ReactiveModel";
 
 // This declaration specifies the types of the implementation in `unwrapReactiveINodeJS` further.
 // It declares, that when
@@ -46,81 +41,90 @@ function unwrapReactiveINodeJS(
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type INodeReferenceJS = any;
 
+interface ReferenceTargetNode {
+  value: ComputedRef<INodeJS | undefined>;
+  // The keys for the existence of the target, which `value` depends on.
+  // They are kept here, so that they stay reachable as long as `value`.
+  existenceKeys: DependencyKey[];
+}
+
+/**
+ * A node that can be read in Vue effects, like a reactive object.
+ *
+ * Every read value is cached in a {@link TrackedValue} until the part of the model it was read from changes.
+ * The {@link ReactiveModel} invalidates the values when it handles a change.
+ */
 export class ReactiveINodeJS implements INodeJS {
-  private byRoleRefToProperty =
-    new org.modelix.model.api.MapWithPropertyRoleKey<Ref<string | undefined>>();
-  private byRoleRefToReferenceTargetNode =
-    new org.modelix.model.api.MapWithReferenceRoleKey<
-      Ref<INodeJS | undefined>
+  private readonly properties =
+    new org.modelix.model.api.MapWithPropertyRoleKey<
+      TrackedValue<string | undefined>
     >();
-  private byRoleRefToReferenceTargetRef =
+  private readonly referenceTargetRefs =
     new org.modelix.model.api.MapWithReferenceRoleKey<
-      Ref<INodeReferenceJS | undefined>
+      TrackedValue<INodeReferenceJS | undefined>
     >();
-  private byRoleRefToChildren = new org.modelix.model.api.MapWithChildRoleKey<
-    Ref<INodeJS[]>
+  private readonly referenceTargetNodes =
+    new org.modelix.model.api.MapWithReferenceRoleKey<ReferenceTargetNode>();
+  private readonly children = new org.modelix.model.api.MapWithChildRoleKey<
+    TrackedValue<INodeJS[]>
   >();
-  private refForAllChildren: Ref<INodeJS[]> | undefined = undefined;
+  private allChildren: TrackedValue<INodeJS[]> | undefined;
+  private propertyRoles: TrackedValue<PropertyRole[]> | undefined;
+  private referenceRoles: TrackedValue<ReferenceRole[]> | undefined;
+  private parent: TrackedValue<INodeJS | undefined> | undefined;
+  private roleInParent: TrackedValue<ChildRole | undefined> | undefined;
+  private concept: TrackedValue<IConceptJS | undefined> | undefined;
+  private conceptUID: TrackedValue<string | undefined> | undefined;
+  // A removed node cannot be read from the model anymore.
+  // Its cached values are kept, because they are not invalidated while it is removed.
+  private removed = false;
 
   constructor(
     public readonly unreactiveNode: INodeJS,
-    private readonly cache: Cache<ReactiveINodeJS>,
+    private readonly model: ReactiveModel,
   ) {
     // markRaw ensures, that Vue.js does not wrap this object again in a proxy
     // see. https://vuejs.org/api/reactivity-advanced.html#markraw
     markRaw(this);
   }
 
-  private propertyGetter = (role: PropertyRole) =>
-    this.unreactiveNode.getPropertyValue(role);
-
-  private referenceTargetRefGetter = (role: ReferenceRole) =>
-    this.unreactiveNode.getReferenceTargetRef(role);
-
-  private referenceTargetNodeGetter = (role: ReferenceRole) => {
-    const unreactiveTargetNode =
-      this.unreactiveNode.getReferenceTargetNode(role);
-    return unreactiveTargetNode
-      ? toReactiveINodeJS(unreactiveTargetNode, this.cache)
-      : unreactiveTargetNode;
-  };
-
-  private childrenGetter = (role: ChildRole | undefined) =>
-    this.unreactiveNode
-      .getChildren(role)
-      .map((node) => toReactiveINodeJS(node, this.cache));
-
-  private allChildrenGetter = () =>
-    this.unreactiveNode
-      .getAllChildren()
-      .map((node) => toReactiveINodeJS(node, this.cache));
+  private wrap(node: INodeJS): ReactiveINodeJS;
+  private wrap(node: INodeJS | undefined): ReactiveINodeJS | undefined;
+  private wrap(node: INodeJS | undefined): ReactiveINodeJS | undefined {
+    // Keeps `null`, because the unreactive node returns `null` where `undefined` is declared.
+    // See https://issues.modelix.org/issue/MODELIX-567/
+    return node ? this.model.wrap(node) : node;
+  }
 
   getConcept(): IConceptJS | undefined {
-    return this.unreactiveNode.getConcept();
+    this.concept ??= new TrackedValue(() => this.unreactiveNode.getConcept());
+    return this.concept.value;
   }
 
   getConceptUID(): string | undefined {
-    return this.unreactiveNode.getConceptUID();
+    this.conceptUID ??= new TrackedValue(() =>
+      this.unreactiveNode.getConceptUID(),
+    );
+    return this.conceptUID.value;
   }
 
   getReference(): INodeReferenceJS {
+    // The reference of a node never changes.
     return this.unreactiveNode.getReference();
   }
 
   getRoleInParent(): ChildRole | undefined {
-    // The role of the own node does not need to be reactive,
-    // because the node could have only been obtained by accessing it from its parent.
-    // Whenever the role in the parent or the parent changes,
-    // the reactivity in the parent triggers again.
-    return this.unreactiveNode.getRoleInParent();
+    this.roleInParent ??= new TrackedValue(() =>
+      this.unreactiveNode.getRoleInParent(),
+    );
+    return this.roleInParent.value;
   }
 
   getParent(): INodeJS | undefined {
-    // This does not need to be made reacitve for the same reason as getRoleInParent
-    const unreactiveNode = this.unreactiveNode.getParent();
-    return unreactiveNode
-      ? toReactiveINodeJS(unreactiveNode, this.cache)
-      : unreactiveNode;
+    this.parent ??= new TrackedValue(() =>
+      this.wrap(this.unreactiveNode.getParent()),
+    );
+    return this.parent.value;
   }
 
   remove(): void {
@@ -128,19 +132,23 @@ export class ReactiveINodeJS implements INodeJS {
   }
 
   getChildren(role: ChildRole | undefined): INodeJS[] {
-    const ref = this.getOrCreateRefForRole(
-      this.byRoleRefToChildren,
+    return this.getOrCreate(
+      this.children,
       role,
-      this.childrenGetter,
-    );
-    return ref.value;
+      () =>
+        new TrackedValue(() =>
+          this.unreactiveNode
+            .getChildren(role)
+            .map((node) => this.model.wrap(node)),
+        ),
+    ).value;
   }
 
   getAllChildren(): INodeJS[] {
-    if (this.refForAllChildren == undefined) {
-      this.refForAllChildren = shallowRef(this.allChildrenGetter());
-    }
-    return this.refForAllChildren!.value;
+    this.allChildren ??= new TrackedValue(() =>
+      this.unreactiveNode.getAllChildren().map((node) => this.model.wrap(node)),
+    );
+    return this.allChildren.value;
   }
 
   moveChild(role: ChildRole | undefined, index: number, child: INodeJS): void {
@@ -152,14 +160,14 @@ export class ReactiveINodeJS implements INodeJS {
     index: number,
     concept: IConceptJS | undefined,
   ): INodeJS {
-    // The related Vue-`Ref` does not need to be triggered.
-    // It will be updated through the changed listener of the branch.
+    // The cached values do not need to be invalidated here.
+    // They will be invalidated through the change listener of the branch.
     const unreactiveNode = this.unreactiveNode.addNewChild(
       role,
       index,
       concept,
     );
-    return toReactiveINodeJS(unreactiveNode, this.cache);
+    return this.model.wrap(unreactiveNode);
   }
 
   removeChild(child: INodeJS): void {
@@ -167,35 +175,76 @@ export class ReactiveINodeJS implements INodeJS {
   }
 
   getReferenceRoles(): ReferenceRole[] {
-    // We do not make the getPropertyRoles reactive,
-    // because for a typed reactive API they are not relevant.
-    return this.unreactiveNode.getReferenceRoles();
+    this.referenceRoles ??= new TrackedValue(() =>
+      this.unreactiveNode.getReferenceRoles(),
+    );
+    return this.referenceRoles.value;
   }
 
   getReferenceTargetNode(role: ReferenceRole): INodeJS | undefined {
-    const ref = this.getOrCreateRefForRole(
-      this.byRoleRefToReferenceTargetNode,
-      role,
-      this.referenceTargetNodeGetter,
-    );
-    return ref.value;
+    return this.getOrCreate(this.referenceTargetNodes, role, () => {
+      const targetNode: ReferenceTargetNode = {
+        // The `computed` is shared by every component that reads this reference.
+        // Before Vue 3.5, a `computed` belongs to the effect scope it is created in,
+        // for example, the component whose `setup()` reads the reference first.
+        // The component would stop it on unmount, and it would never be updated again.
+        // A detached scope keeps it independent of the component.
+        value: effectScope(true).run(() =>
+          computed(() => this.readReferenceTargetNode(role, targetNode)),
+        )!,
+        existenceKeys: [],
+      };
+      return targetNode;
+    }).value.value;
+  }
+
+  // The target node depends on the reference and on whether the target exists.
+  // A removed or added target does not change the reference,
+  // so its existence is a key of its own, like the `UnclassifiedNodeDependency` in `IncrementalBranch`.
+  // This also covers a target that does not exist yet when the reference is read.
+  private readReferenceTargetNode(
+    role: ReferenceRole,
+    targetNode: ReferenceTargetNode,
+  ): INodeJS | undefined {
+    const targetRef = this.getReferenceTargetRef(role);
+    // The value is read again while this node is removed, when its target is removed or added.
+    // For example, when this node and its target are removed together.
+    // A reference of a removed node is not resolved.
+    // Unset references are `null`, even though the declared type says `undefined`.
+    // See https://issues.modelix.org/issue/MODELIX-567/
+    const unreactiveTargetNode = this.removed
+      ? (null as unknown as undefined)
+      : this.unreactiveNode.getReferenceTargetNode(role);
+    const existenceKeys: DependencyKey[] = [];
+    if (targetRef) {
+      existenceKeys.push(this.model.existenceKey(targetRef));
+    }
+    // The stored reference might be serialized differently than the reference of the resolved node.
+    // Changes are reported with the reference of the node.
+    const resolvedRef = unreactiveTargetNode?.getReference();
+    if (resolvedRef && resolvedRef !== targetRef) {
+      existenceKeys.push(this.model.existenceKey(resolvedRef));
+    }
+    existenceKeys.forEach((key) => key.track());
+    targetNode.existenceKeys = existenceKeys;
+    return this.wrap(unreactiveTargetNode);
   }
 
   getReferenceTargetRef(role: ReferenceRole): INodeReferenceJS | undefined {
-    const ref = this.getOrCreateRefForRole(
-      this.byRoleRefToReferenceTargetRef,
+    return this.getOrCreate(
+      this.referenceTargetRefs,
       role,
-      this.referenceTargetRefGetter,
-    );
-    return ref.value;
+      () =>
+        new TrackedValue(() => this.unreactiveNode.getReferenceTargetRef(role)),
+    ).value;
   }
 
   setReferenceTargetNode(
     role: ReferenceRole,
     target: INodeJS | undefined,
   ): void {
-    // The related Vue-`Ref` does not need to be triggered.
-    // It will be updated through the changed listener of the branch.
+    // The cached values do not need to be invalidated here.
+    // They will be invalidated through the change listener of the branch.
     return this.unreactiveNode.setReferenceTargetNode(
       role,
       unwrapReactiveINodeJS(target),
@@ -206,74 +255,92 @@ export class ReactiveINodeJS implements INodeJS {
     role: ReferenceRole,
     target: INodeReferenceJS | undefined,
   ): void {
-    // The related Vue-`Ref` does not need to be triggered.
-    // It will be updated through the changed listener of the branch.
+    // The cached values do not need to be invalidated here.
+    // They will be invalidated through the change listener of the branch.
     this.unreactiveNode.setReferenceTargetRef(role, target);
   }
 
   getPropertyRoles(): PropertyRole[] {
-    // We do not make the getPropertyRoles reactive,
-    // because for a typed reactive API they are not relevant.
-    return this.unreactiveNode.getPropertyRoles();
+    this.propertyRoles ??= new TrackedValue(() =>
+      this.unreactiveNode.getPropertyRoles(),
+    );
+    return this.propertyRoles.value;
   }
 
   getPropertyValue(role: PropertyRole): string | undefined {
-    const ref = this.getOrCreateRefForRole(
-      this.byRoleRefToProperty,
+    return this.getOrCreate(
+      this.properties,
       role,
-      this.propertyGetter,
-    );
-    return ref.value;
+      () => new TrackedValue(() => this.unreactiveNode.getPropertyValue(role)),
+    ).value;
   }
 
   setPropertyValue(role: PropertyRole, value: string | undefined): void {
-    // The related Vue-`Ref` does not need to be triggered.
-    // It will be updated through the changed listener of the branch.
+    // The cached values do not need to be invalidated here.
+    // They will be invalidated through the change listener of the branch.
     this.unreactiveNode.setPropertyValue(role, value);
   }
 
-  getOrCreateRefForRole<ValueT, RoleT>(
-    byRoleRefs: org.modelix.model.api.MapWithRoleKey<Ref<ValueT>>,
+  private getOrCreate<ValueT extends object, RoleT>(
+    byRole: org.modelix.model.api.MapWithRoleKey<ValueT>,
     role: RoleT,
-    getValue: (role: RoleT) => ValueT,
-  ): Ref<ValueT> {
-    return byRoleRefs.getOrPut((role as unknown as string) ?? "null", () =>
-      shallowRef(getValue(role)),
-    );
+    create: () => ValueT,
+  ): ValueT {
+    return byRole.getOrPut((role as unknown as string) ?? "null", create);
   }
 
-  triggerChangeInChild(role: Nullable<ChildRole>) {
-    if (this.refForAllChildren) {
-      this.refForAllChildren.value = this.allChildrenGetter();
-    }
-
-    const normalizedRole = role ?? undefined;
-    const maybeRef = this.byRoleRefToChildren.get(role as unknown as string);
-    if (maybeRef) {
-      maybeRef.value = this.childrenGetter(normalizedRole);
-    }
+  private getExisting<ValueT extends object>(
+    byRole: org.modelix.model.api.MapWithRoleKey<ValueT>,
+    role: unknown,
+  ): ValueT | undefined {
+    return byRole.get(role as string) ?? undefined;
   }
 
-  triggerChangeInReference(role: ReferenceRole) {
-    const maybeTargetNodeRef = this.byRoleRefToReferenceTargetNode.get(
-      role as unknown as string,
-    );
-    if (maybeTargetNodeRef) {
-      maybeTargetNodeRef.value = this.referenceTargetNodeGetter(role);
-    }
-    const maybeTargetRefRef = this.byRoleRefToReferenceTargetRef.get(
-      role as unknown as string,
-    );
-    if (maybeTargetRefRef) {
-      maybeTargetRefRef.value = this.referenceTargetRefGetter(role);
-    }
+  setRemoved(removed: boolean) {
+    this.removed = removed;
   }
 
-  triggerChangeInProperty(role: PropertyRole) {
-    const maybeRef = this.byRoleRefToProperty.get(role as unknown as string);
-    if (maybeRef) {
-      maybeRef.value = this.propertyGetter(role);
-    }
+  invalidateProperty(role: PropertyRole) {
+    this.getExisting(this.properties, role)?.invalidate();
+    this.propertyRoles?.invalidate();
+  }
+
+  invalidateReference(role: ReferenceRole) {
+    // The target node is a `computed` that depends on the target reference,
+    // so it is invalidated with it.
+    this.getExisting(this.referenceTargetRefs, role)?.invalidate();
+    this.referenceRoles?.invalidate();
+  }
+
+  invalidateChildren(role: Nullable<ChildRole>) {
+    this.getExisting(this.children, role)?.invalidate();
+    this.allChildren?.invalidate();
+  }
+
+  invalidateContainment() {
+    this.parent?.invalidate();
+    this.roleInParent?.invalidate();
+  }
+
+  invalidateConcept() {
+    this.concept?.invalidate();
+    this.conceptUID?.invalidate();
+  }
+
+  /**
+   * Invalidates every cached value of this node.
+   * A node that is added again after it was removed can differ from the removed node,
+   * for example, when a model is deleted and imported again with the same node IDs.
+   */
+  invalidateAll() {
+    this.invalidateContainment();
+    this.invalidateConcept();
+    this.propertyRoles?.invalidate();
+    this.referenceRoles?.invalidate();
+    this.allChildren?.invalidate();
+    this.properties.values().forEach((value) => value.invalidate());
+    this.referenceTargetRefs.values().forEach((value) => value.invalidate());
+    this.children.values().forEach((value) => value.invalidate());
   }
 
   get node() {

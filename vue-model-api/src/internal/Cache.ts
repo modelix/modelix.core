@@ -3,7 +3,7 @@
 import type { INodeJS } from "@modelix/ts-model-api";
 
 /**
- * Cache for memoizing values assoziated with {@link INodeJS}.
+ * Cache for memoizing values assoziated with {@link INodeJS} or with the serialized reference of a node.
  *
  * Memoized value will eventually be garbage collected and removed from the cache,
  * when they are not referenced outside the cache.
@@ -47,7 +47,7 @@ export class Cache<CachedT extends object> {
     return node.getReference() as string;
   }
 
-  private getWithKey(key: string): CachedT | undefined {
+  getWithKey(key: string): CachedT | undefined {
     return this.map.get(key)?.deref();
   }
 
@@ -57,7 +57,10 @@ export class Cache<CachedT extends object> {
   }
 
   memoize(node: INodeJS, supply: () => CachedT): CachedT {
-    const key = this.getKey(node);
+    return this.memoizeWithKey(this.getKey(node), supply);
+  }
+
+  memoizeWithKey(key: string, supply: () => CachedT): CachedT {
     const existingValue = this.getWithKey(key);
     if (existingValue !== undefined) {
       return existingValue;

@@ -76,7 +76,8 @@ class MutableModelTreeJsTest {
         val aNode = branch.rootNode.getAllChildren()[0]
         branch.rootNode.removeChild(aNode)
 
-        assertEquals(1, changeCount)
+        // ChildrenChanged for the parent and NodeRemoved for the child
+        assertEquals(2, changeCount)
     }
 
     @Test
@@ -200,5 +201,74 @@ class MutableModelTreeJsTest {
 
         // Assert
         assertEquals(1, childrenChanged)
+    }
+
+    @Test
+    fun changeDetectionWorksForAddedSubtree() {
+        // Arrange
+        val addedNodes = mutableListOf<String>()
+        val branch = loadModelsFromJsonAsBranch(arrayOf(emptyRoot))
+        val rootNode = branch.rootNode
+        val child = rootNode.addNewChild("aRole", -1, GeneratedConcept("aConceptUid"))
+        branch.addListener {
+            when (it) {
+                is NodeAdded -> addedNodes += it.node.getReference() as String
+                else -> {}
+            }
+        }
+
+        // Act
+        val grandChild = child.addNewChild("aRole", -1, GeneratedConcept("aConceptUid"))
+
+        // Assert
+        assertEquals(listOf(grandChild.getReference() as String), addedNodes)
+    }
+
+    @Test
+    fun changeDetectionWorksForRemovedSubtree() {
+        // Arrange
+        val removedNodes = mutableSetOf<String>()
+        val branch = loadModelsFromJsonAsBranch(arrayOf(emptyRoot))
+        val rootNode = branch.rootNode
+        val child = rootNode.addNewChild("aRole", -1, GeneratedConcept("aConceptUid"))
+        val grandChild = child.addNewChild("aRole", -1, GeneratedConcept("aConceptUid"))
+        val greatGrandChild = grandChild.addNewChild("aRole", -1, GeneratedConcept("aConceptUid"))
+        branch.addListener {
+            when (it) {
+                is NodeRemoved -> removedNodes += it.node.getReference() as String
+                else -> {}
+            }
+        }
+
+        // Act
+        rootNode.removeChild(child)
+
+        // Assert
+        assertEquals(
+            setOf(child, grandChild, greatGrandChild).map { it.getReference() as String }.toSet(),
+            removedNodes,
+        )
+    }
+
+    @Test
+    fun movedNodeIsNeitherAddedNorRemoved() {
+        // Arrange
+        var addedOrRemoved = 0
+        val branch = loadModelsFromJsonAsBranch(arrayOf(emptyRoot))
+        val rootNode = branch.rootNode
+        val child1 = rootNode.addNewChild("aRole", -1, GeneratedConcept("aConceptUid"))
+        val child2 = rootNode.addNewChild("aRole", -1, GeneratedConcept("aConceptUid"))
+        branch.addListener {
+            when (it) {
+                is NodeAdded, is NodeRemoved -> addedOrRemoved++
+                else -> {}
+            }
+        }
+
+        // Act
+        child1.moveChild("aRole", -1, child2)
+
+        // Assert
+        assertEquals(0, addedOrRemoved)
     }
 }

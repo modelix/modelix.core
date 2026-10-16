@@ -70,8 +70,8 @@ internal class ChangeListener(private val tree: IMutableModelTree, private val c
             when (it) {
                 is ConceptChangedEvent<INodeReference> -> changeCallback(ConceptChanged(nodeIdToInode(it.nodeId)))
                 is ContainmentChangedEvent<INodeReference> -> changeCallback(ContainmentChanged(nodeIdToInode(it.nodeId)))
-                is NodeAddedEvent<INodeReference> -> {}
-                is NodeRemovedEvent<INodeReference> -> {}
+                is NodeAddedEvent<INodeReference> -> changeCallback(NodeAdded(nodeIdToInode(it.nodeId)))
+                is NodeRemovedEvent<INodeReference> -> changeCallback(NodeRemoved(nodeIdToInode(it.nodeId)))
                 is ChildrenChangedEvent<INodeReference> -> changeCallback(ChildrenChanged(nodeIdToInode(it.nodeId), it.role.stringForLegacyApi()))
                 is PropertyChangedEvent<INodeReference> -> changeCallback(PropertyChanged(nodeIdToInode(it.nodeId), it.role.stringForLegacyApi()))
                 is ReferenceChangedEvent<INodeReference> -> changeCallback(ReferenceChanged(nodeIdToInode(it.nodeId), it.role.stringForLegacyApi()))

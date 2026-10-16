@@ -3,10 +3,7 @@ import type { INodeJS } from "@modelix/ts-model-api";
 import { useLastPromiseEffect } from "./internal/useLastPromiseEffect";
 import type { MaybeRefOrGetter, Ref } from "vue";
 import { shallowRef, toValue } from "vue";
-import type { ReactiveINodeJS } from "./internal/ReactiveINodeJS";
-import { toReactiveINodeJS } from "./internal/ReactiveINodeJS";
-import { Cache } from "./internal/Cache";
-import { handleChange } from "./internal/handleChange";
+import { ReactiveModel } from "./internal/ReactiveModel";
 
 type ClientJS = org.modelix.model.client2.ClientJS;
 type ChangeJS = org.modelix.model.client2.ChangeJS;
@@ -55,25 +52,22 @@ export function useReadonlyVersion(
       if (!isDefined(versionHashValue)) {
         return;
       }
-      const cache = new Cache<ReactiveINodeJS>();
+      const reactiveModel = new ReactiveModel();
       return clientValue
         .loadReadonlyVersion(repositoryIdValue, versionHashValue)
         .then(({ version, tree }) => ({
           versionInfo: version,
           tree,
-          cache,
+          reactiveModel,
         }));
     },
-    ({ versionInfo, tree, cache }, isResultOfLastStartedPromise) => {
+    ({ versionInfo, tree, reactiveModel }, isResultOfLastStartedPromise) => {
       if (isResultOfLastStartedPromise) {
         tree.addListener((change: ChangeJS) => {
-          if (cache === null) {
-            throw Error("The cache is unexpectedly not set up.");
-          }
-          handleChange(change, cache);
+          reactiveModel.handleChange(change);
         });
         const unreactiveRootNode = tree.rootNode;
-        const reactiveRootNode = toReactiveINodeJS(unreactiveRootNode, cache);
+        const reactiveRootNode = reactiveModel.wrap(unreactiveRootNode);
         versionInformationRef.value = versionInfo;
         rootNodeRef.value = reactiveRootNode;
       }

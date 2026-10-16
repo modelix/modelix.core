@@ -573,6 +573,9 @@ interface MutableModelTreeJs {
     /**
      * Add a change handler to the branch.
      * The change handler will be called when data on the branch changes.
+     *
+     * Added and removed nodes are reported with [NodeAdded] and [NodeRemoved] for every node of the subtree,
+     * in addition to [ChildrenChanged] for the parent.
      */
     fun addListener(handler: ChangeHandler)
 

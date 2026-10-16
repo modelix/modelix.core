@@ -34,6 +34,10 @@ sealed class MapWithRoleKey<V : Any>(private val type: IRoleReferenceFactory<*>)
         return _get(type.fromRoleOrString(role))
     }
 
+    fun values(): Array<V> {
+        return entries.map { it.second }.toTypedArray()
+    }
+
     fun getOrPut(role: ReferenceRole, initializer: () -> V): V {
         val convertedRole = type.fromRoleOrString(role)
         return _get(convertedRole) ?: initializer().also { _put(convertedRole.merge(convertedRole), it) }

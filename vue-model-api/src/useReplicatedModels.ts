@@ -3,10 +3,7 @@ import type { INodeJS } from "@modelix/ts-model-api";
 import { useLastPromiseEffect } from "./internal/useLastPromiseEffect";
 import type { MaybeRefOrGetter, Ref } from "vue";
 import { shallowRef, toValue } from "vue";
-import type { ReactiveINodeJS } from "./internal/ReactiveINodeJS";
-import { toReactiveINodeJS } from "./internal/ReactiveINodeJS";
-import { Cache } from "./internal/Cache";
-import { handleChange } from "./internal/handleChange";
+import { ReactiveModel } from "./internal/ReactiveModel";
 import { ReadOnlyNodeJS } from "./ReadonlyNodeJS";
 
 type ClientJS = org.modelix.model.client2.ClientJS;
@@ -68,7 +65,7 @@ export function useReplicatedModels(
   useLastPromiseEffect<{
     replicatedModel: ReplicatedModelJS;
     params: ReplicatedModelParameters[];
-    cache: Cache<ReactiveINodeJS>;
+    reactiveModel: ReactiveModel;
   }>(
     () => {
       dispose();
@@ -80,31 +77,28 @@ export function useReplicatedModels(
       if (!isDefined(modelsValue)) {
         return;
       }
-      const cache = new Cache<ReactiveINodeJS>();
+      const reactiveModel = new ReactiveModel();
       return clientValue
         .startReplicatedModels(modelsValue)
         .then((replicatedModel) => ({
           replicatedModel,
           params: modelsValue,
-          cache,
+          reactiveModel,
         }));
     },
     (
-      { replicatedModel: connectedReplicatedModel, params, cache },
+      { replicatedModel: connectedReplicatedModel, params, reactiveModel },
       isResultOfLastStartedPromise,
     ) => {
       if (isResultOfLastStartedPromise) {
         replicatedModel = connectedReplicatedModel;
         const branch = replicatedModel.getBranch();
         branch.addListener((change: ChangeJS) => {
-          if (cache === null) {
-            throw Error("The cache is unexpectedly not set up.");
-          }
-          handleChange(change, cache);
+          reactiveModel.handleChange(change);
         });
         const unreactiveRootNodes = branch.getRootNodes();
         const reactiveRootNodes = unreactiveRootNodes.map((node, index) => {
-          const reactiveNode = toReactiveINodeJS(node, cache);
+          const reactiveNode = reactiveModel.wrap(node);
           const param = params[index];
           if (param && param.readonly) {
             return new ReadOnlyNodeJS(reactiveNode, () =>

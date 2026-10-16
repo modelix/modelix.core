@@ -6,7 +6,7 @@ import type {
   PropertyRole,
 } from "@modelix/ts-model-api";
 import type { ComputedRef } from "vue";
-import { computed, markRaw } from "vue";
+import { computed, effectScope, markRaw } from "vue";
 import type { Nullable } from "@modelix/model-client";
 import { org } from "@modelix/model-client";
 import type { DependencyKey } from "./DependencyKey";
@@ -184,7 +184,14 @@ export class ReactiveINodeJS implements INodeJS {
   getReferenceTargetNode(role: ReferenceRole): INodeJS | undefined {
     return this.getOrCreate(this.referenceTargetNodes, role, () => {
       const targetNode: ReferenceTargetNode = {
-        value: computed(() => this.readReferenceTargetNode(role, targetNode)),
+        // The `computed` is shared by every component that reads this reference.
+        // Before Vue 3.5, a `computed` belongs to the effect scope it is created in,
+        // for example, the component whose `setup()` reads the reference first.
+        // The component would stop it on unmount, and it would never be updated again.
+        // A detached scope keeps it independent of the component.
+        value: effectScope(true).run(() =>
+          computed(() => this.readReferenceTargetNode(role, targetNode)),
+        )!,
         existenceKeys: [],
       };
       return targetNode;

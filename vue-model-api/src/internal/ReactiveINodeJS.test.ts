@@ -1,5 +1,5 @@
 import { useModelsFromJson } from "../useModelsFromJson";
-import { computed, isReactive, reactive } from "vue";
+import { computed, effectScope, isReactive, reactive } from "vue";
 import { runGarbageCollection } from "./runGarbageCollection";
 import { toRoleJS } from "@modelix/ts-model-api";
 import { ReadOnlyNodeJS } from "../ReadonlyNodeJS";
@@ -439,4 +439,27 @@ test("a value is not read again from the model before it is accessed", () => {
 
   expect(computedProperty.value).toBe("aValue3");
   expect(evaluations).toBe(2);
+});
+
+test("a reference read first in a component that is unmounted stays reactive", () => {
+  const [child0, child1, child2] = useRootNode().getChildren(
+    toRoleJS("children1"),
+  );
+  const reference = toRoleJS("aReference");
+  child0.setReferenceTargetNode(reference, child1);
+  // Like the `setup()` of a component that is unmounted later.
+  // Before Vue 3.5, a `computed` created in it belongs to the component and is stopped with it.
+  const componentScope = effectScope();
+  componentScope.run(() => child0.getReferenceTargetNode(reference));
+  componentScope.stop();
+  const computedTarget = computed(() =>
+    child0.getReferenceTargetNode(reference),
+  );
+  expect(computedTarget.value).toBe(child1);
+
+  child0.setReferenceTargetNode(reference, child2);
+  expect(computedTarget.value).toBe(child2);
+
+  child2.remove();
+  expect(computedTarget.value).toBe(null);
 });

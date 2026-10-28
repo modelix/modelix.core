@@ -28,7 +28,7 @@
     "outDir": "dist",
     "declarationDir": "dist",
     "noUnusedLocals": false,
-    "module": "CommonJS",
+    "module": "ESNext",
     "resolveJsonModule": false,
     "target": "ES2020"
   },

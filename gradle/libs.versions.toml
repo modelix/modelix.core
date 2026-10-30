@@ -41,7 +41,7 @@ kotest = "6.2.5"
 reaktive = "2.2.0"
 testcontainers = "1.21.4"
 keycloak = "26.0.8"
-arrow = "2.2.3"
+arrow = "2.3.0.1"
 
 [libraries]
 

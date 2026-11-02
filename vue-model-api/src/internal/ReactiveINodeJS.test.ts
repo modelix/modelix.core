@@ -448,7 +448,7 @@ test("a reference read first in a component that is unmounted stays reactive", (
   const reference = toRoleJS("aReference");
   child0.setReferenceTargetNode(reference, child1);
   // Like the `setup()` of a component that is unmounted later.
-  // Before Vue 3.5, a `computed` created in it belongs to the component and is stopped with it.
+  // A `computed` created in it must not be stopped with it.
   const componentScope = effectScope();
   componentScope.run(() => child0.getReferenceTargetNode(reference));
   componentScope.stop();

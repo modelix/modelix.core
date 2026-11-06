@@ -14,6 +14,18 @@ class SingleChildAccessor<ChildT : ITypedNode>(
     fun isSet(): Boolean = !isEmpty()
     fun get(): ChildT? = iterator().let { if (it.hasNext()) it.next() else null }
     fun <T> read(receiver: (ChildT?) -> T): T = receiver(get())
+
+    /**
+     * The child if it is set and its concept is provided by a registered generated language, and
+     * `null` if it is unset or its concept is unknown.
+     *
+     * This is an additive, opt-in *lenient* view. [get], [isSet] and [setNew] stay strict: [get]
+     * reports an unknown child as an [UnknownConceptException] rather than as "no child", and
+     * [setNew] must keep failing so that it never silently orphans a child it cannot see.
+     *
+     * @see ChildAccessor.known
+     */
+    fun knownOrNull(): ChildT? = untypedNodes().firstOrNull()?.typedOrNull(childType)
     fun setNew(): ChildT {
         get()?.let { parent.removeChild(it.unwrap()) }
         return addNew()

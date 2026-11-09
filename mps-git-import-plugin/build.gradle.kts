@@ -23,7 +23,7 @@ dependencies {
     implementation(libs.modelix.mpsApi, excludeMPSLibraries)
     implementation(libs.kotlin.logging, excludeMPSLibraries)
     implementation(libs.kotlin.datetime, excludeMPSLibraries)
-    implementation("org.eclipse.jgit:org.eclipse.jgit:7.8.0.202609011348-r")
+    implementation("org.eclipse.jgit:org.eclipse.jgit:7.8.1.202611041320-r")
     implementation("com.github.ajalt.clikt:clikt:5.1.0")
 
     compileOnly(

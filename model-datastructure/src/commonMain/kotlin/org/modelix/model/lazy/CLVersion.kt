@@ -4,6 +4,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toDeprecatedInstant
 import kotlinx.datetime.toInstant
 import org.modelix.datastructures.model.IGenericModelTree
 import org.modelix.datastructures.model.asLegacyTree
@@ -44,6 +45,7 @@ import org.modelix.streams.getBlocking
 import org.modelix.streams.plus
 import org.modelix.streams.query
 import kotlin.jvm.JvmName
+import kotlin.time.ExperimentalTime
 
 class CLVersion(val obj: Object<CPVersion>) : IVersion {
 
@@ -80,7 +82,8 @@ class CLVersion(val obj: Object<CPVersion>) : IVersion {
             return Instant.fromEpochSeconds(dateTimeStr.toLong())
         } catch (ex: Exception) {}
         try {
-            return LocalDateTime.parse(dateTimeStr).toInstant(TimeZone.currentSystemDefault())
+            @OptIn(ExperimentalTime::class)
+            return LocalDateTime.parse(dateTimeStr).toInstant(TimeZone.currentSystemDefault()).toDeprecatedInstant()
         } catch (ex: Exception) {}
         return null
     }

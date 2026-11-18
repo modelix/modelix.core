@@ -37,7 +37,7 @@
   "devDependencies": {
     "@reallyland/tslint-config": "^1.1.1",
     "@types/jest": "^29.5.14",
-    "@types/node": "^13.9.8",
+    "@types/node": "^26.6.6",
     "husky": "^4.2.3",
     "jest": "^30.0.0",
     "shx": "^0.3.2",

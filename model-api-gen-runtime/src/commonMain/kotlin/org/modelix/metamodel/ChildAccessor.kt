@@ -19,6 +19,29 @@ abstract class ChildAccessor<ChildT : ITypedNode>(
 
     fun untypedNodes(): Iterable<INode> = parent.getChildren(role)
 
+    /**
+     * The children whose concept is provided by a registered generated language and can be viewed as
+     * [childType], in the same order as [untypedNodes].
+     *
+     * This is an additive, opt-in *lenient* view. The default accessors ([iterator], [getSize],
+     * [isEmpty]) stay strict on purpose: skipping unknown children by default would silently desync
+     * the typed view from the stored tree - sizes and indices would no longer match the untyped
+     * model, and writes such as [SingleChildAccessor.setNew] would leave the skipped child behind.
+     *
+     * @see unknown
+     */
+    fun known(): Iterable<ChildT> = untypedNodes().mapNotNull { it.typedOrNull(childType) }
+
+    /**
+     * The children whose concept is not provided by any registered generated language, in the same
+     * order as [untypedNodes]. These are exactly the children that make the strict [iterator] throw
+     * an [UnknownConceptException].
+     *
+     * @see known
+     */
+    fun unknown(): Iterable<UnknownConceptInstance> =
+        untypedNodes().mapNotNull { it.typedOrNull(UnknownConceptInstance::class) }
+
     override fun iterator(): Iterator<ChildT> {
         return untypedNodes().map {
             when (childConcept) {

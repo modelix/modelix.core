@@ -43,6 +43,7 @@ data class ConceptData(
     val references: List<ReferenceLinkData> = emptyList(),
     val extends: List<String> = emptyList(),
     override val deprecationMessage: String? = null,
+    val smodelAttributes: List<AnnotationData> = emptyList(),
     val metaProperties: MutableMap<String, String> = mutableMapOf(),
 ) : IDeprecatable {
     companion object {
@@ -133,3 +134,13 @@ data class ReferenceLinkData(
     val optional: Boolean = true,
     override val deprecationMessage: String? = null,
 ) : IConceptFeatureData, IDeprecatable
+
+@Serializable
+data class AnnotationData(
+    val uid: String? = null,
+    val type: String,
+    val role: String? = null,
+    val children: List<NodeData> = emptyList(),
+    val properties: Map<String, String> = emptyMap(),
+    val references: Map<String, String> = emptyMap(),
+)

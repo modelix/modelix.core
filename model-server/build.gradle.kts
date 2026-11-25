@@ -181,7 +181,7 @@ tasks.test {
 }
 
 jib {
-    from.image = "registry.access.redhat.com/ubi8/openjdk-17:1.20-2.1729094551"
+    from.image = "registry.access.redhat.com/ubi8/openjdk-17:1.23-7@sha256:c784f77df695303b2d8bd3ac528080d543c9df52eac8f5f7ebcbead1b32ffc54"
     to.image = "modelix/model-server:$version"
     to.tags = setOf("test")
     container {

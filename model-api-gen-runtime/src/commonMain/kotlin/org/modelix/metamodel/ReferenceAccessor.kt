@@ -17,6 +17,15 @@ class OptionalReferenceAccessor<SourceT, TargetT : ITypedNode>(
     operator fun setValue(thisRef: SourceT, property: KProperty<*>, target: TargetT?) {
         node.setReferenceTarget(role, target?.unwrap())
     }
+
+    /**
+     * The reference target if it is set and its concept is provided by a registered generated
+     * language, and `null` if the reference is unset or the target's concept is unknown.
+     *
+     * Additive, opt-in *lenient* view; reading the delegated property stays strict and reports an
+     * unknown target as an [UnknownConceptException].
+     */
+    fun knownTargetOrNull(): TargetT? = node.getReferenceTarget(role)?.typedOrNull(targetType)
 }
 
 class MandatoryReferenceAccessor<SourceT, TargetT : ITypedNode>(
@@ -31,6 +40,15 @@ class MandatoryReferenceAccessor<SourceT, TargetT : ITypedNode>(
     operator fun setValue(thisRef: SourceT, property: KProperty<*>, target: TargetT) {
         node.setReferenceTarget(role, target.unwrap())
     }
+
+    /**
+     * The reference target if it is set and its concept is provided by a registered generated
+     * language, and `null` if the reference is unset or the target's concept is unknown.
+     *
+     * Additive, opt-in *lenient* view; reading the delegated property stays strict and reports an
+     * unknown target as an [UnknownConceptException].
+     */
+    fun knownTargetOrNull(): TargetT? = node.getReferenceTarget(role)?.typedOrNull(targetType)
 }
 
 class RawReferenceAccessor<SourceT>(

@@ -9,7 +9,7 @@
     "@eslint/js": "^10.0.1",
     "@semantic-release/changelog": "7.0.0",
     "@semantic-release/git": "11.0.1",
-    "semantic-release": "25.0.9",
+    "semantic-release": "26.0.1",
     "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.14.0",

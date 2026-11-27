@@ -230,8 +230,18 @@ data class MPSWritableNode(val node: SNode) : IWritableNode, ISyncTargetNode {
         }
     }
 
+    /**
+     * A node is valid while it is part of a model. MPS deletes a node by detaching it from its parent, which takes
+     * its descendants out of the model too, and notifies only the containment of the detached node. That's why the
+     * containment of every ancestor is a dependency.
+     */
     override fun isValid(): Boolean {
-        return true
+        var current: SNode? = node
+        while (current != null) {
+            DependencyTracking.accessed(MPSContainmentDependency(current))
+            current = current.parent
+        }
+        return node.model != null
     }
 
     override fun getNodeReference(): INodeReference {

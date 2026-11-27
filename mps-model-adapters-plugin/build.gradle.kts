@@ -21,6 +21,7 @@ publishMpsPlugin()
 dependencies {
     implementation(project(":mps-model-adapters"), excludeMPSLibraries)
     testImplementation(kotlin("test"))
+    testImplementation(libs.modelix.incremental)
 }
 
 tasks {
